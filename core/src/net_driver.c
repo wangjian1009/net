@@ -1,0 +1,162 @@
+#include <assert.h>
+#include "cpe/pal/pal_string.h"
+#include "cpe/utils/string_utils.h"
+#include "net_driver_i.h"
+#include "net_endpoint_i.h"
+#include "net_dgram_i.h"
+#include "net_timer_i.h"
+
+net_driver_t
+net_driver_create(
+    net_schedule_t schedule,
+    /*driver*/
+    const char * driver_name,
+    uint16_t driver_capacity,
+    net_driver_init_fun_t driver_init,
+    net_driver_fini_fun_t driver_fini,
+    /*timer*/
+    uint16_t timer_capacity,
+    net_timer_init_fun_t timer_init,
+    net_timer_fini_fun_t timer_fini,
+    net_timer_schedule_fun_t timer_schedule,
+    net_timer_cancel_fun_t timer_cancel,
+    net_timer_is_active_fun_t timer_is_active,
+    /*endpoint*/
+    uint16_t endpoint_capacity,
+    net_endpoint_init_fun_t endpoint_init,
+    net_endpoint_fini_fun_t endpoint_fini,
+    net_endpoint_connect_fun_t endpoint_connect,
+    net_endpoint_on_output_fun_t endpoint_on_output,
+    /*dgram*/
+    uint16_t dgram_capacity,
+    net_dgram_init_fun_t dgram_init,
+    net_dgram_fini_fun_t dgram_fini,
+    net_dgram_send_fun_t dgram_send)
+{
+    net_driver_t driver;
+    
+    driver = mem_alloc(schedule->m_alloc, sizeof(struct net_driver) + driver_capacity);
+    if (driver == NULL) {
+        CPE_ERROR(schedule->m_em, "core: driver alloc fail!");
+        return NULL;
+    }
+
+    driver->m_schedule = schedule;
+    cpe_str_dup(driver->m_name, sizeof(driver->m_name), driver_name);
+
+    /*driver*/
+    driver->m_driver_capacity = driver_capacity;
+    driver->m_driver_fini = driver_fini;
+
+    /*timer*/
+    driver->m_timer_capacity = timer_capacity;
+    driver->m_timer_init = timer_init;
+    driver->m_timer_fini = timer_fini;
+    driver->m_timer_schedule = timer_schedule;
+    driver->m_timer_cancel = timer_cancel;
+    driver->m_timer_is_active = timer_is_active;
+    
+    /*endpoint*/
+    driver->m_endpoint_capacity = endpoint_capacity;
+    driver->m_endpoint_init = endpoint_init;
+    driver->m_endpoint_fini = endpoint_fini;
+    driver->m_endpoint_connect = endpoint_connect;
+    driver->m_endpoint_on_output = endpoint_on_output;
+
+    /*dgram*/
+    driver->m_dgram_capacity = dgram_capacity;
+    driver->m_dgram_init = dgram_init;
+    driver->m_dgram_fini = dgram_fini;
+    driver->m_dgram_send = dgram_send;
+    
+    /*runtime*/
+    TAILQ_INIT(&driver->m_free_endpoints);
+    TAILQ_INIT(&driver->m_endpoints);
+
+    TAILQ_INIT(&driver->m_free_dgrams);
+    TAILQ_INIT(&driver->m_dgrams);
+    
+    TAILQ_INIT(&driver->m_free_timers);
+    TAILQ_INIT(&driver->m_timers);
+    
+    if (driver_init(driver) != 0) {
+        mem_free(schedule->m_alloc, driver);
+        return NULL;
+    }
+    
+    TAILQ_INSERT_TAIL(&schedule->m_drivers, driver, m_next_for_schedule);
+
+    if (schedule->m_debug) {
+        CPE_INFO(schedule->m_em, "core: driver %s created", driver_name);
+    }
+    
+    return driver;
+}
+
+void net_driver_free(net_driver_t driver) {
+    net_schedule_t schedule = driver->m_schedule;
+
+    if (schedule->m_direct_driver == driver) {
+        schedule->m_direct_driver = NULL;
+    }
+    
+    while(!TAILQ_EMPTY(&driver->m_endpoints)) {
+        net_endpoint_free(TAILQ_FIRST(&driver->m_endpoints));
+    }
+
+    while(!TAILQ_EMPTY(&driver->m_free_endpoints)) {
+        net_endpoint_real_free(TAILQ_FIRST(&driver->m_free_endpoints));
+    }
+    
+    while(!TAILQ_EMPTY(&driver->m_dgrams)) {
+        net_dgram_free(TAILQ_FIRST(&driver->m_dgrams));
+    }
+
+    while(!TAILQ_EMPTY(&driver->m_free_dgrams)) {
+        net_dgram_real_free(TAILQ_FIRST(&driver->m_free_dgrams));
+    }
+    
+    while(!TAILQ_EMPTY(&driver->m_timers)) {
+        net_timer_free(TAILQ_FIRST(&driver->m_timers));
+    }
+
+    while(!TAILQ_EMPTY(&driver->m_free_timers)) {
+        net_timer_real_free(TAILQ_FIRST(&driver->m_free_timers));
+    }
+    
+    if (driver->m_driver_fini) {
+        driver->m_driver_fini(driver);
+    }
+    
+    TAILQ_REMOVE(&schedule->m_drivers, driver, m_next_for_schedule);
+    
+    mem_free(schedule->m_alloc, driver);
+}
+
+net_driver_t
+net_driver_find(net_schedule_t schedule, const char * driver_name) {
+    net_driver_t driver;
+
+    TAILQ_FOREACH(driver, &schedule->m_drivers, m_next_for_schedule) {
+        if (strcmp(driver->m_name, driver_name) == 0) return driver;
+    }
+
+    return NULL;
+}
+
+net_schedule_t net_driver_schedule(net_driver_t driver) {
+    return driver->m_schedule;
+}
+
+const char * net_driver_name(net_driver_t driver) {
+    return driver->m_name;
+}
+
+void * net_driver_data(net_driver_t driver) {
+    return driver + 1;
+}
+
+net_driver_t net_driver_from_data(void * data) {
+    return ((net_driver_t)data) - 1;
+}
+

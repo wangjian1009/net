@@ -1,0 +1,72 @@
+static uint32_t NET_IPSET_NAME(bit_for_var)(net_ipset_variable var) {
+    return (var - 1);
+}
+
+static uint8_t NET_IPSET_NAME(assignment)(const void *addr, net_ipset_variable var) {
+    if (var == 0) {
+        return NET_IP_DISCRIMINATOR_VALUE;
+    }
+    else {
+        uint32_t bit = NET_IPSET_NAME(bit_for_var)(var);
+        return cpe_ba_get(addr, bit);
+    }
+}
+
+uint8_t NET_IPSET_PRENAME(contains)(const net_ipset_t set, NET_ADDRESS_DATA *elem) {
+    return net_ipset_node_evaluate
+        (set->m_cache, set->m_set_bdd, NET_IPSET_NAME(assignment), elem);
+}
+
+uint8_t NET_IPSET_NAME(add_network)(net_ipset_t set, NET_ADDRESS_DATA *elem, uint8_t cidr_prefix) {
+    if (cidr_prefix > NET_IP_BIT_SIZE) {
+        CPE_ERROR(set->m_schedule->m_em, "CIDR block %u out of range [0..%u]", cidr_prefix, NET_IP_BIT_SIZE);
+        return 0;
+    }
+
+    net_ipset_node_id  new_bdd =
+        net_ipset_node_insert(
+            set->m_cache, set->m_set_bdd,
+            NET_IPSET_NAME(assignment), elem, cidr_prefix + 1, 1);
+    uint8_t result = (new_bdd == set->m_set_bdd) ? 1 : 0;
+    net_ipset_node_decref(set->m_cache, set->m_set_bdd);
+    set->m_set_bdd = new_bdd;
+    return result;
+}
+
+uint8_t NET_IPSET_NAME(add)(net_ipset_t set, NET_ADDRESS_DATA *elem) {
+    net_ipset_node_id  new_bdd =
+        net_ipset_node_insert(
+            set->m_cache, set->m_set_bdd,
+            NET_IPSET_NAME(assignment), elem, NET_IP_BIT_SIZE + 1, 1);
+    uint8_t  result = (new_bdd == set->m_set_bdd);
+    net_ipset_node_decref(set->m_cache, set->m_set_bdd);
+    set->m_set_bdd = new_bdd;
+    return result;
+}
+
+uint8_t NET_IPSET_NAME(remove)(net_ipset_t set, NET_ADDRESS_DATA *elem) {
+    net_ipset_node_id  new_bdd =
+        net_ipset_node_insert(
+            set->m_cache, set->m_set_bdd,
+            NET_IPSET_NAME(assignment), elem, NET_IP_BIT_SIZE + 1, 0);
+    uint8_t  result = (new_bdd == set->m_set_bdd);
+    net_ipset_node_decref(set->m_cache, set->m_set_bdd);
+    set->m_set_bdd = new_bdd;
+    return result;
+}
+
+uint8_t NET_IPSET_NAME(remove_network)(net_ipset_t set, NET_ADDRESS_DATA *elem, uint8_t cidr_prefix) {
+    if (cidr_prefix > NET_IP_BIT_SIZE) {
+        CPE_ERROR(set->m_schedule->m_em, "CIDR block %u out of range [0..%u]", cidr_prefix, NET_IP_BIT_SIZE);
+        return 0;
+    }
+
+    net_ipset_node_id  new_bdd =
+        net_ipset_node_insert(
+            set->m_cache, set->m_set_bdd,
+            NET_IPSET_NAME(assignment), elem, cidr_prefix + 1, 0);
+    uint8_t result = (new_bdd == set->m_set_bdd) ? 1 : 0;
+    net_ipset_node_decref(set->m_cache, set->m_set_bdd);
+    set->m_set_bdd = new_bdd;
+    return result;
+}
