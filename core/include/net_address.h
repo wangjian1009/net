@@ -52,6 +52,8 @@ int net_address_cmp(net_address_t l, net_address_t r);
 int net_address_set_resolved(net_address_t address, net_address_t resolved);
 net_address_t net_address_resolved(net_address_t address);
 
+uint32_t net_address_hash(net_address_t address);
+
 NET_END_DECL
 
 #endif

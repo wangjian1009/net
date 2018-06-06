@@ -305,3 +305,21 @@ int net_address_cmp(net_address_t l, net_address_t r) {
         return memcmp(&((struct net_address_ipv4v6 *)l)->m_ipv6, &((struct net_address_ipv4v6 *)r)->m_ipv6, sizeof(struct in6_addr));
     }
 }
+
+uint32_t net_address_hash(net_address_t address) {
+    uint32_t r;
+
+    switch(address->m_type) {
+    case net_address_ipv4:
+        r = ((struct net_address_ipv4v6 *)address)->m_ipv4.u32;
+        CPE_HASH_UINT32(r);
+        r ^= (uint32_t)address->m_port;
+        break;
+    case net_address_ipv6:
+        break;
+    case net_address_domain:
+        break;
+    }
+        
+    return r;
+}
