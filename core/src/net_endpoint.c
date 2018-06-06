@@ -183,22 +183,40 @@ net_address_t net_endpoint_address(net_endpoint_t endpoint) {
     return endpoint->m_address;
 }
 
-void net_endpoint_set_address(net_endpoint_t endpoint, net_address_t address) {
+int net_endpoint_set_address(net_endpoint_t endpoint, net_address_t address, uint8_t is_own) {
     if (endpoint->m_address) {
         net_address_free(endpoint->m_address);
     }
-    endpoint->m_address = address;
+
+    if (is_own) {
+        endpoint->m_address = address;
+    }
+    else {
+        endpoint->m_address = net_address_copy(endpoint->m_driver->m_schedule, address);
+        if (endpoint->m_address == NULL) return -1;
+    }
+
+    return 0;
 }
 
 net_address_t net_endpoint_remote_address(net_endpoint_t endpoint) {
     return endpoint->m_remote_address;
 }
 
-void net_endpoint_set_remote_address(net_endpoint_t endpoint, net_address_t address) {
+int net_endpoint_set_remote_address(net_endpoint_t endpoint, net_address_t address, uint8_t is_own) {
     if (endpoint->m_remote_address) {
         net_address_free(endpoint->m_remote_address);
     }
-    endpoint->m_remote_address = address;
+
+    if (is_own) {
+        endpoint->m_remote_address = address;
+    }
+    else {
+        endpoint->m_remote_address = net_address_copy(endpoint->m_driver->m_schedule, address);
+        if (endpoint->m_remote_address == NULL) return -1;
+    }
+
+    return 0;
 }
 
 void * net_endpoint_data(net_endpoint_t endpoint) {

@@ -18,10 +18,10 @@ uint32_t net_endpoint_id(net_endpoint_t endpoint);
 net_endpoint_t net_endpoint_find(net_schedule_t schedule, uint32_t id);
 
 net_address_t net_endpoint_address(net_endpoint_t endpoint);
-void net_endpoint_set_address(net_endpoint_t endpoint, net_address_t address);
+int net_endpoint_set_address(net_endpoint_t endpoint, net_address_t address, uint8_t is_own);
 
 net_address_t net_endpoint_remote_address(net_endpoint_t endpoint);
-void net_endpoint_set_remote_address(net_endpoint_t endpoint, net_address_t address);
+int net_endpoint_set_remote_address(net_endpoint_t endpoint, net_address_t address, uint8_t is_own);
 
 net_endpoint_state_t net_endpoint_state(net_endpoint_t endpoint);
 void net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state);
