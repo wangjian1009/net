@@ -49,7 +49,7 @@ void net_address_free(net_address_t address);
 int net_address_cmp(net_address_t l, net_address_t r);
 
 /*domain*/
-int net_address_set_resolved(net_address_t address, net_address_t resolved);
+int net_address_set_resolved(net_address_t address, net_address_t resolved, uint8_t is_own);
 net_address_t net_address_resolved(net_address_t address);
 
 uint32_t net_address_hash(net_address_t address);

@@ -31,6 +31,7 @@ typedef enum net_address_type {
 
 typedef enum net_endpoint_state {
     net_endpoint_state_disable,
+    net_endpoint_state_resolving,
     net_endpoint_state_connecting,
     net_endpoint_state_established,
     net_endpoint_state_error,
@@ -51,8 +52,13 @@ typedef enum net_dns_mode {
     net_dns_ipv6_first,
 } net_dns_mode_t;
 
+/*monitor*/
 typedef void (*net_data_monitor_fun_t) (
     void * ctx, net_endpoint_t endpoint, net_data_direct_t direct, uint32_t sz);
+
+/*dns*/
+typedef void (*net_dns_query_callback_fun_t)(void * ctx, net_address_t address);
+typedef void (*net_dns_query_ctx_free_fun_t)(void * ctx);
 
 NET_END_DECL
 

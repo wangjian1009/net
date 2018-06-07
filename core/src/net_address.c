@@ -228,17 +228,41 @@ void const * net_address_data(net_address_t address) {
     }
 }
 
-int net_address_set_resolved(net_address_t address, net_address_t resolved) {
+int net_address_set_resolved(net_address_t address, net_address_t resolved, uint8_t is_own) {
     switch(address->m_type) {
     case net_address_ipv4:
     case net_address_ipv6:
         return -1;
     case net_address_domain: {
+        if (resolved) {
+            if (resolved->m_type != net_address_ipv4 && resolved->m_type != net_address_ipv6) {
+                CPE_ERROR(address->m_schedule->m_em, "net_address_set_resolved: resolved address type is %d!", resolved->m_type);
+                return -1;
+            }
+        }
+
         struct net_address_domain * domain_addr = (struct net_address_domain *)address;
         if (domain_addr->m_resolved) {
             net_address_free(domain_addr->m_resolved);
         }
-        domain_addr->m_resolved = resolved;
+
+        if (resolved == NULL) {
+            domain_addr->m_resolved = NULL;
+        }
+        else {
+            if (is_own) {
+                domain_addr->m_resolved = resolved;
+            }
+            else {
+                domain_addr->m_resolved = net_address_copy(address->m_schedule, resolved);
+                if (domain_addr->m_resolved) {
+                    CPE_ERROR(address->m_schedule->m_em, "net_address_set_resolved: address copy fail!");
+                    return -1;
+                }
+            }
+
+            domain_addr->m_resolved->m_port = domain_addr->m_port;
+        }
         return 0;
     }
     }
