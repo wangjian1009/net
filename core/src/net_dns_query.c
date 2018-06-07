@@ -87,10 +87,10 @@ void * net_dns_query_data(net_dns_query_t query) {
     return query + 1;
 }
 
-uint32_t net_dns_query_hash(net_dns_query_t o) {
+uint32_t net_dns_query_hash(net_dns_query_t o, void * user_data) {
     return o->m_query_id;
 }
 
-int net_dns_query_eq(net_dns_query_t l, net_dns_query_t r) {
+int net_dns_query_eq(net_dns_query_t l, net_dns_query_t r, void * user_data) {
     return l->m_query_id == r->m_query_id;
 }

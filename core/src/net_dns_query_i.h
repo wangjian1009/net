@@ -20,8 +20,8 @@ struct net_dns_query {
 void net_dns_query_real_free(net_dns_query_t query);
 void net_dns_query_free_all(net_schedule_t schedule);
 
-uint32_t net_dns_query_hash(net_dns_query_t o);
-int net_dns_query_eq(net_dns_query_t l, net_dns_query_t r);
+uint32_t net_dns_query_hash(net_dns_query_t o, void * user_data);
+int net_dns_query_eq(net_dns_query_t l, net_dns_query_t r, void * user_data);
 
 NET_END_DECL
 

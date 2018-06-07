@@ -359,11 +359,11 @@ ringbuffer_block_t net_endpoint_common_buf_alloc(net_endpoint_t endpoint, uint32
     return blk;
 }
 
-uint32_t net_endpoint_hash(net_endpoint_t o) {
+uint32_t net_endpoint_hash(net_endpoint_t o, void * user_data) {
     return o->m_id;
 }
 
-int net_endpoint_eq(net_endpoint_t l, net_endpoint_t r) {
+int net_endpoint_eq(net_endpoint_t l, net_endpoint_t r, void * user_data) {
     return l->m_id == r->m_id;
 }
 

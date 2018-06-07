@@ -12,6 +12,7 @@ struct net_dns_entry {
         TAILQ_ENTRY(net_dns_entry) m_next;
     };
     net_address_t m_address;
+    net_dns_task_t m_task;
     uint32_t m_expire_time_ms;
     char m_hostname_buf[32];
 };
@@ -19,8 +20,8 @@ struct net_dns_entry {
 void net_dns_entry_real_free(net_dns_manage_t manage, net_dns_entry_t entry);
 void net_dns_entry_free_all(net_dns_manage_t manage);
 
-uint32_t net_dns_entry_hash(net_dns_entry_t o);
-int net_dns_entry_eq(net_dns_entry_t l, net_dns_entry_t r);
+uint32_t net_dns_entry_hash(net_dns_entry_t o, void * user_data);
+int net_dns_entry_eq(net_dns_entry_t l, net_dns_entry_t r, void * user_data);
 
 NET_END_DECL
 

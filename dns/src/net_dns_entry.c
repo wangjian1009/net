@@ -1,7 +1,9 @@
+#include "assert.h"
 #include "cpe/pal/pal_types.h"
 #include "cpe/pal/pal_string.h"
 #include "net_address.h"
 #include "net_dns_entry_i.h"
+#include "net_dns_task_i.h"
 
 net_dns_entry_t
 net_dns_entry_create(
@@ -39,6 +41,7 @@ net_dns_entry_create(
     entry->m_hostname = entry->m_hostname_buf;
     entry->m_address = NULL;
     memcpy(entry->m_hostname_buf, hostname, hostname_len);
+    entry->m_task = NULL;
     entry->m_expire_time_ms = expire_time_ms;
 
     if (address) {
@@ -78,6 +81,16 @@ net_dns_entry_create(
 void net_dns_entry_free(net_dns_manage_t manage, net_dns_entry_t entry) {
     size_t hostname_len = strlen(entry->m_hostname) + 1;
     uint8_t use_cache = hostname_len <= CPE_ENTRY_SIZE(net_dns_entry, m_hostname_buf);
+
+    if (entry->m_address) {
+        net_address_free(entry->m_address);
+        entry->m_address = NULL;
+    }
+
+    if (entry->m_task) {
+        net_dns_task_free(entry->m_task);
+        assert(entry->m_task == NULL);
+    }
     
     cpe_hash_table_remove_by_ins(&manage->m_entries, entry);
 
@@ -115,10 +128,10 @@ net_dns_entry_find(net_dns_manage_t manage, const char * hostname) {
     return cpe_hash_table_find(&manage->m_entries, &key);
 }
 
-uint32_t net_dns_entry_hash(net_dns_entry_t o) {
+uint32_t net_dns_entry_hash(net_dns_entry_t o, void * user_data) {
     return cpe_hash_str(o->m_hostname, strlen(o->m_hostname));
 }
 
-int net_dns_entry_eq(net_dns_entry_t l, net_dns_entry_t r) {
+int net_dns_entry_eq(net_dns_entry_t l, net_dns_entry_t r, void * user_data) {
     return strcmp(l->m_hostname, r->m_hostname) == 0 ? 1 : 0;
 }

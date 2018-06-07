@@ -18,6 +18,7 @@ typedef TAILQ_HEAD(net_dns_query_ex_list, net_dns_query_ex) net_dns_query_ex_lis
 struct net_dns_manage {
     mem_allocrator_t m_alloc;
     error_monitor_t m_em;
+    uint8_t m_debug;
     net_schedule_t m_schedule;
     net_driver_t m_driver;
     net_dns_mode_t m_mode;
@@ -29,6 +30,7 @@ struct net_dns_manage {
     struct cpe_hash_table m_entries;
     net_dns_entry_list_t m_free_entries;
 
+    uint32_t m_max_task_id;
     struct cpe_hash_table m_tasks;
     net_dns_task_list_t m_free_tasks;
 };

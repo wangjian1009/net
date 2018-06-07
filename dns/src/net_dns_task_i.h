@@ -7,6 +7,7 @@ NET_BEGIN_DECL
 
 struct net_dns_task {
     net_dns_manage_t m_manage;
+    uint32_t m_id;
     net_dns_entry_t m_entry;
     union {
         struct cpe_hash_entry m_hh;

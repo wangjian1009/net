@@ -7,26 +7,33 @@ int net_dns_query_ex_start(void * ctx, net_dns_query_t query, const char * hostn
     net_dns_manage_t manage = ctx;
     struct net_dns_query_ex * query_ex = net_dns_query_data(query);
 
-    net_dns_task_t task = NULL;
-
+    uint8_t is_entry_new = 0;
     net_dns_entry_t entry = net_dns_entry_find(manage, hostname);
     if (entry == NULL) {
         entry = net_dns_entry_create(manage, hostname, NULL, 0, 0);
         if (entry == NULL) return -1;
-    }
-    else {
-        task = net_dns_task_find(manage, entry);
+        is_entry_new = 1;
     }
 
     if (entry->m_address == NULL) {
-        if (task == NULL) {
+        if (entry->m_task == NULL) {
+            if (net_dns_task_create(manage, entry) == NULL) {
+                if (is_entry_new) {
+                    net_dns_entry_free(manage, entry);
+                }
+                return -1;
+            }
         }
     }
 
+    query_ex->m_manage = manage;
+    query_ex->m_task = entry->m_task;
+
     if (query_ex->m_task) {
-        
+        TAILQ_INSERT_TAIL(&query_ex->m_task->m_querys, query_ex, m_next);
     }
     else {
+        TAILQ_INSERT_TAIL(&query_ex->m_manage->m_to_notify_querys, query_ex, m_next);
     }
     
     return 0;

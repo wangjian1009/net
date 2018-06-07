@@ -26,8 +26,8 @@ void net_endpoint_real_free(net_endpoint_t endpoint);
 
 ringbuffer_block_t net_endpoint_common_buf_alloc(net_endpoint_t endpoint, uint32_t size);
 
-uint32_t net_endpoint_hash(net_endpoint_t o);
-int net_endpoint_eq(net_endpoint_t l, net_endpoint_t r);
+uint32_t net_endpoint_hash(net_endpoint_t o, void * user_data);
+int net_endpoint_eq(net_endpoint_t l, net_endpoint_t r, void * user_data);
 
 NET_END_DECL
 

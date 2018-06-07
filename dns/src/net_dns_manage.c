@@ -24,9 +24,11 @@ net_dns_manage_t net_dns_manage_create(
 
     manage->m_alloc = alloc;
     manage->m_em = em;
+    manage->m_debug = 0;
     manage->m_schedule = schedule;
     manage->m_driver = driver;
     manage->m_mode = net_dns_ipv4_first;
+    manage->m_max_task_id = 0;
     TAILQ_INIT(&manage->m_servers);
     TAILQ_INIT(&manage->m_to_notify_querys);
     TAILQ_INIT(&manage->m_free_entries);
@@ -70,7 +72,7 @@ net_dns_manage_t net_dns_manage_create(
         schedule,
         manage,
         net_dns_manage_fini,
-        0,
+        sizeof(struct net_dns_query_ex),
         net_dns_query_ex_start,
         net_dns_query_ex_cancel);
     
@@ -113,6 +115,14 @@ static void net_dns_manage_fini(void * ctx) {
 
 net_dns_mode_t net_dns_manage_mode(net_dns_manage_t manage) {
     return manage->m_mode;
+}
+
+uint8_t net_dns_manage_debug(net_dns_manage_t manage) {
+    return manage->m_debug;
+}
+
+void net_dns_manage_set_debug(net_dns_manage_t manage, uint8_t debug) {
+    manage->m_debug = debug;
 }
 
 static void net_dns_dgram_process(
