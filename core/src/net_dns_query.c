@@ -2,13 +2,13 @@
 
 net_dns_query_t net_dns_query_create(
     net_schedule_t schedule,
-    const char *hostname,
+    const char * hostname,
     net_dns_query_callback_fun_t callback,
     net_dns_query_ctx_free_fun_t ctx_free,
     void * ctx)
 {
     if (schedule->m_dns_resolver_ctx == NULL) {
-        CPE_ERROR(schedule->m_em, "query_create: no dns resolver!");
+        CPE_ERROR(schedule->m_em, "dns-query: %s: no dns resolver!", hostname);
         return NULL;
     }
     
@@ -17,9 +17,9 @@ net_dns_query_t net_dns_query_create(
         TAILQ_REMOVE(&schedule->m_free_dns_querys, query, m_next);
     }
     else {
-        query = mem_alloc(schedule->m_alloc, sizeof(struct net_dns_query));
+        query = mem_alloc(schedule->m_alloc, sizeof(struct net_dns_query) + schedule->m_dns_query_capacity);
         if (query == NULL) {
-            CPE_ERROR(schedule->m_em, "query_create: alloc fail!");
+            CPE_ERROR(schedule->m_em, "dns-query: %s: alloc fail!", hostname);
             return NULL;
         }
     }
@@ -29,13 +29,30 @@ net_dns_query_t net_dns_query_create(
     query->m_callback = callback;
     query->m_ctx_free = ctx_free;
     query->m_ctx = ctx;
+
+    cpe_hash_entry_init(&query->m_hh);
+    if (cpe_hash_table_insert_unique(&schedule->m_dns_querys, query) != 0) {
+        CPE_ERROR(schedule->m_em, "dns-query: %s: id duplicate!", hostname);
+        TAILQ_INSERT_TAIL(&schedule->m_free_dns_querys, query, m_next);
+        return NULL;
+    }
+        
     
+    if (schedule->m_dns_query_start_fun(schedule->m_dns_resolver_ctx, query, hostname) != 0) {
+        CPE_ERROR(schedule->m_em, "dns-query: %s: start fail!", hostname);
+        cpe_hash_table_remove_by_ins(&schedule->m_dns_querys, query);
+        TAILQ_INSERT_TAIL(&schedule->m_free_dns_querys, query, m_next);
+        return NULL;
+    }
+
     return query;
 }
 
 void net_dns_query_free(net_dns_query_t query) {
     net_schedule_t schedule = query->m_schedule;
 
+    schedule->m_dns_query_cancel_fun(schedule->m_dns_resolver_ctx, query);
+    
     if (query->m_ctx_free) {
         query->m_ctx_free(query->m_ctx);
     }

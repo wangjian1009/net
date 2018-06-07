@@ -31,7 +31,7 @@ void net_schedule_set_data_monitor(
     net_schedule_t schedule, net_data_monitor_fun_t monitor_fun, void * monitor_ctx);
 
 /*dns*/
-typedef int (*net_schedule_dns_query_start_fun_t)(void * ctx, net_dns_query_t query);
+typedef int (*net_schedule_dns_query_start_fun_t)(void * ctx, net_dns_query_t query, const char * hostname);
 typedef void (*net_schedule_dns_query_cancel_fun_t)(void * ctx, net_dns_query_t query);
 
 void net_schedule_set_dns_resolver(
