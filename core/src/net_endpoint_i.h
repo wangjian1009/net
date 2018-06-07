@@ -16,6 +16,7 @@ struct net_endpoint {
     uint32_t m_id;
     struct cpe_hash_entry m_hh;
     net_endpoint_state_t m_state;
+    net_dns_query_t m_dns_query;
     ringbuffer_block_t m_rb;
     ringbuffer_block_t m_wb;
     ringbuffer_block_t m_fb;
