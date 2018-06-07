@@ -30,10 +30,10 @@ typedef enum net_address_type {
 } net_address_type_t;
 
 typedef enum net_endpoint_state {
-    net_endpoint_disable,
-    net_endpoint_connecting,
-    net_endpoint_established,
-    net_endpoint_error,
+    net_endpoint_state_disable,
+    net_endpoint_state_connecting,
+    net_endpoint_state_established,
+    net_endpoint_state_error,
 } net_endpoint_state_t;
 
 typedef enum net_endpoint_type {
