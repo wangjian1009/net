@@ -1,4 +1,5 @@
 #include "net_dns_task_i.h"
+#include "net_dns_query_ex_i.h"
 
 net_dns_task_t net_dns_task_create(net_dns_manage_t manage, net_dns_entry_t entry) {
     net_dns_task_t task;
@@ -17,7 +18,8 @@ net_dns_task_t net_dns_task_create(net_dns_manage_t manage, net_dns_entry_t entr
 
     task->m_manage = manage;
     task->m_entry = entry;
-
+    TAILQ_INIT(&task->m_querys);
+    
     cpe_hash_entry_init(&task->m_hh);
     if (cpe_hash_table_insert_unique(&manage->m_tasks, task) != 0) {
         CPE_ERROR(manage->m_em, "dns: task duplicate!");
@@ -30,6 +32,10 @@ net_dns_task_t net_dns_task_create(net_dns_manage_t manage, net_dns_entry_t entr
 
 void net_dns_task_free(net_dns_task_t task) {
     net_dns_manage_t manage = task->m_manage;
+
+    while(!TAILQ_EMPTY(&task->m_querys)) {
+        net_dns_query_ex_set_task(TAILQ_FIRST(&task->m_querys), NULL);
+    }
 
     cpe_hash_table_remove_by_ins(&manage->m_tasks, task);
 

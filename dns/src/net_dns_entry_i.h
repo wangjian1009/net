@@ -1,5 +1,5 @@
-#ifndef NET_DNS_ENTRY_H_INCLEDED
-#define NET_DNS_ENTRY_H_INCLEDED
+#ifndef NET_DNS_ENTRY_I_H_INCLEDED
+#define NET_DNS_ENTRY_I_H_INCLEDED
 #include "net_dns_entry.h"
 #include "net_dns_manage_i.h"
 

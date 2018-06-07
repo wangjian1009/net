@@ -37,26 +37,29 @@ net_dns_entry_create(
     }
 
     entry->m_hostname = entry->m_hostname_buf;
+    entry->m_address = NULL;
     memcpy(entry->m_hostname_buf, hostname, hostname_len);
     entry->m_expire_time_ms = expire_time_ms;
 
-    if (is_own) {
-        entry->m_address = address;
-    }
-    else {
-        entry->m_address = net_address_copy(manage->m_schedule, address);
-        if (entry->m_address == NULL) {
-            CPE_ERROR(manage->m_em, "dns: entry dup address fail!");
-            if (use_cache) {
-                TAILQ_INSERT_TAIL(&manage->m_free_entries, entry, m_next);
+    if (address) {
+        if (is_own) {
+            entry->m_address = address;
+        }
+        else {
+            entry->m_address = net_address_copy(manage->m_schedule, address);
+            if (entry->m_address == NULL) {
+                CPE_ERROR(manage->m_em, "dns: entry dup address fail!");
+                if (use_cache) {
+                    TAILQ_INSERT_TAIL(&manage->m_free_entries, entry, m_next);
+                }
+                else {
+                    mem_free(manage->m_alloc, entry);
+                }
+                return NULL;
             }
-            else {
-                mem_free(manage->m_alloc, entry);
-            }
-            return NULL;
         }
     }
-    
+
     cpe_hash_entry_init(&entry->m_hh);
     if (cpe_hash_table_insert_unique(&manage->m_entries, entry) != 0) {
         CPE_ERROR(manage->m_em, "dns: entry duplicate!");

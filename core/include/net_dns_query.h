@@ -11,6 +11,8 @@ net_dns_query_t net_dns_query_create(
 
 void net_dns_query_free(net_dns_query_t query);
 
+void * net_dns_query_data(net_dns_query_t query);
+
 NET_END_DECL
 
 #endif

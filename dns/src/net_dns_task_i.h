@@ -1,5 +1,5 @@
-#ifndef NET_DNS_TASK_H_INCLEDED
-#define NET_DNS_TASK_H_INCLEDED
+#ifndef NET_DNS_TASK_I_H_INCLEDED
+#define NET_DNS_TASK_I_H_INCLEDED
 #include "net_dns_task.h"
 #include "net_dns_manage_i.h"
 
@@ -12,6 +12,7 @@ struct net_dns_task {
         struct cpe_hash_entry m_hh;
         TAILQ_ENTRY(net_dns_task) m_next;
     };
+    net_dns_query_ex_list_t m_querys;    
 };
 
 void net_dns_task_real_free(net_dns_task_t task);

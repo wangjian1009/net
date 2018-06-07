@@ -28,6 +28,7 @@ net_dns_manage_t net_dns_manage_create(
     manage->m_driver = driver;
     manage->m_mode = net_dns_ipv4_first;
     TAILQ_INIT(&manage->m_servers);
+    TAILQ_INIT(&manage->m_to_notify_querys);
     TAILQ_INIT(&manage->m_free_entries);
     TAILQ_INIT(&manage->m_free_tasks);
 

@@ -83,6 +83,10 @@ void net_dns_query_real_free(net_dns_query_t query) {
     mem_free(schedule->m_alloc, query);
 }
 
+void * net_dns_query_data(net_dns_query_t query) {
+    return query + 1;
+}
+
 uint32_t net_dns_query_hash(net_dns_query_t o) {
     return o->m_query_id;
 }
