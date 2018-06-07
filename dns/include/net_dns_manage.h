@@ -6,10 +6,13 @@
 NET_BEGIN_DECL
 
 net_dns_manage_t net_dns_manage_create(
-    mem_allocrator_t alloc, error_monitor_t em, net_schedule_t schedule, net_dns_mode_t mode);
+    mem_allocrator_t alloc, error_monitor_t em,
+    net_schedule_t schedule, net_driver_t driver);
+
 void net_dns_manage_free(net_dns_manage_t dns_manage);
 
 net_dns_mode_t net_dns_manager_mode(net_dns_manage_t manage);
+void net_dns_manager_set_mode(net_dns_manage_t manage, net_dns_mode_t mode);
 
 NET_END_DECL
 

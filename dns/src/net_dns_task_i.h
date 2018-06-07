@@ -1,0 +1,25 @@
+#ifndef NET_DNS_TASK_H_INCLEDED
+#define NET_DNS_TASK_H_INCLEDED
+#include "net_dns_task.h"
+#include "net_dns_manage_i.h"
+
+NET_BEGIN_DECL
+
+struct net_dns_task {
+    net_dns_manage_t m_manage;
+    net_dns_entry_t m_entry;
+    union {
+        struct cpe_hash_entry m_hh;
+        TAILQ_ENTRY(net_dns_task) m_next;
+    };
+};
+
+void net_dns_task_real_free(net_dns_task_t task);
+void net_dns_task_free_all(net_dns_manage_t manage);
+
+uint32_t net_dns_task_hash(net_dns_task_t o);
+int net_dns_task_eq(net_dns_task_t l, net_dns_task_t r);
+
+NET_END_DECL
+
+#endif

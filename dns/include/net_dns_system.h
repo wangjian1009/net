@@ -11,6 +11,13 @@ typedef enum net_dns_mode {
 
 typedef struct net_dns_manage * net_dns_manage_t;
 typedef struct net_dns_server * net_dns_server_t;
+typedef struct net_dns_entry * net_dns_entry_t;
+typedef struct net_dns_task * net_dns_task_t;
+
+typedef enum net_dns_entry_state {
+    net_dns_entry_runing,
+    net_dns_entry_done,
+} net_dns_entry_state_t;
 
 NET_END_DECL
 

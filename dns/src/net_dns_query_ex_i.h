@@ -9,7 +9,7 @@ struct net_dns_query_ex {
     TAILQ_ENTRY(net_dns_query_ex) m_next;
 };
 
-int net_dns_query_ex_start(void * ctx, net_dns_query_t query);
+int net_dns_query_ex_start(void * ctx, net_dns_query_t query, const char * hostname);
 void net_dns_query_ex_cancel(void * ctx, net_dns_query_t query);
 
 NET_END_DECL
