@@ -1,14 +1,17 @@
 #include "net_dns_query_i.h"
 
 net_dns_query_t net_dns_query_create(
-    net_dns_resolver_t resolver,
+    net_schedule_t schedule,
     const char *hostname,
     net_dns_query_callback_fun_t callback,
     net_dns_query_ctx_free_fun_t ctx_free,
     void * ctx)
 {
-    net_schedule_t schedule = resolver->m_schedule;
-
+    if (schedule->m_dns_resolver_ctx == NULL) {
+        CPE_ERROR(schedule->m_em, "query_create: no dns resolver!");
+        return NULL;
+    }
+    
     net_dns_query_t query = TAILQ_FIRST(&schedule->m_free_dns_querys);
     if (query) {
         TAILQ_REMOVE(&schedule->m_free_dns_querys, query, m_next);
@@ -21,8 +24,8 @@ net_dns_query_t net_dns_query_create(
         }
     }
 
-    query->m_resolver = resolver;
-    query->m_query_id = resolver->m_max_query_id++;
+    query->m_schedule = schedule;
+    query->m_query_id = schedule->m_dns_max_query_id++;
     query->m_callback = callback;
     query->m_ctx_free = ctx_free;
     query->m_ctx = ctx;
@@ -31,24 +34,22 @@ net_dns_query_t net_dns_query_create(
 }
 
 void net_dns_query_free(net_dns_query_t query) {
-    net_dns_resolver_t resolver = query->m_resolver;
-    net_schedule_t schedule = resolver->m_schedule;
+    net_schedule_t schedule = query->m_schedule;
 
     if (query->m_ctx_free) {
         query->m_ctx_free(query->m_ctx);
     }
     
-    cpe_hash_table_remove_by_ins(&resolver->m_querys, query);
+    cpe_hash_table_remove_by_ins(&schedule->m_dns_querys, query);
 
-    query->m_resolver = (net_dns_resolver_t)schedule;
     TAILQ_INSERT_TAIL(&schedule->m_free_dns_querys, query, m_next);
 }
 
-void net_dns_query_free_all(net_dns_resolver_t resolver) {
+void net_dns_query_free_all(net_schedule_t schedule) {
     struct cpe_hash_it query_it;
     net_dns_query_t query;
 
-    cpe_hash_it_init(&query_it, &resolver->m_querys);
+    cpe_hash_it_init(&query_it, &schedule->m_dns_querys);
 
     query = cpe_hash_it_next(&query_it);
     while(query) {
@@ -59,7 +60,7 @@ void net_dns_query_free_all(net_dns_resolver_t resolver) {
 }
 
 void net_dns_query_real_free(net_dns_query_t query) {
-    net_schedule_t schedule = (net_schedule_t)query->m_resolver;
+    net_schedule_t schedule = query->m_schedule;
 
     TAILQ_REMOVE(&schedule->m_free_dns_querys, query, m_next);
     mem_free(schedule->m_alloc, query);

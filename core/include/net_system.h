@@ -16,9 +16,7 @@ typedef struct net_address * net_address_t;
 typedef struct net_ipset * net_ipset_t;
 typedef struct net_address_matcher * net_address_matcher_t;
 typedef struct net_address_rule * net_address_rule_t;
-typedef struct net_dns_resolver * net_dns_resolver_t;
 typedef struct net_dns_query * net_dns_query_t;
-typedef struct net_dns_server * net_dns_server_t;
 
 typedef struct net_address_data_ipv4 * net_address_data_ipv4_t;
 typedef struct net_address_data_ipv6 * net_address_data_ipv6_t;
@@ -46,11 +44,6 @@ typedef enum net_data_direct {
     net_data_in,
     net_data_out,
 } net_data_direct_t;
-
-typedef enum net_dns_mode {
-    net_dns_ipv4_first,
-    net_dns_ipv6_first,
-} net_dns_mode_t;
 
 /*monitor*/
 typedef void (*net_data_monitor_fun_t) (

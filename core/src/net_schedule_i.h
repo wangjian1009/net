@@ -20,7 +20,6 @@ typedef TAILQ_HEAD(net_timer_list, net_timer) net_timer_list_t;
 typedef TAILQ_HEAD(net_address_rule_list, net_address_rule) net_address_rule_list_t;
 typedef TAILQ_HEAD(net_address_list, net_address_in_cache) net_address_list_t;
 typedef TAILQ_HEAD(net_link_list, net_link) net_link_list_t;
-typedef TAILQ_HEAD(net_dns_server_list, net_dns_server) net_dns_server_list_t;
 typedef TAILQ_HEAD(net_dns_query_list, net_dns_query) net_dns_query_list_t;
 
 struct net_schedule {
@@ -31,8 +30,16 @@ struct net_schedule {
     net_data_monitor_fun_t m_data_monitor_fun;
     void * m_data_monitor_ctx;
 
-    net_dns_resolver_t m_dns_resolver;
-    
+    /*dns resolver*/
+    void * m_dns_resolver_ctx;
+    void (*m_dns_resolver_ctx_fini_fun)(void * ctx);
+    uint16_t m_dns_query_capacity;
+    net_schedule_dns_query_start_fun_t m_dns_query_start_fun;
+    net_schedule_dns_query_cancel_fun_t m_dns_query_cancel_fun;
+    uint32_t m_dns_max_query_id;
+    struct cpe_hash_table m_dns_querys;
+
+    /**/
     uint16_t m_endpoint_protocol_capacity;
 
     net_protocol_t m_direct_protocol;

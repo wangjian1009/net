@@ -348,6 +348,8 @@ const char * net_endpoint_state_str(net_endpoint_state_t state) {
     switch(state) {
     case net_endpoint_state_disable:
         return "disable";
+    case net_endpoint_state_resolving:
+        return "resolve";
     case net_endpoint_state_connecting:
         return "connecting";
     case net_endpoint_state_established:

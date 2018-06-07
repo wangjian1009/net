@@ -30,6 +30,20 @@ net_address_matcher_t net_schedule_direct_matcher_black_check_create(net_schedul
 void net_schedule_set_data_monitor(
     net_schedule_t schedule, net_data_monitor_fun_t monitor_fun, void * monitor_ctx);
 
+/*dns*/
+typedef int (*net_schedule_dns_query_start_fun_t)(void * ctx, net_dns_query_t query);
+typedef void (*net_schedule_dns_query_cancel_fun_t)(void * ctx, net_dns_query_t query);
+
+void net_schedule_set_dns_resolver(
+    net_schedule_t schedule,
+    void * ctx,
+    void (*ctx_fini)(void * ctx),
+    uint16_t dns_query_capacity,
+    net_schedule_dns_query_start_fun_t start_fun,
+    net_schedule_dns_query_cancel_fun_t cancel_fun);
+
+void * net_schedule_dns_resolver(net_schedule_t schedule);
+    
 NET_END_DECL
 
 #endif

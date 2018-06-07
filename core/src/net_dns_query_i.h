@@ -1,12 +1,12 @@
 #ifndef NET_DNS_QUERY_I_H_INCLEDED
 #define NET_DNS_QUERY_I_H_INCLEDED
 #include "net_dns_query.h"
-#include "net_dns_resolver_i.h"
+#include "net_schedule_i.h"
 
 NET_BEGIN_DECL
 
 struct net_dns_query {
-    net_dns_resolver_t m_resolver;
+    net_schedule_t m_schedule;
     union {
         TAILQ_ENTRY(net_dns_query) m_next;
         struct cpe_hash_entry m_hh;
@@ -18,7 +18,7 @@ struct net_dns_query {
 };
 
 void net_dns_query_real_free(net_dns_query_t query);
-void net_dns_query_free_all(net_dns_resolver_t resolver);
+void net_dns_query_free_all(net_schedule_t schedule);
 
 uint32_t net_dns_query_hash(net_dns_query_t o);
 int net_dns_query_eq(net_dns_query_t l, net_dns_query_t r);

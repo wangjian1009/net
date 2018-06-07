@@ -10,7 +10,6 @@
 #include "net_address_matcher_i.h"
 #include "net_link_i.h"
 #include "net_direct_endpoint_i.h"
-#include "net_dns_resolver_i.h"
 #include "net_dns_query_i.h"
 
 net_schedule_t
@@ -28,7 +27,12 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em, uint32_t common_
     schedule->m_debug = 2;
     schedule->m_data_monitor_fun = NULL;
     schedule->m_data_monitor_ctx = NULL;
-    schedule->m_dns_resolver = NULL;
+    schedule->m_dns_resolver_ctx = NULL;
+    schedule->m_dns_resolver_ctx_fini_fun = NULL;
+    schedule->m_dns_query_capacity = 0;
+    schedule->m_dns_query_start_fun = NULL;
+    schedule->m_dns_query_cancel_fun = NULL;
+    schedule->m_dns_max_query_id = 0;
     schedule->m_direct_protocol = NULL;
     schedule->m_direct_driver = NULL;
     schedule->m_direct_matcher_white = NULL;
@@ -63,7 +67,21 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em, uint32_t common_
         mem_free(alloc, schedule);
         return NULL;
     }
-    
+
+    if (cpe_hash_table_init(
+            &schedule->m_dns_querys,
+            schedule->m_alloc,
+            (cpe_hash_fun_t) net_dns_query_hash,
+            (cpe_hash_eq_t) net_dns_query_eq,
+            CPE_HASH_OBJ2ENTRY(net_dns_query, m_hh),
+            -1) != 0)
+    {
+        cpe_hash_table_fini(&schedule->m_endpoints);
+        ringbuffer_delete(schedule->m_endpoint_buf);
+        mem_free(alloc, schedule);
+        return NULL;
+    }
+
     mem_buffer_init(&schedule->m_tmp_buffer, alloc);
 
     schedule->m_direct_protocol = net_direct_protocol_create(schedule);
@@ -76,6 +94,14 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em, uint32_t common_
 }
 
 void net_schedule_free(net_schedule_t schedule) {
+    net_dns_query_free_all(schedule);
+    cpe_hash_table_fini(&schedule->m_dns_querys);
+    
+    if (schedule->m_dns_resolver_ctx && schedule->m_dns_resolver_ctx_fini_fun) {
+        schedule->m_dns_resolver_ctx_fini_fun(schedule->m_dns_resolver_ctx);
+        schedule->m_dns_resolver_ctx = NULL;
+    }
+
     while(!TAILQ_EMPTY(&schedule->m_links)) {
         net_link_free(TAILQ_FIRST(&schedule->m_links));
     }
@@ -103,11 +129,6 @@ void net_schedule_free(net_schedule_t schedule) {
         net_router_free(TAILQ_FIRST(&schedule->m_routers));
     }
 
-    if (schedule->m_dns_resolver) {
-        net_dns_resolver_free(schedule->m_dns_resolver);
-        assert(schedule->m_dns_resolver == NULL);
-    }
-    
     while(!TAILQ_EMPTY(&schedule->m_protocols)) {
         net_protocol_free(TAILQ_FIRST(&schedule->m_protocols));
     }
@@ -199,4 +220,23 @@ uint8_t net_schedule_debug(net_schedule_t schedule) {
 
 void net_schedule_set_debug(net_schedule_t schedule, uint8_t debug) {
     schedule->m_debug = debug;
+}
+
+void net_schedule_set_dns_resolver(
+    net_schedule_t schedule,
+    void * ctx,
+    void (*ctx_fini)(void * ctx),
+    uint16_t dns_query_capacity,
+    net_schedule_dns_query_start_fun_t start_fun,
+    net_schedule_dns_query_cancel_fun_t cancel_fun)
+{
+    schedule->m_dns_resolver_ctx = ctx;
+    schedule->m_dns_resolver_ctx_fini_fun = ctx_fini;
+    schedule->m_dns_query_capacity = dns_query_capacity;
+    schedule->m_dns_query_start_fun = start_fun;
+    schedule->m_dns_query_cancel_fun = cancel_fun;
+}
+
+void * net_schedule_dns_resolver(net_schedule_t schedule) {
+    return schedule->m_dns_resolver_ctx;
 }
