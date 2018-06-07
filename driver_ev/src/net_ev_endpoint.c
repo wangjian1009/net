@@ -34,7 +34,7 @@ void net_ev_endpoint_fini(net_endpoint_t base_endpoint) {
 }
 
 int net_ev_endpoint_on_output(net_endpoint_t base_endpoint) {
-    if (net_endpoint_state(base_endpoint) != net_endpoint_established) return 0;
+    if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return 0;
 
     net_ev_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     net_ev_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
@@ -161,7 +161,7 @@ int net_ev_endpoint_connect(net_endpoint_t base_endpoint) {
                 EV_READ | EV_WRITE);
             ev_io_start(driver->m_ev_loop, &endpoint->m_watcher);
             
-            net_endpoint_set_state(base_endpoint, net_endpoint_connecting);
+            net_endpoint_set_state(base_endpoint, net_endpoint_state_connecting);
             return 0;
         }
         else {
@@ -186,10 +186,21 @@ int net_ev_endpoint_connect(net_endpoint_t base_endpoint) {
             net_ev_endpoint_update_local_address(endpoint);
         }
 
-        net_endpoint_set_state(base_endpoint, net_endpoint_established);
+        net_endpoint_set_state(base_endpoint, net_endpoint_state_established);
         net_ev_endpoint_start_rw_watcher(driver, base_endpoint, endpoint);
         return 0;
     }
+}
+
+void net_ev_endpoint_close(net_endpoint_t base_endpoint) {
+    net_ev_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+    net_ev_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
+
+    if (endpoint->m_fd == -1) return;
+
+    ev_io_stop(driver->m_ev_loop, &endpoint->m_watcher);
+    cpe_sock_close(endpoint->m_fd);
+    endpoint->m_fd = -1;
 }
 
 void net_ev_endpoint_start_rw_watcher(
@@ -227,7 +238,7 @@ int net_ev_endpoint_update_local_address(net_ev_endpoint_t endpoint) {
         return -1;
     }
 
-    net_endpoint_set_address(base_endpoint, address);
+    net_endpoint_set_address(base_endpoint, address, 1);
     
     return 0;
 }
@@ -256,7 +267,7 @@ int net_ev_endpoint_update_remote_address(net_ev_endpoint_t endpoint) {
         return -1;
     }
 
-    net_endpoint_set_remote_address(base_endpoint, address);
+    net_endpoint_set_remote_address(base_endpoint, address, 1);
     
     return 0;
 }
@@ -403,7 +414,7 @@ static void net_ev_endpoint_connect_cb(EV_P_ ev_io *w, int revents) {
             em, "ev: %s: connect_cb get socket error fail, errno=%d (%s)!",
             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-        net_endpoint_set_state(base_endpoint, net_endpoint_error);
+        net_endpoint_set_state(base_endpoint, net_endpoint_state_error);
         return;
     }
 
@@ -412,7 +423,7 @@ static void net_ev_endpoint_connect_cb(EV_P_ ev_io *w, int revents) {
             em, "ev: %s: connect error, errno=%d (%s)",
             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-        net_endpoint_set_state(base_endpoint, net_endpoint_error);
+        net_endpoint_set_state(base_endpoint, net_endpoint_state_error);
         return;
     }
 
@@ -427,6 +438,6 @@ static void net_ev_endpoint_connect_cb(EV_P_ ev_io *w, int revents) {
         net_ev_endpoint_update_local_address(endpoint);
     }
     
-    net_endpoint_set_state(base_endpoint, net_endpoint_established);
+    net_endpoint_set_state(base_endpoint, net_endpoint_state_established);
     net_ev_endpoint_start_rw_watcher(driver, base_endpoint, endpoint);
 }

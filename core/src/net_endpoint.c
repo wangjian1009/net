@@ -37,7 +37,7 @@ net_endpoint_create(net_driver_t driver, net_endpoint_type_t type, net_protocol_
     endpoint->m_protocol = protocol;
     endpoint->m_link = NULL;
     endpoint->m_id = schedule->m_endpoint_max_id + 1;
-    endpoint->m_state = net_endpoint_disable;
+    endpoint->m_state = net_endpoint_state_disable;
     endpoint->m_rb = NULL;
     endpoint->m_wb = NULL;
     endpoint->m_fb = NULL;
@@ -247,6 +247,10 @@ int net_endpoint_connect(net_endpoint_t endpoint) {
     return endpoint->m_driver->m_endpoint_connect(endpoint);
 }
 
+void net_endpoint_disable(net_endpoint_t endpoint) {
+    return endpoint->m_driver->m_endpoint_close(endpoint);
+}
+
 ringbuffer_block_t net_endpoint_common_buf_alloc(net_endpoint_t endpoint, uint32_t size) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
     ringbuffer_block_t blk;
@@ -342,13 +346,13 @@ int net_endpoint_forward(net_endpoint_t endpoint) {
 
 const char * net_endpoint_state_str(net_endpoint_state_t state) {
     switch(state) {
-    case net_endpoint_disable:
+    case net_endpoint_state_disable:
         return "disable";
-    case net_endpoint_connecting:
+    case net_endpoint_state_connecting:
         return "connecting";
-    case net_endpoint_established:
+    case net_endpoint_state_established:
         return "established";
-    case net_endpoint_error:
+    case net_endpoint_state_error:
         return "error";
     }
 }

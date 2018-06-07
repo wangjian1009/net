@@ -13,14 +13,7 @@ int net_endpoint_link_with_router(net_endpoint_t endpoint, net_address_t target_
         return -1;
     }
 
-    net_address_t connect_to_address = net_address_copy(schedule, router->m_address);
-    if (connect_to_address == NULL) {
-        net_endpoint_free(target);
-        return -1;
-    }
-    
-    net_endpoint_set_remote_address(target, connect_to_address);
-    if (net_endpoint_connect(target) != 0) {
+    if (net_endpoint_set_remote_address(target, router->m_address, 0) != 0) {
         net_endpoint_free(target);
         return -1;
     }
@@ -54,7 +47,7 @@ int net_endpoint_link_direct(net_endpoint_t endpoint, net_address_t target_addr)
         return -1;
     }
 
-    net_endpoint_set_remote_address(target, target_addr);
+    net_endpoint_set_remote_address(target, target_addr, 1);
     if (net_endpoint_connect(target) != 0) {
         target->m_address = NULL;
         net_endpoint_free(target);

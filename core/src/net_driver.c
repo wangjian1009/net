@@ -26,6 +26,7 @@ net_driver_create(
     net_endpoint_init_fun_t endpoint_init,
     net_endpoint_fini_fun_t endpoint_fini,
     net_endpoint_connect_fun_t endpoint_connect,
+    net_endpoint_close_fun_t endpoint_close,
     net_endpoint_on_output_fun_t endpoint_on_output,
     /*dgram*/
     uint16_t dgram_capacity,
@@ -61,6 +62,7 @@ net_driver_create(
     driver->m_endpoint_init = endpoint_init;
     driver->m_endpoint_fini = endpoint_fini;
     driver->m_endpoint_connect = endpoint_connect;
+    driver->m_endpoint_close = endpoint_close;
     driver->m_endpoint_on_output = endpoint_on_output;
 
     /*dgram*/

@@ -32,6 +32,7 @@ net_ev_driver_create(net_schedule_t schedule, struct ev_loop * ev_loop) {
         net_ev_endpoint_init,
         net_ev_endpoint_fini,
         net_ev_endpoint_connect,
+        net_ev_endpoint_close,
         net_ev_endpoint_on_output,
         /*dgram*/
         sizeof(struct net_ev_dgram),

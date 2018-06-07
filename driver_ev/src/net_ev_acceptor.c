@@ -149,7 +149,7 @@ static void net_ev_acceptor_cb(EV_P_ ev_io *w, int revents) {
     net_ev_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     endpoint->m_fd = new_fd;
     net_ev_endpoint_start_rw_watcher(driver, base_endpoint, endpoint);
-    net_endpoint_set_state(base_endpoint, net_endpoint_established);
+    net_endpoint_set_state(base_endpoint, net_endpoint_state_established);
 
     if (net_ev_endpoint_update_local_address(endpoint) != 0
         || net_ev_endpoint_update_remote_address(endpoint) != 0)

@@ -11,6 +11,7 @@ struct net_ev_endpoint {
 int net_ev_endpoint_init(net_endpoint_t base_endpoint);
 void net_ev_endpoint_fini(net_endpoint_t base_endpoint);
 int net_ev_endpoint_connect(net_endpoint_t base_endpoint);
+void net_ev_endpoint_close(net_endpoint_t base_endpoint);
 int net_ev_endpoint_on_output(net_endpoint_t base_endpoint);
 
 void net_ev_endpoint_start_rw_watcher(
