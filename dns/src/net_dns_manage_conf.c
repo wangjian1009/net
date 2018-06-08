@@ -47,10 +47,10 @@ int net_dns_manage_load_resolv(net_dns_manage_t manage, const char * path) {
     char * line = NULL;
     size_t data_len = 0;
 
-    mem_buffer_t buffer = net_dns_manage_tmp_buffer(manage);
-    mem_buffer_clear_data(buffer);
+    struct mem_buffer buffer;
+    mem_buffer_init(&buffer, manage->m_alloc);
     do {
-        if (file_stream_read_line(buffer, &line, &data_len, fp, NULL) != 0) {
+        if (file_stream_read_line(&buffer, &line, &data_len, fp, NULL) != 0) {
             CPE_ERROR(
                 manage->m_em, "dns: load resolv from %s: read line fail, errno=%d (%s)",
                 path, errno, strerror(errno));
@@ -75,6 +75,7 @@ int net_dns_manage_load_resolv(net_dns_manage_t manage, const char * path) {
         }
     } while(1);
 
+    mem_buffer_clear(&buffer);
     file_stream_close(fp, manage->m_em);
     
     return rv;
