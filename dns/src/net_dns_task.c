@@ -1,5 +1,6 @@
 #include "assert.h"
 #include "net_dns_task_i.h"
+#include "net_dns_task_step_i.h"
 #include "net_dns_query_ex_i.h"
 #include "net_dns_entry_i.h"
 
@@ -23,6 +24,7 @@ net_dns_task_t net_dns_task_create(net_dns_manage_t manage, net_dns_entry_t entr
     task->m_manage = manage;
     task->m_entry = entry;
     task->m_id = manage->m_max_task_id + 1;
+    TAILQ_INIT(&task->m_steps);
     TAILQ_INIT(&task->m_querys);
     
     cpe_hash_entry_init(&task->m_hh);
@@ -52,6 +54,10 @@ void net_dns_task_free(net_dns_task_t task) {
     assert(task->m_entry->m_task == task);
     task->m_entry->m_task = NULL;
 
+    while(!TAILQ_EMPTY(&task->m_steps)) {
+        net_dns_task_step_free(TAILQ_FIRST(&task->m_steps));
+    }
+    
     while(!TAILQ_EMPTY(&task->m_querys)) {
         net_dns_query_ex_set_task(TAILQ_FIRST(&task->m_querys), NULL);
     }

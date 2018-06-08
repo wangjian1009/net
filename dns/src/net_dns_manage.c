@@ -3,9 +3,11 @@
 #include "net_dgram.h"
 #include "net_dns_manage_i.h"
 #include "net_dns_query_ex_i.h"
-#include "net_dns_server_i.h"
+#include "net_dns_source_i.h"
 #include "net_dns_entry_i.h"
 #include "net_dns_task_i.h"
+#include "net_dns_task_step_i.h"
+#include "net_dns_task_ctx_i.h"
 
 static void net_dns_manage_fini(void * ctx);
 static void net_dns_dgram_process(
@@ -29,10 +31,13 @@ net_dns_manage_t net_dns_manage_create(
     manage->m_driver = driver;
     manage->m_mode = net_dns_ipv4_first;
     manage->m_max_task_id = 0;
-    TAILQ_INIT(&manage->m_servers);
+    manage->m_task_ctx_capacity = 0;
+    TAILQ_INIT(&manage->m_sources);
     TAILQ_INIT(&manage->m_to_notify_querys);
     TAILQ_INIT(&manage->m_free_entries);
     TAILQ_INIT(&manage->m_free_tasks);
+    TAILQ_INIT(&manage->m_free_task_steps);
+    TAILQ_INIT(&manage->m_free_task_ctxs);
 
     if (cpe_hash_table_init(
             &manage->m_entries,
@@ -89,8 +94,8 @@ void net_dns_manage_free(net_dns_manage_t manage) {
     cpe_hash_table_fini(&manage->m_tasks);
     cpe_hash_table_fini(&manage->m_entries);
     
-    while(!TAILQ_EMPTY(&manage->m_servers)) {
-        net_dns_server_free(TAILQ_FIRST(&manage->m_servers));
+    while(!TAILQ_EMPTY(&manage->m_sources)) {
+        net_dns_source_free(TAILQ_FIRST(&manage->m_sources));
     }
 
     if (manage->m_dgram) {
@@ -104,6 +109,14 @@ void net_dns_manage_free(net_dns_manage_t manage) {
 
     while(!TAILQ_EMPTY(&manage->m_free_tasks)) {
         net_dns_task_real_free(TAILQ_FIRST(&manage->m_free_tasks));
+    }
+    
+    while(!TAILQ_EMPTY(&manage->m_free_task_steps)) {
+        net_dns_task_step_real_free(TAILQ_FIRST(&manage->m_free_task_steps));
+    }
+    
+    while(!TAILQ_EMPTY(&manage->m_free_task_ctxs)) {
+        net_dns_task_ctx_real_free(TAILQ_FIRST(&manage->m_free_task_ctxs));
     }
     
     mem_free(manage->m_alloc, manage);
