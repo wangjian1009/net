@@ -18,13 +18,20 @@ typedef struct net_dns_task_builder * net_dns_task_builder_t;
 typedef struct net_dns_source * net_dns_source_t;
 typedef struct net_dns_source_it * net_dns_source_it_t;
 
-typedef struct net_dns_source_server * net_dns_source_server_t;
+typedef struct net_dns_source_nameserver * net_dns_source_nameserver_t;
 
 typedef enum net_dns_entry_state {
     net_dns_entry_runing,
     net_dns_entry_done,
 } net_dns_entry_state_t;
 
+typedef enum net_dns_task_state {
+    net_dns_task_state_init,
+    net_dns_task_state_runing,
+    net_dns_task_state_success,
+    net_dns_task_state_error,
+} net_dns_task_state_t;
+    
 NET_END_DECL
 
 #endif

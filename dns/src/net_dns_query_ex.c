@@ -1,13 +1,17 @@
+#include "assert.h"
 #include "net_dns_query.h"
 #include "net_dns_query_ex_i.h"
 #include "net_dns_entry_i.h"
 #include "net_dns_task_i.h"
+#include "net_dns_task_builder_i.h"
 
 int net_dns_query_ex_start(void * ctx, net_dns_query_t query, const char * hostname) {
     net_dns_manage_t manage = ctx;
     struct net_dns_query_ex * query_ex = net_dns_query_data(query);
 
     uint8_t is_entry_new = 0;
+    uint8_t is_task_new = 0;
+
     net_dns_entry_t entry = net_dns_entry_find(manage, hostname);
     if (entry == NULL) {
         entry = net_dns_entry_create(manage, hostname, NULL, 0, 0);
@@ -17,11 +21,25 @@ int net_dns_query_ex_start(void * ctx, net_dns_query_t query, const char * hostn
 
     if (entry->m_address == NULL) {
         if (entry->m_task == NULL) {
+            if (manage->m_builder_default == NULL) {
+                CPE_ERROR(manage->m_em, "dns: query %s: no task builder!", hostname);
+                goto START_ERROR;
+            }
+            
             if (net_dns_task_create(manage, entry) == NULL) {
-                if (is_entry_new) {
-                    net_dns_entry_free(manage, entry);
-                }
-                return -1;
+                goto START_ERROR;
+            }
+            assert(entry->m_task != NULL);
+            is_task_new = 1;
+
+            if (net_dns_task_builder_build(manage->m_builder_default, entry->m_task) != 0) {
+                CPE_ERROR(manage->m_em, "dns: query %s: build task fail!", hostname);
+                goto START_ERROR;
+            }
+
+            if (net_dns_task_start(entry->m_task) != 0) {
+                CPE_ERROR(manage->m_em, "dns: query %s: start task fail!", hostname);
+                goto START_ERROR;
             }
         }
     }
@@ -37,6 +55,17 @@ int net_dns_query_ex_start(void * ctx, net_dns_query_t query, const char * hostn
     }
     
     return 0;
+
+START_ERROR:
+    if (is_entry_new) {
+        net_dns_entry_free(manage, entry);
+    }
+    else if (is_task_new) {
+        net_dns_task_free(entry->m_task);
+        assert(entry->m_task == NULL);
+    }
+
+    return -1;
 }
 
 void net_dns_query_ex_cancel(void * ctx, net_dns_query_t query) {

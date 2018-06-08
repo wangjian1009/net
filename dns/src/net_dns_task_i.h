@@ -13,6 +13,7 @@ struct net_dns_task {
         struct cpe_hash_entry m_hh;
         TAILQ_ENTRY(net_dns_task) m_next;
     };
+    net_dns_task_step_t m_step_current;
     net_dns_task_step_list_t m_steps;
     net_dns_query_ex_list_t m_querys;    
 };

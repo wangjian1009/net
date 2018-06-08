@@ -33,6 +33,9 @@ void net_dns_source_free(net_dns_source_t source);
 void * net_dns_source_data(net_dns_source_t source);
 net_dns_source_t net_dns_source_from_data(void * date);
 
+void net_dns_source_print(write_stream_t ws, net_dns_source_t source);
+const char * net_dns_source_dump(mem_buffer_t buffer, net_dns_source_t source);
+
 void net_dns_manage_sources(net_dns_manage_t manage, net_dns_source_it_t it);
 
 #define net_dns_source_it_next(it) ((it)->next ? (it)->next(it) : NULL)

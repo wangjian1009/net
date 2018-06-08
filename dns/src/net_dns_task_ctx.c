@@ -20,6 +20,7 @@ net_dns_task_ctx_create(net_dns_task_step_t step, net_dns_source_t source) {
 
     ctx->m_step = step;
     ctx->m_source = source;
+    ctx->m_state = net_dns_task_state_init;
 
     TAILQ_INSERT_TAIL(&step->m_ctxs, ctx, m_next_for_step);
     TAILQ_INSERT_TAIL(&source->m_ctxs, ctx, m_next_for_source);
@@ -59,4 +60,21 @@ net_dns_source_t net_dns_task_ctx_source(net_dns_task_ctx_t ctx) {
 
 void * net_dns_task_ctx_data(net_dns_task_ctx_t ctx) {
     return ctx + 1;
+}
+
+net_dns_task_state_t net_dns_task_ctx_state(net_dns_task_ctx_t ctx) {
+    return ctx->m_state;
+}
+
+void net_dns_task_ctx_set_state(net_dns_task_ctx_t ctx, net_dns_task_state_t state) {
+    if (ctx->m_state == state) return;
+
+    uint8_t is_complete =
+        (ctx->m_state == net_dns_task_state_init || ctx->m_state == net_dns_task_state_runing)
+        && (state == net_dns_task_state_success || state == net_dns_task_state_error);
+
+    ctx->m_state = state;
+
+    if (!is_complete) return;
+
 }

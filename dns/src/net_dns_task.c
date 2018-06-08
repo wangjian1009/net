@@ -95,6 +95,10 @@ net_dns_task_find(net_dns_manage_t manage, uint32_t id) {
     return cpe_hash_table_find(&manage->m_tasks, &key);
 }
 
+int net_dns_task_start(net_dns_task_t o) {
+    return 0;
+}
+
 uint32_t net_dns_task_hash(net_dns_task_t o) {
     return o->m_id;
 }

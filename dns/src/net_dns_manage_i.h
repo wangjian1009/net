@@ -48,6 +48,8 @@ struct net_dns_manage {
     net_dns_task_ctx_list_t m_free_task_ctxs;
 };
 
+mem_buffer_t net_dns_manage_tmp_buffer(net_dns_manage_t manage);
+
 NET_END_DECL
 
 #endif

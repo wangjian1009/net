@@ -47,3 +47,35 @@ void net_dns_task_step_real_free(net_dns_task_step_t task_step) {
     TAILQ_REMOVE(&manage->m_free_task_steps, task_step, m_next);
     mem_free(manage->m_alloc, task_step);
 }
+
+net_dns_task_state_t net_dns_task_step_state(net_dns_task_step_t step) {
+    uint8_t init_count = 0;
+    uint8_t error_count = 0;
+    uint8_t runing_count = 0;
+    net_dns_task_ctx_t ctx;
+    TAILQ_FOREACH(ctx, &step->m_ctxs, m_next_for_step) {
+        switch(ctx->m_state) {
+        case net_dns_task_state_init:
+            init_count++;
+            break;
+        case net_dns_task_state_runing:
+            runing_count++;
+            break;
+        case net_dns_task_state_success:
+            return net_dns_task_state_success;
+        case net_dns_task_state_error:
+            error_count++;
+            break; 
+        }
+    }
+
+    if (runing_count) {
+        return net_dns_task_state_runing;
+    }
+    
+    if (error_count) {
+        return init_count > 0 ? net_dns_task_state_runing : net_dns_task_state_error;
+    }
+
+    return init_count ? net_dns_task_state_init : net_dns_task_state_success;
+}

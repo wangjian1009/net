@@ -11,6 +11,7 @@ struct net_dns_task_ctx {
     TAILQ_ENTRY(net_dns_task_ctx) m_next_for_step;
     net_dns_source_t m_source;
     TAILQ_ENTRY(net_dns_task_ctx) m_next_for_source;
+    net_dns_task_state_t m_state;
 };
 
 void net_dns_task_ctx_real_free(net_dns_task_ctx_t task_ctx);

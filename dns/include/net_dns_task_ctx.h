@@ -13,6 +13,11 @@ net_dns_source_t net_dns_task_ctx_source(net_dns_task_ctx_t ctx);
 
 void * net_dns_task_ctx_data(net_dns_task_ctx_t ctx);
 
+net_dns_task_state_t net_dns_task_ctx_state(net_dns_task_ctx_t ctx);
+
+void net_dns_task_ctx_set_result(net_dns_task_ctx_t ctx, net_address_t address, uint8_t is_own);
+void net_dns_task_ctx_set_error(net_dns_task_ctx_t ctx);
+
 NET_END_DECL
 
 #endif

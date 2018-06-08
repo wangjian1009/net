@@ -159,6 +159,10 @@ void net_dns_manage_set_debug(net_dns_manage_t manage, uint8_t debug) {
     manage->m_debug = debug;
 }
 
+mem_buffer_t net_dns_manage_tmp_buffer(net_dns_manage_t manage) {
+    return net_schedule_tmp_buffer(manage->m_schedule);
+}
+
 static void net_dns_dgram_process(
     net_dgram_t dgram, void * ctx, void * data, size_t data_size, net_address_t source)
 {

@@ -1,3 +1,5 @@
+#include "cpe/utils/stream_buffer.h"
+#include "cpe/utils/string_utils.h"
 #include "net_dns_source_i.h"
 #include "net_dns_task_ctx_i.h"
 
@@ -16,7 +18,7 @@ net_dns_source_create(
 {
     net_schedule_t schedule = manage->m_schedule;
 
-    net_dns_source_t source = mem_alloc(manage->m_alloc, sizeof(struct net_dns_source));
+    net_dns_source_t source = mem_alloc(manage->m_alloc, sizeof(struct net_dns_source) + capacity);
     if (source == NULL) {
         CPE_ERROR(manage->m_em, "dns: source: alloc fail!");
         return NULL;
@@ -59,6 +61,29 @@ void net_dns_source_free(net_dns_source_t source) {
     
     TAILQ_REMOVE(&manage->m_sources, source, m_next);
     mem_free(manage->m_alloc, source);
+}
+
+void * net_dns_source_data(net_dns_source_t source) {
+    return source + 1;
+}
+
+net_dns_source_t net_dns_source_from_data(void * date) {
+    return ((net_dns_source_t)date) - 1;
+}
+
+void net_dns_source_print(write_stream_t ws, net_dns_source_t source) {
+    source->m_dump(ws, source);
+}
+
+const char * net_dns_source_dump(mem_buffer_t buffer, net_dns_source_t source) {
+    struct write_stream_buffer stream = CPE_WRITE_STREAM_BUFFER_INITIALIZER(buffer);
+
+    mem_buffer_clear_data(buffer);
+    
+    net_dns_source_print((write_stream_t)&stream, source);
+    stream_putc((write_stream_t)&stream, 0);
+    
+    return mem_buffer_make_continuous(buffer, 0);
 }
 
 static net_dns_source_t net_dns_source_next(struct net_dns_source_it * it) {
