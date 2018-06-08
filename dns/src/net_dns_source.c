@@ -61,3 +61,16 @@ void net_dns_source_free(net_dns_source_t source) {
     mem_free(manage->m_alloc, source);
 }
 
+static net_dns_source_t net_dns_source_next(struct net_dns_source_it * it) {
+    net_dns_source_t * data = (net_dns_source_t *)(it->m_data);
+    net_dns_source_t r;
+    if (*data == NULL) return NULL;
+    r = *data;
+    *data = TAILQ_NEXT(r, m_next);
+    return r;
+}
+
+void net_dns_manage_sources(net_dns_manage_t manage, net_dns_source_it_t it) {
+    *(net_dns_source_t *)(it->m_data) = TAILQ_FIRST(&manage->m_sources);
+    it->next = net_dns_source_next;
+}

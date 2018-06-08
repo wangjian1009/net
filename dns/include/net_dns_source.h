@@ -5,6 +5,11 @@
 
 NET_BEGIN_DECL
 
+struct net_dns_source_it {
+    net_dns_source_t (*next)(struct net_dns_source_it * it);
+    char m_data[64];
+};
+
 typedef int (*net_dns_source_init_fun_t)(net_dns_source_t source);
 typedef void (*net_dns_source_fini_fun_t)(net_dns_source_t source);
 typedef void (*net_dns_source_dump_fun_t)(write_stream_t ws, net_dns_source_t source);
@@ -27,6 +32,10 @@ void net_dns_source_free(net_dns_source_t source);
 
 void * net_dns_source_data(net_dns_source_t source);
 net_dns_source_t net_dns_source_from_data(void * date);
+
+void net_dns_manage_sources(net_dns_manage_t manage, net_dns_source_it_t it);
+
+#define net_dns_source_it_next(it) ((it)->next ? (it)->next(it) : NULL)
 
 NET_END_DECL
 

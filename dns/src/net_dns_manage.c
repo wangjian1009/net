@@ -1,3 +1,4 @@
+#include "assert.h"
 #include "cpe/pal/pal_strings.h"
 #include "net_schedule.h"
 #include "net_dgram.h"
@@ -8,6 +9,7 @@
 #include "net_dns_task_i.h"
 #include "net_dns_task_step_i.h"
 #include "net_dns_task_ctx_i.h"
+#include "net_dns_task_builder_i.h"
 
 static void net_dns_manage_fini(void * ctx);
 static void net_dns_dgram_process(
@@ -32,12 +34,15 @@ net_dns_manage_t net_dns_manage_create(
     manage->m_mode = net_dns_ipv4_first;
     manage->m_max_task_id = 0;
     manage->m_task_ctx_capacity = 0;
+    manage->m_builder_internal = NULL;
+    manage->m_builder_default = NULL;
     TAILQ_INIT(&manage->m_sources);
     TAILQ_INIT(&manage->m_to_notify_querys);
     TAILQ_INIT(&manage->m_free_entries);
     TAILQ_INIT(&manage->m_free_tasks);
     TAILQ_INIT(&manage->m_free_task_steps);
     TAILQ_INIT(&manage->m_free_task_ctxs);
+    TAILQ_INIT(&manage->m_builders);
 
     if (cpe_hash_table_init(
             &manage->m_entries,
@@ -63,10 +68,20 @@ net_dns_manage_t net_dns_manage_create(
         mem_free(alloc, manage);
         return NULL;
     }
+
+    manage->m_builder_internal = net_dns_task_builder_internal_create(manage);
+    if (manage->m_builder_internal == NULL) {
+        cpe_hash_table_fini(&manage->m_tasks);
+        cpe_hash_table_fini(&manage->m_entries);
+        mem_free(alloc, manage);
+        return NULL;
+    }
+    manage->m_builder_default = manage->m_builder_internal;
     
     manage->m_dgram = net_dgram_create(driver, NULL, net_dns_dgram_process, manage);
     if (manage->m_dgram == NULL) {
         CPE_ERROR(em, "dns: create dgram fail!");
+        net_dns_task_builder_free(manage->m_builder_internal);
         cpe_hash_table_fini(&manage->m_tasks);
         cpe_hash_table_fini(&manage->m_entries);
         mem_free(alloc, manage);
@@ -102,6 +117,12 @@ void net_dns_manage_free(net_dns_manage_t manage) {
         net_dgram_free(manage->m_dgram);
         manage->m_dgram = NULL;
     }
+
+    while(!TAILQ_EMPTY(&manage->m_builders)) {
+        net_dns_task_builder_free(TAILQ_FIRST(&manage->m_builders));
+    }
+    assert(manage->m_builder_default == NULL);
+    assert(manage->m_builder_internal == NULL);
 
     while(!TAILQ_EMPTY(&manage->m_free_entries)) {
         net_dns_entry_real_free(manage, TAILQ_FIRST(&manage->m_free_entries));
