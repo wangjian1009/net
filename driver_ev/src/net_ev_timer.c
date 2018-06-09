@@ -21,7 +21,7 @@ void net_ev_timer_fini(net_timer_t base_timer) {
     ev_timer_stop(driver->m_ev_loop, &timer->m_watcher);
 }
 
-void net_ev_timer_active(net_timer_t base_timer, int32_t delay_ms) {
+void net_ev_timer_active(net_timer_t base_timer, uint32_t delay_ms) {
     net_ev_timer_t timer = net_timer_data(base_timer);
     net_ev_driver_t driver = net_driver_data(net_timer_driver(base_timer));
 

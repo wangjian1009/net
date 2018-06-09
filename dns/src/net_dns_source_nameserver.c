@@ -1,7 +1,18 @@
 #include "cpe/utils/stream.h"
 #include "net_address.h"
 #include "net_endpoint.h"
+#include "net_timer.h"
+#include "net_dns_task_ctx.h"
 #include "net_dns_source_nameserver_i.h"
+
+static int net_dns_source_nameserver_init(net_dns_source_t source);
+static void net_dns_source_nameserver_fini(net_dns_source_t source);
+static void net_dns_source_nameserver_dump(write_stream_t ws, net_dns_source_t source);
+
+static int net_dns_source_nameserver_ctx_init(net_dns_source_t source, net_dns_task_ctx_t task_ctx);
+static void net_dns_source_nameserver_ctx_fini(net_dns_source_t source, net_dns_task_ctx_t task_ctx);
+static int net_dns_source_nameserver_ctx_start(net_dns_source_t source, net_dns_task_ctx_t task_ctx);
+static void net_dns_source_nameserver_ctx_cancel(net_dns_source_t source, net_dns_task_ctx_t task_ctx);
 
 net_dns_source_nameserver_t
 net_dns_source_nameserver_create(net_dns_manage_t manage, net_address_t addr, uint8_t is_own) {
@@ -87,9 +98,11 @@ void net_dns_source_nameserver_ctx_fini(net_dns_source_t source, net_dns_task_ct
 }
 
 int net_dns_source_nameserver_ctx_start(net_dns_source_t source, net_dns_task_ctx_t task_ctx) {
+    struct net_dns_source_nameserver_ctx * ctx = net_dns_task_ctx_data(task_ctx);
+    net_dns_manage_t manage = net_dns_task_ctx_manage(task_ctx);
+    
     return 0;
 }
 
 void net_dns_source_nameserver_ctx_cancel(net_dns_source_t source, net_dns_task_ctx_t task_ctx) {
 }
-

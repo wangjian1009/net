@@ -12,6 +12,9 @@ struct net_dns_task_ctx {
     net_dns_source_t m_source;
     TAILQ_ENTRY(net_dns_task_ctx) m_next_for_source;
     net_dns_task_state_t m_state;
+    net_timer_t m_timeout_timer;
+    uint16_t m_timeout_ms;
+    uint16_t m_retry_count;
 };
 
 void net_dns_task_ctx_real_free(net_dns_task_ctx_t task_ctx);
