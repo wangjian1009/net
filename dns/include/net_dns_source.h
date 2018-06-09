@@ -16,6 +16,8 @@ typedef void (*net_dns_source_dump_fun_t)(write_stream_t ws, net_dns_source_t so
 
 typedef int (*net_dns_task_ctx_init_fun_t)(net_dns_source_t source, net_dns_task_ctx_t task_ctx);
 typedef void (*net_dns_task_ctx_fini_fun_t)(net_dns_source_t source, net_dns_task_ctx_t task_ctx);
+typedef int (*net_dns_task_ctx_start_fun_t)(net_dns_source_t source, net_dns_task_ctx_t task_ctx);
+typedef void (*net_dns_task_ctx_cancel_fun_t)(net_dns_source_t source, net_dns_task_ctx_t task_ctx);
 
 net_dns_source_t
 net_dns_source_create(
@@ -26,7 +28,9 @@ net_dns_source_create(
     net_dns_source_dump_fun_t dump,
     uint32_t task_ctx_capacity,
     net_dns_task_ctx_init_fun_t task_ctx_init,
-    net_dns_task_ctx_fini_fun_t task_ctx_fini);
+    net_dns_task_ctx_fini_fun_t task_ctx_fini,
+    net_dns_task_ctx_start_fun_t task_ctx_start,
+    net_dns_task_ctx_cancel_fun_t task_ctx_cancel);
 
 void net_dns_source_free(net_dns_source_t source);
 

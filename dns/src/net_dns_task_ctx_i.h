@@ -16,6 +16,8 @@ struct net_dns_task_ctx {
 
 void net_dns_task_ctx_real_free(net_dns_task_ctx_t task_ctx);
 
+void net_dns_task_ctx_start(net_dns_task_ctx_t task_ctx);
+
 NET_END_DECL
 
 #endif

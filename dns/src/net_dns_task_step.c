@@ -48,6 +48,14 @@ void net_dns_task_step_real_free(net_dns_task_step_t task_step) {
     mem_free(manage->m_alloc, task_step);
 }
 
+void net_dns_task_step_start(net_dns_task_step_t step) {
+    net_dns_task_ctx_t ctx;
+
+    TAILQ_FOREACH(ctx, &step->m_ctxs, m_next_for_step) {
+        net_dns_task_ctx_start(ctx);
+    }
+}
+
 net_dns_task_state_t net_dns_task_step_state(net_dns_task_step_t step) {
     uint8_t init_count = 0;
     uint8_t error_count = 0;

@@ -1,5 +1,6 @@
 #include "assert.h"
 #include "net_dns_task_ctx_i.h"
+#include "net_dns_entry_i.h"
 
 net_dns_task_ctx_t
 net_dns_task_ctx_create(net_dns_task_step_t step, net_dns_source_t source) {
@@ -77,4 +78,22 @@ void net_dns_task_ctx_set_state(net_dns_task_ctx_t ctx, net_dns_task_state_t sta
 
     if (!is_complete) return;
 
+}
+
+void net_dns_task_ctx_start(net_dns_task_ctx_t task_ctx) {
+    net_dns_task_t task = task_ctx->m_step->m_task;
+    net_dns_source_t source = task_ctx->m_source;
+    net_dns_manage_t manage = source->m_manage;
+
+    if (task_ctx->m_state != net_dns_task_state_init) {
+        CPE_ERROR(
+            manage->m_em, "dns: task %d-%s %s already started",
+            task->m_id, task->m_entry->m_hostname,
+            net_dns_source_dump(net_dns_manage_tmp_buffer(manage), task_ctx->m_source));
+        return;
+    }
+
+    task_ctx->m_state = net_dns_task_state_runing;
+
+    //source->
 }

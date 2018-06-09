@@ -13,6 +13,8 @@ struct net_dns_task_step {
 
 void net_dns_task_step_real_free(net_dns_task_step_t task_step);
 
+void net_dns_task_step_start(net_dns_task_step_t task_step);
+
 NET_END_DECL
 
 #endif

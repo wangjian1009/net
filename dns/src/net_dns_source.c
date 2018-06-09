@@ -14,7 +14,9 @@ net_dns_source_create(
     /*task_ctx*/
     uint32_t task_ctx_capacity,
     net_dns_task_ctx_init_fun_t task_ctx_init,
-    net_dns_task_ctx_fini_fun_t task_ctx_fini)
+    net_dns_task_ctx_fini_fun_t task_ctx_fini,
+    net_dns_task_ctx_start_fun_t task_ctx_start,
+    net_dns_task_ctx_cancel_fun_t task_ctx_cancel)
 {
     net_schedule_t schedule = manage->m_schedule;
 
@@ -34,9 +36,11 @@ net_dns_source_create(
     source->m_task_ctx_capacity = task_ctx_capacity;
     source->m_task_ctx_init = task_ctx_init;
     source->m_task_ctx_fini = task_ctx_fini;
+    source->m_task_ctx_start = task_ctx_start;
+    source->m_task_ctx_cancel = task_ctx_cancel;
 
     TAILQ_INIT(&source->m_ctxs);
-    
+
     if (source->m_init(source) != 0) {
         mem_free(manage->m_alloc, source);
         return NULL;

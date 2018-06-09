@@ -17,6 +17,8 @@ struct net_dns_source {
     uint32_t m_task_ctx_capacity;
     net_dns_task_ctx_init_fun_t m_task_ctx_init;
     net_dns_task_ctx_fini_fun_t m_task_ctx_fini;
+    net_dns_task_ctx_start_fun_t m_task_ctx_start;
+    net_dns_task_ctx_cancel_fun_t m_task_ctx_cancel;
 
     net_dns_task_ctx_list_t m_ctxs;
 };
