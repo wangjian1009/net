@@ -14,7 +14,9 @@ net_dns_source_nameserver_create(net_dns_manage_t manage, net_address_t addr, ui
             net_dns_source_nameserver_dump,
             0,
             net_dns_source_nameserver_ctx_init,
-            net_dns_source_nameserver_ctx_fini);
+            net_dns_source_nameserver_ctx_fini,
+            net_dns_source_nameserver_ctx_start,
+            net_dns_source_nameserver_ctx_cancel);
     if (source == NULL) return NULL;
 
     net_dns_source_nameserver_t nameserver = net_dns_source_data(source);
@@ -83,3 +85,11 @@ int net_dns_source_nameserver_ctx_init(net_dns_source_t source, net_dns_task_ctx
 
 void net_dns_source_nameserver_ctx_fini(net_dns_source_t source, net_dns_task_ctx_t task_ctx) {
 }
+
+int net_dns_source_nameserver_ctx_start(net_dns_source_t source, net_dns_task_ctx_t task_ctx) {
+    return 0;
+}
+
+void net_dns_source_nameserver_ctx_cancel(net_dns_source_t source, net_dns_task_ctx_t task_ctx) {
+}
+

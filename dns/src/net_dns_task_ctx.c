@@ -87,7 +87,7 @@ void net_dns_task_ctx_start(net_dns_task_ctx_t task_ctx) {
 
     if (task_ctx->m_state != net_dns_task_state_init) {
         CPE_ERROR(
-            manage->m_em, "dns: task %d-%s %s already started",
+            manage->m_em, "dns: %d-->%s %s already started",
             task->m_id, task->m_entry->m_hostname,
             net_dns_source_dump(net_dns_manage_tmp_buffer(manage), task_ctx->m_source));
         return;

@@ -22,8 +22,9 @@ net_dns_task_t net_dns_task_create(net_dns_manage_t manage, net_dns_entry_t entr
     }
 
     task->m_manage = manage;
-    task->m_entry = entry;
     task->m_id = manage->m_max_task_id + 1;
+    task->m_entry = entry;
+    task->m_step_current = NULL;
     TAILQ_INIT(&task->m_steps);
     TAILQ_INIT(&task->m_querys);
     
@@ -98,7 +99,7 @@ net_dns_task_find(net_dns_manage_t manage, uint32_t id) {
 int net_dns_task_start(net_dns_task_t task) {
     if (task->m_step_current != NULL) {
         CPE_ERROR(
-            task->m_manage->m_em, "dns: task %d-%s already started",
+            task->m_manage->m_em, "dns: %d-->%s already started",
             task->m_id, task->m_entry->m_hostname);
         return -1;
     }
@@ -106,7 +107,7 @@ int net_dns_task_start(net_dns_task_t task) {
     task->m_step_current = TAILQ_FIRST(&task->m_steps);
     if (task->m_step_current == NULL) {
         CPE_ERROR(
-            task->m_manage->m_em, "dns: task %d-%s no step",
+            task->m_manage->m_em, "dns: %d-->%s no step",
             task->m_id, task->m_entry->m_hostname);
         return -1;
     }
@@ -117,7 +118,7 @@ int net_dns_task_start(net_dns_task_t task) {
         switch(net_dns_task_step_state(task->m_step_current)) {
         case net_dns_task_state_init:
             CPE_ERROR(
-                task->m_manage->m_em, "dns: task %d-%s step start but still init",
+                task->m_manage->m_em, "dns: %d-->%s step start but still init",
                 task->m_id, task->m_entry->m_hostname);
             return -1;
         case net_dns_task_state_runing:
@@ -136,7 +137,7 @@ int net_dns_task_start(net_dns_task_t task) {
         else {
             return -1;
         }
-    } while(0);
+    } while(1);
 }
 
 net_dns_task_state_t net_dns_task_state(net_dns_task_t task) {
