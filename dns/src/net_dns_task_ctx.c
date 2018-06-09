@@ -82,19 +82,6 @@ net_dns_task_state_t net_dns_task_ctx_state(net_dns_task_ctx_t ctx) {
     return ctx->m_state;
 }
 
-void net_dns_task_ctx_set_state(net_dns_task_ctx_t ctx, net_dns_task_state_t state) {
-    if (ctx->m_state == state) return;
-
-    uint8_t is_complete =
-        (ctx->m_state == net_dns_task_state_init || ctx->m_state == net_dns_task_state_runing)
-        && (state == net_dns_task_state_success || state == net_dns_task_state_error);
-
-    ctx->m_state = state;
-
-    if (!is_complete) return;
-
-}
-
 void net_dns_task_ctx_start(net_dns_task_ctx_t ctx) {
     net_dns_task_t task = ctx->m_step->m_task;
     net_dns_source_t source = ctx->m_source;
@@ -115,21 +102,22 @@ void net_dns_task_ctx_start(net_dns_task_ctx_t ctx) {
             manage->m_em, "dns: %d-->%s %s start fail",
             task->m_id, task->m_entry->m_hostname,
             net_dns_source_dump(net_dns_manage_tmp_buffer(manage), ctx->m_source));
-        ctx->m_state = net_dns_task_state_error;
+        net_dns_task_ctx_set_error(ctx);
     }
-
-    if (ctx->m_state == net_dns_task_state_runing) {
-        if (ctx->m_timeout_ms >= 0 && ctx->m_timeout_timer && !net_timer_is_active(ctx->m_timeout_timer)) {
-            if (net_dns_task_ctx_update_timeout(ctx) != 0) {
-                ctx->m_state = net_dns_task_state_error;
-                return;
+    else {
+        if (ctx->m_state == net_dns_task_state_runing) {
+            if (ctx->m_timeout_ms >= 0 && ctx->m_timeout_timer && !net_timer_is_active(ctx->m_timeout_timer)) {
+                if (net_dns_task_ctx_update_timeout(ctx) != 0) {
+                    net_dns_task_ctx_set_error(ctx);
+                    return;
+                }
             }
-        }
         
-        CPE_INFO(
-            manage->m_em, "dns: %d-->%s %s start success",
-            task->m_id, task->m_entry->m_hostname,
-            net_dns_source_dump(net_dns_manage_tmp_buffer(manage), ctx->m_source));
+            CPE_INFO(
+                manage->m_em, "dns: %d-->%s %s start success",
+                task->m_id, task->m_entry->m_hostname,
+                net_dns_source_dump(net_dns_manage_tmp_buffer(manage), ctx->m_source));
+        }
     }
 }
 
@@ -191,32 +179,33 @@ static void net_dns_task_ctx_do_timeout(net_timer_t timer, void * input_ctx) {
                 manage->m_em, "dns: %d-->%s %s restart fail",
                 task->m_id, task->m_entry->m_hostname,
                 net_dns_source_dump(net_dns_manage_tmp_buffer(manage), ctx->m_source));
-            ctx->m_state = net_dns_task_state_error;
+            net_dns_task_ctx_set_error(ctx);
         }
-
-        if (ctx->m_state == net_dns_task_state_init) {
-            if (ctx->m_timeout_ms >= 0 && ctx->m_timeout_timer && !net_timer_is_active(ctx->m_timeout_timer)) {
-                if (net_dns_task_ctx_update_timeout(ctx) != 0) {
-                    ctx->m_state = net_dns_task_state_error;
-                    return;
+        else {
+            if (ctx->m_state == net_dns_task_state_init) {
+                if (ctx->m_timeout_ms >= 0 && ctx->m_timeout_timer && !net_timer_is_active(ctx->m_timeout_timer)) {
+                    if (net_dns_task_ctx_update_timeout(ctx) != 0) {
+                        net_dns_task_ctx_set_error(ctx);
+                        return;
+                    }
                 }
-            }
             
-            if (manage->m_debug >= 2) {
-                CPE_INFO(
-                    manage->m_em, "dns: %d-->%s %s restart success",
-                    task->m_id, task->m_entry->m_hostname,
-                    net_dns_source_dump(net_dns_manage_tmp_buffer(manage), ctx->m_source));
+                if (manage->m_debug >= 2) {
+                    CPE_INFO(
+                        manage->m_em, "dns: %d-->%s %s restart success",
+                        task->m_id, task->m_entry->m_hostname,
+                        net_dns_source_dump(net_dns_manage_tmp_buffer(manage), ctx->m_source));
+                }
             }
         }
     }
     else {
-        ctx->m_state = net_dns_task_state_error;
-
         CPE_ERROR(
             manage->m_em, "dns: %d-->%s %s timeout",
             task->m_id, task->m_entry->m_hostname,
             net_dns_source_dump(net_dns_manage_tmp_buffer(manage), ctx->m_source));
+
+        net_dns_task_ctx_set_error(ctx);
     }
 }
 
@@ -225,3 +214,21 @@ int net_dns_task_ctx_set_timeout(net_dns_task_ctx_t ctx, uint16_t timeout_ms) {
     return ctx->m_state == net_dns_task_state_runing ? net_dns_task_ctx_update_timeout(ctx) : 0;
 }
 
+void net_dns_task_ctx_set_result(net_dns_task_ctx_t ctx, net_address_t address, uint8_t is_own) {
+}
+
+void net_dns_task_ctx_set_error(net_dns_task_ctx_t ctx) {
+    net_dns_task_t task = ctx->m_step->m_task;
+    net_dns_manage_t manage = task->m_manage;
+
+    if (ctx->m_state != net_dns_task_state_runing) {
+        CPE_ERROR(
+            manage->m_em, "dns: %d-->%s %s set error in state %d",
+            task->m_id, task->m_entry->m_hostname,
+            net_dns_source_dump(net_dns_manage_tmp_buffer(manage), ctx->m_source),
+            ctx->m_state);
+        return;
+    }
+
+    ctx->m_state = net_dns_task_state_error;
+}
