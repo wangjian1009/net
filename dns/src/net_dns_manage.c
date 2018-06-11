@@ -88,6 +88,8 @@ net_dns_manage_t net_dns_manage_create(
         return NULL;
     }
 
+    mem_buffer_init(&manage->m_data_buffer, alloc);
+
     net_schedule_set_dns_resolver(
         schedule,
         manage,
@@ -139,6 +141,8 @@ void net_dns_manage_free(net_dns_manage_t manage) {
     while(!TAILQ_EMPTY(&manage->m_free_task_ctxs)) {
         net_dns_task_ctx_real_free(TAILQ_FIRST(&manage->m_free_task_ctxs));
     }
+
+    mem_buffer_clear(&manage->m_data_buffer);
     
     mem_free(manage->m_alloc, manage);
 }

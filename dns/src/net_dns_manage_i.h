@@ -4,6 +4,7 @@
 #include "cpe/utils/hash.h"
 #include "cpe/utils/memory.h"
 #include "cpe/utils/error.h"
+#include "cpe/utils/buffer.h"
 #include "net_dns_manage.h"
 
 NET_BEGIN_DECL
@@ -36,12 +37,14 @@ struct net_dns_manage {
 
     uint32_t m_task_ctx_capacity;
     
-    uint32_t m_max_task_id;
+    uint16_t m_max_task_id;
     struct cpe_hash_table m_tasks;
 
     net_dns_task_builder_t m_builder_default;
     net_dns_task_builder_t m_builder_internal;
     net_dns_task_builder_list_t m_builders;
+
+    struct mem_buffer m_data_buffer;
 
     net_dns_task_list_t m_free_tasks;
     net_dns_task_step_list_t m_free_task_steps;

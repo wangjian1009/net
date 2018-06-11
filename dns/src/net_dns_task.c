@@ -90,10 +90,18 @@ void net_dns_task_free_all(net_dns_manage_t manage) {
 }
 
 net_dns_task_t
-net_dns_task_find(net_dns_manage_t manage, uint32_t id) {
+net_dns_task_find(net_dns_manage_t manage, uint16_t id) {
     struct net_dns_task key;
     key.m_id = id;
     return cpe_hash_table_find(&manage->m_tasks, &key);
+}
+
+uint16_t net_dns_task_id(net_dns_task_t task) {
+    return task->m_id;
+}
+
+const char * net_dns_task_hostname(net_dns_task_t task) {
+    return task->m_entry->m_hostname;
 }
 
 int net_dns_task_start(net_dns_task_t task) {
