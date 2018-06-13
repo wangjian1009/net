@@ -39,6 +39,8 @@ int net_address_to_sockaddr(net_address_t address, struct sockaddr * addr, sockl
 
 net_address_type_t net_address_type(net_address_t address);
 uint16_t net_address_port(net_address_t address);
+void net_address_set_port(net_address_t address, uint16_t port);
+
 void const * net_address_data(net_address_t address);
 
 void net_address_print(write_stream_t ws, net_address_t address);

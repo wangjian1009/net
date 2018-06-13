@@ -5,6 +5,7 @@
 #include "net_address.h"
 #include "net_endpoint.h"
 #include "net_timer.h"
+#include "net_dns_dgram_receiver.h"
 #include "net_dns_task.h"
 #include "net_dns_task_ctx.h"
 #include "net_dns_source_nameserver_i.h"
@@ -12,6 +13,7 @@
 static int net_dns_source_nameserver_init(net_dns_source_t source);
 static void net_dns_source_nameserver_fini(net_dns_source_t source);
 static void net_dns_source_nameserver_dump(write_stream_t ws, net_dns_source_t source);
+static void net_dns_source_nameserver_dgram_receiver(void * ctx, void * data, size_t data_size);
 
 static int net_dns_source_nameserver_ctx_init(net_dns_source_t source, net_dns_task_ctx_t task_ctx);
 static void net_dns_source_nameserver_ctx_fini(net_dns_source_t source, net_dns_task_ctx_t task_ctx);
@@ -50,6 +52,20 @@ net_dns_source_nameserver_create(net_dns_manage_t manage, net_address_t addr, ui
         }
     }
 
+    if (net_address_port(nameserver->m_address) == 0) {
+        net_address_set_port(nameserver->m_address, 53);
+    }
+
+    if (net_dns_dgram_receiver_create(
+            manage, 0, nameserver->m_address, nameserver, net_dns_source_nameserver_dgram_receiver)
+        == NULL)
+    {
+        CPE_ERROR(manage->m_em, "dns: nameserver: create dgram receiver fail!");
+        if (!is_own) net_address_free(nameserver->m_address);
+        net_dns_source_free(source);
+        return NULL;
+    }
+
     if (manage->m_debug >= 2) {
         CPE_INFO(
             manage->m_em, "dns: %s created!",
@@ -74,6 +90,13 @@ int net_dns_source_nameserver_init(net_dns_source_t source) {
 
 void net_dns_source_nameserver_fini(net_dns_source_t source) {
     net_dns_source_nameserver_t nameserver = net_dns_source_data(source);
+
+    net_dns_dgram_receiver_t receiver =
+        net_dns_dgram_receiver_find_by_ctx(
+            net_dns_source_manager(source), nameserver, net_dns_source_nameserver_dgram_receiver);
+    if (receiver) {
+        net_dns_dgram_receiver_free(receiver);
+    }
 
     if (nameserver->m_address) {
         net_address_free(nameserver->m_address);
@@ -106,6 +129,7 @@ void net_dns_source_nameserver_ctx_fini(net_dns_source_t source, net_dns_task_ct
 int net_dns_source_nameserver_ctx_start(net_dns_source_t source, net_dns_task_ctx_t task_ctx) {
     net_dns_task_t task = net_dns_task_ctx_task(task_ctx);
     net_dns_manage_t manage = net_dns_task_ctx_manage(task_ctx);
+    net_dns_source_nameserver_t nameserver = net_dns_source_data(source);
 
     mem_buffer_t buffer = &manage->m_data_buffer;
     mem_buffer_clear_data(buffer);
@@ -118,28 +142,26 @@ int net_dns_source_nameserver_ctx_start(net_dns_source_t source, net_dns_task_ct
 
     char *p = buf;
 
-    //Transaction ID
+    /* Transaction ID */
     uint16_t task_id = net_dns_task_id(task);
-    CPE_COPY_HTON16(p, &task_id);
-    //Header section
-    //flag word = 0x0100
-    *(p++) = 0x01;
-    *(p++) = 0x00;
-    //Questions = 0x0001
-    //just one query
-    *(p++) = 0x00;
-    *(p++) = 0x01;
-    //Answer RRs = 0x0000
-    //no answers in this message
-    *(p++) = 0x00;
-    *(p++) = 0x00;
-    //Authority RRs = 0x0000
-    *(p++) = 0x00;
-    *(p++) = 0x00;
-    //Additional RRs = 0x0000
-    *(p++) = 0x00;
-    *(p++) = 0x00;
-    //Query section
+    CPE_COPY_HTON16(p, &task_id); p+=2;
+
+    uint16_t flag = 0x0100;
+    CPE_COPY_HTON16(p, &flag); p+=2;
+
+    uint16_t qdcount = 1;
+    CPE_COPY_HTON16(p, &qdcount); p+=2;
+
+    uint16_t ancount = 0;
+    CPE_COPY_HTON16(p, &ancount); p+=2;
+
+    uint16_t nscount = 0;
+    CPE_COPY_HTON16(p, &nscount); p+=2;
+ 
+    uint16_t arcount = 0;
+    CPE_COPY_HTON16(p, &arcount); p+=2;
+    
+    /* Query section */
     char * countp = p;  
     *(p++) = 0;
 
@@ -167,9 +189,14 @@ int net_dns_source_nameserver_ctx_start(net_dns_source_t source, net_dns_task_ct
     *(p++)=0;
     *(p++)=1;
 
+    if (net_dns_manage_dgram_send(manage, nameserver->m_address, buf, p - buf) < 0) {
+        CPE_ERROR(manage->m_em, "dns: nameserver: send data fail");
+        return -1;
+    }
+
     if (manage->m_debug >= 2) {
         CPE_INFO(
-            manage->m_em, "dns: %s",
+            manage->m_em, "dns: udp --> %s",
             net_dns_source_nameserver_req_dump(net_dns_manage_tmp_buffer(manage), buf));
     }
     
@@ -177,6 +204,18 @@ int net_dns_source_nameserver_ctx_start(net_dns_source_t source, net_dns_task_ct
 }
 
 void net_dns_source_nameserver_ctx_cancel(net_dns_source_t source, net_dns_task_ctx_t task_ctx) {
+}
+
+static void net_dns_source_nameserver_dgram_receiver(void * ctx, void * data, size_t data_size) {
+    net_dns_source_nameserver_t nameserver = ctx;
+    net_dns_source_t source = net_dns_source_from_data(nameserver);
+    net_dns_manage_t manage = net_dns_source_manager(source);
+
+    if (manage->m_debug >= 2) {
+        CPE_INFO(
+            manage->m_em, "dns: udp <-- %s",
+            net_dns_source_nameserver_req_dump(net_dns_manage_tmp_buffer(manage), data));
+    }
 }
 
 static char const *
@@ -201,39 +240,39 @@ static void net_dns_source_nameserver_req_print(write_stream_t ws, char const * 
 
     uint16_t ident;
     CPE_COPY_NTOH16(&ident, p); p+=2;
-    stream_printf(ws, "ident=%#x\n", ident);
+    stream_printf(ws, "ident=%#x", ident);
 
     uint16_t flags;
     CPE_COPY_NTOH16(&flags, p); p+=2;
-    stream_printf(ws, "flags=%#x\n", flags);
-    stream_printf(ws, "qr=%u\n", flags >> 15);
-    stream_printf(ws, "opcode=%u\n", (flags >> 11) & 15);
-    stream_printf(ws, "aa=%u\n", (flags >> 10) & 1);
-    stream_printf(ws, "tc=%u\n", (flags >> 9) & 1);
-    stream_printf(ws, "rd=%u\n", (flags >> 8) & 1);
-    stream_printf(ws, "ra=%u\n", (flags >> 7) & 1);
-    stream_printf(ws, "z=%u\n", (flags >> 4) & 7);
-    stream_printf(ws, "rcode=%u\n", flags & 15); 
+    stream_printf(ws, ", flags=%#x", flags);
+    stream_printf(ws, ", qr=%u", flags >> 15);
+    stream_printf(ws, ", opcode=%u", (flags >> 11) & 15);
+    stream_printf(ws, ", aa=%u", (flags >> 10) & 1);
+    stream_printf(ws, ", tc=%u", (flags >> 9) & 1);
+    stream_printf(ws, ", rd=%u", (flags >> 8) & 1);
+    stream_printf(ws, ", ra=%u", (flags >> 7) & 1);
+    stream_printf(ws, ", z=%u", (flags >> 4) & 7);
+    stream_printf(ws, ", rcode=%u", flags & 15); 
 
     uint16_t qdcount;
     CPE_COPY_NTOH16(&qdcount, p); p+=2;
-    stream_printf(ws, "qdcount=%u\n", qdcount);
+    stream_printf(ws, ", qdcount=%u", qdcount);
 
     uint16_t ancount;
     CPE_COPY_NTOH16(&ancount, p); p+=2;
-    stream_printf(ws, "ancount=%u\n", ancount);
+    stream_printf(ws, ", ancount=%u", ancount);
 
     uint16_t nscount;
     CPE_COPY_NTOH16(&nscount, p); p+=2;
-    stream_printf(ws, "nscount=%u\n", nscount);
+    stream_printf(ws, ", nscount=%u", nscount);
  
     uint16_t arcount;
     CPE_COPY_NTOH16(&arcount, p); p+=2;
-    stream_printf(ws, "arcount=%u\n", arcount);
+    stream_printf(ws, ", arcount=%u", arcount);
  
     unsigned int i;
      for(i = 0; i < qdcount; i++) {
-        stream_printf(ws, "qd[%u]:\n", i);
+        stream_printf(ws, "\n    qd[%u]: ", i);
         while(*p!=0) {
             p = net_dns_source_nameserver_req_print_name(ws, p, buf);
             if(*p != 0) {
@@ -241,46 +280,43 @@ static void net_dns_source_nameserver_req_print(write_stream_t ws, char const * 
             }
         }
         p++;
-        stream_printf(ws, "\n");
 
         uint16_t type;
         CPE_COPY_NTOH16(&type, p); p+=2;
-        stream_printf(ws, "type=%u\n",type);
+        stream_printf(ws, ", type=%u",type);
         
         uint16_t class;
         CPE_COPY_NTOH16(&class, p); p+=2;
-        stream_printf(ws, "class=%u\n",class);
+        stream_printf(ws, ", class=%u",class);
     }
  
     for(i = 0; i < ancount; i++) {
-        stream_printf(ws, "an[%u]:\n",i);
+        stream_printf(ws, "\n    an[%u]: ",i);
         p = net_dns_source_nameserver_req_print_name(ws, p, buf);
-        stream_printf(ws, "\n");
 
         uint16_t type;
         CPE_COPY_NTOH16(&type, p); p+=2;
-        stream_printf(ws, "type=%u\n", type);
+        stream_printf(ws, ", type=%u", type);
 
         uint16_t class;
         CPE_COPY_NTOH16(&class, p); p+=2;
-        stream_printf(ws, "class=%u\n", class);
+        stream_printf(ws, ", class=%u", class);
 
         uint16_t ttl;
         CPE_COPY_NTOH16(&ttl, p); p+=2;
-        stream_printf(ws, "ttl=%u\n",ttl);
+        stream_printf(ws, ", ttl=%u",ttl);
 
         uint16_t rdlength;
         CPE_COPY_NTOH16(&rdlength, p); p+=2;
-        stream_printf(ws, "rdlength=%u\n",rdlength);
-        stream_printf(ws, "rd=");
+        stream_printf(ws, ", rdlength=%u",rdlength);
 
+        stream_printf(ws, ", rd=");
         uint16_t j;
         for(j = 0; j < rdlength; j++) {
+            if (j > 0) stream_printf(ws, "-");
             stream_printf(ws, "%2.2x(%u)",*p,*p);
             p++;
         }
-
-        stream_printf(ws, "\n");
     }
 }
 

@@ -165,11 +165,11 @@ net_dns_task_state_t net_dns_task_state(net_dns_task_t task) {
     }
 }
 
-uint32_t net_dns_task_hash(net_dns_task_t o) {
+uint32_t net_dns_task_hash(net_dns_task_t o, void * user_data) {
     return o->m_id;
 }
 
-int net_dns_task_eq(net_dns_task_t l, net_dns_task_t r) {
+int net_dns_task_eq(net_dns_task_t l, net_dns_task_t r, void * user_data) {
     return l->m_id == r->m_id ? 1 : 0;
 }
 

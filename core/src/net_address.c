@@ -217,6 +217,10 @@ uint16_t net_address_port(net_address_t address) {
     return address->m_port;
 }
 
+void net_address_set_port(net_address_t address, uint16_t port) {
+    address->m_port = port;
+}
+
 void const * net_address_data(net_address_t address) {
     switch(address->m_type) {
     case net_address_ipv4:

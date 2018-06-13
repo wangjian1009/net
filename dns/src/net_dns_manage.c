@@ -1,8 +1,10 @@
 #include "assert.h"
 #include "cpe/pal/pal_strings.h"
 #include "net_schedule.h"
+#include "net_address.h"
 #include "net_dgram.h"
 #include "net_dns_manage_i.h"
+#include "net_dns_dgram_receiver_i.h"
 #include "net_dns_query_ex_i.h"
 #include "net_dns_source_i.h"
 #include "net_dns_entry_i.h"
@@ -45,6 +47,18 @@ net_dns_manage_t net_dns_manage_create(
     TAILQ_INIT(&manage->m_builders);
 
     if (cpe_hash_table_init(
+            &manage->m_dgram_receivers,
+            alloc,
+            (cpe_hash_fun_t) net_dns_dgram_receiver_hash,
+            (cpe_hash_eq_t) net_dns_dgram_receiver_eq,
+            CPE_HASH_OBJ2ENTRY(net_dns_dgram_receiver, m_hh),
+            -1) != 0)
+    {
+        mem_free(alloc, manage);
+        return NULL;
+    }
+
+    if (cpe_hash_table_init(
             &manage->m_entries,
             alloc,
             (cpe_hash_fun_t) net_dns_entry_hash,
@@ -52,6 +66,7 @@ net_dns_manage_t net_dns_manage_create(
             CPE_HASH_OBJ2ENTRY(net_dns_entry, m_hh),
             -1) != 0)
     {
+        cpe_hash_table_fini(&manage->m_dgram_receivers);
         mem_free(alloc, manage);
         return NULL;
     }
@@ -65,6 +80,7 @@ net_dns_manage_t net_dns_manage_create(
             -1) != 0)
     {
         cpe_hash_table_fini(&manage->m_entries);
+        cpe_hash_table_fini(&manage->m_dgram_receivers);
         mem_free(alloc, manage);
         return NULL;
     }
@@ -73,6 +89,7 @@ net_dns_manage_t net_dns_manage_create(
     if (manage->m_builder_internal == NULL) {
         cpe_hash_table_fini(&manage->m_tasks);
         cpe_hash_table_fini(&manage->m_entries);
+        cpe_hash_table_fini(&manage->m_dgram_receivers);
         mem_free(alloc, manage);
         return NULL;
     }
@@ -84,6 +101,7 @@ net_dns_manage_t net_dns_manage_create(
         net_dns_task_builder_free(manage->m_builder_internal);
         cpe_hash_table_fini(&manage->m_tasks);
         cpe_hash_table_fini(&manage->m_entries);
+        cpe_hash_table_fini(&manage->m_dgram_receivers);
         mem_free(alloc, manage);
         return NULL;
     }
@@ -115,16 +133,20 @@ void net_dns_manage_free(net_dns_manage_t manage) {
         net_dns_source_free(TAILQ_FIRST(&manage->m_sources));
     }
 
-    if (manage->m_dgram) {
-        net_dgram_free(manage->m_dgram);
-        manage->m_dgram = NULL;
-    }
-
     while(!TAILQ_EMPTY(&manage->m_builders)) {
         net_dns_task_builder_free(TAILQ_FIRST(&manage->m_builders));
     }
     assert(manage->m_builder_default == NULL);
     assert(manage->m_builder_internal == NULL);
+
+
+    if (manage->m_dgram) {
+        net_dgram_free(manage->m_dgram);
+        manage->m_dgram = NULL;
+    }
+
+    net_dns_dgram_receiver_free_all(manage);
+    cpe_hash_table_fini(&manage->m_dgram_receivers);
 
     while(!TAILQ_EMPTY(&manage->m_free_entries)) {
         net_dns_entry_real_free(manage, TAILQ_FIRST(&manage->m_free_entries));
@@ -167,8 +189,24 @@ mem_buffer_t net_dns_manage_tmp_buffer(net_dns_manage_t manage) {
     return net_schedule_tmp_buffer(manage->m_schedule);
 }
 
+int net_dns_manage_dgram_send(net_dns_manage_t manage, net_address_t target, void const * data, size_t data_size) {
+    return net_dgram_send(manage->m_dgram, target, data, data_size);
+}
+
 static void net_dns_dgram_process(
     net_dgram_t dgram, void * ctx, void * data, size_t data_size, net_address_t source)
 {
-    
+    net_dns_manage_t manage = ctx;
+
+    net_dns_dgram_receiver_t receiver = net_dns_dgram_receiver_find_by_address(manage, source);
+    if (receiver == NULL) {
+        if (manage->m_debug) {
+            CPE_INFO(
+                manage->m_em, "dns: no dgram receiver process data from %s, ignore",
+                net_address_dump(net_dns_manage_tmp_buffer(manage), source));
+        }
+        return;
+    }
+
+    receiver->m_process_fun(receiver->m_process_ctx, data, data_size);
 }

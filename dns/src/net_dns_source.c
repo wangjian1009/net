@@ -71,6 +71,10 @@ void * net_dns_source_data(net_dns_source_t source) {
     return source + 1;
 }
 
+net_dns_manage_t net_dns_source_manager(net_dns_source_t source) {
+    return source->m_manage;
+}
+
 net_dns_source_t net_dns_source_from_data(void * date) {
     return ((net_dns_source_t)date) - 1;
 }

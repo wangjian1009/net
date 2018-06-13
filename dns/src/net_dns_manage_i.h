@@ -29,6 +29,7 @@ struct net_dns_manage {
     net_dns_mode_t m_mode;
     net_dns_source_list_t m_sources;
     net_dgram_t m_dgram;
+    struct cpe_hash_table m_dgram_receivers;
 
     net_dns_query_ex_list_t m_to_notify_querys;
     

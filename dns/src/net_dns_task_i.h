@@ -21,8 +21,8 @@ struct net_dns_task {
 void net_dns_task_real_free(net_dns_task_t task);
 void net_dns_task_free_all(net_dns_manage_t manage);
 
-uint32_t net_dns_task_hash(net_dns_task_t o);
-int net_dns_task_eq(net_dns_task_t l, net_dns_task_t r);
+uint32_t net_dns_task_hash(net_dns_task_t o, void * user_data);
+int net_dns_task_eq(net_dns_task_t l, net_dns_task_t r, void * user_data);
 
 NET_END_DECL
 
