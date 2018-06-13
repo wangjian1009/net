@@ -220,12 +220,18 @@ static void net_dns_source_nameserver_dgram_receiver(void * ctx, void * data, si
 
 static char const *
 net_dns_source_nameserver_req_print_name(write_stream_t ws, char const * p, char const * buf) {
-    uint16_t nchars = (uint8_t)*(p++);
+    uint16_t nchars = *(uint8_t const *)p++;
     if((nchars & 0xc0) == 0xc0) {
         uint16_t offset = (nchars & 0x3f) << 8;
-        offset |= (uint16_t)*(p++);
-        nchars = (uint16_t)buf[offset++];
-        stream_printf(ws, "%*.*bs", nchars, nchars, buf + offset);
+        offset |= *(uint8_t const *)p++;
+
+        const char * p2 = buf + offset;
+        while(*p2 != 0) {
+            p2 = net_dns_source_nameserver_req_print_name(ws, p2, buf);
+            if(*p2 != 0) {
+                stream_printf(ws, ".");
+            }
+        }
     }
     else {
         stream_printf(ws, "%*.*s", nchars, nchars, p);
