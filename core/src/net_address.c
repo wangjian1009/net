@@ -36,8 +36,24 @@ net_address_t net_address_create_ipv4(net_schedule_t schedule, const char * addr
     }
     
     struct net_address_ipv4v6 * addr_ipv4v6 = net_address_create_ipv4v6(schedule, net_address_ipv4, port);
+    if (addr_ipv4v6 == NULL) return NULL;
+    
     addr_ipv4v6->m_ipv4 = ipv4;
 
+    return (net_address_t)addr_ipv4v6;
+}
+
+net_address_t net_address_create_from_data_ipv4(net_schedule_t schedule, net_address_data_ipv4_t addr_data, uint16_t port) {
+    struct net_address_ipv4v6 * addr_ipv4v6 = net_address_create_ipv4v6(schedule, net_address_ipv4, port);
+    if (addr_ipv4v6 == NULL) return NULL;
+    addr_ipv4v6->m_ipv4 = *addr_data;
+    return (net_address_t)addr_ipv4v6;
+}
+
+net_address_t net_address_create_from_data_ipv6(net_schedule_t schedule, net_address_data_ipv6_t addr_data, uint16_t port) {
+    struct net_address_ipv4v6 * addr_ipv4v6 = net_address_create_ipv4v6(schedule, net_address_ipv6, port);
+    if (addr_ipv4v6 == NULL) return NULL;
+    addr_ipv4v6->m_ipv6 = *addr_data;
     return (net_address_t)addr_ipv4v6;
 }
 

@@ -24,7 +24,10 @@ struct net_address_data_ipv6 {
 };
 
 net_address_t net_address_create_ipv4(net_schedule_t schedule, const char * addr, uint16_t port);
+net_address_t net_address_create_from_data_ipv4(net_schedule_t schedule, net_address_data_ipv4_t addr, uint16_t port);
+
 net_address_t net_address_create_ipv6(net_schedule_t schedule, const char * addr, uint16_t port);
+net_address_t net_address_create_from_data_ipv6(net_schedule_t schedule, net_address_data_ipv6_t addr, uint16_t port);
 
 net_address_t net_address_create_domain(
     net_schedule_t schedule, const char * url, uint16_t port, net_address_t resolved);

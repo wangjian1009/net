@@ -20,6 +20,7 @@ static void net_dns_source_nameserver_ctx_fini(net_dns_source_t source, net_dns_
 static int net_dns_source_nameserver_ctx_start(net_dns_source_t source, net_dns_task_ctx_t task_ctx);
 static void net_dns_source_nameserver_ctx_cancel(net_dns_source_t source, net_dns_task_ctx_t task_ctx);
 
+static char const * net_dns_source_nameserver_req_print_name(write_stream_t ws, char const * p, char const * buf);
 static const char * net_dns_source_nameserver_req_dump(mem_buffer_t buffer, char const * buf);
 
 net_dns_source_nameserver_t
@@ -142,7 +143,7 @@ int net_dns_source_nameserver_ctx_start(net_dns_source_t source, net_dns_task_ct
 
     char *p = buf;
 
-    /* Transaction ID */
+    /* head */
     uint16_t task_id = net_dns_task_id(task);
     CPE_COPY_HTON16(p, &task_id); p+=2;
 
@@ -161,7 +162,7 @@ int net_dns_source_nameserver_ctx_start(net_dns_source_t source, net_dns_task_ct
     uint16_t arcount = 0;
     CPE_COPY_HTON16(p, &arcount); p+=2;
     
-    /* Query section */
+    /* query */
     char * countp = p;  
     *(p++) = 0;
 
@@ -181,11 +182,9 @@ int net_dns_source_nameserver_ctx_start(net_dns_source_t source, net_dns_task_ct
         *(p++) = 0;
     }
  
-    //Type=1(A):host address
     uint16_t qtype = 1;
     CPE_COPY_HTON16(p, &qtype); p+=2;
     
-    //Class=1(IN):internet
     uint16_t qclass = 1;
     CPE_COPY_HTON16(p, &qclass); p+=2;
 
@@ -211,33 +210,117 @@ static void net_dns_source_nameserver_dgram_receiver(void * ctx, void * data, si
     net_dns_source_t source = net_dns_source_from_data(nameserver);
     net_dns_manage_t manage = net_dns_source_manager(source);
 
+    if (data_size < 12) {
+        CPE_ERROR(manage->m_em, "dns: udp <-- size %d too small!", (int)data_size);
+        return;
+    }
+
     if (manage->m_debug >= 2) {
         CPE_INFO(
             manage->m_em, "dns: udp <-- %s",
             net_dns_source_nameserver_req_dump(net_dns_manage_tmp_buffer(manage), data));
     }
+    
+    char const * p = data;
+
+    uint16_t ident;
+    CPE_COPY_NTOH16(&ident, p); p+=2;
+
+    uint16_t flags;
+    CPE_COPY_NTOH16(&ident, p); p+=2;
+
+    uint16_t qdcount;
+    CPE_COPY_NTOH16(&qdcount, p); p+=2;
+
+    uint16_t ancount;
+    CPE_COPY_NTOH16(&ancount, p); p+=2;
+
+    uint16_t nscount;
+    CPE_COPY_NTOH16(&nscount, p); p+=2;
+ 
+    uint16_t arcount;
+    CPE_COPY_NTOH16(&arcount, p); p+=2;
+
+    uint16_t i;
+    for(i = 0; i < qdcount; i++) {
+        p = net_dns_source_nameserver_req_print_name(NULL, p, data);
+        p += 2 + 2; /*type + class*/
+    }
+
+    mem_buffer_t buffer = &manage->m_data_buffer;
+    for(i = 0; i < ancount; i++) {
+        struct write_stream_buffer ws = CPE_WRITE_STREAM_BUFFER_INITIALIZER(buffer);
+        mem_buffer_clear_data(buffer);
+        p = net_dns_source_nameserver_req_print_name((write_stream_t)&ws, p, data);
+        stream_putc((write_stream_t)&ws, 0);
+
+        const char * hostname = mem_buffer_make_continuous(buffer, 0);
+
+        p += 2 + 2; /*type + class*/
+
+        uint32_t ttl;
+        CPE_COPY_NTOH32(&ttl, p); p+=4;
+
+        uint16_t rdlength;
+        CPE_COPY_NTOH16(&rdlength, p); p+=2;
+
+        net_address_t address = NULL;
+        if (rdlength == 4) {
+            struct net_address_data_ipv4 ipv4;
+            ipv4.u8[0] = p[0];
+            ipv4.u8[1] = p[1];
+            ipv4.u8[2] = p[2];
+            ipv4.u8[3] = p[3];
+            address = net_address_create_from_data_ipv4(manage->m_schedule, &ipv4, 0);
+            if (address == NULL) {
+                CPE_ERROR(manage->m_em, "dns: udp <-- create address for %s fail", hostname);
+            }
+        }
+        else {
+            if (manage->m_debug) {
+                CPE_INFO(manage->m_em, "dns: udp <-- %s answer length %d unknown", hostname, rdlength);
+            }
+        }
+        
+        p += rdlength;
+
+        if (address == NULL) continue;
+
+        if (manage->m_debug) {
+            CPE_INFO(manage->m_em, "dns: resolved %s ==> %s", hostname, net_address_dump(net_dns_manage_tmp_buffer(manage), address));
+        }
+    }
 }
 
 static char const *
 net_dns_source_nameserver_req_print_name(write_stream_t ws, char const * p, char const * buf) {
-    uint16_t nchars = *(uint8_t const *)p++;
-    if((nchars & 0xc0) == 0xc0) {
-        uint16_t offset = (nchars & 0x3f) << 8;
-        offset |= *(uint8_t const *)p++;
+    while(*p != 0) {
+        uint16_t nchars = *(uint8_t const *)p++;
+        if((nchars & 0xc0) == 0xc0) {
+            uint16_t offset = (nchars & 0x3f) << 8;
+            offset |= *(uint8_t const *)p++;
 
-        const char * p2 = buf + offset;
-        while(*p2 != 0) {
-            p2 = net_dns_source_nameserver_req_print_name(ws, p2, buf);
-            if(*p2 != 0) {
-                stream_printf(ws, ".");
+            const char * p2 = buf + offset;
+            while(*p2 != 0) {
+                p2 = net_dns_source_nameserver_req_print_name(ws, p2, buf);
+                if(*p2 != 0) {
+                    if (ws) stream_printf(ws, ".");
+                }
             }
+
+            return p;
+        }
+        else {
+            if (ws) stream_printf(ws, "%*.*s", nchars, nchars, p);
+            p += nchars;
+        }
+
+        if(*p != 0) {
+            if (ws) stream_printf(ws, ".");
         }
     }
-    else {
-        stream_printf(ws, "%*.*s", nchars, nchars, p);
-        p += nchars;
-    }
- 
+    
+    p++;
     return p;
 }
 
@@ -277,15 +360,9 @@ static void net_dns_source_nameserver_req_print(write_stream_t ws, char const * 
     stream_printf(ws, ", arcount=%u", arcount);
  
     unsigned int i;
-     for(i = 0; i < qdcount; i++) {
-        stream_printf(ws, "\n    qd[%u]: ", i);
-        while(*p!=0) {
-            p = net_dns_source_nameserver_req_print_name(ws, p, buf);
-            if(*p != 0) {
-                stream_printf(ws, ".");
-            }
-        }
-        p++;
+    for(i = 0; i < qdcount; i++) {
+        stream_printf(ws, "\n    question[%u]: ", i);
+        p = net_dns_source_nameserver_req_print_name(ws, p, buf);
 
         uint16_t type;
         CPE_COPY_NTOH16(&type, p); p+=2;
@@ -297,7 +374,7 @@ static void net_dns_source_nameserver_req_print(write_stream_t ws, char const * 
     }
  
     for(i = 0; i < ancount; i++) {
-        stream_printf(ws, "\n    an[%u]: ", i);
+        stream_printf(ws, "\n    answer[%u]: ", i);
         p = net_dns_source_nameserver_req_print_name(ws, p, buf);
 
         uint16_t type;
