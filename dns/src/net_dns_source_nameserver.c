@@ -182,12 +182,12 @@ int net_dns_source_nameserver_ctx_start(net_dns_source_t source, net_dns_task_ct
     }
  
     //Type=1(A):host address
-    *(p++)=0;
-    *(p++)=1;
+    uint16_t qtype = 1;
+    CPE_COPY_HTON16(p, &qtype); p+=2;
     
     //Class=1(IN):internet
-    *(p++)=0;
-    *(p++)=1;
+    uint16_t qclass = 1;
+    CPE_COPY_HTON16(p, &qclass); p+=2;
 
     if (net_dns_manage_dgram_send(manage, nameserver->m_address, buf, p - buf) < 0) {
         CPE_ERROR(manage->m_em, "dns: nameserver: send data fail");
@@ -228,7 +228,7 @@ net_dns_source_nameserver_req_print_name(write_stream_t ws, char const * p, char
         stream_printf(ws, "%*.*bs", nchars, nchars, buf + offset);
     }
     else {
-        stream_printf(ws, "%*.*s",nchars,nchars,p);
+        stream_printf(ws, "%*.*s", nchars, nchars, p);
         p += nchars;
     }
  
@@ -291,7 +291,7 @@ static void net_dns_source_nameserver_req_print(write_stream_t ws, char const * 
     }
  
     for(i = 0; i < ancount; i++) {
-        stream_printf(ws, "\n    an[%u]: ",i);
+        stream_printf(ws, "\n    an[%u]: ", i);
         p = net_dns_source_nameserver_req_print_name(ws, p, buf);
 
         uint16_t type;
@@ -302,8 +302,8 @@ static void net_dns_source_nameserver_req_print(write_stream_t ws, char const * 
         CPE_COPY_NTOH16(&class, p); p+=2;
         stream_printf(ws, ", class=%u", class);
 
-        uint16_t ttl;
-        CPE_COPY_NTOH16(&ttl, p); p+=2;
+        uint32_t ttl;
+        CPE_COPY_NTOH32(&ttl, p); p+=4;
         stream_printf(ws, ", ttl=%u",ttl);
 
         uint16_t rdlength;
@@ -314,7 +314,7 @@ static void net_dns_source_nameserver_req_print(write_stream_t ws, char const * 
         uint16_t j;
         for(j = 0; j < rdlength; j++) {
             if (j > 0) stream_printf(ws, "-");
-            stream_printf(ws, "%2.2x(%u)",*p,*p);
+            stream_printf(ws, "%2.2x(%u)", *(uint8_t const *)p, *(uint8_t const *)p);
             p++;
         }
     }
