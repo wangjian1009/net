@@ -193,8 +193,11 @@ void net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state)
             net_endpoint_state_str(endpoint->m_state),
             net_endpoint_state_str(state));
     }
-    
+
+    net_endpoint_state_t old_state = endpoint->m_state;
     endpoint->m_state = state;
+
+    net_endpoint_notify_state_changed(endpoint, old_state);
 }
 
 net_address_t net_endpoint_address(net_endpoint_t endpoint) {
@@ -457,3 +460,20 @@ static void net_endpoint_dns_query_callback(void * ctx, net_address_t address) {
     }
 }
 
+void net_endpoint_notify_state_changed(net_endpoint_t endpoint, net_endpoint_state_t old_state) {
+    net_endpoint_monitor_t monitor = TAILQ_FIRST(&endpoint->m_monitors);
+    while(monitor) {
+        net_endpoint_monitor_t next_monitor = TAILQ_NEXT(monitor, m_next);
+        assert(!monitor->m_is_free);
+        assert(!monitor->m_is_processing);
+
+        if (monitor->m_on_state_change) {
+            monitor->m_is_processing = 1;
+            monitor->m_on_state_change(monitor->m_ctx, endpoint, old_state);
+            monitor->m_is_processing = 0;
+            if (monitor->m_is_free) net_endpoint_monitor_free(monitor);
+        }
+        
+        monitor = next_monitor;
+    }
+}
