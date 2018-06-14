@@ -64,13 +64,6 @@ int net_ev_endpoint_connect(net_endpoint_t base_endpoint) {
             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
         return -1;
     }
-
-    if (net_address_type(remote_addr) == net_address_domain) {
-        CPE_ERROR(
-            em, "ev: %s: connect not support connect to domain address!",
-            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
-        return -1;
-    }
         
     net_address_t local_address = net_endpoint_address(base_endpoint);
     if (local_address) {
@@ -98,7 +91,12 @@ int net_ev_endpoint_connect(net_endpoint_t base_endpoint) {
 
         struct sockaddr_storage addr;
         socklen_t addr_len = sizeof(addr);
-        net_address_to_sockaddr(local_address, (struct sockaddr *)&addr, &addr_len);
+        if (net_address_to_sockaddr(local_address, (struct sockaddr *)&addr, &addr_len) != 0) {
+            CPE_ERROR(
+                em, "ev: %s: connect not support connect to domain address!",
+                net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+            return -1;
+        }
 
         if(cpe_bind(endpoint->m_fd, (struct sockaddr *)&addr, addr_len) != 0) {
             CPE_ERROR(

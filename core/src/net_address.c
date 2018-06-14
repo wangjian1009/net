@@ -98,10 +98,19 @@ net_address_create_from_sockaddr(net_schedule_t schedule, struct sockaddr * addr
 }
 
 int net_address_to_sockaddr(net_address_t address, struct sockaddr * addr, socklen_t * addr_len) {
+TRY_AGAIN:
     switch(address->m_type) {
-    case net_address_domain:
-        CPE_ERROR(address->m_schedule->m_em, "net_address_to_sockaddr: not support domain!");
-        return -1;
+    case net_address_domain: {
+        struct net_address_domain * domain = (struct net_address_domain *)address;
+        if (domain->m_resolved) {
+            address = domain->m_resolved;
+            goto TRY_AGAIN;
+        }
+        else {
+            CPE_ERROR(address->m_schedule->m_em, "net_address_to_sockaddr: not support not resolved domain!");
+            return -1;
+        }
+    }
     case net_address_ipv4: {
         if (*addr_len < sizeof(struct sockaddr_in)) {
             CPE_ERROR(
@@ -315,6 +324,11 @@ void net_address_print(write_stream_t ws, net_address_t address) {
     case net_address_domain: {
         struct net_address_domain * address_domain = (struct net_address_domain *)address;
         stream_printf(ws, "%s:%d", address_domain->m_url, address_domain->m_port);
+        if (address_domain->m_resolved) {
+            stream_printf(ws, "(");
+            net_address_print(ws, address_domain->m_resolved);
+            stream_printf(ws, ")");
+        }
         break;
     }
     }
