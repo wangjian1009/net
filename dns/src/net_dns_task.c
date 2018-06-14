@@ -109,6 +109,7 @@ int net_dns_task_start(net_dns_task_t task) {
             net_dns_task_update_state(task, net_dns_task_state_error);
             return -1;
         case net_dns_task_state_runing:
+            net_dns_task_update_state(task, net_dns_task_state_runing);
             return 0;
         case net_dns_task_state_success:
             break;

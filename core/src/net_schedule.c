@@ -6,6 +6,7 @@
 #include "net_driver_i.h"
 #include "net_protocol_i.h"
 #include "net_endpoint_i.h"
+#include "net_endpoint_monitor_i.h"
 #include "net_address_i.h"
 #include "net_address_matcher_i.h"
 #include "net_link_i.h"
@@ -47,6 +48,7 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em, uint32_t common_
     TAILQ_INIT(&schedule->m_free_addresses);
     TAILQ_INIT(&schedule->m_free_links);
     TAILQ_INIT(&schedule->m_free_dns_querys);
+    TAILQ_INIT(&schedule->m_free_endpoint_monitors);
 
     schedule->m_endpoint_buf = ringbuffer_new(common_buff_capacity);
     if (schedule->m_endpoint_buf == NULL) {
@@ -143,6 +145,10 @@ void net_schedule_free(net_schedule_t schedule) {
 
     while(!TAILQ_EMPTY(&schedule->m_free_dns_querys)) {
         net_dns_query_real_free(TAILQ_FIRST(&schedule->m_free_dns_querys));
+    }
+    
+    while(!TAILQ_EMPTY(&schedule->m_free_endpoint_monitors)) {
+        net_endpoint_monitor_real_free(TAILQ_FIRST(&schedule->m_free_endpoint_monitors));
     }
     
     assert(cpe_hash_table_count(&schedule->m_endpoints) == 0);

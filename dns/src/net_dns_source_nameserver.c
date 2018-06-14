@@ -8,6 +8,7 @@
 #include "net_timer.h"
 #include "net_dns_dgram_receiver.h"
 #include "net_dns_task.h"
+#include "net_dns_task_step.h"
 #include "net_dns_task_ctx.h"
 #include "net_dns_entry.h"
 #include "net_dns_entry_item.h"
@@ -133,7 +134,7 @@ int net_dns_source_nameserver_ctx_init(net_dns_source_t source, net_dns_task_ctx
     net_dns_task_ctx_set_retry_count(task_ctx, nameserver->m_retry_count);
     net_dns_task_ctx_set_timeout(task_ctx, nameserver->m_timeout_ms);
 
-    nameserver_ctx->m_transaction = 0;
+    nameserver_ctx->m_transaction = ++nameserver->m_max_transaction;
     
     return 0;
 }
@@ -159,7 +160,6 @@ int net_dns_source_nameserver_ctx_start(net_dns_source_t source, net_dns_task_ct
     char *p = buf;
 
     /* head */
-    nameserver_ctx->m_transaction = ++nameserver->m_max_transaction;
     CPE_COPY_HTON16(p, &nameserver_ctx->m_transaction); p+=2;
 
     uint16_t flag = 0x0100;
@@ -242,7 +242,7 @@ static void net_dns_source_nameserver_dgram_receiver(void * ctx, void * data, si
     CPE_COPY_NTOH16(&ident, p); p+=2;
 
     uint16_t flags;
-    CPE_COPY_NTOH16(&ident, p); p+=2;
+    CPE_COPY_NTOH16(&flags, p); p+=2;
 
     uint16_t qdcount;
     CPE_COPY_NTOH16(&qdcount, p); p+=2;
@@ -326,6 +326,23 @@ static void net_dns_source_nameserver_dgram_receiver(void * ctx, void * data, si
         if (item == NULL) {
             net_address_free(address);
             continue;
+        }
+
+        net_dns_task_step_t curent_step = net_dns_task_step_current(task);
+        if (curent_step) {
+            struct net_dns_task_ctx_it task_ctx_it;
+            net_dns_task_ctx_t task_ctx;
+            net_dns_task_step_ctxes(curent_step, &task_ctx_it);
+
+            while((task_ctx = net_dns_task_ctx_it_next(&task_ctx_it))) {
+                if (net_dns_task_ctx_source(task_ctx) != source) continue;
+
+                struct net_dns_source_nameserver_ctx * nameserver_ctx = net_dns_task_ctx_data(task_ctx);
+                if (nameserver_ctx->m_transaction == ident) {
+                    net_dns_task_ctx_set_success(task_ctx);
+                    break;;
+                }
+            }
         }
     }
 }

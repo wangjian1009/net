@@ -20,6 +20,7 @@ struct net_endpoint {
     ringbuffer_block_t m_rb;
     ringbuffer_block_t m_wb;
     ringbuffer_block_t m_fb;
+    net_endpoint_monitor_list_t m_monitors;
 };
 
 void net_endpoint_real_free(net_endpoint_t endpoint);

@@ -4,6 +4,7 @@
 #include "cpe/utils/stream_buffer.h"
 #include "cpe/utils/string_utils.h"
 #include "net_endpoint_i.h"
+#include "net_endpoint_monitor_i.h"
 #include "net_protocol_i.h"
 #include "net_driver_i.h"
 #include "net_schedule_i.h"
@@ -45,7 +46,8 @@ net_endpoint_create(net_driver_t driver, net_endpoint_type_t type, net_protocol_
     endpoint->m_rb = NULL;
     endpoint->m_wb = NULL;
     endpoint->m_fb = NULL;
-    
+    TAILQ_INIT(&endpoint->m_monitors);
+
     if (protocol->m_endpoint_init(endpoint) != 0) {
         TAILQ_INSERT_TAIL(&driver->m_free_endpoints, endpoint, m_next_for_driver);
         return NULL;
@@ -81,6 +83,13 @@ void net_endpoint_free(net_endpoint_t endpoint) {
 
     if (schedule->m_debug >= 2) {
         CPE_INFO(schedule->m_em, "core: %s free!", net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
+    }
+
+    while(!TAILQ_EMPTY(&endpoint->m_monitors)) {
+        net_endpoint_monitor_t monitor = TAILQ_FIRST(&endpoint->m_monitors);
+        assert(!monitor->m_is_processing);
+        assert(!monitor->m_is_free);
+        net_endpoint_monitor_free(monitor);
     }
 
     if (endpoint->m_dns_query) {

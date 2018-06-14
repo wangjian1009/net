@@ -243,8 +243,6 @@ static void net_dns_manage_do_delay_process(net_timer_t timer, void * input_ctx)
                 net_dns_entry_select_item(query_ex->m_entry, manage->m_default_item_select_policy);
             if (item == NULL) {
                 CPE_ERROR(manage->m_em, "dns: query %s: no item!", query_ex->m_entry->m_hostname);
-                net_dns_entry_free(query_ex->m_entry);
-                query_ex->m_entry = NULL;
             }
             else {
                 address = item->m_address;

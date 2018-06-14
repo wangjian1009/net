@@ -9,6 +9,8 @@ void net_dns_task_step_free(net_dns_task_step_t step);
 
 net_dns_task_state_t net_dns_task_step_state(net_dns_task_step_t step);
 
+void net_dns_task_step_ctxes(net_dns_task_step_t step, net_dns_task_ctx_it_t it);
+
 NET_END_DECL
 
 #endif
