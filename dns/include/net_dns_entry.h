@@ -5,14 +5,16 @@
 NET_BEGIN_DECL
 
 net_dns_entry_t
-net_dns_entry_create(
-    net_dns_manage_t manage, const char * hostname,
-    net_address_t address, uint8_t is_own,
-    uint32_t expire_time_ms);
+net_dns_entry_create(net_dns_manage_t manage, const char * hostname);
 
-void net_dns_entry_free(net_dns_manage_t manage, net_dns_entry_t entry);
+void net_dns_entry_free(net_dns_entry_t entry);
 
 net_dns_entry_t net_dns_entry_find(net_dns_manage_t manage, const char * hostname);
+
+net_dns_task_t net_dns_entry_task(net_dns_entry_t entry);
+const char * net_dns_entry_hostname(net_dns_entry_t entry);
+
+void net_dns_entry_clear_item_by_source(net_dns_entry_t entry, net_dns_source_t source);
 
 NET_END_DECL
 

@@ -14,6 +14,8 @@ const char * net_dns_task_hostname(net_dns_task_t task);
 net_dns_task_state_t net_dns_task_state(net_dns_task_t task);
 int net_dns_task_start(net_dns_task_t task);
 
+net_dns_task_step_t net_dns_task_step_current(net_dns_task_t task);
+
 NET_END_DECL
 
 #endif

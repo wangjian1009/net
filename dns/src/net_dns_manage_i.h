@@ -10,9 +10,9 @@
 NET_BEGIN_DECL
 
 typedef struct net_dns_query_ex * net_dns_query_ex_t;
-typedef struct net_dns_task_ctx * net_dns_task_ctx_t;
 
 typedef TAILQ_HEAD(net_dns_entry_list, net_dns_entry) net_dns_entry_list_t;
+typedef TAILQ_HEAD(net_dns_entry_item_list, net_dns_entry_item) net_dns_entry_item_list_t;
 typedef TAILQ_HEAD(net_dns_source_list, net_dns_source) net_dns_source_list_t;
 typedef TAILQ_HEAD(net_dns_task_list, net_dns_task) net_dns_task_list_t;
 typedef TAILQ_HEAD(net_dns_task_step_list, net_dns_task_step) net_dns_task_step_list_t;
@@ -50,6 +50,7 @@ struct net_dns_manage {
     net_dns_task_list_t m_free_tasks;
     net_dns_task_step_list_t m_free_task_steps;
     net_dns_task_ctx_list_t m_free_task_ctxs;
+    net_dns_entry_item_list_t m_free_entry_items;
 };
 
 mem_buffer_t net_dns_manage_tmp_buffer(net_dns_manage_t manage);

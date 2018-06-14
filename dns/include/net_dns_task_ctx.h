@@ -22,7 +22,7 @@ void net_dns_task_ctx_set_retry_count(net_dns_task_ctx_t ctx, uint16_t count);
 uint16_t net_dns_task_ctx_timeout(net_dns_task_ctx_t ctx);
 int net_dns_task_ctx_set_timeout(net_dns_task_ctx_t ctx, uint16_t timeout_ms);
 
-void net_dns_task_ctx_set_result(net_dns_task_ctx_t ctx, net_address_t address, uint8_t is_own);
+void net_dns_task_ctx_set_success(net_dns_task_ctx_t ctx);
 void net_dns_task_ctx_set_error(net_dns_task_ctx_t ctx);
 
 NET_END_DECL

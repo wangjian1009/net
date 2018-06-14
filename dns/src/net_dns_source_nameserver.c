@@ -2,12 +2,15 @@
 #include "cpe/utils/stream_buffer.h"
 #include "cpe/utils/stream.h"
 #include "cpe/utils/buffer.h"
+#include "cpe/utils/time_utils.h"
 #include "net_address.h"
 #include "net_endpoint.h"
 #include "net_timer.h"
 #include "net_dns_dgram_receiver.h"
 #include "net_dns_task.h"
 #include "net_dns_task_ctx.h"
+#include "net_dns_entry.h"
+#include "net_dns_entry_item.h"
 #include "net_dns_source_nameserver_i.h"
 
 static int net_dns_source_nameserver_init(net_dns_source_t source);
@@ -32,7 +35,7 @@ net_dns_source_nameserver_create(net_dns_manage_t manage, net_address_t addr, ui
             net_dns_source_nameserver_init,
             net_dns_source_nameserver_fini,
             net_dns_source_nameserver_dump,
-            0,
+            sizeof(struct net_dns_source_nameserver_ctx),
             net_dns_source_nameserver_ctx_init,
             net_dns_source_nameserver_ctx_fini,
             net_dns_source_nameserver_ctx_start,
@@ -87,6 +90,7 @@ int net_dns_source_nameserver_init(net_dns_source_t source) {
     nameserver->m_endpoint = NULL;
     nameserver->m_retry_count = 0;
     nameserver->m_timeout_ms = 2000;
+    nameserver->m_max_transaction = 0;
     
     return 0;
 }
@@ -123,9 +127,14 @@ void net_dns_source_nameserver_dump(write_stream_t ws, net_dns_source_t source) 
 }
 
 int net_dns_source_nameserver_ctx_init(net_dns_source_t source, net_dns_task_ctx_t task_ctx) {
+    struct net_dns_source_nameserver_ctx * nameserver_ctx = net_dns_task_ctx_data(task_ctx);
     net_dns_source_nameserver_t nameserver = net_dns_source_data(source);
+    
     net_dns_task_ctx_set_retry_count(task_ctx, nameserver->m_retry_count);
     net_dns_task_ctx_set_timeout(task_ctx, nameserver->m_timeout_ms);
+
+    nameserver_ctx->m_transaction = 0;
+    
     return 0;
 }
 
@@ -136,6 +145,7 @@ int net_dns_source_nameserver_ctx_start(net_dns_source_t source, net_dns_task_ct
     net_dns_task_t task = net_dns_task_ctx_task(task_ctx);
     net_dns_manage_t manage = net_dns_task_ctx_manage(task_ctx);
     net_dns_source_nameserver_t nameserver = net_dns_source_data(source);
+    struct net_dns_source_nameserver_ctx * nameserver_ctx = net_dns_task_ctx_data(task_ctx);
 
     mem_buffer_t buffer = &manage->m_data_buffer;
     mem_buffer_clear_data(buffer);
@@ -149,8 +159,8 @@ int net_dns_source_nameserver_ctx_start(net_dns_source_t source, net_dns_task_ct
     char *p = buf;
 
     /* head */
-    uint16_t task_id = net_dns_task_id(task);
-    CPE_COPY_HTON16(p, &task_id); p+=2;
+    nameserver_ctx->m_transaction = ++nameserver->m_max_transaction;
+    CPE_COPY_HTON16(p, &nameserver_ctx->m_transaction); p+=2;
 
     uint16_t flag = 0x0100;
     CPE_COPY_HTON16(p, &flag); p+=2;
@@ -252,6 +262,9 @@ static void net_dns_source_nameserver_dgram_receiver(void * ctx, void * data, si
         p += 2 + 2; /*type + class*/
     }
 
+    uint8_t success_count = 0;
+
+    uint32_t expire_base_ms = cur_time_ms();
     mem_buffer_t buffer = &manage->m_data_buffer;
     for(i = 0; i < ancount; i++) {
         struct write_stream_buffer ws = CPE_WRITE_STREAM_BUFFER_INITIALIZER(buffer);
@@ -260,7 +273,7 @@ static void net_dns_source_nameserver_dgram_receiver(void * ctx, void * data, si
         stream_putc((write_stream_t)&ws, 0);
 
         const char * hostname = mem_buffer_make_continuous(buffer, 0);
-
+        
         p += 2 + 2; /*type + class*/
 
         uint32_t ttl;
@@ -291,8 +304,28 @@ static void net_dns_source_nameserver_dgram_receiver(void * ctx, void * data, si
 
         if (address == NULL) continue;
 
-        if (manage->m_debug) {
-            CPE_INFO(manage->m_em, "dns: resolved %s ==> %s", hostname, net_address_dump(net_dns_manage_tmp_buffer(manage), address));
+        net_dns_entry_t entry = net_dns_entry_find(manage, hostname);
+        if (entry == NULL) {
+            if (manage->m_debug) {
+                CPE_INFO(manage->m_em, "dns: %s no entry!", hostname);
+            }
+            net_address_free(address);
+            continue;
+        }
+
+        net_dns_task_t task = net_dns_entry_task(entry);
+        if (task == NULL) {
+            if (manage->m_debug) {
+                CPE_INFO(manage->m_em, "dns: %s no task!", hostname);
+            }
+            net_address_free(address);
+            continue;
+        }
+
+        net_dns_entry_item_t item = net_dns_entry_item_create(entry, source, address, 1, expire_base_ms + ttl);
+        if (item == NULL) {
+            net_address_free(address);
+            continue;
         }
     }
 }

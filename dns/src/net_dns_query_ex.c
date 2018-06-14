@@ -14,12 +14,12 @@ int net_dns_query_ex_start(void * ctx, net_dns_query_t query, const char * hostn
 
     net_dns_entry_t entry = net_dns_entry_find(manage, hostname);
     if (entry == NULL) {
-        entry = net_dns_entry_create(manage, hostname, NULL, 0, 0);
+        entry = net_dns_entry_create(manage, hostname);
         if (entry == NULL) return -1;
         is_entry_new = 1;
     }
 
-    if (entry->m_address == NULL) {
+    if (TAILQ_EMPTY(&entry->m_items)) {
         if (entry->m_task == NULL) {
             if (manage->m_builder_default == NULL) {
                 CPE_ERROR(manage->m_em, "dns: query %s: no task builder!", hostname);
@@ -58,7 +58,7 @@ int net_dns_query_ex_start(void * ctx, net_dns_query_t query, const char * hostn
 
 START_ERROR:
     if (is_entry_new) {
-        net_dns_entry_free(manage, entry);
+        net_dns_entry_free(entry);
     }
     else if (is_task_new) {
         net_dns_task_free(entry->m_task);

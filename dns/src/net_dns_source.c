@@ -2,6 +2,7 @@
 #include "cpe/utils/string_utils.h"
 #include "net_dns_source_i.h"
 #include "net_dns_task_ctx_i.h"
+#include "net_dns_entry_item_i.h"
 
 net_dns_source_t
 net_dns_source_create(
@@ -40,6 +41,7 @@ net_dns_source_create(
     source->m_task_ctx_cancel = task_ctx_cancel;
 
     TAILQ_INIT(&source->m_ctxs);
+    TAILQ_INIT(&source->m_items);
 
     if (source->m_init(source) != 0) {
         mem_free(manage->m_alloc, source);
@@ -58,9 +60,15 @@ void net_dns_source_free(net_dns_source_t source) {
     net_dns_manage_t manage = source->m_manage;
 
     while(!TAILQ_EMPTY(&source->m_ctxs)) {
-        net_dns_task_ctx_free(TAILQ_FIRST(&source->m_ctxs));
+        net_dns_task_ctx_t ctx = TAILQ_FIRST(&source->m_ctxs);
+        net_dns_task_ctx_free(ctx);
     }
 
+    while(!TAILQ_EMPTY(&source->m_items)) {
+        net_dns_entry_item_t item = TAILQ_FIRST(&source->m_items);
+        net_dns_entry_item_free(item);
+    }
+    
     source->m_fini(source);
     
     TAILQ_REMOVE(&manage->m_sources, source, m_next);

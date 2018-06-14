@@ -8,6 +8,7 @@
 #include "net_dns_query_ex_i.h"
 #include "net_dns_source_i.h"
 #include "net_dns_entry_i.h"
+#include "net_dns_entry_item_i.h"
 #include "net_dns_task_i.h"
 #include "net_dns_task_step_i.h"
 #include "net_dns_task_ctx_i.h"
@@ -44,6 +45,7 @@ net_dns_manage_t net_dns_manage_create(
     TAILQ_INIT(&manage->m_free_tasks);
     TAILQ_INIT(&manage->m_free_task_steps);
     TAILQ_INIT(&manage->m_free_task_ctxs);
+    TAILQ_INIT(&manage->m_free_entry_items);
     TAILQ_INIT(&manage->m_builders);
 
     if (cpe_hash_table_init(
@@ -149,7 +151,7 @@ void net_dns_manage_free(net_dns_manage_t manage) {
     cpe_hash_table_fini(&manage->m_dgram_receivers);
 
     while(!TAILQ_EMPTY(&manage->m_free_entries)) {
-        net_dns_entry_real_free(manage, TAILQ_FIRST(&manage->m_free_entries));
+        net_dns_entry_real_free(TAILQ_FIRST(&manage->m_free_entries));
     }
 
     while(!TAILQ_EMPTY(&manage->m_free_tasks)) {
@@ -164,6 +166,10 @@ void net_dns_manage_free(net_dns_manage_t manage) {
         net_dns_task_ctx_real_free(TAILQ_FIRST(&manage->m_free_task_ctxs));
     }
 
+    while(!TAILQ_EMPTY(&manage->m_free_entry_items)) {
+        net_dns_entry_item_real_free(TAILQ_FIRST(&manage->m_free_entry_items));
+    }
+    
     mem_buffer_clear(&manage->m_data_buffer);
     
     mem_free(manage->m_alloc, manage);

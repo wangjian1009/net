@@ -21,6 +21,7 @@ struct net_dns_source {
     net_dns_task_ctx_cancel_fun_t m_task_ctx_cancel;
 
     net_dns_task_ctx_list_t m_ctxs;
+    net_dns_entry_item_list_t m_items;
 };
 
 NET_END_DECL
