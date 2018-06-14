@@ -17,7 +17,7 @@ struct net_dns_task {
 
 void net_dns_task_real_free(net_dns_task_t task);
 
-void net_dns_task_update_state(net_dns_task_t task);
+void net_dns_task_update_state(net_dns_task_t task, net_dns_task_state_t new_state);
 net_dns_task_state_t net_dns_task_calc_state(net_dns_task_t task);
 
 NET_END_DECL

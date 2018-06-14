@@ -36,6 +36,8 @@ struct net_dns_manage {
     struct cpe_hash_table m_entries;
     net_dns_entry_list_t m_free_entries;
 
+    net_timer_t m_delay_process;
+    
     uint32_t m_task_ctx_capacity;
     net_dns_task_list_t m_runing_tasks;
     net_dns_task_list_t m_complete_tasks;
@@ -53,6 +55,7 @@ struct net_dns_manage {
 };
 
 mem_buffer_t net_dns_manage_tmp_buffer(net_dns_manage_t manage);
+int net_dns_manage_active_delay_process(net_dns_manage_t manage);
 
 NET_END_DECL
 

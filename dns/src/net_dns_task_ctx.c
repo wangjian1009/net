@@ -5,6 +5,8 @@
 
 static void net_dns_task_ctx_do_timeout(net_timer_t timer, void * input_ctx);
 static int net_dns_task_ctx_update_timeout(net_dns_task_ctx_t ctx);
+static void net_dns_task_ctx_set_state_i(
+    net_dns_manage_t manage, net_dns_task_t task, net_dns_task_ctx_t ctx, net_dns_task_state_t to_state);
 
 net_dns_task_ctx_t
 net_dns_task_ctx_create(net_dns_task_step_t step, net_dns_source_t source) {
@@ -38,7 +40,7 @@ net_dns_task_ctx_create(net_dns_task_step_t step, net_dns_source_t source) {
     
     TAILQ_INSERT_TAIL(&step->m_ctxs, ctx, m_next_for_step);
     TAILQ_INSERT_TAIL(&source->m_ctxs, ctx, m_next_for_source);
-    
+
     return ctx;
 }
 
@@ -104,8 +106,7 @@ void net_dns_task_ctx_start(net_dns_task_ctx_t ctx) {
         return;
     }
 
-    ctx->m_state = net_dns_task_state_runing;
-    net_dns_task_update_state(task);
+    net_dns_task_ctx_set_state_i(manage, task, ctx, net_dns_task_state_runing);
 
     if (source->m_task_ctx_start(source, ctx) != 0) {
         CPE_ERROR(
@@ -231,6 +232,50 @@ int net_dns_task_ctx_set_timeout(net_dns_task_ctx_t ctx, uint16_t timeout_ms) {
     return ctx->m_state == net_dns_task_state_runing ? net_dns_task_ctx_update_timeout(ctx) : 0;
 }
 
+static void net_dns_task_ctx_set_state_i(
+    net_dns_manage_t manage, net_dns_task_t task, net_dns_task_ctx_t ctx, net_dns_task_state_t to_state)
+{
+    if (manage->m_debug) {
+        CPE_ERROR(
+            manage->m_em, "dns: query %s --> %s: state %s ==> %s",
+            task->m_entry->m_hostname,
+            net_dns_source_dump(net_dns_manage_tmp_buffer(manage), ctx->m_source),
+            net_dns_task_state_str(ctx->m_state),
+            net_dns_task_state_str(to_state));
+    }
+
+    ctx->m_state = to_state;
+
+    if (task->m_step_current == ctx->m_step) {
+        net_dns_task_state_t step_state;
+    CHECK_STEP_STATE:
+        step_state = net_dns_task_step_state(task->m_step_current);
+        switch(step_state) {
+        case net_dns_task_state_init:
+            CPE_ERROR(
+                task->m_manage->m_em, "dns: query %s: step start but still init",
+                task->m_entry->m_hostname);
+            net_dns_task_update_state(task, net_dns_task_state_error);
+            return;
+        case net_dns_task_state_runing:
+            break;
+        case net_dns_task_state_success:
+            net_dns_task_update_state(task, net_dns_task_calc_state(task));
+            break;
+        case net_dns_task_state_error:
+            if (TAILQ_NEXT(task->m_step_current, m_next)) {
+                task->m_step_current = TAILQ_NEXT(task->m_step_current, m_next);
+                net_dns_task_step_start(task->m_step_current);
+                goto CHECK_STEP_STATE;
+            }
+            else {
+                net_dns_task_update_state(task, net_dns_task_calc_state(task));
+            }
+            break;
+        }
+    }
+}
+
 static void net_dns_task_ctx_set_complete_state(net_dns_task_ctx_t ctx, net_dns_task_state_t to_state) {
     net_dns_task_t task = ctx->m_step->m_task;
     net_dns_manage_t manage = task->m_manage;
@@ -241,9 +286,8 @@ static void net_dns_task_ctx_set_complete_state(net_dns_task_ctx_t ctx, net_dns_
         net_timer_free(ctx->m_timeout_timer);
         ctx->m_timeout_timer = NULL;
     }
-    
-    ctx->m_state = net_dns_task_state_success;
-    net_dns_task_update_state(task);
+
+    net_dns_task_ctx_set_state_i(manage, task, ctx, to_state);
 }
 
 void net_dns_task_ctx_set_success(net_dns_task_ctx_t ctx) {

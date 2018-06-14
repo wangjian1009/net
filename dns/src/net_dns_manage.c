@@ -3,6 +3,7 @@
 #include "net_schedule.h"
 #include "net_address.h"
 #include "net_dgram.h"
+#include "net_timer.h"
 #include "net_dns_manage_i.h"
 #include "net_dns_dgram_receiver_i.h"
 #include "net_dns_query_ex_i.h"
@@ -15,7 +16,8 @@
 #include "net_dns_task_builder_i.h"
 
 static void net_dns_manage_fini(void * ctx);
-static void net_dns_dgram_process(
+static void net_dns_manage_do_delay_process(net_timer_t timer, void * input_ctx);
+static void net_dns_manage_dgram_process(
     net_dgram_t dgram, void * ctx, void * data, size_t data_size, net_address_t source);
 
 net_dns_manage_t net_dns_manage_create(
@@ -38,6 +40,8 @@ net_dns_manage_t net_dns_manage_create(
     manage->m_task_ctx_capacity = 0;
     manage->m_builder_internal = NULL;
     manage->m_builder_default = NULL;
+    manage->m_delay_process = NULL;
+
     TAILQ_INIT(&manage->m_sources);
     TAILQ_INIT(&manage->m_to_notify_querys);
     TAILQ_INIT(&manage->m_runing_tasks);
@@ -83,7 +87,7 @@ net_dns_manage_t net_dns_manage_create(
     }
     manage->m_builder_default = manage->m_builder_internal;
     
-    manage->m_dgram = net_dgram_create(driver, NULL, net_dns_dgram_process, manage);
+    manage->m_dgram = net_dgram_create(driver, NULL, net_dns_manage_dgram_process, manage);
     if (manage->m_dgram == NULL) {
         CPE_ERROR(em, "dns: create dgram fail!");
         net_dns_task_builder_free(manage->m_builder_internal);
@@ -102,7 +106,7 @@ net_dns_manage_t net_dns_manage_create(
         sizeof(struct net_dns_query_ex),
         net_dns_query_ex_start,
         net_dns_query_ex_cancel);
-    
+
     return manage;
 }
 
@@ -132,7 +136,11 @@ void net_dns_manage_free(net_dns_manage_t manage) {
     assert(manage->m_builder_default == NULL);
     assert(manage->m_builder_internal == NULL);
 
-
+    if (manage->m_delay_process) {
+        net_timer_free(manage->m_delay_process);
+        manage->m_delay_process = NULL;
+    }
+    
     if (manage->m_dgram) {
         net_dgram_free(manage->m_dgram);
         manage->m_dgram = NULL;
@@ -186,11 +194,38 @@ mem_buffer_t net_dns_manage_tmp_buffer(net_dns_manage_t manage) {
     return net_schedule_tmp_buffer(manage->m_schedule);
 }
 
+int net_dns_manage_active_delay_process(net_dns_manage_t manage) {
+    if (manage->m_delay_process == NULL) {
+        manage->m_delay_process = net_timer_create(manage->m_driver, net_dns_manage_do_delay_process, manage);
+        if (manage->m_delay_process == NULL) {
+            CPE_ERROR(manage->m_em, "dns: create delay process timer fail!");
+            return -1;
+        }
+    }
+
+    if (!net_timer_is_active(manage->m_delay_process)) {
+        net_timer_active(manage->m_delay_process, 0);
+    }
+
+    return 0;
+}
+
 int net_dns_manage_dgram_send(net_dns_manage_t manage, net_address_t target, void const * data, size_t data_size) {
     return net_dgram_send(manage->m_dgram, target, data, data_size);
 }
 
-static void net_dns_dgram_process(
+static void net_dns_manage_do_delay_process(net_timer_t timer, void * input_ctx) {
+    net_dns_manage_t manage = input_ctx;
+
+    manage->m_delay_process = NULL;
+
+    CPE_INFO(manage->m_em, "dns: delay process");
+    /* while(!TAILQ_EMPTY(&manage->m_complete_tasks)) { */
+    /*     //TODO: */
+    /* } */
+}
+
+static void net_dns_manage_dgram_process(
     net_dgram_t dgram, void * ctx, void * data, size_t data_size, net_address_t source)
 {
     net_dns_manage_t manage = ctx;
