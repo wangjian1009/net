@@ -22,22 +22,15 @@ net_dns_task_t net_dns_task_create(net_dns_manage_t manage, net_dns_entry_t entr
     }
 
     task->m_manage = manage;
-    task->m_id = manage->m_max_task_id + 1;
     task->m_entry = entry;
     task->m_step_current = NULL;
     TAILQ_INIT(&task->m_steps);
     TAILQ_INIT(&task->m_querys);
     
-    cpe_hash_entry_init(&task->m_hh);
-    if (cpe_hash_table_insert_unique(&manage->m_tasks, task) != 0) {
-        CPE_ERROR(manage->m_em, "dns: task duplicate!");
-        TAILQ_INSERT_TAIL(&manage->m_free_tasks, task, m_next);
-        return NULL;
-    }
-
     entry->m_task = task;
-    manage->m_max_task_id++;
 
+    TAILQ_INSERT_TAIL(&manage->m_runing_tasks, task, m_next);
+    
     if (manage->m_debug >= 2) {
         CPE_INFO(manage->m_em, "dns: task for %s start!", entry->m_hostname);
     }
@@ -63,7 +56,12 @@ void net_dns_task_free(net_dns_task_t task) {
         net_dns_query_ex_set_task(TAILQ_FIRST(&task->m_querys), NULL);
     }
 
-    cpe_hash_table_remove_by_ins(&manage->m_tasks, task);
+    if (net_dns_task_is_complete(task)) {
+        TAILQ_REMOVE(&manage->m_complete_tasks, task, m_next);
+    }
+    else {
+        TAILQ_REMOVE(&manage->m_runing_tasks, task, m_next);
+    }
 
     TAILQ_INSERT_TAIL(&manage->m_free_tasks, task, m_next);
 }
@@ -75,48 +73,20 @@ void net_dns_task_real_free(net_dns_task_t task) {
     mem_free(manage->m_alloc, task);
 }
 
-void net_dns_task_free_all(net_dns_manage_t manage) {
-    struct cpe_hash_it task_it;
-    net_dns_task_t task;
-
-    cpe_hash_it_init(&task_it, &manage->m_tasks);
-
-    task = cpe_hash_it_next(&task_it);
-    while(task) {
-        net_dns_task_t next = cpe_hash_it_next(&task_it);
-        net_dns_task_free(task);
-        task = next;
-    }
-}
-
-net_dns_task_t
-net_dns_task_find(net_dns_manage_t manage, uint16_t id) {
-    struct net_dns_task key;
-    key.m_id = id;
-    return cpe_hash_table_find(&manage->m_tasks, &key);
-}
-
-uint16_t net_dns_task_id(net_dns_task_t task) {
-    return task->m_id;
-}
-
 const char * net_dns_task_hostname(net_dns_task_t task) {
     return task->m_entry->m_hostname;
 }
 
 int net_dns_task_start(net_dns_task_t task) {
     if (task->m_step_current != NULL) {
-        CPE_ERROR(
-            task->m_manage->m_em, "dns: %d-->%s already started",
-            task->m_id, task->m_entry->m_hostname);
+        CPE_ERROR(task->m_manage->m_em, "dns: %s already started", task->m_entry->m_hostname);
         return -1;
     }
 
     task->m_step_current = TAILQ_FIRST(&task->m_steps);
     if (task->m_step_current == NULL) {
         CPE_ERROR(
-            task->m_manage->m_em, "dns: %d-->%s no step",
-            task->m_id, task->m_entry->m_hostname);
+            task->m_manage->m_em, "dns: %s no step", task->m_entry->m_hostname);
         return -1;
     }
 
@@ -126,8 +96,8 @@ int net_dns_task_start(net_dns_task_t task) {
         switch(net_dns_task_step_state(task->m_step_current)) {
         case net_dns_task_state_init:
             CPE_ERROR(
-                task->m_manage->m_em, "dns: %d-->%s step start but still init",
-                task->m_id, task->m_entry->m_hostname);
+                task->m_manage->m_em, "dns: %s step start but still init",
+                task->m_entry->m_hostname);
             return -1;
         case net_dns_task_state_runing:
             return 0;
@@ -153,6 +123,36 @@ net_dns_task_step_t net_dns_task_step_current(net_dns_task_t task) {
 }
 
 net_dns_task_state_t net_dns_task_state(net_dns_task_t task) {
+    return task->m_state;
+}
+
+uint8_t net_dns_task_is_complete(net_dns_task_t task) {
+    return (task->m_state == net_dns_task_state_success || task->m_state == net_dns_task_state_error) ? 1 : 0;
+}
+
+void net_dns_task_update_state(net_dns_task_t task) {
+    net_dns_task_state_t new_state = net_dns_task_calc_state(task);
+
+    if (new_state == task->m_state) return;
+
+    uint8_t old_is_complete = net_dns_task_is_complete(task);
+    task->m_state = new_state;
+    uint8_t new_is_complete = net_dns_task_is_complete(task);
+
+    if (old_is_complete == new_is_complete) return;
+    
+    if (new_is_complete) {
+        TAILQ_REMOVE(&task->m_manage->m_runing_tasks, task, m_next);
+        TAILQ_INSERT_TAIL(&task->m_manage->m_complete_tasks, task, m_next);
+        //TODO:
+    }
+    else {
+        TAILQ_REMOVE(&task->m_manage->m_complete_tasks, task, m_next);
+        TAILQ_INSERT_TAIL(&task->m_manage->m_runing_tasks, task, m_next);
+    }
+}
+
+net_dns_task_state_t net_dns_task_calc_state(net_dns_task_t task) {
     if (task->m_step_current) {
         switch(net_dns_task_step_state(task->m_step_current)) {
         case net_dns_task_state_init:
@@ -168,12 +168,3 @@ net_dns_task_state_t net_dns_task_state(net_dns_task_t task) {
         return TAILQ_EMPTY(&task->m_steps) ? net_dns_task_state_error : net_dns_task_state_error;
     }
 }
-
-uint32_t net_dns_task_hash(net_dns_task_t o, void * user_data) {
-    return o->m_id;
-}
-
-int net_dns_task_eq(net_dns_task_t l, net_dns_task_t r, void * user_data) {
-    return l->m_id == r->m_id ? 1 : 0;
-}
-

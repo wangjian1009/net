@@ -35,12 +35,13 @@ net_dns_manage_t net_dns_manage_create(
     manage->m_schedule = schedule;
     manage->m_driver = driver;
     manage->m_mode = net_dns_ipv4_first;
-    manage->m_max_task_id = 0;
     manage->m_task_ctx_capacity = 0;
     manage->m_builder_internal = NULL;
     manage->m_builder_default = NULL;
     TAILQ_INIT(&manage->m_sources);
     TAILQ_INIT(&manage->m_to_notify_querys);
+    TAILQ_INIT(&manage->m_runing_tasks);
+    TAILQ_INIT(&manage->m_complete_tasks);
     TAILQ_INIT(&manage->m_free_entries);
     TAILQ_INIT(&manage->m_free_tasks);
     TAILQ_INIT(&manage->m_free_task_steps);
@@ -73,23 +74,8 @@ net_dns_manage_t net_dns_manage_create(
         return NULL;
     }
 
-    if (cpe_hash_table_init(
-            &manage->m_tasks,
-            alloc,
-            (cpe_hash_fun_t) net_dns_task_hash,
-            (cpe_hash_eq_t) net_dns_task_eq,
-            CPE_HASH_OBJ2ENTRY(net_dns_task, m_hh),
-            -1) != 0)
-    {
-        cpe_hash_table_fini(&manage->m_entries);
-        cpe_hash_table_fini(&manage->m_dgram_receivers);
-        mem_free(alloc, manage);
-        return NULL;
-    }
-
     manage->m_builder_internal = net_dns_task_builder_internal_create(manage);
     if (manage->m_builder_internal == NULL) {
-        cpe_hash_table_fini(&manage->m_tasks);
         cpe_hash_table_fini(&manage->m_entries);
         cpe_hash_table_fini(&manage->m_dgram_receivers);
         mem_free(alloc, manage);
@@ -101,7 +87,6 @@ net_dns_manage_t net_dns_manage_create(
     if (manage->m_dgram == NULL) {
         CPE_ERROR(em, "dns: create dgram fail!");
         net_dns_task_builder_free(manage->m_builder_internal);
-        cpe_hash_table_fini(&manage->m_tasks);
         cpe_hash_table_fini(&manage->m_entries);
         cpe_hash_table_fini(&manage->m_dgram_receivers);
         mem_free(alloc, manage);
@@ -126,9 +111,15 @@ void net_dns_manage_free(net_dns_manage_t manage) {
         net_schedule_set_dns_resolver(manage->m_schedule, NULL, NULL, 0, NULL, NULL);
     }
 
-    net_dns_task_free_all(manage);
+    while(!TAILQ_EMPTY(&manage->m_runing_tasks)) {
+        net_dns_task_free(TAILQ_FIRST(&manage->m_runing_tasks));
+    }
+    
+    while(!TAILQ_EMPTY(&manage->m_complete_tasks)) {
+        net_dns_task_free(TAILQ_FIRST(&manage->m_complete_tasks));
+    }
+    
     net_dns_entry_free_all(manage);
-    cpe_hash_table_fini(&manage->m_tasks);
     cpe_hash_table_fini(&manage->m_entries);
     
     while(!TAILQ_EMPTY(&manage->m_sources)) {
