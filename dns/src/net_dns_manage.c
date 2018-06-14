@@ -4,6 +4,7 @@
 #include "net_address.h"
 #include "net_dgram.h"
 #include "net_timer.h"
+#include "net_dns_query.h"
 #include "net_dns_manage_i.h"
 #include "net_dns_dgram_receiver_i.h"
 #include "net_dns_query_ex_i.h"
@@ -41,7 +42,8 @@ net_dns_manage_t net_dns_manage_create(
     manage->m_builder_internal = NULL;
     manage->m_builder_default = NULL;
     manage->m_delay_process = NULL;
-
+    manage->m_default_item_select_policy = net_dns_item_select_policy_first;
+    
     TAILQ_INIT(&manage->m_sources);
     TAILQ_INIT(&manage->m_to_notify_querys);
     TAILQ_INIT(&manage->m_runing_tasks);
@@ -104,8 +106,8 @@ net_dns_manage_t net_dns_manage_create(
         manage,
         net_dns_manage_fini,
         sizeof(struct net_dns_query_ex),
-        net_dns_query_ex_start,
-        net_dns_query_ex_cancel);
+        net_dns_query_ex_init,
+        net_dns_query_ex_fini);
 
     return manage;
 }
@@ -220,9 +222,38 @@ static void net_dns_manage_do_delay_process(net_timer_t timer, void * input_ctx)
     manage->m_delay_process = NULL;
 
     CPE_INFO(manage->m_em, "dns: delay process");
-    /* while(!TAILQ_EMPTY(&manage->m_complete_tasks)) { */
-    /*     //TODO: */
-    /* } */
+    while(!TAILQ_EMPTY(&manage->m_complete_tasks)) {
+        net_dns_task_t task = TAILQ_FIRST(&manage->m_complete_tasks);
+
+        while(!TAILQ_EMPTY(&task->m_querys)) {
+            net_dns_query_ex_t query_ex = TAILQ_FIRST(&task->m_querys);
+            query_ex->m_entry = task->m_entry;
+            net_dns_query_ex_set_task(query_ex, NULL);
+        }
+
+        net_dns_task_free(task);
+    }
+
+    while(!TAILQ_EMPTY(&manage->m_to_notify_querys)) {
+        net_dns_query_ex_t query_ex = TAILQ_FIRST(&manage->m_to_notify_querys);
+        net_dns_query_t query = net_dns_query_from_data(query_ex);
+        net_address_t address = NULL;
+
+        if (query_ex->m_entry) {
+            net_dns_entry_item_t item = 
+                net_dns_entry_select_item(query_ex->m_entry, manage->m_default_item_select_policy);
+            if (item == NULL) {
+                CPE_ERROR(manage->m_em, "dns: query %s: no item!", query_ex->m_entry->m_hostname);
+                net_dns_entry_free(query_ex->m_entry);
+                query_ex->m_entry = NULL;
+            }
+            else {
+                address = item->m_address;
+            }
+        }
+
+        net_dns_query_notify_result_and_free(query, address);
+    }
 }
 
 static void net_dns_manage_dgram_process(

@@ -5,7 +5,7 @@
 #include "net_dns_task_i.h"
 #include "net_dns_task_builder_i.h"
 
-int net_dns_query_ex_start(void * ctx, net_dns_query_t query, const char * hostname) {
+int net_dns_query_ex_init(void * ctx, net_dns_query_t query, const char * hostname) {
     net_dns_manage_t manage = ctx;
     struct net_dns_query_ex * query_ex = net_dns_query_data(query);
 
@@ -46,6 +46,7 @@ int net_dns_query_ex_start(void * ctx, net_dns_query_t query, const char * hostn
 
     query_ex->m_manage = manage;
     query_ex->m_task = entry->m_task;
+    query_ex->m_entry = NULL;
 
     if (query_ex->m_task) {
         TAILQ_INSERT_TAIL(&query_ex->m_task->m_querys, query_ex, m_next);
@@ -68,7 +69,7 @@ START_ERROR:
     return -1;
 }
 
-void net_dns_query_ex_cancel(void * ctx, net_dns_query_t query) {
+void net_dns_query_ex_fini(void * ctx, net_dns_query_t query) {
     net_dns_manage_t manage = ctx;
     struct net_dns_query_ex * query_ex = net_dns_query_data(query);
 
@@ -81,6 +82,8 @@ void net_dns_query_ex_cancel(void * ctx, net_dns_query_t query) {
 }
 
 void net_dns_query_ex_set_task(net_dns_query_ex_t query_ex, net_dns_task_t task) {
+    if (query_ex->m_task == task) return;
+
     if (query_ex->m_task) {
         TAILQ_REMOVE(&query_ex->m_task->m_querys, query_ex, m_next);
     }

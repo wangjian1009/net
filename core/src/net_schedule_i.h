@@ -34,8 +34,8 @@ struct net_schedule {
     void * m_dns_resolver_ctx;
     void (*m_dns_resolver_ctx_fini_fun)(void * ctx);
     uint16_t m_dns_query_capacity;
-    net_schedule_dns_query_start_fun_t m_dns_query_start_fun;
-    net_schedule_dns_query_cancel_fun_t m_dns_query_cancel_fun;
+    net_schedule_dns_query_init_fun_t m_dns_query_init_fun;
+    net_schedule_dns_query_fini_fun_t m_dns_query_fini_fun;
     uint32_t m_dns_max_query_id;
     struct cpe_hash_table m_dns_querys;
 

@@ -116,6 +116,32 @@ net_dns_entry_find(net_dns_manage_t manage, const char * hostname) {
     return cpe_hash_table_find(&manage->m_entries, &key);
 }
 
+net_dns_entry_item_t
+net_dns_entry_select_item(net_dns_entry_t entry, net_dns_item_select_policy_t policy) {
+    net_dns_entry_item_t item = NULL;
+    net_dns_entry_item_t check;
+
+    switch(policy) {
+    case net_dns_item_select_policy_first:
+        item = TAILQ_FIRST(&entry->m_items);
+        break;
+    case net_dns_item_select_policy_max_ttl:
+        TAILQ_FOREACH(check, &entry->m_items, m_next_for_entry) {
+            if (check->m_expire_time_ms == 0) {
+                item = check;
+                break;
+            }
+
+            if (item == NULL || check->m_expire_time_ms > item->m_expire_time_ms) {
+                item = check;
+            }
+        }
+        break;
+    }
+
+    return item;
+}
+
 uint32_t net_dns_entry_hash(net_dns_entry_t o, void * user_data) {
     return cpe_hash_str(o->m_hostname, strlen(o->m_hostname));
 }

@@ -34,7 +34,12 @@ typedef enum net_dns_task_state {
     net_dns_task_state_success,
     net_dns_task_state_error,
 } net_dns_task_state_t;
-    
+
+typedef enum net_dns_item_select_policy {
+    net_dns_item_select_policy_first,
+    net_dns_item_select_policy_max_ttl,
+} net_dns_item_select_policy_t;
+
 NET_END_DECL
 
 #endif

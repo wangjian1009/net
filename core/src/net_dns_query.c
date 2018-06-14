@@ -25,7 +25,7 @@ net_dns_query_t net_dns_query_create(
     }
 
     query->m_schedule = schedule;
-    query->m_query_id = schedule->m_dns_max_query_id++;
+    query->m_query_id = ++schedule->m_dns_max_query_id;
     query->m_callback = callback;
     query->m_ctx_free = ctx_free;
     query->m_ctx = ctx;
@@ -36,10 +36,9 @@ net_dns_query_t net_dns_query_create(
         TAILQ_INSERT_TAIL(&schedule->m_free_dns_querys, query, m_next);
         return NULL;
     }
-        
     
-    if (schedule->m_dns_query_start_fun(schedule->m_dns_resolver_ctx, query, hostname) != 0) {
-        CPE_ERROR(schedule->m_em, "dns-query: %s: start fail!", hostname);
+    if (schedule->m_dns_query_init_fun(schedule->m_dns_resolver_ctx, query, hostname) != 0) {
+        CPE_ERROR(schedule->m_em, "dns-query: %s: init fail!", hostname);
         cpe_hash_table_remove_by_ins(&schedule->m_dns_querys, query);
         TAILQ_INSERT_TAIL(&schedule->m_free_dns_querys, query, m_next);
         return NULL;
@@ -51,7 +50,7 @@ net_dns_query_t net_dns_query_create(
 void net_dns_query_free(net_dns_query_t query) {
     net_schedule_t schedule = query->m_schedule;
 
-    schedule->m_dns_query_cancel_fun(schedule->m_dns_resolver_ctx, query);
+    schedule->m_dns_query_fini_fun(schedule->m_dns_resolver_ctx, query);
     
     if (query->m_ctx_free) {
         query->m_ctx_free(query->m_ctx);
@@ -83,8 +82,17 @@ void net_dns_query_real_free(net_dns_query_t query) {
     mem_free(schedule->m_alloc, query);
 }
 
+void net_dns_query_notify_result_and_free(net_dns_query_t query, net_address_t address) {
+    query->m_callback(query->m_ctx, address);
+    net_dns_query_free(query);
+}
+
 void * net_dns_query_data(net_dns_query_t query) {
     return query + 1;
+}
+
+net_dns_query_t net_dns_query_from_data(void * data) {
+    return ((net_dns_query_t)data) - 1;
 }
 
 uint32_t net_dns_query_hash(net_dns_query_t o, void * user_data) {

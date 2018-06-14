@@ -30,8 +30,8 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em, uint32_t common_
     schedule->m_dns_resolver_ctx = NULL;
     schedule->m_dns_resolver_ctx_fini_fun = NULL;
     schedule->m_dns_query_capacity = 0;
-    schedule->m_dns_query_start_fun = NULL;
-    schedule->m_dns_query_cancel_fun = NULL;
+    schedule->m_dns_query_init_fun = NULL;
+    schedule->m_dns_query_fini_fun = NULL;
     schedule->m_dns_max_query_id = 0;
     schedule->m_direct_protocol = NULL;
     schedule->m_direct_driver = NULL;
@@ -227,14 +227,14 @@ void net_schedule_set_dns_resolver(
     void * ctx,
     void (*ctx_fini)(void * ctx),
     uint16_t dns_query_capacity,
-    net_schedule_dns_query_start_fun_t start_fun,
-    net_schedule_dns_query_cancel_fun_t cancel_fun)
+    net_schedule_dns_query_init_fun_t init_fun,
+    net_schedule_dns_query_fini_fun_t fini_fun)
 {
     schedule->m_dns_resolver_ctx = ctx;
     schedule->m_dns_resolver_ctx_fini_fun = ctx_fini;
     schedule->m_dns_query_capacity = dns_query_capacity;
-    schedule->m_dns_query_start_fun = start_fun;
-    schedule->m_dns_query_cancel_fun = cancel_fun;
+    schedule->m_dns_query_init_fun = init_fun;
+    schedule->m_dns_query_fini_fun = fini_fun;
 }
 
 void * net_schedule_dns_resolver(net_schedule_t schedule) {
