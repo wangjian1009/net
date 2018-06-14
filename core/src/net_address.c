@@ -275,7 +275,7 @@ int net_address_set_resolved(net_address_t address, net_address_t resolved, uint
             }
             else {
                 domain_addr->m_resolved = net_address_copy(address->m_schedule, resolved);
-                if (domain_addr->m_resolved) {
+                if (domain_addr->m_resolved == NULL) {
                     CPE_ERROR(address->m_schedule->m_em, "net_address_set_resolved: address copy fail!");
                     return -1;
                 }

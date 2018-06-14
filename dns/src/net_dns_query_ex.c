@@ -43,7 +43,7 @@ int net_dns_query_ex_init(void * ctx, net_dns_query_t query, const char * hostna
             }
         }
     }
-
+    
     query_ex->m_manage = manage;
     query_ex->m_task = entry->m_task;
     query_ex->m_entry = NULL;
@@ -53,6 +53,7 @@ int net_dns_query_ex_init(void * ctx, net_dns_query_t query, const char * hostna
     }
     else {
         TAILQ_INSERT_TAIL(&query_ex->m_manage->m_to_notify_querys, query_ex, m_next);
+        net_dns_manage_active_delay_process(manage);
     }
     
     return 0;
@@ -84,11 +85,13 @@ void net_dns_query_ex_fini(void * ctx, net_dns_query_t query) {
 void net_dns_query_ex_set_task(net_dns_query_ex_t query_ex, net_dns_task_t task) {
     if (query_ex->m_task == task) return;
 
+    net_dns_manage_t manage = query_ex->m_manage;
+    
     if (query_ex->m_task) {
         TAILQ_REMOVE(&query_ex->m_task->m_querys, query_ex, m_next);
     }
     else {
-        TAILQ_REMOVE(&query_ex->m_manage->m_to_notify_querys, query_ex, m_next);
+        TAILQ_REMOVE(&manage->m_to_notify_querys, query_ex, m_next);
     }
 
     query_ex->m_task = task;
@@ -97,6 +100,7 @@ void net_dns_query_ex_set_task(net_dns_query_ex_t query_ex, net_dns_task_t task)
         TAILQ_INSERT_TAIL(&query_ex->m_task->m_querys, query_ex, m_next);
     }
     else {
-        TAILQ_INSERT_TAIL(&query_ex->m_manage->m_to_notify_querys, query_ex, m_next);
+        TAILQ_INSERT_TAIL(&manage->m_to_notify_querys, query_ex, m_next);
+        net_dns_manage_active_delay_process(manage);
     }
 }
