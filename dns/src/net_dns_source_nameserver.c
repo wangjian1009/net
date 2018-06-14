@@ -85,6 +85,8 @@ int net_dns_source_nameserver_init(net_dns_source_t source) {
 
     nameserver->m_address = NULL;
     nameserver->m_endpoint = NULL;
+    nameserver->m_retry_count = 0;
+    nameserver->m_timeout_ms = 2000;
     
     return 0;
 }
@@ -121,6 +123,9 @@ void net_dns_source_nameserver_dump(write_stream_t ws, net_dns_source_t source) 
 }
 
 int net_dns_source_nameserver_ctx_init(net_dns_source_t source, net_dns_task_ctx_t task_ctx) {
+    net_dns_source_nameserver_t nameserver = net_dns_source_data(source);
+    net_dns_task_ctx_set_retry_count(task_ctx, nameserver->m_retry_count);
+    net_dns_task_ctx_set_timeout(task_ctx, nameserver->m_timeout_ms);
     return 0;
 }
 

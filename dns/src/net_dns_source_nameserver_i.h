@@ -8,6 +8,8 @@ NET_BEGIN_DECL
 struct net_dns_source_nameserver {
     net_address_t m_address;
     net_endpoint_t m_endpoint;
+    uint16_t m_timeout_ms;
+    uint16_t m_retry_count;
 };
 
 int net_dns_source_nameserver_build_req(
