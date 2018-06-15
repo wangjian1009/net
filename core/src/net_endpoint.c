@@ -272,7 +272,9 @@ net_endpoint_t net_endpoint_other(net_endpoint_t endpoint) {
 int net_endpoint_connect(net_endpoint_t endpoint) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
 
-    if (endpoint->m_state != net_endpoint_state_disable) {
+    if (endpoint->m_state != net_endpoint_state_disable
+        && endpoint->m_state != net_endpoint_state_disable)
+    {
         CPE_ERROR(
             schedule->m_em, "%s: connect: current state is %s, can`t connect!",
             net_endpoint_dump(&schedule->m_tmp_buffer, endpoint),
