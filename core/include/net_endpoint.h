@@ -80,6 +80,9 @@ int net_endpoint_forward(net_endpoint_t endpoint);
 void net_endpoint_print(write_stream_t ws, net_endpoint_t endpoint);
 const char * net_endpoint_dump(mem_buffer_t buff, net_endpoint_t endpoint);
 
+/**/
+void net_endpoint_clear_monitor_by_ctx(net_endpoint_t endpoint, void * ctx);
+
 /*protocol*/
 void * net_endpoint_protocol_data(net_endpoint_t endpoint);
 

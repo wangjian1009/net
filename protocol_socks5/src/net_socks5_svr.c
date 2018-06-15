@@ -19,6 +19,7 @@ net_socks5_svr_t net_socks5_svr_create(net_schedule_t schedule) {
             net_socks5_svr_endpoint_fini,
             net_socks5_svr_endpoint_input,
             net_socks5_svr_endpoint_forward,
+            NULL,
             NULL);
     if (protocol == NULL) return NULL;
 

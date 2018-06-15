@@ -85,13 +85,6 @@ void net_endpoint_free(net_endpoint_t endpoint) {
         CPE_INFO(schedule->m_em, "core: %s free!", net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
     }
 
-    while(!TAILQ_EMPTY(&endpoint->m_monitors)) {
-        net_endpoint_monitor_t monitor = TAILQ_FIRST(&endpoint->m_monitors);
-        assert(!monitor->m_is_processing);
-        assert(!monitor->m_is_free);
-        net_endpoint_monitor_free(monitor);
-    }
-
     if (endpoint->m_dns_query) {
         net_dns_query_free(endpoint->m_dns_query);
         endpoint->m_dns_query = NULL;
@@ -138,7 +131,14 @@ void net_endpoint_free(net_endpoint_t endpoint) {
         net_address_free(endpoint->m_remote_address);
         endpoint->m_remote_address = NULL;
     }
-    
+
+    while(!TAILQ_EMPTY(&endpoint->m_monitors)) {
+        net_endpoint_monitor_t monitor = TAILQ_FIRST(&endpoint->m_monitors);
+        assert(!monitor->m_is_processing);
+        assert(!monitor->m_is_free);
+        net_endpoint_monitor_free(monitor);
+    }
+
     cpe_hash_table_remove_by_ins(&endpoint->m_driver->m_schedule->m_endpoints, endpoint);
 
     TAILQ_REMOVE(&endpoint->m_driver->m_endpoints, endpoint, m_next_for_driver);
@@ -460,7 +460,22 @@ static void net_endpoint_dns_query_callback(void * ctx, net_address_t address) {
     }
 }
 
+void net_endpoint_clear_monitor_by_ctx(net_endpoint_t endpoint, void * ctx) {
+    net_endpoint_monitor_t monitor = TAILQ_FIRST(&endpoint->m_monitors);
+    while(monitor) {
+        net_endpoint_monitor_t next_monitor = TAILQ_NEXT(monitor, m_next);
+        if (monitor->m_ctx == ctx) {
+            net_endpoint_monitor_free(monitor);
+        }
+        monitor = next_monitor;
+    }
+}
+
 void net_endpoint_notify_state_changed(net_endpoint_t endpoint, net_endpoint_state_t old_state) {
+    if (endpoint->m_protocol->m_endpoint_on_state_chagne) {
+        endpoint->m_protocol->m_endpoint_on_state_chagne(endpoint, old_state);
+    }
+    
     net_endpoint_monitor_t monitor = TAILQ_FIRST(&endpoint->m_monitors);
     while(monitor) {
         net_endpoint_monitor_t next_monitor = TAILQ_NEXT(monitor, m_next);

@@ -15,7 +15,8 @@ net_protocol_create(
     net_protocol_endpoint_fini_fun_t endpoint_fini,
     net_protocol_endpoint_input_fun_t endpoint_input,
     net_protocol_endpoint_forward_fun_t endpoint_forward,
-    net_protocol_endpoint_direct_fun_t endpoint_direct)
+    net_protocol_endpoint_direct_fun_t endpoint_direct,
+    net_protocol_endpoint_on_state_change_fun_t endpoint_on_state_chagne)
 {
     net_protocol_t protocol;
 
@@ -43,6 +44,7 @@ net_protocol_create(
     protocol->m_endpoint_input = endpoint_input;
     protocol->m_endpoint_forward = endpoint_forward;
     protocol->m_endpoint_direct = endpoint_direct;
+    protocol->m_endpoint_on_state_chagne = endpoint_on_state_chagne;
 
     if (protocol->m_protocol_init(protocol) != 0) {
         mem_free(schedule->m_alloc, protocol);
