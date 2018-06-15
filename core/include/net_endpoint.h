@@ -49,6 +49,7 @@ int net_endpoint_rbuf_supply(net_endpoint_t endpoint, uint32_t size);
 uint32_t net_endpoint_rbuf_size(net_endpoint_t endpoint);
 void net_endpoint_rbuf_consume(net_endpoint_t endpoint, uint32_t size);
 int net_endpoint_rbuf(net_endpoint_t endpoint, uint32_t require, void * * data);
+int net_endpoint_rbuf_by_sep(net_endpoint_t endpoint, const char * seps, void * * r_data, uint32_t * r_size);
 
 /*wbuf*/
 /*    <-- */
