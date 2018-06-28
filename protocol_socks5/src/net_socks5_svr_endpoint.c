@@ -38,8 +38,9 @@ int net_socks5_svr_endpoint_input(net_endpoint_t endpoint) {
     net_socks5_svr_t socks5_svr = net_protocol_data(net_endpoint_protocol(endpoint));
     net_socks5_svr_endpoint_t ss_ep = net_endpoint_protocol_data(endpoint);
     void * data;
-    
-    for(uint32_t left_size = net_endpoint_rbuf_size(endpoint);
+
+    uint32_t left_size;
+    for(left_size = net_endpoint_rbuf_size(endpoint);
         left_size > 0;
         left_size = net_endpoint_rbuf_size(endpoint)
         )
@@ -81,7 +82,8 @@ int net_socks5_svr_endpoint_input(net_endpoint_t endpoint) {
             struct method_select_response response;
             response.ver    = SOCKS5_SVERSION;
             response.method = SOCKS5_METHOD_UNACCEPTABLE;
-            for (uint8_t i = 0; i < select_request->nmethods; i++) {
+            uint8_t i;
+            for (i = 0; i < select_request->nmethods; i++) {
                 if (select_request->methods[i] == SOCKS5_METHOD_NOAUTH) {
                     response.method = SOCKS5_METHOD_NOAUTH;
                     break;
