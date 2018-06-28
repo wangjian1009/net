@@ -2,7 +2,9 @@
 #include "cpe/pal/pal_stdlib.h"
 #include "cpe/utils/ringbuffer.h"
 #include "net_endpoint.h"
-#include "net_schedule_i.h"
+#include "net_schedule.h"
+#include "net_address_matcher.h"
+#include "net_router_schedule_i.h"
 #include "net_router_i.h"
 
 net_router_schedule_t
@@ -63,7 +65,7 @@ net_router_schedule_direct_matcher_white(net_router_schedule_t schedule) {
 net_address_matcher_t
 net_router_schedule_direct_matcher_white_check_create(net_router_schedule_t schedule) {
     if (schedule->m_direct_matcher_white) {
-        schedule->m_direct_matcher_white = net_address_matcher_create(schedule);
+        schedule->m_direct_matcher_white = net_address_matcher_create(schedule->m_net_schedule);
     }
 
     return schedule->m_direct_matcher_white;
@@ -77,7 +79,7 @@ net_router_schedule_direct_matcher_black(net_router_schedule_t schedule) {
 net_address_matcher_t
 net_router_schedule_direct_matcher_black_check_create(net_router_schedule_t schedule) {
     if (schedule->m_direct_matcher_black) {
-        schedule->m_direct_matcher_black = net_address_matcher_create(schedule);
+        schedule->m_direct_matcher_black = net_address_matcher_create(schedule->m_net_schedule);
     }
 
     return schedule->m_direct_matcher_black;
@@ -91,8 +93,12 @@ int net_router_schedule_auto_select(net_router_schedule_t schedule, net_endpoint
     net_router_t router;
 
     TAILQ_FOREACH(router, &schedule->m_routers, m_next_for_schedule) {
-        return net_endpoint_link_with_router(endpoint, target_addr, router);
+        return net_router_link(router, endpoint, target_addr);
     }
 
     return net_endpoint_link_direct(endpoint, target_addr);
+}
+
+int net_router_schedule_do_connect(void * ctx, net_endpoint_t endpoint, net_address_t target, uint8_t is_own) {
+    
 }

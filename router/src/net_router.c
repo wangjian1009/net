@@ -2,16 +2,21 @@
 #include "cpe/utils/string_utils.h"
 #include "net_address.h"
 #include "net_address_matcher.h"
+#include "net_protocol.h"
+#include "net_endpoint.h"
+#include "net_link.h"
 #include "net_router_i.h"
 
 net_router_t
 net_router_create(
-    net_schedule_t schedule, net_address_t address, net_protocol_t protocol, net_driver_t driver)
+    net_router_schedule_t schedule, net_address_t address, net_protocol_t protocol, net_driver_t driver)
 {
     net_router_t router;
 
-    if (protocol->m_endpoint_direct == NULL) {
-        CPE_ERROR(schedule->m_em, "core: router: protocol %s not support direct, can`t work with router!", protocol->m_name);
+    if (!net_protocol_support_direct(protocol)) {
+        CPE_ERROR(
+            schedule->m_em, "router: protocol %s not support direct, can`t work with router!",
+            net_protocol_name(protocol));
         return NULL;
     }
     
@@ -32,22 +37,22 @@ net_router_create(
 
     if (schedule->m_debug) {
         CPE_INFO(
-            schedule->m_em, "core: router [%s@%s] created",
-            protocol->m_name,
-            net_address_dump(&schedule->m_tmp_buffer, address));
+            schedule->m_em, "router [%s@%s] created",
+            net_protocol_name(protocol),
+            net_address_dump(net_router_schedule_tmp_buffer(schedule), address));
     }
     
     return router;
 }
 
 void net_router_free(net_router_t router) {
-    net_schedule_t schedule = router->m_schedule;
+    net_router_schedule_t schedule = router->m_schedule;
 
     if (schedule->m_debug) {
         CPE_INFO(
-            schedule->m_em, "core: router [%s@%s] free",
-            router->m_protocol->m_name,
-            net_address_dump(&schedule->m_tmp_buffer, router->m_address));
+            schedule->m_em, "router [%s@%s] free",
+            net_protocol_name(router->m_protocol),
+            net_address_dump(net_router_schedule_tmp_buffer(schedule), router->m_address));
     }
 
     if (router->m_matcher_white) {
@@ -76,7 +81,7 @@ net_address_matcher_t net_router_matcher_white(net_router_t router) {
 
 net_address_matcher_t net_router_matcher_white_check_create(net_router_t router) {
     if (router->m_matcher_white == NULL) {
-        router->m_matcher_white = net_address_matcher_create(router->m_schedule);
+        router->m_matcher_white = net_address_matcher_create(router->m_schedule->m_net_schedule);
     }
 
     return router->m_matcher_white;
@@ -88,14 +93,14 @@ net_address_matcher_t net_router_matcher_black(net_router_t router) {
 
 net_address_matcher_t net_router_matcher_black_check_create(net_router_t router) {
     if (router->m_matcher_black == NULL) {
-        router->m_matcher_black = net_address_matcher_create(router->m_schedule);
+        router->m_matcher_black = net_address_matcher_create(router->m_schedule->m_net_schedule);
     }
 
     return router->m_matcher_black;
 }
 
 int net_router_link(net_router_t router, net_endpoint_t endpoint, net_address_t target_addr) {
-    net_routerh_schedule_t schedule = endpoint->m_driver->m_schedule;
+    net_router_schedule_t schedule = router->m_schedule;
     
     net_endpoint_t target = net_endpoint_create(router->m_driver, net_endpoint_outbound, router->m_protocol);
     if (target == NULL) {
@@ -113,7 +118,7 @@ int net_router_link(net_router_t router, net_endpoint_t endpoint, net_address_t 
         return -1;
     }
 
-    if (target->m_protocol->m_endpoint_direct(target, target_addr) != 0) {
+    if (net_endpoint_direct(target, target_addr) != 0) {
         net_link_free(link);
         return -1;
     }

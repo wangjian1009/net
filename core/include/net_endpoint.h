@@ -31,6 +31,7 @@ net_endpoint_t net_endpoint_from_data(void * data);
 
 int net_endpoint_connect(net_endpoint_t endpoint);
 void net_endpoint_disable(net_endpoint_t endpoint);
+int net_endpoint_direct(net_endpoint_t endpoint, net_address_t target_addr);
 
 /*link*/
 int net_endpoint_link_direct(net_endpoint_t endpoint, net_address_t target_addr);

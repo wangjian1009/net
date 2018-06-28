@@ -6,7 +6,7 @@
 NET_BEGIN_DECL
 
 struct net_router {
-    net_schedule_t m_schedule;
+    net_router_schedule_t m_schedule;
     TAILQ_ENTRY(net_router) m_next_for_schedule;
     net_address_t m_address;
     net_protocol_t m_protocol;

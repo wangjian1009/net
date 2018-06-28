@@ -1,11 +1,11 @@
-#ifndef NET_SCHEDULE_I_H_INCLEDED
-#define NET_SCHEDULE_I_H_INCLEDED
+#ifndef NET_ROUTER_SCHEDULE_I_H_INCLEDED
+#define NET_ROUTER_SCHEDULE_I_H_INCLEDED
 #include "cpe/pal/pal_queue.h"
 #include "cpe/utils/error.h"
 #include "cpe/utils/memory.h"
 #include "cpe/utils/buffer.h"
 #include "cpe/utils/hash.h"
-#include "net_schedule.h"
+#include "net_router_schedule.h"
 
 NET_BEGIN_DECL
 

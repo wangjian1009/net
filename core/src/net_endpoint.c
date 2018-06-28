@@ -320,6 +320,18 @@ void net_endpoint_disable(net_endpoint_t endpoint) {
     return endpoint->m_driver->m_endpoint_close(endpoint);
 }
 
+int net_endpoint_direct(net_endpoint_t endpoint, net_address_t target_addr) {
+    if (endpoint->m_protocol->m_endpoint_direct == NULL) {
+        CPE_ERROR(
+            endpoint->m_driver->m_schedule->m_em,
+            "core: direct: protocol %s not support direct, can`t work with router!",
+            endpoint->m_protocol->m_name);
+        return -1;
+    }
+
+    return 0;
+}
+
 ringbuffer_block_t net_endpoint_common_buf_alloc(net_endpoint_t endpoint, uint32_t size) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
     ringbuffer_block_t blk;

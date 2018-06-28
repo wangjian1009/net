@@ -74,6 +74,14 @@ net_schedule_t net_protocol_schedule(net_protocol_t protocol) {
     return protocol->m_schedule;
 }
 
+const char * net_protocol_name(net_protocol_t protocol) {
+    return protocol->m_name;
+}
+
+uint8_t net_protocol_support_direct(net_protocol_t protocol) {
+    return protocol->m_endpoint_direct == NULL ? 0 : 1;
+}
+
 void * net_protocol_data(net_protocol_t protocol) {
     return protocol + 1;
 }

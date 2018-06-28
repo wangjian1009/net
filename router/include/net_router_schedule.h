@@ -4,8 +4,7 @@
 
 NET_BEGIN_DECL
 
-net_router_schedule_t net_router_schedule_create(
-    net_router_schedule_t net_router_schedule_create(net_schedule_t net_schedule);
+net_router_schedule_t net_router_schedule_create(mem_allocrator_t alloc, error_monitor_t em, net_schedule_t net_schedule);
 void net_router_schedule_free(net_router_schedule_t schedule);
 
 mem_allocrator_t net_router_schedule_allocrator(net_router_schedule_t schedule);
