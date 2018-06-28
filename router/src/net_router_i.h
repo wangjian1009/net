@@ -1,7 +1,7 @@
 #ifndef NET_ROUTER_I_H_INCLEDED
 #define NET_ROUTER_I_H_INCLEDED
 #include "net_router.h"
-#include "net_schedule_i.h"
+#include "net_router_schedule_i.h"
 
 NET_BEGIN_DECL
 

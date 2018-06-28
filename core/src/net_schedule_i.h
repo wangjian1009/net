@@ -13,7 +13,6 @@ typedef struct net_address_in_cache * net_address_in_cache_t;
 
 typedef TAILQ_HEAD(net_driver_list, net_driver) net_driver_list_t;
 typedef TAILQ_HEAD(net_protocol_list, net_protocol) net_protocol_list_t;
-typedef TAILQ_HEAD(net_router_list, net_router) net_router_list_t;
 typedef TAILQ_HEAD(net_endpoint_list, net_endpoint) net_endpoint_list_t;
 typedef TAILQ_HEAD(net_endpoint_monitor_list, net_endpoint_monitor) net_endpoint_monitor_list_t;
 typedef TAILQ_HEAD(net_dgram_list, net_dgram) net_dgram_list_t;
@@ -45,12 +44,9 @@ struct net_schedule {
 
     net_protocol_t m_direct_protocol;
     net_driver_t m_direct_driver;
-    net_address_matcher_t m_direct_matcher_white;
-    net_address_matcher_t m_direct_matcher_black;
     
     net_protocol_list_t m_protocols;
     net_driver_list_t m_drivers;
-    net_router_list_t m_routers;
     net_link_list_t m_links;
 
     uint32_t m_endpoint_max_id;

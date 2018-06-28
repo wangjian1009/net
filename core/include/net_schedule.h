@@ -21,12 +21,6 @@ net_protocol_t net_schedule_direct_protocol(net_schedule_t schedule);
 net_driver_t net_schedule_direct_driver(net_schedule_t schedule);
 void net_schedule_set_direct_driver(net_schedule_t schedule, net_driver_t driver);
 
-net_address_matcher_t net_schedule_direct_matcher_white(net_schedule_t schedule);
-net_address_matcher_t net_schedule_direct_matcher_white_check_create(net_schedule_t schedule);
-
-net_address_matcher_t net_schedule_direct_matcher_black(net_schedule_t schedule);
-net_address_matcher_t net_schedule_direct_matcher_black_check_create(net_schedule_t schedule);
-
 void net_schedule_set_data_monitor(
     net_schedule_t schedule, net_data_monitor_fun_t monitor_fun, void * monitor_ctx);
 

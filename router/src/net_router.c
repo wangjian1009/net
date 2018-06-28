@@ -3,7 +3,6 @@
 #include "net_address.h"
 #include "net_address_matcher.h"
 #include "net_router_i.h"
-#include "net_protocol_i.h"
 
 net_router_t
 net_router_create(
@@ -94,3 +93,31 @@ net_address_matcher_t net_router_matcher_black_check_create(net_router_t router)
 
     return router->m_matcher_black;
 }
+
+int net_router_link(net_router_t router, net_endpoint_t endpoint, net_address_t target_addr) {
+    net_routerh_schedule_t schedule = endpoint->m_driver->m_schedule;
+    
+    net_endpoint_t target = net_endpoint_create(router->m_driver, net_endpoint_outbound, router->m_protocol);
+    if (target == NULL) {
+        return -1;
+    }
+
+    if (net_endpoint_set_remote_address(target, router->m_address, 0) != 0) {
+        net_endpoint_free(target);
+        return -1;
+    }
+
+    net_link_t link = net_link_create(endpoint, 0, target, 1);
+    if (link == NULL) {
+        net_endpoint_free(target);
+        return -1;
+    }
+
+    if (target->m_protocol->m_endpoint_direct(target, target_addr) != 0) {
+        net_link_free(link);
+        return -1;
+    }
+
+    return 0;
+}
+

@@ -174,7 +174,7 @@ int net_socks5_svr_endpoint_input(net_endpoint_t endpoint) {
                         net_address_dump(&socks5_svr->m_tmp_buffer, address));
                 }
 
-                if (net_endpoint_link_auto_select(endpoint, address) != 0) {
+                if (socks5_svr->m_dft_connect(socks5_svr->m_dft_connect_ctx, endpoint, address, 1) != 0) {
                     net_address_free(address);
                     return -1;
                 }

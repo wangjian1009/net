@@ -1,12 +1,12 @@
-#ifndef NET_PROVIDER_H_INCLEDED
-#define NET_PROVIDER_H_INCLEDED
-#include "net_system.h"
+#ifndef NET_ROUTER_H_INCLEDED
+#define NET_ROUTER_H_INCLEDED
+#include "net_router_types.h"
 
 NET_BEGIN_DECL
 
 net_router_t
 net_router_create(
-    net_schedule_t schedule,
+    net_router_schedule_t schedule,
     net_address_t address,
     net_protocol_t endpoint_protocol,
     net_driver_t driver);

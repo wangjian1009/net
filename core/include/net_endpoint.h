@@ -33,9 +33,7 @@ int net_endpoint_connect(net_endpoint_t endpoint);
 void net_endpoint_disable(net_endpoint_t endpoint);
 
 /*link*/
-int net_endpoint_link_with_router(net_endpoint_t endpoint, net_address_t target_addr, net_router_t router);
 int net_endpoint_link_direct(net_endpoint_t endpoint, net_address_t target_addr);
-int net_endpoint_link_auto_select(net_endpoint_t endpoint, net_address_t target_addr);
 net_link_t net_endpoint_link(net_endpoint_t endpoint);
 net_endpoint_t net_endpoint_other(net_endpoint_t endpoint);
 

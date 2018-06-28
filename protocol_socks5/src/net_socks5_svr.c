@@ -6,7 +6,9 @@
 static int net_socks5_svr_init(net_protocol_t protocol);
 static void net_socks5_svr_fini(net_protocol_t protocol);
 
-net_socks5_svr_t net_socks5_svr_create(net_schedule_t schedule) {
+net_socks5_svr_t net_socks5_svr_create(
+    net_schedule_t schedule, net_socks5_svr_connect_fun_t dft_connect, void * dft_connect_ctx)
+{
     net_protocol_t protocol =
         net_protocol_create(
             schedule, "socks5",
@@ -24,7 +26,8 @@ net_socks5_svr_t net_socks5_svr_create(net_schedule_t schedule) {
     if (protocol == NULL) return NULL;
 
     net_socks5_svr_t socks5_svr = net_protocol_data(protocol);
-    
+    socks5_svr->m_dft_connect = dft_connect;
+    socks5_svr->m_dft_connect_ctx = dft_connect_ctx;
     return socks5_svr;
 }
 

@@ -2,7 +2,6 @@
 #include "cpe/pal/pal_stdlib.h"
 #include "cpe/utils/ringbuffer.h"
 #include "net_schedule_i.h"
-#include "net_router_i.h"
 #include "net_driver_i.h"
 #include "net_protocol_i.h"
 #include "net_endpoint_i.h"
@@ -36,14 +35,11 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em, uint32_t common_
     schedule->m_dns_max_query_id = 0;
     schedule->m_direct_protocol = NULL;
     schedule->m_direct_driver = NULL;
-    schedule->m_direct_matcher_white = NULL;
-    schedule->m_direct_matcher_black = NULL;
     schedule->m_endpoint_max_id = 0;
     schedule->m_endpoint_protocol_capacity = 0;
 
     TAILQ_INIT(&schedule->m_drivers);
     TAILQ_INIT(&schedule->m_protocols);
-    TAILQ_INIT(&schedule->m_routers);
     TAILQ_INIT(&schedule->m_links);
     TAILQ_INIT(&schedule->m_free_addresses);
     TAILQ_INIT(&schedule->m_free_links);
@@ -112,23 +108,9 @@ void net_schedule_free(net_schedule_t schedule) {
         net_driver_free(TAILQ_FIRST(&schedule->m_drivers));
     }
 
-    if (schedule->m_direct_matcher_white) {
-        net_address_matcher_free(schedule->m_direct_matcher_white);
-        schedule->m_direct_matcher_white = NULL;
-    }
-    
-    if (schedule->m_direct_matcher_black) {
-        net_address_matcher_free(schedule->m_direct_matcher_black);
-        schedule->m_direct_matcher_black = NULL;
-    }
-    
     if (schedule->m_direct_protocol) {
         net_protocol_free(schedule->m_direct_protocol);
         schedule->m_direct_protocol = NULL;
-    }
-
-    while(!TAILQ_EMPTY(&schedule->m_routers)) {
-        net_router_free(TAILQ_FIRST(&schedule->m_routers));
     }
 
     while(!TAILQ_EMPTY(&schedule->m_protocols)) {
@@ -190,34 +172,6 @@ void net_schedule_set_data_monitor(
 {
     schedule->m_data_monitor_fun = monitor_fun;
     schedule->m_data_monitor_ctx = monitor_ctx;
-}
-
-net_address_matcher_t
-net_schedule_direct_matcher_white(net_schedule_t schedule) {
-    return schedule->m_direct_matcher_white;
-}
-
-net_address_matcher_t
-net_schedule_direct_matcher_white_check_create(net_schedule_t schedule) {
-    if (schedule->m_direct_matcher_white) {
-        schedule->m_direct_matcher_white = net_address_matcher_create(schedule);
-    }
-
-    return schedule->m_direct_matcher_white;
-}
-
-net_address_matcher_t
-net_schedule_direct_matcher_black(net_schedule_t schedule) {
-    return schedule->m_direct_matcher_black;
-}
-
-net_address_matcher_t
-net_schedule_direct_matcher_black_check_create(net_schedule_t schedule) {
-    if (schedule->m_direct_matcher_black) {
-        schedule->m_direct_matcher_black = net_address_matcher_create(schedule);
-    }
-
-    return schedule->m_direct_matcher_black;
 }
 
 uint8_t net_schedule_debug(net_schedule_t schedule) {
