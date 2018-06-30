@@ -145,6 +145,28 @@ void net_endpoint_free(net_endpoint_t endpoint) {
     TAILQ_INSERT_TAIL(&endpoint->m_driver->m_free_endpoints, endpoint, m_next_for_driver);
 }
 
+int net_endpoint_set_protocol(net_endpoint_t endpoint, net_protocol_t protocol) {
+    net_protocol_t old_protocol = endpoint->m_protocol;
+
+    endpoint->m_protocol->m_endpoint_fini(endpoint);
+
+    endpoint->m_protocol = protocol;
+    if (endpoint->m_protocol->m_endpoint_init(endpoint) != 0) goto SET_PROTOCOL_ERROR;
+
+    return 0;
+
+SET_PROTOCOL_ERROR:
+    return -1;
+
+    endpoint->m_protocol = old_protocol;
+    endpoint->m_protocol->m_endpoint_init(endpoint);
+    CPE_ERROR(
+        endpoint->m_driver->m_schedule->m_em, "core: %s set protocol %s fail!",
+        net_endpoint_dump(&endpoint->m_driver->m_schedule->m_tmp_buffer, endpoint),
+        protocol->m_name);
+    return -1;
+}
+
 void net_endpoint_real_free(net_endpoint_t endpoint) {
     net_driver_t driver = endpoint->m_driver;
     

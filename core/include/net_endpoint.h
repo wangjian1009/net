@@ -34,7 +34,7 @@ void net_endpoint_disable(net_endpoint_t endpoint);
 int net_endpoint_direct(net_endpoint_t endpoint, net_address_t target_addr);
 
 /*link*/
-int net_endpoint_link_direct(net_endpoint_t endpoint, net_address_t target_addr);
+int net_endpoint_link_direct(net_endpoint_t endpoint, net_address_t target_addr, uint8_t is_own);
 net_link_t net_endpoint_link(net_endpoint_t endpoint);
 net_endpoint_t net_endpoint_other(net_endpoint_t endpoint);
 
