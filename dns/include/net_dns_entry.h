@@ -18,6 +18,8 @@ void net_dns_entry_clear_item_by_source(net_dns_entry_t entry, net_dns_source_t 
 
 net_dns_entry_item_t net_dns_entry_select_item(net_dns_entry_t entry, net_dns_item_select_policy_t policy);
 
+void net_dns_entry_addresses(net_dns_entry_t entry, net_address_it_t it);
+
 NET_END_DECL
 
 #endif

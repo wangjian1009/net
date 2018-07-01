@@ -237,6 +237,8 @@ static void net_dns_manage_do_delay_process(net_timer_t timer, void * input_ctx)
         net_dns_query_ex_t query_ex = TAILQ_FIRST(&manage->m_to_notify_querys);
         net_dns_query_t query = net_dns_query_from_data(query_ex);
         net_address_t address = NULL;
+        struct net_address_it address_it;
+        net_address_it_init(&address_it);
 
         if (query_ex->m_entry) {
             net_dns_entry_item_t item = 
@@ -247,9 +249,11 @@ static void net_dns_manage_do_delay_process(net_timer_t timer, void * input_ctx)
             else {
                 address = item->m_address;
             }
+
+            net_dns_entry_addresses(query_ex->m_entry, &address_it);
         }
 
-        net_dns_query_notify_result_and_free(query, address);
+        net_dns_query_notify_result_and_free(query, address, &address_it);
     }
 }
 

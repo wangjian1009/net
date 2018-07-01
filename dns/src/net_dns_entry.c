@@ -1,6 +1,7 @@
 #include "assert.h"
 #include "cpe/pal/pal_types.h"
 #include "cpe/pal/pal_string.h"
+#include "net_address.h"
 #include "net_dns_entry_i.h"
 #include "net_dns_entry_item_i.h"
 #include "net_dns_task_i.h"
@@ -140,6 +141,23 @@ net_dns_entry_select_item(net_dns_entry_t entry, net_dns_item_select_policy_t po
     }
 
     return item;
+}
+
+static net_address_t net_dns_entry_address_it_next(net_address_it_t it) {
+    net_dns_entry_item_t * item = (net_dns_entry_item_t *)it->data;
+
+    if (*item == NULL) return NULL;
+
+    net_address_t r = (*item)->m_address;
+    (*item) = TAILQ_NEXT(*item, m_next_for_entry);
+
+    return r;
+}
+
+void net_dns_entry_addresses(net_dns_entry_t entry, net_address_it_t it) {
+    net_dns_entry_item_t * item = (net_dns_entry_item_t *)it->data;
+    it->next = net_dns_entry_address_it_next;
+    *item = TAILQ_FIRST(&entry->m_items);
 }
 
 uint32_t net_dns_entry_hash(net_dns_entry_t o, void * user_data) {

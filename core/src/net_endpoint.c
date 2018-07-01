@@ -12,7 +12,7 @@
 #include "net_link_i.h"
 #include "net_dns_query_i.h"
 
-static void net_endpoint_dns_query_callback(void * ctx, net_address_t address);
+static void net_endpoint_dns_query_callback(void * ctx, net_address_t main_address, net_address_it_t it);
 
 net_endpoint_t
 net_endpoint_create(net_driver_t driver, net_endpoint_type_t type, net_protocol_t protocol) {
@@ -462,7 +462,7 @@ const char * net_endpoint_state_str(net_endpoint_state_t state) {
     }
 }
 
-static void net_endpoint_dns_query_callback(void * ctx, net_address_t address) {
+static void net_endpoint_dns_query_callback(void * ctx, net_address_t address, net_address_it_t all_address) {
     net_endpoint_t endpoint = ctx;
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
 

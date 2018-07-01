@@ -147,6 +147,7 @@ uint16_t net_dns_task_ctx_timeout(net_dns_task_ctx_t ctx) {
 }
 
 static int net_dns_task_ctx_update_timeout(net_dns_task_ctx_t ctx) {
+    printf("xxxxx: update timer\n");
     if (ctx->m_timeout_ms == (uint16_t)-1) {
         if (ctx->m_timeout_timer) {
             net_timer_free(ctx->m_timeout_timer);
@@ -181,6 +182,8 @@ static void net_dns_task_ctx_do_timeout(net_timer_t timer, void * input_ctx) {
     net_dns_manage_t manage = task->m_manage;
 
     ctx->m_timeout_timer = NULL;
+
+    printf("xxxxx: md do timeout\n");
 
     assert(ctx->m_state == net_dns_task_state_runing);
     

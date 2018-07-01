@@ -381,3 +381,11 @@ uint32_t net_address_hash(net_address_t address) {
         
     return r;
 }
+
+static net_address_t net_address_it_next_empty(net_address_it_t it) {
+    return NULL;
+}
+
+void net_address_it_init(net_address_it_t it) {
+    it->next = net_address_it_next_empty;
+}

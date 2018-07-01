@@ -13,6 +13,7 @@ typedef struct net_endpoint * net_endpoint_t;
 typedef struct net_endpoint_monitor * net_endpoint_monitor_t;
 typedef struct net_dgram * net_dgram_t;
 typedef struct net_address * net_address_t;
+typedef struct net_address_it * net_address_it_t;
 typedef struct net_ipset * net_ipset_t;
 typedef struct net_address_matcher * net_address_matcher_t;
 typedef struct net_address_rule * net_address_rule_t;
@@ -50,7 +51,7 @@ typedef void (*net_data_monitor_fun_t) (
     void * ctx, net_endpoint_t endpoint, net_data_direct_t direct, uint32_t sz);
 
 /*dns*/
-typedef void (*net_dns_query_callback_fun_t)(void * ctx, net_address_t address);
+typedef void (*net_dns_query_callback_fun_t)(void * ctx, net_address_t main_address, net_address_it_t all_address);
 typedef void (*net_dns_query_ctx_free_fun_t)(void * ctx);
 
 NET_END_DECL
