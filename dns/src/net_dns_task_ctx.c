@@ -147,7 +147,6 @@ uint16_t net_dns_task_ctx_timeout(net_dns_task_ctx_t ctx) {
 }
 
 static int net_dns_task_ctx_update_timeout(net_dns_task_ctx_t ctx) {
-    printf("xxxxx: update timer\n");
     if (ctx->m_timeout_ms == (uint16_t)-1) {
         if (ctx->m_timeout_timer) {
             net_timer_free(ctx->m_timeout_timer);
