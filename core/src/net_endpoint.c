@@ -204,6 +204,10 @@ net_endpoint_state_t net_endpoint_state(net_endpoint_t endpoint) {
     return endpoint->m_state;
 }
 
+uint8_t net_endpoint_is_not_active(net_endpoint_t endpoint) {
+    return (endpoint->m_state == net_endpoint_state_disable || endpoint->m_state == net_endpoint_state_error) ? 1 : 0;
+}
+
 void net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) {
     if (endpoint->m_state == state) return;
     

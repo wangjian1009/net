@@ -30,6 +30,7 @@ void net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state)
 void * net_endpoint_data(net_endpoint_t endpoint);
 net_endpoint_t net_endpoint_from_data(void * data);
 
+uint8_t net_endpoint_is_not_active(net_endpoint_t endpoint);
 int net_endpoint_connect(net_endpoint_t endpoint);
 void net_endpoint_disable(net_endpoint_t endpoint);
 int net_endpoint_direct(net_endpoint_t endpoint, net_address_t target_addr);
