@@ -157,6 +157,7 @@ int net_endpoint_fbuf_by_sep(net_endpoint_t endpoint, const char * seps, void * 
             }
         }
         sz += (uint32_t)block_data_len;
+        block = ringbuffer_block_link_next(schedule->m_endpoint_buf, block);
     }
     
     *r_data = NULL;
