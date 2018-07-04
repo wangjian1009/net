@@ -83,7 +83,7 @@ int net_endpoint_wbuf_supply(net_endpoint_t endpoint, uint32_t size) {
     
     schedule->m_endpoint_tb = NULL;
 
-    return 0;
+    return endpoint->m_driver->m_endpoint_on_output(endpoint);
 }
 
 void * net_endpoint_wbuf(net_endpoint_t endpoint, uint32_t * size) {

@@ -39,7 +39,6 @@ int net_ev_endpoint_on_output(net_endpoint_t base_endpoint) {
     net_ev_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     net_ev_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
 
-    ev_io_stop(driver->m_ev_loop, &endpoint->m_watcher);
     net_ev_endpoint_start_rw_watcher(driver, base_endpoint, endpoint);
     return 0;
 }
@@ -153,6 +152,7 @@ int net_ev_endpoint_connect(net_endpoint_t base_endpoint) {
                     cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
             }
 
+            assert(!ev_is_active(&endpoint->m_watcher));
             ev_io_init(
                 &endpoint->m_watcher,
                 net_ev_endpoint_connect_cb, endpoint->m_fd,
@@ -204,6 +204,7 @@ void net_ev_endpoint_close(net_endpoint_t base_endpoint) {
 void net_ev_endpoint_start_rw_watcher(
     net_ev_driver_t driver, net_endpoint_t base_endpoint, net_ev_endpoint_t endpoint)
 {
+    ev_io_stop(driver->m_ev_loop, &endpoint->m_watcher);
     ev_io_init(
         &endpoint->m_watcher,
         net_ev_endpoint_rw_cb, endpoint->m_fd,
@@ -392,7 +393,6 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
         }
     }
 
-    ev_io_stop(driver->m_ev_loop, &endpoint->m_watcher);
     net_ev_endpoint_start_rw_watcher(driver, base_endpoint, endpoint);
 }
 
