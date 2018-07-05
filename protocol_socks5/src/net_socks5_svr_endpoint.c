@@ -54,7 +54,7 @@ int net_socks5_svr_endpoint_input(net_endpoint_t endpoint) {
             }
 
             switch(net_endpoint_state(endpoint)) {
-            case net_endpoint_state_error:
+            case net_endpoint_state_logic_error:
                 CPE_ERROR(
                     em, "ss: %s: state in error!",
                     net_endpoint_dump(net_schedule_tmp_buffer(schedule), endpoint));

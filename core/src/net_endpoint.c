@@ -204,12 +204,19 @@ net_endpoint_state_t net_endpoint_state(net_endpoint_t endpoint) {
     return endpoint->m_state;
 }
 
-uint8_t net_endpoint_is_not_active(net_endpoint_t endpoint) {
-    return (endpoint->m_state == net_endpoint_state_disable || endpoint->m_state == net_endpoint_state_error) ? 1 : 0;
+uint8_t net_endpoint_is_active(net_endpoint_t endpoint) {
+    switch(endpoint->m_state) {
+    case net_endpoint_state_disable:
+    case net_endpoint_state_logic_error:
+    case net_endpoint_state_network_error:
+        return 0;
+    default:
+        return 1;
+    }
 }
 
-void net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) {
-    if (endpoint->m_state == state) return;
+int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) {
+    if (endpoint->m_state == state) return 0;
     
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
     if (schedule->m_debug >= 2) {
@@ -220,10 +227,34 @@ void net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state)
             net_endpoint_state_str(state));
     }
 
+    uint8_t old_is_active = net_endpoint_is_active(endpoint);
     net_endpoint_state_t old_state = endpoint->m_state;
+    
     endpoint->m_state = state;
 
-    net_endpoint_notify_state_changed(endpoint, old_state);
+    if (old_is_active && !net_endpoint_is_active(endpoint)) {
+        if (endpoint->m_rb) {
+            assert(endpoint->m_rb->id == endpoint->m_id);
+            ringbuffer_free(schedule->m_endpoint_buf, endpoint->m_rb);
+            endpoint->m_rb = NULL;
+        }
+
+        if (endpoint->m_wb) {
+            assert(endpoint->m_wb->id == endpoint->m_id);
+            ringbuffer_free(schedule->m_endpoint_buf, endpoint->m_wb);
+            endpoint->m_wb = NULL;
+        }
+
+        if (endpoint->m_fb) {
+            assert(endpoint->m_fb->id == endpoint->m_id);
+            ringbuffer_free(schedule->m_endpoint_buf, endpoint->m_fb);
+            endpoint->m_fb = NULL;
+        }
+
+        endpoint->m_driver->m_endpoint_close(endpoint);
+    }
+
+    return net_endpoint_notify_state_changed(endpoint, old_state);
 }
 
 net_address_t net_endpoint_address(net_endpoint_t endpoint) {
@@ -298,9 +329,7 @@ net_endpoint_t net_endpoint_other(net_endpoint_t endpoint) {
 int net_endpoint_connect(net_endpoint_t endpoint) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
 
-    if (endpoint->m_state != net_endpoint_state_disable
-        && endpoint->m_state != net_endpoint_state_disable)
-    {
+    if (net_endpoint_is_active(endpoint)) {
         CPE_ERROR(
             schedule->m_em, "%s: connect: current state is %s, can`t connect!",
             net_endpoint_dump(&schedule->m_tmp_buffer, endpoint),
@@ -334,16 +363,11 @@ int net_endpoint_connect(net_endpoint_t endpoint) {
             return -1;
         }
 
-        net_endpoint_set_state(endpoint, net_endpoint_state_resolving);
-        return 0;
+        return net_endpoint_set_state(endpoint, net_endpoint_state_resolving);
     }
     else {
         return endpoint->m_driver->m_endpoint_connect(endpoint);
     }
-}
-
-void net_endpoint_disable(net_endpoint_t endpoint) {
-    return endpoint->m_driver->m_endpoint_close(endpoint);
 }
 
 int net_endpoint_direct(net_endpoint_t endpoint, net_address_t target_addr) {
@@ -461,8 +485,10 @@ const char * net_endpoint_state_str(net_endpoint_state_t state) {
         return "connecting";
     case net_endpoint_state_established:
         return "established";
-    case net_endpoint_state_error:
-        return "error";
+    case net_endpoint_state_logic_error:
+        return "logic-error";
+    case net_endpoint_state_network_error:
+        return "network-error";
     }
 }
 
@@ -476,7 +502,9 @@ static void net_endpoint_dns_query_callback(void * ctx, net_address_t address, n
         CPE_ERROR(
             schedule->m_em, "%s: resolve: dns resolve fail!!!",
             net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
-        net_endpoint_set_state(endpoint, net_endpoint_state_error);
+        if (net_endpoint_set_state(endpoint, net_endpoint_state_network_error) != 0) {
+            net_endpoint_free(endpoint);
+        }
         return;
     }
 
@@ -484,7 +512,9 @@ static void net_endpoint_dns_query_callback(void * ctx, net_address_t address, n
         CPE_ERROR(
             schedule->m_em, "%s: resolve: set resolve result fail!",
             net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
-        net_endpoint_set_state(endpoint, net_endpoint_state_error);
+        if (net_endpoint_set_state(endpoint, net_endpoint_state_logic_error) != 0) {
+            net_endpoint_free(endpoint);
+        }
         return;
     }
 
@@ -495,7 +525,9 @@ static void net_endpoint_dns_query_callback(void * ctx, net_address_t address, n
     }
     
     if (endpoint->m_driver->m_endpoint_connect(endpoint) != 0) {
-        net_endpoint_set_state(endpoint, net_endpoint_state_error);
+        if (net_endpoint_set_state(endpoint, net_endpoint_state_network_error) != 0) {
+            net_endpoint_free(endpoint);
+        }
         return;
     }
 }
@@ -511,9 +543,11 @@ void net_endpoint_clear_monitor_by_ctx(net_endpoint_t endpoint, void * ctx) {
     }
 }
 
-void net_endpoint_notify_state_changed(net_endpoint_t endpoint, net_endpoint_state_t old_state) {
+int net_endpoint_notify_state_changed(net_endpoint_t endpoint, net_endpoint_state_t old_state) {
+    int rv = 0;
+    
     if (endpoint->m_protocol->m_endpoint_on_state_chagne) {
-        endpoint->m_protocol->m_endpoint_on_state_chagne(endpoint, old_state);
+        rv = endpoint->m_protocol->m_endpoint_on_state_chagne(endpoint, old_state);
     }
     
     net_endpoint_monitor_t monitor = TAILQ_FIRST(&endpoint->m_monitors);
@@ -531,4 +565,6 @@ void net_endpoint_notify_state_changed(net_endpoint_t endpoint, net_endpoint_sta
         
         monitor = next_monitor;
     }
+
+    return rv;
 }

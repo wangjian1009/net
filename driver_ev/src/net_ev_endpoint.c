@@ -159,8 +159,7 @@ int net_ev_endpoint_connect(net_endpoint_t base_endpoint) {
                 EV_READ | EV_WRITE);
             ev_io_start(driver->m_ev_loop, &endpoint->m_watcher);
             
-            net_endpoint_set_state(base_endpoint, net_endpoint_state_connecting);
-            return 0;
+            return net_endpoint_set_state(base_endpoint, net_endpoint_state_connecting);
         }
         else {
             CPE_ERROR(
@@ -168,7 +167,7 @@ int net_ev_endpoint_connect(net_endpoint_t base_endpoint) {
                 net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
                 cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
             cpe_sock_close(endpoint->m_fd);
-			endpoint->m_fd = -1;
+            endpoint->m_fd = -1;
             return -1;
         }
     }
@@ -184,9 +183,9 @@ int net_ev_endpoint_connect(net_endpoint_t base_endpoint) {
             net_ev_endpoint_update_local_address(endpoint);
         }
 
-        net_endpoint_set_state(base_endpoint, net_endpoint_state_established);
         net_ev_endpoint_start_rw_watcher(driver, base_endpoint, endpoint);
-        return 0;
+        
+        return net_endpoint_set_state(base_endpoint, net_endpoint_state_established);
     }
 }
 
@@ -279,7 +278,7 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
     error_monitor_t em = net_schedule_em(schedule);
 
     if (revents & EV_READ) {
-        for(;;) {
+        for(;net_endpoint_state(base_endpoint) == net_endpoint_state_established;) {
             uint32_t capacity = 0;
             void * rbuf = net_endpoint_rbuf_alloc(base_endpoint, &capacity);
             if (rbuf == NULL) {
@@ -297,27 +296,31 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
                 }
 
                 if (net_endpoint_rbuf_supply(base_endpoint, (uint32_t)bytes) != 0) {
-                    CPE_ERROR(
-                        em, "ev: %s: free for process fail!",
-                        net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
-                    net_endpoint_free(base_endpoint);
+                    if (net_endpoint_set_state(base_endpoint, net_endpoint_state_logic_error) != 0) {
+                        CPE_ERROR(
+                            em, "ev: %s: free for process fail!",
+                            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+                        net_endpoint_free(base_endpoint);
+                    }
                     return;
                 }
 
                 if (driver->m_data_monitor_fun) {
                     driver->m_data_monitor_fun(driver->m_data_monitor_ctx, base_endpoint, net_data_in, (uint32_t)bytes);
                 }
-                
+
                 break;
             }
             else if (bytes == 0) {
                 if (driver->m_debug || net_schedule_debug(schedule) >= 2) {
                     CPE_INFO(
-                        em, "ev: %s: free for recv return 0!",
+                        em, "ev: %s: remote disconnected(recv 0)!",
                         net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
                 }
                 
-                net_endpoint_free(base_endpoint);
+                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_disable) != 0) {
+                    net_endpoint_free(base_endpoint);
+                }
                 return;
             }
             else {
@@ -331,11 +334,13 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
                     continue;
                 default:
                     CPE_ERROR(
-                        em, "ev: %s: free for recv error, errno=%d (%s)!",
+                        em, "ev: %s: recv error, errno=%d (%s)!",
                         net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
                         cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
 
-                    net_endpoint_free(base_endpoint);
+                    if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
+                        net_endpoint_free(base_endpoint);
+                    }
                     return;
                 }
             }
@@ -343,7 +348,7 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
     }
 
     if (revents & EV_WRITE) {
-        while(!net_endpoint_wbuf_is_empty(base_endpoint)) {
+        while(net_endpoint_state(base_endpoint) == net_endpoint_state_established && !net_endpoint_wbuf_is_empty(base_endpoint)) {
             uint32_t data_size;
             void * data = net_endpoint_wbuf(base_endpoint, &data_size);
 
@@ -393,7 +398,9 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
         }
     }
 
-    net_ev_endpoint_start_rw_watcher(driver, base_endpoint, endpoint);
+    if (net_endpoint_state(base_endpoint) == net_endpoint_state_established) {
+        net_ev_endpoint_start_rw_watcher(driver, base_endpoint, endpoint);
+    }
 }
 
 static void net_ev_endpoint_connect_cb(EV_P_ ev_io *w, int revents) {
@@ -412,7 +419,10 @@ static void net_ev_endpoint_connect_cb(EV_P_ ev_io *w, int revents) {
             em, "ev: %s: connect_cb get socket error fail, errno=%d (%s)!",
             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-        net_endpoint_set_state(base_endpoint, net_endpoint_state_error);
+
+        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
+            net_endpoint_free(base_endpoint);
+        }
         return;
     }
 
@@ -421,7 +431,9 @@ static void net_ev_endpoint_connect_cb(EV_P_ ev_io *w, int revents) {
             em, "ev: %s: connect error, errno=%d (%s)",
             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-        net_endpoint_set_state(base_endpoint, net_endpoint_state_error);
+        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
+            net_endpoint_free(base_endpoint);
+        }
         return;
     }
 
@@ -435,7 +447,10 @@ static void net_ev_endpoint_connect_cb(EV_P_ ev_io *w, int revents) {
     if (net_endpoint_address(base_endpoint) == NULL) {
         net_ev_endpoint_update_local_address(endpoint);
     }
-    
-    net_endpoint_set_state(base_endpoint, net_endpoint_state_established);
+
     net_ev_endpoint_start_rw_watcher(driver, base_endpoint, endpoint);
+    if (net_endpoint_set_state(base_endpoint, net_endpoint_state_established) != 0) {
+        net_endpoint_free(base_endpoint);
+        return;
+    }
 }

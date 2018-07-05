@@ -85,11 +85,11 @@ uint32_t net_endpoint_rbuf_size(net_endpoint_t endpoint) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
 
     if (endpoint->m_rb) {
-		return ringbuffer_block_len(schedule->m_endpoint_buf, endpoint->m_rb, 0);
-	}
+        return ringbuffer_block_len(schedule->m_endpoint_buf, endpoint->m_rb, 0);
+    }
     else {
         return 0;
-	}
+    }
 }
 
 void net_endpoint_rbuf_consume(net_endpoint_t endpoint, uint32_t size) {
@@ -99,12 +99,14 @@ void net_endpoint_rbuf_consume(net_endpoint_t endpoint, uint32_t size) {
         ringbuffer_free(schedule->m_endpoint_buf, schedule->m_endpoint_tb);
         schedule->m_endpoint_tb = NULL;
     }
-    
-    endpoint->m_rb = ringbuffer_yield(schedule->m_endpoint_buf, endpoint->m_rb, size);
 
-    if (schedule->m_data_monitor_fun) {
-        schedule->m_data_monitor_fun(
-            schedule->m_data_monitor_ctx, endpoint, net_data_in, size);
+    if (endpoint->m_rb) {
+        endpoint->m_rb = ringbuffer_yield(schedule->m_endpoint_buf, endpoint->m_rb, size);
+
+        if (schedule->m_data_monitor_fun) {
+            schedule->m_data_monitor_fun(
+                schedule->m_data_monitor_ctx, endpoint, net_data_in, size);
+        }
     }
 }
 

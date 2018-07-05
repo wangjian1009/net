@@ -25,14 +25,13 @@ net_address_t net_endpoint_remote_address(net_endpoint_t endpoint);
 int net_endpoint_set_remote_address(net_endpoint_t endpoint, net_address_t address, uint8_t is_own);
 
 net_endpoint_state_t net_endpoint_state(net_endpoint_t endpoint);
-void net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state);
+int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state);
 
 void * net_endpoint_data(net_endpoint_t endpoint);
 net_endpoint_t net_endpoint_from_data(void * data);
 
-uint8_t net_endpoint_is_not_active(net_endpoint_t endpoint);
+uint8_t net_endpoint_is_active(net_endpoint_t endpoint);
 int net_endpoint_connect(net_endpoint_t endpoint);
-void net_endpoint_disable(net_endpoint_t endpoint);
 int net_endpoint_direct(net_endpoint_t endpoint, net_address_t target_addr);
 
 /*link*/

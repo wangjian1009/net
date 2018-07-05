@@ -25,7 +25,7 @@ struct net_endpoint {
 
 void net_endpoint_real_free(net_endpoint_t endpoint);
 
-void net_endpoint_notify_state_changed(net_endpoint_t endpoint, net_endpoint_state_t old_state);
+int net_endpoint_notify_state_changed(net_endpoint_t endpoint, net_endpoint_state_t old_state);
 
 ringbuffer_block_t net_endpoint_common_buf_alloc(net_endpoint_t endpoint, uint32_t size);
 

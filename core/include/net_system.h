@@ -33,7 +33,8 @@ typedef enum net_endpoint_state {
     net_endpoint_state_resolving,
     net_endpoint_state_connecting,
     net_endpoint_state_established,
-    net_endpoint_state_error,
+    net_endpoint_state_logic_error,
+    net_endpoint_state_network_error,
 } net_endpoint_state_t;
 
 typedef enum net_endpoint_type {
