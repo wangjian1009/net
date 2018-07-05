@@ -297,9 +297,11 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
 
                 if (net_endpoint_rbuf_supply(base_endpoint, (uint32_t)bytes) != 0) {
                     if (net_endpoint_set_state(base_endpoint, net_endpoint_state_logic_error) != 0) {
-                        CPE_ERROR(
-                            em, "ev: %s: free for process fail!",
-                            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+                        if (driver->m_debug || net_schedule_debug(schedule) >= 2) {
+                            CPE_INFO(
+                                em, "ev: %s: free for process fail!",
+                                net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+                        }
                         net_endpoint_free(base_endpoint);
                     }
                     return;
