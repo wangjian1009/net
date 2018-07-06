@@ -544,11 +544,11 @@ void net_endpoint_clear_monitor_by_ctx(net_endpoint_t endpoint, void * ctx) {
 }
 
 int net_endpoint_notify_state_changed(net_endpoint_t endpoint, net_endpoint_state_t old_state) {
-    int rv = 0;
-    
-    if (endpoint->m_protocol->m_endpoint_on_state_chagne) {
-        rv = endpoint->m_protocol->m_endpoint_on_state_chagne(endpoint, old_state);
-    }
+    int rv = endpoint->m_protocol->m_endpoint_on_state_chagne
+        ? endpoint->m_protocol->m_endpoint_on_state_chagne(endpoint, old_state)
+        : net_endpoint_is_active(endpoint)
+        ? 0
+        : -1;
     
     net_endpoint_monitor_t monitor = TAILQ_FIRST(&endpoint->m_monitors);
     while(monitor) {
