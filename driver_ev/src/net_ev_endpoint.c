@@ -148,8 +148,7 @@ int net_ev_endpoint_connect(net_endpoint_t base_endpoint) {
             if (net_schedule_debug(schedule) >= 2) {
                 CPE_INFO(
                     em, "ev: %s: connect start",
-                    net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
-                    cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+                    net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
             }
 
             assert(!ev_is_active(&endpoint->m_watcher));
@@ -175,8 +174,7 @@ int net_ev_endpoint_connect(net_endpoint_t base_endpoint) {
         if (driver->m_debug || net_schedule_debug(schedule) >= 2) {
             CPE_INFO(
                 em, "ev: %s: connect success",
-                net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
-                cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+                net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
         }
 
         if (net_endpoint_address(base_endpoint) == NULL) {
@@ -442,8 +440,7 @@ static void net_ev_endpoint_connect_cb(EV_P_ ev_io *w, int revents) {
     if (driver->m_debug || net_schedule_debug(schedule) >= 2) {
         CPE_INFO(
             em, "ev: %s: connect success",
-            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
-            cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
     }
 
     if (net_endpoint_address(base_endpoint) == NULL) {

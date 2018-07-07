@@ -182,8 +182,6 @@ static void net_dns_task_ctx_do_timeout(net_timer_t timer, void * input_ctx) {
 
     ctx->m_timeout_timer = NULL;
 
-    printf("xxxxx: md do timeout\n");
-
     assert(ctx->m_state == net_dns_task_state_runing);
     
     if (ctx->m_retry_count > 0) {
