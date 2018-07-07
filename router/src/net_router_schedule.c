@@ -89,16 +89,16 @@ uint8_t net_router_schedule_debug(net_router_schedule_t schedule) {
     return schedule->m_debug;
 }
 
-int net_router_schedule_auto_select(net_router_schedule_t schedule, net_endpoint_t endpoint, net_address_t target_addr) {
+int net_router_schedule_auto_select(net_router_schedule_t schedule, net_endpoint_t endpoint, net_address_t target_addr, uint8_t is_own) {
     net_router_t router;
 
     TAILQ_FOREACH(router, &schedule->m_routers, m_next_for_schedule) {
-        return net_router_link(router, endpoint, target_addr);
+        return net_router_link(router, endpoint, target_addr, is_own);
     }
 
-    return net_endpoint_link_direct(endpoint, target_addr);
+    return net_endpoint_link_direct(endpoint, target_addr, is_own);
 }
 
 int net_router_schedule_do_connect(void * ctx, net_endpoint_t endpoint, net_address_t target, uint8_t is_own) {
-    
+    return 0;
 }

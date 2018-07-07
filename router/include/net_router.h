@@ -19,6 +19,8 @@ net_address_matcher_t net_router_matcher_white_check_create(net_router_t router)
 net_address_matcher_t net_router_matcher_black(net_router_t router);
 net_address_matcher_t net_router_matcher_black_check_create(net_router_t router);
 
+int net_router_link(net_router_t router, net_endpoint_t endpoint, net_address_t target_addr, uint8_t is_own);
+
 NET_END_DECL
 
 #endif

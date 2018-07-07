@@ -19,7 +19,7 @@ net_address_matcher_t net_router_schedule_direct_matcher_black_check_create(net_
 
 uint8_t net_router_schedule_debug(net_router_schedule_t schedule);
     
-int net_router_schedule_auto_select(net_router_schedule_t schedule, net_endpoint_t endpoint, net_address_t target_addr);
+int net_router_schedule_auto_select(net_router_schedule_t schedule, net_endpoint_t endpoint, net_address_t target_addr, uint8_t is_own);
 
 NET_END_DECL
 

@@ -99,7 +99,7 @@ net_address_matcher_t net_router_matcher_black_check_create(net_router_t router)
     return router->m_matcher_black;
 }
 
-int net_router_link(net_router_t router, net_endpoint_t endpoint, net_address_t target_addr) {
+int net_router_link(net_router_t router, net_endpoint_t endpoint, net_address_t target_addr, uint8_t is_own) {
     net_router_schedule_t schedule = router->m_schedule;
     
     net_endpoint_t target = net_endpoint_create(router->m_driver, net_endpoint_outbound, router->m_protocol);
@@ -123,6 +123,10 @@ int net_router_link(net_router_t router, net_endpoint_t endpoint, net_address_t 
         return -1;
     }
 
+    if (is_own) {
+        net_address_free(target_addr);
+    }
+    
     return 0;
 }
 
