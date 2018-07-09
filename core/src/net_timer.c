@@ -1,3 +1,4 @@
+#include "assert.h"
 #include "net_timer_i.h"
 #include "net_driver_i.h"
 
@@ -24,6 +25,7 @@ net_timer_t net_timer_create(
     timer->m_process_fun = process_fun;
     timer->m_process_ctx = process_ctx;
 
+    assert(driver->m_timer_init);
     if (driver->m_timer_init(timer) != 0) {
         CPE_ERROR(schedule->m_em, "net_timer_create: init fail");
         TAILQ_INSERT_TAIL(&driver->m_free_timers, timer, m_next_for_driver);

@@ -198,7 +198,7 @@ mem_buffer_t net_dns_manage_tmp_buffer(net_dns_manage_t manage) {
 
 int net_dns_manage_active_delay_process(net_dns_manage_t manage) {
     if (manage->m_delay_process == NULL) {
-        manage->m_delay_process = net_timer_create(manage->m_driver, net_dns_manage_do_delay_process, manage);
+        manage->m_delay_process = net_timer_auto_create(manage->m_schedule, net_dns_manage_do_delay_process, manage);
         if (manage->m_delay_process == NULL) {
             CPE_ERROR(manage->m_em, "dns: create delay process timer fail!");
             return -1;

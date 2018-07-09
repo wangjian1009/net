@@ -158,8 +158,8 @@ static int net_dns_task_ctx_update_timeout(net_dns_task_ctx_t ctx) {
             net_dns_task_t task = ctx->m_step->m_task;
             net_dns_manage_t manage = task->m_manage;
 
-            ctx->m_timeout_timer = net_timer_create(
-                manage->m_driver, net_dns_task_ctx_do_timeout, ctx);
+            ctx->m_timeout_timer = net_timer_auto_create(
+                manage->m_schedule, net_dns_task_ctx_do_timeout, ctx);
             if (ctx->m_timeout_timer == NULL) {
                 CPE_ERROR(
                     manage->m_em, "dns: query %s --> %s: create timeout timer fail!",
