@@ -377,7 +377,9 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
                         net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
                 }
 
-                net_endpoint_free(base_endpoint);
+                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
+                    net_endpoint_free(base_endpoint);
+                }
                 return;
             }
             else {
@@ -392,7 +394,9 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
                     net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
                     cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
 
-                net_endpoint_free(base_endpoint);
+                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
+                    net_endpoint_free(base_endpoint);
+                }
                 return;
             }
         }
