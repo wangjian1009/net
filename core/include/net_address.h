@@ -58,6 +58,8 @@ void net_address_free(net_address_t address);
 
 int net_address_cmp(net_address_t l, net_address_t r);
 
+net_address_t net_address_rand_same_network(net_address_t base_address, net_address_t mask);
+
 /*domain*/
 int net_address_set_resolved(net_address_t address, net_address_t resolved, uint8_t is_own);
 net_address_t net_address_resolved(net_address_t address);
@@ -69,6 +71,8 @@ uint32_t net_address_hash(net_address_t address);
 void net_address_it_init(net_address_it_t it);
 
 #define net_address_it_next(__it) ((__it)->next(__it))
+
+const char * net_address_type_str(net_address_type_t at);
 
 NET_END_DECL
 

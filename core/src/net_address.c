@@ -1,7 +1,10 @@
+#include "assert.h"
 #include "cpe/pal/pal_string.h"
 #include "cpe/pal/pal_strings.h"
+#include "cpe/utils/bitarry.h"
 #include "cpe/utils/string_utils.h"
 #include "cpe/utils/stream_buffer.h"
+#include "cpe/utils/random.h"
 #include "net_address_i.h"
 
 struct net_address_ipv4v6 *
@@ -388,4 +391,81 @@ static net_address_t net_address_it_next_empty(net_address_it_t it) {
 
 void net_address_it_init(net_address_it_t it) {
     it->next = net_address_it_next_empty;
+}
+
+const char * net_address_type_str(net_address_type_t at) {
+    switch(at) {
+    case net_address_ipv4:
+        return "ipv4";
+    case net_address_ipv6:
+        return "ipv6";
+    case net_address_domain:
+        return "domain";
+    }
+}
+
+static net_address_t net_address_rand_same_network_ipv4(net_schedule_t schedule, net_address_data_ipv4_t base_address, net_address_data_ipv4_t mask) {
+    struct net_address_data_ipv4 r_data = *base_address;
+
+    r_data.u32 &= mask->u32;
+
+    uint32_t bit_count = cpe_ba_count((cpe_ba_t)&mask->u32, sizeof(mask->u32));
+    uint32_t range = 1u << bit_count;
+
+    CPE_ERROR(schedule->m_em, "net_address_rand_same_network: bit count %d, range=%d", bit_count, range);
+
+    if (range < 4) {
+        CPE_ERROR(schedule->m_em, "net_address_rand_same_network: bit count %d, range %d error", bit_count, range);
+        return NULL;
+    }
+
+    uint32_t use = cpe_rand_dft(range - 4) + 2;
+
+    int i;
+    uint32_t set;
+    for(set = use, i = 3; i >= 0 && set > 0; i--, set >>= 8) {
+        r_data.u8[i] += (uint8_t)(set & 0xFF);
+    }
+
+    if (r_data.u32 == base_address->u32) {
+        use++;
+        for(set = use, i = 3; i >= 0 && set > 0; i--, set >>= 8) {
+            r_data.u8[i] += (uint8_t)(set & 0xFF);
+        }
+    }
+    
+    return net_address_create_from_data_ipv4(schedule, &r_data, 0);
+}
+    
+net_address_t net_address_rand_same_network(net_address_t base_address, net_address_t mask) {
+    assert(base_address);
+    assert(mask);
+
+    net_schedule_t schedule = base_address->m_schedule;
+    
+    if (base_address->m_type != mask->m_type) {
+        CPE_ERROR(
+            schedule->m_em,
+            "net_address_rand_same_network: address type %s, mask type %s, mismatch!",
+            net_address_type_str(base_address->m_type), net_address_type_str(mask->m_type));
+        return NULL;
+    }
+
+    switch(base_address->m_type) {
+    case net_address_ipv4:
+        return net_address_rand_same_network_ipv4(
+            schedule,
+            (net_address_data_ipv4_t)net_address_data(base_address),
+            (net_address_data_ipv4_t)net_address_data(mask));
+    case net_address_ipv6:
+        CPE_ERROR(
+            schedule->m_em, "net_address_rand_same_network: address type %s not support!",
+            net_address_type_str(base_address->m_type));
+        return NULL;
+    case net_address_domain:
+        CPE_ERROR(
+            schedule->m_em, "net_address_rand_same_network: address type %s not support!",
+            net_address_type_str(base_address->m_type));
+        return NULL;
+    }
 }
