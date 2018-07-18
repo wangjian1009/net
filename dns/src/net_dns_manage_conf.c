@@ -96,6 +96,16 @@ int net_dns_manage_load_nameserver(net_dns_manage_t manage, char * str) {
         return -1;
     }
 
+    if (net_dns_source_nameserver_find(manage, address) != NULL) {
+        if (manage->m_debug) {
+            CPE_INFO(
+                manage->m_em, "dns: load nameserver: ignore duplicate address %s",
+                net_address_dump(net_dns_manage_tmp_buffer(manage), address));
+        }
+        net_address_free(address);
+        return 0;
+    }
+    
     net_dns_source_nameserver_t nameserver = net_dns_source_nameserver_create(manage, address, 1);
     if (nameserver == NULL) {
         CPE_ERROR(manage->m_em, "dns: load nameserver: create nameserver fail");

@@ -57,6 +57,7 @@ const char * net_address_dump(mem_buffer_t buffer, net_address_t address);
 void net_address_free(net_address_t address);
 
 int net_address_cmp(net_address_t l, net_address_t r);
+int net_address_cmp_without_port(net_address_t l, net_address_t r);
 
 net_address_t net_address_rand_same_network(net_address_t base_address, net_address_t mask);
 

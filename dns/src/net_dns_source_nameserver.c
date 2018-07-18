@@ -13,6 +13,7 @@
 #include "net_dns_entry.h"
 #include "net_dns_entry_item.h"
 #include "net_dns_source_nameserver_i.h"
+#include "net_dns_source_i.h"
 
 static int net_dns_source_nameserver_init(net_dns_source_t source);
 static void net_dns_source_nameserver_fini(net_dns_source_t source);
@@ -78,6 +79,26 @@ net_dns_source_nameserver_create(net_dns_manage_t manage, net_address_t addr, ui
     }
     
     return nameserver;
+}
+
+net_dns_source_nameserver_t net_dns_source_nameserver_find(net_dns_manage_t manage, net_address_t addr) {
+    net_dns_source_t source;
+
+    uint16_t port = net_address_port(addr);
+    if (port == 0) port = 53; 
+    
+    TAILQ_FOREACH(source, &manage->m_sources, m_next) {
+        if (source->m_init != net_dns_source_nameserver_init) continue;
+
+        net_dns_source_nameserver_t nameserver = net_dns_source_data(source);
+
+        if (net_address_cmp_without_port(nameserver->m_address, addr) != 0) continue;
+        if (net_address_port(nameserver->m_address) != port) continue;
+
+        return nameserver;
+    }
+
+    return 0;
 }
 
 void net_dns_source_nameserver_free(net_dns_source_nameserver_t nameserver) {
