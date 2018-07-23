@@ -1,0 +1,469 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 50;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		C91E1EEC2105E4160080FAD8 /* net_endpoint_link_to.c in Sources */ = {isa = PBXBuildFile; fileRef = C91E1EC52105E4160080FAD8 /* net_endpoint_link_to.c */; };
+		C91E1EED2105E4160080FAD8 /* net_timer.c in Sources */ = {isa = PBXBuildFile; fileRef = C91E1EC62105E4160080FAD8 /* net_timer.c */; };
+		C91E1EEE2105E4160080FAD8 /* net_address.c in Sources */ = {isa = PBXBuildFile; fileRef = C91E1EC72105E4160080FAD8 /* net_address.c */; };
+		C91E1EEF2105E4160080FAD8 /* net_schedule.c in Sources */ = {isa = PBXBuildFile; fileRef = C91E1EC92105E4160080FAD8 /* net_schedule.c */; };
+		C91E1EF02105E4160080FAD8 /* net_endpoint_monitor.c in Sources */ = {isa = PBXBuildFile; fileRef = C91E1ECA2105E4160080FAD8 /* net_endpoint_monitor.c */; };
+		C91E1EF12105E4160080FAD8 /* net_endpoint_wbuf.c in Sources */ = {isa = PBXBuildFile; fileRef = C91E1ECB2105E4160080FAD8 /* net_endpoint_wbuf.c */; };
+		C91E1EF22105E4160080FAD8 /* net_ipset_node.c in Sources */ = {isa = PBXBuildFile; fileRef = C91E1ECC2105E4160080FAD8 /* net_ipset_node.c */; };
+		C91E1EF32105E4160080FAD8 /* net_ipset.c in Sources */ = {isa = PBXBuildFile; fileRef = C91E1ECD2105E4160080FAD8 /* net_ipset.c */; };
+		C91E1EF42105E4160080FAD8 /* net_ipset_ipv4.c in Sources */ = {isa = PBXBuildFile; fileRef = C91E1ECE2105E4160080FAD8 /* net_ipset_ipv4.c */; };
+		C91E1EF52105E4160080FAD8 /* net_driver.c in Sources */ = {isa = PBXBuildFile; fileRef = C91E1ECF2105E4160080FAD8 /* net_driver.c */; };
+		C91E1EF62105E4160080FAD8 /* net_endpoint.c in Sources */ = {isa = PBXBuildFile; fileRef = C91E1ED62105E4160080FAD8 /* net_endpoint.c */; };
+		C91E1EF72105E4160080FAD8 /* net_protocol.c in Sources */ = {isa = PBXBuildFile; fileRef = C91E1ED72105E4160080FAD8 /* net_protocol.c */; };
+		C91E1EF82105E4160080FAD8 /* net_endpoint_rbuf.c in Sources */ = {isa = PBXBuildFile; fileRef = C91E1EDA2105E4160080FAD8 /* net_endpoint_rbuf.c */; };
+		C91E1EF92105E4160080FAD8 /* net_direct_endpoint.c in Sources */ = {isa = PBXBuildFile; fileRef = C91E1EDC2105E4160080FAD8 /* net_direct_endpoint.c */; };
+		C91E1EFA2105E4160080FAD8 /* net_endpoint_fbuf.c in Sources */ = {isa = PBXBuildFile; fileRef = C91E1EDD2105E4160080FAD8 /* net_endpoint_fbuf.c */; };
+		C91E1EFB2105E4160080FAD8 /* net_endpoint_stream.c in Sources */ = {isa = PBXBuildFile; fileRef = C91E1EDE2105E4160080FAD8 /* net_endpoint_stream.c */; };
+		C91E1EFC2105E4160080FAD8 /* net_link.c in Sources */ = {isa = PBXBuildFile; fileRef = C91E1EDF2105E4160080FAD8 /* net_link.c */; };
+		C91E1EFD2105E4160080FAD8 /* net_dns_query.c in Sources */ = {isa = PBXBuildFile; fileRef = C91E1EE02105E4160080FAD8 /* net_dns_query.c */; };
+		C91E1EFE2105E4160080FAD8 /* net_dgram.c in Sources */ = {isa = PBXBuildFile; fileRef = C91E1EE42105E4160080FAD8 /* net_dgram.c */; };
+		C91E1EFF2105E4160080FAD8 /* net_address_matcher.c in Sources */ = {isa = PBXBuildFile; fileRef = C91E1EE52105E4160080FAD8 /* net_address_matcher.c */; };
+		C91E1F002105E4160080FAD8 /* net_ipset_ipv6.c in Sources */ = {isa = PBXBuildFile; fileRef = C91E1EE62105E4160080FAD8 /* net_ipset_ipv6.c */; };
+		C91E1F012105E4160080FAD8 /* net_ipset_node_cache.c in Sources */ = {isa = PBXBuildFile; fileRef = C91E1EE92105E4160080FAD8 /* net_ipset_node_cache.c */; };
+		C91E1F022105E4160080FAD8 /* net_address_rule.c in Sources */ = {isa = PBXBuildFile; fileRef = C91E1EEB2105E4160080FAD8 /* net_address_rule.c */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		C9323A4F2105E2E3005DD3C0 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "include/$(PRODUCT_NAME)";
+			dstSubfolderSpec = 16;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		C91E1EB42105E4150080FAD8 /* net_protocol.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_protocol.h; sourceTree = "<group>"; };
+		C91E1EB52105E4150080FAD8 /* net_endpoint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_endpoint.h; sourceTree = "<group>"; };
+		C91E1EB62105E4150080FAD8 /* net_dns_query.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_query.h; sourceTree = "<group>"; };
+		C91E1EB72105E4150080FAD8 /* net_endpoint_stream.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_endpoint_stream.h; sourceTree = "<group>"; };
+		C91E1EB82105E4150080FAD8 /* net_link.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_link.h; sourceTree = "<group>"; };
+		C91E1EB92105E4150080FAD8 /* net_common.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_common.h; sourceTree = "<group>"; };
+		C91E1EBA2105E4150080FAD8 /* net_address_matcher.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_address_matcher.h; sourceTree = "<group>"; };
+		C91E1EBB2105E4150080FAD8 /* net_dgram.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dgram.h; sourceTree = "<group>"; };
+		C91E1EBC2105E4150080FAD8 /* net_system.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_system.h; sourceTree = "<group>"; };
+		C91E1EBD2105E4150080FAD8 /* net_endpoint_monitor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_endpoint_monitor.h; sourceTree = "<group>"; };
+		C91E1EBE2105E4150080FAD8 /* net_schedule.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_schedule.h; sourceTree = "<group>"; };
+		C91E1EBF2105E4150080FAD8 /* net_timer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_timer.h; sourceTree = "<group>"; };
+		C91E1EC02105E4150080FAD8 /* net_address.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_address.h; sourceTree = "<group>"; };
+		C91E1EC12105E4150080FAD8 /* net_driver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_driver.h; sourceTree = "<group>"; };
+		C91E1EC22105E4150080FAD8 /* net_ipset.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ipset.h; sourceTree = "<group>"; };
+		C91E1EC42105E4160080FAD8 /* net_address_matcher_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_address_matcher_i.h; sourceTree = "<group>"; };
+		C91E1EC52105E4160080FAD8 /* net_endpoint_link_to.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_endpoint_link_to.c; sourceTree = "<group>"; };
+		C91E1EC62105E4160080FAD8 /* net_timer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_timer.c; sourceTree = "<group>"; };
+		C91E1EC72105E4160080FAD8 /* net_address.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_address.c; sourceTree = "<group>"; };
+		C91E1EC82105E4160080FAD8 /* net_address_rule_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_address_rule_i.h; sourceTree = "<group>"; };
+		C91E1EC92105E4160080FAD8 /* net_schedule.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_schedule.c; sourceTree = "<group>"; };
+		C91E1ECA2105E4160080FAD8 /* net_endpoint_monitor.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_endpoint_monitor.c; sourceTree = "<group>"; };
+		C91E1ECB2105E4160080FAD8 /* net_endpoint_wbuf.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_endpoint_wbuf.c; sourceTree = "<group>"; };
+		C91E1ECC2105E4160080FAD8 /* net_ipset_node.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ipset_node.c; sourceTree = "<group>"; };
+		C91E1ECD2105E4160080FAD8 /* net_ipset.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ipset.c; sourceTree = "<group>"; };
+		C91E1ECE2105E4160080FAD8 /* net_ipset_ipv4.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ipset_ipv4.c; sourceTree = "<group>"; };
+		C91E1ECF2105E4160080FAD8 /* net_driver.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_driver.c; sourceTree = "<group>"; };
+		C91E1ED02105E4160080FAD8 /* net_ipset_template.c.in */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = net_ipset_template.c.in; sourceTree = "<group>"; };
+		C91E1ED12105E4160080FAD8 /* net_timer_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_timer_i.h; sourceTree = "<group>"; };
+		C91E1ED22105E4160080FAD8 /* net_endpoint_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_endpoint_i.h; sourceTree = "<group>"; };
+		C91E1ED32105E4160080FAD8 /* net_driver_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_driver_i.h; sourceTree = "<group>"; };
+		C91E1ED42105E4160080FAD8 /* net_schedule_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_schedule_i.h; sourceTree = "<group>"; };
+		C91E1ED52105E4160080FAD8 /* net_ipset_node_cache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ipset_node_cache.h; sourceTree = "<group>"; };
+		C91E1ED62105E4160080FAD8 /* net_endpoint.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_endpoint.c; sourceTree = "<group>"; };
+		C91E1ED72105E4160080FAD8 /* net_protocol.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_protocol.c; sourceTree = "<group>"; };
+		C91E1ED82105E4160080FAD8 /* net_link_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_link_i.h; sourceTree = "<group>"; };
+		C91E1ED92105E4160080FAD8 /* net_address_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_address_i.h; sourceTree = "<group>"; };
+		C91E1EDA2105E4160080FAD8 /* net_endpoint_rbuf.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_endpoint_rbuf.c; sourceTree = "<group>"; };
+		C91E1EDB2105E4160080FAD8 /* net_ipset_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ipset_i.h; sourceTree = "<group>"; };
+		C91E1EDC2105E4160080FAD8 /* net_direct_endpoint.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_direct_endpoint.c; sourceTree = "<group>"; };
+		C91E1EDD2105E4160080FAD8 /* net_endpoint_fbuf.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_endpoint_fbuf.c; sourceTree = "<group>"; };
+		C91E1EDE2105E4160080FAD8 /* net_endpoint_stream.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_endpoint_stream.c; sourceTree = "<group>"; };
+		C91E1EDF2105E4160080FAD8 /* net_link.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_link.c; sourceTree = "<group>"; };
+		C91E1EE02105E4160080FAD8 /* net_dns_query.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_dns_query.c; sourceTree = "<group>"; };
+		C91E1EE12105E4160080FAD8 /* net_dgram_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dgram_i.h; sourceTree = "<group>"; };
+		C91E1EE22105E4160080FAD8 /* net_protocol_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_protocol_i.h; sourceTree = "<group>"; };
+		C91E1EE32105E4160080FAD8 /* net_dns_query_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_query_i.h; sourceTree = "<group>"; };
+		C91E1EE42105E4160080FAD8 /* net_dgram.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_dgram.c; sourceTree = "<group>"; };
+		C91E1EE52105E4160080FAD8 /* net_address_matcher.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_address_matcher.c; sourceTree = "<group>"; };
+		C91E1EE62105E4160080FAD8 /* net_ipset_ipv6.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ipset_ipv6.c; sourceTree = "<group>"; };
+		C91E1EE72105E4160080FAD8 /* net_ipset_node.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ipset_node.h; sourceTree = "<group>"; };
+		C91E1EE82105E4160080FAD8 /* net_endpoint_monitor_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_endpoint_monitor_i.h; sourceTree = "<group>"; };
+		C91E1EE92105E4160080FAD8 /* net_ipset_node_cache.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ipset_node_cache.c; sourceTree = "<group>"; };
+		C91E1EEA2105E4160080FAD8 /* net_direct_endpoint_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_direct_endpoint_i.h; sourceTree = "<group>"; };
+		C91E1EEB2105E4160080FAD8 /* net_address_rule.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_address_rule.c; sourceTree = "<group>"; };
+		C9323A512105E2E3005DD3C0 /* libnet_core.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_core.a; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		C9323A4E2105E2E3005DD3C0 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		C91E1EB32105E4150080FAD8 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				C91E1EB42105E4150080FAD8 /* net_protocol.h */,
+				C91E1EB52105E4150080FAD8 /* net_endpoint.h */,
+				C91E1EB62105E4150080FAD8 /* net_dns_query.h */,
+				C91E1EB72105E4150080FAD8 /* net_endpoint_stream.h */,
+				C91E1EB82105E4150080FAD8 /* net_link.h */,
+				C91E1EB92105E4150080FAD8 /* net_common.h */,
+				C91E1EBA2105E4150080FAD8 /* net_address_matcher.h */,
+				C91E1EBB2105E4150080FAD8 /* net_dgram.h */,
+				C91E1EBC2105E4150080FAD8 /* net_system.h */,
+				C91E1EBD2105E4150080FAD8 /* net_endpoint_monitor.h */,
+				C91E1EBE2105E4150080FAD8 /* net_schedule.h */,
+				C91E1EBF2105E4150080FAD8 /* net_timer.h */,
+				C91E1EC02105E4150080FAD8 /* net_address.h */,
+				C91E1EC12105E4150080FAD8 /* net_driver.h */,
+				C91E1EC22105E4150080FAD8 /* net_ipset.h */,
+			);
+			path = include;
+			sourceTree = "<group>";
+		};
+		C91E1EC32105E4160080FAD8 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				C91E1EC42105E4160080FAD8 /* net_address_matcher_i.h */,
+				C91E1EC52105E4160080FAD8 /* net_endpoint_link_to.c */,
+				C91E1EC62105E4160080FAD8 /* net_timer.c */,
+				C91E1EC72105E4160080FAD8 /* net_address.c */,
+				C91E1EC82105E4160080FAD8 /* net_address_rule_i.h */,
+				C91E1EC92105E4160080FAD8 /* net_schedule.c */,
+				C91E1ECA2105E4160080FAD8 /* net_endpoint_monitor.c */,
+				C91E1ECB2105E4160080FAD8 /* net_endpoint_wbuf.c */,
+				C91E1ECC2105E4160080FAD8 /* net_ipset_node.c */,
+				C91E1ECD2105E4160080FAD8 /* net_ipset.c */,
+				C91E1ECE2105E4160080FAD8 /* net_ipset_ipv4.c */,
+				C91E1ECF2105E4160080FAD8 /* net_driver.c */,
+				C91E1ED02105E4160080FAD8 /* net_ipset_template.c.in */,
+				C91E1ED12105E4160080FAD8 /* net_timer_i.h */,
+				C91E1ED22105E4160080FAD8 /* net_endpoint_i.h */,
+				C91E1ED32105E4160080FAD8 /* net_driver_i.h */,
+				C91E1ED42105E4160080FAD8 /* net_schedule_i.h */,
+				C91E1ED52105E4160080FAD8 /* net_ipset_node_cache.h */,
+				C91E1ED62105E4160080FAD8 /* net_endpoint.c */,
+				C91E1ED72105E4160080FAD8 /* net_protocol.c */,
+				C91E1ED82105E4160080FAD8 /* net_link_i.h */,
+				C91E1ED92105E4160080FAD8 /* net_address_i.h */,
+				C91E1EDA2105E4160080FAD8 /* net_endpoint_rbuf.c */,
+				C91E1EDB2105E4160080FAD8 /* net_ipset_i.h */,
+				C91E1EDC2105E4160080FAD8 /* net_direct_endpoint.c */,
+				C91E1EDD2105E4160080FAD8 /* net_endpoint_fbuf.c */,
+				C91E1EDE2105E4160080FAD8 /* net_endpoint_stream.c */,
+				C91E1EDF2105E4160080FAD8 /* net_link.c */,
+				C91E1EE02105E4160080FAD8 /* net_dns_query.c */,
+				C91E1EE12105E4160080FAD8 /* net_dgram_i.h */,
+				C91E1EE22105E4160080FAD8 /* net_protocol_i.h */,
+				C91E1EE32105E4160080FAD8 /* net_dns_query_i.h */,
+				C91E1EE42105E4160080FAD8 /* net_dgram.c */,
+				C91E1EE52105E4160080FAD8 /* net_address_matcher.c */,
+				C91E1EE62105E4160080FAD8 /* net_ipset_ipv6.c */,
+				C91E1EE72105E4160080FAD8 /* net_ipset_node.h */,
+				C91E1EE82105E4160080FAD8 /* net_endpoint_monitor_i.h */,
+				C91E1EE92105E4160080FAD8 /* net_ipset_node_cache.c */,
+				C91E1EEA2105E4160080FAD8 /* net_direct_endpoint_i.h */,
+				C91E1EEB2105E4160080FAD8 /* net_address_rule.c */,
+			);
+			path = src;
+			sourceTree = "<group>";
+		};
+		C9323A382105E2CD005DD3C0 = {
+			isa = PBXGroup;
+			children = (
+				C9323A522105E2E3005DD3C0 /* core */,
+				C9323A422105E2CD005DD3C0 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		C9323A422105E2CD005DD3C0 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				C9323A512105E2E3005DD3C0 /* libnet_core.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		C9323A522105E2E3005DD3C0 /* core */ = {
+			isa = PBXGroup;
+			children = (
+				C91E1EB32105E4150080FAD8 /* include */,
+				C91E1EC32105E4160080FAD8 /* src */,
+			);
+			name = core;
+			path = ../../core;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		C9323A502105E2E3005DD3C0 /* net_core */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C9323A572105E2E3005DD3C0 /* Build configuration list for PBXNativeTarget "net_core" */;
+			buildPhases = (
+				C9323A4D2105E2E3005DD3C0 /* Sources */,
+				C9323A4E2105E2E3005DD3C0 /* Frameworks */,
+				C9323A4F2105E2E3005DD3C0 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = net_core;
+			productName = net_core;
+			productReference = C9323A512105E2E3005DD3C0 /* libnet_core.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		C9323A392105E2CD005DD3C0 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0940;
+				ORGANIZATIONNAME = "汪键";
+				TargetAttributes = {
+					C9323A502105E2E3005DD3C0 = {
+						CreatedOnToolsVersion = 9.4.1;
+					};
+				};
+			};
+			buildConfigurationList = C9323A3C2105E2CD005DD3C0 /* Build configuration list for PBXProject "net" */;
+			compatibilityVersion = "Xcode 9.3";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = C9323A382105E2CD005DD3C0;
+			productRefGroup = C9323A422105E2CD005DD3C0 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				C9323A502105E2E3005DD3C0 /* net_core */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		C9323A4D2105E2E3005DD3C0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C91E1EF62105E4160080FAD8 /* net_endpoint.c in Sources */,
+				C91E1EEE2105E4160080FAD8 /* net_address.c in Sources */,
+				C91E1EF82105E4160080FAD8 /* net_endpoint_rbuf.c in Sources */,
+				C91E1EF92105E4160080FAD8 /* net_direct_endpoint.c in Sources */,
+				C91E1EFE2105E4160080FAD8 /* net_dgram.c in Sources */,
+				C91E1EEC2105E4160080FAD8 /* net_endpoint_link_to.c in Sources */,
+				C91E1EEF2105E4160080FAD8 /* net_schedule.c in Sources */,
+				C91E1EED2105E4160080FAD8 /* net_timer.c in Sources */,
+				C91E1EF12105E4160080FAD8 /* net_endpoint_wbuf.c in Sources */,
+				C91E1EFB2105E4160080FAD8 /* net_endpoint_stream.c in Sources */,
+				C91E1EFA2105E4160080FAD8 /* net_endpoint_fbuf.c in Sources */,
+				C91E1EF22105E4160080FAD8 /* net_ipset_node.c in Sources */,
+				C91E1F012105E4160080FAD8 /* net_ipset_node_cache.c in Sources */,
+				C91E1EFC2105E4160080FAD8 /* net_link.c in Sources */,
+				C91E1EFF2105E4160080FAD8 /* net_address_matcher.c in Sources */,
+				C91E1F002105E4160080FAD8 /* net_ipset_ipv6.c in Sources */,
+				C91E1EF02105E4160080FAD8 /* net_endpoint_monitor.c in Sources */,
+				C91E1EF52105E4160080FAD8 /* net_driver.c in Sources */,
+				C91E1EFD2105E4160080FAD8 /* net_dns_query.c in Sources */,
+				C91E1EF42105E4160080FAD8 /* net_ipset_ipv4.c in Sources */,
+				C91E1EF32105E4160080FAD8 /* net_ipset.c in Sources */,
+				C91E1F022105E4160080FAD8 /* net_address_rule.c in Sources */,
+				C91E1EF72105E4160080FAD8 /* net_protocol.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		C9323A482105E2CD005DD3C0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 11.4;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+			};
+			name = Debug;
+		};
+		C9323A492105E2CD005DD3C0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 11.4;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		C9323A582105E2E3005DD3C0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"PCRE2_CODE_UNIT_WIDTH=8",
+				);
+				HEADER_SEARCH_PATHS = (
+					../../../cpe/include,
+					../../../cpe/depends/pcre2/include,
+				);
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C9323A592105E2E3005DD3C0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"PCRE2_CODE_UNIT_WIDTH=8",
+				);
+				HEADER_SEARCH_PATHS = (
+					../../../cpe/include,
+					../../../cpe/depends/pcre2/include,
+				);
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		C9323A3C2105E2CD005DD3C0 /* Build configuration list for PBXProject "net" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C9323A482105E2CD005DD3C0 /* Debug */,
+				C9323A492105E2CD005DD3C0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C9323A572105E2E3005DD3C0 /* Build configuration list for PBXNativeTarget "net_core" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C9323A582105E2E3005DD3C0 /* Debug */,
+				C9323A592105E2E3005DD3C0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = C9323A392105E2CD005DD3C0 /* Project object */;
+}
