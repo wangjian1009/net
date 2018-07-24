@@ -26,26 +26,22 @@ int net_ne_timer_init(net_timer_t base_timer) {
 }
 
 void net_ne_timer_fini(net_timer_t base_timer) {
-    // net_ne_timer_t timer = net_timer_data(base_timer);
-    // net_ne_driver_t driver = net_driver_data(net_timer_driver(base_timer));
-    // ev_timer_stop(driver->m_ne_loop, &timer->m_watcher);
+    net_ne_timer_t timer = net_timer_data(base_timer);
+    dispatch_release(timer->m_timer);
+    timer->m_timer = NULL;
 }
 
 void net_ne_timer_active(net_timer_t base_timer, uint32_t delay_ms) {
-    // net_ne_timer_t timer = net_timer_data(base_timer);
-    // net_ne_driver_t driver = net_driver_data(net_timer_driver(base_timer));
-
-    // ev_timer_stop(driver->m_ne_loop, &timer->m_watcher);
-    // ev_timer_init(&timer->m_watcher, net_ne_timer_cb, ((double)delay_ms / 1000.0), 0.0f);
-    // ev_timer_start(driver->m_ne_loop, &timer->m_watcher);
+    net_ne_timer_t timer = net_timer_data(base_timer);
+    dispatch_source_cancel(timer->m_timer);
+    dispatch_source_set_timer(
+        timer->m_timer, dispatch_time(DISPATCH_TIME_NOW, ((uint64_t)delay_ms) * 1000), DISPATCH_TIME_FOREVER, 1000ULL);
+    dispatch_resume(timer->m_timer);
 }
 
 void net_ne_timer_cancel(net_timer_t base_timer) {
-    // net_ne_timer_t timer = net_timer_data(base_timer);
-    // if (!ev_is_active(&timer->m_watcher)) return;
-
-    // net_ne_driver_t driver = net_driver_data(net_timer_driver(base_timer));
-    // ev_timer_stop(driver->m_ne_loop, &timer->m_watcher);
+    net_ne_timer_t timer = net_timer_data(base_timer);
+    dispatch_source_cancel(timer->m_timer);
 }
 
 uint8_t net_ne_timer_is_active(net_timer_t base_timer) {

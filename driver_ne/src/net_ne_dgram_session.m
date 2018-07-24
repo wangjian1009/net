@@ -30,7 +30,8 @@ net_ne_dgram_session_t net_ne_dgram_session_create(net_ne_dgram_t dgram, net_add
         TAILQ_INSERT_TAIL(&driver->m_free_dgram_sessions, session, m_next);
         return NULL;
     }
-
+    [session->m_session retain];
+    
     return session;
 }
 
@@ -39,6 +40,7 @@ void net_ne_dgram_session_free(net_ne_dgram_session_t session) {
     
     if (session->m_session) {
         [session->m_session cancel];
+        [session->m_session release];
         session->m_session = NULL;
     }
 
