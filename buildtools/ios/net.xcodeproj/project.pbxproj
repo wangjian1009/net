@@ -30,9 +30,21 @@
 		C91E1F002105E4160080FAD8 /* net_ipset_ipv6.c in Sources */ = {isa = PBXBuildFile; fileRef = C91E1EE62105E4160080FAD8 /* net_ipset_ipv6.c */; };
 		C91E1F012105E4160080FAD8 /* net_ipset_node_cache.c in Sources */ = {isa = PBXBuildFile; fileRef = C91E1EE92105E4160080FAD8 /* net_ipset_node_cache.c */; };
 		C91E1F022105E4160080FAD8 /* net_address_rule.c in Sources */ = {isa = PBXBuildFile; fileRef = C91E1EEB2105E4160080FAD8 /* net_address_rule.c */; };
+		C91E1F212105FF000080FAD8 /* net_ne_driver.m in Sources */ = {isa = PBXBuildFile; fileRef = C91E1F142105FF000080FAD8 /* net_ne_driver.m */; };
+		C91E1F222105FF000080FAD8 /* net_ne_dgram.m in Sources */ = {isa = PBXBuildFile; fileRef = C91E1F152105FF000080FAD8 /* net_ne_dgram.m */; };
+		C91E1F2E2106AC3D0080FAD8 /* net_ne_utils.m in Sources */ = {isa = PBXBuildFile; fileRef = C91E1F2D2106AC3C0080FAD8 /* net_ne_utils.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		C91E1F052105FEA80080FAD8 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "include/$(PRODUCT_NAME)";
+			dstSubfolderSpec = 16;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		C9323A4F2105E2E3005DD3C0 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -100,10 +112,30 @@
 		C91E1EE92105E4160080FAD8 /* net_ipset_node_cache.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ipset_node_cache.c; sourceTree = "<group>"; };
 		C91E1EEA2105E4160080FAD8 /* net_direct_endpoint_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_direct_endpoint_i.h; sourceTree = "<group>"; };
 		C91E1EEB2105E4160080FAD8 /* net_address_rule.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_address_rule.c; sourceTree = "<group>"; };
+		C91E1F072105FEA80080FAD8 /* libnet_driver_ne.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_driver_ne.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		C91E1F112105FF000080FAD8 /* net_ne_timer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ne_timer.h; sourceTree = "<group>"; };
+		C91E1F142105FF000080FAD8 /* net_ne_driver.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = net_ne_driver.m; sourceTree = "<group>"; };
+		C91E1F152105FF000080FAD8 /* net_ne_dgram.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = net_ne_dgram.m; sourceTree = "<group>"; };
+		C91E1F162105FF000080FAD8 /* net_ne_acceptor_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ne_acceptor_i.h; sourceTree = "<group>"; };
+		C91E1F182105FF000080FAD8 /* net_ne_driver_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ne_driver_i.h; sourceTree = "<group>"; };
+		C91E1F192105FF000080FAD8 /* net_ne_endpoint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ne_endpoint.h; sourceTree = "<group>"; };
+		C91E1F1A2105FF000080FAD8 /* net_ne_dgram.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ne_dgram.h; sourceTree = "<group>"; };
+		C91E1F1C2105FF000080FAD8 /* net_ne_types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ne_types.h; sourceTree = "<group>"; };
+		C91E1F1D2105FF000080FAD8 /* net_ne_acceptor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ne_acceptor.h; sourceTree = "<group>"; };
+		C91E1F1E2105FF000080FAD8 /* net_ne_driver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ne_driver.h; sourceTree = "<group>"; };
+		C91E1F2C2106AC3C0080FAD8 /* net_ne_utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ne_utils.h; sourceTree = "<group>"; };
+		C91E1F2D2106AC3C0080FAD8 /* net_ne_utils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = net_ne_utils.m; sourceTree = "<group>"; };
 		C9323A512105E2E3005DD3C0 /* libnet_core.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_core.a; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		C91E1F042105FEA80080FAD8 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		C9323A4E2105E2E3005DD3C0 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -183,10 +215,47 @@
 			path = src;
 			sourceTree = "<group>";
 		};
+		C91E1F082105FEA90080FAD8 /* driver_ne */ = {
+			isa = PBXGroup;
+			children = (
+				C91E1F1B2105FF000080FAD8 /* include */,
+				C91E1F102105FF000080FAD8 /* src */,
+			);
+			name = driver_ne;
+			path = ../../driver_ne;
+			sourceTree = "<group>";
+		};
+		C91E1F102105FF000080FAD8 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				C91E1F2C2106AC3C0080FAD8 /* net_ne_utils.h */,
+				C91E1F2D2106AC3C0080FAD8 /* net_ne_utils.m */,
+				C91E1F112105FF000080FAD8 /* net_ne_timer.h */,
+				C91E1F142105FF000080FAD8 /* net_ne_driver.m */,
+				C91E1F152105FF000080FAD8 /* net_ne_dgram.m */,
+				C91E1F162105FF000080FAD8 /* net_ne_acceptor_i.h */,
+				C91E1F182105FF000080FAD8 /* net_ne_driver_i.h */,
+				C91E1F192105FF000080FAD8 /* net_ne_endpoint.h */,
+				C91E1F1A2105FF000080FAD8 /* net_ne_dgram.h */,
+			);
+			path = src;
+			sourceTree = "<group>";
+		};
+		C91E1F1B2105FF000080FAD8 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				C91E1F1C2105FF000080FAD8 /* net_ne_types.h */,
+				C91E1F1D2105FF000080FAD8 /* net_ne_acceptor.h */,
+				C91E1F1E2105FF000080FAD8 /* net_ne_driver.h */,
+			);
+			path = include;
+			sourceTree = "<group>";
+		};
 		C9323A382105E2CD005DD3C0 = {
 			isa = PBXGroup;
 			children = (
 				C9323A522105E2E3005DD3C0 /* core */,
+				C91E1F082105FEA90080FAD8 /* driver_ne */,
 				C9323A422105E2CD005DD3C0 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -195,6 +264,7 @@
 			isa = PBXGroup;
 			children = (
 				C9323A512105E2E3005DD3C0 /* libnet_core.a */,
+				C91E1F072105FEA80080FAD8 /* libnet_driver_ne.a */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -212,6 +282,23 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		C91E1F062105FEA80080FAD8 /* net_driver_ne */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C91E1F0F2105FEA90080FAD8 /* Build configuration list for PBXNativeTarget "net_driver_ne" */;
+			buildPhases = (
+				C91E1F032105FEA80080FAD8 /* Sources */,
+				C91E1F042105FEA80080FAD8 /* Frameworks */,
+				C91E1F052105FEA80080FAD8 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = net_driver_ne;
+			productName = driver_ne;
+			productReference = C91E1F072105FEA80080FAD8 /* libnet_driver_ne.a */;
+			productType = "com.apple.product-type.library.static";
+		};
 		C9323A502105E2E3005DD3C0 /* net_core */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = C9323A572105E2E3005DD3C0 /* Build configuration list for PBXNativeTarget "net_core" */;
@@ -238,6 +325,9 @@
 				LastUpgradeCheck = 0940;
 				ORGANIZATIONNAME = "汪键";
 				TargetAttributes = {
+					C91E1F062105FEA80080FAD8 = {
+						CreatedOnToolsVersion = 9.4.1;
+					};
 					C9323A502105E2E3005DD3C0 = {
 						CreatedOnToolsVersion = 9.4.1;
 					};
@@ -256,11 +346,22 @@
 			projectRoot = "";
 			targets = (
 				C9323A502105E2E3005DD3C0 /* net_core */,
+				C91E1F062105FEA80080FAD8 /* net_driver_ne */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXSourcesBuildPhase section */
+		C91E1F032105FEA80080FAD8 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C91E1F222105FF000080FAD8 /* net_ne_dgram.m in Sources */,
+				C91E1F212105FF000080FAD8 /* net_ne_driver.m in Sources */,
+				C91E1F2E2106AC3D0080FAD8 /* net_ne_utils.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		C9323A4D2105E2E3005DD3C0 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -294,6 +395,36 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
+		C91E1F0D2105FEA90080FAD8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				HEADER_SEARCH_PATHS = (
+					../../../cpe/include,
+					../../core/include,
+				);
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C91E1F0E2105FEA90080FAD8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				HEADER_SEARCH_PATHS = (
+					../../../cpe/include,
+					../../core/include,
+				);
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		C9323A482105E2CD005DD3C0 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -445,6 +576,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		C91E1F0F2105FEA90080FAD8 /* Build configuration list for PBXNativeTarget "net_driver_ne" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C91E1F0D2105FEA90080FAD8 /* Debug */,
+				C91E1F0E2105FEA90080FAD8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		C9323A3C2105E2CD005DD3C0 /* Build configuration list for PBXProject "net" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

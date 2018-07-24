@@ -54,6 +54,8 @@ void const * net_address_data(net_address_t address);
 void net_address_print(write_stream_t ws, net_address_t address);
 const char * net_address_dump(mem_buffer_t buffer, net_address_t address);
 
+const char * net_address_host(mem_buffer_t buffer, net_address_t address);
+
 void net_address_free(net_address_t address);
 
 int net_address_cmp(net_address_t l, net_address_t r);

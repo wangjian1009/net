@@ -1,6 +1,7 @@
 #include "assert.h"
 #include "cpe/pal/pal_string.h"
 #include "cpe/pal/pal_strings.h"
+#include "cpe/utils/hash_algo.h"
 #include "cpe/utils/bitarry.h"
 #include "cpe/utils/string_utils.h"
 #include "cpe/utils/stream_buffer.h"
@@ -348,6 +349,25 @@ const char * net_address_dump(mem_buffer_t buffer, net_address_t address) {
     return mem_buffer_make_continuous(buffer, 0);
 }
 
+const char * net_address_host(mem_buffer_t buffer, net_address_t address) {
+    char * buf;
+    
+    switch(address->m_type) {
+    case net_address_ipv4:
+        mem_buffer_clear_data(buffer);
+        buf = mem_buffer_alloc(buffer, INET_ADDRSTRLEN);
+        inet_ntop(AF_INET, &((struct net_address_ipv4v6 *)address)->m_ipv4, buf, INET_ADDRSTRLEN);
+        return buf;
+    case net_address_ipv6:
+        mem_buffer_clear_data(buffer);
+        buf = mem_buffer_alloc(buffer, INET6_ADDRSTRLEN);
+        inet_ntop(AF_INET6, &((struct net_address_ipv4v6 *)address)->m_ipv6, buf, INET6_ADDRSTRLEN);
+        return buf;
+    case net_address_domain:
+        return ((struct net_address_domain *)address)->m_url;
+    }
+}
+
 int net_address_cmp(net_address_t l, net_address_t r) {
     if (l->m_type != r->m_type) {
         return (int)l->m_type - (int)r->m_type;
@@ -392,8 +412,10 @@ uint32_t net_address_hash(net_address_t address) {
         r ^= (uint32_t)address->m_port;
         break;
     case net_address_ipv6:
+        r = 0;
         break;
     case net_address_domain:
+        r = cpe_hash_str((const char *)net_address_data(address), strlen((const char *)net_address_data(address)));
         break;
     }
         
