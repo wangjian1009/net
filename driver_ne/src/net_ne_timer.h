@@ -5,6 +5,7 @@
 
 struct net_ne_timer {
     __unsafe_unretained dispatch_source_t m_timer;
+    uint8_t m_is_active;
 };
 
 int net_ne_timer_init(net_timer_t base_timer);
