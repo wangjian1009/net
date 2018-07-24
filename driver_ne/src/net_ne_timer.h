@@ -4,7 +4,7 @@
 #include "net_ne_driver_i.h"
 
 struct net_ne_timer {
-    //struct ev_timer m_watcher;
+    __unsafe_unretained dispatch_source_t m_timer;
 };
 
 int net_ne_timer_init(net_timer_t base_timer);

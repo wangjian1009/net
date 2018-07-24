@@ -102,6 +102,7 @@ void net_ne_dgram_fini(net_dgram_t base_dgram) {
     //net_ne_driver_t driver = net_driver_data(net_dgram_driver(base_dgram));
 
     net_ne_dgram_session_free_all(dgram);
+    cpe_hash_table_fini(&dgram->m_sessions);
 }
 
 int net_ne_dgram_send(net_dgram_t base_dgram, net_address_t target, void const * data, size_t data_len) {
@@ -109,13 +110,13 @@ int net_ne_dgram_send(net_dgram_t base_dgram, net_address_t target, void const *
     net_schedule_t schedule = net_dgram_schedule(base_dgram);
     net_ne_driver_t driver = net_driver_data(net_dgram_driver(base_dgram));
 
-    // struct sockaddr_storage addr;
-    // socklen_t addr_len = sizeof(addr);
-    // if (net_address_to_sockaddr(target, (struct sockaddr *)&addr, &addr_len) != 0) {
-    //     net_schedule_t schedule = net_dgram_schedule(base_dgram);
-    //     CPE_ERROR(net_schedule_em(schedule), "ne: dgram: get address to send fail");
-    //     return -1;
-    // }
+    net_ne_dgram_session_t session = net_ne_dgram_session_find(dgram, target);
+    if (session == NULL) {
+        session = net_ne_dgram_session_create(dgram, target);
+        if (session == NULL) {
+            return -1;
+        }
+    }
     
     // int nret = sendto(dgram->m_fd, data, data_len, 0, (struct sockaddr *)&addr, addr_len);
     // if (nret < 0) {

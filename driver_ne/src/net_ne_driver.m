@@ -62,6 +62,14 @@ static int net_ne_driver_init(net_driver_t base_driver) {
     driver->m_data_monitor_ctx = NULL;
     driver->m_debug = 0;
 
+    id queue = dispatch_queue_create("net_driver_ne", nil);
+    driver->m_queue = queue;
+
+    if (driver->m_queue == NULL) {
+        CPE_ERROR(driver->m_em, "ne: create dispatch queue fail!");
+        return -1;
+    }
+    
     TAILQ_INIT(&driver->m_acceptors);
     TAILQ_INIT(&driver->m_free_dgram_sessions);
 
@@ -83,6 +91,8 @@ static void net_ne_driver_fini(net_driver_t base_driver) {
     while(!TAILQ_EMPTY(&driver->m_free_dgram_sessions)) {
         net_ne_dgram_session_real_free(TAILQ_FIRST(&driver->m_free_dgram_sessions));
     }
+
+    //dispatch_release(driver->m_queue);
 }
 
 void net_ne_driver_free(net_ne_driver_t driver) {
