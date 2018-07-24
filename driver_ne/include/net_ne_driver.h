@@ -1,11 +1,12 @@
 #ifndef NET_NE_DRIVER_H_INCLEDED
 #define NET_NE_DRIVER_H_INCLEDED
+#import <NetworkExtension/NETunnelProvider.h>
 #include "cpe/utils/utils_types.h"
 #include "net_ne_types.h"
 
 NET_BEGIN_DECL
 
-net_ne_driver_t net_ne_driver_create(net_schedule_t schedule, /*NETunnelProvider*/void * tunnel_provider);
+net_ne_driver_t net_ne_driver_create(net_schedule_t schedule, NETunnelProvider * tunnel_provider);
 
 void net_ne_driver_free(net_ne_driver_t driver);
 

@@ -11,7 +11,7 @@ static int net_ne_driver_init(net_driver_t driver);
 static void net_ne_driver_fini(net_driver_t driver);
 
 net_ne_driver_t
-net_ne_driver_create(net_schedule_t schedule, /*NETunnelProvider*/void * tunnel_provider) {
+net_ne_driver_create(net_schedule_t schedule, NETunnelProvider* tunnel_provider) {
     net_driver_t base_driver;
 
     base_driver = net_driver_create(
@@ -123,3 +123,6 @@ void net_ne_driver_set_data_monitor(
     driver->m_data_monitor_ctx = monitor_ctx;
 }
 
+mem_buffer_t net_ne_driver_tmp_buffer(net_ne_driver_t driver) {
+    return net_schedule_tmp_buffer(net_driver_schedule(net_driver_from_data(driver)));
+}

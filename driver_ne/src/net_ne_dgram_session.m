@@ -72,6 +72,12 @@ void net_ne_dgram_session_real_free(net_ne_dgram_session_t session) {
     mem_free(driver->m_alloc, session);
 }
 
+net_ne_dgram_session_t net_ne_dgram_session_find(net_ne_dgram_t dgram, net_address_t remote_address) {
+    struct net_ne_dgram_session key;
+    key.m_remote_address = remote_address;
+    return cpe_hash_table_find(&dgram->m_sessions, &key);
+}
+
 uint32_t net_ne_dgram_session_hash(net_ne_dgram_session_t session, void * user_data) {
     return net_address_hash(session->m_remote_address);
 }
