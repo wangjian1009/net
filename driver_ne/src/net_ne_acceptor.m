@@ -13,20 +13,16 @@ net_ne_acceptor_create(
     net_ne_driver_t driver, net_protocol_t protocol,
     net_address_t address, uint32_t accept_queue_size)
 {
-    net_schedule_t schedule = net_driver_schedule(net_driver_from_data(driver));
-    mem_allocrator_t alloc = net_schedule_allocrator(schedule);
-    error_monitor_t em = net_schedule_em(schedule);
-
     struct sockaddr_storage addr;
     socklen_t addr_len = sizeof(addr);
     if (net_address_to_sockaddr(address, (struct sockaddr *)&addr, &addr_len) != 0) {
-        CPE_ERROR(em, "ne: acceptor: add address fail!");
+        CPE_ERROR(driver->m_em, "ne: acceptor: add address fail!");
         return NULL;
     }
     
-    net_ne_acceptor_t acceptor = mem_alloc(alloc, sizeof(struct net_ne_acceptor));
+    net_ne_acceptor_t acceptor = mem_alloc(driver->m_alloc, sizeof(struct net_ne_acceptor));
     if (acceptor == NULL) {
-        CPE_ERROR(em, "ne: acceptor: alloc fail!");
+        CPE_ERROR(driver->m_em, "ne: acceptor: alloc fail!");
         return NULL;
     }
 
@@ -65,7 +61,7 @@ net_ne_acceptor_create(
 
     if (driver->m_sock_process_fun) {
         if (driver->m_sock_process_fun(driver, driver->m_sock_process_ctx, acceptor->m_fd, NULL) != 0) {
-            CPE_ERROR(em, "ne: acceptor: sock process fail");
+            CPE_ERROR(driver->m_em, "ne: acceptor: sock process fail");
             cpe_sock_close(acceptor->m_fd);
             mem_free(alloc, acceptor);
             return NULL;
@@ -141,7 +137,7 @@ static void net_ne_acceptor_cb(EV_P_ ev_io *w, int revents) {
     net_endpoint_t base_endpoint =
         net_endpoint_create(net_driver_from_data(driver), net_endpoint_inbound, acceptor->m_protocol);
     if (base_endpoint == NULL) {
-        CPE_ERROR(em, "ne: acceptor: create endpoint fail");
+        CPE_ERROR(driver->m_em, "ne: acceptor: create endpoint fail");
         cpe_sock_close(new_fd);
         return;
     }
@@ -164,7 +160,7 @@ static void net_ne_acceptor_cb(EV_P_ ev_io *w, int revents) {
 
     if (driver->m_sock_process_fun) {
         if (driver->m_sock_process_fun(driver, driver->m_sock_process_ctx, new_fd, net_endpoint_remote_address(base_endpoint)) != 0) {
-            CPE_ERROR(em, "ne: accept: sock process fail");
+            CPE_ERROR(driver->m_em, "ne: accept: sock process fail");
             net_endpoint_free(base_endpoint);
             return;
         }

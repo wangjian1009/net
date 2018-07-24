@@ -4,16 +4,21 @@
 #include "cpe/pal/pal_queue.h"
 #include "cpe/utils/memory.h"
 #include "cpe/utils/error.h"
+#include "cpe/utils/hash.h"
 #include "net_schedule.h"
 #include "net_ne_driver.h"
 
 typedef TAILQ_HEAD(net_ne_acceptor_list, net_ne_acceptor) net_ne_acceptor_list_t;
+typedef TAILQ_HEAD(net_ne_dgram_session_list, net_ne_dgram_session) net_ne_dgram_session_list_t;
 
 typedef struct net_ne_endpoint * net_ne_endpoint_t;
 typedef struct net_ne_dgram * net_ne_dgram_t;
+typedef struct net_ne_dgram_session * net_ne_dgram_session_t;
 typedef struct net_ne_timer * net_ne_timer_t;
 
 struct net_ne_driver {
+    mem_allocrator_t m_alloc;
+    error_monitor_t m_em;
     __unsafe_unretained NETunnelProvider * m_tunnel_provider;
     uint8_t m_debug;
     net_ne_driver_sock_create_process_fun_t m_sock_process_fun;
@@ -22,6 +27,8 @@ struct net_ne_driver {
     void * m_data_monitor_ctx;
     
     net_ne_acceptor_list_t m_acceptors;
+
+    net_ne_dgram_session_list_t m_free_dgram_sessions;
 };
 
 mem_buffer_t net_ne_driver_tmp_buffer(net_ne_driver_t driver);

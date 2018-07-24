@@ -5,6 +5,7 @@
 #include "net_ne_endpoint.h"
 #include "net_ne_dgram.h"
 #include "net_ne_timer.h"
+#include "net_ne_dgram_session.h"
 
 static int net_ne_driver_init(net_driver_t driver);
 static void net_ne_driver_fini(net_driver_t driver);
@@ -50,7 +51,10 @@ net_ne_driver_create(net_schedule_t schedule, /*NETunnelProvider*/void * tunnel_
 
 static int net_ne_driver_init(net_driver_t base_driver) {
     net_ne_driver_t driver = net_driver_data(base_driver);
+    net_schedule_t schedule = net_driver_schedule(base_driver);
 
+    driver->m_alloc = net_schedule_allocrator(schedule);
+    driver->m_em = net_schedule_em(schedule);
     driver->m_tunnel_provider = NULL;
     driver->m_sock_process_fun = NULL;
     driver->m_sock_process_ctx = NULL;
@@ -59,6 +63,7 @@ static int net_ne_driver_init(net_driver_t base_driver) {
     driver->m_debug = 0;
 
     TAILQ_INIT(&driver->m_acceptors);
+    TAILQ_INIT(&driver->m_free_dgram_sessions);
 
     return 0;
 }
@@ -71,7 +76,12 @@ static void net_ne_driver_fini(net_driver_t base_driver) {
     }
 
     if (driver->m_tunnel_provider) {
+        //driver->m_tunnel_provider;
         driver->m_tunnel_provider = NULL;
+    }
+
+    while(!TAILQ_EMPTY(&driver->m_free_dgram_sessions)) {
+        net_ne_dgram_session_real_free(TAILQ_FIRST(&driver->m_free_dgram_sessions));
     }
 }
 
