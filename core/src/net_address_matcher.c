@@ -105,7 +105,6 @@ static const char * net_address_matcher_parse_cidr(mem_buffer_t buffer, const ch
     const char * p = strrchr(str, '/');
     if (p == NULL) {
         return str;
-        *cidr = (uint8_t)-1;
     }
     else {
         *cidr = atoi(p + 1);

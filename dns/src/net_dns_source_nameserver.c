@@ -283,9 +283,9 @@ static void net_dns_source_nameserver_dgram_receiver(void * ctx, void * data, si
         p += 2 + 2; /*type + class*/
     }
 
-    uint8_t success_count = 0;
+    //uint8_t success_count = 0;
 
-    uint32_t expire_base_ms = cur_time_ms();
+    int64_t expire_base_ms = cur_time_ms();
     mem_buffer_t buffer = &manage->m_data_buffer;
     for(i = 0; i < ancount; i++) {
         struct write_stream_buffer ws = CPE_WRITE_STREAM_BUFFER_INITIALIZER(buffer);

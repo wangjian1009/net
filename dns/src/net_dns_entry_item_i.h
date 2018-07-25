@@ -11,7 +11,7 @@ struct net_dns_entry_item {
     net_dns_source_t m_source;
     TAILQ_ENTRY(net_dns_entry_item) m_next_for_source;
     net_address_t m_address;
-    uint32_t m_expire_time_ms;
+    int64_t m_expire_time_ms;
 };
 
 void net_dns_entry_item_real_free(net_dns_entry_item_t entry_item);

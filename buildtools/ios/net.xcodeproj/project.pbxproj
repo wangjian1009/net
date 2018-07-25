@@ -37,6 +37,22 @@
 		C91E1F332106D1240080FAD8 /* net_ne_timer.m in Sources */ = {isa = PBXBuildFile; fileRef = C91E1F322106D1240080FAD8 /* net_ne_timer.m */; };
 		C91E1F3521076D6F0080FAD8 /* net_ne_acceptor.m in Sources */ = {isa = PBXBuildFile; fileRef = C91E1F3421076D6F0080FAD8 /* net_ne_acceptor.m */; };
 		C91E1F3721076E1F0080FAD8 /* net_ne_endpoint.m in Sources */ = {isa = PBXBuildFile; fileRef = C91E1F3621076E1F0080FAD8 /* net_ne_endpoint.m */; };
+		C9C4B142210862470045A1A3 /* net_dns_dgram_receiver.c in Sources */ = {isa = PBXBuildFile; fileRef = C9C4B12F210862460045A1A3 /* net_dns_dgram_receiver.c */; };
+		C9C4B143210862470045A1A3 /* net_dns_task_builder.c in Sources */ = {isa = PBXBuildFile; fileRef = C9C4B131210862460045A1A3 /* net_dns_task_builder.c */; };
+		C9C4B144210862470045A1A3 /* net_dns_source.c in Sources */ = {isa = PBXBuildFile; fileRef = C9C4B132210862460045A1A3 /* net_dns_source.c */; };
+		C9C4B145210862470045A1A3 /* net_dns_manage_conf.c in Sources */ = {isa = PBXBuildFile; fileRef = C9C4B133210862460045A1A3 /* net_dns_manage_conf.c */; };
+		C9C4B146210862470045A1A3 /* net_dns_query_ex.c in Sources */ = {isa = PBXBuildFile; fileRef = C9C4B134210862460045A1A3 /* net_dns_query_ex.c */; };
+		C9C4B147210862470045A1A3 /* net_dns_source_nameserver.c in Sources */ = {isa = PBXBuildFile; fileRef = C9C4B137210862460045A1A3 /* net_dns_source_nameserver.c */; };
+		C9C4B148210862470045A1A3 /* net_dns_task.c in Sources */ = {isa = PBXBuildFile; fileRef = C9C4B138210862460045A1A3 /* net_dns_task.c */; };
+		C9C4B149210862470045A1A3 /* net_dns_manage.c in Sources */ = {isa = PBXBuildFile; fileRef = C9C4B139210862460045A1A3 /* net_dns_manage.c */; };
+		C9C4B14A210862470045A1A3 /* net_dns_task_ctx.c in Sources */ = {isa = PBXBuildFile; fileRef = C9C4B13A210862460045A1A3 /* net_dns_task_ctx.c */; };
+		C9C4B14B210862470045A1A3 /* net_dns_task_step.c in Sources */ = {isa = PBXBuildFile; fileRef = C9C4B13C210862460045A1A3 /* net_dns_task_step.c */; };
+		C9C4B14C210862470045A1A3 /* net_dns_entry_item.c in Sources */ = {isa = PBXBuildFile; fileRef = C9C4B13D210862460045A1A3 /* net_dns_entry_item.c */; };
+		C9C4B14D210862470045A1A3 /* net_dns_entry.c in Sources */ = {isa = PBXBuildFile; fileRef = C9C4B141210862470045A1A3 /* net_dns_entry.c */; };
+		C9C4B157210862550045A1A3 /* net_socks5_svr_endpoint.c in Sources */ = {isa = PBXBuildFile; fileRef = C9C4B150210862550045A1A3 /* net_socks5_svr_endpoint.c */; };
+		C9C4B158210862550045A1A3 /* net_socks5_svr.c in Sources */ = {isa = PBXBuildFile; fileRef = C9C4B153210862550045A1A3 /* net_socks5_svr.c */; };
+		C9C4B162210862630045A1A3 /* net_router_schedule.c in Sources */ = {isa = PBXBuildFile; fileRef = C9C4B15E210862630045A1A3 /* net_router_schedule.c */; };
+		C9C4B163210862630045A1A3 /* net_router.c in Sources */ = {isa = PBXBuildFile; fileRef = C9C4B161210862630045A1A3 /* net_router.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -50,6 +66,33 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C9323A4F2105E2E3005DD3C0 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "include/$(PRODUCT_NAME)";
+			dstSubfolderSpec = 16;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C9C4B0F9210861940045A1A3 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "include/$(PRODUCT_NAME)";
+			dstSubfolderSpec = 16;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C9C4B106210861A70045A1A3 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "include/$(PRODUCT_NAME)";
+			dstSubfolderSpec = 16;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C9C4B113210861B50045A1A3 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "include/$(PRODUCT_NAME)";
@@ -135,6 +178,57 @@
 		C91E1F3421076D6F0080FAD8 /* net_ne_acceptor.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = net_ne_acceptor.m; sourceTree = "<group>"; };
 		C91E1F3621076E1F0080FAD8 /* net_ne_endpoint.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = net_ne_endpoint.m; sourceTree = "<group>"; };
 		C9323A512105E2E3005DD3C0 /* libnet_core.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_core.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		C9C4B0FB210861940045A1A3 /* libnet_dns.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_dns.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		C9C4B108210861A70045A1A3 /* libnet_protocol_socks5.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_protocol_socks5.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		C9C4B115210861B50045A1A3 /* libnet_router.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_router.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		C9C4B11F210862460045A1A3 /* net_dns_source.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_source.h; sourceTree = "<group>"; };
+		C9C4B120210862460045A1A3 /* net_dns_source_nameserver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_source_nameserver.h; sourceTree = "<group>"; };
+		C9C4B121210862460045A1A3 /* net_dns_entry_item.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_entry_item.h; sourceTree = "<group>"; };
+		C9C4B122210862460045A1A3 /* net_dns_task_step.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_task_step.h; sourceTree = "<group>"; };
+		C9C4B123210862460045A1A3 /* net_dns_task_ctx.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_task_ctx.h; sourceTree = "<group>"; };
+		C9C4B124210862460045A1A3 /* net_dns_manage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_manage.h; sourceTree = "<group>"; };
+		C9C4B125210862460045A1A3 /* net_dns_task.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_task.h; sourceTree = "<group>"; };
+		C9C4B126210862460045A1A3 /* net_dns_entry.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_entry.h; sourceTree = "<group>"; };
+		C9C4B127210862460045A1A3 /* net_dns_system.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_system.h; sourceTree = "<group>"; };
+		C9C4B128210862460045A1A3 /* net_dns_task_builder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_task_builder.h; sourceTree = "<group>"; };
+		C9C4B129210862460045A1A3 /* net_dns_dgram_receiver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_dgram_receiver.h; sourceTree = "<group>"; };
+		C9C4B12B210862460045A1A3 /* net_dns_query_ex_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_query_ex_i.h; sourceTree = "<group>"; };
+		C9C4B12C210862460045A1A3 /* net_dns_dgram_receiver_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_dgram_receiver_i.h; sourceTree = "<group>"; };
+		C9C4B12D210862460045A1A3 /* net_dns_source_nameserver_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_source_nameserver_i.h; sourceTree = "<group>"; };
+		C9C4B12E210862460045A1A3 /* net_dns_task_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_task_i.h; sourceTree = "<group>"; };
+		C9C4B12F210862460045A1A3 /* net_dns_dgram_receiver.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_dns_dgram_receiver.c; sourceTree = "<group>"; };
+		C9C4B130210862460045A1A3 /* net_dns_entry_item_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_entry_item_i.h; sourceTree = "<group>"; };
+		C9C4B131210862460045A1A3 /* net_dns_task_builder.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_dns_task_builder.c; sourceTree = "<group>"; };
+		C9C4B132210862460045A1A3 /* net_dns_source.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_dns_source.c; sourceTree = "<group>"; };
+		C9C4B133210862460045A1A3 /* net_dns_manage_conf.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_dns_manage_conf.c; sourceTree = "<group>"; };
+		C9C4B134210862460045A1A3 /* net_dns_query_ex.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_dns_query_ex.c; sourceTree = "<group>"; };
+		C9C4B135210862460045A1A3 /* net_dns_entry_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_entry_i.h; sourceTree = "<group>"; };
+		C9C4B136210862460045A1A3 /* net_dns_source_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_source_i.h; sourceTree = "<group>"; };
+		C9C4B137210862460045A1A3 /* net_dns_source_nameserver.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_dns_source_nameserver.c; sourceTree = "<group>"; };
+		C9C4B138210862460045A1A3 /* net_dns_task.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_dns_task.c; sourceTree = "<group>"; };
+		C9C4B139210862460045A1A3 /* net_dns_manage.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_dns_manage.c; sourceTree = "<group>"; };
+		C9C4B13A210862460045A1A3 /* net_dns_task_ctx.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_dns_task_ctx.c; sourceTree = "<group>"; };
+		C9C4B13B210862460045A1A3 /* net_dns_task_ctx_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_task_ctx_i.h; sourceTree = "<group>"; };
+		C9C4B13C210862460045A1A3 /* net_dns_task_step.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_dns_task_step.c; sourceTree = "<group>"; };
+		C9C4B13D210862460045A1A3 /* net_dns_entry_item.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_dns_entry_item.c; sourceTree = "<group>"; };
+		C9C4B13E210862460045A1A3 /* net_dns_task_builder_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_task_builder_i.h; sourceTree = "<group>"; };
+		C9C4B13F210862460045A1A3 /* net_dns_manage_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_manage_i.h; sourceTree = "<group>"; };
+		C9C4B140210862460045A1A3 /* net_dns_task_step_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_task_step_i.h; sourceTree = "<group>"; };
+		C9C4B141210862470045A1A3 /* net_dns_entry.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_dns_entry.c; sourceTree = "<group>"; };
+		C9C4B14F210862550045A1A3 /* net_socks5_svr_endpoint_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_socks5_svr_endpoint_i.h; sourceTree = "<group>"; };
+		C9C4B150210862550045A1A3 /* net_socks5_svr_endpoint.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_socks5_svr_endpoint.c; sourceTree = "<group>"; };
+		C9C4B151210862550045A1A3 /* net_socks5_pro.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_socks5_pro.h; sourceTree = "<group>"; };
+		C9C4B152210862550045A1A3 /* net_socks5_svr_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_socks5_svr_i.h; sourceTree = "<group>"; };
+		C9C4B153210862550045A1A3 /* net_socks5_svr.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_socks5_svr.c; sourceTree = "<group>"; };
+		C9C4B155210862550045A1A3 /* net_socks5_types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_socks5_types.h; sourceTree = "<group>"; };
+		C9C4B156210862550045A1A3 /* net_socks5_svr.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_socks5_svr.h; sourceTree = "<group>"; };
+		C9C4B15A210862630045A1A3 /* net_router_schedule.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_router_schedule.h; sourceTree = "<group>"; };
+		C9C4B15B210862630045A1A3 /* net_router.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_router.h; sourceTree = "<group>"; };
+		C9C4B15C210862630045A1A3 /* net_router_types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_router_types.h; sourceTree = "<group>"; };
+		C9C4B15E210862630045A1A3 /* net_router_schedule.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_router_schedule.c; sourceTree = "<group>"; };
+		C9C4B15F210862630045A1A3 /* net_router_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_router_i.h; sourceTree = "<group>"; };
+		C9C4B160210862630045A1A3 /* net_router_schedule_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_router_schedule_i.h; sourceTree = "<group>"; };
+		C9C4B161210862630045A1A3 /* net_router.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_router.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -146,6 +240,27 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C9323A4E2105E2E3005DD3C0 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C9C4B0F8210861940045A1A3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C9C4B105210861A70045A1A3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C9C4B112210861B50045A1A3 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -270,6 +385,9 @@
 			children = (
 				C9323A522105E2E3005DD3C0 /* core */,
 				C91E1F082105FEA90080FAD8 /* driver_ne */,
+				C9C4B0FC210861940045A1A3 /* dns */,
+				C9C4B109210861A70045A1A3 /* protocol_socks5 */,
+				C9C4B116210861B50045A1A3 /* router */,
 				C9323A422105E2CD005DD3C0 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -279,6 +397,9 @@
 			children = (
 				C9323A512105E2E3005DD3C0 /* libnet_core.a */,
 				C91E1F072105FEA80080FAD8 /* libnet_driver_ne.a */,
+				C9C4B0FB210861940045A1A3 /* libnet_dns.a */,
+				C9C4B108210861A70045A1A3 /* libnet_protocol_socks5.a */,
+				C9C4B115210861B50045A1A3 /* libnet_router.a */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -291,6 +412,126 @@
 			);
 			name = core;
 			path = ../../core;
+			sourceTree = "<group>";
+		};
+		C9C4B0FC210861940045A1A3 /* dns */ = {
+			isa = PBXGroup;
+			children = (
+				C9C4B11E210862460045A1A3 /* include */,
+				C9C4B12A210862460045A1A3 /* src */,
+			);
+			name = dns;
+			path = ../../dns;
+			sourceTree = "<group>";
+		};
+		C9C4B109210861A70045A1A3 /* protocol_socks5 */ = {
+			isa = PBXGroup;
+			children = (
+				C9C4B154210862550045A1A3 /* include */,
+				C9C4B14E210862550045A1A3 /* src */,
+			);
+			name = protocol_socks5;
+			path = ../../protocol_socks5;
+			sourceTree = "<group>";
+		};
+		C9C4B116210861B50045A1A3 /* router */ = {
+			isa = PBXGroup;
+			children = (
+				C9C4B159210862630045A1A3 /* include */,
+				C9C4B15D210862630045A1A3 /* src */,
+			);
+			name = router;
+			path = ../../router;
+			sourceTree = "<group>";
+		};
+		C9C4B11E210862460045A1A3 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				C9C4B11F210862460045A1A3 /* net_dns_source.h */,
+				C9C4B120210862460045A1A3 /* net_dns_source_nameserver.h */,
+				C9C4B121210862460045A1A3 /* net_dns_entry_item.h */,
+				C9C4B122210862460045A1A3 /* net_dns_task_step.h */,
+				C9C4B123210862460045A1A3 /* net_dns_task_ctx.h */,
+				C9C4B124210862460045A1A3 /* net_dns_manage.h */,
+				C9C4B125210862460045A1A3 /* net_dns_task.h */,
+				C9C4B126210862460045A1A3 /* net_dns_entry.h */,
+				C9C4B127210862460045A1A3 /* net_dns_system.h */,
+				C9C4B128210862460045A1A3 /* net_dns_task_builder.h */,
+				C9C4B129210862460045A1A3 /* net_dns_dgram_receiver.h */,
+			);
+			path = include;
+			sourceTree = "<group>";
+		};
+		C9C4B12A210862460045A1A3 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				C9C4B12B210862460045A1A3 /* net_dns_query_ex_i.h */,
+				C9C4B12C210862460045A1A3 /* net_dns_dgram_receiver_i.h */,
+				C9C4B12D210862460045A1A3 /* net_dns_source_nameserver_i.h */,
+				C9C4B12E210862460045A1A3 /* net_dns_task_i.h */,
+				C9C4B12F210862460045A1A3 /* net_dns_dgram_receiver.c */,
+				C9C4B130210862460045A1A3 /* net_dns_entry_item_i.h */,
+				C9C4B131210862460045A1A3 /* net_dns_task_builder.c */,
+				C9C4B132210862460045A1A3 /* net_dns_source.c */,
+				C9C4B133210862460045A1A3 /* net_dns_manage_conf.c */,
+				C9C4B134210862460045A1A3 /* net_dns_query_ex.c */,
+				C9C4B135210862460045A1A3 /* net_dns_entry_i.h */,
+				C9C4B136210862460045A1A3 /* net_dns_source_i.h */,
+				C9C4B137210862460045A1A3 /* net_dns_source_nameserver.c */,
+				C9C4B138210862460045A1A3 /* net_dns_task.c */,
+				C9C4B139210862460045A1A3 /* net_dns_manage.c */,
+				C9C4B13A210862460045A1A3 /* net_dns_task_ctx.c */,
+				C9C4B13B210862460045A1A3 /* net_dns_task_ctx_i.h */,
+				C9C4B13C210862460045A1A3 /* net_dns_task_step.c */,
+				C9C4B13D210862460045A1A3 /* net_dns_entry_item.c */,
+				C9C4B13E210862460045A1A3 /* net_dns_task_builder_i.h */,
+				C9C4B13F210862460045A1A3 /* net_dns_manage_i.h */,
+				C9C4B140210862460045A1A3 /* net_dns_task_step_i.h */,
+				C9C4B141210862470045A1A3 /* net_dns_entry.c */,
+			);
+			path = src;
+			sourceTree = "<group>";
+		};
+		C9C4B14E210862550045A1A3 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				C9C4B14F210862550045A1A3 /* net_socks5_svr_endpoint_i.h */,
+				C9C4B150210862550045A1A3 /* net_socks5_svr_endpoint.c */,
+				C9C4B151210862550045A1A3 /* net_socks5_pro.h */,
+				C9C4B152210862550045A1A3 /* net_socks5_svr_i.h */,
+				C9C4B153210862550045A1A3 /* net_socks5_svr.c */,
+			);
+			path = src;
+			sourceTree = "<group>";
+		};
+		C9C4B154210862550045A1A3 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				C9C4B155210862550045A1A3 /* net_socks5_types.h */,
+				C9C4B156210862550045A1A3 /* net_socks5_svr.h */,
+			);
+			path = include;
+			sourceTree = "<group>";
+		};
+		C9C4B159210862630045A1A3 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				C9C4B15A210862630045A1A3 /* net_router_schedule.h */,
+				C9C4B15B210862630045A1A3 /* net_router.h */,
+				C9C4B15C210862630045A1A3 /* net_router_types.h */,
+			);
+			path = include;
+			sourceTree = "<group>";
+		};
+		C9C4B15D210862630045A1A3 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				C9C4B15E210862630045A1A3 /* net_router_schedule.c */,
+				C9C4B15F210862630045A1A3 /* net_router_i.h */,
+				C9C4B160210862630045A1A3 /* net_router_schedule_i.h */,
+				C9C4B161210862630045A1A3 /* net_router.c */,
+			);
+			path = src;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -330,6 +571,57 @@
 			productReference = C9323A512105E2E3005DD3C0 /* libnet_core.a */;
 			productType = "com.apple.product-type.library.static";
 		};
+		C9C4B0FA210861940045A1A3 /* net_dns */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C9C4B101210861940045A1A3 /* Build configuration list for PBXNativeTarget "net_dns" */;
+			buildPhases = (
+				C9C4B0F7210861940045A1A3 /* Sources */,
+				C9C4B0F8210861940045A1A3 /* Frameworks */,
+				C9C4B0F9210861940045A1A3 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = net_dns;
+			productName = net_dns;
+			productReference = C9C4B0FB210861940045A1A3 /* libnet_dns.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+		C9C4B107210861A70045A1A3 /* net_protocol_socks5 */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C9C4B10E210861A70045A1A3 /* Build configuration list for PBXNativeTarget "net_protocol_socks5" */;
+			buildPhases = (
+				C9C4B104210861A70045A1A3 /* Sources */,
+				C9C4B105210861A70045A1A3 /* Frameworks */,
+				C9C4B106210861A70045A1A3 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = net_protocol_socks5;
+			productName = net_protocol_socks5;
+			productReference = C9C4B108210861A70045A1A3 /* libnet_protocol_socks5.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+		C9C4B114210861B50045A1A3 /* net_router */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C9C4B11B210861B50045A1A3 /* Build configuration list for PBXNativeTarget "net_router" */;
+			buildPhases = (
+				C9C4B111210861B50045A1A3 /* Sources */,
+				C9C4B112210861B50045A1A3 /* Frameworks */,
+				C9C4B113210861B50045A1A3 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = net_router;
+			productName = net_router;
+			productReference = C9C4B115210861B50045A1A3 /* libnet_router.a */;
+			productType = "com.apple.product-type.library.static";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -343,6 +635,15 @@
 						CreatedOnToolsVersion = 9.4.1;
 					};
 					C9323A502105E2E3005DD3C0 = {
+						CreatedOnToolsVersion = 9.4.1;
+					};
+					C9C4B0FA210861940045A1A3 = {
+						CreatedOnToolsVersion = 9.4.1;
+					};
+					C9C4B107210861A70045A1A3 = {
+						CreatedOnToolsVersion = 9.4.1;
+					};
+					C9C4B114210861B50045A1A3 = {
 						CreatedOnToolsVersion = 9.4.1;
 					};
 				};
@@ -361,6 +662,9 @@
 			targets = (
 				C9323A502105E2E3005DD3C0 /* net_core */,
 				C91E1F062105FEA80080FAD8 /* net_driver_ne */,
+				C9C4B0FA210861940045A1A3 /* net_dns */,
+				C9C4B107210861A70045A1A3 /* net_protocol_socks5 */,
+				C9C4B114210861B50045A1A3 /* net_router */,
 			);
 		};
 /* End PBXProject section */
@@ -407,6 +711,43 @@
 				C91E1EF32105E4160080FAD8 /* net_ipset.c in Sources */,
 				C91E1F022105E4160080FAD8 /* net_address_rule.c in Sources */,
 				C91E1EF72105E4160080FAD8 /* net_protocol.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C9C4B0F7210861940045A1A3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C9C4B144210862470045A1A3 /* net_dns_source.c in Sources */,
+				C9C4B143210862470045A1A3 /* net_dns_task_builder.c in Sources */,
+				C9C4B14A210862470045A1A3 /* net_dns_task_ctx.c in Sources */,
+				C9C4B145210862470045A1A3 /* net_dns_manage_conf.c in Sources */,
+				C9C4B142210862470045A1A3 /* net_dns_dgram_receiver.c in Sources */,
+				C9C4B149210862470045A1A3 /* net_dns_manage.c in Sources */,
+				C9C4B147210862470045A1A3 /* net_dns_source_nameserver.c in Sources */,
+				C9C4B146210862470045A1A3 /* net_dns_query_ex.c in Sources */,
+				C9C4B14D210862470045A1A3 /* net_dns_entry.c in Sources */,
+				C9C4B14B210862470045A1A3 /* net_dns_task_step.c in Sources */,
+				C9C4B14C210862470045A1A3 /* net_dns_entry_item.c in Sources */,
+				C9C4B148210862470045A1A3 /* net_dns_task.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C9C4B104210861A70045A1A3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C9C4B157210862550045A1A3 /* net_socks5_svr_endpoint.c in Sources */,
+				C9C4B158210862550045A1A3 /* net_socks5_svr.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C9C4B111210861B50045A1A3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C9C4B163210862630045A1A3 /* net_router.c in Sources */,
+				C9C4B162210862630045A1A3 /* net_router_schedule.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -496,7 +837,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 11.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
@@ -548,7 +889,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 11.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = iphoneos;
 				VALIDATE_PRODUCT = YES;
@@ -591,6 +932,90 @@
 			};
 			name = Release;
 		};
+		C9C4B102210861940045A1A3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				HEADER_SEARCH_PATHS = (
+					../../../cpe/include,
+					../../dns/include,
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C9C4B103210861940045A1A3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				HEADER_SEARCH_PATHS = (
+					../../../cpe/include,
+					../../dns/include,
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		C9C4B10F210861A70045A1A3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				HEADER_SEARCH_PATHS = (
+					../../../cpe/include,
+					../../protocol_socks5/include,
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C9C4B110210861A70045A1A3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				HEADER_SEARCH_PATHS = (
+					../../../cpe/include,
+					../../protocol_socks5/include,
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		C9C4B11C210861B50045A1A3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				HEADER_SEARCH_PATHS = (
+					../../../cpe/include,
+					../../router/include,
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C9C4B11D210861B50045A1A3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				HEADER_SEARCH_PATHS = (
+					../../../cpe/include,
+					../../router/include,
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -617,6 +1042,33 @@
 			buildConfigurations = (
 				C9323A582105E2E3005DD3C0 /* Debug */,
 				C9323A592105E2E3005DD3C0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C9C4B101210861940045A1A3 /* Build configuration list for PBXNativeTarget "net_dns" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C9C4B102210861940045A1A3 /* Debug */,
+				C9C4B103210861940045A1A3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C9C4B10E210861A70045A1A3 /* Build configuration list for PBXNativeTarget "net_protocol_socks5" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C9C4B10F210861A70045A1A3 /* Debug */,
+				C9C4B110210861A70045A1A3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C9C4B11B210861B50045A1A3 /* Build configuration list for PBXNativeTarget "net_router" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C9C4B11C210861B50045A1A3 /* Debug */,
+				C9C4B11D210861B50045A1A3 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

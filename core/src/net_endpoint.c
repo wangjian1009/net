@@ -156,8 +156,6 @@ int net_endpoint_set_protocol(net_endpoint_t endpoint, net_protocol_t protocol) 
     return 0;
 
 SET_PROTOCOL_ERROR:
-    return -1;
-
     endpoint->m_protocol = old_protocol;
     endpoint->m_protocol->m_endpoint_init(endpoint);
     CPE_ERROR(

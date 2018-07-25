@@ -71,7 +71,7 @@ START_ERROR:
 }
 
 void net_dns_query_ex_fini(void * ctx, net_dns_query_t query) {
-    net_dns_manage_t manage = ctx;
+    //net_dns_manage_t manage = ctx;
     struct net_dns_query_ex * query_ex = net_dns_query_data(query);
 
     if (query_ex->m_task) {

@@ -177,7 +177,7 @@ void net_dns_manage_free(net_dns_manage_t manage) {
 }
 
 static void net_dns_manage_fini(void * ctx) {
-    net_dns_manage_t manage = ctx;
+    //net_dns_manage_t manage = ctx;
 }
 
 net_dns_mode_t net_dns_manage_mode(net_dns_manage_t manage) {

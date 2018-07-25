@@ -6,7 +6,7 @@ net_dns_entry_item_t
 net_dns_entry_item_create(
     net_dns_entry_t entry, net_dns_source_t source,
     net_address_t address, uint8_t is_own,
-    uint32_t expire_time_ms)
+    int64_t expire_time_ms)
 {
     net_dns_manage_t manage = entry->m_manage;
 

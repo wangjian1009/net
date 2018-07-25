@@ -446,7 +446,7 @@ static net_address_t net_address_rand_same_network_ipv4(net_schedule_t schedule,
 
     r_data.u32 &= mask->u32;
 
-    uint32_t bit_count = cpe_ba_count((cpe_ba_t)&mask->u32, sizeof(mask->u32));
+    uint32_t bit_count = (uint32_t)cpe_ba_count((cpe_ba_t)&mask->u32, sizeof(mask->u32));
     uint32_t range = 1u << bit_count;
 
     //CPE_ERROR(schedule->m_em, "net_address_rand_same_network: bit count %d, range=%d", bit_count, range);

@@ -19,8 +19,6 @@ net_dns_source_create(
     net_dns_task_ctx_start_fun_t task_ctx_start,
     net_dns_task_ctx_cancel_fun_t task_ctx_cancel)
 {
-    net_schedule_t schedule = manage->m_schedule;
-
     net_dns_source_t source = mem_alloc(manage->m_alloc, sizeof(struct net_dns_source) + capacity);
     if (source == NULL) {
         CPE_ERROR(manage->m_em, "dns: source: alloc fail!");
