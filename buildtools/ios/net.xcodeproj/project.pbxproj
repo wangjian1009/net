@@ -53,6 +53,11 @@
 		C9C4B158210862550045A1A3 /* net_socks5_svr.c in Sources */ = {isa = PBXBuildFile; fileRef = C9C4B153210862550045A1A3 /* net_socks5_svr.c */; };
 		C9C4B162210862630045A1A3 /* net_router_schedule.c in Sources */ = {isa = PBXBuildFile; fileRef = C9C4B15E210862630045A1A3 /* net_router_schedule.c */; };
 		C9C4B163210862630045A1A3 /* net_router.c in Sources */ = {isa = PBXBuildFile; fileRef = C9C4B161210862630045A1A3 /* net_router.c */; };
+		C9F3115F21094392006A7621 /* wslay_stack.c in Sources */ = {isa = PBXBuildFile; fileRef = C9F3115521094392006A7621 /* wslay_stack.c */; };
+		C9F3116021094392006A7621 /* wslay_net.c in Sources */ = {isa = PBXBuildFile; fileRef = C9F3115721094392006A7621 /* wslay_net.c */; };
+		C9F3116121094392006A7621 /* wslay_queue.c in Sources */ = {isa = PBXBuildFile; fileRef = C9F3115821094392006A7621 /* wslay_queue.c */; };
+		C9F3116221094392006A7621 /* wslay_event.c in Sources */ = {isa = PBXBuildFile; fileRef = C9F3115A21094392006A7621 /* wslay_event.c */; };
+		C9F3116321094392006A7621 /* wslay_frame.c in Sources */ = {isa = PBXBuildFile; fileRef = C9F3115E21094392006A7621 /* wslay_frame.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -93,6 +98,15 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C9C4B113210861B50045A1A3 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "include/$(PRODUCT_NAME)";
+			dstSubfolderSpec = 16;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C9F311432109433C006A7621 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "include/$(PRODUCT_NAME)";
@@ -229,6 +243,19 @@
 		C9C4B15F210862630045A1A3 /* net_router_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_router_i.h; sourceTree = "<group>"; };
 		C9C4B160210862630045A1A3 /* net_router_schedule_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_router_schedule_i.h; sourceTree = "<group>"; };
 		C9C4B161210862630045A1A3 /* net_router.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_router.c; sourceTree = "<group>"; };
+		C9F311452109433C006A7621 /* libwslay.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libwslay.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		C9F3115221094392006A7621 /* wslayver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = wslayver.h; sourceTree = "<group>"; };
+		C9F3115321094392006A7621 /* wslay.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = wslay.h; sourceTree = "<group>"; };
+		C9F3115521094392006A7621 /* wslay_stack.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = wslay_stack.c; sourceTree = "<group>"; };
+		C9F3115621094392006A7621 /* wslay_event.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = wslay_event.h; sourceTree = "<group>"; };
+		C9F3115721094392006A7621 /* wslay_net.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = wslay_net.c; sourceTree = "<group>"; };
+		C9F3115821094392006A7621 /* wslay_queue.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = wslay_queue.c; sourceTree = "<group>"; };
+		C9F3115921094392006A7621 /* wslay_frame.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = wslay_frame.h; sourceTree = "<group>"; };
+		C9F3115A21094392006A7621 /* wslay_event.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = wslay_event.c; sourceTree = "<group>"; };
+		C9F3115B21094392006A7621 /* wslay_stack.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = wslay_stack.h; sourceTree = "<group>"; };
+		C9F3115C21094392006A7621 /* wslay_net.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = wslay_net.h; sourceTree = "<group>"; };
+		C9F3115D21094392006A7621 /* wslay_queue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = wslay_queue.h; sourceTree = "<group>"; };
+		C9F3115E21094392006A7621 /* wslay_frame.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = wslay_frame.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -261,6 +288,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C9C4B112210861B50045A1A3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C9F311422109433C006A7621 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -383,6 +417,7 @@
 		C9323A382105E2CD005DD3C0 = {
 			isa = PBXGroup;
 			children = (
+				C9F3114E21094371006A7621 /* depends */,
 				C9323A522105E2E3005DD3C0 /* core */,
 				C91E1F082105FEA90080FAD8 /* driver_ne */,
 				C9C4B0FC210861940045A1A3 /* dns */,
@@ -400,6 +435,7 @@
 				C9C4B0FB210861940045A1A3 /* libnet_dns.a */,
 				C9C4B108210861A70045A1A3 /* libnet_protocol_socks5.a */,
 				C9C4B115210861B50045A1A3 /* libnet_router.a */,
+				C9F311452109433C006A7621 /* libwslay.a */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -534,6 +570,58 @@
 			path = src;
 			sourceTree = "<group>";
 		};
+		C9F3114E21094371006A7621 /* depends */ = {
+			isa = PBXGroup;
+			children = (
+				C9F3114F21094392006A7621 /* wslay */,
+			);
+			name = depends;
+			path = ../../depends;
+			sourceTree = "<group>";
+		};
+		C9F3114F21094392006A7621 /* wslay */ = {
+			isa = PBXGroup;
+			children = (
+				C9F3115021094392006A7621 /* include */,
+				C9F3115421094392006A7621 /* src */,
+			);
+			path = wslay;
+			sourceTree = "<group>";
+		};
+		C9F3115021094392006A7621 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				C9F3115121094392006A7621 /* wslay */,
+			);
+			path = include;
+			sourceTree = "<group>";
+		};
+		C9F3115121094392006A7621 /* wslay */ = {
+			isa = PBXGroup;
+			children = (
+				C9F3115221094392006A7621 /* wslayver.h */,
+				C9F3115321094392006A7621 /* wslay.h */,
+			);
+			path = wslay;
+			sourceTree = "<group>";
+		};
+		C9F3115421094392006A7621 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				C9F3115521094392006A7621 /* wslay_stack.c */,
+				C9F3115621094392006A7621 /* wslay_event.h */,
+				C9F3115721094392006A7621 /* wslay_net.c */,
+				C9F3115821094392006A7621 /* wslay_queue.c */,
+				C9F3115921094392006A7621 /* wslay_frame.h */,
+				C9F3115A21094392006A7621 /* wslay_event.c */,
+				C9F3115B21094392006A7621 /* wslay_stack.h */,
+				C9F3115C21094392006A7621 /* wslay_net.h */,
+				C9F3115D21094392006A7621 /* wslay_queue.h */,
+				C9F3115E21094392006A7621 /* wslay_frame.c */,
+			);
+			path = src;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -622,6 +710,23 @@
 			productReference = C9C4B115210861B50045A1A3 /* libnet_router.a */;
 			productType = "com.apple.product-type.library.static";
 		};
+		C9F311442109433C006A7621 /* wslay */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C9F3114D2109433C006A7621 /* Build configuration list for PBXNativeTarget "wslay" */;
+			buildPhases = (
+				C9F311412109433C006A7621 /* Sources */,
+				C9F311422109433C006A7621 /* Frameworks */,
+				C9F311432109433C006A7621 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = wslay;
+			productName = wslay;
+			productReference = C9F311452109433C006A7621 /* libwslay.a */;
+			productType = "com.apple.product-type.library.static";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -646,6 +751,9 @@
 					C9C4B114210861B50045A1A3 = {
 						CreatedOnToolsVersion = 9.4.1;
 					};
+					C9F311442109433C006A7621 = {
+						CreatedOnToolsVersion = 9.4.1;
+					};
 				};
 			};
 			buildConfigurationList = C9323A3C2105E2CD005DD3C0 /* Build configuration list for PBXProject "net" */;
@@ -665,6 +773,7 @@
 				C9C4B0FA210861940045A1A3 /* net_dns */,
 				C9C4B107210861A70045A1A3 /* net_protocol_socks5 */,
 				C9C4B114210861B50045A1A3 /* net_router */,
+				C9F311442109433C006A7621 /* wslay */,
 			);
 		};
 /* End PBXProject section */
@@ -748,6 +857,18 @@
 			files = (
 				C9C4B163210862630045A1A3 /* net_router.c in Sources */,
 				C9C4B162210862630045A1A3 /* net_router_schedule.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C9F311412109433C006A7621 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C9F3116021094392006A7621 /* wslay_net.c in Sources */,
+				C9F3116321094392006A7621 /* wslay_frame.c in Sources */,
+				C9F3116121094392006A7621 /* wslay_queue.c in Sources */,
+				C9F3115F21094392006A7621 /* wslay_stack.c in Sources */,
+				C9F3116221094392006A7621 /* wslay_event.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1016,6 +1137,34 @@
 			};
 			name = Release;
 		};
+		C9F3114B2109433C006A7621 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
+				CLANG_WARN_STRICT_PROTOTYPES = NO;
+				CODE_SIGN_STYLE = Automatic;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
+				HEADER_SEARCH_PATHS = ../../depends/wslay/include;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C9F3114C2109433C006A7621 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
+				CLANG_WARN_STRICT_PROTOTYPES = NO;
+				CODE_SIGN_STYLE = Automatic;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
+				HEADER_SEARCH_PATHS = ../../depends/wslay/include;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -1069,6 +1218,15 @@
 			buildConfigurations = (
 				C9C4B11C210861B50045A1A3 /* Debug */,
 				C9C4B11D210861B50045A1A3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C9F3114D2109433C006A7621 /* Build configuration list for PBXNativeTarget "wslay" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C9F3114B2109433C006A7621 /* Debug */,
+				C9F3114C2109433C006A7621 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
