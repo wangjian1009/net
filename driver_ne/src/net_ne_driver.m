@@ -1,3 +1,4 @@
+#include "cpe/utils/ringbuffer.h"
 #include "net_schedule.h"
 #include "net_driver.h"
 #include "net_ne_driver_i.h"
@@ -44,8 +45,18 @@ net_ne_driver_create(net_schedule_t schedule, NETunnelProvider* tunnel_provider)
     if (base_driver == NULL) return NULL;
 
     net_ne_driver_t driver = net_driver_data(base_driver);
-    driver->m_tunnel_provider = (__bridge NETunnelProvider*)tunnel_provider;
 
+    uint32_t dgram_buf_size = 4 * 1024 * 1024;
+    driver->m_dgram_data_buf = ringbuffer_new(dgram_buf_size);
+    if (driver->m_dgram_data_buf == NULL) {
+        CPE_ERROR(net_schedule_em(schedule), "ne: alloc dgram data buff fail, capacity=%d!", dgram_buf_size);
+        net_driver_free(base_driver);
+        return NULL;
+    }
+    
+    driver->m_tunnel_provider = tunnel_provider;
+    [driver->m_tunnel_provider retain];
+    
     return net_driver_data(base_driver);
 }
 
@@ -59,10 +70,25 @@ static int net_ne_driver_init(net_driver_t base_driver) {
     driver->m_data_monitor_fun = NULL;
     driver->m_data_monitor_ctx = NULL;
     driver->m_debug = 0;
+    driver->m_dgram_data_buf = NULL;
+    driver->m_dgram_max_session_id = 0;
 
+    if (cpe_hash_table_init(
+            &driver->m_dgram_sessions,
+            driver->m_alloc,
+            (cpe_hash_fun_t) net_ne_dgram_session_id_hash,
+            (cpe_hash_eq_t) net_ne_dgram_session_id_eq,
+            CPE_HASH_OBJ2ENTRY(net_ne_dgram_session, m_hh_for_id),
+            -1) != 0)
+    {
+        CPE_ERROR(driver->m_em, "ne: create hash table fail!");
+        return -1;
+    }
+    
     driver->m_queue = dispatch_queue_create("net_driver_ne", nil);
     if (driver->m_queue == NULL) {
         CPE_ERROR(driver->m_em, "ne: create dispatch queue fail!");
+        cpe_hash_table_fini(&driver->m_dgram_sessions);
         return -1;
     }
     [driver->m_queue retain];
@@ -85,11 +111,20 @@ static void net_ne_driver_fini(net_driver_t base_driver) {
         driver->m_tunnel_provider = NULL;
     }
 
+    [driver->m_queue release];
+
+    assert(cpe_hash_table_count(&driver->m_dgram_sessions) == 0);
+    cpe_hash_table_fini(&driver->m_dgram_sessions);
+
+    if (driver->m_dgram_data_buf) {
+        ringbuffer_delete(driver->m_dgram_data_buf);
+        driver->m_dgram_data_buf = NULL;
+    }
+
     while(!TAILQ_EMPTY(&driver->m_free_dgram_sessions)) {
         net_ne_dgram_session_real_free(TAILQ_FIRST(&driver->m_free_dgram_sessions));
     }
 
-    [driver->m_queue release];
 }
 
 void net_ne_driver_free(net_ne_driver_t driver) {
@@ -112,6 +147,10 @@ void net_ne_driver_set_data_monitor(
     driver->m_data_monitor_ctx = monitor_ctx;
 }
 
+net_schedule_t net_ne_driver_schedule(net_ne_driver_t driver) {
+    return net_driver_schedule(net_driver_from_data(driver));
+}
+
 mem_buffer_t net_ne_driver_tmp_buffer(net_ne_driver_t driver) {
-    return net_schedule_tmp_buffer(net_driver_schedule(net_driver_from_data(driver)));
+    return net_schedule_tmp_buffer(net_ne_driver_schedule(driver));
 }

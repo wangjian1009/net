@@ -16,9 +16,9 @@ int net_ne_dgram_init(net_dgram_t base_dgram) {
     if (cpe_hash_table_init(
             &dgram->m_sessions,
             driver->m_alloc,
-            (cpe_hash_fun_t) net_ne_dgram_session_hash,
-            (cpe_hash_eq_t) net_ne_dgram_session_eq,
-            CPE_HASH_OBJ2ENTRY(net_ne_dgram_session, m_hh),
+            (cpe_hash_fun_t) net_ne_dgram_session_address_hash,
+            (cpe_hash_eq_t) net_ne_dgram_session_address_eq,
+            CPE_HASH_OBJ2ENTRY(net_ne_dgram_session, m_hh_for_dgram),
             -1) != 0)
     {
         return -1;

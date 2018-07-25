@@ -1,9 +1,11 @@
+#include "cpe/utils/ringbuffer.h"
 #include "net_address.h"
 #include "net_dgram.h"
 #include "net_ne_dgram_session.h"
 #include "net_ne_utils.h"
 
 static void net_ne_dgram_session_receive_cb(net_ne_dgram_session_t session, NSArray<NSData *> *datagrams, NSError *error);
+static int net_ne_dgram_session_queue_data(net_ne_dgram_session_t session, void const * data, size_t data_len);
 
 net_ne_dgram_session_t net_ne_dgram_session_create(net_ne_dgram_t dgram, net_address_t remote_address) {
     net_ne_driver_t driver = net_ne_dgram_driver(dgram);
@@ -20,7 +22,18 @@ net_ne_dgram_session_t net_ne_dgram_session_create(net_ne_dgram_t dgram, net_add
             return NULL;
         }
     }
-    
+
+    session->m_dgram = dgram;
+    session->m_id = ++driver->m_dgram_max_session_id;
+    session->m_wb = NULL;
+    session->m_remote_address = net_address_copy(net_ne_driver_schedule(driver), remote_address);
+    if (session->m_remote_address == NULL) {
+        CPE_ERROR(driver->m_em, "ne: dgram: dup remote address fail!");
+        session->m_dgram = (net_ne_dgram_t)driver;
+        TAILQ_INSERT_TAIL(&driver->m_free_dgram_sessions, session, m_next);
+        return NULL;
+    }
+        
     net_address_t local_address = net_dgram_address(net_dgram_from_data(dgram));
     
     session->m_session = [driver->m_tunnel_provider
@@ -28,6 +41,7 @@ net_ne_dgram_session_t net_ne_dgram_session_create(net_ne_dgram_t dgram, net_add
                              fromEndpoint: local_address ? net_ne_address_to_endoint(driver, local_address) : nil];
     if (session->m_session == NULL) {
         CPE_ERROR(driver->m_em, "ne: dgram: socket create error");
+        net_address_free(session->m_remote_address);
         session->m_dgram = (net_ne_dgram_t)driver;
         TAILQ_INSERT_TAIL(&driver->m_free_dgram_sessions, session, m_next);
         return NULL;
@@ -40,8 +54,6 @@ net_ne_dgram_session_t net_ne_dgram_session_create(net_ne_dgram_t dgram, net_add
             })
         maxDatagrams: 1500];
     
-        //net_ne_driver_t driver = net_driver_data(net_dgram_driver(base_dgram));
-
     return session;
 }
 
@@ -54,6 +66,12 @@ void net_ne_dgram_session_free(net_ne_dgram_session_t session) {
         session->m_session = NULL;
     }
 
+    if (session->m_wb) {
+        assert(session->m_wb->id == session->m_id);
+        ringbuffer_free(driver->m_dgram_data_buf, session->m_wb);
+        session->m_wb = NULL;
+    }
+    
     cpe_hash_table_remove_by_ins(&session->m_dgram->m_sessions, session);
     
     net_address_free(session->m_remote_address);
@@ -89,6 +107,7 @@ net_ne_dgram_session_t net_ne_dgram_session_find(net_ne_dgram_t dgram, net_addre
 }
 
 int net_ne_dgram_session_send(net_ne_dgram_session_t session, void const * data, size_t data_len) {
+    
     // int nret = sendto(dgram->m_fd, data, data_len, 0, (struct sockaddr *)&addr, addr_len);
     // if (nret < 0) {
     //     CPE_ERROR(
@@ -148,10 +167,18 @@ static void net_ne_dgram_session_receive_cb(net_ne_dgram_session_t session, NSAr
     }
 }
 
-uint32_t net_ne_dgram_session_hash(net_ne_dgram_session_t session, void * user_data) {
+uint32_t net_ne_dgram_session_id_hash(net_ne_dgram_session_t session, void * user_data) {
+    return session->m_id;
+}
+
+int net_ne_dgram_session_id_eq(net_ne_dgram_session_t l, net_ne_dgram_session_t r, void * user_data) {
+    return l->m_id == r->m_id ? 1 : 0;
+}
+
+uint32_t net_ne_dgram_session_address_hash(net_ne_dgram_session_t session, void * user_data) {
     return net_address_hash(session->m_remote_address);
 }
 
-int net_ne_dgram_session_eq(net_ne_dgram_session_t l, net_ne_dgram_session_t r, void * user_data) {
+int net_ne_dgram_session_address_eq(net_ne_dgram_session_t l, net_ne_dgram_session_t r, void * user_data) {
     return net_address_cmp(l->m_remote_address, r->m_remote_address) == 0 ? 1 : 0;
 }
