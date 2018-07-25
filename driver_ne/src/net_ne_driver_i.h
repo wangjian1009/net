@@ -22,8 +22,6 @@ struct net_ne_driver {
     __unsafe_unretained dispatch_queue_t m_queue;
     __unsafe_unretained NETunnelProvider * m_tunnel_provider;
     uint8_t m_debug;
-    net_ne_driver_sock_create_process_fun_t m_sock_process_fun;
-    void * m_sock_process_ctx;
     net_data_monitor_fun_t m_data_monitor_fun;
     void * m_data_monitor_ctx;
     

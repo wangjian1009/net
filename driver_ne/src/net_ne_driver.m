@@ -56,8 +56,6 @@ static int net_ne_driver_init(net_driver_t base_driver) {
     driver->m_alloc = net_schedule_allocrator(schedule);
     driver->m_em = net_schedule_em(schedule);
     driver->m_tunnel_provider = NULL;
-    driver->m_sock_process_fun = NULL;
-    driver->m_sock_process_ctx = NULL;
     driver->m_data_monitor_fun = NULL;
     driver->m_data_monitor_ctx = NULL;
     driver->m_debug = 0;
@@ -106,15 +104,6 @@ void net_ne_driver_set_debug(net_ne_driver_t driver, uint8_t debug) {
     driver->m_debug = debug;
 }
 
-void net_ne_driver_set_sock_create_processor(
-    net_ne_driver_t driver,
-    net_ne_driver_sock_create_process_fun_t process_fun,
-    void * process_ctx)
-{
-    driver->m_sock_process_fun = process_fun;
-    driver->m_sock_process_ctx = process_ctx;
-}
-    
 void net_ne_driver_set_data_monitor(
     net_ne_driver_t driver,
     net_data_monitor_fun_t monitor_fun, void * monitor_ctx)
