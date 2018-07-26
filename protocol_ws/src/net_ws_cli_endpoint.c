@@ -1,4 +1,6 @@
+#include "cpe/pal/pal_string.h"
 #include "cpe/utils/string_utils.h"
+#include "cpe/utils/random.h"
 #include "net_schedule.h"
 #include "net_endpoint.h"
 #include "net_protocol.h"
@@ -49,42 +51,56 @@ static ssize_t net_ws_cli_endpoint_recv_cb(
     wslay_event_context_ptr ctx, uint8_t *data, size_t len, int flags, void *user_data)
 {
     net_ws_cli_endpoint_t ws_ep = (net_ws_cli_endpoint_t)user_data;
-    /* ssize_t r = ws->recv_data(data, len, flags); */
-    /* if(r == -1) { */
-    /*     if(errno == EAGAIN || errno == EWOULDBLOCK) { */
-    /*         wslay_event_set_error(ctx, WSLAY_ERR_WOULDBLOCK); */
-    /*     } else { */
-    /*         wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE); */
-    /*     } */
-    /* } else if(r == 0) { */
-    /*     wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE); */
-    /*     r = -1; */
-    /* } */
-    /* return r; */
-    return 0;
+
+    uint32_t size = (uint32_t)len;
+    if (net_endpoint_rbuf_recv(ws_ep->m_endpoint, data, &size) != 0) {
+        CPE_ERROR(
+            net_schedule_em(net_endpoint_schedule(ws_ep->m_endpoint)),
+            "ws: %s: rbuf recv fail!", ws_ep->m_url);
+        wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE);
+        return -1;
+    }
+
+    if (size == 0) {
+        CPE_ERROR(
+            net_schedule_em(net_endpoint_schedule(ws_ep->m_endpoint)),
+            "ws: %s: rbuf recv no data!", ws_ep->m_url);
+        wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE);
+        return -1;
+    }
+
+    return (ssize_t)size;
 }
 
 static ssize_t net_ws_cli_endpoint_send_cb(
     wslay_event_context_ptr ctx, const uint8_t *data, size_t len, int flags, void *user_data)
 {
     net_ws_cli_endpoint_t ws_ep = (net_ws_cli_endpoint_t)user_data;
-    /* ssize_t r = ws->send_data(data, len, flags); */
-    /* if(r == -1) { */
-    /*     if(errno == EAGAIN || errno == EWOULDBLOCK) { */
-    /*         wslay_event_set_error(ctx, WSLAY_ERR_WOULDBLOCK); */
-    /*     } else { */
-    /*         wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE); */
-    /*     } */
-    /* } */
-    /* return r; */
-    return 0;
+
+    if (net_endpoint_wbuf_append(ws_ep->m_endpoint, data, (uint32_t)len) != 0) {
+        CPE_ERROR(
+            net_schedule_em(net_endpoint_schedule(ws_ep->m_endpoint)),
+            "ws: %s: wbuf append fail!", ws_ep->m_url);
+        wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE);
+        return -1;
+    }
+    
+    return (size_t)len;
 }
 
 static int net_ws_cli_endpoint_genmask_cb(
     wslay_event_context_ptr ctx, uint8_t *buf, size_t len, void *user_data)
 {
     net_ws_cli_endpoint_t ws_ep = (net_ws_cli_endpoint_t)user_data;
-    /* ws->get_random(buf, len); */
+
+    while(len) {
+        uint32_t v = cpe_rand_dft(UINT32_MAX);
+        size_t copy_len = sizeof(v) > len ? len : sizeof(v);
+        memcpy(buf, &v, copy_len);
+        buf += copy_len;
+        len -= copy_len;
+    }
+
     return 0;
 }
 

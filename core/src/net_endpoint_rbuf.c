@@ -1,4 +1,5 @@
 #include "assert.h"
+#include "cpe/pal/pal_string.h"
 #include "cpe/utils/ringbuffer.h"
 #include "net_endpoint_i.h"
 #include "net_driver_i.h"
@@ -141,6 +142,40 @@ int net_endpoint_rbuf(net_endpoint_t endpoint, uint32_t require, void * * r_data
         return 0;
     }
 }
+
+int net_endpoint_rbuf_recv(net_endpoint_t endpoint, void * data, uint32_t * size) {
+    net_schedule_t schedule = endpoint->m_driver->m_schedule;
+
+    uint32_t capacity = *size;
+    uint32_t received = 0;
+
+    while(capacity > 0 && endpoint->m_rb == NULL) {
+        char * block_data;
+        uint32_t block_data_len = (uint32_t)ringbuffer_block_len(schedule->m_endpoint_buf, endpoint->m_rb, 0);
+        ringbuffer_block_data(schedule->m_endpoint_buf, endpoint->m_rb, 0, (void**)&block_data);
+
+        uint32_t copy_len = block_data_len > capacity ? capacity : block_data_len;
+        memcpy(data, block_data, copy_len);
+
+        capacity -= copy_len;
+        data += copy_len;
+        received += copy_len;
+        
+        endpoint->m_rb = ringbuffer_yield(schedule->m_endpoint_buf, endpoint->m_rb, (int)copy_len);
+    }
+
+    *size = received;
+
+    if (received) {
+        if (schedule->m_data_monitor_fun) {
+            schedule->m_data_monitor_fun(
+                schedule->m_data_monitor_ctx, endpoint, net_data_in, received);
+        }
+    }
+    
+    return 0;
+}
+
 
 int net_endpoint_rbuf_by_sep(net_endpoint_t endpoint, const char * seps, void * * r_data, uint32_t *r_size) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
