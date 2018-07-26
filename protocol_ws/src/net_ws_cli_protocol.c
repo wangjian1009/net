@@ -32,7 +32,7 @@ net_ws_cli_protocol_t net_ws_cli_protocol_create(
             net_ws_cli_endpoint_input,
             NULL,
             NULL,
-            NULL);
+            net_ws_cli_endpoint_on_state_change);
     if (protocol == NULL) {
         return NULL;
     }

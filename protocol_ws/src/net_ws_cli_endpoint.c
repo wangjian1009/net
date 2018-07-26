@@ -11,8 +11,10 @@ net_ws_cli_endpoint_create(net_driver_t driver, net_endpoint_type_t type, net_ws
     
     net_schedule_t schedule = net_endpoint_schedule(endpoint);
     mem_allocrator_t alloc = net_schedule_allocrator(schedule);
-    net_ws_cli_endpoint_t ws_ep = net_endpoint_data(endpoint);
+    net_ws_cli_endpoint_t ws_ep = net_endpoint_protocol_data(endpoint);
 
+    ws_ep->m_endpoint = endpoint;
+    
     ws_ep->m_url = cpe_str_mem_dup(alloc, url);
     if (ws_ep->m_url == NULL) {
         CPE_ERROR(net_schedule_em(schedule), "net_ws_cli_endpoint_create: dup url %s fail", url);
@@ -20,12 +22,11 @@ net_ws_cli_endpoint_create(net_driver_t driver, net_endpoint_type_t type, net_ws
         return NULL;
     }
 
-    printf("xxxx:ws_ep = %p\n", ws_ep);
     return ws_ep;
 }
 
 void net_ws_cli_endpoint_free(net_ws_cli_endpoint_t ws_ep) {
-    return net_endpoint_free(net_endpoint_from_data(ws_ep));
+    return net_endpoint_free(ws_ep->m_endpoint);
 }
 
 net_ws_cli_endpoint_t net_ws_cli_endpoint_get(net_endpoint_t endpoint) {
@@ -44,25 +45,101 @@ const char * net_ws_cli_endpoint_url(net_ws_cli_endpoint_t ws_ep) {
     return ws_ep->m_url;
 }
 
+static ssize_t net_ws_cli_endpoint_recv_cb(
+    wslay_event_context_ptr ctx, uint8_t *data, size_t len, int flags, void *user_data)
+{
+    net_ws_cli_endpoint_t ws_ep = (net_ws_cli_endpoint_t)user_data;
+    /* ssize_t r = ws->recv_data(data, len, flags); */
+    /* if(r == -1) { */
+    /*     if(errno == EAGAIN || errno == EWOULDBLOCK) { */
+    /*         wslay_event_set_error(ctx, WSLAY_ERR_WOULDBLOCK); */
+    /*     } else { */
+    /*         wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE); */
+    /*     } */
+    /* } else if(r == 0) { */
+    /*     wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE); */
+    /*     r = -1; */
+    /* } */
+    /* return r; */
+    return 0;
+}
+
+static ssize_t net_ws_cli_endpoint_send_cb(
+    wslay_event_context_ptr ctx, const uint8_t *data, size_t len, int flags, void *user_data)
+{
+    net_ws_cli_endpoint_t ws_ep = (net_ws_cli_endpoint_t)user_data;
+    /* ssize_t r = ws->send_data(data, len, flags); */
+    /* if(r == -1) { */
+    /*     if(errno == EAGAIN || errno == EWOULDBLOCK) { */
+    /*         wslay_event_set_error(ctx, WSLAY_ERR_WOULDBLOCK); */
+    /*     } else { */
+    /*         wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE); */
+    /*     } */
+    /* } */
+    /* return r; */
+    return 0;
+}
+
+static int net_ws_cli_endpoint_genmask_cb(
+    wslay_event_context_ptr ctx, uint8_t *buf, size_t len, void *user_data)
+{
+    net_ws_cli_endpoint_t ws_ep = (net_ws_cli_endpoint_t)user_data;
+    /* ws->get_random(buf, len); */
+    return 0;
+}
+
+static void net_ws_cli_endpoint_on_msg_recv_cb(
+    wslay_event_context_ptr ctx, const struct wslay_event_on_msg_recv_arg *arg, void *user_data)
+{
+    if(!wslay_is_ctrl_frame(arg->opcode)) {
+        struct wslay_event_msg msgarg = {
+            arg->opcode, arg->msg, arg->msg_length
+        };
+        wslay_event_queue_msg(ctx, &msgarg);
+    }
+}
+
+static struct wslay_event_callbacks s_net_ws_cli_endpoint_callbacks = {
+    net_ws_cli_endpoint_recv_cb,
+    net_ws_cli_endpoint_send_cb,
+    net_ws_cli_endpoint_genmask_cb,
+    NULL, /* on_frame_recv_start_callback */
+    NULL, /* on_frame_recv_callback */
+    NULL, /* on_frame_recv_end_callback */
+    net_ws_cli_endpoint_on_msg_recv_cb
+};
+
 int net_ws_cli_endpoint_init(net_endpoint_t endpoint) {
-    net_ws_cli_endpoint_t ws_ep = net_endpoint_data(endpoint);
+    net_ws_cli_endpoint_t ws_ep = net_endpoint_protocol_data(endpoint);
+    ws_ep->m_endpoint = NULL;
     ws_ep->m_url = NULL;
+    ws_ep->m_state = net_ws_cli_state_init;
+    wslay_event_context_client_init(&ws_ep->m_ctx, &s_net_ws_cli_endpoint_callbacks, ws_ep);
     return 0;
 }
 
 void net_ws_cli_endpoint_fini(net_endpoint_t endpoint) {
-    net_ws_cli_endpoint_t ws_ep = net_endpoint_data(endpoint);
+    net_ws_cli_endpoint_t ws_ep = net_endpoint_protocol_data(endpoint);
     net_schedule_t schedule = net_endpoint_schedule(endpoint);
     mem_allocrator_t alloc = net_schedule_allocrator(schedule);
     
+    if (ws_ep->m_ctx) {
+        wslay_event_context_free(ws_ep->m_ctx);
+        ws_ep->m_ctx = NULL;
+    }
+
     if (ws_ep->m_url) {
         mem_free(alloc, ws_ep->m_url);
         ws_ep->m_url = NULL;
     }
+
+    ws_ep->m_endpoint = NULL;
 }
 
 int net_ws_cli_endpoint_input(net_endpoint_t endpoint) {
     return 0;
 }
 
-
+int net_ws_cli_endpoint_on_state_change(net_endpoint_t endpoint, net_endpoint_state_t from_state) {
+    return 0;
+}

@@ -16,6 +16,8 @@ net_ws_cli_endpoint_t net_ws_cli_endpoint_from_data(void * data);
 
 const char * net_ws_cli_endpoint_url(net_ws_cli_endpoint_t ws_ep);
 
+net_ws_cli_state_t net_ws_cli_endpoint_state(net_ws_cli_endpoint_t ws_ep);
+
 NET_END_DECL
 
 #endif
