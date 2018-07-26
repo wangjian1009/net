@@ -58,8 +58,8 @@
 		C9F3116121094392006A7621 /* wslay_queue.c in Sources */ = {isa = PBXBuildFile; fileRef = C9F3115821094392006A7621 /* wslay_queue.c */; };
 		C9F3116221094392006A7621 /* wslay_event.c in Sources */ = {isa = PBXBuildFile; fileRef = C9F3115A21094392006A7621 /* wslay_event.c */; };
 		C9F3116321094392006A7621 /* wslay_frame.c in Sources */ = {isa = PBXBuildFile; fileRef = C9F3115E21094392006A7621 /* wslay_frame.c */; };
-		C9F3118C21095971006A7621 /* net_ws_endpoint.c in Sources */ = {isa = PBXBuildFile; fileRef = C9F3118421095971006A7621 /* net_ws_endpoint.c */; };
-		C9F3118D21095971006A7621 /* net_ws_protocol.c in Sources */ = {isa = PBXBuildFile; fileRef = C9F3118521095971006A7621 /* net_ws_protocol.c */; };
+		C9F31199210960A3006A7621 /* net_ws_cli_endpoint.c in Sources */ = {isa = PBXBuildFile; fileRef = C9F31192210960A3006A7621 /* net_ws_cli_endpoint.c */; };
+		C9F3119A210960A3006A7621 /* net_ws_cli_protocol.c in Sources */ = {isa = PBXBuildFile; fileRef = C9F31193210960A3006A7621 /* net_ws_cli_protocol.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -268,13 +268,13 @@
 		C9F3115D21094392006A7621 /* wslay_queue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = wslay_queue.h; sourceTree = "<group>"; };
 		C9F3115E21094392006A7621 /* wslay_frame.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = wslay_frame.c; sourceTree = "<group>"; };
 		C9F3117A21095931006A7621 /* libnet_protocol_ws.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_protocol_ws.a; sourceTree = BUILT_PRODUCTS_DIR; };
-		C9F3118421095971006A7621 /* net_ws_endpoint.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ws_endpoint.c; sourceTree = "<group>"; };
-		C9F3118521095971006A7621 /* net_ws_protocol.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ws_protocol.c; sourceTree = "<group>"; };
-		C9F3118621095971006A7621 /* net_ws_endpoint_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ws_endpoint_i.h; sourceTree = "<group>"; };
-		C9F3118721095971006A7621 /* net_ws_protocol_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ws_protocol_i.h; sourceTree = "<group>"; };
-		C9F3118921095971006A7621 /* net_ws_types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ws_types.h; sourceTree = "<group>"; };
-		C9F3118A21095971006A7621 /* net_ws_protocol.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ws_protocol.h; sourceTree = "<group>"; };
-		C9F3118B21095971006A7621 /* net_ws_endpoint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ws_endpoint.h; sourceTree = "<group>"; };
+		C9F31191210960A3006A7621 /* net_ws_cli_protocol_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ws_cli_protocol_i.h; sourceTree = "<group>"; };
+		C9F31192210960A3006A7621 /* net_ws_cli_endpoint.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ws_cli_endpoint.c; sourceTree = "<group>"; };
+		C9F31193210960A3006A7621 /* net_ws_cli_protocol.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ws_cli_protocol.c; sourceTree = "<group>"; };
+		C9F31194210960A3006A7621 /* net_ws_cli_endpoint_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ws_cli_endpoint_i.h; sourceTree = "<group>"; };
+		C9F31196210960A3006A7621 /* net_ws_types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ws_types.h; sourceTree = "<group>"; };
+		C9F31197210960A3006A7621 /* net_ws_cli_protocol.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ws_cli_protocol.h; sourceTree = "<group>"; };
+		C9F31198210960A3006A7621 /* net_ws_cli_endpoint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ws_cli_endpoint.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -653,30 +653,30 @@
 		C9F3117B21095931006A7621 /* protocol_ws */ = {
 			isa = PBXGroup;
 			children = (
-				C9F3118821095971006A7621 /* include */,
-				C9F3118321095971006A7621 /* src */,
+				C9F31195210960A3006A7621 /* include */,
+				C9F31190210960A3006A7621 /* src */,
 			);
 			name = protocol_ws;
 			path = ../../protocol_ws;
 			sourceTree = "<group>";
 		};
-		C9F3118321095971006A7621 /* src */ = {
+		C9F31190210960A3006A7621 /* src */ = {
 			isa = PBXGroup;
 			children = (
-				C9F3118421095971006A7621 /* net_ws_endpoint.c */,
-				C9F3118521095971006A7621 /* net_ws_protocol.c */,
-				C9F3118621095971006A7621 /* net_ws_endpoint_i.h */,
-				C9F3118721095971006A7621 /* net_ws_protocol_i.h */,
+				C9F31191210960A3006A7621 /* net_ws_cli_protocol_i.h */,
+				C9F31192210960A3006A7621 /* net_ws_cli_endpoint.c */,
+				C9F31193210960A3006A7621 /* net_ws_cli_protocol.c */,
+				C9F31194210960A3006A7621 /* net_ws_cli_endpoint_i.h */,
 			);
 			path = src;
 			sourceTree = "<group>";
 		};
-		C9F3118821095971006A7621 /* include */ = {
+		C9F31195210960A3006A7621 /* include */ = {
 			isa = PBXGroup;
 			children = (
-				C9F3118921095971006A7621 /* net_ws_types.h */,
-				C9F3118A21095971006A7621 /* net_ws_protocol.h */,
-				C9F3118B21095971006A7621 /* net_ws_endpoint.h */,
+				C9F31196210960A3006A7621 /* net_ws_types.h */,
+				C9F31197210960A3006A7621 /* net_ws_cli_protocol.h */,
+				C9F31198210960A3006A7621 /* net_ws_cli_endpoint.h */,
 			);
 			path = include;
 			sourceTree = "<group>";
@@ -956,8 +956,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C9F3118C21095971006A7621 /* net_ws_endpoint.c in Sources */,
-				C9F3118D21095971006A7621 /* net_ws_protocol.c in Sources */,
+				C9F3119A210960A3006A7621 /* net_ws_cli_protocol.c in Sources */,
+				C9F31199210960A3006A7621 /* net_ws_cli_endpoint.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
