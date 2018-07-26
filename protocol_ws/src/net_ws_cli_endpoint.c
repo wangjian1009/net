@@ -1,10 +1,18 @@
 #include "cpe/pal/pal_string.h"
 #include "cpe/utils/string_utils.h"
+#include "cpe/utils/stream_mem.h"
 #include "cpe/utils/random.h"
+#include "cpe/utils/base64.h"
 #include "net_schedule.h"
 #include "net_endpoint.h"
 #include "net_protocol.h"
+#include "net_address.h"
+#include "net_timer.h"
 #include "net_ws_cli_endpoint_i.h"
+
+static void net_ws_cli_endpoint_do_connect(net_timer_t timer, void * ctx);
+static void net_ws_cli_endpoint_reset(net_ws_cli_endpoint_t ws_ep);
+static int net_ws_cli_endpoint_send_handshake(net_ws_cli_endpoint_t ws_ep);
 
 net_ws_cli_endpoint_t
 net_ws_cli_endpoint_create(net_driver_t driver, net_endpoint_type_t type, net_ws_cli_protocol_t ws_protocol) {
@@ -91,16 +99,7 @@ static ssize_t net_ws_cli_endpoint_send_cb(
 static int net_ws_cli_endpoint_genmask_cb(
     wslay_event_context_ptr ctx, uint8_t *buf, size_t len, void *user_data)
 {
-    net_ws_cli_endpoint_t ws_ep = (net_ws_cli_endpoint_t)user_data;
-
-    while(len) {
-        uint32_t v = cpe_rand_dft(UINT32_MAX);
-        size_t copy_len = sizeof(v) > len ? len : sizeof(v);
-        memcpy(buf, &v, copy_len);
-        buf += copy_len;
-        len -= copy_len;
-    }
-
+    cpe_rand_ctx_fill(cpe_rand_ctx_dft(), buf, len);
     return 0;
 }
 
@@ -127,8 +126,18 @@ static struct wslay_event_callbacks s_net_ws_cli_endpoint_callbacks = {
 
 int net_ws_cli_endpoint_init(net_endpoint_t endpoint) {
     net_ws_cli_endpoint_t ws_ep = net_endpoint_protocol_data(endpoint);
+    net_schedule_t schedule = net_endpoint_schedule(endpoint);
+
     ws_ep->m_endpoint = NULL;
     ws_ep->m_state = net_ws_cli_state_init;
+    ws_ep->m_cfg_reconnect_span_ms = 3u * 1000u;
+
+    ws_ep->m_connect_timer = net_timer_auto_create(schedule, net_ws_cli_endpoint_do_connect, ws_ep);
+    if (ws_ep->m_connect_timer == NULL) {
+        CPE_ERROR(net_schedule_em(schedule), "ws: ???: init: create connect timer fail!");
+        return -1;
+    }
+    
     wslay_event_context_client_init(&ws_ep->m_ctx, &s_net_ws_cli_endpoint_callbacks, ws_ep);
     return 0;
 }
@@ -143,6 +152,11 @@ void net_ws_cli_endpoint_fini(net_endpoint_t endpoint) {
         ws_ep->m_ctx = NULL;
     }
 
+    if (ws_ep->m_connect_timer) {
+        net_timer_free(ws_ep->m_connect_timer);
+        ws_ep->m_connect_timer = NULL;
+    }
+    
     ws_ep->m_endpoint = NULL;
 }
 
@@ -150,6 +164,93 @@ int net_ws_cli_endpoint_input(net_endpoint_t endpoint) {
     return 0;
 }
 
-int net_ws_cli_endpoint_on_state_change(net_endpoint_t endpoint, net_endpoint_state_t from_state) {
+int net_ws_cli_endpoint_on_state_change(net_endpoint_t endpoint, net_endpoint_state_t old_state) {
+    net_ws_cli_endpoint_t ws_ep = net_endpoint_protocol_data(endpoint);
+    net_schedule_t schedule = net_endpoint_schedule(endpoint);
+
+    if (net_schedule_debug(schedule)) {
+        CPE_INFO(
+            net_schedule_em(schedule), "ws: %s:    %s ==> %s",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), endpoint),
+            net_endpoint_state_str(old_state), net_endpoint_state_str(net_endpoint_state(endpoint)));
+    }
+    
+    switch(net_endpoint_state(endpoint)) {
+    case net_endpoint_state_disable:
+        net_ws_cli_endpoint_reset(ws_ep);
+        net_timer_active(ws_ep->m_connect_timer, (int32_t)ws_ep->m_cfg_reconnect_span_ms);
+        break;
+    case net_endpoint_state_network_error:
+        net_ws_cli_endpoint_reset(ws_ep);
+        net_timer_active(ws_ep->m_connect_timer, (int32_t)ws_ep->m_cfg_reconnect_span_ms);
+        break;
+    case net_endpoint_state_logic_error:
+        net_ws_cli_endpoint_reset(ws_ep);
+        net_timer_active(ws_ep->m_connect_timer, 0);
+        break;
+    case net_endpoint_state_resolving:
+    case net_endpoint_state_connecting:
+        break;
+    case net_endpoint_state_established:
+        if (net_ws_cli_endpoint_send_handshake(ws_ep) != 0) {
+            net_timer_active(ws_ep->m_connect_timer, (int32_t)ws_ep->m_cfg_reconnect_span_ms);
+        }
+        break;
+    }
+
+    return 0;
+}
+
+static void net_ws_cli_endpoint_do_connect(net_timer_t timer, void * ctx) {
+    net_ws_cli_endpoint_t ws_ep = ctx;
+    
+    if (net_endpoint_connect(ws_ep->m_endpoint) != 0) {
+        net_timer_active(timer, (int32_t)ws_ep->m_cfg_reconnect_span_ms);
+    }
+}
+
+static void net_ws_cli_endpoint_reset(net_ws_cli_endpoint_t ws_ep) {
+}
+
+static int net_ws_cli_endpoint_send_handshake(net_ws_cli_endpoint_t ws_ep) {
+    net_schedule_t schedule = net_endpoint_schedule(ws_ep->m_endpoint);
+    
+    uint32_t size = 1024;
+    void * buf = net_endpoint_wbuf_alloc(ws_ep->m_endpoint, &size);
+    if (buf == NULL) {
+    }
+
+    struct write_stream_mem ws = CPE_WRITE_STREAM_MEM_INITIALIZER(buf, size);
+
+    net_address_t address = net_endpoint_remote_address(ws_ep->m_endpoint);
+    
+    int n = stream_printf(
+        (write_stream_t)&ws,
+        "GET %s HTTP/1.1\r\n"
+        "Host: %s:%d\r\n"
+        "Upgrade: websocket\r\n"
+        "Connection: Upgrade\r\n"
+        "Sec-WebSocket-Key: ",
+        net_address_host(net_schedule_tmp_buffer(schedule), address),
+        net_address_port(address));
+
+    char rand_buf[16];
+    cpe_rand_ctx_fill(cpe_rand_ctx_dft(), rand_buf, sizeof(rand_buf));
+    struct read_stream_mem rand_buf_is = CPE_READ_STREAM_MEM_INITIALIZER(rand_buf, sizeof(rand_buf));
+    n += cpe_base64_encode((write_stream_t)&ws, (read_stream_t)&rand_buf_is);
+    
+    n += stream_printf(
+        (write_stream_t)&ws,
+        "\r\n"
+        "Sec-WebSocket-Version: 13\r\n"
+        "\r\n");
+
+    if (net_endpoint_wbuf_supply(ws_ep->m_endpoint, (uint32_t)n) != 0) {
+        CPE_ERROR(
+            net_schedule_em(schedule), "ws: %s:    handshake: write fail",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), ws_ep->m_endpoint));
+        return -1;
+    }
+    
     return 0;
 }
