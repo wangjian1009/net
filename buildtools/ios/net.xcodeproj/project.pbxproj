@@ -58,6 +58,8 @@
 		C9F3116121094392006A7621 /* wslay_queue.c in Sources */ = {isa = PBXBuildFile; fileRef = C9F3115821094392006A7621 /* wslay_queue.c */; };
 		C9F3116221094392006A7621 /* wslay_event.c in Sources */ = {isa = PBXBuildFile; fileRef = C9F3115A21094392006A7621 /* wslay_event.c */; };
 		C9F3116321094392006A7621 /* wslay_frame.c in Sources */ = {isa = PBXBuildFile; fileRef = C9F3115E21094392006A7621 /* wslay_frame.c */; };
+		C9F3118C21095971006A7621 /* net_ws_endpoint.c in Sources */ = {isa = PBXBuildFile; fileRef = C9F3118421095971006A7621 /* net_ws_endpoint.c */; };
+		C9F3118D21095971006A7621 /* net_ws_protocol.c in Sources */ = {isa = PBXBuildFile; fileRef = C9F3118521095971006A7621 /* net_ws_protocol.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -107,6 +109,15 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C9F311432109433C006A7621 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "include/$(PRODUCT_NAME)";
+			dstSubfolderSpec = 16;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C9F3117821095931006A7621 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "include/$(PRODUCT_NAME)";
@@ -256,6 +267,14 @@
 		C9F3115C21094392006A7621 /* wslay_net.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = wslay_net.h; sourceTree = "<group>"; };
 		C9F3115D21094392006A7621 /* wslay_queue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = wslay_queue.h; sourceTree = "<group>"; };
 		C9F3115E21094392006A7621 /* wslay_frame.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = wslay_frame.c; sourceTree = "<group>"; };
+		C9F3117A21095931006A7621 /* libnet_protocol_ws.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_protocol_ws.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		C9F3118421095971006A7621 /* net_ws_endpoint.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ws_endpoint.c; sourceTree = "<group>"; };
+		C9F3118521095971006A7621 /* net_ws_protocol.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ws_protocol.c; sourceTree = "<group>"; };
+		C9F3118621095971006A7621 /* net_ws_endpoint_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ws_endpoint_i.h; sourceTree = "<group>"; };
+		C9F3118721095971006A7621 /* net_ws_protocol_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ws_protocol_i.h; sourceTree = "<group>"; };
+		C9F3118921095971006A7621 /* net_ws_types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ws_types.h; sourceTree = "<group>"; };
+		C9F3118A21095971006A7621 /* net_ws_protocol.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ws_protocol.h; sourceTree = "<group>"; };
+		C9F3118B21095971006A7621 /* net_ws_endpoint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ws_endpoint.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -295,6 +314,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C9F311422109433C006A7621 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C9F3117721095931006A7621 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -423,6 +449,7 @@
 				C9C4B0FC210861940045A1A3 /* dns */,
 				C9C4B109210861A70045A1A3 /* protocol_socks5 */,
 				C9C4B116210861B50045A1A3 /* router */,
+				C9F3117B21095931006A7621 /* protocol_ws */,
 				C9323A422105E2CD005DD3C0 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -436,6 +463,7 @@
 				C9C4B108210861A70045A1A3 /* libnet_protocol_socks5.a */,
 				C9C4B115210861B50045A1A3 /* libnet_router.a */,
 				C9F311452109433C006A7621 /* libwslay.a */,
+				C9F3117A21095931006A7621 /* libnet_protocol_ws.a */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -622,6 +650,37 @@
 			path = src;
 			sourceTree = "<group>";
 		};
+		C9F3117B21095931006A7621 /* protocol_ws */ = {
+			isa = PBXGroup;
+			children = (
+				C9F3118821095971006A7621 /* include */,
+				C9F3118321095971006A7621 /* src */,
+			);
+			name = protocol_ws;
+			path = ../../protocol_ws;
+			sourceTree = "<group>";
+		};
+		C9F3118321095971006A7621 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				C9F3118421095971006A7621 /* net_ws_endpoint.c */,
+				C9F3118521095971006A7621 /* net_ws_protocol.c */,
+				C9F3118621095971006A7621 /* net_ws_endpoint_i.h */,
+				C9F3118721095971006A7621 /* net_ws_protocol_i.h */,
+			);
+			path = src;
+			sourceTree = "<group>";
+		};
+		C9F3118821095971006A7621 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				C9F3118921095971006A7621 /* net_ws_types.h */,
+				C9F3118A21095971006A7621 /* net_ws_protocol.h */,
+				C9F3118B21095971006A7621 /* net_ws_endpoint.h */,
+			);
+			path = include;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -727,6 +786,23 @@
 			productReference = C9F311452109433C006A7621 /* libwslay.a */;
 			productType = "com.apple.product-type.library.static";
 		};
+		C9F3117921095931006A7621 /* net_protocol_ws */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C9F3118021095931006A7621 /* Build configuration list for PBXNativeTarget "net_protocol_ws" */;
+			buildPhases = (
+				C9F3117621095931006A7621 /* Sources */,
+				C9F3117721095931006A7621 /* Frameworks */,
+				C9F3117821095931006A7621 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = net_protocol_ws;
+			productName = net_protocol_ws;
+			productReference = C9F3117A21095931006A7621 /* libnet_protocol_ws.a */;
+			productType = "com.apple.product-type.library.static";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -754,6 +830,9 @@
 					C9F311442109433C006A7621 = {
 						CreatedOnToolsVersion = 9.4.1;
 					};
+					C9F3117921095931006A7621 = {
+						CreatedOnToolsVersion = 9.4.1;
+					};
 				};
 			};
 			buildConfigurationList = C9323A3C2105E2CD005DD3C0 /* Build configuration list for PBXProject "net" */;
@@ -774,6 +853,7 @@
 				C9C4B107210861A70045A1A3 /* net_protocol_socks5 */,
 				C9C4B114210861B50045A1A3 /* net_router */,
 				C9F311442109433C006A7621 /* wslay */,
+				C9F3117921095931006A7621 /* net_protocol_ws */,
 			);
 		};
 /* End PBXProject section */
@@ -869,6 +949,15 @@
 				C9F3116121094392006A7621 /* wslay_queue.c in Sources */,
 				C9F3115F21094392006A7621 /* wslay_stack.c in Sources */,
 				C9F3116221094392006A7621 /* wslay_event.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C9F3117621095931006A7621 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C9F3118C21095971006A7621 /* net_ws_endpoint.c in Sources */,
+				C9F3118D21095971006A7621 /* net_ws_protocol.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1165,6 +1254,36 @@
 			};
 			name = Release;
 		};
+		C9F3118121095931006A7621 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				HEADER_SEARCH_PATHS = (
+					../../depends/wslay/include,
+					../../../cpe/include,
+					../../core/include,
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C9F3118221095931006A7621 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				HEADER_SEARCH_PATHS = (
+					../../depends/wslay/include,
+					../../../cpe/include,
+					../../core/include,
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -1227,6 +1346,15 @@
 			buildConfigurations = (
 				C9F3114B2109433C006A7621 /* Debug */,
 				C9F3114C2109433C006A7621 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C9F3118021095931006A7621 /* Build configuration list for PBXNativeTarget "net_protocol_ws" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C9F3118121095931006A7621 /* Debug */,
+				C9F3118221095931006A7621 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
