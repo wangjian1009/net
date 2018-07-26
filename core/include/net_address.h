@@ -28,6 +28,8 @@ struct net_address_data_ipv6 {
     };
 };
 
+net_address_t net_address_create_auto(net_schedule_t schedule, const char * url);
+
 net_address_t net_address_create_ipv4(net_schedule_t schedule, const char * addr, uint16_t port);
 net_address_t net_address_create_from_data_ipv4(net_schedule_t schedule, net_address_data_ipv4_t addr, uint16_t port);
 

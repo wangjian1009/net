@@ -7,7 +7,7 @@
 #include "net_ws_cli_endpoint_i.h"
 
 net_ws_cli_endpoint_t
-net_ws_cli_endpoint_create(net_driver_t driver, net_endpoint_type_t type, net_ws_cli_protocol_t ws_protocol, const char * url) {
+net_ws_cli_endpoint_create(net_driver_t driver, net_endpoint_type_t type, net_ws_cli_protocol_t ws_protocol) {
     net_endpoint_t endpoint = net_endpoint_create(driver, type, net_protocol_from_data(ws_protocol));
     if (endpoint == NULL) return NULL;
     
@@ -17,13 +17,6 @@ net_ws_cli_endpoint_create(net_driver_t driver, net_endpoint_type_t type, net_ws
 
     ws_ep->m_endpoint = endpoint;
     
-    ws_ep->m_url = cpe_str_mem_dup(alloc, url);
-    if (ws_ep->m_url == NULL) {
-        CPE_ERROR(net_schedule_em(schedule), "net_ws_cli_endpoint_create: dup url %s fail", url);
-        net_endpoint_free(endpoint);
-        return NULL;
-    }
-
     return ws_ep;
 }
 
@@ -43,8 +36,12 @@ net_ws_cli_endpoint_t net_ws_cli_endpoint_from_data(void * data) {
     return ((net_ws_cli_endpoint_t)data) - 1;
 }
 
-const char * net_ws_cli_endpoint_url(net_ws_cli_endpoint_t ws_ep) {
-    return ws_ep->m_url;
+net_ws_cli_state_t net_ws_cli_endpoint_state(net_ws_cli_endpoint_t ws_ep) {
+    return ws_ep->m_state;
+}
+
+net_endpoint_t net_ws_cli_endpoint_net_endpoint(net_ws_cli_endpoint_t ws_ep) {
+    return ws_ep->m_endpoint;
 }
 
 static ssize_t net_ws_cli_endpoint_recv_cb(
@@ -56,7 +53,8 @@ static ssize_t net_ws_cli_endpoint_recv_cb(
     if (net_endpoint_rbuf_recv(ws_ep->m_endpoint, data, &size) != 0) {
         CPE_ERROR(
             net_schedule_em(net_endpoint_schedule(ws_ep->m_endpoint)),
-            "ws: %s: rbuf recv fail!", ws_ep->m_url);
+            "ws: %s: rbuf recv fail!",
+            net_endpoint_dump(net_schedule_tmp_buffer(net_endpoint_schedule(ws_ep->m_endpoint)), ws_ep->m_endpoint));
         wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE);
         return -1;
     }
@@ -64,7 +62,8 @@ static ssize_t net_ws_cli_endpoint_recv_cb(
     if (size == 0) {
         CPE_ERROR(
             net_schedule_em(net_endpoint_schedule(ws_ep->m_endpoint)),
-            "ws: %s: rbuf recv no data!", ws_ep->m_url);
+            "ws: %s: rbuf recv no data!",
+            net_endpoint_dump(net_schedule_tmp_buffer(net_endpoint_schedule(ws_ep->m_endpoint)), ws_ep->m_endpoint));
         wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE);
         return -1;
     }
@@ -80,7 +79,8 @@ static ssize_t net_ws_cli_endpoint_send_cb(
     if (net_endpoint_wbuf_append(ws_ep->m_endpoint, data, (uint32_t)len) != 0) {
         CPE_ERROR(
             net_schedule_em(net_endpoint_schedule(ws_ep->m_endpoint)),
-            "ws: %s: wbuf append fail!", ws_ep->m_url);
+            "ws: %s: wbuf append fail!",
+            net_endpoint_dump(net_schedule_tmp_buffer(net_endpoint_schedule(ws_ep->m_endpoint)), ws_ep->m_endpoint));
         wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE);
         return -1;
     }
@@ -128,7 +128,6 @@ static struct wslay_event_callbacks s_net_ws_cli_endpoint_callbacks = {
 int net_ws_cli_endpoint_init(net_endpoint_t endpoint) {
     net_ws_cli_endpoint_t ws_ep = net_endpoint_protocol_data(endpoint);
     ws_ep->m_endpoint = NULL;
-    ws_ep->m_url = NULL;
     ws_ep->m_state = net_ws_cli_state_init;
     wslay_event_context_client_init(&ws_ep->m_ctx, &s_net_ws_cli_endpoint_callbacks, ws_ep);
     return 0;
@@ -142,11 +141,6 @@ void net_ws_cli_endpoint_fini(net_endpoint_t endpoint) {
     if (ws_ep->m_ctx) {
         wslay_event_context_free(ws_ep->m_ctx);
         ws_ep->m_ctx = NULL;
-    }
-
-    if (ws_ep->m_url) {
-        mem_free(alloc, ws_ep->m_url);
-        ws_ep->m_url = NULL;
     }
 
     ws_ep->m_endpoint = NULL;

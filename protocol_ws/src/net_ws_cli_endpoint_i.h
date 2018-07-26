@@ -7,7 +7,6 @@ NET_BEGIN_DECL
 
 struct net_ws_cli_endpoint {
     net_endpoint_t m_endpoint;
-    char * m_url;
     net_ws_cli_state_t m_state;
     wslay_event_context_ptr m_ctx;
 };

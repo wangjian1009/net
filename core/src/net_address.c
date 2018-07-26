@@ -1,12 +1,54 @@
 #include "assert.h"
 #include "cpe/pal/pal_string.h"
 #include "cpe/pal/pal_strings.h"
+#include "cpe/pal/pal_stdlib.h"
 #include "cpe/utils/hash_algo.h"
 #include "cpe/utils/bitarry.h"
 #include "cpe/utils/string_utils.h"
 #include "cpe/utils/stream_buffer.h"
 #include "cpe/utils/random.h"
+#include "cpe/utils_sock/sock_utils.h"
 #include "net_address_i.h"
+
+net_address_t net_address_create_auto(net_schedule_t schedule, const char * url) {
+    size_t hostname_len;
+    uint16_t port;
+    
+    const char * sep = strrchr(url, ':');
+    if (sep) {
+        port = (uint16_t)atoi(sep + 1);
+        hostname_len = sep - url;
+    }
+    else {
+        port = 0;
+        hostname_len = strlen(url);
+    }
+
+    if (sock_validate_hostname(url, (int)hostname_len)) {
+        char buf[64];
+        assert(hostname_len + 1 < sizeof(buf));
+        if (sep) {
+            memcpy(buf, url, hostname_len);
+            buf[hostname_len] = 0;
+            url = buf;
+        }
+
+        struct sockaddr_storage addr;
+        socklen_t addr_len = sizeof(addr);
+        if (sock_ipv4_init((struct sockaddr *)&addr, &addr_len, url, port, NULL) == 0) {
+            return net_address_create_from_sockaddr(schedule, (struct sockaddr *)&addr, addr_len);
+        }
+
+        if (sock_ipv6_init((struct sockaddr *)&addr, &addr_len, url, port, NULL) == 0) {
+            return net_address_create_from_sockaddr(schedule, (struct sockaddr *)&addr, addr_len);
+        }
+
+        return net_address_create_domain(schedule, url, port, NULL);
+    }
+    else {
+        return net_address_create_domain_with_len(schedule, url, hostname_len, port, NULL);
+    }
+}
 
 struct net_address_ipv4v6 *
 net_address_create_ipv4v6(net_schedule_t schedule, net_address_type_t type, uint16_t port) {
