@@ -24,6 +24,10 @@ uint8_t net_endpoint_rbuf_is_full(net_endpoint_t endpoint) {
     return 0;
 }
 
+uint8_t net_endpoint_rbuf_is_empty(net_endpoint_t endpoint) {
+    return endpoint->m_rb ? 0 : 1;
+}
+
 void * net_endpoint_rbuf_alloc(net_endpoint_t endpoint, uint32_t * inout_size) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
     void * data;

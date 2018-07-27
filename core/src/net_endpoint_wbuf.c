@@ -18,6 +18,10 @@
         }                                                   \
     } while(0)
 
+uint8_t net_endpoint_wbuf_is_full(net_endpoint_t endpoint) {
+    return 0;
+}
+
 uint8_t net_endpoint_wbuf_is_empty(net_endpoint_t endpoint) {
     return endpoint->m_wb ? 0 : 1;
 }

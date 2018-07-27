@@ -57,6 +57,97 @@ net_endpoint_t net_ws_cli_endpoint_net_endpoint(net_ws_cli_endpoint_t ws_ep) {
     return ws_ep->m_endpoint;
 }
 
+uint8_t net_ws_cli_endpoint_debug(net_ws_cli_endpoint_t ws_ep) {
+    return ws_ep->m_debug;
+}
+
+void net_ws_cli_endpoint_set_debug(net_ws_cli_endpoint_t ws_ep, uint8_t debug) {
+    ws_ep->m_debug = debug;
+}
+
+const char * net_ws_cli_endpoint_path(net_ws_cli_endpoint_t ws_ep) {
+    return ws_ep->m_cfg_path ? ws_ep->m_cfg_path : "/";
+}
+
+int net_ws_cli_endpoint_set_path(net_ws_cli_endpoint_t ws_ep, const char * path) {
+    net_schedule_t schedule = net_endpoint_schedule(ws_ep->m_endpoint);
+    mem_allocrator_t alloc = net_schedule_allocrator(schedule);
+
+    if (ws_ep->m_cfg_path) {
+        mem_free(alloc, ws_ep->m_cfg_path);
+        ws_ep->m_cfg_path = NULL;
+    }
+
+    if (path) {
+        ws_ep->m_cfg_path = cpe_str_mem_dup(alloc, path);
+        if (ws_ep->m_cfg_path == NULL) {
+            CPE_ERROR(
+                net_schedule_em(net_endpoint_schedule(ws_ep->m_endpoint)),
+                "ws: %s: set path: copy path %s fail!",
+                net_endpoint_dump(net_schedule_tmp_buffer(net_endpoint_schedule(ws_ep->m_endpoint)), ws_ep->m_endpoint), path);
+            return -1;
+        }
+    }
+    
+    return 0;
+}
+
+uint32_t net_ws_cli_endpoint_reconnect_span_ms(net_ws_cli_endpoint_t ws_ep) {
+    return ws_ep->m_cfg_reconnect_span_ms;
+}
+
+void net_ws_cli_endpoint_set_reconnect_span_ms(net_ws_cli_endpoint_t ws_ep, uint32_t span_ms) {
+    ws_ep->m_cfg_reconnect_span_ms = span_ms;
+}
+
+int net_ws_cli_endpoint_send_msg_text(net_ws_cli_endpoint_t ws_ep, const char * msg) {
+    struct wslay_event_msg ws_msg = { WSLAY_TEXT_FRAME,  (const uint8_t *)msg, strlen(msg) };
+
+    if (wslay_event_queue_msg(ws_ep->m_ctx, &ws_msg) != 0) {
+        CPE_ERROR(
+            net_schedule_em(net_endpoint_schedule(ws_ep->m_endpoint)),
+            "ws: %s: send msg text: queue msg fail!",
+            net_endpoint_dump(net_schedule_tmp_buffer(net_endpoint_schedule(ws_ep->m_endpoint)), ws_ep->m_endpoint));
+        return -1;
+    }
+
+    if (ws_ep->m_debug >= 2) {
+        net_schedule_t schedule = net_endpoint_schedule(ws_ep->m_endpoint);
+        CPE_INFO(
+            net_schedule_em(schedule), "ws: %s: handshake request: >>>\n%s",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), ws_ep->m_endpoint),
+            msg);
+    }
+
+    net_timer_active(ws_ep->m_process_timer, 0);
+    
+    return 0;
+}
+
+int net_ws_cli_endpoint_send_msg_bin(net_ws_cli_endpoint_t ws_ep, const void * msg, uint32_t msg_len) {
+    struct wslay_event_msg ws_msg = { WSLAY_BINARY_FRAME,  (const uint8_t *)msg, msg_len };
+
+    if (wslay_event_queue_msg(ws_ep->m_ctx, &ws_msg) != 0) {
+        CPE_ERROR(
+            net_schedule_em(net_endpoint_schedule(ws_ep->m_endpoint)),
+            "ws: %s: send msg text: queue bintray fail, len=%d!",
+            net_endpoint_dump(net_schedule_tmp_buffer(net_endpoint_schedule(ws_ep->m_endpoint)), ws_ep->m_endpoint), msg_len);
+        return -1;
+    }
+
+    if (ws_ep->m_debug >= 2) {
+        net_schedule_t schedule = net_endpoint_schedule(ws_ep->m_endpoint);
+        CPE_INFO(
+            net_schedule_em(schedule), "ws: %s: handshake request: >>> %d data",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), ws_ep->m_endpoint),
+            msg_len);
+    }
+
+    net_timer_active(ws_ep->m_process_timer, 0);
+        
+    return 0;
+}
+
 void net_ws_cli_endpoint_enable(net_ws_cli_endpoint_t ws_ep) {
     net_timer_active(ws_ep->m_connect_timer, 0);
 }
@@ -64,8 +155,8 @@ void net_ws_cli_endpoint_enable(net_ws_cli_endpoint_t ws_ep) {
 int net_ws_cli_endpoint_set_state(net_ws_cli_endpoint_t ws_ep, net_ws_cli_state_t state) {
     if (ws_ep->m_state == state) return 0;
     
-    net_schedule_t schedule = net_endpoint_schedule(ws_ep->m_endpoint);
-    if (net_schedule_debug(schedule) >= 1) {
+    if (ws_ep->m_debug >= 1) {
+        net_schedule_t schedule = net_endpoint_schedule(ws_ep->m_endpoint);
         CPE_INFO(
             net_schedule_em(schedule), "ws: %s: state %s ==> %s",
             net_endpoint_dump(net_schedule_tmp_buffer(schedule), ws_ep->m_endpoint),
@@ -175,7 +266,9 @@ int net_ws_cli_endpoint_init(net_endpoint_t endpoint) {
 
     ws_ep->m_endpoint = NULL;
     ws_ep->m_state = net_ws_cli_state_init;
+    ws_ep->m_debug = net_schedule_debug(schedule);
     ws_ep->m_cfg_reconnect_span_ms = 3u * 1000u;
+    ws_ep->m_cfg_path = NULL;
     ws_ep->m_handshake_token = NULL;
 
     ws_ep->m_connect_timer = net_timer_auto_create(schedule, net_ws_cli_endpoint_do_connect, ws_ep);
@@ -220,6 +313,11 @@ void net_ws_cli_endpoint_fini(net_endpoint_t endpoint) {
         ws_ep->m_handshake_token = NULL;
     }
 
+    if (ws_ep->m_cfg_path) {
+        mem_free(alloc, ws_ep->m_cfg_path);
+        ws_ep->m_cfg_path = NULL;
+    }
+    
     ws_ep->m_endpoint = NULL;
 }
 
@@ -266,13 +364,6 @@ int net_ws_cli_endpoint_on_state_change(net_endpoint_t endpoint, net_endpoint_st
     net_ws_cli_endpoint_t ws_ep = net_endpoint_protocol_data(endpoint);
     net_schedule_t schedule = net_endpoint_schedule(endpoint);
 
-    if (net_schedule_debug(schedule)) {
-        CPE_INFO(
-            net_schedule_em(schedule), "ws: %s: %s ==> %s",
-            net_endpoint_dump(net_schedule_tmp_buffer(schedule), endpoint),
-            net_endpoint_state_str(old_state), net_endpoint_state_str(net_endpoint_state(endpoint)));
-    }
-    
     switch(net_endpoint_state(endpoint)) {
     case net_endpoint_state_disable:
         if (net_ws_cli_endpoint_set_state(ws_ep, net_ws_cli_state_init) != 0) return -1;
@@ -318,14 +409,27 @@ static void net_ws_cli_endpoint_do_connect(net_timer_t timer, void * ctx) {
 
 static void net_ws_cli_endpoint_do_process(net_timer_t timer, void * ctx) {
     net_ws_cli_endpoint_t ws_ep = ctx;
-    
-    if (wslay_event_recv(ws_ep->m_ctx) != 0) {
-        net_schedule_t schedule = net_endpoint_schedule(ws_ep->m_endpoint);
-        CPE_ERROR(
-            net_schedule_em(schedule), "ws: %s: process: process fail, auto disconnect",
-            net_endpoint_dump(net_schedule_tmp_buffer(schedule), ws_ep->m_endpoint));
-        net_endpoint_set_state(ws_ep->m_endpoint, net_endpoint_state_disable);
-        return;
+
+    if (wslay_event_want_read(ws_ep->m_ctx) && !net_endpoint_rbuf_is_empty(ws_ep->m_endpoint)) {
+        if (wslay_event_recv(ws_ep->m_ctx) != 0) {
+            net_schedule_t schedule = net_endpoint_schedule(ws_ep->m_endpoint);
+            CPE_ERROR(
+                net_schedule_em(schedule), "ws: %s: process: recv fail, auto disconnect",
+                net_endpoint_dump(net_schedule_tmp_buffer(schedule), ws_ep->m_endpoint));
+            net_endpoint_set_state(ws_ep->m_endpoint, net_endpoint_state_disable);
+            return;
+        }
+    }
+
+    if (wslay_event_want_write(ws_ep->m_ctx) && !net_endpoint_wbuf_is_full(ws_ep->m_endpoint)) {
+        if (wslay_event_send(ws_ep->m_ctx) != 0) {
+            net_schedule_t schedule = net_endpoint_schedule(ws_ep->m_endpoint);
+            CPE_ERROR(
+                net_schedule_em(schedule), "ws: %s: process: send fail, auto disconnect",
+                net_endpoint_dump(net_schedule_tmp_buffer(schedule), ws_ep->m_endpoint));
+            net_endpoint_set_state(ws_ep->m_endpoint, net_endpoint_state_disable);
+            return;
+        }
     }
 }
 
@@ -387,22 +491,22 @@ static int net_ws_cli_endpoint_send_handshake(net_ws_cli_endpoint_t ws_ep) {
         "Sec-WebSocket-Key: %s\r\n"
         "Sec-WebSocket-Version: 13\r\n"
         "\r\n",
-        "server",
+        net_ws_cli_endpoint_path(ws_ep),
         net_address_host(net_schedule_tmp_buffer(schedule), address),
         net_address_port(address),
         ws_ep->m_handshake_token);
 
-    if (net_schedule_debug(schedule) >= 2) {
+    if (ws_ep->m_debug >= 2) {
         ((char*)buf)[n] = 0;
         CPE_INFO(
-            net_schedule_em(schedule), "ws: %s: handshake request: %s",
+            net_schedule_em(schedule), "ws: %s: handshake request: >>>\n%s",
             net_endpoint_dump(net_schedule_tmp_buffer(schedule), ws_ep->m_endpoint),
             buf);
     }
     
     if (net_endpoint_wbuf_supply(ws_ep->m_endpoint, (uint32_t)n) != 0) {
         CPE_ERROR(
-            net_schedule_em(schedule), "ws: %s:    handshake: write fail",
+            net_schedule_em(schedule), "ws: %s: handshake: write fail",
             net_endpoint_dump(net_schedule_tmp_buffer(schedule), ws_ep->m_endpoint));
         return -1;
     }
@@ -447,9 +551,9 @@ static int net_ws_cli_endpoint_on_handshake_line(net_schedule_t schedule, net_ws
 }
 
 static int net_ws_cli_endpoint_on_handshake(net_schedule_t schedule, net_ws_cli_endpoint_t ws_ep, char * response) {
-    if (net_schedule_debug(schedule) >= 2) {
+    if (ws_ep->m_debug >= 2) {
         CPE_INFO(
-            net_schedule_em(schedule), "ws: %s: handshake response: %s",
+            net_schedule_em(schedule), "ws: %s: handshake response: <<<\n%s",
             net_endpoint_dump(net_schedule_tmp_buffer(schedule), ws_ep->m_endpoint),
             response);
     }

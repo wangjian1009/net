@@ -41,6 +41,7 @@ net_endpoint_t net_endpoint_other(net_endpoint_t endpoint);
 
 /*rbuf*/
 /*    --> */
+uint8_t net_endpoint_rbuf_is_empty(net_endpoint_t endpoint);
 uint8_t net_endpoint_rbuf_is_full(net_endpoint_t endpoint);
 void * net_endpoint_rbuf_alloc(net_endpoint_t endpoint, uint32_t * inout_size);
 int net_endpoint_rbuf_supply(net_endpoint_t endpoint, uint32_t size);
@@ -56,6 +57,7 @@ int net_endpoint_rbuf_by_str(net_endpoint_t endpoint, const char * str, void * *
 /*wbuf*/
 /*    <-- */
 uint8_t net_endpoint_wbuf_is_empty(net_endpoint_t endpoint);
+uint8_t net_endpoint_wbuf_is_full(net_endpoint_t endpoint);
 uint32_t net_endpoint_wbuf_size(net_endpoint_t endpoint);
 void * net_endpoint_wbuf(net_endpoint_t endpoint, uint32_t * size);
 void * net_endpoint_wbuf_alloc(net_endpoint_t endpoint, uint32_t * inout_size);

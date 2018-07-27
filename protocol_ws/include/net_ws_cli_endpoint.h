@@ -10,6 +10,15 @@ void net_ws_cli_endpoint_free(net_ws_cli_endpoint_t ws_ep);
 
 net_ws_cli_endpoint_t net_ws_cli_endpoint_get(net_endpoint_t endpoint);
 
+uint8_t net_ws_cli_endpoint_debug(net_ws_cli_endpoint_t ws_ep);
+void net_ws_cli_endpoint_set_debug(net_ws_cli_endpoint_t ws_ep, uint8_t debug);
+
+const char * net_ws_cli_endpoint_path(net_ws_cli_endpoint_t ws_ep);
+int net_ws_cli_endpoint_set_path(net_ws_cli_endpoint_t ws_ep, const char * path);
+
+uint32_t net_ws_cli_endpoint_reconnect_span_ms(net_ws_cli_endpoint_t ws_ep);
+void net_ws_cli_endpoint_set_reconnect_span_ms(net_ws_cli_endpoint_t ws_ep, uint32_t span_ms);
+
 void * net_ws_cli_endpoint_data(net_ws_cli_endpoint_t ws_ep);
 net_ws_cli_endpoint_t net_ws_cli_endpoint_from_data(void * data);
 
@@ -18,6 +27,9 @@ net_ws_cli_state_t net_ws_cli_endpoint_state(net_ws_cli_endpoint_t ws_ep);
 void net_ws_cli_endpoint_enable(net_ws_cli_endpoint_t ws_ep);
 
 net_endpoint_t net_ws_cli_endpoint_net_endpoint(net_ws_cli_endpoint_t ws_ep);
+
+int net_ws_cli_endpoint_send_msg_text(net_ws_cli_endpoint_t ws_ep, const char * msg);
+int net_ws_cli_endpoint_send_msg_bin(net_ws_cli_endpoint_t ws_ep, const void * msg, uint32_t msg_len);
 
 const char * net_ws_cli_state_str(net_ws_cli_state_t state);
 

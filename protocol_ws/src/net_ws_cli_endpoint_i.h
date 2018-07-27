@@ -7,7 +7,9 @@ NET_BEGIN_DECL
 
 struct net_ws_cli_endpoint {
     net_endpoint_t m_endpoint;
+    uint8_t m_debug;
     uint32_t m_cfg_reconnect_span_ms;
+    char * m_cfg_path;
     net_ws_cli_state_t m_state;
     net_timer_t m_connect_timer;
     net_timer_t m_process_timer;
