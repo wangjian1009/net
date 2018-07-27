@@ -176,7 +176,6 @@ int net_endpoint_rbuf_recv(net_endpoint_t endpoint, void * data, uint32_t * size
     return 0;
 }
 
-
 int net_endpoint_rbuf_by_sep(net_endpoint_t endpoint, const char * seps, void * * r_data, uint32_t *r_size) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
 
@@ -218,5 +217,84 @@ int net_endpoint_rbuf_by_sep(net_endpoint_t endpoint, const char * seps, void * 
     *r_data = NULL;
     *r_size = 0;
     return 0;
+}
 
+static uint8_t net_endpoint_rbuf_match_forward(
+    net_schedule_t schedule, ringbuffer_block_t block, char * block_data, int block_data_len, int block_pos,
+    const char * look_str, size_t look_str_len)
+{
+    int i;
+    for(i = 0; i < 100; ++i) {
+        assert(block_data_len > block_pos);
+
+        size_t cmp_sz = (size_t)(block_data_len - block_pos);
+        if (cmp_sz > look_str_len) cmp_sz = look_str_len;
+
+        if (memcmp(block_data + block_pos, look_str, cmp_sz) != 0) return 0;
+
+        look_str += cmp_sz;
+        look_str_len -= cmp_sz;
+
+        if (look_str_len == 0) return 1;
+
+        block = ringbuffer_block_link_next(schedule->m_endpoint_buf, block);
+        if (block == NULL) return 0;
+
+        block_data_len = ringbuffer_block_len(schedule->m_endpoint_buf, block, 0);
+        ringbuffer_block_data(schedule->m_endpoint_buf, block, 0, (void**)&block_data);
+
+        block_pos = 0;
+    }
+
+    assert(0);
+    return 0;
+}
+
+int net_endpoint_rbuf_by_str(net_endpoint_t endpoint, const char * str, void * * r_data, uint32_t * r_size) {
+    net_schedule_t schedule = endpoint->m_driver->m_schedule;
+    size_t str_len = strlen(str);
+    if (str_len == 0) return -1;
+
+    uint32_t sz = 0;
+    ringbuffer_block_t block = endpoint->m_rb;
+    while(block) {
+        char * block_data;
+        int block_data_len = ringbuffer_block_len(schedule->m_endpoint_buf, block, 0);
+        ringbuffer_block_data(schedule->m_endpoint_buf, block, 0, (void**)&block_data);
+
+        int block_pos;
+        for(block_pos = 0; block_pos < block_data_len; ++block_pos) {
+            if (block_data[block_pos] == str[0]
+                && net_endpoint_rbuf_match_forward(
+                    schedule, block, block_data, block_data_len, block_pos + 1, str + 1, str_len - 1)
+                )
+            {
+                if (block != endpoint->m_rb /*已经涉及多个块*/
+                    || (block_pos + str_len) > block_data_len /**/)
+                {
+                    /*多块，需要合并 */
+                    block_pos += sz;
+                    block_data_len = ringbuffer_block_total_len(schedule->m_endpoint_buf, endpoint->m_rb);
+                    ringbuffer_block_t combine_blk = net_endpoint_common_buf_alloc(endpoint, (uint32_t)block_data_len);
+                    if (combine_blk == NULL) return -1;
+
+                    block_data = ringbuffer_copy(schedule->m_endpoint_buf, endpoint->m_rb, 0, combine_blk);
+                    ringbuffer_free(schedule->m_endpoint_buf, endpoint->m_rb);
+                    combine_blk->id = endpoint->m_id;
+                    endpoint->m_rb = combine_blk;
+                }
+
+                block_data[block_pos] = 0;
+                *r_data = block_data;
+                *r_size = block_pos + str_len;
+                return 0;
+            }
+        }
+        sz += (uint32_t)block_data_len;
+        block = ringbuffer_block_link_next(schedule->m_endpoint_buf, block);
+    }
+    
+    *r_data = NULL;
+    *r_size = 0;
+    return 0;
 }
