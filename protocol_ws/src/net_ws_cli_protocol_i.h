@@ -13,6 +13,7 @@ struct net_ws_cli_protocol {
     uint16_t m_endpoint_capacity;
     net_ws_cli_endpoint_init_fun_t m_endpoint_init;
     net_ws_cli_endpoint_fini_fun_t m_endpoint_fini;
+    net_ws_cli_endpoint_on_state_change_fun_t m_endpoint_on_state_change;
 };
 
 NET_END_DECL

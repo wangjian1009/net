@@ -10,12 +10,14 @@
 #include "net_address.h"
 #include "net_timer.h"
 #include "net_ws_cli_endpoint_i.h"
+#include "net_ws_cli_protocol_i.h"
 
 static void net_ws_cli_endpoint_do_connect(net_timer_t timer, void * ctx);
-static void net_ws_cli_endpoint_do_reconnect(net_timer_t timer, void * ctx);
+static void net_ws_cli_endpoint_do_process(net_timer_t timer, void * ctx);
 static void net_ws_cli_endpoint_reset_data(net_ws_cli_endpoint_t ws_ep);
 static int net_ws_cli_endpoint_send_handshake(net_ws_cli_endpoint_t ws_ep);
 static int net_ws_cli_endpoint_on_handshake(net_schedule_t schedule, net_ws_cli_endpoint_t ws_ep, char * response);
+static int net_ws_cli_endpoint_notify_state_changed(net_ws_cli_endpoint_t ws_ep, net_ws_cli_state_t old_state);
 
 net_ws_cli_endpoint_t
 net_ws_cli_endpoint_create(net_driver_t driver, net_endpoint_type_t type, net_ws_cli_protocol_t ws_protocol) {
@@ -71,11 +73,37 @@ int net_ws_cli_endpoint_set_state(net_ws_cli_endpoint_t ws_ep, net_ws_cli_state_
             net_ws_cli_state_str(state));
     }
 
-    //net_endpoint_state_t old_state = endpoint->m_state;
+    net_ws_cli_state_t old_state = ws_ep->m_state;
     
     ws_ep->m_state = state;
 
-    return 0;//net_endpoint_notify_state_changed(endpoint, old_state);
+    return net_ws_cli_endpoint_notify_state_changed(ws_ep, old_state);
+}
+
+static int net_ws_cli_endpoint_notify_state_changed(net_ws_cli_endpoint_t ws_ep, net_ws_cli_state_t old_state) {
+    net_ws_cli_protocol_t ws_protocol = net_protocol_data(net_endpoint_protocol(ws_ep->m_endpoint));
+        
+    int rv = ws_protocol->m_endpoint_on_state_change
+        ? ws_protocol->m_endpoint_on_state_change(ws_ep, old_state)
+        : 0;
+    
+    /* net_endpoint_monitor_t monitor = TAILQ_FIRST(&endpoint->m_monitors); */
+    /* while(monitor) { */
+    /*     net_endpoint_monitor_t next_monitor = TAILQ_NEXT(monitor, m_next); */
+    /*     assert(!monitor->m_is_free); */
+    /*     assert(!monitor->m_is_processing); */
+
+    /*     if (monitor->m_on_state_change) { */
+    /*         monitor->m_is_processing = 1; */
+    /*         monitor->m_on_state_change(monitor->m_ctx, endpoint, old_state); */
+    /*         monitor->m_is_processing = 0; */
+    /*         if (monitor->m_is_free) net_endpoint_monitor_free(monitor); */
+    /*     } */
+        
+    /*     monitor = next_monitor; */
+    /* } */
+
+    return rv;
 }
 
 static ssize_t net_ws_cli_endpoint_recv_cb(
@@ -88,15 +116,6 @@ static ssize_t net_ws_cli_endpoint_recv_cb(
         CPE_ERROR(
             net_schedule_em(net_endpoint_schedule(ws_ep->m_endpoint)),
             "ws: %s: rbuf recv fail!",
-            net_endpoint_dump(net_schedule_tmp_buffer(net_endpoint_schedule(ws_ep->m_endpoint)), ws_ep->m_endpoint));
-        wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE);
-        return -1;
-    }
-
-    if (size == 0) {
-        CPE_ERROR(
-            net_schedule_em(net_endpoint_schedule(ws_ep->m_endpoint)),
-            "ws: %s: rbuf recv no data!",
             net_endpoint_dump(net_schedule_tmp_buffer(net_endpoint_schedule(ws_ep->m_endpoint)), ws_ep->m_endpoint));
         wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE);
         return -1;
@@ -165,9 +184,9 @@ int net_ws_cli_endpoint_init(net_endpoint_t endpoint) {
         return -1;
     }
     
-    ws_ep->m_reconnect_timer = net_timer_auto_create(schedule, net_ws_cli_endpoint_do_reconnect, ws_ep);
-    if (ws_ep->m_reconnect_timer == NULL) {
-        CPE_ERROR(net_schedule_em(schedule), "ws: ???: init: create reconnect timer fail!");
+    ws_ep->m_process_timer = net_timer_auto_create(schedule, net_ws_cli_endpoint_do_process, ws_ep);
+    if (ws_ep->m_process_timer == NULL) {
+        CPE_ERROR(net_schedule_em(schedule), "ws: ???: init: create process timer fail!");
         net_timer_free(ws_ep->m_connect_timer);
         return -1;
     }
@@ -191,9 +210,9 @@ void net_ws_cli_endpoint_fini(net_endpoint_t endpoint) {
         ws_ep->m_connect_timer = NULL;
     }
 
-    if (ws_ep->m_reconnect_timer) {
-        net_timer_free(ws_ep->m_reconnect_timer);
-        ws_ep->m_reconnect_timer = NULL;
+    if (ws_ep->m_process_timer) {
+        net_timer_free(ws_ep->m_process_timer);
+        ws_ep->m_process_timer = NULL;
     }
 
     if (ws_ep->m_handshake_token) {
@@ -236,8 +255,9 @@ int net_ws_cli_endpoint_input(net_endpoint_t endpoint) {
         net_endpoint_rbuf_consume(endpoint, size);
     }
 
-    /* while(ws_ep->m_state == net_ws_cli_state_established) { */
-    /* } */
+    if (ws_ep->m_state == net_ws_cli_state_established) {
+        net_timer_active(ws_ep->m_process_timer, 0);
+    }
     
     return ws_ep->m_state == net_ws_cli_state_established ? 0 : -1;
 }
@@ -296,11 +316,17 @@ static void net_ws_cli_endpoint_do_connect(net_timer_t timer, void * ctx) {
     }
 }
 
-static void net_ws_cli_endpoint_do_reconnect(net_timer_t timer, void * ctx) {
+static void net_ws_cli_endpoint_do_process(net_timer_t timer, void * ctx) {
     net_ws_cli_endpoint_t ws_ep = ctx;
-
-    net_endpoint_set_state(ws_ep->m_endpoint, net_endpoint_state_disable);
-    net_timer_active(ws_ep->m_connect_timer, (int32_t)ws_ep->m_cfg_reconnect_span_ms);
+    
+    if (wslay_event_recv(ws_ep->m_ctx) != 0) {
+        net_schedule_t schedule = net_endpoint_schedule(ws_ep->m_endpoint);
+        CPE_ERROR(
+            net_schedule_em(schedule), "ws: %s: process: process fail, auto disconnect",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), ws_ep->m_endpoint));
+        net_endpoint_set_state(ws_ep->m_endpoint, net_endpoint_state_disable);
+        return;
+    }
 }
 
 static void net_ws_cli_endpoint_reset_data(net_ws_cli_endpoint_t ws_ep) {

@@ -9,6 +9,7 @@ typedef void (*net_ws_cli_protocol_fini_fun_t)(net_ws_cli_protocol_t ws_protocol
 
 typedef int (*net_ws_cli_endpoint_init_fun_t)(net_ws_cli_endpoint_t ws_ep);
 typedef void (*net_ws_cli_endpoint_fini_fun_t)(net_ws_cli_endpoint_t ws_ep);
+typedef int (*net_ws_cli_endpoint_on_state_change_fun_t)(net_ws_cli_endpoint_t ws_ep, net_ws_cli_state_t from_state);
 
 net_ws_cli_protocol_t net_ws_cli_protocol_create(
     net_schedule_t schedule,
@@ -20,7 +21,8 @@ net_ws_cli_protocol_t net_ws_cli_protocol_create(
     /*endpoint*/
     uint16_t endpoint_capacity,
     net_ws_cli_endpoint_init_fun_t endpoint_init,
-    net_ws_cli_endpoint_fini_fun_t endpoint_fini);
+    net_ws_cli_endpoint_fini_fun_t endpoint_fini,
+    net_ws_cli_endpoint_on_state_change_fun_t endpoint_on_state_change);
 
 void net_ws_cli_protocol_free(net_ws_cli_protocol_t ws_protocol);
 

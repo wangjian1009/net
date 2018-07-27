@@ -10,7 +10,7 @@ struct net_ws_cli_endpoint {
     uint32_t m_cfg_reconnect_span_ms;
     net_ws_cli_state_t m_state;
     net_timer_t m_connect_timer;
-    net_timer_t m_reconnect_timer;
+    net_timer_t m_process_timer;
     wslay_event_context_ptr m_ctx;
     char * m_handshake_token;
 };

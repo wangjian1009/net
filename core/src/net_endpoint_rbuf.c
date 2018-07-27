@@ -149,7 +149,7 @@ int net_endpoint_rbuf_recv(net_endpoint_t endpoint, void * data, uint32_t * size
     uint32_t capacity = *size;
     uint32_t received = 0;
 
-    while(capacity > 0 && endpoint->m_rb == NULL) {
+    while(capacity > 0 && endpoint->m_rb != NULL) {
         char * block_data;
         uint32_t block_data_len = (uint32_t)ringbuffer_block_len(schedule->m_endpoint_buf, endpoint->m_rb, 0);
         ringbuffer_block_data(schedule->m_endpoint_buf, endpoint->m_rb, 0, (void**)&block_data);
