@@ -24,8 +24,6 @@ net_ws_cli_endpoint_create(net_driver_t driver, net_endpoint_type_t type, net_ws
     net_endpoint_t endpoint = net_endpoint_create(driver, type, net_protocol_from_data(ws_protocol));
     if (endpoint == NULL) return NULL;
     
-    net_schedule_t schedule = net_endpoint_schedule(endpoint);
-    mem_allocrator_t alloc = net_schedule_allocrator(schedule);
     net_ws_cli_endpoint_t ws_ep = net_endpoint_protocol_data(endpoint);
 
     ws_ep->m_endpoint = endpoint;
@@ -410,7 +408,6 @@ int net_ws_cli_endpoint_input(net_endpoint_t endpoint) {
 
 int net_ws_cli_endpoint_on_state_change(net_endpoint_t endpoint, net_endpoint_state_t old_state) {
     net_ws_cli_endpoint_t ws_ep = net_endpoint_protocol_data(endpoint);
-    net_schedule_t schedule = net_endpoint_schedule(endpoint);
 
     switch(net_endpoint_state(endpoint)) {
     case net_endpoint_state_disable:

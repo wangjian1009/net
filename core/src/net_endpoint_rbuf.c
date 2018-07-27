@@ -290,7 +290,7 @@ int net_endpoint_rbuf_by_str(net_endpoint_t endpoint, const char * str, void * *
 
                 block_data[block_pos] = 0;
                 *r_data = block_data;
-                *r_size = block_pos + str_len;
+                *r_size = (uint32_t)(block_pos + str_len);
                 return 0;
             }
         }
