@@ -16,7 +16,9 @@ net_ws_cli_protocol_t net_ws_cli_protocol_create(
     uint16_t endpoint_capacity,
     net_ws_cli_endpoint_init_fun_t endpoint_init,
     net_ws_cli_endpoint_fini_fun_t endpoint_fini,
-    net_ws_cli_endpoint_on_state_change_fun_t endpoint_on_state_change)
+    net_ws_cli_endpoint_on_state_change_fun_t endpoint_on_state_change,
+    net_ws_cli_endpoint_on_text_msg_fun_t endpoint_on_text_msg,
+    net_ws_cli_endpoint_on_bin_msg_fun_t endpoint_on_bin_msg)
 {
     net_protocol_t protocol =
         net_protocol_create(
@@ -46,6 +48,8 @@ net_ws_cli_protocol_t net_ws_cli_protocol_create(
     ws_protocol->m_endpoint_init = endpoint_init;
     ws_protocol->m_endpoint_fini = endpoint_fini;
     ws_protocol->m_endpoint_on_state_change = endpoint_on_state_change;
+    ws_protocol->m_endpoint_on_text_msg = endpoint_on_text_msg;
+    ws_protocol->m_endpoint_on_bin_msg = endpoint_on_bin_msg;
 
     return ws_protocol;
 }
@@ -64,6 +68,8 @@ static int net_ws_cli_protocol_init(net_protocol_t protocol) {
     ws_protocol->m_endpoint_init = NULL;
     ws_protocol->m_endpoint_fini = NULL;
     ws_protocol->m_endpoint_on_state_change = NULL;
+    ws_protocol->m_endpoint_on_text_msg = NULL;
+    ws_protocol->m_endpoint_on_bin_msg = NULL;
     
     return 0;
 }

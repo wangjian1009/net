@@ -114,7 +114,7 @@ int net_ws_cli_endpoint_send_msg_text(net_ws_cli_endpoint_t ws_ep, const char * 
     if (ws_ep->m_debug >= 2) {
         net_schedule_t schedule = net_endpoint_schedule(ws_ep->m_endpoint);
         CPE_INFO(
-            net_schedule_em(schedule), "ws: %s: handshake request: >>>\n%s",
+            net_schedule_em(schedule), "ws: %s: msg text: >>>\n%s",
             net_endpoint_dump(net_schedule_tmp_buffer(schedule), ws_ep->m_endpoint),
             msg);
     }
@@ -138,7 +138,7 @@ int net_ws_cli_endpoint_send_msg_bin(net_ws_cli_endpoint_t ws_ep, const void * m
     if (ws_ep->m_debug >= 2) {
         net_schedule_t schedule = net_endpoint_schedule(ws_ep->m_endpoint);
         CPE_INFO(
-            net_schedule_em(schedule), "ws: %s: handshake request: >>> %d data",
+            net_schedule_em(schedule), "ws: %s: msg bin: >>> %d data",
             net_endpoint_dump(net_schedule_tmp_buffer(schedule), ws_ep->m_endpoint),
             msg_len);
     }
@@ -242,11 +242,59 @@ static int net_ws_cli_endpoint_genmask_cb(
 static void net_ws_cli_endpoint_on_msg_recv_cb(
     wslay_event_context_ptr ctx, const struct wslay_event_on_msg_recv_arg *arg, void *user_data)
 {
-    if(!wslay_is_ctrl_frame(arg->opcode)) {
-        struct wslay_event_msg msgarg = {
-            arg->opcode, arg->msg, arg->msg_length
-        };
-        wslay_event_queue_msg(ctx, &msgarg);
+    net_ws_cli_endpoint_t ws_ep = user_data;
+    net_schedule_t schedule = net_endpoint_schedule(ws_ep->m_endpoint);
+    net_ws_cli_protocol_t ws_protocol = net_protocol_data(net_endpoint_protocol(ws_ep->m_endpoint));
+    
+    switch(arg->opcode) {
+    case WSLAY_CONTINUATION_FRAME:
+        CPE_ERROR(
+            net_schedule_em(schedule), "ws: %s: continuation: not support!",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), ws_ep->m_endpoint));
+        break;
+    case WSLAY_TEXT_FRAME:
+        if (ws_ep->m_debug >= 2) {
+            CPE_INFO(
+                net_schedule_em(schedule), "ws: %s: msg text: <<<\n%s",
+                net_endpoint_dump(net_schedule_tmp_buffer(schedule), ws_ep->m_endpoint),
+                arg->msg);
+        }
+        
+        if (ws_protocol->m_endpoint_on_text_msg) {
+            if (ws_protocol->m_endpoint_on_text_msg(ws_ep, (const char *)arg->msg) != 0) {
+                wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE);
+            }
+        }
+        break;
+    case WSLAY_BINARY_FRAME:
+        if (ws_ep->m_debug >= 2) {
+            CPE_INFO(
+                net_schedule_em(schedule), "ws: %s: msg bin: <<< %d data",
+                net_endpoint_dump(net_schedule_tmp_buffer(schedule), ws_ep->m_endpoint),
+                (int)arg->msg_length);
+        }
+        
+        if (ws_protocol->m_endpoint_on_bin_msg) {
+            if (ws_protocol->m_endpoint_on_bin_msg(ws_ep, arg->msg, (uint32_t)arg->msg_length) != 0) {
+                wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE);
+            }
+        }
+        break;
+    case WSLAY_CONNECTION_CLOSE:
+        CPE_ERROR(
+            net_schedule_em(schedule), "ws: %s: close: not support!",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), ws_ep->m_endpoint));
+        break;
+    case WSLAY_PING:
+        CPE_ERROR(
+            net_schedule_em(schedule), "ws: %s: ping: not support!",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), ws_ep->m_endpoint));
+        break;
+    case WSLAY_PONG:
+        CPE_ERROR(
+            net_schedule_em(schedule), "ws: %s: pong: not support!",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), ws_ep->m_endpoint));
+        break;
     }
 }
 

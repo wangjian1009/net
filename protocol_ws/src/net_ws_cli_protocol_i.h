@@ -14,6 +14,8 @@ struct net_ws_cli_protocol {
     net_ws_cli_endpoint_init_fun_t m_endpoint_init;
     net_ws_cli_endpoint_fini_fun_t m_endpoint_fini;
     net_ws_cli_endpoint_on_state_change_fun_t m_endpoint_on_state_change;
+    net_ws_cli_endpoint_on_text_msg_fun_t m_endpoint_on_text_msg;
+    net_ws_cli_endpoint_on_bin_msg_fun_t m_endpoint_on_bin_msg;
 };
 
 NET_END_DECL
