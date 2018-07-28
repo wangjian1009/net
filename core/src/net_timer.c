@@ -98,6 +98,19 @@ void net_timer_cancel(net_timer_t timer) {
     timer->m_driver->m_timer_cancel(timer);
 }
 
+net_timer_process_fun_t net_timer_process_fun(net_timer_t timer) {
+    return timer->m_process_fun;
+}
+
+void * net_timer_process_ctx(net_timer_t timer) {
+    return timer->m_process_ctx;
+}
+
+void net_timer_set_process_fun(net_timer_t timer, net_timer_process_fun_t process_fun, void * process_ctx) {
+    timer->m_process_fun = process_fun;
+    timer->m_process_ctx = process_ctx;
+}
+
 void net_timer_process(net_timer_t timer) {
     if (timer->m_process_fun) {
         timer->m_process_fun(timer, timer->m_process_ctx);

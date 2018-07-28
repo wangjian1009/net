@@ -27,6 +27,10 @@ uint8_t net_timer_is_active(net_timer_t timer);
 void net_timer_active(net_timer_t timer, int32_t delay_ms);
 void net_timer_cancel(net_timer_t timer);
 
+net_timer_process_fun_t net_timer_process_fun(net_timer_t timer);
+void * net_timer_process_ctx(net_timer_t timer);
+void net_timer_set_process_fun(net_timer_t timer, net_timer_process_fun_t process_fun, void * process_ctx);
+
 void net_timer_process(net_timer_t timer);
 
 NET_END_DECL
