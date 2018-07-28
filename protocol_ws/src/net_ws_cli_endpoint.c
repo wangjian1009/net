@@ -308,6 +308,7 @@ static struct wslay_event_callbacks s_net_ws_cli_endpoint_callbacks = {
 
 int net_ws_cli_endpoint_init(net_endpoint_t endpoint) {
     net_ws_cli_endpoint_t ws_ep = net_endpoint_protocol_data(endpoint);
+    net_ws_cli_protocol_t ws_protocol = net_protocol_data(net_endpoint_protocol(endpoint));
     net_schedule_t schedule = net_endpoint_schedule(endpoint);
 
     ws_ep->m_endpoint = NULL;
@@ -331,13 +332,26 @@ int net_ws_cli_endpoint_init(net_endpoint_t endpoint) {
     }
     
     wslay_event_context_client_init(&ws_ep->m_ctx, &s_net_ws_cli_endpoint_callbacks, ws_ep);
+
+    if (ws_protocol->m_endpoint_init && ws_protocol->m_endpoint_init(ws_ep) != 0) {
+        CPE_ERROR(net_schedule_em(schedule), "ws: ???: init: external init fail!");
+        net_timer_free(ws_ep->m_process_timer);
+        net_timer_free(ws_ep->m_connect_timer);
+        return -1;
+    }
+    
     return 0;
 }
 
 void net_ws_cli_endpoint_fini(net_endpoint_t endpoint) {
     net_ws_cli_endpoint_t ws_ep = net_endpoint_protocol_data(endpoint);
+    net_ws_cli_protocol_t ws_protocol = net_protocol_data(net_endpoint_protocol(endpoint));
     net_schedule_t schedule = net_endpoint_schedule(endpoint);
     mem_allocrator_t alloc = net_schedule_allocrator(schedule);
+
+    if (ws_protocol->m_endpoint_fini) {
+        ws_protocol->m_endpoint_fini(ws_ep);
+    }
     
     if (ws_ep->m_ctx) {
         wslay_event_context_free(ws_ep->m_ctx);
