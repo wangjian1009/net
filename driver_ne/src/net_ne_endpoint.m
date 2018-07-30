@@ -414,11 +414,14 @@ static const char * net_ne_endpoint_state_str(NWTCPConnectionState state) {
     net_ne_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
 
     if ([keyPath isEqual:@"state"]) {
+        NWTCPConnectionState oldState = (NWTCPConnectionState)[[change objectForKey:@"old"] intValue];
+        NWTCPConnectionState newState = (NWTCPConnectionState)[[change objectForKey:@"new"] intValue];
+        
         CPE_INFO(
             driver->m_em, "ne: %s: state %s ==> %s!",
             net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint),
-            net_ne_endpoint_state_str((NWTCPConnectionState)[change objectForKey:@"old"]),
-            net_ne_endpoint_state_str((NWTCPConnectionState)[change objectForKey:@"new"]));
+            net_ne_endpoint_state_str(oldState), net_ne_endpoint_state_str(newState));
+
     }
 }
 @end

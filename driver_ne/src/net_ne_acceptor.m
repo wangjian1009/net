@@ -60,15 +60,6 @@ net_ne_acceptor_create(
 
     if (accept_queue_size == 0) accept_queue_size = 512;
 
-    // if (driver->m_sock_process_fun) {
-    //     if (driver->m_sock_process_fun(driver, driver->m_sock_process_ctx, acceptor->m_fd, NULL) != 0) {
-    //         CPE_ERROR(driver->m_em, "ne: acceptor: sock process fail");
-    //         cpe_sock_close(acceptor->m_fd);
-    //         mem_free(alloc, acceptor);
-    //         return NULL;
-    //     }
-    // }
-    
     // if (cpe_listen(acceptor->m_fd, accept_queue_size) != 0) {
     //     CPE_ERROR(
     //         em, "ne: acceptor: listen error, errno=%d (%s)",

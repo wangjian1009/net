@@ -7,7 +7,6 @@
 
 int net_ne_timer_init(net_timer_t base_timer) {
     net_ne_timer_t timer = net_timer_data(base_timer);
-    net_ne_driver_t driver = net_driver_data(net_timer_driver(base_timer));
 
     timer->m_timer = nil;
 

@@ -19,7 +19,6 @@ typedef struct net_ne_timer * net_ne_timer_t;
 struct net_ne_driver {
     mem_allocrator_t m_alloc;
     error_monitor_t m_em;
-    //__unsafe_unretained dispatch_queue_t m_queue;
     __unsafe_unretained NETunnelProvider * m_tunnel_provider;
     uint8_t m_debug;
     net_data_monitor_fun_t m_data_monitor_fun;
