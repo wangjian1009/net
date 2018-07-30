@@ -6,240 +6,165 @@
 #include "net_address.h"
 #include "net_driver.h"
 #include "net_ne_endpoint.h"
+#include "net_ne_utils.h"
+
+static const char * net_ne_endpoint_state_str(NWTCPConnectionState state);
 
 int net_ne_endpoint_init(net_endpoint_t base_endpoint) {
     net_ne_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+
+    endpoint->m_connection = nil;
     
     return 0;
 }
 
 void net_ne_endpoint_fini(net_endpoint_t base_endpoint) {
     net_ne_endpoint_t endpoint = net_endpoint_data(base_endpoint);
-    net_ne_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
+
+    if (endpoint->m_connection) {
+        [endpoint->m_connection release];
+        endpoint->m_connection = nil;
+    }
 }
 
 int net_ne_endpoint_on_output(net_endpoint_t base_endpoint) {
     if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return 0;
 
-    net_ne_endpoint_t endpoint = net_endpoint_data(base_endpoint);
-    net_ne_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
+    // net_ne_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+    // net_ne_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
 
-    //net_ne_endpoint_start_rw_watcher(driver, base_endpoint, endpoint);
     return 0;
 }
 
 int net_ne_endpoint_connect(net_endpoint_t base_endpoint) {
-    // net_ne_endpoint_t endpoint = net_endpoint_data(base_endpoint);
-    // net_ne_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
-    // net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
-    // error_monitor_t em = net_schedule_em(schedule);
+    net_ne_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+    net_ne_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
+    net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
 
-    // if (endpoint->m_fd != -1) {
-    //     CPE_ERROR(
-    //         em, "ne: %s: already connected!",
-    //         net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
-    //     return -1;
-    // }
+    if (endpoint->m_connection != nil) {
+        CPE_ERROR(
+            driver->m_em, "ne: %s: already connected!",
+            net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint));
+        return -1;
+    }
 
-    // net_address_t remote_addr = net_endpoint_remote_address(base_endpoint);
-    // if (remote_addr == NULL) {
-    //     CPE_ERROR(
-    //         em, "ne: %s: connect with no remote address!",
-    //         net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
-    //     return -1;
-    // }
-        
-    // net_address_t local_address = net_endpoint_address(base_endpoint);
-    // if (local_address) {
-    //     switch(net_address_type(local_address)) {
-    //     case net_address_ipv4:
-    //         endpoint->m_fd = cpe_sock_open(AF_INET, SOCK_STREAM, 0);
-    //         break;
-    //     case net_address_ipv6:
-    //         endpoint->m_fd = cpe_sock_open(AF_INET6, SOCK_STREAM, 0);
-    //         break;
-    //     case net_address_domain:
-    //         CPE_ERROR(
-    //             em, "ne: %s: connect not support domain address!",
-    //             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
-    //         return -1;
-    //     }
+    net_address_t remote_addr = net_endpoint_remote_address(base_endpoint);
+    if (remote_addr == NULL) {
+        CPE_ERROR(
+            driver->m_em, "ne: %s: connect with no remote address!",
+            net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint));
+        return -1;
+    }
 
-    //     if (endpoint->m_fd == -1) {
-    //         CPE_ERROR(
-    //             em, "ne: %s: create socket fail, errno=%d (%s)",
-    //             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
-    //             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-    //         return -1;
-    //     }
-
-    //     struct sockaddr_storage addr;
-    //     socklen_t addr_len = sizeof(addr);
-    //     if (net_address_to_sockaddr(local_address, (struct sockaddr *)&addr, &addr_len) != 0) {
-    //         CPE_ERROR(
-    //             em, "ne: %s: connect not support connect to domain address!",
-    //             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
-    //         return -1;
-    //     }
-
-    //     if(cpe_bind(endpoint->m_fd, (struct sockaddr *)&addr, addr_len) != 0) {
-    //         CPE_ERROR(
-    //             em, "ne: %s: bind fail, errno=%d (%s)",
-    //             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
-    //             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-    //         cpe_sock_close(endpoint->m_fd);
-    //         endpoint->m_fd = -1;
-    //         return -1;
-    //     }
-    // }
-    // else {
-    //     endpoint->m_fd = cpe_sock_open(AF_INET, SOCK_STREAM, 0);
-    //     if (endpoint->m_fd == -1) {
-    //         CPE_ERROR(
-    //             em, "ne: %s: create ipv4 socket fail, errno=%d (%s)",
-    //             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
-    //             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-    //         return -1;
-    //     }
-    // }
-
-    // if (cpe_sock_set_none_block(endpoint->m_fd, 1) != 0) {
-    //     CPE_ERROR(
-    //         em, "ne: %s: set non-block fail, errno=%d (%s)",
-    //         net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
-    //         cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-    //     cpe_sock_close(endpoint->m_fd);
-    //     endpoint->m_fd = -1;
-    //     return -1;
-    // }
-
-    // struct sockaddr_storage addr;
-    // socklen_t addr_len = sizeof(addr);
-    // net_address_to_sockaddr(remote_addr, (struct sockaddr *)&addr, &addr_len);
-
-    // if (driver->m_sock_process_fun) {
-    //     if (driver->m_sock_process_fun(driver, driver->m_sock_process_ctx, endpoint->m_fd, remote_addr) != 0) {
-    //         CPE_ERROR(
-    //             em, "ne: %s: sock process fail",
-    //             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
-    //         cpe_sock_close(endpoint->m_fd);
-    //         endpoint->m_fd = -1;
-    //         return -1;
-    //     }
-    // }
+    NWHostEndpoint * remote_endpoint = net_ne_address_to_endoint(driver, remote_addr);
+    if (remote_endpoint == NULL) {
+        CPE_ERROR(
+            driver->m_em, "ne: %s: convert remote address fail!",
+            net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint));
+        return -1;
+    }
     
-    // if (cpe_connect(endpoint->m_fd, (struct sockaddr *)&addr, addr_len) != 0) {
-    //     if (cpe_sock_errno() == EINPROGRESS || cpe_sock_errno() == EWOULDBLOCK) {
-    //         if (net_schedule_debug(schedule) >= 2) {
-    //             CPE_INFO(
-    //                 em, "ne: %s: connect start",
-    //                 net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
-    //                 cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-    //         }
+    endpoint->m_connection = [driver->m_tunnel_provider createTCPConnectionToEndpoint: remote_endpoint];
+    if (endpoint->m_connection == nil) {
+        CPE_ERROR(
+            driver->m_em, "ne: %s: create connection fail!",
+            net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint));
+        return -1;
+    }
+    [endpoint->m_connection retain];
 
-    //         assert(!ev_is_active(&endpoint->m_watcher));
-    //         ev_io_init(
-    //             &endpoint->m_watcher,
-    //             net_ne_endpoint_connect_cb, endpoint->m_fd,
-    //             EV_READ | EV_WRITE);
-    //         ev_io_start(driver->m_ne_loop, &endpoint->m_watcher);
-            
-    //         return net_endpoint_set_state(base_endpoint, net_endpoint_state_connecting);
-    //     }
-    //     else {
-    //         CPE_ERROR(
-    //             em, "ne: %s: connect error, errno=%d (%s)",
-    //             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
-    //             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-    //         cpe_sock_close(endpoint->m_fd);
-    //         endpoint->m_fd = -1;
-    //         return -1;
-    //     }
-    // }
-    // else {
-    //     if (driver->m_debug || net_schedule_debug(schedule) >= 2) {
-    //         CPE_INFO(
-    //             em, "ne: %s: connect success",
-    //             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
-    //             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-    //     }
+    //     connection.addObserver(self, forKeyPath: "state", options: [.initial, .new], context: nil)
 
-    //     if (net_endpoint_address(base_endpoint) == NULL) {
-    //         net_ne_endpoint_update_local_address(endpoint);
-    //     }
+    switch(endpoint->m_connection.state) {
+    case NWTCPConnectionStateConnecting:
+        if (driver->m_debug || net_schedule_debug(schedule) >= 2) {
+            CPE_INFO(
+                driver->m_em, "ne: %s: connect start",
+                net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint));
+        }
 
-    //     net_ne_endpoint_start_rw_watcher(driver, base_endpoint, endpoint);
-        
-    //     return net_endpoint_set_state(base_endpoint, net_endpoint_state_established);
-    // }
-    return 0;
+        return net_endpoint_set_state(base_endpoint, net_endpoint_state_connecting);
+    case NWTCPConnectionStateConnected:
+        if (driver->m_debug || net_schedule_debug(schedule) >= 2) {
+            CPE_INFO(
+                driver->m_em, "ne: %s: connect success",
+                net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint));
+        }
+
+        if (net_endpoint_address(base_endpoint) == NULL) {
+            net_ne_endpoint_update_local_address(endpoint);
+        }
+
+        return net_endpoint_set_state(base_endpoint, net_endpoint_state_established);
+    case NWTCPConnectionStateCancelled:
+    case NWTCPConnectionStateInvalid:
+    case NWTCPConnectionStateDisconnected:
+    default:
+        CPE_ERROR(
+            driver->m_em, "ne: %s: connect complete, state=%s, error",
+            net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint),
+            net_ne_endpoint_state_str(endpoint->m_connection.state));
+        [endpoint->m_connection release];
+        endpoint->m_connection = nil;
+        return -1;
+    }
 }
 
 void net_ne_endpoint_close(net_endpoint_t base_endpoint) {
-    // net_ne_endpoint_t endpoint = net_endpoint_data(base_endpoint);
-    // net_ne_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
+    net_ne_endpoint_t endpoint = net_endpoint_data(base_endpoint);
 
-    // if (endpoint->m_fd == -1) return;
+    if (endpoint->m_connection == nil) return;
 
-    // ev_io_stop(driver->m_ne_loop, &endpoint->m_watcher);
-    // cpe_sock_close(endpoint->m_fd);
-    // endpoint->m_fd = -1;
+    [endpoint->m_connection release];
+    endpoint->m_connection = nil;
 }
 
 int net_ne_endpoint_update_local_address(net_ne_endpoint_t endpoint) {
     net_endpoint_t base_endpoint = net_endpoint_from_data(endpoint);
-    net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
-    
-    // struct sockaddr_storage addr;
-    // socklen_t addr_len = sizeof(struct sockaddr_storage);
-    // memset(&addr, 0, addr_len);
-    // if (getsockname(endpoint->m_fd, (struct sockaddr *)&addr, &addr_len) != 0) {
-    //     CPE_ERROR(
-    //         net_schedule_em(schedule), "ne: %s: sockaddr error, errno=%d (%s)",
-    //         net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
-    //         cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-    //     return -1;
-    // }
+    net_ne_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
 
-    // net_address_t address =
-    //     net_address_create_from_sockaddr(schedule, (struct sockaddr *)&addr, addr_len);
-    // if (address == NULL) {
-    //     CPE_ERROR(
-    //         net_schedule_em(schedule), "ne: %s: create address fail",
-    //         net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
-    //     return -1;
-    // }
+    NWEndpoint *localAddress = [endpoint->m_connection localAddress];
+    if (localAddress == nil) {
+        CPE_ERROR(
+            driver->m_em, "ne: %s: localAddress error",
+            net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint));
+        return -1;
+    }
 
-    // net_endpoint_set_address(base_endpoint, address, 1);
-    
+    net_address_t address = net_ne_endpoint_to_address(driver, localAddress);
+    if (address == NULL) {
+        CPE_ERROR(
+            driver->m_em, "ne: %s: create local address fail",
+            net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint));
+        return -1;
+    }
+
+    net_endpoint_set_address(base_endpoint, address, 1);
+
     return 0;
 }
 
 int net_ne_endpoint_update_remote_address(net_ne_endpoint_t endpoint) {
     net_endpoint_t base_endpoint = net_endpoint_from_data(endpoint);
-    net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
+    net_ne_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
     
-    // struct sockaddr_storage addr;
-    // socklen_t addr_len = sizeof(struct sockaddr_storage);
-    // memset(&addr, 0, addr_len);
-    // if (getpeername(endpoint->m_fd, (struct sockaddr *)&addr, &addr_len) != 0) {
-    //     CPE_ERROR(
-    //         net_schedule_em(schedule), "ne: %s: getpeername error, errno=%d (%s)",
-    //         net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
-    //         cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-    //     return -1;
-    // }
+    NWEndpoint * remoteAddress = [endpoint->m_connection remoteAddress];
+    if (remoteAddress == nil) {
+        CPE_ERROR(
+            driver->m_em, "ne: %s: address error",
+            net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint));
+        return -1;
+    }
 
-    // net_address_t address =
-    //     net_address_create_from_sockaddr(schedule, (struct sockaddr *)&addr, addr_len);
-    // if (address == NULL) {
-    //     CPE_ERROR(
-    //         net_schedule_em(schedule), "ne: %s: create address fail",
-    //         net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
-    //     return -1;
-    // }
+    net_address_t address = net_ne_endpoint_to_address(driver, remoteAddress);
+    if (address == NULL) {
+        CPE_ERROR(
+            driver->m_em, "ne: %s: create remote address fail",
+            net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint));
+        return -1;
+    }
 
-    // net_endpoint_set_remote_address(base_endpoint, address, 1);
+    net_endpoint_set_remote_address(base_endpoint, address, 1);
     
     return 0;
 }
@@ -265,7 +190,7 @@ int net_ne_endpoint_update_remote_address(net_ne_endpoint_t endpoint) {
 //                 if (driver->m_debug) {
 //                     CPE_INFO(
 //                         em, "ne: %s: recv %d bytes data!",
-//                         net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
+//                         net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint),
 //                         bytes);
 //                 }
 
@@ -274,7 +199,7 @@ int net_ne_endpoint_update_remote_address(net_ne_endpoint_t endpoint) {
 //                         if (driver->m_debug || net_schedule_debug(schedule) >= 2) {
 //                             CPE_INFO(
 //                                 em, "ne: %s: free for process fail!",
-//                                 net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+//                                 net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint));
 //                         }
 //                         net_endpoint_free(base_endpoint);
 //                     }
@@ -291,7 +216,7 @@ int net_ne_endpoint_update_remote_address(net_ne_endpoint_t endpoint) {
 //                 if (driver->m_debug || net_schedule_debug(schedule) >= 2) {
 //                     CPE_INFO(
 //                         em, "ne: %s: remote disconnected(recv 0)!",
-//                         net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+//                         net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint));
 //                 }
                 
 //                 if (net_endpoint_set_state(base_endpoint, net_endpoint_state_disable) != 0) {
@@ -311,7 +236,7 @@ int net_ne_endpoint_update_remote_address(net_ne_endpoint_t endpoint) {
 //                 default:
 //                     CPE_ERROR(
 //                         em, "ne: %s: recv error, errno=%d (%s)!",
-//                         net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
+//                         net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint),
 //                         cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
 
 //                     if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
@@ -336,7 +261,7 @@ int net_ne_endpoint_update_remote_address(net_ne_endpoint_t endpoint) {
 //                 if (driver->m_debug) {
 //                     CPE_INFO(
 //                         em, "ne: %s: send %d bytes data!",
-//                         net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
+//                         net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint),
 //                         bytes);
 //                 }
 
@@ -350,7 +275,7 @@ int net_ne_endpoint_update_remote_address(net_ne_endpoint_t endpoint) {
 //                 if (driver->m_debug || net_schedule_debug(schedule) >= 2) {
 //                     CPE_INFO(
 //                         em, "ne: %s: free for send return 0!",
-//                         net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+//                         net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint));
 //                 }
 
 //                 net_endpoint_free(base_endpoint);
@@ -365,7 +290,7 @@ int net_ne_endpoint_update_remote_address(net_ne_endpoint_t endpoint) {
 
 //                 CPE_ERROR(
 //                     em, "ne: %s: free for send error, errno=%d (%s)!",
-//                     net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
+//                     net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint),
 //                     cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
 
 //                 net_endpoint_free(base_endpoint);
@@ -389,7 +314,7 @@ int net_ne_endpoint_update_remote_address(net_ne_endpoint_t endpoint) {
 //     if (cpe_getsockopt(endpoint->m_fd, SOL_SOCKET, SO_ERROR, (void*)&err, &err_len) == -1) {
 //         CPE_ERROR(
 //             em, "ne: %s: connect_cb get socket error fail, errno=%d (%s)!",
-//             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
+//             net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint),
 //             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
 
 //         if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
@@ -401,7 +326,7 @@ int net_ne_endpoint_update_remote_address(net_ne_endpoint_t endpoint) {
 //     if (err != 0) {
 //         CPE_ERROR(
 //             em, "ne: %s: connect error, errno=%d (%s)",
-//             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
+//             net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint),
 //             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
 //         if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
 //             net_endpoint_free(base_endpoint);
@@ -412,7 +337,7 @@ int net_ne_endpoint_update_remote_address(net_ne_endpoint_t endpoint) {
 //     if (driver->m_debug || net_schedule_debug(schedule) >= 2) {
 //         CPE_INFO(
 //             em, "ne: %s: connect success",
-//             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
+//             net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint),
 //             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
 //     }
 
@@ -426,3 +351,20 @@ int net_ne_endpoint_update_remote_address(net_ne_endpoint_t endpoint) {
 //         return;
 //     }
 // }
+
+static const char * net_ne_endpoint_state_str(NWTCPConnectionState state) {
+    switch(state) {
+    case NWTCPConnectionStateConnecting:
+        return "Connecting";
+    case NWTCPConnectionStateConnected:
+        return "Connected";
+    case NWTCPConnectionStateCancelled:
+        return "Cancelled";
+    case NWTCPConnectionStateInvalid:
+        return "Invalid";
+    case NWTCPConnectionStateDisconnected:
+        return "Disconnected";
+    default:
+        return "Unknown";
+    }
+}
