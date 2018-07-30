@@ -1,5 +1,6 @@
 #ifndef NET_ROUTER_SCHEDULE_H_INCLEDED
 #define NET_ROUTER_SCHEDULE_H_INCLEDED
+#include "cpe/utils/utils_types.h"
 #include "net_router_types.h"
 
 NET_BEGIN_DECL
