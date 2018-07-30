@@ -3,8 +3,13 @@
 #import <NetworkExtension/NWTCPConnection.h>
 #include "net_ne_driver_i.h"
 
+@interface NetNeEndpointObserver : NSObject {
+}
+@end
+
 struct net_ne_endpoint {
     __unsafe_unretained NWTCPConnection * m_connection;
+    __unsafe_unretained NetNeEndpointObserver * m_observer;
 };
 
 int net_ne_endpoint_init(net_endpoint_t base_endpoint);

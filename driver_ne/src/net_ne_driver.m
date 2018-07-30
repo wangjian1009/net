@@ -85,13 +85,13 @@ static int net_ne_driver_init(net_driver_t base_driver) {
         return -1;
     }
     
-    driver->m_queue = dispatch_queue_create("net_driver_ne", nil);
-    if (driver->m_queue == NULL) {
-        CPE_ERROR(driver->m_em, "ne: create dispatch queue fail!");
-        cpe_hash_table_fini(&driver->m_dgram_sessions);
-        return -1;
-    }
-    [driver->m_queue retain];
+    // driver->m_queue = dispatch_queue_create("net_driver_ne", nil);
+    // if (driver->m_queue == NULL) {
+    //     CPE_ERROR(driver->m_em, "ne: create dispatch queue fail!");
+    //     cpe_hash_table_fini(&driver->m_dgram_sessions);
+    //     return -1;
+    // }
+    // [driver->m_queue retain];
 
     TAILQ_INIT(&driver->m_acceptors);
     TAILQ_INIT(&driver->m_free_dgram_sessions);
@@ -111,7 +111,7 @@ static void net_ne_driver_fini(net_driver_t base_driver) {
         driver->m_tunnel_provider = NULL;
     }
 
-    [driver->m_queue release];
+    //[driver->m_queue release];
 
     assert(cpe_hash_table_count(&driver->m_dgram_sessions) == 0);
     cpe_hash_table_fini(&driver->m_dgram_sessions);
