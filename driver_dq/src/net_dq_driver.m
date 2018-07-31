@@ -27,6 +27,10 @@ net_dq_driver_create(net_schedule_t schedule) {
         net_dq_timer_active,
         net_dq_timer_cancel,
         net_dq_timer_is_active,
+        /*acceptor*/
+        sizeof(struct net_dq_acceptor),
+        net_dq_acceptor_init,
+        net_dq_acceptor_fini,
         /*endpoint*/
         sizeof(struct net_dq_endpoint),
         net_dq_endpoint_init,
@@ -57,17 +61,10 @@ static int net_dq_driver_init(net_driver_t base_driver) {
     driver->m_data_monitor_ctx = NULL;
     driver->m_debug = 0;
     
-    TAILQ_INIT(&driver->m_acceptors);
-
     return 0;
 }
 
 static void net_dq_driver_fini(net_driver_t base_driver) {
-    net_dq_driver_t driver = net_driver_data(base_driver);
-
-    while(!TAILQ_EMPTY(&driver->m_acceptors)) {
-        net_dq_acceptor_free(TAILQ_FIRST(&driver->m_acceptors));
-    }
 }
 
 void net_dq_driver_free(net_dq_driver_t driver) {

@@ -27,6 +27,10 @@ net_ev_driver_create(net_schedule_t schedule, struct ev_loop * ev_loop) {
         net_ev_timer_active,
         net_ev_timer_cancel,
         net_ev_timer_is_active,
+        /*acceptor*/
+        sizeof(struct net_ev_acceptor),
+        net_ev_acceptor_init,
+        net_ev_acceptor_fini,
         /*endpoint*/
         sizeof(struct net_ev_endpoint),
         net_ev_endpoint_init,
@@ -58,17 +62,10 @@ static int net_ev_driver_init(net_driver_t base_driver) {
     driver->m_data_monitor_ctx = NULL;
     driver->m_debug = 0;
 
-    TAILQ_INIT(&driver->m_acceptors);
-
     return 0;
 }
 
 static void net_ev_driver_fini(net_driver_t base_driver) {
-    net_ev_driver_t driver = net_driver_data(base_driver);
-
-    while(!TAILQ_EMPTY(&driver->m_acceptors)) {
-        net_ev_acceptor_free(TAILQ_FIRST(&driver->m_acceptors));
-    }
 }
 
 void net_ev_driver_free(net_ev_driver_t driver) {

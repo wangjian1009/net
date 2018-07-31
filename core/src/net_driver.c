@@ -2,6 +2,7 @@
 #include "cpe/pal/pal_string.h"
 #include "cpe/utils/string_utils.h"
 #include "net_driver_i.h"
+#include "net_acceptor_i.h"
 #include "net_endpoint_i.h"
 #include "net_dgram_i.h"
 #include "net_timer_i.h"
@@ -21,6 +22,10 @@ net_driver_create(
     net_timer_schedule_fun_t timer_schedule,
     net_timer_cancel_fun_t timer_cancel,
     net_timer_is_active_fun_t timer_is_active,
+    /*acceptor*/
+    uint16_t acceptor_capacity,
+    net_acceptor_init_fun_t acceptor_init,
+    net_acceptor_fini_fun_t acceptor_fini,
     /*endpoint*/
     uint16_t endpoint_capacity,
     net_endpoint_init_fun_t endpoint_init,
@@ -56,6 +61,10 @@ net_driver_create(
     driver->m_timer_schedule = timer_schedule;
     driver->m_timer_cancel = timer_cancel;
     driver->m_timer_is_active = timer_is_active;
+
+    /*acceptor*/
+    driver->m_acceptor_capacity = acceptor_capacity;
+    driver->m_acceptor_init = acceptor_init;
     
     /*endpoint*/
     driver->m_endpoint_capacity = endpoint_capacity;
@@ -72,9 +81,12 @@ net_driver_create(
     driver->m_dgram_send = dgram_send;
     
     /*runtime*/
+    TAILQ_INIT(&driver->m_free_acceptors);
+    TAILQ_INIT(&driver->m_acceptors);
+
     TAILQ_INIT(&driver->m_free_endpoints);
     TAILQ_INIT(&driver->m_endpoints);
-
+    
     TAILQ_INIT(&driver->m_free_dgrams);
     TAILQ_INIT(&driver->m_dgrams);
     
@@ -102,6 +114,10 @@ void net_driver_free(net_driver_t driver) {
         schedule->m_direct_driver = NULL;
     }
     
+    while(!TAILQ_EMPTY(&driver->m_acceptors)) {
+        net_acceptor_free(TAILQ_FIRST(&driver->m_acceptors));
+    }
+
     while(!TAILQ_EMPTY(&driver->m_endpoints)) {
         net_endpoint_free(TAILQ_FIRST(&driver->m_endpoints));
     }

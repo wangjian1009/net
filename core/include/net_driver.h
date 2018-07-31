@@ -13,6 +13,9 @@ typedef void (*net_timer_schedule_fun_t)(net_timer_t timer, uint32_t delay_ms);
 typedef void (*net_timer_cancel_fun_t)(net_timer_t timer);
 typedef uint8_t (*net_timer_is_active_fun_t)(net_timer_t timer);
 
+typedef int (*net_acceptor_init_fun_t)(net_acceptor_t acceptor);
+typedef void (*net_acceptor_fini_fun_t)(net_acceptor_t acceptor);
+
 typedef int (*net_endpoint_init_fun_t)(net_endpoint_t endpoint);
 typedef void (*net_endpoint_fini_fun_t)(net_endpoint_t endpoint);
 typedef int (*net_endpoint_on_output_fun_t)(net_endpoint_t endpoint);
@@ -38,6 +41,10 @@ net_driver_create(
     net_timer_schedule_fun_t timer_schedule,
     net_timer_cancel_fun_t timer_cancel,
     net_timer_is_active_fun_t timer_is_active,
+    /*acceptor*/
+    uint16_t acceptor_capacity,
+    net_acceptor_init_fun_t acceptor_init,
+    net_acceptor_fini_fun_t acceptor_fini,
     /*endpoint*/
     uint16_t endpoint_capacity,
     net_endpoint_init_fun_t endpoint_init,

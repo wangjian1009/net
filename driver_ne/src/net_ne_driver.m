@@ -29,6 +29,10 @@ net_ne_driver_create(net_schedule_t schedule, NETunnelProvider* tunnel_provider)
         net_ne_timer_active,
         net_ne_timer_cancel,
         net_ne_timer_is_active,
+        /*acceptor*/
+        0,
+        NULL,
+        NULL,
         /*endpoint*/
         sizeof(struct net_ne_endpoint),
         net_ne_endpoint_init,

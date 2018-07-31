@@ -5,7 +5,6 @@
 NET_BEGIN_DECL
 
 typedef struct net_dq_driver * net_dq_driver_t;
-typedef struct net_dq_acceptor * net_dq_acceptor_t;
 
 NET_END_DECL
 

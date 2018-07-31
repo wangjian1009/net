@@ -12,6 +12,7 @@ NET_BEGIN_DECL
 typedef struct net_address_in_cache * net_address_in_cache_t;
 
 typedef TAILQ_HEAD(net_driver_list, net_driver) net_driver_list_t;
+typedef TAILQ_HEAD(net_acceptor_list, net_acceptor) net_acceptor_list_t;
 typedef TAILQ_HEAD(net_protocol_list, net_protocol) net_protocol_list_t;
 typedef TAILQ_HEAD(net_endpoint_list, net_endpoint) net_endpoint_list_t;
 typedef TAILQ_HEAD(net_endpoint_monitor_list, net_endpoint_monitor) net_endpoint_monitor_list_t;

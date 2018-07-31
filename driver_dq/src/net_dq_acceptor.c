@@ -4,14 +4,14 @@
 #include "net_acceptor.h"
 #include "net_driver.h"
 #include "net_address.h"
-#include "net_ev_acceptor_i.h"
-#include "net_ev_endpoint.h"
+#include "net_dq_acceptor_i.h"
+#include "net_dq_endpoint.h"
 
-static void net_ev_acceptor_cb(EV_P_ ev_io *w, int revents);
+static void net_dq_acceptor_cb(EV_P_ ev_io *w, int revents);
 
-int net_ev_acceptor_init(net_acceptor_t base_acceptor) {
-    net_ev_driver_t driver = net_driver_data(net_acceptor_driver(base_acceptor));
-    net_ev_acceptor_t acceptor = net_acceptor_data(base_acceptor);
+int net_dq_acceptor_init(net_acceptor_t base_acceptor) {
+    net_dq_driver_t driver = net_driver_data(net_acceptor_driver(base_acceptor));
+    net_dq_acceptor_t acceptor = net_acceptor_data(base_acceptor);
     net_address_t address = net_acceptor_address(base_acceptor);
     net_schedule_t schedule = net_acceptor_schedule(base_acceptor);
     error_monitor_t em = net_schedule_em(schedule);
@@ -67,8 +67,8 @@ int net_ev_acceptor_init(net_acceptor_t base_acceptor) {
     }
 
     acceptor->m_watcher.data = acceptor;
-    ev_io_init(&acceptor->m_watcher, net_ev_acceptor_cb, acceptor->m_fd, EV_READ);
-    ev_io_start(driver->m_ev_loop, &acceptor->m_watcher);
+    ev_io_init(&acceptor->m_watcher, net_dq_acceptor_cb, acceptor->m_fd, EV_READ);
+    ev_io_start(driver->m_dq_loop, &acceptor->m_watcher);
 
     if (driver->m_debug || net_schedule_debug(schedule)) {
         CPE_INFO(
@@ -79,20 +79,20 @@ int net_ev_acceptor_init(net_acceptor_t base_acceptor) {
     return 0;
 }
 
-void net_ev_acceptor_fini(net_acceptor_t base_acceptor) {
-    net_ev_acceptor_t acceptor = net_acceptor_data(base_acceptor);
-    net_ev_driver_t driver = net_driver_data(net_acceptor_driver(base_acceptor));
+void net_dq_acceptor_fini(net_acceptor_t base_acceptor) {
+    net_dq_acceptor_t acceptor = net_acceptor_data(base_acceptor);
+    net_dq_driver_t driver = net_driver_data(net_acceptor_driver(base_acceptor));
     net_schedule_t schedule = net_acceptor_schedule(base_acceptor);
     mem_allocrator_t alloc = net_schedule_allocrator(schedule);
 
-    ev_io_stop(driver->m_ev_loop, &acceptor->m_watcher);
+    ev_io_stop(driver->m_dq_loop, &acceptor->m_watcher);
     cpe_sock_close(acceptor->m_fd);
 }
 
-static void net_ev_acceptor_cb(EV_P_ ev_io *w, int revents) {
-    net_ev_acceptor_t acceptor = w->data;
+static void net_dq_acceptor_cb(EV_P_ ev_io *w, int revents) {
+    net_dq_acceptor_t acceptor = w->data;
     net_acceptor_t base_acceptor = net_acceptor_from_data(acceptor);
-    net_ev_driver_t driver = net_driver_data(net_acceptor_driver(base_acceptor));
+    net_dq_driver_t driver = net_driver_data(net_acceptor_driver(base_acceptor));
     net_schedule_t schedule = net_acceptor_schedule(base_acceptor);
     error_monitor_t em = net_schedule_em(schedule);
     int new_fd;
@@ -121,17 +121,17 @@ static void net_ev_acceptor_cb(EV_P_ ev_io *w, int revents) {
         return;
     }
 
-    net_ev_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+    net_dq_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     endpoint->m_fd = new_fd;
-    net_ev_endpoint_start_rw_watcher(driver, base_endpoint, endpoint);
+    net_dq_endpoint_start_rw_watcher(driver, base_endpoint, endpoint);
 
     if (net_endpoint_set_state(base_endpoint, net_endpoint_state_established) != 0) {
         net_endpoint_free(base_endpoint);
         return;
     }
 
-    if (net_ev_endpoint_update_local_address(endpoint) != 0
-        || net_ev_endpoint_update_remote_address(endpoint) != 0)
+    if (net_dq_endpoint_update_local_address(endpoint) != 0
+        || net_dq_endpoint_update_remote_address(endpoint) != 0)
     {
         net_endpoint_free(base_endpoint);
         return;
