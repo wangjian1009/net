@@ -412,6 +412,7 @@ static const char * net_ne_endpoint_state_str(NWTCPConnectionState state) {
     net_ne_endpoint_t endpoint = context;
     net_endpoint_t base_endpoint = net_endpoint_from_data(endpoint);
     net_ne_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
+    net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
 
     if ([keyPath isEqual:@"state"]) {
         NWTCPConnectionState oldState = (NWTCPConnectionState)[[change objectForKey:@"old"] intValue];
@@ -422,6 +423,73 @@ static const char * net_ne_endpoint_state_str(NWTCPConnectionState state) {
             net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint),
             net_ne_endpoint_state_str(oldState), net_ne_endpoint_state_str(newState));
 
+        switch(newState) {
+        case NWTCPConnectionStateDisconnected:
+            if (net_endpoint_state(base_endpoint) == net_endpoint_state_connecting) {
+                CPE_ERROR(
+                    driver->m_em, "ne: %s: disconnected in connecting, connect error!",
+                    net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint));
+                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
+                    net_endpoint_free(base_endpoint);
+                    return;
+                }
+            }
+            else if (net_endpoint_state(base_endpoint) == net_endpoint_state_established) {
+                if (driver->m_debug || net_schedule_debug(schedule) >= 2) {
+                    CPE_INFO(
+                        driver->m_em, "ne: %s: disconnected!",
+                        net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint));
+                }
+
+                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_disable) != 0) {
+                    net_endpoint_free(base_endpoint);
+                    return;
+                }
+            }
+            else {
+                CPE_ERROR(
+                    driver->m_em, "ne: %s: disconnected in state %s error!",
+                    net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint),
+                    net_endpoint_state_str(net_endpoint_state(base_endpoint)));
+
+                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
+                    net_endpoint_free(base_endpoint);
+                    return;
+                }
+            }
+            break;
+        case NWTCPConnectionStateConnected:
+            if (net_endpoint_state(base_endpoint) == net_endpoint_state_connecting) {
+                if (net_endpoint_address(base_endpoint) == NULL) {
+                    net_ne_endpoint_update_local_address(endpoint);
+                }
+
+                //net_ne_endpoint_start_rw_watcher(driver, base_endpoint, endpoint);
+                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_established) != 0) {
+                    net_endpoint_free(base_endpoint);
+                    return;
+                }
+            }            
+            else {
+                CPE_ERROR(
+                    driver->m_em, "ne: %s: connected in state %s!",
+                    net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint),
+                    net_endpoint_state_str(net_endpoint_state(base_endpoint)));
+
+                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_established) != 0) {
+                    net_endpoint_free(base_endpoint);
+                    return;
+                }
+            }
+            break;
+        case NWTCPConnectionStateCancelled:
+            break;
+        case NWTCPConnectionStateInvalid:
+            break;
+        case NWTCPConnectionStateConnecting:
+        default:
+            break;
+        }
     }
 }
 @end
