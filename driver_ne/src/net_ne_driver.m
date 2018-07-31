@@ -5,7 +5,6 @@
 #include "net_ne_acceptor_i.h"
 #include "net_ne_endpoint.h"
 #include "net_ne_dgram.h"
-#include "net_ne_timer.h"
 #include "net_ne_dgram_session.h"
 
 static int net_ne_driver_init(net_driver_t driver);
@@ -23,12 +22,12 @@ net_ne_driver_create(net_schedule_t schedule, NETunnelProvider* tunnel_provider)
         net_ne_driver_init,
         net_ne_driver_fini,
         /*timer*/
-        sizeof(struct net_ne_timer),
-        net_ne_timer_init,
-        net_ne_timer_fini,
-        net_ne_timer_active,
-        net_ne_timer_cancel,
-        net_ne_timer_is_active,
+        0,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
         /*acceptor*/
         0,
         NULL,

@@ -8,6 +8,7 @@
 #include "net_schedule.h"
 #include "net_dq_driver.h"
 
+typedef struct net_dq_acceptor * net_dq_acceptor_t;
 typedef struct net_dq_endpoint * net_dq_endpoint_t;
 typedef struct net_dq_dgram * net_dq_dgram_t;
 typedef struct net_dq_timer * net_dq_timer_t;

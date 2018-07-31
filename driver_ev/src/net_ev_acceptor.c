@@ -69,12 +69,6 @@ int net_ev_acceptor_init(net_acceptor_t base_acceptor) {
     acceptor->m_watcher.data = acceptor;
     ev_io_init(&acceptor->m_watcher, net_ev_acceptor_cb, acceptor->m_fd, EV_READ);
     ev_io_start(driver->m_ev_loop, &acceptor->m_watcher);
-
-    if (driver->m_debug || net_schedule_debug(schedule)) {
-        CPE_INFO(
-            em, "ev: acceptor: listen at %s (accept-queue-size=%d)",
-            net_address_dump(net_schedule_tmp_buffer(schedule), address), accept_queue_size);
-    }
     
     return 0;
 }

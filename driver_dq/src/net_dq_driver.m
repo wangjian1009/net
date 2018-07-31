@@ -48,7 +48,7 @@ net_dq_driver_create(net_schedule_t schedule) {
 
     net_dq_driver_t driver = net_driver_data(base_driver);
 
-    return net_driver_data(base_driver);
+    return driver;
 }
 
 static int net_dq_driver_init(net_driver_t base_driver) {

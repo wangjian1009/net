@@ -14,7 +14,6 @@ typedef TAILQ_HEAD(net_ne_dgram_session_list, net_ne_dgram_session) net_ne_dgram
 typedef struct net_ne_endpoint * net_ne_endpoint_t;
 typedef struct net_ne_dgram * net_ne_dgram_t;
 typedef struct net_ne_dgram_session * net_ne_dgram_session_t;
-typedef struct net_ne_timer * net_ne_timer_t;
 
 struct net_ne_driver {
     mem_allocrator_t m_alloc;
