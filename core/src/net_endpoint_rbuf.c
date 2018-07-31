@@ -229,7 +229,7 @@ static uint8_t net_endpoint_rbuf_match_forward(
 {
     int i;
     for(i = 0; i < 100; ++i) {
-        assert(block_data_len > block_pos);
+        assert(block_data_len >= block_pos);
 
         size_t cmp_sz = (size_t)(block_data_len - block_pos);
         if (cmp_sz > look_str_len) cmp_sz = look_str_len;
