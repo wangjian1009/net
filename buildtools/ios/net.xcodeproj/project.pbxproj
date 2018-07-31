@@ -37,6 +37,11 @@
 		C91E1F332106D1240080FAD8 /* net_ne_timer.m in Sources */ = {isa = PBXBuildFile; fileRef = C91E1F322106D1240080FAD8 /* net_ne_timer.m */; };
 		C91E1F3521076D6F0080FAD8 /* net_ne_acceptor.m in Sources */ = {isa = PBXBuildFile; fileRef = C91E1F3421076D6F0080FAD8 /* net_ne_acceptor.m */; };
 		C91E1F3721076E1F0080FAD8 /* net_ne_endpoint.m in Sources */ = {isa = PBXBuildFile; fileRef = C91E1F3621076E1F0080FAD8 /* net_ne_endpoint.m */; };
+		C96A82F02110054D000CB30D /* net_dq_driver.m in Sources */ = {isa = PBXBuildFile; fileRef = C96A82E22110054D000CB30D /* net_dq_driver.m */; };
+		C96A82F12110054D000CB30D /* net_dq_acceptor.m in Sources */ = {isa = PBXBuildFile; fileRef = C96A82E42110054D000CB30D /* net_dq_acceptor.m */; };
+		C96A82F22110054D000CB30D /* net_dq_endpoint.m in Sources */ = {isa = PBXBuildFile; fileRef = C96A82E62110054D000CB30D /* net_dq_endpoint.m */; };
+		C96A82F32110054D000CB30D /* net_dq_dgram.m in Sources */ = {isa = PBXBuildFile; fileRef = C96A82E72110054D000CB30D /* net_dq_dgram.m */; };
+		C96A82F42110054D000CB30D /* net_dq_timer.m in Sources */ = {isa = PBXBuildFile; fileRef = C96A82E82110054D000CB30D /* net_dq_timer.m */; };
 		C9C4B142210862470045A1A3 /* net_dns_dgram_receiver.c in Sources */ = {isa = PBXBuildFile; fileRef = C9C4B12F210862460045A1A3 /* net_dns_dgram_receiver.c */; };
 		C9C4B143210862470045A1A3 /* net_dns_task_builder.c in Sources */ = {isa = PBXBuildFile; fileRef = C9C4B131210862460045A1A3 /* net_dns_task_builder.c */; };
 		C9C4B144210862470045A1A3 /* net_dns_source.c in Sources */ = {isa = PBXBuildFile; fileRef = C9C4B132210862460045A1A3 /* net_dns_source.c */; };
@@ -73,6 +78,15 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C9323A4F2105E2E3005DD3C0 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "include/$(PRODUCT_NAME)";
+			dstSubfolderSpec = 16;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C96A82D621100505000CB30D /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "include/$(PRODUCT_NAME)";
@@ -203,6 +217,20 @@
 		C91E1F3421076D6F0080FAD8 /* net_ne_acceptor.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = net_ne_acceptor.m; sourceTree = "<group>"; };
 		C91E1F3621076E1F0080FAD8 /* net_ne_endpoint.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = net_ne_endpoint.m; sourceTree = "<group>"; };
 		C9323A512105E2E3005DD3C0 /* libnet_core.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_core.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		C96A82D821100505000CB30D /* libnet_driver_dq.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_driver_dq.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		C96A82E22110054D000CB30D /* net_dq_driver.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = net_dq_driver.m; sourceTree = "<group>"; };
+		C96A82E32110054D000CB30D /* net_dq_timer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dq_timer.h; sourceTree = "<group>"; };
+		C96A82E42110054D000CB30D /* net_dq_acceptor.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = net_dq_acceptor.m; sourceTree = "<group>"; };
+		C96A82E52110054D000CB30D /* net_dq_acceptor_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dq_acceptor_i.h; sourceTree = "<group>"; };
+		C96A82E62110054D000CB30D /* net_dq_endpoint.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = net_dq_endpoint.m; sourceTree = "<group>"; };
+		C96A82E72110054D000CB30D /* net_dq_dgram.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = net_dq_dgram.m; sourceTree = "<group>"; };
+		C96A82E82110054D000CB30D /* net_dq_timer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = net_dq_timer.m; sourceTree = "<group>"; };
+		C96A82E92110054D000CB30D /* net_dq_driver_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dq_driver_i.h; sourceTree = "<group>"; };
+		C96A82EA2110054D000CB30D /* net_dq_dgram.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dq_dgram.h; sourceTree = "<group>"; };
+		C96A82EB2110054D000CB30D /* net_dq_endpoint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dq_endpoint.h; sourceTree = "<group>"; };
+		C96A82ED2110054D000CB30D /* net_dq_types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dq_types.h; sourceTree = "<group>"; };
+		C96A82EE2110054D000CB30D /* net_dq_driver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dq_driver.h; sourceTree = "<group>"; };
+		C96A82EF2110054D000CB30D /* net_dq_acceptor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dq_acceptor.h; sourceTree = "<group>"; };
 		C9C4B0FB210861940045A1A3 /* libnet_dns.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_dns.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		C9C4B108210861A70045A1A3 /* libnet_protocol_socks5.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_protocol_socks5.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		C9C4B115210861B50045A1A3 /* libnet_router.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_router.a; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -286,6 +314,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C9323A4E2105E2E3005DD3C0 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C96A82D521100505000CB30D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -450,6 +485,7 @@
 				C9C4B109210861A70045A1A3 /* protocol_socks5 */,
 				C9C4B116210861B50045A1A3 /* router */,
 				C9F3117B21095931006A7621 /* protocol_ws */,
+				C96A82D921100505000CB30D /* driver_dq */,
 				C9323A422105E2CD005DD3C0 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -464,6 +500,7 @@
 				C9C4B115210861B50045A1A3 /* libnet_router.a */,
 				C9F311452109433C006A7621 /* libwslay.a */,
 				C9F3117A21095931006A7621 /* libnet_protocol_ws.a */,
+				C96A82D821100505000CB30D /* libnet_driver_dq.a */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -476,6 +513,43 @@
 			);
 			name = core;
 			path = ../../core;
+			sourceTree = "<group>";
+		};
+		C96A82D921100505000CB30D /* driver_dq */ = {
+			isa = PBXGroup;
+			children = (
+				C96A82EC2110054D000CB30D /* include */,
+				C96A82E12110054D000CB30D /* src */,
+			);
+			name = driver_dq;
+			path = ../../driver_dq;
+			sourceTree = "<group>";
+		};
+		C96A82E12110054D000CB30D /* src */ = {
+			isa = PBXGroup;
+			children = (
+				C96A82E22110054D000CB30D /* net_dq_driver.m */,
+				C96A82E32110054D000CB30D /* net_dq_timer.h */,
+				C96A82E42110054D000CB30D /* net_dq_acceptor.m */,
+				C96A82E52110054D000CB30D /* net_dq_acceptor_i.h */,
+				C96A82E62110054D000CB30D /* net_dq_endpoint.m */,
+				C96A82E72110054D000CB30D /* net_dq_dgram.m */,
+				C96A82E82110054D000CB30D /* net_dq_timer.m */,
+				C96A82E92110054D000CB30D /* net_dq_driver_i.h */,
+				C96A82EA2110054D000CB30D /* net_dq_dgram.h */,
+				C96A82EB2110054D000CB30D /* net_dq_endpoint.h */,
+			);
+			path = src;
+			sourceTree = "<group>";
+		};
+		C96A82EC2110054D000CB30D /* include */ = {
+			isa = PBXGroup;
+			children = (
+				C96A82ED2110054D000CB30D /* net_dq_types.h */,
+				C96A82EE2110054D000CB30D /* net_dq_driver.h */,
+				C96A82EF2110054D000CB30D /* net_dq_acceptor.h */,
+			);
+			path = include;
 			sourceTree = "<group>";
 		};
 		C9C4B0FC210861940045A1A3 /* dns */ = {
@@ -718,6 +792,23 @@
 			productReference = C9323A512105E2E3005DD3C0 /* libnet_core.a */;
 			productType = "com.apple.product-type.library.static";
 		};
+		C96A82D721100505000CB30D /* net_driver_dq */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C96A82E021100505000CB30D /* Build configuration list for PBXNativeTarget "net_driver_dq" */;
+			buildPhases = (
+				C96A82D421100505000CB30D /* Sources */,
+				C96A82D521100505000CB30D /* Frameworks */,
+				C96A82D621100505000CB30D /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = net_driver_dq;
+			productName = net_driver_dq;
+			productReference = C96A82D821100505000CB30D /* libnet_driver_dq.a */;
+			productType = "com.apple.product-type.library.static";
+		};
 		C9C4B0FA210861940045A1A3 /* net_dns */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = C9C4B101210861940045A1A3 /* Build configuration list for PBXNativeTarget "net_dns" */;
@@ -818,6 +909,9 @@
 					C9323A502105E2E3005DD3C0 = {
 						CreatedOnToolsVersion = 9.4.1;
 					};
+					C96A82D721100505000CB30D = {
+						CreatedOnToolsVersion = 9.4.1;
+					};
 					C9C4B0FA210861940045A1A3 = {
 						CreatedOnToolsVersion = 9.4.1;
 					};
@@ -854,6 +948,7 @@
 				C9C4B114210861B50045A1A3 /* net_router */,
 				C9F311442109433C006A7621 /* wslay */,
 				C9F3117921095931006A7621 /* net_protocol_ws */,
+				C96A82D721100505000CB30D /* net_driver_dq */,
 			);
 		};
 /* End PBXProject section */
@@ -900,6 +995,18 @@
 				C91E1EF32105E4160080FAD8 /* net_ipset.c in Sources */,
 				C91E1F022105E4160080FAD8 /* net_address_rule.c in Sources */,
 				C91E1EF72105E4160080FAD8 /* net_protocol.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C96A82D421100505000CB30D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C96A82F02110054D000CB30D /* net_dq_driver.m in Sources */,
+				C96A82F22110054D000CB30D /* net_dq_endpoint.m in Sources */,
+				C96A82F32110054D000CB30D /* net_dq_dgram.m in Sources */,
+				C96A82F12110054D000CB30D /* net_dq_acceptor.m in Sources */,
+				C96A82F42110054D000CB30D /* net_dq_timer.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1142,6 +1249,32 @@
 			};
 			name = Release;
 		};
+		C96A82DE21100505000CB30D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_ARC = NO;
+				CODE_SIGN_STYLE = Automatic;
+				HEADER_SEARCH_PATHS = ../../../cpe/include;
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C96A82DF21100505000CB30D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_ARC = NO;
+				CODE_SIGN_STYLE = Automatic;
+				HEADER_SEARCH_PATHS = ../../../cpe/include;
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		C9C4B102210861940045A1A3 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1310,6 +1443,15 @@
 			buildConfigurations = (
 				C9323A582105E2E3005DD3C0 /* Debug */,
 				C9323A592105E2E3005DD3C0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C96A82E021100505000CB30D /* Build configuration list for PBXNativeTarget "net_driver_dq" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C96A82DE21100505000CB30D /* Debug */,
+				C96A82DF21100505000CB30D /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

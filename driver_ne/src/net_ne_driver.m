@@ -17,7 +17,7 @@ net_ne_driver_create(net_schedule_t schedule, NETunnelProvider* tunnel_provider)
 
     base_driver = net_driver_create(
         schedule,
-        "ios_ne",
+        "apple_ne",
         /*driver*/
         sizeof(struct net_ne_driver),
         net_ne_driver_init,
