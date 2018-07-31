@@ -10,6 +10,7 @@
 struct net_ne_endpoint {
     __unsafe_unretained NWTCPConnection * m_connection;
     __unsafe_unretained NetNeEndpointObserver * m_observer;
+    uint8_t m_is_writing;
 };
 
 int net_ne_endpoint_init(net_endpoint_t base_endpoint);
