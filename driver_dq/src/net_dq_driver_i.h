@@ -1,5 +1,6 @@
 #ifndef NET_NE_DRIVER_I_H_INCLEDED
 #define NET_NE_DRIVER_I_H_INCLEDED
+#include <dispatch/source.h>
 #include "cpe/pal/pal_queue.h"
 #include "cpe/utils/memory.h"
 #include "cpe/utils/error.h"

@@ -10,7 +10,7 @@ static int net_dq_driver_init(net_driver_t driver);
 static void net_dq_driver_fini(net_driver_t driver);
 
 net_dq_driver_t
-net_dq_driver_create(net_schedule_t schedule, NETunnelProvider* tunnel_provider) {
+net_dq_driver_create(net_schedule_t schedule) {
     net_driver_t base_driver;
 
     base_driver = net_driver_create(
