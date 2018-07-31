@@ -31,18 +31,14 @@ net_acceptor_create(
     else {
         acceptor->m_address = net_address_copy(schedule, address);
         if (acceptor->m_address == NULL) {
-            CPE_ERROR(
-                schedule->m_em, "core: acceptor %s: dup address fail",
-                net_address_dump(net_schedule_tmp_buffer(schedule), address));
+            CPE_ERROR(schedule->m_em, "core: acceptor: dup address fail");
             TAILQ_INSERT_TAIL(&driver->m_free_acceptors, acceptor, m_next_for_driver);
             return NULL;
         }
     }
     
     if (driver->m_acceptor_init(acceptor) != 0) {
-        CPE_ERROR(
-            schedule->m_em, "core: acceptor %s: external init fail",
-            net_address_dump(net_schedule_tmp_buffer(schedule), address));
+        CPE_ERROR(schedule->m_em, "core: acceptor: external init fail");
         if (!is_own) net_address_free(acceptor->m_address);
         TAILQ_INSERT_TAIL(&driver->m_free_acceptors, acceptor, m_next_for_driver);
         return NULL;
@@ -52,7 +48,7 @@ net_acceptor_create(
 
     if (schedule->m_debug) {
         CPE_INFO(
-            schedule->m_em, "core: acceptor %s: listen success(accept-queue-size=%d)",
+            schedule->m_em, "core: acceptor: start at %s success(accept-queue-size=%d)",
             net_address_dump(net_schedule_tmp_buffer(schedule), acceptor->m_address), accept_queue_size);
     }
     
