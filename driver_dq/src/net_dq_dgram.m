@@ -138,7 +138,7 @@ int net_dq_dgram_send(net_dgram_t base_dgram, net_address_t target, void const *
         return -1;
     }
     
-    int nret = sendto(dgram->m_fd, data, data_len, 0, (struct sockaddr *)&addr, addr_len);
+    ssize_t nret = sendto(dgram->m_fd, data, data_len, 0, (struct sockaddr *)&addr, addr_len);
     if (nret < 0) {
         CPE_ERROR(
             net_schedule_em(schedule), "dq: dgram: send %d data to %s fail, errno=%d (%s)",
@@ -159,7 +159,7 @@ int net_dq_dgram_send(net_dgram_t base_dgram, net_address_t target, void const *
         }
     }
 
-    return nret;
+    return (int)nret;
 }
 
 /*static void net_dq_dgram_receive_cb(EV_P_ ev_io *w, int revents) {

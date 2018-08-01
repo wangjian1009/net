@@ -207,7 +207,7 @@ void net_dq_endpoint_start_rw_watcher(
 
     if (!net_endpoint_wbuf_is_empty(base_endpoint)) {
         if (endpoint->m_source_w == nil) {
-            endpoint->m_source_w = dispatch_source_create(DISPATCH_SOURCE_TYPE_READ, endpoint->m_fd, 0, dispatch_get_main_queue());
+            endpoint->m_source_w = dispatch_source_create(DISPATCH_SOURCE_TYPE_WRITE, endpoint->m_fd, 0, dispatch_get_main_queue());
             dispatch_retain(endpoint->m_source_w);
             dispatch_source_set_event_handler(endpoint->m_source_w, ^{ net_dq_endpoint_on_write(endpoint); });
             dispatch_resume(endpoint->m_source_w);
@@ -363,7 +363,7 @@ static void net_dq_endpoint_on_write(net_dq_endpoint_t endpoint) {
     net_dq_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
 
     net_dq_endpoint_stop_w(endpoint);
-    
+
     while(net_endpoint_state(base_endpoint) == net_endpoint_state_established && !net_endpoint_wbuf_is_empty(base_endpoint)) {
         uint32_t data_size;
         void * data = net_endpoint_wbuf(base_endpoint, &data_size);
