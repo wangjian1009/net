@@ -1,6 +1,7 @@
 #include "cpe/pal/pal_string.h"
 #include "net_address.h"
 #include "net_acceptor_i.h"
+#include "net_protocol_i.h"
 
 net_acceptor_t
 net_acceptor_create(
@@ -51,8 +52,10 @@ net_acceptor_create(
 
     if (schedule->m_debug) {
         CPE_INFO(
-            schedule->m_em, "core: acceptor: start at %s success(accept-queue-size=%d)",
-            net_address_dump(net_schedule_tmp_buffer(schedule), acceptor->m_address), accept_queue_size);
+            schedule->m_em, "core: acceptor: start at %s success. (protocol=%s, accept-queue-size=%d)",
+            net_address_dump(net_schedule_tmp_buffer(schedule), acceptor->m_address),
+            net_protocol_name(protocol),
+            accept_queue_size);
     }
     
     return acceptor;
