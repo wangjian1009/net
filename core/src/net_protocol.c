@@ -1,3 +1,4 @@
+#include "cpe/pal/pal_string.h"
 #include "cpe/utils/string_utils.h"
 #include "net_protocol_i.h"
 
