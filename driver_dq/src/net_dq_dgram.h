@@ -5,7 +5,7 @@
 
 struct net_dq_dgram {
     int m_fd;
-    __unsafe_unretained dispatch_source_t m_source;
+    __unsafe_unretained dispatch_source_t m_source_r;
 };
 
 int net_dq_dgram_init(net_dgram_t base_dgram);
