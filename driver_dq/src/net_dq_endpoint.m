@@ -16,7 +16,6 @@ static void net_dq_endpoint_stop_r(net_dq_endpoint_t endpoint);
 
 int net_dq_endpoint_init(net_endpoint_t base_endpoint) {
     net_dq_endpoint_t endpoint = net_endpoint_data(base_endpoint);
-    net_dq_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
 
     endpoint->m_fd = -1;
     endpoint->m_source_r = nil;
