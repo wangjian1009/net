@@ -11,6 +11,8 @@ struct net_acceptor {
     net_address_t m_address;
     net_protocol_t m_protocol;
     uint32_t m_queue_size;
+    net_acceptor_on_new_endpoint_fun_t m_on_new_endpoint;
+    void * m_on_new_endpoint_ctx;
 };
 
 void net_acceptor_real_free(net_acceptor_t acceptor);

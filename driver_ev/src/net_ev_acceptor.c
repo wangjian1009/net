@@ -138,4 +138,10 @@ static void net_ev_acceptor_cb(EV_P_ ev_io *w, int revents) {
             return;
         }
     }
+
+    if (net_acceptor_on_new_endpoint(base_acceptor, base_endpoint) != 0) {
+        CPE_ERROR(em, "ev: accept: on new endpoint fail");
+        net_endpoint_free(base_endpoint);
+        return;
+    }
 }

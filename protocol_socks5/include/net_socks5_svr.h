@@ -4,10 +4,10 @@
 
 NET_BEGIN_DECL
 
-net_socks5_svr_t net_socks5_svr_create(
-    net_schedule_t schedule,
-    net_socks5_svr_connect_fun_t dft_connect, void * dft_connect_ctx);
+net_socks5_svr_t net_socks5_svr_create(net_schedule_t schedule);
 void net_socks5_svr_free(net_socks5_svr_t socks5_svr);
+
+net_socks5_svr_t net_socks5_svr_find(net_schedule_t schedule);
 
 NET_END_DECL
 

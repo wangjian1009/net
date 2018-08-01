@@ -5,7 +5,8 @@
 net_acceptor_t
 net_acceptor_create(
     net_driver_t driver, net_protocol_t protocol,
-    net_address_t address, uint8_t is_own, uint32_t accept_queue_size)
+    net_address_t address, uint8_t is_own, uint32_t accept_queue_size,
+    net_acceptor_on_new_endpoint_fun_t on_new_endpoint, void * on_new_endpoint_ctx)
 {
     net_schedule_t schedule = driver->m_schedule;
     net_acceptor_t acceptor = TAILQ_FIRST(&driver->m_acceptors);
@@ -24,6 +25,8 @@ net_acceptor_create(
     acceptor->m_address = address;
     acceptor->m_protocol = protocol;
     acceptor->m_queue_size = accept_queue_size ? accept_queue_size : 512;
+    acceptor->m_on_new_endpoint = on_new_endpoint;
+    acceptor->m_on_new_endpoint_ctx = on_new_endpoint_ctx;
 
     if (is_own) {
         acceptor->m_address = address;
@@ -104,4 +107,8 @@ net_acceptor_t net_acceptor_from_data(void * data) {
     return ((net_acceptor_t)data) - 1;
 }
 
-
+int net_acceptor_on_new_endpoint(net_acceptor_t acceptor, net_endpoint_t endpoint) {
+    return acceptor->m_on_new_endpoint
+        ? acceptor->m_on_new_endpoint(acceptor->m_on_new_endpoint_ctx, endpoint)
+        : 0;
+}

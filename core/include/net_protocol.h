@@ -33,6 +33,8 @@ net_protocol_create(
 
 void net_protocol_free(net_protocol_t protocol);
 
+net_protocol_t net_protocol_find(net_schedule_t schedule, const char * name);
+
 net_schedule_t net_protocol_schedule(net_protocol_t protocol);
 const char * net_protocol_name(net_protocol_t protocol);
 

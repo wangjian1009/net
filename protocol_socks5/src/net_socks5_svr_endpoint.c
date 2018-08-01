@@ -14,10 +14,20 @@ static int net_socks5_svr_send_socks5_response(net_endpoint_t endpoint, net_addr
 int net_socks5_svr_endpoint_init(net_endpoint_t endpoint) {
     net_socks5_svr_endpoint_t socks5_svr = net_endpoint_protocol_data(endpoint);
     socks5_svr->m_stage = net_socks5_svr_endpoint_stage_init;
+    socks5_svr->m_on_connect_fun = NULL;
+    socks5_svr->m_on_connect_ctx = NULL;
     return 0;
 }
 
 void net_socks5_svr_endpoint_fini(net_endpoint_t endpoint) {
+}
+
+void net_socks5_svr_endpoint_set_connect_fun(
+    net_socks5_svr_endpoint_t ss_ep,
+    net_socks5_svr_connect_fun_t on_connect_fon, void * on_connect_ctx)
+{
+    ss_ep->m_on_connect_fun = on_connect_fon;
+    ss_ep->m_on_connect_ctx = on_connect_ctx;
 }
 
 #define net_socks5_svr_endpoint_check_read(__sz) \
@@ -174,7 +184,9 @@ int net_socks5_svr_endpoint_input(net_endpoint_t endpoint) {
                         net_address_dump(&socks5_svr->m_tmp_buffer, address));
                 }
 
-                if (socks5_svr->m_dft_connect(socks5_svr->m_dft_connect_ctx, endpoint, address, 1) != 0) {
+                if (ss_ep->m_on_connect_fun &&
+                    ss_ep->m_on_connect_fun(ss_ep->m_on_connect_ctx, endpoint, address, 1) != 0)
+                {
                     net_address_free(address);
                     return -1;
                 }

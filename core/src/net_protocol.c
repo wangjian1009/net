@@ -70,6 +70,16 @@ void net_protocol_free(net_protocol_t protocol) {
     mem_free(schedule->m_alloc, protocol);
 }
 
+net_protocol_t net_protocol_find(net_schedule_t schedule, const char * name) {
+    net_protocol_t protocol;
+
+    TAILQ_FOREACH(protocol, &schedule->m_protocols, m_next_for_schedule) {
+        if (strcmp(protocol->m_name, name) == 0) return protocol;
+    }
+    
+    return NULL;
+}
+
 net_schedule_t net_protocol_schedule(net_protocol_t protocol) {
     return protocol->m_schedule;
 }

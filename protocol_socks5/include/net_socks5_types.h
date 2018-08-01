@@ -5,6 +5,7 @@
 NET_BEGIN_DECL
 
 typedef struct net_socks5_svr * net_socks5_svr_t;
+typedef struct net_socks5_svr_endpoint * net_socks5_svr_endpoint_t;
 
 typedef int (*net_socks5_svr_connect_fun_t)(void * ctx, net_endpoint_t endpoint, net_address_t target, uint8_t is_own);
 

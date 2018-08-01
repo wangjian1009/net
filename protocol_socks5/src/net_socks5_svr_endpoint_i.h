@@ -1,5 +1,6 @@
 #ifndef NET_SOCKS5_SVR_ENDPOINT_I_H_INCLEDED
 #define NET_SOCKS5_SVR_ENDPOINT_I_H_INCLEDED
+#include "net_socks5_svr_endpoint.h"
 #include "net_socks5_svr_i.h"
 
 NET_BEGIN_DECL
@@ -16,6 +17,8 @@ typedef enum net_socks5_svr_endpoint_stage {
 
 struct net_socks5_svr_endpoint {
     net_socks5_svr_endpoint_stage_t m_stage;
+    net_socks5_svr_connect_fun_t m_on_connect_fun;
+    void * m_on_connect_ctx;
 };
 
 int net_socks5_svr_endpoint_init(net_endpoint_t endpoint);
