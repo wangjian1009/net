@@ -26,7 +26,7 @@ int net_dq_dgram_init(net_dgram_t base_dgram) {
             dgram->m_fd = cpe_sock_open(AF_INET6, SOCK_DGRAM, 0);
             break;
         case net_address_domain:
-            CPE_ERROR(em, "ev: dgyam: not support domain address!");
+            CPE_ERROR(em, "dq: dgyam: not support domain address!");
             return -1;
         }
     }
@@ -36,14 +36,14 @@ int net_dq_dgram_init(net_dgram_t base_dgram) {
 
     if (dgram->m_fd == -1) {
         CPE_ERROR(
-            em, "ev: dgram: socket create error, errno=%d (%s)",
+            em, "dq: dgram: socket create error, errno=%d (%s)",
             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
         return -1;
     }
 
     /* (driver->m_sock_process_fun) {
         if (driver->m_sock_process_fun(driver, driver->m_sock_process_ctx, dgram->m_fd, NULL) != 0) {
-            CPE_ERROR(em, "ev: dgram: sock process fail");
+            CPE_ERROR(em, "dq: dgram: sock process fail");
             cpe_sock_close(dgram->m_fd);
             return -1;
         }
@@ -54,7 +54,7 @@ int net_dq_dgram_init(net_dgram_t base_dgram) {
         socklen_t addr_len = sizeof(addr);
 
         if (net_address_to_sockaddr(address, (struct sockaddr *)&addr, &addr_len) != 0) {
-            CPE_ERROR(em, "ev: dgram: get sockaddr from address fail");
+            CPE_ERROR(em, "dq: dgram: get sockaddr from address fail");
             cpe_sock_close(dgram->m_fd);
             return -1;
         }
@@ -63,16 +63,16 @@ int net_dq_dgram_init(net_dgram_t base_dgram) {
 
         if (cpe_bind(dgram->m_fd, (struct sockaddr *)&addr, addr_len) != 0) {
             CPE_ERROR(
-                em, "ev: dgram: bind addr fail, errno=%d (%s)",
+                em, "dq: dgram: bind addr fail, errno=%d (%s)",
                 cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
             cpe_sock_close(dgram->m_fd);
             dgram->m_fd = -1;
             return -1;
         }
 
-        if (driver->m_debug || net_schedule_debug(schedule) >= 2) {
+        if (driver->m_debug) {
             CPE_INFO(
-                em, "ev: dgram: bind to %s",
+                em, "dq: dgram: bind to %s",
                 net_address_dump(net_schedule_tmp_buffer(schedule), address));
         }
     }
@@ -82,7 +82,7 @@ int net_dq_dgram_init(net_dgram_t base_dgram) {
         memset(&addr, 0, addr_len);
         if (getsockname(dgram->m_fd, (struct sockaddr *)&addr, &addr_len) != 0) {
             CPE_ERROR(
-                em, "ev: dgram: sockaddr error, errno=%d (%s)",
+                em, "dq: dgram: sockaddr error, errno=%d (%s)",
                 cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
             cpe_sock_close(dgram->m_fd);
             dgram->m_fd = -1;
@@ -91,15 +91,15 @@ int net_dq_dgram_init(net_dgram_t base_dgram) {
 
         address = net_address_create_from_sockaddr(schedule, (struct sockaddr *)&addr, addr_len);
         if (address == NULL) {
-            CPE_ERROR(net_schedule_em(schedule), "ev: dgram: create address fail");
+            CPE_ERROR(em, "dq: dgram: create address fail");
             cpe_sock_close(dgram->m_fd);
             dgram->m_fd = -1;
             return -1;
         }
 
-        if (driver->m_debug || net_schedule_debug(schedule) >= 2) {
+        if (driver->m_debug) {
             CPE_INFO(
-                em, "ev: dgram: auto bind at %s",
+                em, "dq: dgram: auto bind at %s",
                 net_address_dump(net_schedule_tmp_buffer(schedule), address));
         }
 
@@ -134,14 +134,14 @@ int net_dq_dgram_send(net_dgram_t base_dgram, net_address_t target, void const *
     socklen_t addr_len = sizeof(addr);
     if (net_address_to_sockaddr(target, (struct sockaddr *)&addr, &addr_len) != 0) {
         net_schedule_t schedule = net_dgram_schedule(base_dgram);
-        CPE_ERROR(net_schedule_em(schedule), "ev: dgram: get address to send fail");
+        CPE_ERROR(net_schedule_em(schedule), "dq: dgram: get address to send fail");
         return -1;
     }
     
     int nret = sendto(dgram->m_fd, data, data_len, 0, (struct sockaddr *)&addr, addr_len);
     if (nret < 0) {
         CPE_ERROR(
-            net_schedule_em(schedule), "ev: dgram: send %d data to %s fail, errno=%d (%s)",
+            net_schedule_em(schedule), "dq: dgram: send %d data to %s fail, errno=%d (%s)",
             (int)data_len, net_address_dump(net_schedule_tmp_buffer(schedule), target),
             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
         return -1;
@@ -149,7 +149,7 @@ int net_dq_dgram_send(net_dgram_t base_dgram, net_address_t target, void const *
     else {
         if (driver->m_debug) {
             CPE_INFO(
-                net_schedule_em(schedule), "ev: dgram: send %d data to %s",
+                net_schedule_em(schedule), "dq: dgram: send %d data to %s",
                 (int)data_len,
                 net_address_dump(net_schedule_tmp_buffer(schedule), target));
         }
@@ -176,7 +176,7 @@ int net_dq_dgram_send(net_dgram_t base_dgram, net_address_t target, void const *
     if (nrecv < 0) {
         CPE_ERROR(
             net_schedule_em(schedule),
-            "ev: dgram: receive error, errno=%d (%s)",
+            "dq: dgram: receive error, errno=%d (%s)",
             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
         return;
     }

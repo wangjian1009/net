@@ -5,7 +5,8 @@
 
 struct net_dq_endpoint {
     int m_fd;
-    __unsafe_unretained dispatch_source_t m_source;
+    __unsafe_unretained dispatch_source_t m_source_r;
+    __unsafe_unretained dispatch_source_t m_source_w;
 };
 
 int net_dq_endpoint_init(net_endpoint_t base_endpoint);
@@ -16,6 +17,7 @@ int net_dq_endpoint_on_output(net_endpoint_t base_endpoint);
 
 void net_dq_endpoint_start_rw_watcher(
     net_dq_driver_t driver, net_endpoint_t base_endpoint, net_dq_endpoint_t endpoint);
+
 int net_dq_endpoint_update_local_address(net_dq_endpoint_t endpoint);
 int net_dq_endpoint_update_remote_address(net_dq_endpoint_t endpoint);
 

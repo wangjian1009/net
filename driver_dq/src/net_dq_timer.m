@@ -43,8 +43,6 @@ void net_dq_timer_active(net_timer_t base_timer, uint32_t delay_ms) {
     dispatch_retain(timer->m_timer);
     
     dispatch_source_set_event_handler(timer->m_timer, ^{
-            CPE_INFO(driver->m_em, "timer %p do process", timer);
-
             if (timer->m_timer != cur_timer) return;
             
             dispatch_source_set_event_handler(cur_timer, nil);
