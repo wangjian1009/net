@@ -54,7 +54,7 @@ void net_dq_timer_active(net_timer_t base_timer, uint32_t delay_ms) {
         });
 
     dispatch_source_set_timer(
-        timer->m_timer, dispatch_time(DISPATCH_TIME_NOW, ((uint64_t)delay_ms) * 1000u), 1ull * NSEC_PER_SEC, 0ULL);
+        timer->m_timer, dispatch_time(DISPATCH_TIME_NOW, ((uint64_t)delay_ms) * 1000000u), 1ull * NSEC_PER_SEC, 0ULL);
     dispatch_resume(timer->m_timer);
 }
 
