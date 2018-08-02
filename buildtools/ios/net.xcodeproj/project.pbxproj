@@ -34,7 +34,6 @@
 		C91E1F222105FF000080FAD8 /* net_ne_dgram.m in Sources */ = {isa = PBXBuildFile; fileRef = C91E1F152105FF000080FAD8 /* net_ne_dgram.m */; };
 		C91E1F2E2106AC3D0080FAD8 /* net_ne_utils.m in Sources */ = {isa = PBXBuildFile; fileRef = C91E1F2D2106AC3C0080FAD8 /* net_ne_utils.m */; };
 		C91E1F312106BA690080FAD8 /* net_ne_dgram_session.m in Sources */ = {isa = PBXBuildFile; fileRef = C91E1F2F2106BA690080FAD8 /* net_ne_dgram_session.m */; };
-		C91E1F3521076D6F0080FAD8 /* net_ne_acceptor.m in Sources */ = {isa = PBXBuildFile; fileRef = C91E1F3421076D6F0080FAD8 /* net_ne_acceptor.m */; };
 		C91E1F3721076E1F0080FAD8 /* net_ne_endpoint.m in Sources */ = {isa = PBXBuildFile; fileRef = C91E1F3621076E1F0080FAD8 /* net_ne_endpoint.m */; };
 		C96A82F02110054D000CB30D /* net_dq_driver.m in Sources */ = {isa = PBXBuildFile; fileRef = C96A82E22110054D000CB30D /* net_dq_driver.m */; };
 		C96A82F12110054D000CB30D /* net_dq_acceptor.m in Sources */ = {isa = PBXBuildFile; fileRef = C96A82E42110054D000CB30D /* net_dq_acceptor.m */; };
@@ -201,18 +200,15 @@
 		C91E1F072105FEA80080FAD8 /* libnet_driver_ne.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_driver_ne.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		C91E1F142105FF000080FAD8 /* net_ne_driver.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = net_ne_driver.m; sourceTree = "<group>"; };
 		C91E1F152105FF000080FAD8 /* net_ne_dgram.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = net_ne_dgram.m; sourceTree = "<group>"; };
-		C91E1F162105FF000080FAD8 /* net_ne_acceptor_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ne_acceptor_i.h; sourceTree = "<group>"; };
 		C91E1F182105FF000080FAD8 /* net_ne_driver_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ne_driver_i.h; sourceTree = "<group>"; };
 		C91E1F192105FF000080FAD8 /* net_ne_endpoint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ne_endpoint.h; sourceTree = "<group>"; };
 		C91E1F1A2105FF000080FAD8 /* net_ne_dgram.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ne_dgram.h; sourceTree = "<group>"; };
 		C91E1F1C2105FF000080FAD8 /* net_ne_types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ne_types.h; sourceTree = "<group>"; };
-		C91E1F1D2105FF000080FAD8 /* net_ne_acceptor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ne_acceptor.h; sourceTree = "<group>"; };
 		C91E1F1E2105FF000080FAD8 /* net_ne_driver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ne_driver.h; sourceTree = "<group>"; };
 		C91E1F2C2106AC3C0080FAD8 /* net_ne_utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ne_utils.h; sourceTree = "<group>"; };
 		C91E1F2D2106AC3C0080FAD8 /* net_ne_utils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = net_ne_utils.m; sourceTree = "<group>"; };
 		C91E1F2F2106BA690080FAD8 /* net_ne_dgram_session.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = net_ne_dgram_session.m; sourceTree = "<group>"; };
 		C91E1F302106BA690080FAD8 /* net_ne_dgram_session.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ne_dgram_session.h; sourceTree = "<group>"; };
-		C91E1F3421076D6F0080FAD8 /* net_ne_acceptor.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = net_ne_acceptor.m; sourceTree = "<group>"; };
 		C91E1F3621076E1F0080FAD8 /* net_ne_endpoint.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = net_ne_endpoint.m; sourceTree = "<group>"; };
 		C9323A512105E2E3005DD3C0 /* libnet_core.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_core.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		C96A82D821100505000CB30D /* libnet_driver_dq.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_driver_dq.a; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -451,14 +447,12 @@
 			isa = PBXGroup;
 			children = (
 				C91E1F3621076E1F0080FAD8 /* net_ne_endpoint.m */,
-				C91E1F3421076D6F0080FAD8 /* net_ne_acceptor.m */,
 				C91E1F302106BA690080FAD8 /* net_ne_dgram_session.h */,
 				C91E1F2F2106BA690080FAD8 /* net_ne_dgram_session.m */,
 				C91E1F2C2106AC3C0080FAD8 /* net_ne_utils.h */,
 				C91E1F2D2106AC3C0080FAD8 /* net_ne_utils.m */,
 				C91E1F142105FF000080FAD8 /* net_ne_driver.m */,
 				C91E1F152105FF000080FAD8 /* net_ne_dgram.m */,
-				C91E1F162105FF000080FAD8 /* net_ne_acceptor_i.h */,
 				C91E1F182105FF000080FAD8 /* net_ne_driver_i.h */,
 				C91E1F192105FF000080FAD8 /* net_ne_endpoint.h */,
 				C91E1F1A2105FF000080FAD8 /* net_ne_dgram.h */,
@@ -470,7 +464,6 @@
 			isa = PBXGroup;
 			children = (
 				C91E1F1C2105FF000080FAD8 /* net_ne_types.h */,
-				C91E1F1D2105FF000080FAD8 /* net_ne_acceptor.h */,
 				C91E1F1E2105FF000080FAD8 /* net_ne_driver.h */,
 			);
 			path = include;
@@ -960,7 +953,6 @@
 			files = (
 				C91E1F222105FF000080FAD8 /* net_ne_dgram.m in Sources */,
 				C91E1F212105FF000080FAD8 /* net_ne_driver.m in Sources */,
-				C91E1F3521076D6F0080FAD8 /* net_ne_acceptor.m in Sources */,
 				C91E1F3721076E1F0080FAD8 /* net_ne_endpoint.m in Sources */,
 				C91E1F2E2106AC3D0080FAD8 /* net_ne_utils.m in Sources */,
 				C91E1F312106BA690080FAD8 /* net_ne_dgram_session.m in Sources */,

@@ -8,7 +8,6 @@
 #include "net_schedule.h"
 #include "net_ne_driver.h"
 
-typedef TAILQ_HEAD(net_ne_acceptor_list, net_ne_acceptor) net_ne_acceptor_list_t;
 typedef TAILQ_HEAD(net_ne_dgram_session_list, net_ne_dgram_session) net_ne_dgram_session_list_t;
 
 typedef struct net_ne_endpoint * net_ne_endpoint_t;
@@ -26,8 +25,6 @@ struct net_ne_driver {
     uint32_t m_dgram_max_session_id;
     struct cpe_hash_table m_dgram_sessions;
     ringbuffer_t m_dgram_data_buf;
-
-    net_ne_acceptor_list_t m_acceptors;
 
     net_ne_dgram_session_list_t m_free_dgram_sessions;
 };

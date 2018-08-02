@@ -2,7 +2,6 @@
 #include "net_schedule.h"
 #include "net_driver.h"
 #include "net_ne_driver_i.h"
-#include "net_ne_acceptor_i.h"
 #include "net_ne_endpoint.h"
 #include "net_ne_dgram.h"
 #include "net_ne_dgram_session.h"
@@ -88,7 +87,6 @@ static int net_ne_driver_init(net_driver_t base_driver) {
         return -1;
     }
     
-    TAILQ_INIT(&driver->m_acceptors);
     TAILQ_INIT(&driver->m_free_dgram_sessions);
 
     return 0;
@@ -96,10 +94,6 @@ static int net_ne_driver_init(net_driver_t base_driver) {
 
 static void net_ne_driver_fini(net_driver_t base_driver) {
     net_ne_driver_t driver = net_driver_data(base_driver);
-
-    while(!TAILQ_EMPTY(&driver->m_acceptors)) {
-        net_ne_acceptor_free(TAILQ_FIRST(&driver->m_acceptors));
-    }
 
     if (driver->m_tunnel_provider) {
         [driver->m_tunnel_provider release];
