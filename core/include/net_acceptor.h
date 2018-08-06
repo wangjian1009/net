@@ -4,8 +4,6 @@
 
 NET_BEGIN_DECL
 
-typedef int (*net_acceptor_on_new_endpoint_fun_t)(void * ctx, net_endpoint_t endpoint);
-
 net_acceptor_t
 net_acceptor_create(
     net_driver_t driver, net_protocol_t protocol,

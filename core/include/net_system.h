@@ -48,6 +48,9 @@ typedef enum net_data_direct {
     net_data_out,
 } net_data_direct_t;
 
+/*acceptor*/
+typedef int (*net_acceptor_on_new_endpoint_fun_t)(void * ctx, net_endpoint_t endpoint);
+
 /*monitor*/
 typedef void (*net_data_monitor_fun_t) (
     void * ctx, net_endpoint_t endpoint, net_data_direct_t direct, uint32_t sz);
