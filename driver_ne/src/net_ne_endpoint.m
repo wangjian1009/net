@@ -103,7 +103,7 @@ int net_ne_endpoint_connect(net_endpoint_t base_endpoint) {
         [endpoint->m_connection addObserver: endpoint->m_observer
                                  forKeyPath: @"state" 
                                     options: NSKeyValueObservingOptionOld | NSKeyValueObservingOptionNew
-                                    context: endpoint];
+                                    context: nil];
 
         switch(endpoint->m_connection.state) {
         case NWTCPConnectionStateConnecting:
@@ -225,6 +225,9 @@ static const char * net_ne_endpoint_state_str(NWTCPConnectionState state) {
 }
 
 static void net_ne_endpoint_do_read(net_ne_driver_t driver, net_ne_endpoint_t endpoint, net_endpoint_t base_endpoint) {
+    NetNeEndpointObserver * observer = endpoint->m_observer;
+    [observer retain];
+    
     [endpoint->m_connection
         readMinimumLength: 1
         maximumLength: 255
@@ -232,15 +235,19 @@ static void net_ne_endpoint_do_read(net_ne_driver_t driver, net_ne_endpoint_t en
             dispatch_sync(
                 dispatch_get_main_queue(),
                 ^{
+                    [observer autorelease];
+                    if (observer->m_endpoint == NULL) return;
+
+                    assert(observer->m_endpoint == endpoint);
+                    if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return;
+                    
                     if (error) {
-                        CPE_ERROR(
-                            driver->m_em, "ne: %s: recv error, %s",
-                            net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint),
-                            [[error localizedDescription] UTF8String]);
-                
-                        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
-                            net_endpoint_free(base_endpoint);
-                            return;
+                        if (driver->m_debug) {
+                            CPE_INFO(
+                                driver->m_em, "ne: %s: recv error, error=%d (%s)",
+                                net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint),
+                                (int)[error code],
+                                [[error localizedDescription] UTF8String]);
                         }
                         return;
                     }
