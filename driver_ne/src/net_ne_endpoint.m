@@ -43,9 +43,7 @@ void net_ne_endpoint_fini(net_endpoint_t base_endpoint) {
             driver->m_em, "ne: %s: fini, is-writing=%d",
             net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint), endpoint->m_is_writing);
 
-        CPE_ERROR(driver->m_em, "xxxxx: connection release, 111 retain count=%d", [endpoint->m_connection retainCount]);
         [endpoint->m_connection release];
-        CPE_ERROR(driver->m_em, "xxxxx: connection release, 222 retain count=%d", [endpoint->m_connection retainCount]);
         endpoint->m_connection = nil;
     }
 
@@ -101,7 +99,6 @@ int net_ne_endpoint_connect(net_endpoint_t base_endpoint) {
             return -1;
         }
         [endpoint->m_connection retain];
-        CPE_ERROR(driver->m_em, "xxxxx: connection retain count=%d", [endpoint->m_connection retainCount]);
 
         [endpoint->m_connection addObserver: endpoint->m_observer
                                  forKeyPath: @"state" 
@@ -150,11 +147,7 @@ void net_ne_endpoint_close(net_endpoint_t base_endpoint) {
     if (endpoint->m_connection == nil) return;
 
     [endpoint->m_connection cancel];
-
-    net_ne_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
-    CPE_ERROR(driver->m_em, "xxxxx: close connection release, 111 retain count=%d", [endpoint->m_connection retainCount]);
     [endpoint->m_connection release];
-    CPE_ERROR(driver->m_em, "xxxxx: close connection release, 222 retain count=%d", [endpoint->m_connection retainCount]);
     endpoint->m_connection = nil;
 }
 

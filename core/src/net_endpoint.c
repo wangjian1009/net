@@ -249,6 +249,11 @@ int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) 
             endpoint->m_fb = NULL;
         }
 
+        if (endpoint->m_address) {
+            net_address_free(endpoint->m_address);
+            endpoint->m_address = NULL;
+        }
+        
         endpoint->m_driver->m_endpoint_close(endpoint);
     }
 

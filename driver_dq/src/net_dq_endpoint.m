@@ -100,6 +100,16 @@ int net_dq_endpoint_connect(net_endpoint_t base_endpoint) {
             return -1;
         }
 
+        if (cpe_sock_set_reuseaddr(endpoint->m_fd, 1) != 0) {
+            CPE_ERROR(
+                driver->m_em, "dq: %s: set sock reuse address fail, errno=%d (%s)",
+                net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
+                cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+            cpe_sock_close(endpoint->m_fd);
+            endpoint->m_fd = -1;
+            return -1;
+        }
+        
         if(cpe_bind(endpoint->m_fd, (struct sockaddr *)&addr, addr_len) != 0) {
             char local_addr_buf[128];
             cpe_str_dup(
@@ -108,7 +118,7 @@ int net_dq_endpoint_connect(net_endpoint_t base_endpoint) {
 
             CPE_ERROR(
                 driver->m_em, "dq: %s: bind local address %s fail, errno=%d (%s)",
-                local_addr_buf, net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
+                net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint), local_addr_buf,
                 cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
 
             cpe_sock_close(endpoint->m_fd);
