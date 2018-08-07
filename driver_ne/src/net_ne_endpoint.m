@@ -19,6 +19,7 @@ int net_ne_endpoint_init(net_endpoint_t base_endpoint) {
 
     endpoint->m_connection = nil;
     endpoint->m_observer = [[[NetNeEndpointObserver alloc] init] retain];
+    endpoint->m_observer->m_endpoint = endpoint;
     endpoint->m_is_writing = 0;
     
     CPE_ERROR(
@@ -48,15 +49,14 @@ void net_ne_endpoint_fini(net_endpoint_t base_endpoint) {
     }
 
     [endpoint->m_observer release];
+    endpoint->m_observer->m_endpoint = NULL;
     endpoint->m_observer = nil;
 }
 
 int net_ne_endpoint_on_output(net_endpoint_t base_endpoint) {
-    @autoreleasepool {
-        net_ne_endpoint_t endpoint = net_endpoint_data(base_endpoint);
-        net_ne_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
-        return net_ne_endpoint_do_output(driver, endpoint, base_endpoint);
-    }
+    net_ne_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+    net_ne_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
+    return net_ne_endpoint_do_output(driver, endpoint, base_endpoint);
 }
 
 int net_ne_endpoint_connect(net_endpoint_t base_endpoint) {
@@ -366,7 +366,9 @@ static int net_ne_endpoint_do_output(net_ne_driver_t driver, net_ne_endpoint_t e
         dispatch_get_main_queue(),
         ^{
             @autoreleasepool {
-                net_ne_endpoint_t endpoint = context;
+                net_ne_endpoint_t endpoint = self->m_endpoint;
+                if (endpoint == NULL) return;
+
                 net_endpoint_t base_endpoint = net_endpoint_from_data(endpoint);
                 net_ne_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
                 net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
@@ -434,6 +436,20 @@ static int net_ne_endpoint_do_output(net_ne_driver_t driver, net_ne_endpoint_t e
                                 net_endpoint_free(base_endpoint);
                                 return;
                             }
+
+                            dispatch_async(
+                                dispatch_get_main_queue(),
+                                ^{
+                                    net_ne_endpoint_t endpoint = self->m_endpoint;
+                                    if (endpoint == NULL) return;
+                                    
+                                    if (net_ne_endpoint_do_output(driver, endpoint, base_endpoint) != 0) {
+                                        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_logic_error) != 0) {
+                                            net_endpoint_free(base_endpoint);
+                                            return;
+                                        }
+                                    }
+                                });
                         }            
                         else if (net_endpoint_state(base_endpoint) == net_endpoint_state_established) {
                         }

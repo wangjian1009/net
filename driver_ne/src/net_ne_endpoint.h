@@ -4,6 +4,7 @@
 #include "net_ne_driver_i.h"
 
 @interface NetNeEndpointObserver : NSObject {
+    @public net_ne_endpoint_t m_endpoint;
 }
 @end
 
