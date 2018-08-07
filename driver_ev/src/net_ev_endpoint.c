@@ -2,6 +2,7 @@
 #include "cpe/pal/pal_socket.h"
 #include "cpe/pal/pal_string.h"
 #include "cpe/pal/pal_strings.h"
+#include "cpe/utils/string_utils.h"
 #include "cpe/utils_sock/sock_utils.h"
 #include "net_endpoint.h"
 #include "net_address.h"
@@ -99,7 +100,7 @@ int net_ev_endpoint_connect(net_endpoint_t base_endpoint) {
 
         if(cpe_bind(endpoint->m_fd, (struct sockaddr *)&addr, addr_len) != 0) {
             char local_addr_buf[128];
-            cpe_str_dup(local_addr_buf, sizeof(local_addr_buf), net_address_dump(net_schedule_tmp_buffer(schedule), local_addr));
+            cpe_str_dup(local_addr_buf, sizeof(local_addr_buf), net_address_dump(net_schedule_tmp_buffer(schedule), local_address));
             CPE_ERROR(
                 em, "ev: %s: bind to local addr %s fail, errno=%d (%s)",
                 net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
@@ -148,9 +149,19 @@ int net_ev_endpoint_connect(net_endpoint_t base_endpoint) {
     if (cpe_connect(endpoint->m_fd, (struct sockaddr *)&addr, addr_len) != 0) {
         if (cpe_sock_errno() == EINPROGRESS || cpe_sock_errno() == EWOULDBLOCK) {
             if (net_schedule_debug(schedule) >= 2) {
-                CPE_INFO(
-                    em, "ev: %s: connect start",
-                    net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+                if (local_address) {
+                    char local_addr_buf[128];
+                    cpe_str_dup(local_addr_buf, sizeof(local_addr_buf), net_address_dump(net_schedule_tmp_buffer(schedule), local_address));
+                    CPE_INFO(
+                        em, "ev: %s: connect start (local-address=%s)",
+                        net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
+                        local_addr_buf);
+                }
+                else {
+                    CPE_INFO(
+                        em, "ev: %s: connect start",
+                        net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+                }
             }
 
             assert(!ev_is_active(&endpoint->m_watcher));
@@ -174,9 +185,22 @@ int net_ev_endpoint_connect(net_endpoint_t base_endpoint) {
     }
     else {
         if (driver->m_debug || net_schedule_debug(schedule) >= 2) {
-            CPE_INFO(
-                em, "ev: %s: connect success",
-                net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+            if (local_address) {
+                char local_addr_buf[128];
+                cpe_str_dup(
+                    local_addr_buf, sizeof(local_addr_buf),
+                    net_address_dump(net_schedule_tmp_buffer(schedule), local_address));
+
+                CPE_INFO(
+                    em, "ev: %s: connect success (local-address=%s)",
+                    net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
+                    local_addr_buf);
+            }
+            else {
+                CPE_INFO(
+                    em, "ev: %s: connect success",
+                    net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+            }
         }
 
         if (net_endpoint_address(base_endpoint) == NULL) {

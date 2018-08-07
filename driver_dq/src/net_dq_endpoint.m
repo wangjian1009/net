@@ -2,6 +2,7 @@
 #include "cpe/pal/pal_socket.h"
 #include "cpe/pal/pal_string.h"
 #include "cpe/pal/pal_strings.h"
+#include "cpe/utils/string_utils.h"
 #include "cpe/utils_sock/sock_utils.h"
 #include "net_endpoint.h"
 #include "net_address.h"
@@ -100,10 +101,16 @@ int net_dq_endpoint_connect(net_endpoint_t base_endpoint) {
         }
 
         if(cpe_bind(endpoint->m_fd, (struct sockaddr *)&addr, addr_len) != 0) {
+            char local_addr_buf[128];
+            cpe_str_dup(
+                local_addr_buf, sizeof(local_addr_buf),
+                net_address_dump(net_dq_driver_tmp_buffer(driver), local_address));
+
             CPE_ERROR(
-                driver->m_em, "dq: %s: bind fail, errno=%d (%s)",
-                net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
+                driver->m_em, "dq: %s: bind local address %s fail, errno=%d (%s)",
+                local_addr_buf, net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
                 cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+
             cpe_sock_close(endpoint->m_fd);
             endpoint->m_fd = -1;
             return -1;
@@ -137,11 +144,24 @@ int net_dq_endpoint_connect(net_endpoint_t base_endpoint) {
     if (cpe_connect(endpoint->m_fd, (struct sockaddr *)&addr, addr_len) != 0) {
         if (cpe_sock_errno() == EINPROGRESS || cpe_sock_errno() == EWOULDBLOCK) {
             if (driver->m_debug) {
-                CPE_INFO(
-                    driver->m_em, "dq: %s: connect start",
-                    net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
-            }
+                if (local_address) {
+                    char local_addr_buf[128];
+                    cpe_str_dup(
+                        local_addr_buf, sizeof(local_addr_buf),
+                        net_address_dump(net_dq_driver_tmp_buffer(driver), local_address));
 
+                    CPE_INFO(
+                        driver->m_em, "dq: %s: connect start (local-address=%s)",
+                        net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
+                        local_addr_buf);
+                }
+                else {
+                    CPE_INFO(
+                        driver->m_em, "dq: %s: connect start",
+                        net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
+                }
+            }
+            
             assert(endpoint->m_source_w == nil);
             endpoint->m_source_w = dispatch_source_create(DISPATCH_SOURCE_TYPE_WRITE, endpoint->m_fd, 0, dispatch_get_main_queue());
             dispatch_retain(endpoint->m_source_w);
@@ -162,9 +182,22 @@ int net_dq_endpoint_connect(net_endpoint_t base_endpoint) {
     }
     else {
         if (driver->m_debug) {
-            CPE_INFO(
-                driver->m_em, "dq: %s: connect success",
-                net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
+            if (local_address) {
+                char local_addr_buf[128];
+                cpe_str_dup(
+                    local_addr_buf, sizeof(local_addr_buf),
+                    net_address_dump(net_dq_driver_tmp_buffer(driver), local_address));
+
+                CPE_INFO(
+                    driver->m_em, "dq: %s: connect success (local-address=%s)",
+                    net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
+                    local_addr_buf);
+            }
+            else {
+                CPE_INFO(
+                    driver->m_em, "dq: %s: connect success",
+                    net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
+            }
         }
 
         if (net_endpoint_address(base_endpoint) == NULL) {

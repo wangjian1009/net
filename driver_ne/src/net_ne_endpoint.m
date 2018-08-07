@@ -2,6 +2,7 @@
 #include "cpe/pal/pal_socket.h"
 #include "cpe/pal/pal_string.h"
 #include "cpe/pal/pal_strings.h"
+#include "cpe/utils/string_utils.h"
 #include "net_endpoint.h"
 #include "net_address.h"
 #include "net_driver.h"
@@ -41,8 +42,10 @@ void net_ne_endpoint_fini(net_endpoint_t base_endpoint) {
         CPE_ERROR(
             driver->m_em, "ne: %s: fini, is-writing=%d",
             net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint), endpoint->m_is_writing);
-        
+
+        CPE_ERROR(driver->m_em, "xxxxx: connection release, 111 retain count=%d", [endpoint->m_connection retainCount]);
         [endpoint->m_connection release];
+        CPE_ERROR(driver->m_em, "xxxxx: connection release, 222 retain count=%d", [endpoint->m_connection retainCount]);
         endpoint->m_connection = nil;
     }
 
@@ -63,18 +66,14 @@ int net_ne_endpoint_connect(net_endpoint_t base_endpoint) {
     net_ne_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
     net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
 
-    CPE_ERROR(
-        driver->m_em, "ne: %s: connect begin",
-        net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint));
+    if (endpoint->m_connection != nil) {
+        CPE_ERROR(
+            driver->m_em, "ne: %s: already connected!",
+            net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint));
+        return -1;
+    }
 
     @autoreleasepool {
-        if (endpoint->m_connection != nil) {
-            CPE_ERROR(
-                driver->m_em, "ne: %s: already connected!",
-                net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint));
-            return -1;
-        }
-
         net_address_t remote_addr = net_endpoint_remote_address(base_endpoint);
         if (remote_addr == NULL) {
             CPE_ERROR(
@@ -102,6 +101,7 @@ int net_ne_endpoint_connect(net_endpoint_t base_endpoint) {
             return -1;
         }
         [endpoint->m_connection retain];
+        CPE_ERROR(driver->m_em, "xxxxx: connection retain count=%d", [endpoint->m_connection retainCount]);
 
         [endpoint->m_connection addObserver: endpoint->m_observer
                                  forKeyPath: @"state" 
@@ -150,7 +150,11 @@ void net_ne_endpoint_close(net_endpoint_t base_endpoint) {
     if (endpoint->m_connection == nil) return;
 
     [endpoint->m_connection cancel];
+
+    net_ne_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
+    CPE_ERROR(driver->m_em, "xxxxx: close connection release, 111 retain count=%d", [endpoint->m_connection retainCount]);
     [endpoint->m_connection release];
+    CPE_ERROR(driver->m_em, "xxxxx: close connection release, 222 retain count=%d", [endpoint->m_connection retainCount]);
     endpoint->m_connection = nil;
 }
 
@@ -208,85 +212,6 @@ int net_ne_endpoint_update_remote_address(net_ne_endpoint_t endpoint) {
     }
 }
 
-// static void net_ne_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
-//     net_ne_endpoint_t endpoint = w->data;
-//     net_endpoint_t base_endpoint = net_endpoint_from_data(endpoint);
-//     net_ne_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
-//     net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
-//     error_monitor_t em = net_schedule_em(schedule);
-
-//     if (revents & EV_READ) {
-//         for(;net_endpoint_state(base_endpoint) == net_endpoint_state_established;) {
-//             uint32_t capacity = 0;
-//             void * rbuf = net_endpoint_rbuf_alloc(base_endpoint, &capacity);
-//             if (rbuf == NULL) {
-//                 assert(net_endpoint_rbuf_is_full(base_endpoint));
-//                 break;
-//             }
-            
-//             int bytes = cpe_recv(endpoint->m_fd, rbuf, capacity, 0);
-//             if (bytes > 0) {
-//                 if (driver->m_debug) {
-//                     CPE_INFO(
-//                         em, "ne: %s: recv %d bytes data!",
-//                         net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint),
-//                         bytes);
-//                 }
-
-//                 if (net_endpoint_rbuf_supply(base_endpoint, (uint32_t)bytes) != 0) {
-//                     if (net_endpoint_set_state(base_endpoint, net_endpoint_state_logic_error) != 0) {
-//                         if (driver->m_debug || net_schedule_debug(schedule) >= 2) {
-//                             CPE_INFO(
-//                                 em, "ne: %s: free for process fail!",
-//                                 net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint));
-//                         }
-//                         net_endpoint_free(base_endpoint);
-//                     }
-//                     return;
-//                 }
-
-//                 if (driver->m_data_monitor_fun) {
-//                     driver->m_data_monitor_fun(driver->m_data_monitor_ctx, base_endpoint, net_data_in, (uint32_t)bytes);
-//                 }
-
-//                 break;
-//             }
-//             else if (bytes == 0) {
-//                 if (driver->m_debug || net_schedule_debug(schedule) >= 2) {
-//                     CPE_INFO(
-//                         em, "ne: %s: remote disconnected(recv 0)!",
-//                         net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint));
-//                 }
-                
-//                 if (net_endpoint_set_state(base_endpoint, net_endpoint_state_disable) != 0) {
-//                     net_endpoint_free(base_endpoint);
-//                 }
-//                 return;
-//             }
-//             else {
-//                 assert(bytes == -1);
-
-//                 switch(errno) {
-//                 case EWOULDBLOCK:
-//                 case EINPROGRESS:
-//                     break;
-//                 case EINTR:
-//                     continue;
-//                 default:
-//                     CPE_ERROR(
-//                         em, "ne: %s: recv error, errno=%d (%s)!",
-//                         net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint),
-//                         cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-
-//                     if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
-//                         net_endpoint_free(base_endpoint);
-//                     }
-//                     return;
-//                 }
-//             }
-//         }
-//     }
-
 static const char * net_ne_endpoint_state_str(NWTCPConnectionState state) {
     switch(state) {
     case NWTCPConnectionStateConnecting:
@@ -299,6 +224,8 @@ static const char * net_ne_endpoint_state_str(NWTCPConnectionState state) {
         return "Invalid";
     case NWTCPConnectionStateDisconnected:
         return "Disconnected";
+    case NWTCPConnectionStateWaiting:
+        return "Waiting";
     default:
         return "Unknown";
     }
@@ -369,68 +296,70 @@ static void net_ne_endpoint_do_read(net_ne_driver_t driver, net_ne_endpoint_t en
 }
 
 static int net_ne_endpoint_do_output(net_ne_driver_t driver, net_ne_endpoint_t endpoint, net_endpoint_t base_endpoint) {
-    if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return 0;
-    if (endpoint->m_is_writing) return 0;
+    @autoreleasepool {
+        if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return 0;
+        if (endpoint->m_is_writing) return 0;
 
-    uint32_t sz;
-    void * buf = net_endpoint_wbuf(base_endpoint, &sz);
-    if (buf == NULL) return 0;
+        uint32_t sz;
+        void * buf = net_endpoint_wbuf(base_endpoint, &sz);
+        if (buf == NULL) return 0;
 
-    NSData * data = [[NSData dataWithBytes: buf length: sz] retain];
-    if (data == nil) {
-        CPE_ERROR(
-            driver->m_em, "ne: %s: output: copy data fail",
-            net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint));
-        return -1;
-    }
-    net_endpoint_wbuf_consume(base_endpoint, sz);
+        NSData * data = [NSData dataWithBytes: buf length: sz];
+        if (data == nil) {
+            CPE_ERROR(
+                driver->m_em, "ne: %s: output: copy data fail",
+                net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint));
+            return -1;
+        }
+        net_endpoint_wbuf_consume(base_endpoint, sz);
 
-    if (driver->m_data_monitor_fun) {
-        driver->m_data_monitor_fun(driver->m_data_monitor_ctx, base_endpoint, net_data_out, sz);
-    }
+        if (driver->m_data_monitor_fun) {
+            driver->m_data_monitor_fun(driver->m_data_monitor_ctx, base_endpoint, net_data_out, sz);
+        }
     
-    endpoint->m_is_writing = 1;
-    [endpoint->m_connection
-        write: data
-        completionHandler: ^(NSError* error) {
-            dispatch_sync(
-                dispatch_get_main_queue(),
-                ^{
-                    endpoint->m_is_writing = 0;
+        endpoint->m_is_writing = 1;
+        [endpoint->m_connection
+            write: data
+            completionHandler: ^(NSError* error) {
+                dispatch_sync(
+                    dispatch_get_main_queue(),
+                    ^{
+                        endpoint->m_is_writing = 0;
 
-                    if (error != nil) {
-                        CPE_ERROR(
-                            driver->m_em, "ne: %s: disconnected in connecting, connect error!, %s",
-                            net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint),
-                            error ? [[error localizedDescription] UTF8String] : "unknown error");
+                        if (error != nil) {
+                            CPE_ERROR(
+                                driver->m_em, "ne: %s: disconnected in connecting, connect error!, %s",
+                                net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint),
+                                error ? [[error localizedDescription] UTF8String] : "unknown error");
                 
-                        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
-                            net_endpoint_free(base_endpoint);
+                            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
+                                net_endpoint_free(base_endpoint);
+                                return;
+                            }
+
                             return;
                         }
 
-                        return;
-                    }
-
-                    if (net_ne_endpoint_do_output(driver, endpoint, base_endpoint) != 0) {
-                        CPE_ERROR(
-                            driver->m_em, "ne: %s: auto send follow data error!",
-                            net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint));
-                        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
-                            net_endpoint_free(base_endpoint);
-                            return;
+                        if (net_ne_endpoint_do_output(driver, endpoint, base_endpoint) != 0) {
+                            CPE_ERROR(
+                                driver->m_em, "ne: %s: auto send follow data error!",
+                                net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint));
+                            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
+                                net_endpoint_free(base_endpoint);
+                                return;
+                            }
                         }
-                    }
-                });
-        }];
+                    });
+            }];
 
-    if (driver->m_debug) {
-        CPE_INFO(
-            driver->m_em, "ne: %s: send %d bytes data!",
-            net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint),
-            sz);
+        if (driver->m_debug) {
+            CPE_INFO(
+                driver->m_em, "ne: %s: send %d bytes data!",
+                net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint),
+                sz);
+        }
     }
-    
+
     return 0;
 }
 
@@ -443,95 +372,98 @@ static int net_ne_endpoint_do_output(net_ne_driver_t driver, net_ne_endpoint_t e
     dispatch_sync(
         dispatch_get_main_queue(),
         ^{
-            net_ne_endpoint_t endpoint = context;
-            net_endpoint_t base_endpoint = net_endpoint_from_data(endpoint);
-            net_ne_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
-            net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
+            @autoreleasepool {
+                net_ne_endpoint_t endpoint = context;
+                net_endpoint_t base_endpoint = net_endpoint_from_data(endpoint);
+                net_ne_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
+                net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
 
-            if ([keyPath isEqual:@"state"]) {
-                NWTCPConnectionState oldState = (NWTCPConnectionState)[[change objectForKey:@"old"] intValue];
-                NWTCPConnectionState newState = (NWTCPConnectionState)[[change objectForKey:@"new"] intValue];
+                if ([keyPath isEqual:@"state"]) {
+                    NWTCPConnectionState oldState = (NWTCPConnectionState)[[change objectForKey:@"old"] intValue];
+                    NWTCPConnectionState newState = (NWTCPConnectionState)[[change objectForKey:@"new"] intValue];
         
-                CPE_INFO(
-                    driver->m_em, "ne: %s: state %s ==> %s!",
-                    net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint),
-                    net_ne_endpoint_state_str(oldState), net_ne_endpoint_state_str(newState));
+                    CPE_INFO(
+                        driver->m_em, "ne: %s: state %s(%d) ==> %s(%d)!",
+                        net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint),
+                        net_ne_endpoint_state_str(oldState), (int)oldState, net_ne_endpoint_state_str(newState), (int)newState);
 
-                switch(newState) {
-                case NWTCPConnectionStateDisconnected:
-                    if (net_endpoint_state(base_endpoint) == net_endpoint_state_connecting) {
-                        NSError * error = [endpoint->m_connection error];
-                        CPE_ERROR(
-                            driver->m_em, "ne: %s: disconnected in connecting, connect error!, %s",
-                            net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint),
-                            error ? [[error localizedDescription] UTF8String] : "unknown error");
-                
-                        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
-                            net_endpoint_free(base_endpoint);
-                            return;
-                        }
-                    }
-                    else if (net_endpoint_state(base_endpoint) == net_endpoint_state_established) {
-                        if (driver->m_debug || net_schedule_debug(schedule) >= 2) {
+                    switch(newState) {
+                    case NWTCPConnectionStateWaiting:
+                    case NWTCPConnectionStateDisconnected:
+                        if (net_endpoint_state(base_endpoint) == net_endpoint_state_connecting) {
                             NSError * error = [endpoint->m_connection error];
-                            CPE_INFO(
-                                driver->m_em, "ne: %s: disconnected!, %s",
+                            CPE_ERROR(
+                                driver->m_em, "ne: %s: disconnected in connecting, connect error!, %s",
                                 net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint),
                                 error ? [[error localizedDescription] UTF8String] : "unknown error");
+                
+                            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
+                                net_endpoint_free(base_endpoint);
+                                return;
+                            }
                         }
+                        else if (net_endpoint_state(base_endpoint) == net_endpoint_state_established) {
+                            if (driver->m_debug || net_schedule_debug(schedule) >= 2) {
+                                NSError * error = [endpoint->m_connection error];
+                                CPE_INFO(
+                                    driver->m_em, "ne: %s: disconnected!, %s",
+                                    net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint),
+                                    error ? [[error localizedDescription] UTF8String] : "unknown error");
+                            }
 
-                        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_disable) != 0) {
-                            net_endpoint_free(base_endpoint);
-                            return;
+                            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_disable) != 0) {
+                                net_endpoint_free(base_endpoint);
+                                return;
+                            }
                         }
-                    }
-                    else {
-                        NSError * error = [endpoint->m_connection error];
-                        CPE_ERROR(
-                            driver->m_em, "ne: %s: disconnected in state %s error!, %s",
-                            net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint),
-                            net_endpoint_state_str(net_endpoint_state(base_endpoint)),
-                            error ? [[error localizedDescription] UTF8String] : "unknown error");
+                        else {
+                            NSError * error = [endpoint->m_connection error];
+                            CPE_ERROR(
+                                driver->m_em, "ne: %s: disconnected in state %s error!, %s",
+                                net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint),
+                                net_endpoint_state_str(net_endpoint_state(base_endpoint)),
+                                error ? [[error localizedDescription] UTF8String] : "unknown error");
 
-                        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
-                            net_endpoint_free(base_endpoint);
-                            return;
+                            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
+                                net_endpoint_free(base_endpoint);
+                                return;
+                            }
                         }
-                    }
-                    break;
-                case NWTCPConnectionStateConnected:
-                    if (net_endpoint_state(base_endpoint) == net_endpoint_state_connecting) {
-                        if (net_endpoint_address(base_endpoint) == NULL) {
-                            net_ne_endpoint_update_local_address(endpoint);
-                        }
+                        break;
+                    case NWTCPConnectionStateConnected:
+                        if (net_endpoint_state(base_endpoint) == net_endpoint_state_connecting) {
+                            if (net_endpoint_address(base_endpoint) == NULL) {
+                                net_ne_endpoint_update_local_address(endpoint);
+                            }
 
-                        net_ne_endpoint_do_read(driver, endpoint, base_endpoint);
-                        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_established) != 0) {
-                            net_endpoint_free(base_endpoint);
-                            return;
+                            net_ne_endpoint_do_read(driver, endpoint, base_endpoint);
+                            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_established) != 0) {
+                                net_endpoint_free(base_endpoint);
+                                return;
+                            }
+                        }            
+                        else if (net_endpoint_state(base_endpoint) == net_endpoint_state_established) {
                         }
-                    }            
-                    else if (net_endpoint_state(base_endpoint) == net_endpoint_state_established) {
-                    }
-                    else {
-                        CPE_ERROR(
-                            driver->m_em, "ne: %s: connected in state %s!",
-                            net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint),
-                            net_endpoint_state_str(net_endpoint_state(base_endpoint)));
+                        else {
+                            CPE_ERROR(
+                                driver->m_em, "ne: %s: connected in state %s!",
+                                net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint),
+                                net_endpoint_state_str(net_endpoint_state(base_endpoint)));
 
-                        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_established) != 0) {
-                            net_endpoint_free(base_endpoint);
-                            return;
+                            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_established) != 0) {
+                                net_endpoint_free(base_endpoint);
+                                return;
+                            }
                         }
+                        break;
+                    case NWTCPConnectionStateCancelled:
+                        break;
+                    case NWTCPConnectionStateInvalid:
+                        break;
+                    case NWTCPConnectionStateConnecting:
+                    default:
+                        break;
                     }
-                    break;
-                case NWTCPConnectionStateCancelled:
-                    break;
-                case NWTCPConnectionStateInvalid:
-                    break;
-                case NWTCPConnectionStateConnecting:
-                default:
-                    break;
                 }
             }
         });
