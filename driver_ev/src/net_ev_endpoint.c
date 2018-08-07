@@ -98,10 +98,12 @@ int net_ev_endpoint_connect(net_endpoint_t base_endpoint) {
         }
 
         if(cpe_bind(endpoint->m_fd, (struct sockaddr *)&addr, addr_len) != 0) {
+            char local_addr_buf[128];
+            cpe_str_dup(local_addr_buf, sizeof(local_addr_buf), net_address_dump(net_schedule_tmp_buffer(schedule), local_addr));
             CPE_ERROR(
-                em, "ev: %s: bind fail, errno=%d (%s)",
+                em, "ev: %s: bind to local addr %s fail, errno=%d (%s)",
                 net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
-                cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+                local_addr_buf, cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
             cpe_sock_close(endpoint->m_fd);
             endpoint->m_fd = -1;
             return -1;
