@@ -6,6 +6,7 @@ curl_cpp_flags:=-DHAVE_CONFIG_H \
                 -I$(curl_base)/../openssl/include  \
                 -I$(curl_base)/../openssl/include/$(OS_NAME) \
                 -I$(curl_base)/include \
+                -I$(curl_base)/include/$(OS_NAME) \
                 -I$(curl_base)/include/$(OS_NAME)/curl \
                 -I$(curl_base)/lib \
                 -I$(curl_base)/lib/$(OS_NAME)
