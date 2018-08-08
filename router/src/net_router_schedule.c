@@ -98,7 +98,3 @@ int net_router_schedule_auto_select(net_router_schedule_t schedule, net_endpoint
 
     return net_endpoint_link_direct(endpoint, target_addr, is_own);
 }
-
-int net_router_schedule_do_connect(void * ctx, net_endpoint_t endpoint, net_address_t target, uint8_t is_own) {
-    return 0;
-}

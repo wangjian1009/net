@@ -137,6 +137,11 @@ int net_router_link(net_router_t router, net_endpoint_t endpoint, net_address_t 
             return -1;
         }
     }
+
+    if (net_endpoint_connect(target) != 0) {
+        net_endpoint_free(target);
+        return -1;
+    }
     
     net_link_t link = net_link_create(endpoint, 0, target, 1);
     if (link == NULL) {
