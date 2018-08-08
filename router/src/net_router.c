@@ -9,7 +9,8 @@
 
 net_router_t
 net_router_create(
-    net_router_schedule_t schedule, net_address_t address, net_protocol_t protocol, net_driver_t driver)
+    net_router_schedule_t schedule, net_address_t address, net_protocol_t protocol, net_driver_t driver,
+    net_acceptor_on_new_endpoint_fun_t on_new_endpoint, void * on_new_endpoint_ctx)
 {
     net_router_t router;
 
@@ -32,7 +33,9 @@ net_router_create(
     router->m_driver = driver;
     router->m_matcher_white = NULL;
     router->m_matcher_black = NULL;
-
+    router->m_on_new_endpoint = on_new_endpoint;
+    router->m_on_new_endpoint_ctx = on_new_endpoint_ctx;
+    
     TAILQ_INSERT_TAIL(&schedule->m_routers, router, m_next_for_schedule);
 
     if (schedule->m_debug) {
@@ -99,8 +102,19 @@ net_address_matcher_t net_router_matcher_black_check_create(net_router_t router)
     return router->m_matcher_black;
 }
 
+net_address_t net_router_address(net_router_t router) {
+    return router->m_address;
+}
+
+net_protocol_t net_router_protocol(net_router_t router) {
+    return router->m_protocol;
+}
+
+net_driver_t net_router_driver(net_router_t router) {
+    return router->m_driver;
+}
+
 int net_router_link(net_router_t router, net_endpoint_t endpoint, net_address_t target_addr, uint8_t is_own) {
-    
     net_endpoint_t target = net_endpoint_create(router->m_driver, net_endpoint_outbound, router->m_protocol);
     if (target == NULL) {
         return -1;
@@ -111,6 +125,13 @@ int net_router_link(net_router_t router, net_endpoint_t endpoint, net_address_t 
         return -1;
     }
 
+    if (router->m_on_new_endpoint) {
+        if (router->m_on_new_endpoint(router->m_on_new_endpoint_ctx, target) != 0) {
+            net_endpoint_free(target);
+            return -1;
+        }
+    }
+    
     net_link_t link = net_link_create(endpoint, 0, target, 1);
     if (link == NULL) {
         net_endpoint_free(target);

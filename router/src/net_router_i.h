@@ -13,6 +13,8 @@ struct net_router {
     net_driver_t m_driver;
     net_address_matcher_t m_matcher_white;
     net_address_matcher_t m_matcher_black;
+    net_acceptor_on_new_endpoint_fun_t m_on_new_endpoint;
+    void * m_on_new_endpoint_ctx;
 };
 
 NET_END_DECL
