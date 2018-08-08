@@ -388,7 +388,7 @@ int net_endpoint_direct(net_endpoint_t endpoint, net_address_t target_addr) {
         return -1;
     }
 
-    return 0;
+    return endpoint->m_protocol->m_endpoint_direct(endpoint, target_addr);
 }
 
 ringbuffer_block_t net_endpoint_common_buf_alloc(net_endpoint_t endpoint, uint32_t size) {

@@ -28,13 +28,19 @@ net_router_create(
     }
 
     router->m_schedule = schedule;
-    router->m_address = address;
     router->m_protocol = protocol;
     router->m_driver = driver;
     router->m_matcher_white = NULL;
     router->m_matcher_black = NULL;
     router->m_on_new_endpoint = on_new_endpoint;
     router->m_on_new_endpoint_ctx = on_new_endpoint_ctx;
+
+    router->m_address = net_address_copy(schedule->m_net_schedule, address);
+    if (router->m_address == NULL) {
+        CPE_ERROR(schedule->m_em, "router: dup address fail!");
+        mem_free(schedule->m_alloc, router);
+        return NULL;
+    }
     
     TAILQ_INSERT_TAIL(&schedule->m_routers, router, m_next_for_schedule);
 
