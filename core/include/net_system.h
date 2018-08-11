@@ -48,6 +48,17 @@ typedef enum net_data_direct {
     net_data_out,
 } net_data_direct_t;
 
+typedef enum net_endpoint_data_event {
+    net_endpoint_data_r_supply,
+    net_endpoint_data_r_consume,
+    net_endpoint_data_f_supply,
+    net_endpoint_data_f_consume,
+    net_endpoint_data_w_supply,
+    net_endpoint_data_w_consume,
+} net_endpoint_data_event_t;
+
+typedef void (*net_endpoint_data_watch_fun_t)(void * ctx, net_endpoint_t endpoint, net_endpoint_data_event_t evt, uint32_t size);
+
 /*acceptor*/
 typedef int (*net_acceptor_on_new_endpoint_fun_t)(void * ctx, net_endpoint_t endpoint);
 

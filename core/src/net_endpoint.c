@@ -46,6 +46,9 @@ net_endpoint_create(net_driver_t driver, net_endpoint_type_t type, net_protocol_
     endpoint->m_rb = NULL;
     endpoint->m_wb = NULL;
     endpoint->m_fb = NULL;
+    endpoint->m_data_watcher_ctx = NULL;
+    endpoint->m_data_watcher = NULL;
+
     TAILQ_INIT(&endpoint->m_monitors);
 
     if (protocol->m_endpoint_init(endpoint) != 0) {
@@ -482,6 +485,11 @@ void * net_endpoint_protocol_data(net_endpoint_t endpoint) {
 int net_endpoint_forward(net_endpoint_t endpoint) {
     net_endpoint_t other = net_endpoint_other(endpoint);
     return other ? other->m_protocol->m_endpoint_forward(other, endpoint) : 0;
+}
+
+void net_endpoint_set_data_watcher(net_endpoint_t endpoint, void * watcher_ctx, net_endpoint_data_watch_fun_t watcher_fun) {
+    endpoint->m_data_watcher_ctx = watcher_ctx;
+    endpoint->m_data_watcher = watcher_fun;
 }
 
 const char * net_endpoint_state_str(net_endpoint_state_t state) {

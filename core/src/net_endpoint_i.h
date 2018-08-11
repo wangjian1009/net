@@ -20,6 +20,8 @@ struct net_endpoint {
     ringbuffer_block_t m_rb;
     ringbuffer_block_t m_wb;
     ringbuffer_block_t m_fb;
+    void * m_data_watcher_ctx;
+    net_endpoint_data_watch_fun_t m_data_watcher;
     net_endpoint_monitor_list_t m_monitors;
 };
 

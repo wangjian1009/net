@@ -83,6 +83,10 @@ int net_endpoint_rbuf_supply(net_endpoint_t endpoint, uint32_t size) {
     
     schedule->m_endpoint_tb = NULL;
 
+    if (endpoint->m_data_watcher) {
+        endpoint->m_data_watcher(endpoint->m_data_watcher_ctx, endpoint, net_endpoint_data_r_supply, size);
+    }
+    
     return endpoint->m_protocol->m_endpoint_input(endpoint);
 }
 
@@ -108,6 +112,10 @@ void net_endpoint_rbuf_consume(net_endpoint_t endpoint, uint32_t size) {
     if (endpoint->m_rb) {
         endpoint->m_rb = ringbuffer_yield(schedule->m_endpoint_buf, endpoint->m_rb, size);
 
+        if (endpoint->m_data_watcher) {
+            endpoint->m_data_watcher(endpoint->m_data_watcher_ctx, endpoint, net_endpoint_data_r_consume, size);
+        }
+    
         if (schedule->m_data_monitor_fun) {
             schedule->m_data_monitor_fun(
                 schedule->m_data_monitor_ctx, endpoint, net_data_in, size);
@@ -171,6 +179,10 @@ int net_endpoint_rbuf_recv(net_endpoint_t endpoint, void * data, uint32_t * size
     *size = received;
 
     if (received) {
+        if (endpoint->m_data_watcher) {
+            endpoint->m_data_watcher(endpoint->m_data_watcher_ctx, endpoint, net_endpoint_data_r_consume, received);
+        }
+        
         if (schedule->m_data_monitor_fun) {
             schedule->m_data_monitor_fun(
                 schedule->m_data_monitor_ctx, endpoint, net_data_in, received);

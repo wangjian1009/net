@@ -38,6 +38,10 @@ int net_endpoint_fbuf_append(net_endpoint_t endpoint, void const * i_data, uint3
 
     net_endpoint_fbuf_link(tb);
 
+    if (endpoint->m_data_watcher) {
+        endpoint->m_data_watcher(endpoint->m_data_watcher_ctx, endpoint, net_endpoint_data_f_supply, size);
+    }
+
     return 0;
 }
 
@@ -70,6 +74,11 @@ int net_endpoint_fbuf_append_from_rbuf(net_endpoint_t endpoint, uint32_t size) {
         }
     }
 
+    if (endpoint->m_data_watcher) {
+        endpoint->m_data_watcher(endpoint->m_data_watcher_ctx, endpoint, net_endpoint_data_r_consume, size);
+        endpoint->m_data_watcher(endpoint->m_data_watcher_ctx, endpoint, net_endpoint_data_f_supply, size);
+    }
+    
     return 0;
 }
 
@@ -88,6 +97,10 @@ void net_endpoint_fbuf_consume(net_endpoint_t endpoint, uint32_t size) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
     endpoint->m_fb = ringbuffer_yield(schedule->m_endpoint_buf, endpoint->m_fb, size);
     assert(endpoint->m_fb == NULL || endpoint->m_fb->id == endpoint->m_id);
+
+    if (endpoint->m_data_watcher) {
+        endpoint->m_data_watcher(endpoint->m_data_watcher_ctx, endpoint, net_endpoint_data_f_consume, size);
+    }
 }
 
 int net_endpoint_fbuf(net_endpoint_t endpoint, uint32_t require, void * * r_data) {

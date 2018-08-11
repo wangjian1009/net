@@ -86,6 +86,9 @@ int net_endpoint_forward(net_endpoint_t endpoint);
 void net_endpoint_print(write_stream_t ws, net_endpoint_t endpoint);
 const char * net_endpoint_dump(mem_buffer_t buff, net_endpoint_t endpoint);
 
+/*data-watch*/
+void net_endpoint_set_data_watcher(net_endpoint_t endpoint, void * watcher_ctx, net_endpoint_data_watch_fun_t watcher_fun);
+
 /**/
 void net_endpoint_clear_monitor_by_ctx(net_endpoint_t endpoint, void * ctx);
 
