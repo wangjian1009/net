@@ -21,9 +21,6 @@ net_protocol_t net_schedule_direct_protocol(net_schedule_t schedule);
 net_driver_t net_schedule_direct_driver(net_schedule_t schedule);
 void net_schedule_set_direct_driver(net_schedule_t schedule, net_driver_t driver);
 
-void net_schedule_set_data_monitor(
-    net_schedule_t schedule, net_data_monitor_fun_t monitor_fun, void * monitor_ctx);
-
 /*dns*/
 typedef int (*net_schedule_dns_query_init_fun_t)(void * ctx, net_dns_query_t query, const char * hostname);
 typedef void (*net_schedule_dns_query_fini_fun_t)(void * ctx, net_dns_query_t query);

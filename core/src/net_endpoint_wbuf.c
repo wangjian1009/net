@@ -123,11 +123,6 @@ void net_endpoint_wbuf_consume(net_endpoint_t endpoint, uint32_t size) {
     if (endpoint->m_data_watcher) {
         endpoint->m_data_watcher(endpoint->m_data_watcher_ctx, endpoint, net_endpoint_data_w_consume, size);
     }
-    
-    if (schedule->m_data_monitor_fun) {
-        schedule->m_data_monitor_fun(
-            schedule->m_data_monitor_ctx, endpoint, net_data_out, size);
-    }
 }
 
 int net_endpoint_wbuf_append(net_endpoint_t endpoint, void const * i_data, uint32_t size) {

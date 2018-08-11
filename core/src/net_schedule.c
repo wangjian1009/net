@@ -25,8 +25,6 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em, uint32_t common_
     schedule->m_alloc = alloc;
     schedule->m_em = em;
     schedule->m_debug = 2;
-    schedule->m_data_monitor_fun = NULL;
-    schedule->m_data_monitor_ctx = NULL;
     schedule->m_dns_resolver_ctx = NULL;
     schedule->m_dns_resolver_ctx_fini_fun = NULL;
     schedule->m_dns_query_capacity = 0;
@@ -165,13 +163,6 @@ net_driver_t net_schedule_direct_driver(net_schedule_t schedule) {
 
 void net_schedule_set_direct_driver(net_schedule_t schedule, net_driver_t driver) {
     schedule->m_direct_driver = driver;
-}
-
-void net_schedule_set_data_monitor(
-    net_schedule_t schedule, net_data_monitor_fun_t monitor_fun, void * monitor_ctx)
-{
-    schedule->m_data_monitor_fun = monitor_fun;
-    schedule->m_data_monitor_ctx = monitor_ctx;
 }
 
 uint8_t net_schedule_debug(net_schedule_t schedule) {

@@ -28,9 +28,6 @@ struct net_schedule {
     error_monitor_t m_em;
     uint8_t m_debug;
 
-    net_data_monitor_fun_t m_data_monitor_fun;
-    void * m_data_monitor_ctx;
-
     /*dns resolver*/
     void * m_dns_resolver_ctx;
     void (*m_dns_resolver_ctx_fini_fun)(void * ctx);

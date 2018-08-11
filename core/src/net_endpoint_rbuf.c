@@ -115,11 +115,6 @@ void net_endpoint_rbuf_consume(net_endpoint_t endpoint, uint32_t size) {
         if (endpoint->m_data_watcher) {
             endpoint->m_data_watcher(endpoint->m_data_watcher_ctx, endpoint, net_endpoint_data_r_consume, size);
         }
-    
-        if (schedule->m_data_monitor_fun) {
-            schedule->m_data_monitor_fun(
-                schedule->m_data_monitor_ctx, endpoint, net_data_in, size);
-        }
     }
 }
 
@@ -181,11 +176,6 @@ int net_endpoint_rbuf_recv(net_endpoint_t endpoint, void * data, uint32_t * size
     if (received) {
         if (endpoint->m_data_watcher) {
             endpoint->m_data_watcher(endpoint->m_data_watcher_ctx, endpoint, net_endpoint_data_r_consume, received);
-        }
-        
-        if (schedule->m_data_monitor_fun) {
-            schedule->m_data_monitor_fun(
-                schedule->m_data_monitor_ctx, endpoint, net_data_in, received);
         }
     }
     
