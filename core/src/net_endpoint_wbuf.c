@@ -87,8 +87,8 @@ int net_endpoint_wbuf_supply(net_endpoint_t endpoint, uint32_t size) {
     
     schedule->m_endpoint_tb = NULL;
 
-    if (endpoint->m_data_watcher) {
-        endpoint->m_data_watcher(endpoint->m_data_watcher_ctx, endpoint, net_endpoint_data_w_supply, size);
+    if (endpoint->m_data_watcher_fun) {
+        endpoint->m_data_watcher_fun(endpoint->m_data_watcher_ctx, endpoint, net_endpoint_data_w_supply, size);
     }
     
     return endpoint->m_driver->m_endpoint_on_output(endpoint);
@@ -120,8 +120,8 @@ void net_endpoint_wbuf_consume(net_endpoint_t endpoint, uint32_t size) {
     endpoint->m_wb = ringbuffer_yield(schedule->m_endpoint_buf, endpoint->m_wb, size);
     assert(endpoint->m_wb == NULL || endpoint->m_wb->id == endpoint->m_id);
 
-    if (endpoint->m_data_watcher) {
-        endpoint->m_data_watcher(endpoint->m_data_watcher_ctx, endpoint, net_endpoint_data_w_consume, size);
+    if (endpoint->m_data_watcher_fun) {
+        endpoint->m_data_watcher_fun(endpoint->m_data_watcher_ctx, endpoint, net_endpoint_data_w_consume, size);
     }
 }
 
@@ -142,8 +142,8 @@ int net_endpoint_wbuf_append(net_endpoint_t endpoint, void const * i_data, uint3
     ringbuffer_shrink(schedule->m_endpoint_buf, tb, (int)size);
     net_endpoint_wbuf_link(tb);
 
-    if (endpoint->m_data_watcher) {
-        endpoint->m_data_watcher(endpoint->m_data_watcher_ctx, endpoint, net_endpoint_data_w_supply, size);
+    if (endpoint->m_data_watcher_fun) {
+        endpoint->m_data_watcher_fun(endpoint->m_data_watcher_ctx, endpoint, net_endpoint_data_w_supply, size);
     }
     
     return endpoint->m_driver->m_endpoint_on_output(endpoint);
@@ -178,13 +178,13 @@ int net_endpoint_wbuf_append_from_other(net_endpoint_t endpoint, net_endpoint_t 
         }
     }
 
-    if (other->m_data_watcher) {
-        other->m_data_watcher(other->m_data_watcher_ctx, other, net_endpoint_data_f_consume, size);
+    if (other->m_data_watcher_fun) {
+        other->m_data_watcher_fun(other->m_data_watcher_ctx, other, net_endpoint_data_f_consume, size);
     }
     
 
-    if (endpoint->m_data_watcher) {
-        endpoint->m_data_watcher(endpoint->m_data_watcher_ctx, endpoint, net_endpoint_data_w_supply, size);
+    if (endpoint->m_data_watcher_fun) {
+        endpoint->m_data_watcher_fun(endpoint->m_data_watcher_ctx, endpoint, net_endpoint_data_w_supply, size);
     }
     
     return endpoint->m_driver->m_endpoint_on_output(endpoint);
