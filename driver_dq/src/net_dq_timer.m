@@ -27,7 +27,7 @@ void net_dq_timer_fini(net_timer_t base_timer) {
 void net_dq_timer_active(net_timer_t base_timer, uint32_t delay_ms) {
     net_dq_timer_t timer = net_timer_data(base_timer);
 
-    net_dq_driver_t driver = net_driver_data(net_timer_driver(base_timer));
+    //net_dq_driver_t driver = net_driver_data(net_timer_driver(base_timer));
     //CPE_INFO(driver->m_em, "timer %p active, delay_ms=%d", timer, delay_ms);
 
     if (timer->m_timer) {
