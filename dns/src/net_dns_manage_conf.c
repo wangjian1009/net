@@ -1,15 +1,24 @@
 #include <errno.h>
 #include "assert.h"
 #include "cpe/pal/pal_string.h"
+#include "cpe/pal/pal_stdlib.h"
 #include "cpe/utils/file.h"
 #include "cpe/utils/string_utils.h"
 #include "cpe/utils_sock/sock_utils.h"
 #include "net_address.h"
 #include "net_dns_source_nameserver.h"
 #include "net_dns_manage_i.h"
+#if defined __APPLE__
+#define NET_DNS_USE_RESOLVE_H
+#endif
+
+#if defined NET_DNS_USE_RESOLVE_H
+#include "resolv.h"
+#endif
 
 int net_dns_manage_load_resolv(net_dns_manage_t manage, const char * path);
-int net_dns_manage_load_nameserver(net_dns_manage_t manage, char * str);
+int net_dns_manage_load_nameserver_by_addr(net_dns_manage_t manage, struct sockaddr * addr, socklen_t addr_len);
+int net_dns_manage_load_nameserver_by_str(net_dns_manage_t manage, char * str);
 
 int net_dns_manage_auto_conf(net_dns_manage_t manage) {
     int rv = 0;
@@ -25,12 +34,29 @@ int net_dns_manage_auto_conf(net_dns_manage_t manage) {
             rv = -1;
             break;
         }
-        if (net_dns_manage_load_nameserver(manage, propvalue) != 0) rv = -1;
+        if (net_dns_manage_load_nameserver_by_str(manage, propvalue) != 0) rv = -1;
     }
 #else
+# if defined (NET_DNS_USE_RESOLVE_H)
+    struct __res_state res;
+    if (res_ninit(&res) != 0) {
+        CPE_ERROR(manage->m_em, "dns: resolv: res_ninit fail!");
+        rv = -1; 
+    }
+    else {
+        int i;
+        for(i = 0; i < res.nscount; ++i) {
+            if (net_dns_manage_load_nameserver_by_addr(manage, (struct sockaddr *)&res.nsaddr_list[i], (socklen_t)sizeof(res.nsaddr_list[i])) != 0) {
+                rv = -1;
+            }
+        }
+    }
+    
+#else    
     if (net_dns_manage_load_resolv(manage, "/etc/resolv.conf") != 0) rv = -1;
 #endif
-    
+#endif
+
     return rv;
 }
 
@@ -61,7 +87,7 @@ int net_dns_manage_load_resolv(net_dns_manage_t manage, const char * path) {
         if (line == NULL) break;
 
         if (cpe_str_start_with(line, "nameserver")) {
-            if (net_dns_manage_load_nameserver(manage, cpe_str_trim_head(line + strlen("nameserver"))) != 0) rv = -1;
+            if (net_dns_manage_load_nameserver_by_str(manage, cpe_str_trim_head(line + strlen("nameserver"))) != 0) rv = -1;
         }
         else if (cpe_str_start_with(line, "domain")) {
         }
@@ -81,21 +107,7 @@ int net_dns_manage_load_resolv(net_dns_manage_t manage, const char * path) {
     return rv;
 }
 
-int net_dns_manage_load_nameserver(net_dns_manage_t manage, char * str) {
-    struct sockaddr_storage addr;
-    socklen_t addr_len = sizeof(addr);
-
-    if (sock_ip_init((struct sockaddr *)&addr, &addr_len, str, 0, NULL) != 0) {
-        CPE_ERROR(manage->m_em, "dns: load nameserver: %s format error", str);
-        return -1;
-    }
-
-    net_address_t address = net_address_create_from_sockaddr(manage->m_schedule, (struct sockaddr *)&addr, addr_len);
-    if (address == NULL) {
-        CPE_ERROR(manage->m_em, "dns: load nameserver: create address fail");
-        return -1;
-    }
-
+int net_dns_manage_load_nameserver(net_dns_manage_t manage, net_address_t address) {
     if (net_dns_source_nameserver_find(manage, address) != NULL) {
         if (manage->m_debug) {
             CPE_INFO(
@@ -114,4 +126,24 @@ int net_dns_manage_load_nameserver(net_dns_manage_t manage, char * str) {
     }
 
     return 0;
+}
+
+int net_dns_manage_load_nameserver_by_addr(net_dns_manage_t manage, struct sockaddr * addr, socklen_t addr_len) {
+    net_address_t address = net_address_create_from_sockaddr(manage->m_schedule, addr, addr_len);
+    if (address == NULL) {
+        CPE_ERROR(manage->m_em, "dns: load nameserver: create address from sock addr fail");
+        return -1;
+    }
+
+    return net_dns_manage_load_nameserver(manage, address);
+}
+
+int net_dns_manage_load_nameserver_by_str(net_dns_manage_t manage, char * str) {
+    net_address_t address = net_address_create_auto(manage->m_schedule, str);
+    if (address == NULL) {
+        CPE_ERROR(manage->m_em, "dns: load nameserver: create address %s fail", str);
+        return -1;
+    }
+
+    return net_dns_manage_load_nameserver(manage, address);
 }

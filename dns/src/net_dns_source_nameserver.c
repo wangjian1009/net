@@ -72,9 +72,9 @@ net_dns_source_nameserver_create(net_dns_manage_t manage, net_address_t addr, ui
         return NULL;
     }
 
-    if (manage->m_debug >= 2) {
+    if (manage->m_debug) {
         CPE_INFO(
-            manage->m_em, "dns: %s created!",
+            manage->m_em, "dns: nameserver %s created!",
             net_dns_source_dump(net_dns_manage_tmp_buffer(manage), source));
     }
     
@@ -119,10 +119,17 @@ int net_dns_source_nameserver_init(net_dns_source_t source) {
 
 void net_dns_source_nameserver_fini(net_dns_source_t source) {
     net_dns_source_nameserver_t nameserver = net_dns_source_data(source);
+    net_dns_manage_t manage = net_dns_source_manager(source);
 
+    if (manage->m_debug) {
+        CPE_INFO(
+            manage->m_em, "dns: nameserver %s free!",
+            net_dns_source_dump(net_dns_manage_tmp_buffer(manage), source));
+    }
+    
     net_dns_dgram_receiver_t receiver =
         net_dns_dgram_receiver_find_by_ctx(
-            net_dns_source_manager(source), nameserver, net_dns_source_nameserver_dgram_receiver);
+            manage, nameserver, net_dns_source_nameserver_dgram_receiver);
     if (receiver) {
         net_dns_dgram_receiver_free(receiver);
     }
