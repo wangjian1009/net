@@ -103,7 +103,38 @@ net_driver_t net_dns_itf_driver(net_dns_svr_itf_t dns_itf) {
 
 static void net_dns_svr_dgram_process(net_dgram_t dgram, void * ctx, void * data, size_t data_size, net_address_t source) {
     net_dns_svr_itf_t dns_itf = ctx;
-    net_dns_svr_itf_process(dns_itf, data, (uint32_t)data_size);
+    net_dns_svr_t svr = dns_itf->m_svr;
+
+    if (svr->m_debug) {
+        CPE_INFO(svr->m_em, "net: dns: query: %s", net_dns_svr_req_dump(net_dns_svr_tmp_buffer(svr), (char const *)data));
+    }
+    
+    net_dns_svr_query_t query = net_dns_svr_query_parse_request(dns_itf, data, (uint32_t)data_size);
+    if (query == NULL) return;
+    
+    if (net_dns_svr_query_start(query) != 0) {
+        CPE_ERROR(svr->m_em, "net: dns: start query fail!");
+        net_dns_svr_query_free(query);
+        return;
+    }
+
+    if (query->m_runing_entry_count == 0) {
+        mem_buffer_t buffer = &svr->m_data_buffer;
+        mem_buffer_clear_data(buffer);
+        if (net_dns_svr_query_build_response(query, buffer) != 0) {
+            CPE_ERROR(svr->m_em, "net: dns: build response fail!");
+            net_dns_svr_query_free(query);
+            return;
+        }
+
+        if (net_dgram_send(dns_itf->m_dgram, source, mem_buffer_make_continuous(buffer, 0), mem_buffer_size(buffer)) != 0) {
+            CPE_ERROR(svr->m_em, "net: dns: send response fail!");
+            net_dns_svr_query_free(query);
+            return;
+        }
+        
+        net_dns_svr_query_free(query);
+    }
 }
 
 static int net_dns_svr_acceptor_on_new_endpoint(void * ctx, net_endpoint_t base_endpoint) {

@@ -16,8 +16,6 @@ struct net_dns_svr_itf {
     };
 };
 
-int net_dns_svr_itf_process(net_dns_svr_itf_t itf, void const * data, uint32_t data_size);
-    
 NET_END_DECL
 
 #endif

@@ -28,6 +28,8 @@ net_dns_svr_t net_dns_svr_create(mem_allocrator_t alloc, error_monitor_t em, net
     TAILQ_INIT(&dns_svr->m_itfs);
     TAILQ_INIT(&dns_svr->m_free_querys);
     TAILQ_INIT(&dns_svr->m_free_query_entries);
+
+    mem_buffer_init(&dns_svr->m_data_buffer, alloc);
     
     return dns_svr;
 }
@@ -39,6 +41,8 @@ void net_dns_svr_free(net_dns_svr_t dns_svr) {
     }
 
     net_protocol_free(dns_svr->m_dns_protocol);
+
+    mem_buffer_clear(&dns_svr->m_data_buffer);
 
     while(!TAILQ_EMPTY(&dns_svr->m_free_querys)) {
         net_dns_svr_query_real_free(TAILQ_FIRST(&dns_svr->m_free_querys));

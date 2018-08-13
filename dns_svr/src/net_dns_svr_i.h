@@ -3,6 +3,7 @@
 #include "cpe/pal/pal_queue.h"
 #include "cpe/utils/memory.h"
 #include "cpe/utils/error.h"
+#include "cpe/utils/buffer.h"
 #include "net_dns_svr.h"
 
 NET_BEGIN_DECL
@@ -24,6 +25,8 @@ struct net_dns_svr {
     net_protocol_t m_dns_protocol;
     net_dns_svr_itf_list_t m_itfs;
 
+    struct mem_buffer m_data_buffer;
+    
     net_dns_svr_query_list_t m_free_querys;
     net_dns_svr_query_entry_list_t m_free_query_entries;
 };
