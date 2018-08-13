@@ -74,6 +74,11 @@ int net_dns_svr_query_set_source_addr(net_dns_svr_query_t query, net_address_t s
 }
 
 int net_dns_svr_query_start(net_dns_svr_query_t query) {
-    
+    net_dns_svr_query_entry_t entry;
+
+    TAILQ_FOREACH(entry, &query->m_entries, m_next) {
+        if (net_dns_svr_query_entry_start(entry) != 0) return -1;
+    }
+
     return 0;
 }

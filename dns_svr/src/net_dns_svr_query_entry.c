@@ -90,10 +90,17 @@ static void net_dns_svr_query_entry_callback(void * ctx, net_address_t main_addr
     assert(query_entry->m_query->m_runing_entry_count > 0);
     query_entry->m_query->m_runing_entry_count--;
 
+    if (svr->m_debug) {
+        CPE_ERROR(
+            svr->m_em, "net: dns: query %s ==> %s",
+            query_entry->m_domain_name,
+            main_address ? net_address_dump(net_dns_svr_tmp_buffer(svr), main_address) : "none");
+    }
+    
     if (main_address) {
         query_entry->m_result = net_address_copy(svr->m_schedule, main_address);
         if (query_entry->m_result == NULL) {
-            CPE_ERROR(svr->m_em, "dns: query %s: address copy fail", query_entry->m_domain_name);
+            CPE_ERROR(svr->m_em, "net: dns: query %s: address copy fail", query_entry->m_domain_name);
         }
     }
 
