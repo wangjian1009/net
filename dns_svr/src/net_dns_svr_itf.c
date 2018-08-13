@@ -1,6 +1,8 @@
+#include "net_address.h"
 #include "net_dgram.h"
 #include "net_acceptor.h"
 #include "net_dns_svr_itf_i.h"
+#include "net_dns_svr_query_i.h"
 
 static void net_dns_svr_dgram_process(net_dgram_t dgram, void * ctx, void * data, size_t data_size, net_address_t source);
 static int net_dns_svr_acceptor_on_new_endpoint(void * ctx, net_endpoint_t endpoint);
@@ -36,12 +38,26 @@ net_dns_svr_itf_create(net_dns_svr_t dns_svr, net_dns_svr_itf_type_t type, net_a
         break;
     }
 
+    TAILQ_INIT(&dns_itf->m_querys);
+    
     TAILQ_INSERT_TAIL(&dns_svr->m_itfs, dns_itf, m_next);
+
+    if (dns_svr->m_debug) {
+        CPE_INFO(
+            dns_svr->m_em, "net: dns: itf %s %s created",
+            net_dns_svr_itf_type_str(type),
+            net_address_dump(net_dns_svr_tmp_buffer(dns_svr), address));
+    }
+    
     return dns_itf;
 }
 
 void net_dns_svr_itf_free(net_dns_svr_itf_t dns_itf) {
     net_dns_svr_t dns_svr = dns_itf->m_svr;
+
+    while(!TAILQ_EMPTY(&dns_itf->m_querys)) {
+        net_dns_svr_query_free(TAILQ_FIRST(&dns_itf->m_querys));
+    }
 
     switch(dns_itf->m_type) {
     case net_dns_svr_itf_udp:
@@ -89,4 +105,13 @@ static void net_dns_svr_dgram_process(net_dgram_t dgram, void * ctx, void * data
 
 static int net_dns_svr_acceptor_on_new_endpoint(void * ctx, net_endpoint_t endpoint) {
     return 0;
+}
+
+const char * net_dns_svr_itf_type_str(net_dns_svr_itf_type_t type) {
+    switch(type) {
+    case net_dns_svr_itf_udp:
+        return "udp";
+    case net_dns_svr_itf_tcp:
+        return "tcp";
+    }
 }

@@ -12,6 +12,8 @@ net_dns_svr_itf_type_t net_dns_itf_type(net_dns_svr_itf_t dns_itf);
 net_address_t net_dns_itf_address(net_dns_svr_itf_t dns_itf);
 net_driver_t net_dns_itf_driver(net_dns_svr_itf_t dns_itf);
 
+const char * net_dns_svr_itf_type_str(net_dns_svr_itf_type_t type);
+
 NET_END_DECL
 
 #endif

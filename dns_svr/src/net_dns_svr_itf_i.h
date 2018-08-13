@@ -9,6 +9,7 @@ struct net_dns_svr_itf {
     net_dns_svr_t m_svr;
     TAILQ_ENTRY(net_dns_svr_itf) m_next;
     net_dns_svr_itf_type_t m_type;
+    net_dns_svr_query_list_t m_querys;
     union {
         net_dgram_t m_dgram;
         net_acceptor_t m_acceptor;
