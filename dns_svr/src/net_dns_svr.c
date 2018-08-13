@@ -1,4 +1,7 @@
+#include "net_protocol.h"
 #include "net_dns_svr_i.h"
+#include "net_dns_svr_itf_i.h"
+#include "net_dns_svr_protocol_i.h"
 
 net_dns_svr_t net_dns_svr_create(mem_allocrator_t alloc, error_monitor_t em, net_schedule_t schedule) {
     net_dns_svr_t dns_svr = mem_calloc(alloc, sizeof(struct net_dns_svr));
@@ -12,10 +15,26 @@ net_dns_svr_t net_dns_svr_create(mem_allocrator_t alloc, error_monitor_t em, net
     dns_svr->m_debug = 0;
     dns_svr->m_schedule = schedule;
 
+    dns_svr->m_dns_protocol =  net_dns_svr_protocol_create(dns_svr);
+    if (dns_svr->m_dns_protocol == NULL) {
+        CPE_ERROR(em, "net: dns_svr: create dns_svr_protocol fail!");
+        mem_free(alloc, dns_svr);
+        return NULL;
+    }
+    
+    TAILQ_INIT(&dns_svr->m_itfs);
+    
     return dns_svr;
 }
 
 void net_dns_svr_free(net_dns_svr_t dns_svr) {
+
+    while(!TAILQ_EMPTY(&dns_svr->m_itfs)) {
+        net_dns_svr_itf_free(TAILQ_FIRST(&dns_svr->m_itfs));
+    }
+
+    net_protocol_free(dns_svr->m_dns_protocol);
+    
     mem_free(dns_svr->m_alloc, dns_svr);
 }
 

@@ -58,6 +58,9 @@
 		C9C4B158210862550045A1A3 /* net_socks5_svr.c in Sources */ = {isa = PBXBuildFile; fileRef = C9C4B153210862550045A1A3 /* net_socks5_svr.c */; };
 		C9C4B162210862630045A1A3 /* net_router_schedule.c in Sources */ = {isa = PBXBuildFile; fileRef = C9C4B15E210862630045A1A3 /* net_router_schedule.c */; };
 		C9C4B163210862630045A1A3 /* net_router.c in Sources */ = {isa = PBXBuildFile; fileRef = C9C4B161210862630045A1A3 /* net_router.c */; };
+		C9CD6E252121252B00F6413D /* net_dns_svr_itf.c in Sources */ = {isa = PBXBuildFile; fileRef = C9CD6E242121252B00F6413D /* net_dns_svr_itf.c */; };
+		C9CD6E2B2121286800F6413D /* net_dns_svr_protocol.c in Sources */ = {isa = PBXBuildFile; fileRef = C9CD6E272121286800F6413D /* net_dns_svr_protocol.c */; };
+		C9CD6E2C2121286800F6413D /* net_dns_svr_endpoint.c in Sources */ = {isa = PBXBuildFile; fileRef = C9CD6E2A2121286800F6413D /* net_dns_svr_endpoint.c */; };
 		C9F3115F21094392006A7621 /* wslay_stack.c in Sources */ = {isa = PBXBuildFile; fileRef = C9F3115521094392006A7621 /* wslay_stack.c */; };
 		C9F3116021094392006A7621 /* wslay_net.c in Sources */ = {isa = PBXBuildFile; fileRef = C9F3115721094392006A7621 /* wslay_net.c */; };
 		C9F3116121094392006A7621 /* wslay_queue.c in Sources */ = {isa = PBXBuildFile; fileRef = C9F3115821094392006A7621 /* wslay_queue.c */; };
@@ -293,6 +296,13 @@
 		C9C4B15F210862630045A1A3 /* net_router_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_router_i.h; sourceTree = "<group>"; };
 		C9C4B160210862630045A1A3 /* net_router_schedule_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_router_schedule_i.h; sourceTree = "<group>"; };
 		C9C4B161210862630045A1A3 /* net_router.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_router.c; sourceTree = "<group>"; };
+		C9CD6E232121252B00F6413D /* net_dns_svr_itf_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_svr_itf_i.h; sourceTree = "<group>"; };
+		C9CD6E242121252B00F6413D /* net_dns_svr_itf.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_dns_svr_itf.c; sourceTree = "<group>"; };
+		C9CD6E262121253500F6413D /* net_dns_svr_itf.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_svr_itf.h; sourceTree = "<group>"; };
+		C9CD6E272121286800F6413D /* net_dns_svr_protocol.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_dns_svr_protocol.c; sourceTree = "<group>"; };
+		C9CD6E282121286800F6413D /* net_dns_svr_endpoint_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_svr_endpoint_i.h; sourceTree = "<group>"; };
+		C9CD6E292121286800F6413D /* net_dns_svr_protocol_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_svr_protocol_i.h; sourceTree = "<group>"; };
+		C9CD6E2A2121286800F6413D /* net_dns_svr_endpoint.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_dns_svr_endpoint.c; sourceTree = "<group>"; };
 		C9F311452109433C006A7621 /* libwslay.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libwslay.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		C9F3115221094392006A7621 /* wslayver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = wslayver.h; sourceTree = "<group>"; };
 		C9F3115321094392006A7621 /* wslay.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = wslay.h; sourceTree = "<group>"; };
@@ -546,6 +556,12 @@
 		C9415A9E212105CF00400779 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				C9CD6E282121286800F6413D /* net_dns_svr_endpoint_i.h */,
+				C9CD6E2A2121286800F6413D /* net_dns_svr_endpoint.c */,
+				C9CD6E292121286800F6413D /* net_dns_svr_protocol_i.h */,
+				C9CD6E272121286800F6413D /* net_dns_svr_protocol.c */,
+				C9CD6E232121252B00F6413D /* net_dns_svr_itf_i.h */,
+				C9CD6E242121252B00F6413D /* net_dns_svr_itf.c */,
 				C9415A9F212105CF00400779 /* net_dns_svr.c */,
 				C9415AA0212105CF00400779 /* net_dns_svr_i.h */,
 			);
@@ -555,6 +571,7 @@
 		C9415AA1212105CF00400779 /* include */ = {
 			isa = PBXGroup;
 			children = (
+				C9CD6E262121253500F6413D /* net_dns_svr_itf.h */,
 				C9415AA2212105CF00400779 /* net_dns_svr_types.h */,
 				C9415AA3212105CF00400779 /* net_dns_svr.h */,
 			);
@@ -1067,7 +1084,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C9CD6E2C2121286800F6413D /* net_dns_svr_endpoint.c in Sources */,
+				C9CD6E2B2121286800F6413D /* net_dns_svr_protocol.c in Sources */,
 				C9415AA4212105CF00400779 /* net_dns_svr.c in Sources */,
+				C9CD6E252121252B00F6413D /* net_dns_svr_itf.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1329,6 +1349,7 @@
 				HEADER_SEARCH_PATHS = (
 					../../../cpe/include,
 					../../net_core/include,
+					../../dns_svr/include,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -1343,6 +1364,7 @@
 				HEADER_SEARCH_PATHS = (
 					../../../cpe/include,
 					../../net_core/include,
+					../../dns_svr/include,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;

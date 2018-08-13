@@ -5,8 +5,12 @@
 NET_BEGIN_DECL
 
 typedef struct net_dns_svr * net_dns_svr_t;
+typedef struct net_dns_svr_itf * net_dns_svr_itf_t;
 
-typedef struct net_dns_svr_listener * net_dns_svr_listener_t;
+typedef enum net_dns_svr_itf_type {
+    net_dns_svr_itf_udp,
+    net_dns_svr_itf_tcp,
+} net_dns_svr_itf_type_t;
 
 NET_END_DECL
 
