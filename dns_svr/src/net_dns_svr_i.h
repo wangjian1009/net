@@ -10,9 +10,11 @@ NET_BEGIN_DECL
 typedef struct net_dns_svr_protocol * net_dns_svr_protocol_t;
 typedef struct net_dns_svr_endpoint * net_dns_svr_endpoint_t;
 typedef struct net_dns_svr_query * net_dns_svr_query_t;
+typedef struct net_dns_svr_query_entry * net_dns_svr_query_entry_t;
 
 typedef TAILQ_HEAD(net_dns_svr_itf_list, net_dns_svr_itf) net_dns_svr_itf_list_t;
 typedef TAILQ_HEAD(net_dns_svr_query_list, net_dns_svr_query) net_dns_svr_query_list_t;
+typedef TAILQ_HEAD(net_dns_svr_query_entry_list, net_dns_svr_query_entry) net_dns_svr_query_entry_list_t;
 
 struct net_dns_svr {
     mem_allocrator_t m_alloc;
@@ -23,6 +25,7 @@ struct net_dns_svr {
     net_dns_svr_itf_list_t m_itfs;
 
     net_dns_svr_query_list_t m_free_querys;
+    net_dns_svr_query_entry_list_t m_free_query_entries;
 };
 
 mem_buffer_t net_dns_svr_tmp_buffer(net_dns_svr_t dns_svr);

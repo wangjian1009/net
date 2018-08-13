@@ -1,8 +1,10 @@
 #include "cpe/pal/pal_platform.h"
 #include "cpe/utils/stream_buffer.h"
 #include "net_dns_svr_itf_i.h"
+#include "net_dns_svr_query_i.h"
 
 static const char * net_dns_svr_req_dump(mem_buffer_t buffer, char const * buf);
+static char const * net_dns_svr_req_print_name(write_stream_t ws, char const * p, char const * buf);
 
 int net_dns_svr_itf_process(net_dns_svr_itf_t itf, void const * data, uint32_t data_size) {
     net_dns_svr_t svr = itf->m_svr;
@@ -11,6 +13,65 @@ int net_dns_svr_itf_process(net_dns_svr_itf_t itf, void const * data, uint32_t d
         CPE_INFO(svr->m_em, "net: dns: query: %s", net_dns_svr_req_dump(net_dns_svr_tmp_buffer(svr), (char const *)data));
     }
 
+    char const * p = data;
+
+    uint16_t ident;
+    CPE_COPY_NTOH16(&ident, p); p+=2;
+
+    uint16_t flags;
+    CPE_COPY_NTOH16(&flags, p); p+=2;
+
+    uint8_t qr = flags >> 15;
+    if (qr != 0) {
+        CPE_ERROR(svr->m_em, "net: dns: qr=%d, only support query!", qr);
+        return -1;
+    }
+    
+    uint16_t opcode = (flags >> 11) & 15;
+    if (opcode != 0) {
+        CPE_ERROR(svr->m_em, "net: dns: opcode %d not support!", opcode);
+        return -1;
+    }
+
+    uint16_t qdcount;
+    CPE_COPY_NTOH16(&qdcount, p); p+=2;
+
+    p+=2; /* ancount */
+    p+=2; /* nscount */
+    p+=2; /* arcount */
+
+    net_dns_svr_query_t query = net_dns_svr_query_create(itf, ident);
+    if (query == NULL) {
+        CPE_ERROR(svr->m_em, "net: dns: create query fail!");
+        return -1;
+    }
+    
+    mem_buffer_t buffer = net_dns_svr_tmp_buffer(svr);
+    
+    unsigned int i;
+    for(i = 0; i < qdcount; i++) {
+        struct write_stream_buffer ws = CPE_WRITE_STREAM_BUFFER_INITIALIZER(buffer);
+        mem_buffer_clear_data(buffer);
+        p = net_dns_svr_req_print_name((write_stream_t)&ws, p, data);
+        stream_putc((write_stream_t)&ws, 0);
+
+        const char * hostname = mem_buffer_make_continuous(buffer, 0);
+        
+        p += 2 + 2; /*type + class*/
+
+        CPE_ERROR(svr->m_em, "xxxxx: %d: %s\n", i, hostname);
+
+        uint16_t type;
+        CPE_COPY_NTOH16(&type, p); p+=2;
+        /* stream_printf(ws, ", type=%u",type); */
+        
+        uint16_t class;
+        CPE_COPY_NTOH16(&class, p); p+=2;
+
+        /* stream_printf(ws, ", class=%u",class); */
+    }
+ 
+    
     return 0;
 }
 
