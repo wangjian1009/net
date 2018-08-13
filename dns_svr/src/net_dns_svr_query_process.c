@@ -1,4 +1,6 @@
 #include "cpe/pal/pal_platform.h"
+#include "cpe/pal/pal_string.h"
+#include "cpe/pal/pal_strings.h"
 #include "cpe/utils/stream_buffer.h"
 #include "net_dns_svr_itf_i.h"
 #include "net_dns_svr_query_i.h"
@@ -66,12 +68,58 @@ net_dns_svr_query_parse_request(net_dns_svr_itf_t itf, void const * data, uint32
     return query;
 }
 
+static uint32_t net_dns_svr_query_calc_entry_answer_size(net_dns_svr_query_entry_t query_entry) {
+    if (query_entry->m_result == NULL) return 0;
+    
+    return strlen(query_entry->m_domain_name) + 1 /*name*/
+        + 2/*type*/
+        + 2/*class*/
+        + 4/*ttl*/
+        + 2/*data-length*/
+        ;
+}
 
 uint32_t net_dns_svr_query_calc_response_size(net_dns_svr_query_t query) {
-    return 0;
+    uint32_t sz = 0;
+
+    sz = 2/*trans_id*/ + 2/*flag*/ + 2/*qdcount*/ + 2 /*ancount*/ + 2/*nscount*/ + 2/*arcount*/;
+
+    net_dns_svr_query_entry_t entry;
+    TAILQ_FOREACH(entry, &query->m_entries, m_next) {
+        sz += net_dns_svr_query_calc_entry_answer_size(entry);
+    }
+
+    return sz;
 }
 
 int net_dns_svr_query_build_response(net_dns_svr_query_t query, void * data) {
+    net_dns_svr_query_entry_t entry;
+    char * p = (char*)data;
+    
+    CPE_COPY_HTON16(p, &query->m_trans_id); p+=2;
+
+    char flags[2];
+    bzero(flags, sizeof(flags));
+
+    uint16_t qdcount = 0;
+    CPE_COPY_NTOH16(p, &qdcount); p+=2;
+    
+    uint16_t ancount = 0;
+    TAILQ_FOREACH(entry, &query->m_entries, m_next) {
+        if (entry->m_result) ancount++;
+    }
+    CPE_COPY_NTOH16(p, &ancount); p+=2;
+
+    uint16_t nscount = 0;
+    CPE_COPY_NTOH16(p, &nscount); p+=2;
+    
+    uint16_t arcount = 0;
+    CPE_COPY_NTOH16(p, &arcount); p+=2;
+
+    TAILQ_FOREACH(entry, &query->m_entries, m_next) {
+        if (entry->m_result == NULL) continue;
+    }
+    
     return 0;
 }
 
