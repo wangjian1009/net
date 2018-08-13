@@ -2,6 +2,7 @@
 #include "net_dgram.h"
 #include "net_acceptor.h"
 #include "net_dns_svr_itf_i.h"
+#include "net_dns_svr_endpoint_i.h"
 #include "net_dns_svr_query_i.h"
 
 static void net_dns_svr_dgram_process(net_dgram_t dgram, void * ctx, void * data, size_t data_size, net_address_t source);
@@ -101,9 +102,17 @@ net_driver_t net_dns_itf_driver(net_dns_svr_itf_t dns_itf) {
 }
 
 static void net_dns_svr_dgram_process(net_dgram_t dgram, void * ctx, void * data, size_t data_size, net_address_t source) {
+    net_dns_svr_itf_t dns_itf = ctx;
+
+    CPE_ERROR(dns_itf->m_svr->m_em, "xxx: receive dns query!");
 }
 
-static int net_dns_svr_acceptor_on_new_endpoint(void * ctx, net_endpoint_t endpoint) {
+static int net_dns_svr_acceptor_on_new_endpoint(void * ctx, net_endpoint_t base_endpoint) {
+    net_dns_svr_itf_t dns_itf = ctx;
+
+    net_dns_svr_endpoint_t dns_ep = net_dns_svr_endpoint_get(base_endpoint);
+    net_dns_svr_endpoint_set_itf(dns_ep, dns_itf);
+    
     return 0;
 }
 
