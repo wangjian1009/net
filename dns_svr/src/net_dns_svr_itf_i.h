@@ -16,6 +16,8 @@ struct net_dns_svr_itf {
     };
 };
 
+int net_dns_svr_itf_send_response(net_dns_svr_itf_t itf, net_dns_svr_query_t query);
+
 NET_END_DECL
 
 #endif

@@ -66,7 +66,12 @@ net_dns_svr_query_parse_request(net_dns_svr_itf_t itf, void const * data, uint32
     return query;
 }
 
-int net_dns_svr_query_build_response(net_dns_svr_query_t query, mem_buffer_t buffer) {
+
+uint32_t net_dns_svr_query_calc_response_size(net_dns_svr_query_t query) {
+    return 0;
+}
+
+int net_dns_svr_query_build_response(net_dns_svr_query_t query, void * data) {
     return 0;
 }
 

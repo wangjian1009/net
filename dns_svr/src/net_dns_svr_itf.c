@@ -101,16 +101,56 @@ net_driver_t net_dns_itf_driver(net_dns_svr_itf_t dns_itf) {
     }
 }
 
+int net_dns_svr_itf_send_response(net_dns_svr_itf_t dns_itf, net_dns_svr_query_t query) {
+    net_dns_svr_t svr = dns_itf->m_svr;
+    
+    switch(dns_itf->m_type) {
+    case net_dns_svr_itf_udp: {
+        char buf[1500];
+        uint32_t response_size = net_dns_svr_query_calc_response_size(query);
+        if (response_size > sizeof(buf)) {
+            CPE_ERROR(svr->m_em, "net: dns: response size %d overflow!", response_size);
+            return -1;
+        }
+        
+        if (net_dns_svr_query_build_response(query, buf) != 0) {
+            CPE_ERROR(svr->m_em, "net: dns: build response fail!");
+            return -1;
+        }
+
+        if (svr->m_debug) {
+            CPE_INFO(svr->m_em, "net: dns: >>> %s", net_dns_svr_req_dump(net_dns_svr_tmp_buffer(svr), buf));
+        }
+        
+        if (net_dgram_send(dns_itf->m_dgram, query->m_source_addr, buf, response_size) != 0) {
+            CPE_ERROR(svr->m_em, "net: dns: send response fail!");
+            return -1;
+        }
+
+        return 0;
+    }
+    case net_dns_svr_itf_tcp: {
+        return 0;
+    }
+    }
+}
+
 static void net_dns_svr_dgram_process(net_dgram_t dgram, void * ctx, void * data, size_t data_size, net_address_t source) {
     net_dns_svr_itf_t dns_itf = ctx;
     net_dns_svr_t svr = dns_itf->m_svr;
 
     if (svr->m_debug) {
-        CPE_INFO(svr->m_em, "net: dns: query: %s", net_dns_svr_req_dump(net_dns_svr_tmp_buffer(svr), (char const *)data));
+        CPE_INFO(svr->m_em, "net: dns: <<< %s", net_dns_svr_req_dump(net_dns_svr_tmp_buffer(svr), (char const *)data));
     }
     
     net_dns_svr_query_t query = net_dns_svr_query_parse_request(dns_itf, data, (uint32_t)data_size);
     if (query == NULL) return;
+
+    if (net_dns_svr_query_set_source_addr(query, source) != 0) {
+        CPE_ERROR(svr->m_em, "net: dns: set source addr fail!");
+        net_dns_svr_query_free(query);
+        return;
+    }
     
     if (net_dns_svr_query_start(query) != 0) {
         CPE_ERROR(svr->m_em, "net: dns: start query fail!");
@@ -119,20 +159,7 @@ static void net_dns_svr_dgram_process(net_dgram_t dgram, void * ctx, void * data
     }
 
     if (query->m_runing_entry_count == 0) {
-        mem_buffer_t buffer = &svr->m_data_buffer;
-        mem_buffer_clear_data(buffer);
-        if (net_dns_svr_query_build_response(query, buffer) != 0) {
-            CPE_ERROR(svr->m_em, "net: dns: build response fail!");
-            net_dns_svr_query_free(query);
-            return;
-        }
-
-        if (net_dgram_send(dns_itf->m_dgram, source, mem_buffer_make_continuous(buffer, 0), mem_buffer_size(buffer)) != 0) {
-            CPE_ERROR(svr->m_em, "net: dns: send response fail!");
-            net_dns_svr_query_free(query);
-            return;
-        }
-        
+        net_dns_svr_itf_send_response(dns_itf, query);
         net_dns_svr_query_free(query);
     }
 }
