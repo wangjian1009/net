@@ -35,6 +35,7 @@
 		C91E1F2E2106AC3D0080FAD8 /* net_ne_utils.m in Sources */ = {isa = PBXBuildFile; fileRef = C91E1F2D2106AC3C0080FAD8 /* net_ne_utils.m */; };
 		C91E1F312106BA690080FAD8 /* net_ne_dgram_session.m in Sources */ = {isa = PBXBuildFile; fileRef = C91E1F2F2106BA690080FAD8 /* net_ne_dgram_session.m */; };
 		C91E1F3721076E1F0080FAD8 /* net_ne_endpoint.m in Sources */ = {isa = PBXBuildFile; fileRef = C91E1F3621076E1F0080FAD8 /* net_ne_endpoint.m */; };
+		C9415AA4212105CF00400779 /* net_dns_svr.c in Sources */ = {isa = PBXBuildFile; fileRef = C9415A9F212105CF00400779 /* net_dns_svr.c */; };
 		C96A82F02110054D000CB30D /* net_dq_driver.m in Sources */ = {isa = PBXBuildFile; fileRef = C96A82E22110054D000CB30D /* net_dq_driver.m */; };
 		C96A82F12110054D000CB30D /* net_dq_acceptor.m in Sources */ = {isa = PBXBuildFile; fileRef = C96A82E42110054D000CB30D /* net_dq_acceptor.m */; };
 		C96A82F22110054D000CB30D /* net_dq_endpoint.m in Sources */ = {isa = PBXBuildFile; fileRef = C96A82E62110054D000CB30D /* net_dq_endpoint.m */; };
@@ -77,6 +78,15 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C9323A4F2105E2E3005DD3C0 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "include/$(PRODUCT_NAME)";
+			dstSubfolderSpec = 16;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C9415A932121058E00400779 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "include/$(PRODUCT_NAME)";
@@ -211,6 +221,11 @@
 		C91E1F302106BA690080FAD8 /* net_ne_dgram_session.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ne_dgram_session.h; sourceTree = "<group>"; };
 		C91E1F3621076E1F0080FAD8 /* net_ne_endpoint.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = net_ne_endpoint.m; sourceTree = "<group>"; };
 		C9323A512105E2E3005DD3C0 /* libnet_core.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_core.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		C9415A952121058E00400779 /* libnet_dns_svr.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_dns_svr.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		C9415A9F212105CF00400779 /* net_dns_svr.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_dns_svr.c; sourceTree = "<group>"; };
+		C9415AA0212105CF00400779 /* net_dns_svr_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_svr_i.h; sourceTree = "<group>"; };
+		C9415AA2212105CF00400779 /* net_dns_svr_types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_svr_types.h; sourceTree = "<group>"; };
+		C9415AA3212105CF00400779 /* net_dns_svr.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_svr.h; sourceTree = "<group>"; };
 		C96A82D821100505000CB30D /* libnet_driver_dq.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_driver_dq.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		C96A82E22110054D000CB30D /* net_dq_driver.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = net_dq_driver.m; sourceTree = "<group>"; };
 		C96A82E32110054D000CB30D /* net_dq_timer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dq_timer.h; sourceTree = "<group>"; };
@@ -310,6 +325,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C9323A4E2105E2E3005DD3C0 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C9415A922121058E00400779 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -480,6 +502,7 @@
 				C9C4B116210861B50045A1A3 /* router */,
 				C9F3117B21095931006A7621 /* protocol_ws */,
 				C96A82D921100505000CB30D /* driver_dq */,
+				C9415A962121058E00400779 /* net_dns_svr */,
 				C9323A422105E2CD005DD3C0 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -495,6 +518,7 @@
 				C9F311452109433C006A7621 /* libwslay.a */,
 				C9F3117A21095931006A7621 /* libnet_protocol_ws.a */,
 				C96A82D821100505000CB30D /* libnet_driver_dq.a */,
+				C9415A952121058E00400779 /* libnet_dns_svr.a */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -507,6 +531,34 @@
 			);
 			name = core;
 			path = ../../core;
+			sourceTree = "<group>";
+		};
+		C9415A962121058E00400779 /* net_dns_svr */ = {
+			isa = PBXGroup;
+			children = (
+				C9415AA1212105CF00400779 /* include */,
+				C9415A9E212105CF00400779 /* src */,
+			);
+			name = net_dns_svr;
+			path = ../../dns_svr;
+			sourceTree = "<group>";
+		};
+		C9415A9E212105CF00400779 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				C9415A9F212105CF00400779 /* net_dns_svr.c */,
+				C9415AA0212105CF00400779 /* net_dns_svr_i.h */,
+			);
+			path = src;
+			sourceTree = "<group>";
+		};
+		C9415AA1212105CF00400779 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				C9415AA2212105CF00400779 /* net_dns_svr_types.h */,
+				C9415AA3212105CF00400779 /* net_dns_svr.h */,
+			);
+			path = include;
 			sourceTree = "<group>";
 		};
 		C96A82D921100505000CB30D /* driver_dq */ = {
@@ -785,6 +837,23 @@
 			productReference = C9323A512105E2E3005DD3C0 /* libnet_core.a */;
 			productType = "com.apple.product-type.library.static";
 		};
+		C9415A942121058E00400779 /* net_dns_svr */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C9415A9D2121058E00400779 /* Build configuration list for PBXNativeTarget "net_dns_svr" */;
+			buildPhases = (
+				C9415A912121058E00400779 /* Sources */,
+				C9415A922121058E00400779 /* Frameworks */,
+				C9415A932121058E00400779 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = net_dns_svr;
+			productName = net_dns_svr;
+			productReference = C9415A952121058E00400779 /* libnet_dns_svr.a */;
+			productType = "com.apple.product-type.library.static";
+		};
 		C96A82D721100505000CB30D /* net_driver_dq */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = C96A82E021100505000CB30D /* Build configuration list for PBXNativeTarget "net_driver_dq" */;
@@ -902,6 +971,9 @@
 					C9323A502105E2E3005DD3C0 = {
 						CreatedOnToolsVersion = 9.4.1;
 					};
+					C9415A942121058E00400779 = {
+						CreatedOnToolsVersion = 9.4.1;
+					};
 					C96A82D721100505000CB30D = {
 						CreatedOnToolsVersion = 9.4.1;
 					};
@@ -942,6 +1014,7 @@
 				C9F311442109433C006A7621 /* wslay */,
 				C9F3117921095931006A7621 /* net_protocol_ws */,
 				C96A82D721100505000CB30D /* net_driver_dq */,
+				C9415A942121058E00400779 /* net_dns_svr */,
 			);
 		};
 /* End PBXProject section */
@@ -987,6 +1060,14 @@
 				C91E1EF32105E4160080FAD8 /* net_ipset.c in Sources */,
 				C91E1F022105E4160080FAD8 /* net_address_rule.c in Sources */,
 				C91E1EF72105E4160080FAD8 /* net_protocol.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C9415A912121058E00400779 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C9415AA4212105CF00400779 /* net_dns_svr.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1241,6 +1322,34 @@
 			};
 			name = Release;
 		};
+		C9415A9B2121058E00400779 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				HEADER_SEARCH_PATHS = (
+					../../../cpe/include,
+					../../net_core/include,
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C9415A9C2121058E00400779 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				HEADER_SEARCH_PATHS = (
+					../../../cpe/include,
+					../../net_core/include,
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		C96A82DE21100505000CB30D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1435,6 +1544,15 @@
 			buildConfigurations = (
 				C9323A582105E2E3005DD3C0 /* Debug */,
 				C9323A592105E2E3005DD3C0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C9415A9D2121058E00400779 /* Build configuration list for PBXNativeTarget "net_dns_svr" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C9415A9B2121058E00400779 /* Debug */,
+				C9415A9C2121058E00400779 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
