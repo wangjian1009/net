@@ -103,8 +103,7 @@ net_driver_t net_dns_itf_driver(net_dns_svr_itf_t dns_itf) {
 
 static void net_dns_svr_dgram_process(net_dgram_t dgram, void * ctx, void * data, size_t data_size, net_address_t source) {
     net_dns_svr_itf_t dns_itf = ctx;
-
-    CPE_ERROR(dns_itf->m_svr->m_em, "xxx: receive dns query!");
+    net_dns_svr_itf_process(dns_itf, data, (uint32_t)data_size);
 }
 
 static int net_dns_svr_acceptor_on_new_endpoint(void * ctx, net_endpoint_t base_endpoint) {
