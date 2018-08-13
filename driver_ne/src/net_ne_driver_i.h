@@ -22,10 +22,6 @@ struct net_ne_driver {
     net_data_monitor_fun_t m_data_monitor_fun;
     void * m_data_monitor_ctx;
 
-    uint32_t m_dgram_max_session_id;
-    struct cpe_hash_table m_dgram_sessions;
-    ringbuffer_t m_dgram_data_buf;
-
     net_ne_dgram_session_list_t m_free_dgram_sessions;
 };
 

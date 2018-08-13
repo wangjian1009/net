@@ -48,8 +48,8 @@ void net_ne_endpoint_fini(net_endpoint_t base_endpoint) {
         endpoint->m_connection = nil;
     }
 
-    [endpoint->m_observer release];
     endpoint->m_observer->m_endpoint = NULL;
+    [endpoint->m_observer release];
     endpoint->m_observer = nil;
 }
 
