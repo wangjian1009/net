@@ -28,7 +28,7 @@ net_dns_svr_query_t net_dns_svr_query_parse_request(net_dns_svr_itf_t itf, void 
 uint32_t net_dns_svr_query_calc_response_size(net_dns_svr_query_t query);
 int net_dns_svr_query_build_response(net_dns_svr_query_t query, void * data, uint32_t capacity);
 
-const char * net_dns_svr_req_dump(mem_buffer_t buffer, char const * buf);
+const char * net_dns_svr_req_dump(net_dns_svr_t svr, mem_buffer_t buffer, char const * buf, uint32_t buf_size);
 
 NET_END_DECL
 

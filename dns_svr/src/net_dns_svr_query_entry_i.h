@@ -9,7 +9,9 @@ struct net_dns_svr_query_entry {
     TAILQ_ENTRY(net_dns_svr_query_entry) m_next;
     char m_domain_name[128];
     net_dns_query_t m_local_query;
-    net_address_t m_result;
+    uint8_t m_result_count;
+    net_address_t m_results[5];
+    uint16_t m_cache_name_offset;
 };
 
 net_dns_svr_query_entry_t net_dns_svr_query_entry_create(net_dns_svr_query_t query, const char * domain_name);

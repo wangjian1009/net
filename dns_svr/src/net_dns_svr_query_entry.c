@@ -23,8 +23,9 @@ net_dns_svr_query_entry_t net_dns_svr_query_entry_create(net_dns_svr_query_t que
 
     query_entry->m_query = query;
     cpe_str_dup(query_entry->m_domain_name, sizeof(query_entry->m_domain_name), domain_name);
-    query_entry->m_result = NULL;
+    query_entry->m_result_count = 0;
     query_entry->m_local_query = NULL;
+    query_entry->m_cache_name_offset = 0;
 
     TAILQ_INSERT_TAIL(&query->m_entries, query_entry, m_next);
 
@@ -41,10 +42,11 @@ void net_dns_svr_query_entry_free(net_dns_svr_query_entry_t query_entry) {
         query_entry->m_query->m_runing_entry_count--;
     }
 
-    if (query_entry->m_result) {
-        net_address_free(query_entry->m_result);
-        query_entry->m_result = NULL;
+    uint8_t i;
+    for(i = 0; i < query_entry->m_result_count; ++i) {
+        net_address_free(query_entry->m_results[i]);
     }
+    query_entry->m_result_count = 0;
     
     TAILQ_REMOVE(&query_entry->m_query->m_entries, query_entry, m_next);
 
@@ -84,23 +86,50 @@ static void net_dns_svr_query_entry_callback(void * ctx, net_address_t main_addr
     net_dns_svr_query_t query = query_entry->m_query;
     net_dns_svr_itf_t itf = query->m_itf;
     net_dns_svr_t svr = itf->m_svr;
+    net_address_t result;
     
     assert(query_entry->m_local_query);
     query_entry->m_local_query = NULL;
     assert(query_entry->m_query->m_runing_entry_count > 0);
     query_entry->m_query->m_runing_entry_count--;
 
-    if (svr->m_debug) {
-        CPE_ERROR(
-            svr->m_em, "dns-svr: query %s ==> %s",
-            query_entry->m_domain_name,
-            main_address ? net_address_dump(net_dns_svr_tmp_buffer(svr), main_address) : "none");
+    while((result = net_address_it_next(all_address))) {
+        if (query_entry->m_result_count + 1 >= CPE_ARRAY_SIZE(query_entry->m_results)) {
+            if (svr->m_debug) {
+                CPE_INFO(
+                    svr->m_em, "dns-svr: query %s ==> %s, count=%d, overflow, ignore",
+                    query_entry->m_domain_name,
+                    net_address_dump(net_dns_svr_tmp_buffer(svr), result),
+                    query_entry->m_result_count);
+            }
+            continue;
+        }
+
+        query_entry->m_results[query_entry->m_result_count] = net_address_copy(svr->m_schedule, result);
+        if (query_entry->m_results[query_entry->m_result_count] == NULL) {
+            CPE_ERROR(
+                svr->m_em, "dns-svr: query %s ==> %s, dup address error, ignore",
+                query_entry->m_domain_name,
+                net_address_dump(net_dns_svr_tmp_buffer(svr), result));
+            continue;
+        }
+
+        if (svr->m_debug) {
+            CPE_INFO(
+                svr->m_em, "dns-svr: query %s ==> [%d]%s",
+                query_entry->m_domain_name,
+                query_entry->m_result_count,
+                net_address_dump(net_dns_svr_tmp_buffer(svr), query_entry->m_results[query_entry->m_result_count]));
+        }
+
+        query_entry->m_result_count++;
     }
-    
-    if (main_address) {
-        query_entry->m_result = net_address_copy(svr->m_schedule, main_address);
-        if (query_entry->m_result == NULL) {
-            CPE_ERROR(svr->m_em, "dns-svr: query %s: address copy fail", query_entry->m_domain_name);
+
+    if (svr->m_debug) {
+        if (query_entry->m_result_count == 0) {
+            CPE_INFO(
+                svr->m_em, "dns-svr: query %s ==> none",
+                query_entry->m_domain_name);
         }
     }
 
