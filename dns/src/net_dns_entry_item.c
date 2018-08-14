@@ -45,10 +45,19 @@ net_dns_entry_item_create(
     TAILQ_INSERT_TAIL(&source->m_items, item, m_next_for_source);
     
     if (manage->m_debug) {
-        CPE_INFO(
-            manage->m_em, "dns-cli: resolved %s ==> %s",
-            entry->m_hostname,
-            net_address_dump(net_dns_manage_tmp_buffer(manage), item->m_address));
+        if (entry->m_main) {
+            CPE_INFO(
+                manage->m_em, "dns-cli: resolved %s[%s] ==> %s",
+                entry->m_main->m_hostname,
+                entry->m_hostname,
+                net_address_dump(net_dns_manage_tmp_buffer(manage), item->m_address));
+        }
+        else {
+            CPE_INFO(
+                manage->m_em, "dns-cli: resolved %s ==> %s",
+                entry->m_hostname,
+                net_address_dump(net_dns_manage_tmp_buffer(manage), item->m_address));
+        }
     }
 
     return item;
