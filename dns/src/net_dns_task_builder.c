@@ -14,7 +14,7 @@ net_dns_task_builder_create(
 {
     net_dns_task_builder_t builder = mem_alloc(manage->m_alloc, sizeof(struct net_dns_task_builder));
     if (builder == NULL) {
-        CPE_ERROR(manage->m_em, "dns: builder: alloc fail!");
+        CPE_ERROR(manage->m_em, "dns-cli: builder: alloc fail!");
         return NULL;
     }
 
@@ -56,7 +56,7 @@ static int net_dns_task_build_internal(net_dns_task_builder_t builder, net_dns_t
     net_dns_manage_t manage = builder->m_manage;
 
     if (TAILQ_EMPTY(&manage->m_sources)) {
-        CPE_ERROR(manage->m_em, "dns: builder: no source");
+        CPE_ERROR(manage->m_em, "dns-cli: builder: no source");
         return -1;
     }
     
@@ -65,13 +65,13 @@ static int net_dns_task_build_internal(net_dns_task_builder_t builder, net_dns_t
     TAILQ_FOREACH(source, &manage->m_sources, m_next) {
         net_dns_task_step_t step = net_dns_task_step_create(task);
         if (step == NULL) {
-            CPE_ERROR(manage->m_em, "dns: builder: create step fail");
+            CPE_ERROR(manage->m_em, "dns-cli: builder: create step fail");
             return -1;
         }
 
         net_dns_task_ctx_t ctx = net_dns_task_ctx_create(step, source);
         if (ctx == NULL) {
-            CPE_ERROR(manage->m_em, "dns: builder: create ctx fail");
+            CPE_ERROR(manage->m_em, "dns-cli: builder: create ctx fail");
             return -1;
         }
     }

@@ -22,7 +22,7 @@ int net_dns_query_ex_init(void * ctx, net_dns_query_t query, const char * hostna
     if (TAILQ_EMPTY(&entry->m_items)) {
         if (entry->m_task == NULL) {
             if (manage->m_builder_default == NULL) {
-                CPE_ERROR(manage->m_em, "dns: query %s: no task builder!", hostname);
+                CPE_ERROR(manage->m_em, "dns-cli: query %s: no task builder!", hostname);
                 goto START_ERROR;
             }
             
@@ -33,12 +33,12 @@ int net_dns_query_ex_init(void * ctx, net_dns_query_t query, const char * hostna
             is_task_new = 1;
 
             if (net_dns_task_builder_build(manage->m_builder_default, entry->m_task) != 0) {
-                CPE_ERROR(manage->m_em, "dns: query %s: build task fail!", hostname);
+                CPE_ERROR(manage->m_em, "dns-cli: query %s: build task fail!", hostname);
                 goto START_ERROR;
             }
 
             if (net_dns_task_start(entry->m_task) != 0) {
-                CPE_ERROR(manage->m_em, "dns: query %s: start task fail!", hostname);
+                CPE_ERROR(manage->m_em, "dns-cli: query %s: start task fail!", hostname);
                 goto START_ERROR;
             }
         }

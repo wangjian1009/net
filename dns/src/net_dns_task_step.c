@@ -14,7 +14,7 @@ net_dns_task_step_create(net_dns_task_t task) {
     else {
         step = mem_alloc(manage->m_alloc, sizeof(struct net_dns_task_step));
         if (step == NULL) {
-            CPE_ERROR(manage->m_em, "dns: task_step alloc fail!");
+            CPE_ERROR(manage->m_em, "dns-cli: task_step alloc fail!");
             return NULL;
         }
     }

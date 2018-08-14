@@ -21,7 +21,7 @@ net_dns_source_create(
 {
     net_dns_source_t source = mem_alloc(manage->m_alloc, sizeof(struct net_dns_source) + capacity);
     if (source == NULL) {
-        CPE_ERROR(manage->m_em, "dns: source: alloc fail!");
+        CPE_ERROR(manage->m_em, "dns-cli: source: alloc fail!");
         return NULL;
     }
 

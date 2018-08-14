@@ -16,7 +16,7 @@ net_dns_task_t net_dns_task_create(net_dns_manage_t manage, net_dns_entry_t entr
     else {
         task = mem_alloc(manage->m_alloc, sizeof(struct net_dns_task));
         if (task == NULL) {
-            CPE_ERROR(manage->m_em, "dns: task alloc fail!");
+            CPE_ERROR(manage->m_em, "dns-cli: task alloc fail!");
             return NULL;
         }
     }
@@ -33,7 +33,7 @@ net_dns_task_t net_dns_task_create(net_dns_manage_t manage, net_dns_entry_t entr
     TAILQ_INSERT_TAIL(&manage->m_runing_tasks, task, m_next);
     
     if (manage->m_debug >= 2) {
-        CPE_INFO(manage->m_em, "dns: query %s: start!", entry->m_hostname);
+        CPE_INFO(manage->m_em, "dns-cli: query %s: start!", entry->m_hostname);
     }
     
     return task;
@@ -43,7 +43,7 @@ void net_dns_task_free(net_dns_task_t task) {
     net_dns_manage_t manage = task->m_manage;
 
     if (manage->m_debug >= 2) {
-        CPE_INFO(manage->m_em, "dns: query %s: free!", task->m_entry->m_hostname);
+        CPE_INFO(manage->m_em, "dns-cli: query %s: free!", task->m_entry->m_hostname);
     }
 
     assert(task->m_entry->m_task == task);
@@ -82,7 +82,7 @@ int net_dns_task_start(net_dns_task_t task) {
     if (task->m_state != net_dns_task_state_init) {
         CPE_ERROR(
             task->m_manage->m_em,
-            "dns: query %s: can`t start in state %s",
+            "dns-cli: query %s: can`t start in state %s",
             task->m_entry->m_hostname,
             net_dns_task_state_str(task->m_state));
         return -1;
@@ -93,7 +93,7 @@ int net_dns_task_start(net_dns_task_t task) {
     task->m_step_current = TAILQ_FIRST(&task->m_steps);
     if (task->m_step_current == NULL) {
         CPE_ERROR(
-            task->m_manage->m_em, "dns: query %s: no step", task->m_entry->m_hostname);
+            task->m_manage->m_em, "dns-cli: query %s: no step", task->m_entry->m_hostname);
         net_dns_task_update_state(task, net_dns_task_state_error);
         return -1;
     }
@@ -104,7 +104,7 @@ int net_dns_task_start(net_dns_task_t task) {
         switch(net_dns_task_step_state(task->m_step_current)) {
         case net_dns_task_state_init:
             CPE_ERROR(
-                task->m_manage->m_em, "dns: query %s: step start but still init",
+                task->m_manage->m_em, "dns-cli: query %s: step start but still init",
                 task->m_entry->m_hostname);
             net_dns_task_update_state(task, net_dns_task_state_error);
             return -1;
@@ -146,7 +146,7 @@ void net_dns_task_update_state(net_dns_task_t task, net_dns_task_state_t new_sta
     net_dns_manage_t manage = task->m_manage;
     if (manage->m_debug >= 2) {
         CPE_INFO(
-            manage->m_em, "dns: query %s: state %s ==> %s",
+            manage->m_em, "dns-cli: query %s: state %s ==> %s",
             task->m_entry->m_hostname,
             net_dns_task_state_str(task->m_state),
             net_dns_task_state_str(new_state));

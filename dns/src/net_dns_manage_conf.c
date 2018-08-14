@@ -30,7 +30,7 @@ int net_dns_manage_auto_conf(net_dns_manage_t manage) {
         char propvalue[PROP_VALUE_MAX];
         snprintf(propname, sizeof(propname), "%s%u", DNS_PROP_NAME_PREFIX, i);
         if (__system_property_get(propname, propvalue) < 1) {
-            CPE_ERROR(manage->m_em, "dns: get property %s fail!", propname);
+            CPE_ERROR(manage->m_em, "dns-cli: get property %s fail!", propname);
             rv = -1;
             break;
         }
@@ -40,7 +40,7 @@ int net_dns_manage_auto_conf(net_dns_manage_t manage) {
 # if defined (NET_DNS_USE_RESOLVE_H)
     struct __res_state res;
     if (res_ninit(&res) != 0) {
-        CPE_ERROR(manage->m_em, "dns: resolv: res_ninit fail!");
+        CPE_ERROR(manage->m_em, "dns-cli: resolv: res_ninit fail!");
         rv = -1; 
     }
     else {
@@ -64,7 +64,7 @@ int net_dns_manage_load_resolv(net_dns_manage_t manage, const char * path) {
     FILE *fp = file_stream_open(path, "r", NULL);
     if (fp == NULL) {
         CPE_ERROR(
-            manage->m_em, "dns: load resolv from %s: open fail!, errno=%d (%s)",
+            manage->m_em, "dns-cli: load resolv from %s: open fail!, errno=%d (%s)",
             path, errno, strerror(errno));
         return -1;
     }
@@ -78,7 +78,7 @@ int net_dns_manage_load_resolv(net_dns_manage_t manage, const char * path) {
     do {
         if (file_stream_read_line(&buffer, &line, &data_len, fp, NULL) != 0) {
             CPE_ERROR(
-                manage->m_em, "dns: load resolv from %s: read line fail, errno=%d (%s)",
+                manage->m_em, "dns-cli: load resolv from %s: read line fail, errno=%d (%s)",
                 path, errno, strerror(errno));
             rv = -1;
             break;
@@ -111,7 +111,7 @@ int net_dns_manage_load_nameserver(net_dns_manage_t manage, net_address_t addres
     if (net_dns_source_nameserver_find(manage, address) != NULL) {
         if (manage->m_debug) {
             CPE_INFO(
-                manage->m_em, "dns: load nameserver: ignore duplicate address %s",
+                manage->m_em, "dns-cli: load nameserver: ignore duplicate address %s",
                 net_address_dump(net_dns_manage_tmp_buffer(manage), address));
         }
         net_address_free(address);
@@ -120,7 +120,7 @@ int net_dns_manage_load_nameserver(net_dns_manage_t manage, net_address_t addres
     
     net_dns_source_nameserver_t nameserver = net_dns_source_nameserver_create(manage, address, 1);
     if (nameserver == NULL) {
-        CPE_ERROR(manage->m_em, "dns: load nameserver: create nameserver fail");
+        CPE_ERROR(manage->m_em, "dns-cli: load nameserver: create nameserver fail");
         net_address_free(address);
         return -1;
     }
@@ -131,7 +131,7 @@ int net_dns_manage_load_nameserver(net_dns_manage_t manage, net_address_t addres
 int net_dns_manage_load_nameserver_by_addr(net_dns_manage_t manage, struct sockaddr * addr, socklen_t addr_len) {
     net_address_t address = net_address_create_from_sockaddr(manage->m_schedule, addr, addr_len);
     if (address == NULL) {
-        CPE_ERROR(manage->m_em, "dns: load nameserver: create address from sock addr fail");
+        CPE_ERROR(manage->m_em, "dns-cli: load nameserver: create address from sock addr fail");
         return -1;
     }
 
@@ -141,7 +141,7 @@ int net_dns_manage_load_nameserver_by_addr(net_dns_manage_t manage, struct socka
 int net_dns_manage_load_nameserver_by_str(net_dns_manage_t manage, char * str) {
     net_address_t address = net_address_create_auto(manage->m_schedule, str);
     if (address == NULL) {
-        CPE_ERROR(manage->m_em, "dns: load nameserver: create address %s fail", str);
+        CPE_ERROR(manage->m_em, "dns-cli: load nameserver: create address %s fail", str);
         return -1;
     }
 

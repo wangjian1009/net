@@ -26,7 +26,7 @@ net_dns_manage_t net_dns_manage_create(
 {
     net_dns_manage_t manage = mem_alloc(alloc, sizeof(struct net_dns_manage));
     if (manage == NULL) {
-        CPE_ERROR(em, "dns: manage alloc fail");
+        CPE_ERROR(em, "dns-cli: manage alloc fail");
         return NULL;
     }
     
@@ -91,7 +91,7 @@ net_dns_manage_t net_dns_manage_create(
     
     manage->m_dgram = net_dgram_create(driver, NULL, net_dns_manage_dgram_process, manage);
     if (manage->m_dgram == NULL) {
-        CPE_ERROR(em, "dns: create dgram fail!");
+        CPE_ERROR(em, "dns-cli: create dgram fail!");
         net_dns_task_builder_free(manage->m_builder_internal);
         cpe_hash_table_fini(&manage->m_entries);
         cpe_hash_table_fini(&manage->m_dgram_receivers);
@@ -200,7 +200,7 @@ int net_dns_manage_active_delay_process(net_dns_manage_t manage) {
     if (manage->m_delay_process == NULL) {
         manage->m_delay_process = net_timer_auto_create(manage->m_schedule, net_dns_manage_do_delay_process, manage);
         if (manage->m_delay_process == NULL) {
-            CPE_ERROR(manage->m_em, "dns: create delay process timer fail!");
+            CPE_ERROR(manage->m_em, "dns-cli: create delay process timer fail!");
             return -1;
         }
     }
@@ -244,7 +244,7 @@ static void net_dns_manage_do_delay_process(net_timer_t timer, void * input_ctx)
             net_dns_entry_item_t item = 
                 net_dns_entry_select_item(query_ex->m_entry, manage->m_default_item_select_policy);
             if (item == NULL) {
-                CPE_ERROR(manage->m_em, "dns: query %s: no item!", query_ex->m_entry->m_hostname);
+                CPE_ERROR(manage->m_em, "dns-cli: query %s: no item!", query_ex->m_entry->m_hostname);
             }
             else {
                 address = item->m_address;
@@ -266,7 +266,7 @@ static void net_dns_manage_dgram_process(
     if (receiver == NULL) {
         if (manage->m_debug) {
             CPE_INFO(
-                manage->m_em, "dns: no dgram receiver process data from %s, ignore",
+                manage->m_em, "dns-cli: no dgram receiver process data from %s, ignore",
                 net_address_dump(net_dns_manage_tmp_buffer(manage), source));
         }
         return;

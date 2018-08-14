@@ -12,7 +12,7 @@ net_dns_dgram_receiver_create(
 {
     net_dns_dgram_receiver_t dgram_receiver = mem_alloc(manage->m_alloc, sizeof(struct net_dns_dgram_receiver));
     if (dgram_receiver == NULL) {
-        CPE_ERROR(manage->m_em, "dns: dgram_receiver alloc fail!");
+        CPE_ERROR(manage->m_em, "dns-cli: dgram_receiver alloc fail!");
         return NULL;
     }
 
@@ -25,7 +25,7 @@ net_dns_dgram_receiver_create(
     cpe_hash_entry_init(&dgram_receiver->m_hh);
     if (cpe_hash_table_insert_unique(&manage->m_dgram_receivers, dgram_receiver) != 0) {
         CPE_ERROR(
-            manage->m_em, "dns: dgram_receiver of %s duplicate!",
+            manage->m_em, "dns-cli: dgram_receiver of %s duplicate!",
             net_address_dump(net_dns_manage_tmp_buffer(manage), address));
         mem_free(manage->m_alloc, dgram_receiver);
         return NULL;

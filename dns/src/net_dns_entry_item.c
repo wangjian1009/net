@@ -17,7 +17,7 @@ net_dns_entry_item_create(
     else {
         item = mem_alloc(manage->m_alloc, sizeof(struct net_dns_entry_item));
         if (item == NULL) {
-            CPE_ERROR(manage->m_em, "dns: entry item alloc fail");
+            CPE_ERROR(manage->m_em, "dns-cli: entry item alloc fail");
             return NULL;
         }
     }
@@ -33,7 +33,7 @@ net_dns_entry_item_create(
         else {
             item->m_address = net_address_copy(manage->m_schedule, address);
             if (item->m_address == NULL) {
-                CPE_ERROR(manage->m_em, "dns: entry item dup address fail!");
+                CPE_ERROR(manage->m_em, "dns-cli: entry item dup address fail!");
                 item->m_entry = (net_dns_entry_t)manage;
                 TAILQ_INSERT_TAIL(&manage->m_free_entry_items, item, m_next_for_entry);
                 return NULL;
@@ -46,7 +46,7 @@ net_dns_entry_item_create(
     
     if (manage->m_debug) {
         CPE_INFO(
-            manage->m_em, "dns: resolved %s ==> %s",
+            manage->m_em, "dns-cli: resolved %s ==> %s",
             entry->m_hostname,
             net_address_dump(net_dns_manage_tmp_buffer(manage), item->m_address));
     }

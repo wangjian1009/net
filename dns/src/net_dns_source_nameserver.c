@@ -52,7 +52,7 @@ net_dns_source_nameserver_create(net_dns_manage_t manage, net_address_t addr, ui
     else {
         nameserver->m_address = net_address_copy(manage->m_schedule, addr);
         if (nameserver->m_address == NULL) {
-            CPE_ERROR(manage->m_em, "dns: nameserver: copy address fail!");
+            CPE_ERROR(manage->m_em, "dns-cli: nameserver: copy address fail!");
             net_dns_source_free(source);
             return NULL;
         }
@@ -66,7 +66,7 @@ net_dns_source_nameserver_create(net_dns_manage_t manage, net_address_t addr, ui
             manage, 0, nameserver->m_address, nameserver, net_dns_source_nameserver_dgram_receiver)
         == NULL)
     {
-        CPE_ERROR(manage->m_em, "dns: nameserver: create dgram receiver fail!");
+        CPE_ERROR(manage->m_em, "dns-cli: nameserver: create dgram receiver fail!");
         if (!is_own) net_address_free(nameserver->m_address);
         net_dns_source_free(source);
         return NULL;
@@ -74,7 +74,7 @@ net_dns_source_nameserver_create(net_dns_manage_t manage, net_address_t addr, ui
 
     if (manage->m_debug) {
         CPE_INFO(
-            manage->m_em, "dns: nameserver %s created!",
+            manage->m_em, "dns-cli: nameserver %s created!",
             net_dns_source_dump(net_dns_manage_tmp_buffer(manage), source));
     }
     
@@ -123,7 +123,7 @@ void net_dns_source_nameserver_fini(net_dns_source_t source) {
 
     if (manage->m_debug) {
         CPE_INFO(
-            manage->m_em, "dns: nameserver %s free!",
+            manage->m_em, "dns-cli: nameserver %s free!",
             net_dns_source_dump(net_dns_manage_tmp_buffer(manage), source));
     }
     
@@ -181,7 +181,7 @@ int net_dns_source_nameserver_ctx_start(net_dns_source_t source, net_dns_task_ct
 
     char * buf = mem_buffer_alloc(buffer, 512);
     if (buf == NULL) {
-        CPE_ERROR(manage->m_em, "dns: build nameserver req: alloc fail!");
+        CPE_ERROR(manage->m_em, "dns-cli: build nameserver req: alloc fail!");
         return -1; 
     }
 
@@ -232,13 +232,13 @@ int net_dns_source_nameserver_ctx_start(net_dns_source_t source, net_dns_task_ct
     CPE_COPY_HTON16(p, &qclass); p+=2;
 
     if (net_dns_manage_dgram_send(manage, nameserver->m_address, buf, p - buf) < 0) {
-        CPE_ERROR(manage->m_em, "dns: nameserver: send data fail");
+        CPE_ERROR(manage->m_em, "dns-cli: nameserver: send data fail");
         return -1;
     }
 
     if (manage->m_debug >= 2) {
         CPE_INFO(
-            manage->m_em, "dns: udp --> %s",
+            manage->m_em, "dns-cli: udp --> %s",
             net_dns_source_nameserver_req_dump(net_dns_manage_tmp_buffer(manage), buf));
     }
     
@@ -254,13 +254,13 @@ static void net_dns_source_nameserver_dgram_receiver(void * ctx, void * data, si
     net_dns_manage_t manage = net_dns_source_manager(source);
 
     if (data_size < 12) {
-        CPE_ERROR(manage->m_em, "dns: udp <-- size %d too small!", (int)data_size);
+        CPE_ERROR(manage->m_em, "dns-cli: udp <-- size %d too small!", (int)data_size);
         return;
     }
 
     if (manage->m_debug >= 2) {
         CPE_INFO(
-            manage->m_em, "dns: udp <-- %s",
+            manage->m_em, "dns-cli: udp <-- %s",
             net_dns_source_nameserver_req_dump(net_dns_manage_tmp_buffer(manage), data));
     }
     
@@ -319,12 +319,12 @@ static void net_dns_source_nameserver_dgram_receiver(void * ctx, void * data, si
             ipv4.u8[3] = p[3];
             address = net_address_create_from_data_ipv4(manage->m_schedule, &ipv4, 0);
             if (address == NULL) {
-                CPE_ERROR(manage->m_em, "dns: udp <-- create address for %s fail", hostname);
+                CPE_ERROR(manage->m_em, "dns-cli: udp <-- create address for %s fail", hostname);
             }
         }
         else {
             if (manage->m_debug) {
-                CPE_INFO(manage->m_em, "dns: udp <-- %s answer length %d unknown", hostname, rdlength);
+                CPE_INFO(manage->m_em, "dns-cli: udp <-- %s answer length %d unknown", hostname, rdlength);
             }
         }
         
@@ -335,7 +335,7 @@ static void net_dns_source_nameserver_dgram_receiver(void * ctx, void * data, si
         net_dns_entry_t entry = net_dns_entry_find(manage, hostname);
         if (entry == NULL) {
             if (manage->m_debug) {
-                CPE_INFO(manage->m_em, "dns: %s no entry!", hostname);
+                CPE_INFO(manage->m_em, "dns-cli: %s no entry!", hostname);
             }
             net_address_free(address);
             continue;
@@ -344,7 +344,7 @@ static void net_dns_source_nameserver_dgram_receiver(void * ctx, void * data, si
         net_dns_task_t task = net_dns_entry_task(entry);
         if (task == NULL) {
             if (manage->m_debug) {
-                CPE_INFO(manage->m_em, "dns: %s no task!", hostname);
+                CPE_INFO(manage->m_em, "dns-cli: %s no task!", hostname);
             }
             net_address_free(address);
             continue;

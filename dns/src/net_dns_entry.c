@@ -22,7 +22,7 @@ net_dns_entry_create(net_dns_manage_t manage, const char * hostname) {
         else {
             entry = mem_alloc(manage->m_alloc, sizeof(struct net_dns_entry));
             if (entry == NULL) {
-                CPE_ERROR(manage->m_em, "dns: entry alloc fail!");
+                CPE_ERROR(manage->m_em, "dns-cli: entry alloc fail!");
                 return NULL;
             }
         }
@@ -32,7 +32,7 @@ net_dns_entry_create(net_dns_manage_t manage, const char * hostname) {
             manage->m_alloc,
             sizeof(struct net_dns_entry) + (hostname_len - CPE_TYPE_ARRAY_SIZE(struct net_dns_entry, m_hostname_buf)));
         if (entry == NULL) {
-            CPE_ERROR(manage->m_em, "dns: entry alloc fail!");
+            CPE_ERROR(manage->m_em, "dns-cli: entry alloc fail!");
             return NULL;
         }
     }
@@ -45,7 +45,7 @@ net_dns_entry_create(net_dns_manage_t manage, const char * hostname) {
     
     cpe_hash_entry_init(&entry->m_hh);
     if (cpe_hash_table_insert_unique(&manage->m_entries, entry) != 0) {
-        CPE_ERROR(manage->m_em, "dns: entry duplicate!");
+        CPE_ERROR(manage->m_em, "dns-cli: entry duplicate!");
         if (use_cache) {
             TAILQ_INSERT_TAIL(&manage->m_free_entries, entry, m_next);
         }
