@@ -95,7 +95,7 @@ static void net_dns_svr_query_entry_callback(void * ctx, net_address_t main_addr
 
     while((result = net_address_it_next(all_address))) {
         if (query_entry->m_result_count + 1 >= CPE_ARRAY_SIZE(query_entry->m_results)) {
-            if (svr->m_debug) {
+            if (svr->m_debug >= 2) {
                 CPE_INFO(
                     svr->m_em, "dns-svr: query %s ==> %s, count=%d, overflow, ignore",
                     query_entry->m_domain_name,
@@ -114,7 +114,7 @@ static void net_dns_svr_query_entry_callback(void * ctx, net_address_t main_addr
             continue;
         }
 
-        if (svr->m_debug) {
+        if (svr->m_debug >= 2) {
             CPE_INFO(
                 svr->m_em, "dns-svr: query %s ==> [%d]%s",
                 query_entry->m_domain_name,

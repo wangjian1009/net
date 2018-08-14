@@ -121,7 +121,7 @@ int net_dns_svr_itf_send_response(net_dns_svr_itf_t dns_itf, net_dns_svr_query_t
         }
         assert((uint32_t)rv <= capacity);
 
-        if (svr->m_debug) {
+        if (svr->m_debug >= 2) {
             CPE_INFO(svr->m_em, "dns-svr: >>> %s", net_dns_svr_req_dump(svr, net_dns_svr_tmp_buffer(svr), buf, (uint32_t)rv));
         }
         
@@ -142,7 +142,7 @@ static void net_dns_svr_dgram_process(net_dgram_t dgram, void * ctx, void * data
     net_dns_svr_itf_t dns_itf = ctx;
     net_dns_svr_t svr = dns_itf->m_svr;
 
-    if (svr->m_debug) {
+    if (svr->m_debug >= 2) {
         CPE_INFO(svr->m_em, "dns-svr: <<< %s", net_dns_svr_req_dump(svr, net_dns_svr_tmp_buffer(svr), (char const *)data, (uint32_t)data_size));
     }
     

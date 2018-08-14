@@ -125,11 +125,13 @@ void net_dns_task_ctx_start(net_dns_task_ctx_t ctx) {
                     return;
                 }
             }
-        
-            CPE_INFO(
-                manage->m_em, "dns-cli: query %s --> %s: start success",
-                task->m_entry->m_hostname,
-                net_dns_source_dump(net_dns_manage_tmp_buffer(manage), ctx->m_source));
+
+            if (manage->m_debug >= 2) {
+                CPE_INFO(
+                    manage->m_em, "dns-cli: query %s --> %s: start success",
+                    task->m_entry->m_hostname,
+                    net_dns_source_dump(net_dns_manage_tmp_buffer(manage), ctx->m_source));
+            }
         }
     }
 }
