@@ -4,6 +4,11 @@
 
 NET_BEGIN_DECL
 
+struct net_dns_entry_it {
+    net_dns_entry_t (*next)(net_dns_entry_it_t it);
+    char data[64];
+};
+
 net_dns_entry_t
 net_dns_entry_create(net_dns_manage_t manage, const char * hostname);
 
@@ -26,6 +31,9 @@ net_dns_entry_item_t net_dns_entry_select_item(net_dns_entry_t entry, net_dns_it
 
 void net_dns_entry_addresses(net_dns_entry_t entry, net_address_it_t it);
 void net_dns_entry_items(net_dns_entry_t entry, net_dns_entry_item_it_t it);
+void net_dns_entry_cnames(net_dns_entry_t entry, net_dns_entry_it_t it);
+
+#define net_dns_entry_it_next(__it) ((__it)->next(__it))
 
 NET_END_DECL
 

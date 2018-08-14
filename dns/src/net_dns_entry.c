@@ -263,6 +263,23 @@ void net_dns_entry_items(net_dns_entry_t entry, net_dns_entry_item_it_t it) {
     it->next = net_dns_entry_item_it_do_next;
 }
 
+static net_dns_entry_t net_dns_entry_cname_it_next(net_dns_entry_it_t it) {
+    net_dns_entry_t * data = (net_dns_entry_t *)it->data;
+
+    if (*data == NULL) return NULL;
+
+    net_dns_entry_t r = *data;
+    *data = TAILQ_NEXT(r, m_next_for_main);
+
+    return r;
+}
+
+void net_dns_entrys(net_dns_entry_t entry, net_dns_entry_it_t it) {
+    net_dns_entry_t * data = (net_dns_entry_t *)it->data;
+    *data = TAILQ_FIRST(&entry->m_cnames);
+    it->next = net_dns_entry_cname_it_next;
+}
+
 uint32_t net_dns_entry_hash(net_dns_entry_t o, void * user_data) {
     return cpe_hash_str(o->m_hostname, strlen(o->m_hostname));
 }
