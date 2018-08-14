@@ -71,18 +71,18 @@ net_dns_svr_query_parse_request(net_dns_svr_itf_t itf, void const * data, uint32
 static uint32_t net_dns_svr_query_calc_entry_answer_size(net_dns_svr_query_entry_t query_entry) {
     if (query_entry->m_result == NULL) return 0;
     
-    return strlen(query_entry->m_domain_name) + 1 /*name*/
-        + 2/*type*/
-        + 2/*class*/
-        + 4/*ttl*/
-        + 2/*data-length*/
+    return (uint32_t)strlen(query_entry->m_domain_name) + 1u /*name*/
+        + 2u/*type*/
+        + 2u/*class*/
+        + 4u/*ttl*/
+        + 2u/*data-length*/
         ;
 }
 
 uint32_t net_dns_svr_query_calc_response_size(net_dns_svr_query_t query) {
     uint32_t sz = 0;
 
-    sz = 2/*trans_id*/ + 2/*flag*/ + 2/*qdcount*/ + 2 /*ancount*/ + 2/*nscount*/ + 2/*arcount*/;
+    sz = 2u/*trans_id*/ + 2u/*flag*/ + 2u/*qdcount*/ + 2u/*ancount*/ + 2u/*nscount*/ + 2u/*arcount*/;
 
     net_dns_svr_query_entry_t entry;
     TAILQ_FOREACH(entry, &query->m_entries, m_next) {
@@ -92,7 +92,7 @@ uint32_t net_dns_svr_query_calc_response_size(net_dns_svr_query_t query) {
     return sz;
 }
 
-int net_dns_svr_query_build_response(net_dns_svr_query_t query, void * data) {
+int net_dns_svr_query_build_response(net_dns_svr_query_t query, void * data, uint32_t capacity) {
     net_dns_svr_query_entry_t entry;
     char * p = (char*)data;
     
@@ -120,7 +120,7 @@ int net_dns_svr_query_build_response(net_dns_svr_query_t query, void * data) {
         if (entry->m_result == NULL) continue;
     }
     
-    return 0;
+    return (int)(p - (char*)data);
 }
 
 static char const *

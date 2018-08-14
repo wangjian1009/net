@@ -1,3 +1,4 @@
+#include "assert.h"
 #include "net_address.h"
 #include "net_dgram.h"
 #include "net_acceptor.h"
@@ -107,22 +108,24 @@ int net_dns_svr_itf_send_response(net_dns_svr_itf_t dns_itf, net_dns_svr_query_t
     switch(dns_itf->m_type) {
     case net_dns_svr_itf_udp: {
         char buf[1500];
-        uint32_t response_size = net_dns_svr_query_calc_response_size(query);
-        if (response_size > sizeof(buf)) {
-            CPE_ERROR(svr->m_em, "net: dns: response size %d overflow!", response_size);
+        uint32_t capacity = net_dns_svr_query_calc_response_size(query);
+        if (capacity > sizeof(buf)) {
+            CPE_ERROR(svr->m_em, "net: dns: response size %d overflow!", capacity);
             return -1;
         }
-        
-        if (net_dns_svr_query_build_response(query, buf) != 0) {
+
+        int rv = net_dns_svr_query_build_response(query, buf, capacity);
+        if (rv < 0) {
             CPE_ERROR(svr->m_em, "net: dns: build response fail!");
             return -1;
         }
+        assert((uint32_t)rv < capacity);
 
         if (svr->m_debug) {
             CPE_INFO(svr->m_em, "net: dns: >>> %s", net_dns_svr_req_dump(net_dns_svr_tmp_buffer(svr), buf));
         }
         
-        if (net_dgram_send(dns_itf->m_dgram, query->m_source_addr, buf, response_size) != 0) {
+        if (net_dgram_send(dns_itf->m_dgram, query->m_source_addr, buf, (uint32_t)rv) < 0) {
             CPE_ERROR(svr->m_em, "net: dns: send response fail!");
             return -1;
         }

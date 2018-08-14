@@ -4,6 +4,7 @@
 #include "net_ne_dgram_session.h"
 #include "net_ne_utils.h"
 
+static const char * net_ne_dgram_state_str(NWUDPSessionState state);
 static void net_ne_dgram_session_receive_cb(net_ne_dgram_session_t session, NSArray<NSData *> *datagrams, NSError *error);
 static int net_ne_dgram_session_check_write(net_ne_dgram_session_t session);
     
@@ -27,12 +28,25 @@ net_ne_dgram_session_t net_ne_dgram_session_create(net_ne_dgram_t dgram, net_add
     session->m_writing = 0;
     session->m_remote_address = net_address_copy(net_ne_driver_schedule(driver), remote_address);
     if (session->m_remote_address == NULL) {
-        CPE_ERROR(driver->m_em, "ne: dgram: dup remote address fail!");
+        CPE_ERROR(
+            driver->m_em, "ne: dgram[-->%s]: dup remote address fail!",
+            net_address_dump(net_ne_driver_tmp_buffer(driver), session->m_remote_address));
         session->m_dgram = (net_ne_dgram_t)driver;
         TAILQ_INSERT_TAIL(&driver->m_free_dgram_sessions, session, m_next);
         return NULL;
     }
 
+    cpe_hash_entry_init(&session->m_hh_for_dgram);
+    if (cpe_hash_table_insert_unique(&dgram->m_sessions, session) != 0) {
+        CPE_ERROR(
+            driver->m_em, "ne: dgram[-->%s]: duplicate!",
+            net_address_dump(net_ne_driver_tmp_buffer(driver), session->m_remote_address));
+        net_address_free(session->m_remote_address);
+        session->m_dgram = (net_ne_dgram_t)driver;
+        TAILQ_INSERT_TAIL(&driver->m_free_dgram_sessions, session, m_next);
+        return NULL;
+    }
+    
     session->m_pending = [[NSMutableArray<NSData *> arrayWithCapacity: 0] retain];
     session->m_observer = [[[NetNeDgramSessionObserver alloc] init] retain];
     
@@ -42,9 +56,12 @@ net_ne_dgram_session_t net_ne_dgram_session_create(net_ne_dgram_t dgram, net_add
                              createUDPSessionToEndpoint: net_ne_address_to_endoint(driver, remote_address)
                              fromEndpoint: local_address ? net_ne_address_to_endoint(driver, local_address) : nil];
     if (session->m_session == NULL) {
-        CPE_ERROR(driver->m_em, "ne: dgram: socket create error");
+        CPE_ERROR(
+            driver->m_em, "ne: dgram[-->%s]: socket create error",
+            net_address_dump(net_ne_driver_tmp_buffer(driver), remote_address));
         [session->m_pending release];
         [session->m_observer release];
+        cpe_hash_table_remove_by_ins(&dgram->m_sessions, session);
         net_address_free(session->m_remote_address);
         session->m_dgram = (net_ne_dgram_t)driver;
         TAILQ_INSERT_TAIL(&driver->m_free_dgram_sessions, session, m_next);
@@ -119,7 +136,7 @@ net_ne_dgram_session_t net_ne_dgram_session_find(net_ne_dgram_t dgram, net_addre
 int net_ne_dgram_session_send(net_ne_dgram_session_t session, void const * data, size_t data_len) {
     NSData * sendData = [NSData dataWithBytes: data length: data_len];
     [session->m_pending addObject: sendData];
-    
+
     return net_ne_dgram_session_check_write(session);
 }
 
@@ -129,7 +146,8 @@ static void net_ne_dgram_session_receive_cb(net_ne_dgram_session_t session, NSAr
     if (error) {
         CPE_ERROR(
             driver->m_em,
-            "ne: dgram: receive error, errro=%d %s",
+            "ne: dgram[-->%s]: receive error, errro=%d %s",
+            net_address_dump(net_ne_driver_tmp_buffer(driver), session->m_remote_address),
             (int)[error code],
             [[error localizedDescription] UTF8String]);
         return;
@@ -143,7 +161,8 @@ static void net_ne_dgram_session_receive_cb(net_ne_dgram_session_t session, NSAr
         if (data.length > sizeof(buf)) {
             CPE_ERROR(
                 driver->m_em,
-                "ne: dgram: receive %d data, overflow, mut=%d",
+                "ne: dgram[-->]: receive %d data, overflow, mut=%d",
+                net_address_dump(net_ne_driver_tmp_buffer(driver), session->m_remote_address),
                 (int)data.length, (int)sizeof(buf));
             continue;
         }
@@ -158,12 +177,12 @@ static void net_ne_dgram_session_receive_cb(net_ne_dgram_session_t session, NSAr
 }
 
 static int net_ne_dgram_session_check_write(net_ne_dgram_session_t session) {
+    net_ne_driver_t driver = net_ne_dgram_driver(session->m_dgram);
+    
     if (session->m_session.state != NWUDPSessionStateReady) return 0;
     if (session->m_writing) return 0;
     if (session->m_pending.count == 0) return 0;
 
-    net_ne_driver_t driver = net_ne_dgram_driver(session->m_dgram);
-    
     session->m_writing = 1;
 
     uint32_t sendSize = (uint32_t)session->m_pending.firstObject.length;
@@ -175,7 +194,8 @@ static int net_ne_dgram_session_check_write(net_ne_dgram_session_t session) {
                     
                     if (error) {
                         CPE_ERROR(
-                            driver->m_em, "ne: dgram: send error, error=%d (%s)",
+                            driver->m_em, "ne: dgram[-->%s]: send error, error=%d (%s)",
+                            net_address_dump(net_ne_driver_tmp_buffer(driver), session->m_remote_address),
                             (int)[error code],
                             [[error localizedDescription] UTF8String]);
                         return;
@@ -183,9 +203,9 @@ static int net_ne_dgram_session_check_write(net_ne_dgram_session_t session) {
 
                     if (driver->m_debug) {
                         CPE_INFO(
-                            driver->m_em, "ne: dgram: send data %d to %s",
-                            (int)sendSize,
-                            net_address_dump(net_ne_driver_tmp_buffer(driver), session->m_remote_address));
+                            driver->m_em, "ne: dgram[-->%s]: send data %d",
+                            net_address_dump(net_ne_driver_tmp_buffer(driver), session->m_remote_address),
+                            (int)sendSize);
                     }
                     
                     net_ne_dgram_session_check_write(session);
@@ -235,7 +255,8 @@ static const char * net_ne_dgram_state_str(NWUDPSessionState state) {
                     NWUDPSessionState newState = (NWUDPSessionState)[[change objectForKey:@"new"] intValue];
         
                     CPE_INFO(
-                        driver->m_em, "ne: dgram: state %s(%d) ==> %s(%d)!",
+                        driver->m_em, "ne: dgram[-->%s]: state %s(%d) ==> %s(%d)!",
+                        net_address_dump(net_ne_driver_tmp_buffer(driver), session->m_remote_address),
                         net_ne_dgram_state_str(oldState), (int)oldState, net_ne_dgram_state_str(newState), (int)newState);
 
                     switch(newState) {
