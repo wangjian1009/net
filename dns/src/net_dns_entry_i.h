@@ -13,8 +13,11 @@ struct net_dns_entry {
         TAILQ_ENTRY(net_dns_entry) m_next;
     };
     net_dns_task_t m_task;
-    char m_hostname_buf[32];
+    net_dns_entry_t m_main;
+    TAILQ_ENTRY(net_dns_entry) m_next_for_main;
+    net_dns_entry_list_t m_cnames;
     net_dns_entry_item_list_t m_items;
+    char m_hostname_buf[32]; /* 必须放在最后，可能需要延展 */
 };
 
 void net_dns_entry_real_free(net_dns_entry_t entry);

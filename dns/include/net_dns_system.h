@@ -12,6 +12,7 @@ typedef enum net_dns_mode {
 typedef struct net_dns_manage * net_dns_manage_t;
 typedef struct net_dns_dgram_receiver * net_dns_dgram_receiver_t;
 typedef struct net_dns_entry * net_dns_entry_t;
+typedef struct net_dns_entry_it * net_dns_entry_it_t;
 typedef struct net_dns_entry_item * net_dns_entry_item_t;
 typedef struct net_dns_entry_item_it * net_dns_entry_item_it_t;
 typedef struct net_dns_task * net_dns_task_t;

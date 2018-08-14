@@ -305,14 +305,56 @@ static void net_dns_source_nameserver_dgram_receiver(void * ctx, void * data, si
         stream_putc((write_stream_t)&ws, 0);
 
         const char * hostname = mem_buffer_make_continuous(buffer, 0);
-        
-        p += 2 + 2; /*type + class*/
 
+        uint16_t res_type;
+        CPE_COPY_NTOH16(&res_type, p); p+=2;
+
+        uint16_t res_class;
+        CPE_COPY_NTOH16(&res_class, p); p+=2;
+        
         uint32_t ttl;
         CPE_COPY_NTOH32(&ttl, p); p+=4;
 
         uint16_t rdlength;
         CPE_COPY_NTOH16(&rdlength, p); p+=2;
+
+        switch(res_type) {
+        case 5: {
+            net_dns_entry_t entry = net_dns_entry_find(manage, hostname);
+            if (entry == NULL) {
+                if (manage->m_debug) {
+                    CPE_INFO(manage->m_em, "dns-cli: %s no entry!", hostname);
+                }
+                p += rdlength;
+                continue;
+            }
+
+            mem_buffer_clear_data(buffer);
+            p = net_dns_source_nameserver_req_print_name(manage, (write_stream_t)&ws, p, data, (uint32_t)data_size, 0);
+            stream_putc((write_stream_t)&ws, 0);
+
+            const char * cname = mem_buffer_make_continuous(buffer, 0);
+            net_dns_entry_t cname_entry = net_dns_entry_find(manage, cname);
+            if (cname_entry == NULL) {
+                cname_entry = net_dns_entry_create(manage, cname);
+                if (cname_entry == NULL) {
+                    CPE_ERROR(manage->m_em, "dns-cli: %s create cname entry %s no entry!", net_dns_entry_hostname(entry), cname);
+                    continue;
+                }
+            }
+            net_dns_entry_set_main(cname_entry, entry);
+            continue;
+        }
+        case 1: {
+            break;
+        }
+        default:
+            if (manage->m_debug) {
+                CPE_INFO(manage->m_em, "dns-cli: udp <-- %s type %d not support, ignore record", hostname, res_type);
+            }
+            p += rdlength;
+            continue;
+        }
 
         net_address_t address = NULL;
         if (rdlength == 4) {
@@ -324,31 +366,24 @@ static void net_dns_source_nameserver_dgram_receiver(void * ctx, void * data, si
             address = net_address_create_from_data_ipv4(manage->m_schedule, &ipv4, 0);
             if (address == NULL) {
                 CPE_ERROR(manage->m_em, "dns-cli: udp <-- create address for %s fail", hostname);
+                p += rdlength;
+                continue;
             }
         }
         else {
             if (manage->m_debug) {
-                CPE_INFO(manage->m_em, "dns-cli: udp <-- %s answer length %d unknown", hostname, rdlength);
+                CPE_INFO(manage->m_em, "dns-cli: udp <-- %s answer length %d unknown, ignore record", hostname, rdlength);
             }
+            p += rdlength;
+            continue;
         }
-        
-        p += rdlength;
 
-        if (address == NULL) continue;
+        p += rdlength;
 
         net_dns_entry_t entry = net_dns_entry_find(manage, hostname);
         if (entry == NULL) {
             if (manage->m_debug) {
                 CPE_INFO(manage->m_em, "dns-cli: %s no entry!", hostname);
-            }
-            net_address_free(address);
-            continue;
-        }
-
-        net_dns_task_t task = net_dns_entry_task(entry);
-        if (task == NULL) {
-            if (manage->m_debug) {
-                CPE_INFO(manage->m_em, "dns-cli: %s no task!", hostname);
             }
             net_address_free(address);
             continue;
@@ -360,19 +395,22 @@ static void net_dns_source_nameserver_dgram_receiver(void * ctx, void * data, si
             continue;
         }
 
-        net_dns_task_step_t curent_step = net_dns_task_step_current(task);
-        if (curent_step) {
-            struct net_dns_task_ctx_it task_ctx_it;
-            net_dns_task_ctx_t task_ctx;
-            net_dns_task_step_ctxes(curent_step, &task_ctx_it);
+        net_dns_task_t task = net_dns_entry_task(net_dns_entry_effective(entry));
+        if (task) {
+            net_dns_task_step_t curent_step = net_dns_task_step_current(task);
+            if (curent_step) {
+                struct net_dns_task_ctx_it task_ctx_it;
+                net_dns_task_ctx_t task_ctx;
+                net_dns_task_step_ctxes(curent_step, &task_ctx_it);
 
-            while((task_ctx = net_dns_task_ctx_it_next(&task_ctx_it))) {
-                if (net_dns_task_ctx_source(task_ctx) != source) continue;
+                while((task_ctx = net_dns_task_ctx_it_next(&task_ctx_it))) {
+                    if (net_dns_task_ctx_source(task_ctx) != source) continue;
 
-                struct net_dns_source_nameserver_ctx * nameserver_ctx = net_dns_task_ctx_data(task_ctx);
-                if (nameserver_ctx->m_transaction == ident) {
-                    net_dns_task_ctx_set_success(task_ctx);
-                    break;;
+                    struct net_dns_source_nameserver_ctx * nameserver_ctx = net_dns_task_ctx_data(task_ctx);
+                    if (nameserver_ctx->m_transaction == ident) {
+                        net_dns_task_ctx_set_success(task_ctx);
+                        break;;
+                    }
                 }
             }
         }
@@ -393,20 +431,13 @@ net_dns_source_nameserver_req_print_name(
                 CPE_ERROR(manage->m_em, "dns-cli: parse req name: offset %d overflow, buf-size=%d", offset, buf_size);
                 return p;
             }
-            
-            if (level != 0) {
-                CPE_ERROR(manage->m_em, "dns-cli: parse req name: xxxxx");
+
+            if (level > 10) {
+                CPE_ERROR(manage->m_em, "dns-cli: parse req name: name loop too deep, level=%d", level);
                 return p;
             }
 
-            const char * p2 = buf + offset;
-            int protect;
-            for(protect = 0; protect < 100 && *p2 != 0; protect++) {
-                p2 = net_dns_source_nameserver_req_print_name(manage, ws, p2, buf, buf_size, level + 1);
-                if(*p2 != 0) {
-                    if (ws) stream_printf(ws, ".");
-                }
-            }
+            net_dns_source_nameserver_req_print_name(manage, ws, buf + offset, buf, buf_size, level + 1);
 
             return p;
         }
@@ -493,12 +524,18 @@ static void net_dns_source_nameserver_req_print(net_dns_manage_t manage, write_s
         CPE_COPY_NTOH16(&rdlength, p); p+=2;
         stream_printf(ws, ", rdlength=%u",rdlength);
 
-        stream_printf(ws, ", rd=");
-        uint16_t j;
-        for(j = 0; j < rdlength; j++) {
-            if (j > 0) stream_printf(ws, "-");
-            stream_printf(ws, "%2.2x(%u)", *(uint8_t const *)p, *(uint8_t const *)p);
-            p++;
+        if (type == 5) {
+            stream_printf(ws, ", cname=");
+            p = net_dns_source_nameserver_req_print_name(manage, ws, p, buf, buf_size, 0);
+        }
+        else {
+            stream_printf(ws, ", rd=");
+            uint16_t j;
+            for(j = 0; j < rdlength; j++) {
+                if (j > 0) stream_printf(ws, "-");
+                stream_printf(ws, "%2.2x(%u)", *(uint8_t const *)p, *(uint8_t const *)p);
+                p++;
+            }
         }
     }
 }
