@@ -13,7 +13,7 @@ net_dns_svr_itf_t
 net_dns_svr_itf_create(net_dns_svr_t dns_svr, net_dns_svr_itf_type_t type, net_address_t address, net_driver_t driver) {
     net_dns_svr_itf_t dns_itf = mem_alloc(dns_svr->m_alloc, sizeof(struct net_dns_svr_itf));
     if (dns_itf == NULL) {
-        CPE_ERROR(dns_svr->m_em, "net: dns: alloc dns svr itf fail");
+        CPE_ERROR(dns_svr->m_em, "dns-svr: alloc dns svr itf fail");
         return NULL;
     }
 
@@ -24,7 +24,7 @@ net_dns_svr_itf_create(net_dns_svr_t dns_svr, net_dns_svr_itf_type_t type, net_a
     case net_dns_svr_itf_udp:
         dns_itf->m_dgram = net_dgram_create(driver, address, net_dns_svr_dgram_process, dns_itf);
         if (dns_itf->m_dgram == NULL) {
-            CPE_ERROR(dns_svr->m_em, "net: dns: create dgram fail");
+            CPE_ERROR(dns_svr->m_em, "dns-svr: create dgram fail");
             return NULL;
         }
         break;
@@ -34,7 +34,7 @@ net_dns_svr_itf_create(net_dns_svr_t dns_svr, net_dns_svr_itf_type_t type, net_a
             address, 0, 0,
             net_dns_svr_acceptor_on_new_endpoint, dns_itf);
         if (dns_itf->m_acceptor == NULL) {
-            CPE_ERROR(dns_svr->m_em, "net: dns: create acceptor fail");
+            CPE_ERROR(dns_svr->m_em, "dns-svr: create acceptor fail");
             return NULL;
         }
         break;
@@ -46,7 +46,7 @@ net_dns_svr_itf_create(net_dns_svr_t dns_svr, net_dns_svr_itf_type_t type, net_a
 
     if (dns_svr->m_debug) {
         CPE_INFO(
-            dns_svr->m_em, "net: dns: itf %s %s created",
+            dns_svr->m_em, "dns-svr: itf %s %s created",
             net_dns_svr_itf_type_str(type),
             net_address_dump(net_dns_svr_tmp_buffer(dns_svr), address));
     }
@@ -110,23 +110,23 @@ int net_dns_svr_itf_send_response(net_dns_svr_itf_t dns_itf, net_dns_svr_query_t
         char buf[1500];
         uint32_t capacity = net_dns_svr_query_calc_response_size(query);
         if (capacity > sizeof(buf)) {
-            CPE_ERROR(svr->m_em, "net: dns: response size %d overflow!", capacity);
+            CPE_ERROR(svr->m_em, "dns-svr: response size %d overflow!", capacity);
             return -1;
         }
 
         int rv = net_dns_svr_query_build_response(query, buf, capacity);
         if (rv < 0) {
-            CPE_ERROR(svr->m_em, "net: dns: build response fail!");
+            CPE_ERROR(svr->m_em, "dns-svr: build response fail!");
             return -1;
         }
         assert((uint32_t)rv < capacity);
 
         if (svr->m_debug) {
-            CPE_INFO(svr->m_em, "net: dns: >>> %s", net_dns_svr_req_dump(net_dns_svr_tmp_buffer(svr), buf));
+            CPE_INFO(svr->m_em, "dns-svr: >>> %s", net_dns_svr_req_dump(net_dns_svr_tmp_buffer(svr), buf));
         }
         
         if (net_dgram_send(dns_itf->m_dgram, query->m_source_addr, buf, (uint32_t)rv) < 0) {
-            CPE_ERROR(svr->m_em, "net: dns: send response fail!");
+            CPE_ERROR(svr->m_em, "dns-svr: send response fail!");
             return -1;
         }
 
@@ -143,20 +143,20 @@ static void net_dns_svr_dgram_process(net_dgram_t dgram, void * ctx, void * data
     net_dns_svr_t svr = dns_itf->m_svr;
 
     if (svr->m_debug) {
-        CPE_INFO(svr->m_em, "net: dns: <<< %s", net_dns_svr_req_dump(net_dns_svr_tmp_buffer(svr), (char const *)data));
+        CPE_INFO(svr->m_em, "dns-svr: <<< %s", net_dns_svr_req_dump(net_dns_svr_tmp_buffer(svr), (char const *)data));
     }
     
     net_dns_svr_query_t query = net_dns_svr_query_parse_request(dns_itf, data, (uint32_t)data_size);
     if (query == NULL) return;
 
     if (net_dns_svr_query_set_source_addr(query, source) != 0) {
-        CPE_ERROR(svr->m_em, "net: dns: set source addr fail!");
+        CPE_ERROR(svr->m_em, "dns-svr: set source addr fail!");
         net_dns_svr_query_free(query);
         return;
     }
     
     if (net_dns_svr_query_start(query) != 0) {
-        CPE_ERROR(svr->m_em, "net: dns: start query fail!");
+        CPE_ERROR(svr->m_em, "dns-svr: start query fail!");
         net_dns_svr_query_free(query);
         return;
     }

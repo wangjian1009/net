@@ -12,7 +12,7 @@ net_dns_svr_query_t net_dns_svr_query_create(net_dns_svr_itf_t dns_itf, uint16_t
     else {
         query = mem_alloc(dns_svr->m_alloc, sizeof(struct net_dns_svr_query));
         if (query == NULL) {
-            CPE_ERROR(dns_svr->m_em, "net: dns: query alloc fail!");
+            CPE_ERROR(dns_svr->m_em, "dns-svr: query alloc fail!");
             return NULL;
         }
     }
@@ -65,7 +65,7 @@ int net_dns_svr_query_set_source_addr(net_dns_svr_query_t query, net_address_t s
     if (source_addr) {
         query->m_source_addr = net_address_copy(svr->m_schedule, source_addr);
         if (query->m_source_addr == NULL) {
-            CPE_ERROR(svr->m_em, "net: dns: query: set source addr dup fail!");
+            CPE_ERROR(svr->m_em, "dns-svr: query: set source addr dup fail!");
             return -1;
         }
     }

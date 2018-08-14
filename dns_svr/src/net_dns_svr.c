@@ -9,7 +9,7 @@
 net_dns_svr_t net_dns_svr_create(mem_allocrator_t alloc, error_monitor_t em, net_schedule_t schedule) {
     net_dns_svr_t dns_svr = mem_calloc(alloc, sizeof(struct net_dns_svr));
     if (dns_svr == NULL) {
-        CPE_ERROR(em, "net: dns_svr: alloc dns_svr fail!");
+        CPE_ERROR(em, "dns-svr: alloc dns_svr fail!");
         return NULL;
     }
 
@@ -20,7 +20,7 @@ net_dns_svr_t net_dns_svr_create(mem_allocrator_t alloc, error_monitor_t em, net
 
     dns_svr->m_dns_protocol =  net_dns_svr_protocol_create(dns_svr);
     if (dns_svr->m_dns_protocol == NULL) {
-        CPE_ERROR(em, "net: dns_svr: create dns_svr_protocol fail!");
+        CPE_ERROR(em, "dns-svr: create dns_svr_protocol fail!");
         mem_free(alloc, dns_svr);
         return NULL;
     }
