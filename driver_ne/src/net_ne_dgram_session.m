@@ -141,46 +141,50 @@ int net_ne_dgram_session_send(net_ne_dgram_session_t session, void const * data,
 }
 
 static void net_ne_dgram_session_receive_cb(net_ne_dgram_session_t session, NSArray<NSData *> *datagrams, NSError *error) {
-    net_ne_driver_t driver = net_ne_dgram_driver(session->m_dgram);
+    dispatch_sync(
+        dispatch_get_main_queue(),
+        ^{
+            net_ne_driver_t driver = net_ne_dgram_driver(session->m_dgram);
 
-    if (error) {
-        CPE_ERROR(
-            driver->m_em,
-            "ne: dgram[-->%s]: receive error, errro=%d %s",
-            net_address_dump(net_ne_driver_tmp_buffer(driver), session->m_remote_address),
-            (int)[error code],
-            [[error localizedDescription] UTF8String]);
-        return;
-    }
+            if (error) {
+                CPE_ERROR(
+                    driver->m_em,
+                    "ne: dgram[-->%s]: receive error, errro=%d %s",
+                    net_address_dump(net_ne_driver_tmp_buffer(driver), session->m_remote_address),
+                    (int)[error code],
+                    [[error localizedDescription] UTF8String]);
+                return;
+            }
 
-    int i;
-    for(i = 0; i < datagrams.count; ++i) {
-        NSData * data = datagrams[i];
-        char buf[1500] = {0};
+            int i;
+            for(i = 0; i < datagrams.count; ++i) {
+                NSData * data = datagrams[i];
+                char buf[1500] = {0};
 
-        if (data.length > sizeof(buf)) {
-            CPE_ERROR(
-                driver->m_em,
-                "ne: dgram[-->%s]: receive %d data, overflow, mut=%d",
-                net_address_dump(net_ne_driver_tmp_buffer(driver), session->m_remote_address),
-                (int)data.length, (int)sizeof(buf));
-            continue;
-        }
+                if (data.length > sizeof(buf)) {
+                    CPE_ERROR(
+                        driver->m_em,
+                        "ne: dgram[-->%s]: receive %d data, overflow, mut=%d",
+                        net_address_dump(net_ne_driver_tmp_buffer(driver), session->m_remote_address),
+                        (int)data.length, (int)sizeof(buf));
+                    continue;
+                }
 
-        if (driver->m_debug) {
-            CPE_INFO(
-                driver->m_em, "ne: dgram[-->%s]: recv %d data",
-                net_address_dump(net_ne_driver_tmp_buffer(driver), session->m_remote_address),
-                (int)data.length);
-        }
+                if (driver->m_debug) {
+                    CPE_INFO(
+                        driver->m_em, "ne: dgram[-->%s]: recv %d data",
+                        net_address_dump(net_ne_driver_tmp_buffer(driver), session->m_remote_address),
+                        (int)data.length);
+                }
 
-        memcpy(buf,  [data bytes], data.length);
-        net_dgram_recv(net_dgram_from_data(session->m_dgram), session->m_remote_address, buf, data.length);
+                memcpy(buf,  [data bytes], data.length);
+                net_dgram_recv(net_dgram_from_data(session->m_dgram), session->m_remote_address, buf, data.length);
 
-        if (driver->m_data_monitor_fun) {
-            driver->m_data_monitor_fun(driver->m_data_monitor_ctx, NULL, net_data_in, (uint32_t)data.length);
-        }
-    }
+                if (driver->m_data_monitor_fun) {
+                    driver->m_data_monitor_fun(driver->m_data_monitor_ctx, NULL, net_data_in, (uint32_t)data.length);
+                }
+            }
+        });
 }
 
 static int net_ne_dgram_session_check_write(net_ne_dgram_session_t session) {
