@@ -71,7 +71,7 @@ net_dns_svr_query_parse_request(net_dns_svr_itf_t itf, void const * data, uint32
 }
 
 static uint32_t net_dns_svr_query_calc_entry_query_size(net_dns_svr_query_entry_t query_entry) {
-    return (uint32_t)strlen(query_entry->m_domain_name) + 1u /*name*/
+    return (uint32_t)strlen(query_entry->m_domain_name) + 2u /*name*/
         + 2 /*type*/
         + 2 /*class*/
         ;
@@ -153,8 +153,10 @@ int net_dns_svr_query_build_response(net_dns_svr_query_t query, void * data, uin
     
     CPE_COPY_HTON16(p, &query->m_trans_id); p+=2;
 
-    char flags[2];
-    bzero(flags, sizeof(flags));
+    uint16_t flags = 0;
+    flags |= 1u << 15; /*qr*/
+    
+    CPE_COPY_HTON16(p, &flags); p+=2;
 
     uint16_t qdcount = 0;
     TAILQ_FOREACH(entry, &query->m_entries, m_next) {
