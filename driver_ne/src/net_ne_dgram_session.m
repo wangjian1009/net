@@ -161,10 +161,17 @@ static void net_ne_dgram_session_receive_cb(net_ne_dgram_session_t session, NSAr
         if (data.length > sizeof(buf)) {
             CPE_ERROR(
                 driver->m_em,
-                "ne: dgram[-->]: receive %d data, overflow, mut=%d",
+                "ne: dgram[-->%s]: receive %d data, overflow, mut=%d",
                 net_address_dump(net_ne_driver_tmp_buffer(driver), session->m_remote_address),
                 (int)data.length, (int)sizeof(buf));
             continue;
+        }
+
+        if (driver->m_debug) {
+            CPE_INFO(
+                driver->m_em, "ne: dgram[-->%s]: recv %d data",
+                net_address_dump(net_ne_driver_tmp_buffer(driver), session->m_remote_address),
+                (int)data.length);
         }
 
         memcpy(buf,  [data bytes], data.length);
