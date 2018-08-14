@@ -2,6 +2,7 @@
 #include "net_dns_query.h"
 #include "net_dns_query_ex_i.h"
 #include "net_dns_entry_i.h"
+#include "net_dns_entry_item_i.h"
 #include "net_dns_task_i.h"
 #include "net_dns_task_builder_i.h"
 
@@ -19,7 +20,10 @@ int net_dns_query_ex_init(void * ctx, net_dns_query_t query, const char * hostna
         is_entry_new = 1;
     }
 
-    if (TAILQ_EMPTY(&entry->m_items)) {
+    struct net_dns_entry_item_it item_it;
+    net_dns_entry_items(entry, &item_it);
+
+    if (net_dns_entry_item_it_next(&item_it) == NULL) {
         if (entry->m_task == NULL) {
             if (manage->m_builder_default == NULL) {
                 CPE_ERROR(manage->m_em, "dns-cli: query %s: no task builder!", hostname);
@@ -46,12 +50,13 @@ int net_dns_query_ex_init(void * ctx, net_dns_query_t query, const char * hostna
     
     query_ex->m_manage = manage;
     query_ex->m_task = entry->m_task;
-    query_ex->m_entry = NULL;
 
     if (query_ex->m_task) {
+        query_ex->m_entry = NULL;
         TAILQ_INSERT_TAIL(&query_ex->m_task->m_querys, query_ex, m_next);
     }
     else {
+        query_ex->m_entry = entry;
         TAILQ_INSERT_TAIL(&query_ex->m_manage->m_to_notify_querys, query_ex, m_next);
         net_dns_manage_active_delay_process(manage);
     }

@@ -221,6 +221,8 @@ static void net_dns_manage_do_delay_process(net_timer_t timer, void * input_ctx)
 
     manage->m_delay_process = NULL;
 
+    CPE_ERROR(manage->m_em, "xxxxx: net_dns_manage_do_delay_process\n");
+    
     while(!TAILQ_EMPTY(&manage->m_complete_tasks)) {
         net_dns_task_t task = TAILQ_FIRST(&manage->m_complete_tasks);
 
