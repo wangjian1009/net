@@ -1,7 +1,7 @@
 #ifndef NET_PROXY_HTTP_SVR_ENDPOINT_I_H_INCLEDED
 #define NET_PROXY_HTTP_SVR_ENDPOINT_I_H_INCLEDED
 #include "net_proxy_http_svr_endpoint.h"
-#include "net_proxy_http_svr_i.h"
+#include "net_proxy_http_svr_protocol_i.h"
 
 NET_BEGIN_DECL
 

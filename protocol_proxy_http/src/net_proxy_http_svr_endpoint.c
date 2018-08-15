@@ -6,7 +6,6 @@
 #include "net_endpoint.h"
 #include "net_address.h"
 #include "net_proxy_http_svr_endpoint_i.h"
-#include "net_proxy_http_svr_i.h"
 #include "net_proxy_http_pro.h"
 
 static int net_proxy_http_svr_send_proxy_http_response(net_endpoint_t endpoint, net_address_t address);
@@ -33,7 +32,7 @@ void net_proxy_http_svr_endpoint_set_connect_fun(
 int net_proxy_http_svr_endpoint_input(net_endpoint_t endpoint) {
     //net_schedule_t schedule = net_endpoint_schedule(endpoint);
     /* error_monitor_t em = net_schedule_em(schedule); */
-    /* net_proxy_http_svr_t proxy_http_svr = net_protocol_data(net_endpoint_protocol(endpoint)); */
+    /* net_proxy_http_svr_protocol_t proxy_http_svr = net_protocol_data(net_endpoint_protocol(endpoint)); */
     /* net_proxy_http_svr_endpoint_t ss_ep = net_endpoint_protocol_data(endpoint); */
     /* void * data; */
 
