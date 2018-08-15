@@ -242,8 +242,15 @@ static void net_ne_endpoint_do_read(net_ne_driver_t driver, net_ne_endpoint_t en
                     if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return;
                     
                     if (error) {
-                        if (driver->m_debug) {
-                            CPE_INFO(
+                        if ([error code] == 57) {
+                            if (driver->m_debug) {
+                                CPE_INFO(
+                                    driver->m_em, "ne: %s: disconnected",
+                                    net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint));
+                            }
+                        }
+                        else {
+                            CPE_ERROR(
                                 driver->m_em, "ne: %s: recv error, error=%d (%s)",
                                 net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint),
                                 (int)[error code],

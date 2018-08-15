@@ -21,6 +21,7 @@ struct net_ne_driver {
     uint8_t m_debug;
     net_data_monitor_fun_t m_data_monitor_fun;
     void * m_data_monitor_ctx;
+    uint32_t m_dgram_timeout_ms;
 
     net_ne_dgram_session_list_t m_free_dgram_sessions;
 };

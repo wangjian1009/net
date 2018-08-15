@@ -62,6 +62,7 @@ static int net_ne_driver_init(net_driver_t base_driver) {
     driver->m_tunnel_provider = NULL;
     driver->m_data_monitor_fun = NULL;
     driver->m_data_monitor_ctx = NULL;
+    driver->m_dgram_timeout_ms = 300 * 1000;
     driver->m_debug = 0;
     
     TAILQ_INIT(&driver->m_free_dgram_sessions);

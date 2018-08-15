@@ -15,6 +15,7 @@ struct net_ne_dgram_session {
         TAILQ_ENTRY(net_ne_dgram_session) m_next;
     };
     net_address_t m_remote_address;
+    net_timer_t m_timer;
     __unsafe_unretained NSMutableArray<NSData *> * m_pending;
     __unsafe_unretained NWUDPSession* m_session;
     __unsafe_unretained NetNeDgramSessionObserver * m_observer;
