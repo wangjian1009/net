@@ -45,6 +45,8 @@
 		C99AAEB521215523001FA074 /* net_dns_svr_query.c in Sources */ = {isa = PBXBuildFile; fileRef = C99AAEB321215523001FA074 /* net_dns_svr_query.c */; };
 		C99AAEBA2121805F001FA074 /* net_dns_svr_query_entry.c in Sources */ = {isa = PBXBuildFile; fileRef = C99AAEB82121805F001FA074 /* net_dns_svr_query_entry.c */; };
 		C99AAEBC21218819001FA074 /* net_dns_svr_query_process.c in Sources */ = {isa = PBXBuildFile; fileRef = C99AAEBB21218819001FA074 /* net_dns_svr_query_process.c */; };
+		C9B0C46F2123F35F008DB367 /* net_proxy_http_svr_endpoint.c in Sources */ = {isa = PBXBuildFile; fileRef = C9B0C46B2123F35F008DB367 /* net_proxy_http_svr_endpoint.c */; };
+		C9B0C4702123F35F008DB367 /* net_proxy_http_svr.c in Sources */ = {isa = PBXBuildFile; fileRef = C9B0C46E2123F35F008DB367 /* net_proxy_http_svr.c */; };
 		C9C4B142210862470045A1A3 /* net_dns_dgram_receiver.c in Sources */ = {isa = PBXBuildFile; fileRef = C9C4B12F210862460045A1A3 /* net_dns_dgram_receiver.c */; };
 		C9C4B143210862470045A1A3 /* net_dns_task_builder.c in Sources */ = {isa = PBXBuildFile; fileRef = C9C4B131210862460045A1A3 /* net_dns_task_builder.c */; };
 		C9C4B144210862470045A1A3 /* net_dns_source.c in Sources */ = {isa = PBXBuildFile; fileRef = C9C4B132210862460045A1A3 /* net_dns_source.c */; };
@@ -102,6 +104,15 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C96A82D621100505000CB30D /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "include/$(PRODUCT_NAME)";
+			dstSubfolderSpec = 16;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C9B0C44D2123F30F008DB367 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "include/$(PRODUCT_NAME)";
@@ -253,6 +264,15 @@
 		C99AAEB82121805F001FA074 /* net_dns_svr_query_entry.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_dns_svr_query_entry.c; sourceTree = "<group>"; };
 		C99AAEB92121805F001FA074 /* net_dns_svr_query_entry_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_svr_query_entry_i.h; sourceTree = "<group>"; };
 		C99AAEBB21218819001FA074 /* net_dns_svr_query_process.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_dns_svr_query_process.c; sourceTree = "<group>"; };
+		C9B0C44F2123F30F008DB367 /* libnet_protocol_proxy_http.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_protocol_proxy_http.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		C9B0C4662123F35F008DB367 /* net_proxy_http_svr.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_proxy_http_svr.h; sourceTree = "<group>"; };
+		C9B0C4672123F35F008DB367 /* net_proxy_http_types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_proxy_http_types.h; sourceTree = "<group>"; };
+		C9B0C4682123F35F008DB367 /* net_proxy_http_svr_endpoint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_proxy_http_svr_endpoint.h; sourceTree = "<group>"; };
+		C9B0C46A2123F35F008DB367 /* net_proxy_http_svr_endpoint_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_proxy_http_svr_endpoint_i.h; sourceTree = "<group>"; };
+		C9B0C46B2123F35F008DB367 /* net_proxy_http_svr_endpoint.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_proxy_http_svr_endpoint.c; sourceTree = "<group>"; };
+		C9B0C46C2123F35F008DB367 /* net_proxy_http_svr_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_proxy_http_svr_i.h; sourceTree = "<group>"; };
+		C9B0C46D2123F35F008DB367 /* net_proxy_http_pro.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_proxy_http_pro.h; sourceTree = "<group>"; };
+		C9B0C46E2123F35F008DB367 /* net_proxy_http_svr.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_proxy_http_svr.c; sourceTree = "<group>"; };
 		C9C4B0FB210861940045A1A3 /* libnet_dns.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_dns.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		C9C4B108210861A70045A1A3 /* libnet_protocol_socks5.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_protocol_socks5.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		C9C4B115210861B50045A1A3 /* libnet_router.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_router.a; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -357,6 +377,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C96A82D521100505000CB30D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C9B0C44C2123F30F008DB367 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -521,6 +548,7 @@
 				C9F3117B21095931006A7621 /* protocol_ws */,
 				C96A82D921100505000CB30D /* driver_dq */,
 				C9415A962121058E00400779 /* net_dns_svr */,
+				C9B0C4502123F30F008DB367 /* protocol_proxy_http */,
 				C9323A422105E2CD005DD3C0 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -537,6 +565,7 @@
 				C9F3117A21095931006A7621 /* libnet_protocol_ws.a */,
 				C96A82D821100505000CB30D /* libnet_driver_dq.a */,
 				C9415A952121058E00400779 /* libnet_dns_svr.a */,
+				C9B0C44F2123F30F008DB367 /* libnet_protocol_proxy_http.a */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -625,6 +654,38 @@
 				C96A82EE2110054D000CB30D /* net_dq_driver.h */,
 			);
 			path = include;
+			sourceTree = "<group>";
+		};
+		C9B0C4502123F30F008DB367 /* protocol_proxy_http */ = {
+			isa = PBXGroup;
+			children = (
+				C9B0C4652123F35F008DB367 /* include */,
+				C9B0C4692123F35F008DB367 /* src */,
+			);
+			name = protocol_proxy_http;
+			path = ../../protocol_proxy_http;
+			sourceTree = "<group>";
+		};
+		C9B0C4652123F35F008DB367 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				C9B0C4662123F35F008DB367 /* net_proxy_http_svr.h */,
+				C9B0C4672123F35F008DB367 /* net_proxy_http_types.h */,
+				C9B0C4682123F35F008DB367 /* net_proxy_http_svr_endpoint.h */,
+			);
+			path = include;
+			sourceTree = "<group>";
+		};
+		C9B0C4692123F35F008DB367 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				C9B0C46A2123F35F008DB367 /* net_proxy_http_svr_endpoint_i.h */,
+				C9B0C46B2123F35F008DB367 /* net_proxy_http_svr_endpoint.c */,
+				C9B0C46C2123F35F008DB367 /* net_proxy_http_svr_i.h */,
+				C9B0C46D2123F35F008DB367 /* net_proxy_http_pro.h */,
+				C9B0C46E2123F35F008DB367 /* net_proxy_http_svr.c */,
+			);
+			path = src;
 			sourceTree = "<group>";
 		};
 		C9C4B0FC210861940045A1A3 /* dns */ = {
@@ -901,6 +962,23 @@
 			productReference = C96A82D821100505000CB30D /* libnet_driver_dq.a */;
 			productType = "com.apple.product-type.library.static";
 		};
+		C9B0C44E2123F30F008DB367 /* net_protocol_proxy_http */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C9B0C4572123F30F008DB367 /* Build configuration list for PBXNativeTarget "net_protocol_proxy_http" */;
+			buildPhases = (
+				C9B0C44B2123F30F008DB367 /* Sources */,
+				C9B0C44C2123F30F008DB367 /* Frameworks */,
+				C9B0C44D2123F30F008DB367 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = net_protocol_proxy_http;
+			productName = net_protocol_proxy_http;
+			productReference = C9B0C44F2123F30F008DB367 /* libnet_protocol_proxy_http.a */;
+			productType = "com.apple.product-type.library.static";
+		};
 		C9C4B0FA210861940045A1A3 /* net_dns */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = C9C4B101210861940045A1A3 /* Build configuration list for PBXNativeTarget "net_dns" */;
@@ -1007,6 +1085,9 @@
 					C96A82D721100505000CB30D = {
 						CreatedOnToolsVersion = 9.4.1;
 					};
+					C9B0C44E2123F30F008DB367 = {
+						CreatedOnToolsVersion = 9.4.1;
+					};
 					C9C4B0FA210861940045A1A3 = {
 						CreatedOnToolsVersion = 9.4.1;
 					};
@@ -1045,6 +1126,7 @@
 				C9F3117921095931006A7621 /* net_protocol_ws */,
 				C96A82D721100505000CB30D /* net_driver_dq */,
 				C9415A942121058E00400779 /* net_dns_svr */,
+				C9B0C44E2123F30F008DB367 /* net_protocol_proxy_http */,
 			);
 		};
 /* End PBXProject section */
@@ -1116,6 +1198,15 @@
 				C96A82F32110054D000CB30D /* net_dq_dgram.m in Sources */,
 				C96A82F12110054D000CB30D /* net_dq_acceptor.m in Sources */,
 				C96A82F42110054D000CB30D /* net_dq_timer.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C9B0C44B2123F30F008DB367 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C9B0C4702123F35F008DB367 /* net_proxy_http_svr.c in Sources */,
+				C9B0C46F2123F35F008DB367 /* net_proxy_http_svr_endpoint.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1414,6 +1505,34 @@
 			};
 			name = Release;
 		};
+		C9B0C4552123F30F008DB367 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				HEADER_SEARCH_PATHS = (
+					../../../cpe/include,
+					../../core/include,
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C9B0C4562123F30F008DB367 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				HEADER_SEARCH_PATHS = (
+					../../../cpe/include,
+					../../core/include,
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		C9C4B102210861940045A1A3 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1600,6 +1719,15 @@
 			buildConfigurations = (
 				C96A82DE21100505000CB30D /* Debug */,
 				C96A82DF21100505000CB30D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C9B0C4572123F30F008DB367 /* Build configuration list for PBXNativeTarget "net_protocol_proxy_http" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C9B0C4552123F30F008DB367 /* Debug */,
+				C9B0C4562123F30F008DB367 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
