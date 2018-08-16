@@ -7,9 +7,11 @@
 NET_BEGIN_DECL
 
 struct net_proxy_http_svr_protocol {
-    uint8_t m_use_acl;
-    struct mem_buffer m_tmp_buffer;
+    mem_allocrator_t m_alloc;
+    error_monitor_t m_em;
 };
+
+mem_buffer_t net_proxy_http_svr_protocol_tmp_buffer(net_proxy_http_svr_protocol_t http_protocol);
 
 NET_END_DECL
 
