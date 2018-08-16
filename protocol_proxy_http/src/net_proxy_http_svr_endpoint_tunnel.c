@@ -61,11 +61,11 @@ int net_proxy_http_svr_endpoint_tunnel_on_connect(
             return -1;
         }
 
-        if (http_ep->m_debug) {
-            CPE_INFO(
-                http_protocol->m_em, "http-proxy-svr: %s: tunnel: create other endpoint state monitor created",
-                net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint));
-        }
+        /* if (http_ep->m_debug) { */
+        /*     CPE_INFO( */
+        /*         http_protocol->m_em, "http-proxy-svr: %s: tunnel: create other endpoint state monitor created", */
+        /*         net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint)); */
+        /* } */
     }
     
     return 0;
@@ -91,7 +91,7 @@ int net_proxy_http_svr_endpoint_tunnel_forward(
     default:
         break;
     }
-            
+
     if (net_endpoint_fbuf_append_from_rbuf(endpoint, 0) != 0) return -1;
     if (net_endpoint_forward(endpoint) != 0) return -1;
     return 0;
@@ -245,9 +245,19 @@ static int net_proxy_http_svr_endpoint_tunnel_check_send_response(
         http_ep->m_tunnel.m_other_state_monitor = NULL;
     }
 
+    if (net_endpoint_fbuf_append_from_rbuf(endpoint, 0) != 0
+        || net_endpoint_forward(endpoint) != 0
+        )
+    {
+        CPE_ERROR(
+            http_protocol->m_em, "http-proxy-svr: %s: tunnel: forward input data fail",
+            net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint));
+        return -1;
+    }
+
     if (net_endpoint_wbuf_append_from_other(endpoint, other, 0) != 0) {
         CPE_ERROR(
-            http_protocol->m_em, "http-proxy-svr: %s: tunnel: append from other fail",
+            http_protocol->m_em, "http-proxy-svr: %s: tunnel: forward output data fail",
             net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint));
         return -1;
     }
