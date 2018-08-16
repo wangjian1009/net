@@ -63,7 +63,7 @@ net_ne_dgram_session_t net_ne_dgram_session_create(net_ne_dgram_t dgram, net_add
     }
     
     session->m_pending = [[NSMutableArray<NSData *> arrayWithCapacity: 0] retain];
-    session->m_observer = [[[NetNeDgramSessionObserver alloc] init] retain];
+    session->m_observer = [NetNeDgramSessionObserver new];
     
     net_address_t local_address = net_dgram_address(net_dgram_from_data(dgram));
     
