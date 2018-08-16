@@ -1,3 +1,4 @@
+#include "net_schedule.h"
 #include "net_protocol.h"
 #include "net_ws_cli_protocol_i.h"
 #include "net_ws_cli_endpoint_i.h"
@@ -59,7 +60,12 @@ void net_ws_cli_protocol_free(net_ws_cli_protocol_t ws_protocol) {
 }
 
 static int net_ws_cli_protocol_init(net_protocol_t protocol) {
+    net_schedule_t schedule = net_protocol_schedule(protocol);
     net_ws_cli_protocol_t ws_protocol = net_protocol_data(protocol);
+
+    ws_protocol->m_alloc = net_schedule_allocrator(schedule);
+    ws_protocol->m_em = net_schedule_em(schedule);
+    mem_buffer_init(&ws_protocol->m_data_buffer, ws_protocol->m_alloc);
 
     ws_protocol->m_protocol_capacity = 0;
     ws_protocol->m_protocol_init = NULL;
@@ -70,9 +76,19 @@ static int net_ws_cli_protocol_init(net_protocol_t protocol) {
     ws_protocol->m_endpoint_on_state_change = NULL;
     ws_protocol->m_endpoint_on_text_msg = NULL;
     ws_protocol->m_endpoint_on_bin_msg = NULL;
-    
+
     return 0;
 }
 
 static void net_ws_cli_protocol_fini(net_protocol_t protocol) {
+    net_ws_cli_protocol_t ws_protocol = net_protocol_data(protocol);
+    mem_buffer_clear(&ws_protocol->m_data_buffer);
+}
+
+mem_buffer_t net_ws_cli_protocol_tmp_buffer(net_ws_cli_protocol_t ws_protocol) {
+    return net_schedule_tmp_buffer(net_protocol_schedule(net_protocol_from_data(ws_protocol)));
+}
+
+net_schedule_t net_ws_cli_protocol_schedule(net_ws_cli_protocol_t ws_protocol) {
+    return net_protocol_schedule(net_protocol_from_data(ws_protocol));
 }

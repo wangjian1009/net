@@ -4,7 +4,6 @@
 #include "cpe/utils/random.h"
 #include "cpe/utils/base64.h"
 #include "cpe/utils/sha1.h"
-#include "net_schedule.h"
 #include "net_endpoint.h"
 #include "net_protocol.h"
 #include "net_address.h"
@@ -16,7 +15,7 @@ static void net_ws_cli_endpoint_do_connect(net_timer_t timer, void * ctx);
 static void net_ws_cli_endpoint_do_process(net_timer_t timer, void * ctx);
 static void net_ws_cli_endpoint_reset_data(net_ws_cli_endpoint_t ws_ep);
 static int net_ws_cli_endpoint_send_handshake(net_ws_cli_endpoint_t ws_ep);
-static int net_ws_cli_endpoint_on_handshake(net_schedule_t schedule, net_ws_cli_endpoint_t ws_ep, char * response);
+static int net_ws_cli_endpoint_on_handshake(net_ws_cli_protocol_t ws_protocol, net_ws_cli_endpoint_t ws_ep, char * response);
 static int net_ws_cli_endpoint_notify_state_changed(net_ws_cli_endpoint_t ws_ep, net_ws_cli_state_t old_state);
 
 net_ws_cli_endpoint_t
@@ -68,21 +67,20 @@ const char * net_ws_cli_endpoint_path(net_ws_cli_endpoint_t ws_ep) {
 }
 
 int net_ws_cli_endpoint_set_path(net_ws_cli_endpoint_t ws_ep, const char * path) {
-    net_schedule_t schedule = net_endpoint_schedule(ws_ep->m_endpoint);
-    mem_allocrator_t alloc = net_schedule_allocrator(schedule);
+    net_ws_cli_protocol_t ws_protocol = net_protocol_data(net_endpoint_protocol(ws_ep->m_endpoint));
 
     if (ws_ep->m_cfg_path) {
-        mem_free(alloc, ws_ep->m_cfg_path);
+        mem_free(ws_protocol->m_alloc, ws_ep->m_cfg_path);
         ws_ep->m_cfg_path = NULL;
     }
 
     if (path) {
-        ws_ep->m_cfg_path = cpe_str_mem_dup(alloc, path);
+        ws_ep->m_cfg_path = cpe_str_mem_dup(ws_protocol->m_alloc, path);
         if (ws_ep->m_cfg_path == NULL) {
             CPE_ERROR(
-                net_schedule_em(net_endpoint_schedule(ws_ep->m_endpoint)),
+                ws_protocol->m_em,
                 "ws: %s: set path: copy path %s fail!",
-                net_endpoint_dump(net_schedule_tmp_buffer(net_endpoint_schedule(ws_ep->m_endpoint)), ws_ep->m_endpoint), path);
+                net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), ws_ep->m_endpoint), path);
             return -1;
         }
     }
@@ -99,21 +97,21 @@ void net_ws_cli_endpoint_set_reconnect_span_ms(net_ws_cli_endpoint_t ws_ep, uint
 }
 
 int net_ws_cli_endpoint_send_msg_text(net_ws_cli_endpoint_t ws_ep, const char * msg) {
+    net_ws_cli_protocol_t ws_protocol = net_protocol_data(net_endpoint_protocol(ws_ep->m_endpoint));
     struct wslay_event_msg ws_msg = { WSLAY_TEXT_FRAME,  (const uint8_t *)msg, strlen(msg) };
 
     if (wslay_event_queue_msg(ws_ep->m_ctx, &ws_msg) != 0) {
         CPE_ERROR(
-            net_schedule_em(net_endpoint_schedule(ws_ep->m_endpoint)),
+            ws_protocol->m_em,
             "ws: %s: send msg text: queue msg fail!",
-            net_endpoint_dump(net_schedule_tmp_buffer(net_endpoint_schedule(ws_ep->m_endpoint)), ws_ep->m_endpoint));
+            net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), ws_ep->m_endpoint));
         return -1;
     }
 
     if (ws_ep->m_debug >= 2) {
-        net_schedule_t schedule = net_endpoint_schedule(ws_ep->m_endpoint);
         CPE_INFO(
-            net_schedule_em(schedule), "ws: %s: msg text: >>>\n%s",
-            net_endpoint_dump(net_schedule_tmp_buffer(schedule), ws_ep->m_endpoint),
+            ws_protocol->m_em, "ws: %s: msg text: >>>\n%s",
+            net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), ws_ep->m_endpoint),
             msg);
     }
 
@@ -123,21 +121,21 @@ int net_ws_cli_endpoint_send_msg_text(net_ws_cli_endpoint_t ws_ep, const char * 
 }
 
 int net_ws_cli_endpoint_send_msg_bin(net_ws_cli_endpoint_t ws_ep, const void * msg, uint32_t msg_len) {
+    net_ws_cli_protocol_t ws_protocol = net_protocol_data(net_endpoint_protocol(ws_ep->m_endpoint));
     struct wslay_event_msg ws_msg = { WSLAY_BINARY_FRAME,  (const uint8_t *)msg, msg_len };
 
     if (wslay_event_queue_msg(ws_ep->m_ctx, &ws_msg) != 0) {
         CPE_ERROR(
-            net_schedule_em(net_endpoint_schedule(ws_ep->m_endpoint)),
+            ws_protocol->m_em,
             "ws: %s: send msg text: queue bintray fail, len=%d!",
-            net_endpoint_dump(net_schedule_tmp_buffer(net_endpoint_schedule(ws_ep->m_endpoint)), ws_ep->m_endpoint), msg_len);
+            net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), ws_ep->m_endpoint), msg_len);
         return -1;
     }
 
     if (ws_ep->m_debug >= 2) {
-        net_schedule_t schedule = net_endpoint_schedule(ws_ep->m_endpoint);
         CPE_INFO(
-            net_schedule_em(schedule), "ws: %s: msg bin: >>> %d data",
-            net_endpoint_dump(net_schedule_tmp_buffer(schedule), ws_ep->m_endpoint),
+            ws_protocol->m_em, "ws: %s: msg bin: >>> %d data",
+            net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), ws_ep->m_endpoint),
             msg_len);
     }
 
@@ -154,10 +152,10 @@ int net_ws_cli_endpoint_set_state(net_ws_cli_endpoint_t ws_ep, net_ws_cli_state_
     if (ws_ep->m_state == state) return 0;
     
     if (ws_ep->m_debug >= 1) {
-        net_schedule_t schedule = net_endpoint_schedule(ws_ep->m_endpoint);
+        net_ws_cli_protocol_t ws_protocol = net_protocol_data(net_endpoint_protocol(ws_ep->m_endpoint));
         CPE_INFO(
-            net_schedule_em(schedule), "ws: %s: state %s ==> %s",
-            net_endpoint_dump(net_schedule_tmp_buffer(schedule), ws_ep->m_endpoint),
+            ws_protocol->m_em, "ws: %s: state %s ==> %s",
+            net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), ws_ep->m_endpoint),
             net_ws_cli_state_str(ws_ep->m_state),
             net_ws_cli_state_str(state));
     }
@@ -202,10 +200,11 @@ static ssize_t net_ws_cli_endpoint_recv_cb(
 
     uint32_t size = (uint32_t)len;
     if (net_endpoint_rbuf_recv(ws_ep->m_endpoint, data, &size) != 0) {
+        net_ws_cli_protocol_t ws_protocol = net_protocol_data(net_endpoint_protocol(ws_ep->m_endpoint));
         CPE_ERROR(
-            net_schedule_em(net_endpoint_schedule(ws_ep->m_endpoint)),
+            ws_protocol->m_em,
             "ws: %s: rbuf recv fail!",
-            net_endpoint_dump(net_schedule_tmp_buffer(net_endpoint_schedule(ws_ep->m_endpoint)), ws_ep->m_endpoint));
+            net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), ws_ep->m_endpoint));
         wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE);
         return -1;
     }
@@ -219,10 +218,11 @@ static ssize_t net_ws_cli_endpoint_send_cb(
     net_ws_cli_endpoint_t ws_ep = (net_ws_cli_endpoint_t)user_data;
 
     if (net_endpoint_wbuf_append(ws_ep->m_endpoint, data, (uint32_t)len) != 0) {
+        net_ws_cli_protocol_t ws_protocol = net_protocol_data(net_endpoint_protocol(ws_ep->m_endpoint));
         CPE_ERROR(
-            net_schedule_em(net_endpoint_schedule(ws_ep->m_endpoint)),
+            ws_protocol->m_em,
             "ws: %s: wbuf append fail!",
-            net_endpoint_dump(net_schedule_tmp_buffer(net_endpoint_schedule(ws_ep->m_endpoint)), ws_ep->m_endpoint));
+            net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), ws_ep->m_endpoint));
         wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE);
         return -1;
     }
@@ -241,34 +241,45 @@ static void net_ws_cli_endpoint_on_msg_recv_cb(
     wslay_event_context_ptr ctx, const struct wslay_event_on_msg_recv_arg *arg, void *user_data)
 {
     net_ws_cli_endpoint_t ws_ep = user_data;
-    net_schedule_t schedule = net_endpoint_schedule(ws_ep->m_endpoint);
     net_ws_cli_protocol_t ws_protocol = net_protocol_data(net_endpoint_protocol(ws_ep->m_endpoint));
     
     switch(arg->opcode) {
     case WSLAY_CONTINUATION_FRAME:
         CPE_ERROR(
-            net_schedule_em(schedule), "ws: %s: continuation: not support!",
-            net_endpoint_dump(net_schedule_tmp_buffer(schedule), ws_ep->m_endpoint));
+            ws_protocol->m_em, "ws: %s: continuation: not support!",
+            net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), ws_ep->m_endpoint));
         break;
-    case WSLAY_TEXT_FRAME:
+    case WSLAY_TEXT_FRAME: {
+        mem_buffer_clear_data(&ws_protocol->m_data_buffer);
+        char * buf = mem_buffer_alloc(&ws_protocol->m_data_buffer, arg->msg_length + 1);
+        if (buf == NULL) {
+            CPE_ERROR(
+                ws_protocol->m_em, "ws: %s: msg text: alloc buf fail, msg-length=%d!",
+                net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), ws_ep->m_endpoint),
+                (int)arg->msg_length);
+        }
+        memcpy(buf, arg->msg, arg->msg_length);
+        buf[arg->msg_length] = 0;
+
         if (ws_ep->m_debug >= 2) {
             CPE_INFO(
-                net_schedule_em(schedule), "ws: %s: msg text: <<<\n%s",
-                net_endpoint_dump(net_schedule_tmp_buffer(schedule), ws_ep->m_endpoint),
-                arg->msg);
+                ws_protocol->m_em, "ws: %s: msg text: <<<\n%s",
+                net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), ws_ep->m_endpoint),
+                buf);
         }
         
         if (ws_protocol->m_endpoint_on_text_msg) {
-            if (ws_protocol->m_endpoint_on_text_msg(ws_ep, (const char *)arg->msg) != 0) {
+            if (ws_protocol->m_endpoint_on_text_msg(ws_ep, buf) != 0) {
                 wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE);
             }
         }
         break;
+    }
     case WSLAY_BINARY_FRAME:
         if (ws_ep->m_debug >= 2) {
             CPE_INFO(
-                net_schedule_em(schedule), "ws: %s: msg bin: <<< %d data",
-                net_endpoint_dump(net_schedule_tmp_buffer(schedule), ws_ep->m_endpoint),
+                ws_protocol->m_em, "ws: %s: msg bin: <<< %d data",
+                net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), ws_ep->m_endpoint),
                 (int)arg->msg_length);
         }
         
@@ -280,18 +291,18 @@ static void net_ws_cli_endpoint_on_msg_recv_cb(
         break;
     case WSLAY_CONNECTION_CLOSE:
         CPE_ERROR(
-            net_schedule_em(schedule), "ws: %s: close: not support!",
-            net_endpoint_dump(net_schedule_tmp_buffer(schedule), ws_ep->m_endpoint));
+            ws_protocol->m_em, "ws: %s: close: not support!",
+            net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), ws_ep->m_endpoint));
         break;
     case WSLAY_PING:
         CPE_ERROR(
-            net_schedule_em(schedule), "ws: %s: ping: not support!",
-            net_endpoint_dump(net_schedule_tmp_buffer(schedule), ws_ep->m_endpoint));
+            ws_protocol->m_em, "ws: %s: ping: not support!",
+            net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), ws_ep->m_endpoint));
         break;
     case WSLAY_PONG:
         CPE_ERROR(
-            net_schedule_em(schedule), "ws: %s: pong: not support!",
-            net_endpoint_dump(net_schedule_tmp_buffer(schedule), ws_ep->m_endpoint));
+            ws_protocol->m_em, "ws: %s: pong: not support!",
+            net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), ws_ep->m_endpoint));
         break;
     }
 }
@@ -313,20 +324,20 @@ int net_ws_cli_endpoint_init(net_endpoint_t endpoint) {
 
     ws_ep->m_endpoint = NULL;
     ws_ep->m_state = net_ws_cli_state_init;
-    ws_ep->m_debug = net_schedule_debug(schedule);
+    ws_ep->m_debug = 0;
     ws_ep->m_cfg_reconnect_span_ms = 3u * 1000u;
     ws_ep->m_cfg_path = NULL;
     ws_ep->m_handshake_token = NULL;
 
     ws_ep->m_connect_timer = net_timer_auto_create(schedule, net_ws_cli_endpoint_do_connect, ws_ep);
     if (ws_ep->m_connect_timer == NULL) {
-        CPE_ERROR(net_schedule_em(schedule), "ws: ???: init: create connect timer fail!");
+        CPE_ERROR(ws_protocol->m_em, "ws: ???: init: create connect timer fail!");
         return -1;
     }
     
     ws_ep->m_process_timer = net_timer_auto_create(schedule, net_ws_cli_endpoint_do_process, ws_ep);
     if (ws_ep->m_process_timer == NULL) {
-        CPE_ERROR(net_schedule_em(schedule), "ws: ???: init: create process timer fail!");
+        CPE_ERROR(ws_protocol->m_em, "ws: ???: init: create process timer fail!");
         net_timer_free(ws_ep->m_connect_timer);
         return -1;
     }
@@ -334,7 +345,7 @@ int net_ws_cli_endpoint_init(net_endpoint_t endpoint) {
     wslay_event_context_client_init(&ws_ep->m_ctx, &s_net_ws_cli_endpoint_callbacks, ws_ep);
 
     if (ws_protocol->m_endpoint_init && ws_protocol->m_endpoint_init(ws_ep) != 0) {
-        CPE_ERROR(net_schedule_em(schedule), "ws: ???: init: external init fail!");
+        CPE_ERROR(ws_protocol->m_em, "ws: ???: init: external init fail!");
         net_timer_free(ws_ep->m_process_timer);
         net_timer_free(ws_ep->m_connect_timer);
         return -1;
@@ -346,8 +357,6 @@ int net_ws_cli_endpoint_init(net_endpoint_t endpoint) {
 void net_ws_cli_endpoint_fini(net_endpoint_t endpoint) {
     net_ws_cli_endpoint_t ws_ep = net_endpoint_protocol_data(endpoint);
     net_ws_cli_protocol_t ws_protocol = net_protocol_data(net_endpoint_protocol(endpoint));
-    net_schedule_t schedule = net_endpoint_schedule(endpoint);
-    mem_allocrator_t alloc = net_schedule_allocrator(schedule);
 
     if (ws_protocol->m_endpoint_fini) {
         ws_protocol->m_endpoint_fini(ws_ep);
@@ -369,12 +378,12 @@ void net_ws_cli_endpoint_fini(net_endpoint_t endpoint) {
     }
 
     if (ws_ep->m_handshake_token) {
-        mem_free(alloc, ws_ep->m_handshake_token);
+        mem_free(ws_protocol->m_alloc, ws_ep->m_handshake_token);
         ws_ep->m_handshake_token = NULL;
     }
 
     if (ws_ep->m_cfg_path) {
-        mem_free(alloc, ws_ep->m_cfg_path);
+        mem_free(ws_protocol->m_alloc, ws_ep->m_cfg_path);
         ws_ep->m_cfg_path = NULL;
     }
     
@@ -383,23 +392,23 @@ void net_ws_cli_endpoint_fini(net_endpoint_t endpoint) {
 
 int net_ws_cli_endpoint_input(net_endpoint_t endpoint) {
     net_ws_cli_endpoint_t ws_ep = net_endpoint_protocol_data(endpoint);
-    net_schedule_t schedule = net_endpoint_schedule(endpoint);
+    net_ws_cli_protocol_t ws_protocol = net_protocol_data(net_endpoint_protocol(endpoint));
 
     if (ws_ep->m_state == net_ws_cli_state_handshake) {
         char * data;
         uint32_t size;
         if (net_endpoint_rbuf_by_str(endpoint, "\r\n\r\n", (void**)&data, &size) != 0) {
             CPE_ERROR(
-                net_schedule_em(schedule), "ws: %s: handshake response: search sep fail",
-                net_endpoint_dump(net_schedule_tmp_buffer(schedule), endpoint));
+                ws_protocol->m_em, "ws: %s: handshake response: search sep fail",
+                net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), endpoint));
             return -1;
         }
 
         if (data == NULL) {
             if(net_endpoint_rbuf_size(endpoint) > 8192) {
                 CPE_ERROR(
-                    net_schedule_em(schedule), "ws: %s: handshake response: Too big response head!, size=%d",
-                    net_endpoint_dump(net_schedule_tmp_buffer(schedule), endpoint),
+                    ws_protocol->m_em, "ws: %s: handshake response: Too big response head!, size=%d",
+                    net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), endpoint),
                     net_endpoint_rbuf_size(endpoint));
                 return -1;
             }
@@ -408,7 +417,7 @@ int net_ws_cli_endpoint_input(net_endpoint_t endpoint) {
             }
         }
 
-        if (net_ws_cli_endpoint_on_handshake(schedule, ws_ep, data) != 0) return -1;
+        if (net_ws_cli_endpoint_on_handshake(ws_protocol, ws_ep, data) != 0) return -1;
 
         net_endpoint_rbuf_consume(endpoint, size);
     }
@@ -471,10 +480,10 @@ static void net_ws_cli_endpoint_do_process(net_timer_t timer, void * ctx) {
 
     if (wslay_event_want_read(ws_ep->m_ctx) && !net_endpoint_rbuf_is_empty(ws_ep->m_endpoint)) {
         if (wslay_event_recv(ws_ep->m_ctx) != 0) {
-            net_schedule_t schedule = net_endpoint_schedule(ws_ep->m_endpoint);
+            net_ws_cli_protocol_t ws_protocol = net_protocol_data(net_endpoint_protocol(ws_ep->m_endpoint));
             CPE_ERROR(
-                net_schedule_em(schedule), "ws: %s: process: recv fail, auto disconnect",
-                net_endpoint_dump(net_schedule_tmp_buffer(schedule), ws_ep->m_endpoint));
+                ws_protocol->m_em, "ws: %s: process: recv fail, auto disconnect",
+                net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), ws_ep->m_endpoint));
             net_endpoint_set_state(ws_ep->m_endpoint, net_endpoint_state_disable);
             return;
         }
@@ -482,10 +491,10 @@ static void net_ws_cli_endpoint_do_process(net_timer_t timer, void * ctx) {
 
     if (wslay_event_want_write(ws_ep->m_ctx) && !net_endpoint_wbuf_is_full(ws_ep->m_endpoint)) {
         if (wslay_event_send(ws_ep->m_ctx) != 0) {
-            net_schedule_t schedule = net_endpoint_schedule(ws_ep->m_endpoint);
+            net_ws_cli_protocol_t ws_protocol = net_protocol_data(net_endpoint_protocol(ws_ep->m_endpoint));
             CPE_ERROR(
-                net_schedule_em(schedule), "ws: %s: process: send fail, auto disconnect",
-                net_endpoint_dump(net_schedule_tmp_buffer(schedule), ws_ep->m_endpoint));
+                ws_protocol->m_em, "ws: %s: process: send fail, auto disconnect",
+                net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), ws_ep->m_endpoint));
             net_endpoint_set_state(ws_ep->m_endpoint, net_endpoint_state_disable);
             return;
         }
@@ -493,11 +502,10 @@ static void net_ws_cli_endpoint_do_process(net_timer_t timer, void * ctx) {
 }
 
 static void net_ws_cli_endpoint_reset_data(net_ws_cli_endpoint_t ws_ep) {
-    net_schedule_t schedule = net_endpoint_schedule(ws_ep->m_endpoint);
-    mem_allocrator_t alloc = net_schedule_allocrator(schedule);
+    net_ws_cli_protocol_t ws_protocol = net_protocol_data(net_endpoint_protocol(ws_ep->m_endpoint));
     
     if (ws_ep->m_handshake_token) {
-        mem_free(alloc, ws_ep->m_handshake_token);
+        mem_free(ws_protocol->m_alloc, ws_ep->m_handshake_token);
         ws_ep->m_handshake_token = NULL;
     }
 
@@ -506,11 +514,11 @@ static void net_ws_cli_endpoint_reset_data(net_ws_cli_endpoint_t ws_ep) {
 }
 
 static int net_ws_cli_endpoint_send_handshake(net_ws_cli_endpoint_t ws_ep) {
-    net_schedule_t schedule = net_endpoint_schedule(ws_ep->m_endpoint);
+    net_ws_cli_protocol_t ws_protocol = net_protocol_data(net_endpoint_protocol(ws_ep->m_endpoint));
 
     /*生成token */
     if (ws_ep->m_handshake_token) {
-        mem_free(net_schedule_allocrator(schedule), ws_ep->m_handshake_token);
+        mem_free(ws_protocol->m_alloc, ws_ep->m_handshake_token);
         ws_ep->m_handshake_token = NULL;
     }
 
@@ -518,12 +526,12 @@ static int net_ws_cli_endpoint_send_handshake(net_ws_cli_endpoint_t ws_ep) {
     cpe_rand_ctx_fill(cpe_rand_ctx_dft(), rand_buf, sizeof(rand_buf));
     ws_ep->m_handshake_token =
         cpe_str_mem_dup(
-            net_schedule_allocrator(schedule), 
-            cpe_base64_dump(net_schedule_tmp_buffer(schedule), rand_buf, sizeof(rand_buf)));
+            ws_protocol->m_alloc, 
+            cpe_base64_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), rand_buf, sizeof(rand_buf)));
     if (ws_ep->m_handshake_token == NULL) {
         CPE_ERROR(
-            net_schedule_em(schedule), "ws: %s:    handshake: generate token fail",
-            net_endpoint_dump(net_schedule_tmp_buffer(schedule), ws_ep->m_endpoint));
+            ws_protocol->m_em, "ws: %s:    handshake: generate token fail",
+            net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), ws_ep->m_endpoint));
         return -1;
     }
             
@@ -531,8 +539,8 @@ static int net_ws_cli_endpoint_send_handshake(net_ws_cli_endpoint_t ws_ep) {
     void * buf = net_endpoint_wbuf_alloc(ws_ep->m_endpoint, &size);
     if (buf == NULL) {
         CPE_ERROR(
-            net_schedule_em(schedule), "ws: %s:    handshake: alloc buf fail, size=%d",
-            net_endpoint_dump(net_schedule_tmp_buffer(schedule), ws_ep->m_endpoint),
+            ws_protocol->m_em, "ws: %s:    handshake: alloc buf fail, size=%d",
+            net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), ws_ep->m_endpoint),
             (int)size);
         return -1;
     }
@@ -551,29 +559,29 @@ static int net_ws_cli_endpoint_send_handshake(net_ws_cli_endpoint_t ws_ep) {
         "Sec-WebSocket-Version: 13\r\n"
         "\r\n",
         net_ws_cli_endpoint_path(ws_ep),
-        net_address_host(net_schedule_tmp_buffer(schedule), address),
+        net_address_host(net_ws_cli_protocol_tmp_buffer(ws_protocol), address),
         net_address_port(address),
         ws_ep->m_handshake_token);
 
     if (ws_ep->m_debug >= 2) {
         ((char*)buf)[n] = 0;
         CPE_INFO(
-            net_schedule_em(schedule), "ws: %s: handshake request: >>>\n%s",
-            net_endpoint_dump(net_schedule_tmp_buffer(schedule), ws_ep->m_endpoint),
+            ws_protocol->m_em, "ws: %s: handshake request: >>>\n%s",
+            net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), ws_ep->m_endpoint),
             buf);
     }
     
     if (net_endpoint_wbuf_supply(ws_ep->m_endpoint, (uint32_t)n) != 0) {
         CPE_ERROR(
-            net_schedule_em(schedule), "ws: %s: handshake: write fail",
-            net_endpoint_dump(net_schedule_tmp_buffer(schedule), ws_ep->m_endpoint));
+            ws_protocol->m_em, "ws: %s: handshake: write fail",
+            net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), ws_ep->m_endpoint));
         return -1;
     }
     
     return 0;
 }
 
-static int net_ws_cli_endpoint_on_handshake_line(net_schedule_t schedule, net_ws_cli_endpoint_t ws_ep, char * line) {
+static int net_ws_cli_endpoint_on_handshake_line(net_ws_cli_protocol_t ws_protocol, net_ws_cli_endpoint_t ws_ep, char * line) {
     char * sep = strchr(line, ':');
     if (sep == NULL) return 0;
 
@@ -589,16 +597,16 @@ static int net_ws_cli_endpoint_on_handshake_line(net_schedule_t schedule, net_ws
         struct cpe_sha1_value sha1_value;
         if (cpe_sha1_encode_str(&sha1_value, accept_token_buf) != 0) {
             CPE_ERROR(
-                net_schedule_em(schedule), "ws: %s: handshake response: calc accept token fail",
-                net_endpoint_dump(net_schedule_tmp_buffer(schedule), ws_ep->m_endpoint));
+                ws_protocol->m_em, "ws: %s: handshake response: calc accept token fail",
+                net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), ws_ep->m_endpoint));
             return -1;
         }
 
-        const char * expect_accept = cpe_base64_dump(net_schedule_tmp_buffer(schedule), sha1_value.digest, sizeof(sha1_value.digest));
+        const char * expect_accept = cpe_base64_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), sha1_value.digest, sizeof(sha1_value.digest));
         if (strcmp(value, expect_accept) != 0) {
             CPE_ERROR(
-                net_schedule_em(schedule), "ws: %s: handshake response: expect token %s, but %s",
-                net_endpoint_dump(net_schedule_tmp_buffer(schedule), ws_ep->m_endpoint),
+                ws_protocol->m_em, "ws: %s: handshake response: expect token %s, but %s",
+                net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), ws_ep->m_endpoint),
                 expect_accept, value);
             return -1;
         }
@@ -609,11 +617,11 @@ static int net_ws_cli_endpoint_on_handshake_line(net_schedule_t schedule, net_ws
     return 0;
 }
 
-static int net_ws_cli_endpoint_on_handshake(net_schedule_t schedule, net_ws_cli_endpoint_t ws_ep, char * response) {
+static int net_ws_cli_endpoint_on_handshake(net_ws_cli_protocol_t ws_protocol, net_ws_cli_endpoint_t ws_ep, char * response) {
     if (ws_ep->m_debug >= 2) {
         CPE_INFO(
-            net_schedule_em(schedule), "ws: %s: handshake response: <<<\n%s",
-            net_endpoint_dump(net_schedule_tmp_buffer(schedule), ws_ep->m_endpoint),
+            ws_protocol->m_em, "ws: %s: handshake response: <<<\n%s",
+            net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), ws_ep->m_endpoint),
             response);
     }
 
@@ -621,17 +629,17 @@ static int net_ws_cli_endpoint_on_handshake(net_schedule_t schedule, net_ws_cli_
     char * sep = strstr(line, "\r\n");
     for(; sep; line = sep + 2, sep = strstr(line, "\r\n")) {
         *sep = 0;
-        if (net_ws_cli_endpoint_on_handshake_line(schedule, ws_ep, line) != 0) return -1;
+        if (net_ws_cli_endpoint_on_handshake_line(ws_protocol, ws_ep, line) != 0) return -1;
     }
 
     if (line[0]) {
-        if (net_ws_cli_endpoint_on_handshake_line(schedule, ws_ep, line) != 0) return -1;
+        if (net_ws_cli_endpoint_on_handshake_line(ws_protocol, ws_ep, line) != 0) return -1;
     }
 
     if (ws_ep->m_state != net_ws_cli_state_established) {
         CPE_ERROR(
-            net_schedule_em(schedule), "ws: %s: handshake response: no sec-websocket-accept data!",
-            net_endpoint_dump(net_schedule_tmp_buffer(schedule), ws_ep->m_endpoint));
+            ws_protocol->m_em, "ws: %s: handshake response: no sec-websocket-accept data!",
+            net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), ws_ep->m_endpoint));
         return -1;
     }
     
