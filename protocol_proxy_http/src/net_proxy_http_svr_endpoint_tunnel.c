@@ -100,7 +100,12 @@ int net_proxy_http_svr_endpoint_tunnel_forward(
 int net_proxy_http_svr_endpoint_tunnel_backword(
     net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep, net_endpoint_t endpoint, net_endpoint_t from)
 {
-    return net_endpoint_wbuf_append_from_other(endpoint, from, 0);
+    switch(http_ep->m_tunnel.m_state) {
+    case proxy_http_svr_tunnel_state_established:
+        return net_endpoint_wbuf_append_from_other(endpoint, from, 0);
+    default:
+        return 0;
+    }
 }
 
 static int net_proxy_http_svr_endpoint_tunnel_parse_header_line(

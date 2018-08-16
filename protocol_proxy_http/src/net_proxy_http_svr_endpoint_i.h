@@ -5,17 +5,10 @@
 
 NET_BEGIN_DECL
 
-typedef enum proxy_http_svr_basic_read_state {
-    proxy_http_svr_basic_read_state_reading_header
-    , proxy_http_svr_basic_read_state_reading_content
-} proxy_http_svr_basic_read_state_t;
-
-typedef enum proxy_http_svr_write_state {
-    proxy_http_svr_basic_write_state_invalid
-    , proxy_http_svr_basic_write_state_sending_content_response
-    , proxy_http_svr_basic_write_state_forwarding
-    , proxy_http_svr_basic_write_state_stopped
-} proxy_http_svr_basic_write_state_t;
+typedef enum proxy_http_svr_basic_state {
+    proxy_http_svr_basic_state_reading_header
+    , proxy_http_svr_basic_state_reading_content
+} proxy_http_svr_basic_state_t;
 
 typedef enum proxy_http_svr_tunnel_state {
     proxy_http_svr_tunnel_state_connecting
@@ -31,9 +24,8 @@ struct net_proxy_http_svr_endpoint {
             net_endpoint_monitor_t m_other_state_monitor;
         } m_tunnel;
         struct {
-            proxy_http_svr_basic_read_state_t m_read_state;
+            proxy_http_svr_basic_state_t m_read_state;
             uint32_t m_read_context_length;
-            proxy_http_svr_basic_write_state_t m_write_state;
         } m_basic;
     };
     uint8_t m_keep_alive;
@@ -49,6 +41,10 @@ int net_proxy_http_svr_endpoint_forward(net_endpoint_t endpoint, net_endpoint_t 
 /*basic*/
 int net_proxy_http_svr_endpoint_basic_read_head(
     net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep, net_endpoint_t endpoint, char * data);
+int net_proxy_http_svr_endpoint_basic_forward(
+    net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep, net_endpoint_t endpoint);
+int net_proxy_http_svr_endpoint_basic_backword(
+    net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep, net_endpoint_t endpoint, net_endpoint_t from);
 
 /*tunnel*/
 int net_proxy_http_svr_endpoint_tunnel_on_connect(

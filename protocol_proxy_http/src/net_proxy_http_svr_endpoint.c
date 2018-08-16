@@ -59,12 +59,7 @@ CHECK_AGAIN:
     case net_proxy_http_way_tunnel:
         return net_proxy_http_svr_endpoint_tunnel_forward(http_protocol, http_ep, endpoint);
     case net_proxy_http_way_basic:
-        switch(http_ep->m_basic.m_read_state) {
-        case proxy_http_svr_basic_read_state_reading_header:
-            return -1;
-        case proxy_http_svr_basic_read_state_reading_content:
-            return -1;
-        }
+        return net_proxy_http_svr_endpoint_basic_forward(http_protocol, http_ep, endpoint);
     }
     
     return 0;
@@ -83,7 +78,7 @@ int net_proxy_http_svr_endpoint_forward(net_endpoint_t endpoint, net_endpoint_t 
     case net_proxy_http_way_tunnel:
         return net_proxy_http_svr_endpoint_tunnel_backword(http_protocol, http_ep, endpoint, from);
     case net_proxy_http_way_basic:
-        return -1;
+        return net_proxy_http_svr_endpoint_basic_backword(http_protocol, http_ep, endpoint, from);
     }
 }
 
@@ -141,9 +136,8 @@ static int net_proxy_http_svr_endpoint_input_first_header(
     }
     else {
         http_ep->m_way = net_proxy_http_way_basic;
-        http_ep->m_basic.m_read_state = proxy_http_svr_basic_read_state_reading_header;
+        http_ep->m_basic.m_read_state = proxy_http_svr_basic_state_reading_header;
         http_ep->m_basic.m_read_context_length = 0;
-        http_ep->m_basic.m_write_state = proxy_http_svr_basic_write_state_invalid;
         rv = net_proxy_http_svr_endpoint_basic_read_head(http_protocol, http_ep, endpoint, data);
     }
     
