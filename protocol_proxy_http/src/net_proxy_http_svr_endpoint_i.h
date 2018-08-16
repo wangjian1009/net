@@ -17,15 +17,26 @@ typedef enum proxy_http_svr_write_state {
     , proxy_http_svr_basic_write_state_stopped
 } proxy_http_svr_basic_write_state_t;
 
+typedef enum proxy_http_svr_tunnel_state {
+    proxy_http_svr_tunnel_state_connecting
+    , proxy_http_svr_tunnel_state_established
+} proxy_http_svr_tunnel_state_t;
+
 struct net_proxy_http_svr_endpoint {
     uint8_t m_debug;
     net_proxy_http_way_t m_way;
     union {
         struct {
+            proxy_http_svr_tunnel_state_t m_state;
+            net_endpoint_monitor_t m_other_state_monitor;
+        } m_tunnel;
+        struct {
             proxy_http_svr_basic_read_state_t m_read_state;
+            uint32_t m_read_context_length;
             proxy_http_svr_basic_write_state_t m_write_state;
         } m_basic;
     };
+    uint8_t m_keep_alive;
     net_proxy_http_svr_connect_fun_t m_on_connect_fun;
     void * m_on_connect_ctx;
 };

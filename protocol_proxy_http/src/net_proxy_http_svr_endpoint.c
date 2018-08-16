@@ -1,10 +1,9 @@
 #include "cpe/pal/pal_string.h"
 #include "cpe/pal/pal_strings.h"
 #include "cpe/utils/string_utils.h"
-#include "net_schedule.h"
 #include "net_protocol.h"
 #include "net_endpoint.h"
-#include "net_address.h"
+#include "net_endpoint_monitor.h"
 #include "net_proxy_http_svr_endpoint_i.h"
 
 static int net_proxy_http_svr_endpoint_input_first_header(
@@ -14,12 +13,29 @@ int net_proxy_http_svr_endpoint_init(net_endpoint_t endpoint) {
     net_proxy_http_svr_endpoint_t http_ep = net_endpoint_protocol_data(endpoint);
     http_ep->m_debug = 0;
     http_ep->m_way = net_proxy_http_way_unknown;
+    http_ep->m_keep_alive = 0;
+
     http_ep->m_on_connect_fun = NULL;
     http_ep->m_on_connect_ctx = NULL;
+    
     return 0;
 }
 
 void net_proxy_http_svr_endpoint_fini(net_endpoint_t endpoint) {
+    net_proxy_http_svr_endpoint_t http_ep = net_endpoint_protocol_data(endpoint);
+
+    switch(http_ep->m_way) {
+    case net_proxy_http_way_unknown:
+        break;
+    case net_proxy_http_way_tunnel:
+        if (http_ep->m_tunnel.m_other_state_monitor) {
+            net_endpoint_monitor_free(http_ep->m_tunnel.m_other_state_monitor);
+            http_ep->m_tunnel.m_other_state_monitor = NULL;
+        }
+        break;
+    case net_proxy_http_way_basic:
+        break;
+    }
 }
 
 void net_proxy_http_svr_endpoint_set_connect_fun(
@@ -119,11 +135,14 @@ static int net_proxy_http_svr_endpoint_input_first_header(
     
     if (cpe_str_start_with(data, "CONNECT")) {
         http_ep->m_way = net_proxy_http_way_tunnel;
+        http_ep->m_tunnel.m_state = proxy_http_svr_tunnel_state_connecting;
+        http_ep->m_tunnel.m_other_state_monitor = NULL;
         rv = net_proxy_http_svr_endpoint_tunnel_on_connect(http_protocol, http_ep, endpoint, data);
     }
     else {
         http_ep->m_way = net_proxy_http_way_basic;
         http_ep->m_basic.m_read_state = proxy_http_svr_basic_read_state_reading_header;
+        http_ep->m_basic.m_read_context_length = 0;
         http_ep->m_basic.m_write_state = proxy_http_svr_basic_write_state_invalid;
         rv = net_proxy_http_svr_endpoint_basic_read_head(http_protocol, http_ep, endpoint, data);
     }
