@@ -25,11 +25,8 @@ struct net_dns_manage {
     error_monitor_t m_em;
     uint8_t m_debug;
     net_schedule_t m_schedule;
-    net_driver_t m_driver;
     net_dns_mode_t m_mode;
     net_dns_source_list_t m_sources;
-    net_dgram_t m_dgram;
-    struct cpe_hash_table m_dgram_receivers;
 
     net_dns_item_select_policy_t m_default_item_select_policy;
     

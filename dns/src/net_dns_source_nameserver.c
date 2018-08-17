@@ -5,8 +5,8 @@
 #include "cpe/utils/time_utils.h"
 #include "net_address.h"
 #include "net_endpoint.h"
+#include "net_dgram.h"
 #include "net_timer.h"
-#include "net_dns_dgram_receiver.h"
 #include "net_dns_task.h"
 #include "net_dns_task_step.h"
 #include "net_dns_task_ctx.h"
@@ -18,7 +18,11 @@
 static int net_dns_source_nameserver_init(net_dns_source_t source);
 static void net_dns_source_nameserver_fini(net_dns_source_t source);
 static void net_dns_source_nameserver_dump(write_stream_t ws, net_dns_source_t source);
-static void net_dns_source_nameserver_dgram_receiver(void * ctx, void * data, size_t data_size);
+static void net_dns_source_nameserver_dgram_input(
+    net_dgram_t dgram, void * ctx, void * data, size_t data_size, net_address_t source);
+
+static int net_dns_source_nameserver_dgram_output(
+    net_dns_manage_t manage, net_dns_source_nameserver_t nameserver, void const * data, uint16_t buf_size);
 
 static int net_dns_source_nameserver_ctx_init(net_dns_source_t source, net_dns_task_ctx_t task_ctx);
 static void net_dns_source_nameserver_ctx_fini(net_dns_source_t source, net_dns_task_ctx_t task_ctx);
@@ -31,7 +35,7 @@ static const char * net_dns_source_nameserver_req_dump(
     net_dns_manage_t manage, mem_buffer_t buffer, char const * buf, uint32_t data_size);
 
 net_dns_source_nameserver_t
-net_dns_source_nameserver_create(net_dns_manage_t manage, net_address_t addr, uint8_t is_own) {
+net_dns_source_nameserver_create(net_dns_manage_t manage, net_driver_t driver, net_address_t addr, uint8_t is_own) {
     net_dns_source_t source =
         net_dns_source_create(
             manage,
@@ -48,6 +52,8 @@ net_dns_source_nameserver_create(net_dns_manage_t manage, net_address_t addr, ui
 
     net_dns_source_nameserver_t nameserver = net_dns_source_data(source);
 
+    nameserver->m_driver = driver;
+    
     if (is_own) {
         nameserver->m_address = addr;
     }
@@ -62,16 +68,6 @@ net_dns_source_nameserver_create(net_dns_manage_t manage, net_address_t addr, ui
 
     if (net_address_port(nameserver->m_address) == 0) {
         net_address_set_port(nameserver->m_address, 53);
-    }
-
-    if (net_dns_dgram_receiver_create(
-            manage, 0, nameserver->m_address, nameserver, net_dns_source_nameserver_dgram_receiver)
-        == NULL)
-    {
-        CPE_ERROR(manage->m_em, "dns-cli: nameserver: create dgram receiver fail!");
-        if (!is_own) net_address_free(nameserver->m_address);
-        net_dns_source_free(source);
-        return NULL;
     }
 
     if (manage->m_debug) {
@@ -110,7 +106,9 @@ void net_dns_source_nameserver_free(net_dns_source_nameserver_t nameserver) {
 int net_dns_source_nameserver_init(net_dns_source_t source) {
     net_dns_source_nameserver_t nameserver = net_dns_source_data(source);
 
+    nameserver->m_driver = NULL;
     nameserver->m_address = NULL;
+    nameserver->m_dgram = NULL;
     nameserver->m_endpoint = NULL;
     nameserver->m_retry_count = 0;
     nameserver->m_timeout_ms = 2000;
@@ -129,18 +127,16 @@ void net_dns_source_nameserver_fini(net_dns_source_t source) {
             net_dns_source_dump(net_dns_manage_tmp_buffer(manage), source));
     }
     
-    net_dns_dgram_receiver_t receiver =
-        net_dns_dgram_receiver_find_by_ctx(
-            manage, nameserver, net_dns_source_nameserver_dgram_receiver);
-    if (receiver) {
-        net_dns_dgram_receiver_free(receiver);
-    }
-
     if (nameserver->m_address) {
         net_address_free(nameserver->m_address);
         nameserver->m_address = NULL;
     }
 
+    if (nameserver->m_dgram) {
+        net_dgram_free(nameserver->m_dgram);
+        nameserver->m_dgram = NULL;
+    }
+    
     if (nameserver->m_endpoint) {
         net_endpoint_free(nameserver->m_endpoint);
         nameserver->m_endpoint = NULL;
@@ -235,24 +231,16 @@ int net_dns_source_nameserver_ctx_start(net_dns_source_t source, net_dns_task_ct
     CPE_COPY_HTON16(p, &qclass); p+=2;
 
     uint16_t buf_size = (uint32_t)(p - buf);
-    if (net_dns_manage_dgram_send(manage, nameserver->m_address, buf, buf_size) < 0) {
-        CPE_ERROR(manage->m_em, "dns-cli: nameserver: send data fail");
-        return -1;
-    }
 
-    if (manage->m_debug >= 2) {
-        CPE_INFO(
-            manage->m_em, "dns-cli: udp --> %s",
-            net_dns_source_nameserver_req_dump(manage, net_dns_manage_tmp_buffer(manage), buf, buf_size));
-    }
-    
-    return 0;
+    return net_dns_source_nameserver_dgram_output(manage, nameserver, buf, buf_size);
 }
 
 void net_dns_source_nameserver_ctx_cancel(net_dns_source_t source, net_dns_task_ctx_t task_ctx) {
 }
 
-static void net_dns_source_nameserver_dgram_receiver(void * ctx, void * data, size_t data_size) {
+static void net_dns_source_nameserver_dgram_input(
+    net_dgram_t dgram, void * ctx, void * data, size_t data_size, net_address_t from)
+{
     net_dns_source_nameserver_t nameserver = ctx;
     net_dns_source_t source = net_dns_source_from_data(nameserver);
     net_dns_manage_t manage = net_dns_source_manager(source);
@@ -549,4 +537,38 @@ static const char * net_dns_source_nameserver_req_dump(net_dns_manage_t manage, 
     stream_putc((write_stream_t)&stream, 0);
 
     return mem_buffer_make_continuous(buffer, 0);
+}
+
+static int net_dns_source_nameserver_dgram_output(
+    net_dns_manage_t manage, net_dns_source_nameserver_t nameserver, void const * buf, uint16_t buf_size)
+{
+    if (nameserver->m_dgram == NULL) {
+        nameserver->m_dgram = net_dgram_create(
+            nameserver->m_driver, NULL, net_dns_source_nameserver_dgram_input, nameserver);
+        if (nameserver->m_dgram == NULL) {
+            CPE_ERROR(
+                manage->m_em, "dns-cli: nameserver[%s]: create dgram fail",
+                net_address_dump(net_dns_manage_tmp_buffer(manage), nameserver->m_address));
+            return -1;
+        }
+    }
+    
+    if (net_dgram_send(nameserver->m_dgram, nameserver->m_address, buf, buf_size) < 0) {
+        CPE_ERROR(
+            manage->m_em, "dns-cli: nameserver[%s]: send data fail",
+            net_address_dump(net_dns_manage_tmp_buffer(manage), nameserver->m_address));
+        return -1;
+    }
+
+    if (manage->m_debug >= 2) {
+        char address_buf[128];
+        snprintf(address_buf, sizeof(address_buf), "%s", net_address_dump(net_dns_manage_tmp_buffer(manage), nameserver->m_address));
+        
+        CPE_INFO(
+            manage->m_em, "dns-cli: nameserver[%s]: udp --> %s",
+            address_buf,
+            net_dns_source_nameserver_req_dump(manage, net_dns_manage_tmp_buffer(manage), buf, buf_size));
+    }
+
+    return 0;
 }

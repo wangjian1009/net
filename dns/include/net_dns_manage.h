@@ -6,8 +6,7 @@
 NET_BEGIN_DECL
 
 net_dns_manage_t net_dns_manage_create(
-    mem_allocrator_t alloc, error_monitor_t em,
-    net_schedule_t schedule, net_driver_t driver);
+    mem_allocrator_t alloc, error_monitor_t em, net_schedule_t schedule);
 
 void net_dns_manage_free(net_dns_manage_t dns_manage);
 
@@ -22,7 +21,7 @@ net_dns_task_builder_t net_dns_task_builder_internal(net_dns_manage_t manage);
 net_dns_task_builder_t net_dns_task_builder_default(net_dns_manage_t manage);
 void net_dns_task_builder_set_default(net_dns_manage_t manage, net_dns_task_builder_t builder);
 
-int net_dns_manage_auto_conf(net_dns_manage_t manage);
+int net_dns_manage_auto_conf(net_dns_manage_t manage, net_driver_t driver);
 
 int net_dns_manage_dgram_send(net_dns_manage_t manage, net_address_t target, void const * data, size_t data_size);
 

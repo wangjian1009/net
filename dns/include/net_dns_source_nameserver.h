@@ -4,7 +4,9 @@
 
 NET_BEGIN_DECL
 
-net_dns_source_nameserver_t net_dns_source_nameserver_create(net_dns_manage_t manage, net_address_t addr, uint8_t is_own);
+net_dns_source_nameserver_t
+net_dns_source_nameserver_create(
+    net_dns_manage_t manage, net_driver_t driver, net_address_t addr, uint8_t is_own);
 void net_dns_source_nameserver_free(net_dns_source_nameserver_t server);
 
 net_dns_source_nameserver_t net_dns_source_nameserver_find(net_dns_manage_t manage, net_address_t addr);

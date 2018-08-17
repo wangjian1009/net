@@ -6,7 +6,9 @@
 NET_BEGIN_DECL
 
 struct net_dns_source_nameserver {
+    net_driver_t m_driver;
     net_address_t m_address;
+    net_dgram_t m_dgram;
     net_endpoint_t m_endpoint;
     uint16_t m_timeout_ms;
     uint16_t m_retry_count;
