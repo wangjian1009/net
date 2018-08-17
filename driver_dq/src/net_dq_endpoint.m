@@ -47,8 +47,6 @@ void net_dq_endpoint_fini(net_endpoint_t base_endpoint) {
 }
 
 int net_dq_endpoint_on_output(net_endpoint_t base_endpoint) {
-    if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return 0;
-
     net_dq_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     net_dq_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
 
@@ -183,6 +181,7 @@ int net_dq_endpoint_connect(net_endpoint_t base_endpoint) {
             endpoint->m_source_w = dispatch_source_create(DISPATCH_SOURCE_TYPE_WRITE, endpoint->m_fd, 0, dispatch_get_main_queue());
             dispatch_retain(endpoint->m_source_w);
             dispatch_source_set_event_handler(endpoint->m_source_w, ^{
+                CPE_ERROR(driver->m_em, "222");
                     net_dq_endpoint_stop_w(driver, endpoint, base_endpoint);
                     net_dq_endpoint_on_connect(driver, endpoint, base_endpoint);
                 });
@@ -224,7 +223,7 @@ int net_dq_endpoint_connect(net_endpoint_t base_endpoint) {
             net_dq_endpoint_update_local_address(endpoint);
         }
 
-        return net_endpoint_set_state(base_endpoint, net_endpoint_state_established);
+        return net_dq_endpoint_set_established(driver, endpoint, base_endpoint);
     }
 }
 
@@ -305,6 +304,21 @@ int net_dq_endpoint_update_remote_address(net_dq_endpoint_t endpoint) {
     return 0;
 }
 
+int net_dq_endpoint_set_established(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint) {
+    assert(endpoint->m_source_r == NULL);
+    endpoint->m_can_read = 1;
+    assert(endpoint->m_source_w == NULL);
+    endpoint->m_can_write = 1;
+
+    if (net_endpoint_set_state(base_endpoint, net_endpoint_state_established) != 0) return -1;
+
+    if (net_dq_endpoint_on_read(driver, endpoint, base_endpoint) != 0) return -1;
+    
+    if (net_dq_endpoint_on_write(driver, endpoint, base_endpoint) != 0) return -1;
+
+    return 0;
+}
+
 int net_dq_endpoint_on_read(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint) {
     if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) {
         CPE_ERROR(
@@ -315,23 +329,7 @@ int net_dq_endpoint_on_read(net_dq_driver_t driver, net_dq_endpoint_t endpoint, 
     }
 
     while(1) {
-        int sock_r_sz;
-        socklen_t sock_r_sz_len = sizeof(sock_r_sz);
-        if (cpe_getsockopt(endpoint->m_fd, SOL_SOCKET, SO_NREAD, (void*)&sock_r_sz, &sock_r_sz_len) == -1) {
-            CPE_ERROR(
-                driver->m_em, "dq: %s: on read: get socket NREAD fail, errno=%d (%s)!",
-                net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
-                cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-
-            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) return -1;
-        }
-
-        if (sock_r_sz == 0) {
-            net_dq_endpoint_start_r(driver, endpoint, base_endpoint);
-            return 0;
-        }
-    
-        uint32_t capacity = (uint32_t)sock_r_sz;
+        uint32_t capacity = 0;
         void * rbuf = net_endpoint_rbuf_alloc(base_endpoint, &capacity);
         if (rbuf == NULL) {
             CPE_ERROR(
@@ -346,9 +344,9 @@ int net_dq_endpoint_on_read(net_dq_driver_t driver, net_dq_endpoint_t endpoint, 
         if (bytes > 0) {
             if (driver->m_debug) {
                 CPE_INFO(
-                    driver->m_em, "dq: %s: recv %d/%d bytes data!",
+                    driver->m_em, "dq: %s: recv %d bytes data!",
                     net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
-                    (int)bytes, capacity);
+                    (int)bytes);
             }
 
             if (net_endpoint_rbuf_supply(base_endpoint, (uint32_t)bytes) != 0) {
@@ -450,7 +448,7 @@ int net_dq_endpoint_on_write(net_dq_driver_t driver, net_dq_endpoint_t endpoint,
             if (err == EINTR) continue;
 
             CPE_ERROR(
-                driver->m_em, "dq: %s: free for send error, errno=%d (%s)!",
+                driver->m_em, "dq: %s: send error, errno=%d (%s)!",
                 net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
                 cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
 
@@ -464,16 +462,11 @@ int net_dq_endpoint_on_write(net_dq_driver_t driver, net_dq_endpoint_t endpoint,
 }
 
 static void net_dq_endpoint_on_connect(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint) {
-    assert(endpoint->m_source_r == NULL);
-    endpoint->m_can_read = 1;
-    assert(endpoint->m_source_w == NULL);
-    endpoint->m_can_write = 1;
-
     int err;
     socklen_t err_len = sizeof(err);
     if (cpe_getsockopt(endpoint->m_fd, SOL_SOCKET, SO_ERROR, (void*)&err, &err_len) == -1) {
         CPE_ERROR(
-            driver->m_em, "dq: %s: connect_cb get socket error fail, errno=%d (%s)!",
+            driver->m_em, "dq: %s: connect: connect get socket error fail, errno=%d (%s)!",
             net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
 
@@ -504,14 +497,7 @@ static void net_dq_endpoint_on_connect(net_dq_driver_t driver, net_dq_endpoint_t
         net_dq_endpoint_update_local_address(endpoint);
     }
 
-    if (net_endpoint_set_state(base_endpoint, net_endpoint_state_established) != 0) {
-        net_endpoint_free(base_endpoint);
-        return;
-    }
-
-    if (net_dq_endpoint_on_read(driver, endpoint, base_endpoint) != 0
-        || net_dq_endpoint_on_write(driver, endpoint, base_endpoint) != 0)
-    {
+    if (net_dq_endpoint_set_established(driver, endpoint, base_endpoint) != 0) {
         net_endpoint_free(base_endpoint);
         return;
     }
@@ -530,6 +516,7 @@ static void net_dq_endpoint_start_w(net_dq_driver_t driver, net_dq_endpoint_t en
     endpoint->m_source_w = dispatch_source_create(DISPATCH_SOURCE_TYPE_WRITE, endpoint->m_fd, 0, dispatch_get_main_queue());
     dispatch_retain(endpoint->m_source_w);
     dispatch_source_set_event_handler(endpoint->m_source_w, ^{
+            CPE_ERROR(driver->m_em, "444");
             net_dq_endpoint_stop_w(driver, endpoint, base_endpoint);
             if (net_dq_endpoint_on_write(driver, endpoint, base_endpoint) != 0) {
                 net_endpoint_free(base_endpoint);

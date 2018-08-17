@@ -103,13 +103,8 @@ static void net_dq_acceptor_on_accept(net_dq_acceptor_t acceptor) {
         cpe_sock_close(new_fd);
         return;
     }
-
     net_dq_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     endpoint->m_fd = new_fd;
-    if (net_endpoint_set_state(base_endpoint, net_endpoint_state_established) != 0) {
-        net_endpoint_free(base_endpoint);
-        return;
-    }
 
     if (net_dq_endpoint_update_local_address(endpoint) != 0
         || net_dq_endpoint_update_remote_address(endpoint) != 0)
@@ -124,9 +119,7 @@ static void net_dq_acceptor_on_accept(net_dq_acceptor_t acceptor) {
         return;
     }
 
-    if (net_dq_endpoint_on_read(driver, endpoint, base_endpoint) != 0
-        || net_dq_endpoint_on_write(driver, endpoint, base_endpoint) != 0)
-    {
+    if (net_dq_endpoint_set_established(driver, endpoint, base_endpoint) != 0) {
         net_endpoint_free(base_endpoint);
         return;
     }

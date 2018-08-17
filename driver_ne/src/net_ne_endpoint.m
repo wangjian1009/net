@@ -308,7 +308,6 @@ static int net_ne_endpoint_do_write(net_ne_driver_t driver, net_ne_endpoint_t en
 
     uint32_t sz;
     void * buf = net_endpoint_wbuf(base_endpoint, &sz);
-    CPE_ERROR(driver->m_em, "xxx do write 3, buf=%p, sz=%d", buf, sz);
     if (buf == NULL) return 0;
 
     NSData * data = [NSData dataWithBytes: buf length: sz];
@@ -376,7 +375,7 @@ static int net_ne_endpoint_do_write(net_ne_driver_t driver, net_ne_endpoint_t en
                        change:(NSDictionary *)change 
                       context:(void *)context
 {
-    NSLog(@"xxxxx observeValueForKeyPath: keyPath=%@, change=%@", keyPath, change);
+    //NSLog(@"xxxxx observeValueForKeyPath: keyPath=%@, change=%@", keyPath, change);
     
     dispatch_sync(
         dispatch_get_main_queue(),
