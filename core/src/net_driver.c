@@ -65,6 +65,7 @@ net_driver_create(
     /*acceptor*/
     driver->m_acceptor_capacity = acceptor_capacity;
     driver->m_acceptor_init = acceptor_init;
+    driver->m_acceptor_fini = acceptor_fini;
     
     /*endpoint*/
     driver->m_endpoint_capacity = endpoint_capacity;

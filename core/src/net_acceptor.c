@@ -10,7 +10,7 @@ net_acceptor_create(
     net_acceptor_on_new_endpoint_fun_t on_new_endpoint, void * on_new_endpoint_ctx)
 {
     net_schedule_t schedule = driver->m_schedule;
-    net_acceptor_t acceptor = TAILQ_FIRST(&driver->m_acceptors);
+    net_acceptor_t acceptor = TAILQ_FIRST(&driver->m_free_acceptors);
     if (acceptor) {
         TAILQ_REMOVE(&driver->m_free_acceptors, acceptor, m_next_for_driver);
     }
