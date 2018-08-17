@@ -5,17 +5,18 @@
 #include "net_driver_i.h"
 #include "net_schedule_i.h"
 
-#define net_endpoint_wbuf_link(__buf)                   \
-    do {                                                    \
-        if (endpoint->m_wb) {                               \
-            ringbuffer_link(schedule->m_endpoint_buf,       \
-                            endpoint->m_wb, (__buf));       \
-            assert(endpoint->m_wb->id == endpoint->m_id);   \
-        }                                                   \
-        else {                                              \
-            (__buf)->id = endpoint->m_id;                   \
-            endpoint->m_wb = (__buf);                       \
-        }                                                   \
+#define net_endpoint_wbuf_link(__buf)                                   \
+    do {                                                                \
+        if (endpoint->m_wb) {                                           \
+            ringbuffer_link(                                            \
+                schedule->m_endpoint_buf, endpoint->m_wb, (__buf));     \
+            assert(endpoint->m_wb->id == endpoint->m_id);               \
+        }                                                               \
+        else {                                                          \
+            ringbuffer_block_set_id(                                    \
+                schedule->m_endpoint_buf, (__buf), endpoint->m_id);     \
+            endpoint->m_wb = (__buf);                                   \
+        }                                                               \
     } while(0)
 
 uint8_t net_endpoint_wbuf_is_full(net_endpoint_t endpoint) {

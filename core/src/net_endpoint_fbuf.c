@@ -6,7 +6,7 @@
 #include "net_schedule_i.h"
 #include "net_protocol_i.h"
 
-#define net_endpoint_fbuf_link(__buf)               \
+#define net_endpoint_fbuf_link(__buf)                   \
     do {                                                \
         if (endpoint->m_fb) {                           \
             (__buf)->id = -1;                           \
@@ -17,7 +17,6 @@
             (__buf)->id = endpoint->m_id;               \
             endpoint->m_fb = (__buf);                   \
         }                                               \
-        assert(endpoint->m_fb->id == endpoint->m_id);   \
     } while(0)
 
 int net_endpoint_fbuf_append(net_endpoint_t endpoint, void const * i_data, uint32_t size) {

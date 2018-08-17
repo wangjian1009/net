@@ -6,19 +6,19 @@
 #include "net_schedule_i.h"
 #include "net_protocol_i.h"
 
-#define net_endpoint_rbuf_link(__buf)               \
-    do {                                                \
-        if (endpoint->m_rb) {                           \
-            (__buf)->id = -1;                           \
-            ringbuffer_link(schedule->m_endpoint_buf,   \
-                            endpoint->m_rb, (__buf));   \
-        }                                               \
-        else {                                          \
-            (__buf)->id = endpoint->m_id;               \
-            endpoint->m_rb = (__buf);                   \
-        }                                               \
+#define net_endpoint_rbuf_link(__buf)                                   \
+    do {                                                                \
+        if (endpoint->m_rb) {                                           \
+            ringbuffer_link(                                            \
+                schedule->m_endpoint_buf, endpoint->m_rb, (__buf));     \
+            assert(endpoint->m_rb->id == endpoint->m_id);               \
+        }                                                               \
+        else {                                                          \
+            ringbuffer_block_set_id(                                    \
+                schedule->m_endpoint_buf, (__buf), endpoint->m_id);     \
+            endpoint->m_rb = (__buf);                                   \
+        }                                                               \
     } while(0)
-
 
 uint8_t net_endpoint_rbuf_is_full(net_endpoint_t endpoint) {
     return 0;
