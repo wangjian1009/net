@@ -26,6 +26,10 @@ static int net_proxy_http_svr_endpoint_basic_append_header(
     net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep, net_endpoint_t endpoint,
     struct net_proxy_http_svr_endpoint_basic_head_context * ctx, const char * name, const char * value);
 
+static int net_proxy_http_svr_endpoint_basic_parse_header_method(
+    net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep, net_endpoint_t endpoint,
+    struct net_proxy_http_svr_endpoint_basic_head_context * ctx, char * line);
+
 static int net_proxy_http_svr_endpoint_basic_parse_header_line(
     net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep, net_endpoint_t endpoint,
     struct net_proxy_http_svr_endpoint_basic_head_context * ctx, char * line);
@@ -110,10 +114,16 @@ int net_proxy_http_svr_endpoint_basic_read_head(
     
     char * line = data;
     char * sep = strstr(line, "\r\n");
+    uint32_t line_num = 0;
     for(; sep; line = sep + 2, sep = strstr(line, "\r\n")) {
         *sep = 0;
-        if (net_proxy_http_svr_endpoint_basic_parse_header_line(http_protocol, http_ep, endpoint, &ctx, line) != 0) return -1;
-        *sep = '\r';
+        if (line_num == 0) {
+            if (net_proxy_http_svr_endpoint_basic_parse_header_method(http_protocol, http_ep, endpoint, &ctx, line) != 0) return -1;
+        }
+        else {
+            if (net_proxy_http_svr_endpoint_basic_parse_header_line(http_protocol, http_ep, endpoint, &ctx, line) != 0) return -1;
+        }
+        line_num++;
     }
 
     if (line[0]) {
@@ -176,10 +186,76 @@ static int net_proxy_http_svr_endpoint_basic_append_header(
     return 0;
 }
 
+static int net_proxy_http_svr_endpoint_basic_parse_header_method(
+    net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep, net_endpoint_t endpoint,
+    struct net_proxy_http_svr_endpoint_basic_head_context * ctx, char * line)
+{
+    char * sep1 = strchr(line, ' ');
+    char * sep2 = sep1 ? strchr(sep1 + 1, ' ') : NULL;
+    if (sep1 == NULL || sep2 == NULL) {
+        CPE_ERROR(
+            http_protocol->m_em, "http-proxy-svr: %s: parse head method: first line %s format error",
+            net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
+            line);
+        return -1;
+    }
+
+    char * method = line;
+    *sep1 = 0;
+
+    const char * origin_target = sep1 + 1;
+    *sep2 = 0;
+
+    const char * version = sep2 + 1;
+
+    const char * target = origin_target;
+    uint8_t remove_host_name = 0;
+    if (cpe_str_start_with(target, "http://")) {
+        target += 7;
+        remove_host_name = 1;
+    }
+    else if (cpe_str_start_with(target, "https://")) {
+        target += 8;
+        remove_host_name = 1;
+    }
+
+    if (remove_host_name) {
+        sep1 = strchr(target, '/');
+        if (sep1) {
+            target = sep1;
+        }
+        else {
+            target = "/";
+        }
+    }
+    
+    assert(ctx->m_output_size + 1u < ctx->m_output_capacity);
+
+    if (http_ep->m_debug) {
+        CPE_INFO(
+            http_protocol->m_em, "http-proxy-svr: %s: basic: relative target %s => %s",
+            net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
+            origin_target, target);
+    }
+    
+    uint32_t left_capacity = ctx->m_output_capacity - ctx->m_output_size - 1;
+    int n = snprintf(ctx->m_output + ctx->m_output_size, left_capacity, "%s %s %s\r\n", method, target, version);
+    if (n == left_capacity) {
+        CPE_ERROR(
+            http_protocol->m_em, "http-proxy-svr: %s: append method line overflow, capacity=%d, left-capacity=%d",
+            net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
+            ctx->m_output_capacity, left_capacity);
+        return -1;
+    }
+
+    ctx->m_output_size += (uint32_t)n;
+    
+    return 0;
+}
+
 static int net_proxy_http_svr_endpoint_basic_parse_header_line(
     net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep, net_endpoint_t endpoint,
-    struct net_proxy_http_svr_endpoint_basic_head_context * ctx,
-    char * line)
+    struct net_proxy_http_svr_endpoint_basic_head_context * ctx, char * line)
 {
     char * sep = strchr(line, ':');
     if (sep == NULL) return 0;

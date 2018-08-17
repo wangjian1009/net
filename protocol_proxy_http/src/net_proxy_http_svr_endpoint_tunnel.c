@@ -9,10 +9,13 @@
 #include "net_address.h"
 #include "net_proxy_http_svr_endpoint_i.h"
 
+static int net_proxy_http_svr_endpoint_tunnel_parse_header_method(
+    net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep, net_endpoint_t endpoint, char * line);
+
 static int net_proxy_http_svr_endpoint_tunnel_parse_header_line(
     net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep, net_endpoint_t endpoint, char * line);
 
-static int net_proxy_http_svr_endpoint_tunnel_connect(
+static int net_proxy_http_svr_endpoint_tunnel_do_link(
     net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep, net_endpoint_t endpoint, const char * str_address);
 
 static int net_proxy_http_svr_endpoint_tunnel_check_send_response(
@@ -26,10 +29,16 @@ int net_proxy_http_svr_endpoint_tunnel_on_connect(
 {
     char * line = data;
     char * sep = strstr(line, "\r\n");
+    uint32_t line_num = 0;
     for(; sep; line = sep + 2, sep = strstr(line, "\r\n")) {
         *sep = 0;
-        if (net_proxy_http_svr_endpoint_tunnel_parse_header_line(http_protocol, http_ep, endpoint, line) != 0) return -1;
-        *sep = '\r';
+        if (line_num == 0) {
+            if (net_proxy_http_svr_endpoint_tunnel_parse_header_method(http_protocol, http_ep, endpoint, line) != 0) return -1;
+        }
+        else {
+            if (net_proxy_http_svr_endpoint_tunnel_parse_header_line(http_protocol, http_ep, endpoint, line) != 0) return -1;
+        }
+        line_num++;
     }
 
     if (line[0]) {
@@ -108,6 +117,38 @@ int net_proxy_http_svr_endpoint_tunnel_backword(
     }
 }
 
+static int net_proxy_http_svr_endpoint_tunnel_parse_header_method(
+    net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep, net_endpoint_t endpoint, char * line)
+{
+    char * sep1 = strchr(line, ' ');
+    char * sep2 = sep1 ? strchr(sep1 + 1, ' ') : NULL;
+    if (sep1 == NULL || sep2 == NULL) {
+        CPE_ERROR(
+            http_protocol->m_em, "http-proxy-svr: %s: tunnel: parse head method: first line %s format error",
+            net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
+            line);
+        return -1;
+    }
+
+    /* char * method = line; */
+    *sep1 = 0;
+
+    char * target = sep1 + 1;
+    *sep2 = 0;
+
+    //char * version = sep2 + 1;
+
+    char * sep = strstr(target, "://");
+    if (sep) target = sep + 3;
+        
+    sep = strrchr(target, '/');
+    if (sep) *sep = 0;
+
+    if (net_proxy_http_svr_endpoint_tunnel_do_link(http_protocol, http_ep, endpoint, target) != 0) return -1;
+
+    return 0;
+}
+
 static int net_proxy_http_svr_endpoint_tunnel_parse_header_line(
     net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep, net_endpoint_t endpoint, char * line)
 {
@@ -128,21 +169,7 @@ static int net_proxy_http_svr_endpoint_tunnel_parse_header_line(
     }
     else if (strcasecmp(name, "HOST") == 0) {
         if (net_endpoint_other(endpoint) == NULL) {
-            if (net_proxy_http_svr_endpoint_tunnel_connect(http_protocol, http_ep, endpoint, value) != 0) return -1;
-        }
-    }
-    else if (strcasecmp(name, "CONNECT") == 0) {
-        if (net_endpoint_other(endpoint) == NULL) {
-            sep = strchr(value, ':');
-            if (sep) value = sep + 1;
-        
-            sep = strchr(value, ' ');
-            if (sep) *sep = 0;
-
-            sep = strrchr(value, '/');
-            if (sep) *sep = 0;
-
-            if (net_proxy_http_svr_endpoint_tunnel_connect(http_protocol, http_ep, endpoint, value) != 0) return -1;
+            if (net_proxy_http_svr_endpoint_tunnel_do_link(http_protocol, http_ep, endpoint, value) != 0) return -1;
         }
     }
 
@@ -150,7 +177,7 @@ static int net_proxy_http_svr_endpoint_tunnel_parse_header_line(
 }
 
 
-static int net_proxy_http_svr_endpoint_tunnel_connect(
+static int net_proxy_http_svr_endpoint_tunnel_do_link(
     net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep, net_endpoint_t endpoint, const char * str_address)
 {
     net_address_t address = net_address_create_auto(net_proxy_http_svr_protocol_schedule(http_protocol), str_address);
