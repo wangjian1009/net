@@ -243,12 +243,12 @@ static int net_proxy_http_svr_endpoint_tunnel_check_send_response(
     case net_endpoint_state_connecting:
         return 0;
     case net_endpoint_state_established: {
-        stream_printf((write_stream_t)&ws, "HTTP/1.1 200 Connection Established\n\n");
+        stream_printf((write_stream_t)&ws, "HTTP/1.1 200 Connection Established\r\n\r\n");
         break;
     }
     case net_endpoint_state_logic_error:
     case net_endpoint_state_network_error:
-        stream_printf((write_stream_t)&ws, "HTTP/1.1 500 Connection Error\n\n");
+        stream_printf((write_stream_t)&ws, "HTTP/1.1 500 Connection Error\r\n\r\n");
         break;
     }
 
@@ -256,19 +256,19 @@ static int net_proxy_http_svr_endpoint_tunnel_check_send_response(
 
     char * response = mem_buffer_make_continuous(&http_protocol->m_data_buffer, 0);
 
+    if (http_ep->m_debug) {
+        CPE_INFO(
+            http_protocol->m_em, "http-proxy-svr: %s: tunnel: --> %s!",
+            net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
+            response);
+    }
+    
     if (net_endpoint_wbuf_append(endpoint, response, (uint32_t)mem_buffer_size(&http_protocol->m_data_buffer) - 1u) != 0) {
         CPE_ERROR(
             http_protocol->m_em, "http-proxy-svr: %s: tunnel: write response error\n%s!",
             net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
             response);
         return -1;
-    }
-
-    if (http_ep->m_debug) {
-        CPE_INFO(
-            http_protocol->m_em, "http-proxy-svr: %s: tunnel: --> %s!",
-            net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
-            response);
     }
 
     http_ep->m_tunnel.m_state = proxy_http_svr_tunnel_state_established;
