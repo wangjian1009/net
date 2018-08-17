@@ -9,16 +9,19 @@
 #include "net_driver.h"
 #include "net_dq_endpoint.h"
 
-static void net_dq_endpoint_on_read(net_dq_endpoint_t endpoint);
-static void net_dq_endpoint_on_write(net_dq_endpoint_t endpoint);
-static void net_dq_endpoint_on_connect(net_dq_endpoint_t endpoint);
-static void net_dq_endpoint_stop_w(net_dq_endpoint_t endpoint);
-static void net_dq_endpoint_stop_r(net_dq_endpoint_t endpoint);
+static void net_dq_endpoint_on_connect(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint);
+
+static void net_dq_endpoint_start_w(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint);
+static void net_dq_endpoint_stop_w(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint);
+static void net_dq_endpoint_start_r(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint);
+static void net_dq_endpoint_stop_r(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint);
 
 int net_dq_endpoint_init(net_endpoint_t base_endpoint) {
     net_dq_endpoint_t endpoint = net_endpoint_data(base_endpoint);
 
     endpoint->m_fd = -1;
+    endpoint->m_can_read = 0;
+    endpoint->m_can_write = 0;
     endpoint->m_source_r = nil;
     endpoint->m_source_w = nil;
 
@@ -27,9 +30,15 @@ int net_dq_endpoint_init(net_endpoint_t base_endpoint) {
 
 void net_dq_endpoint_fini(net_endpoint_t base_endpoint) {
     net_dq_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+    net_dq_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
 
-    net_dq_endpoint_stop_r(endpoint);
-    net_dq_endpoint_stop_w(endpoint);
+    if (endpoint->m_source_r) {
+        net_dq_endpoint_stop_r(driver, endpoint, base_endpoint);
+    }
+
+    if (endpoint->m_source_w) {
+        net_dq_endpoint_stop_w(driver, endpoint, base_endpoint);
+    }
 
     if (endpoint->m_fd != -1) {
         cpe_sock_close(endpoint->m_fd);
@@ -43,9 +52,7 @@ int net_dq_endpoint_on_output(net_endpoint_t base_endpoint) {
     net_dq_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     net_dq_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
 
-    net_dq_endpoint_start_rw_watcher(driver, base_endpoint, endpoint);
-    
-    return 0;
+    return net_dq_endpoint_on_write(driver, endpoint, base_endpoint);
 }
 
 int net_dq_endpoint_connect(net_endpoint_t base_endpoint) {
@@ -175,7 +182,10 @@ int net_dq_endpoint_connect(net_endpoint_t base_endpoint) {
             assert(endpoint->m_source_w == nil);
             endpoint->m_source_w = dispatch_source_create(DISPATCH_SOURCE_TYPE_WRITE, endpoint->m_fd, 0, dispatch_get_main_queue());
             dispatch_retain(endpoint->m_source_w);
-            dispatch_source_set_event_handler(endpoint->m_source_w, ^{ net_dq_endpoint_on_connect(endpoint); });
+            dispatch_source_set_event_handler(endpoint->m_source_w, ^{
+                    net_dq_endpoint_stop_w(driver, endpoint, base_endpoint);
+                    net_dq_endpoint_on_connect(driver, endpoint, base_endpoint);
+                });
             dispatch_resume(endpoint->m_source_w);
             
             return net_endpoint_set_state(base_endpoint, net_endpoint_state_connecting);
@@ -214,49 +224,25 @@ int net_dq_endpoint_connect(net_endpoint_t base_endpoint) {
             net_dq_endpoint_update_local_address(endpoint);
         }
 
-        net_dq_endpoint_start_rw_watcher(driver, base_endpoint, endpoint);
-        
         return net_endpoint_set_state(base_endpoint, net_endpoint_state_established);
     }
 }
 
 void net_dq_endpoint_close(net_endpoint_t base_endpoint) {
     net_dq_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+    net_dq_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
 
-    net_dq_endpoint_stop_r(endpoint);
-    net_dq_endpoint_stop_w(endpoint);
-    
+    if (endpoint->m_source_r) {
+        net_dq_endpoint_stop_r(driver, endpoint, base_endpoint);
+    }
+
+    if (endpoint->m_source_w) {
+        net_dq_endpoint_stop_w(driver, endpoint, base_endpoint);
+    }
+
     if (endpoint->m_fd != -1) {
         cpe_sock_close(endpoint->m_fd);
         endpoint->m_fd = -1;
-    }
-}
-
-void net_dq_endpoint_start_rw_watcher(
-    net_dq_driver_t driver, net_endpoint_t base_endpoint, net_dq_endpoint_t endpoint)
-{
-    if (!net_endpoint_rbuf_is_full(base_endpoint)) {
-        if (endpoint->m_source_r == nil) {
-            endpoint->m_source_r = dispatch_source_create(DISPATCH_SOURCE_TYPE_READ, endpoint->m_fd, 0, dispatch_get_main_queue());
-            dispatch_retain(endpoint->m_source_r);
-            dispatch_source_set_event_handler(endpoint->m_source_r, ^{ net_dq_endpoint_on_read(endpoint); });
-            dispatch_resume(endpoint->m_source_r);
-        }
-    }
-    else {
-        net_dq_endpoint_stop_r(endpoint);
-    }
-
-    if (!net_endpoint_wbuf_is_empty(base_endpoint)) {
-        if (endpoint->m_source_w == nil) {
-            endpoint->m_source_w = dispatch_source_create(DISPATCH_SOURCE_TYPE_WRITE, endpoint->m_fd, 0, dispatch_get_main_queue());
-            dispatch_retain(endpoint->m_source_w);
-            dispatch_source_set_event_handler(endpoint->m_source_w, ^{ net_dq_endpoint_on_write(endpoint); });
-            dispatch_resume(endpoint->m_source_w);
-        }
-    }
-    else {
-        net_dq_endpoint_stop_w(endpoint);
     }
 }
 
@@ -319,27 +305,50 @@ int net_dq_endpoint_update_remote_address(net_dq_endpoint_t endpoint) {
     return 0;
 }
 
-static void net_dq_endpoint_on_read(net_dq_endpoint_t endpoint) {
-    net_endpoint_t base_endpoint = net_endpoint_from_data(endpoint);
-    net_dq_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
+int net_dq_endpoint_on_read(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint) {
+    if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) {
+        CPE_ERROR(
+            driver->m_em, "dq: %s: on read: state is %s, can`t read",
+            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
+            net_endpoint_state_str(net_endpoint_state(base_endpoint)));
+        return -1;
+    }
 
-    net_dq_endpoint_stop_r(endpoint);
+    while(1) {
+        int sock_r_sz;
+        socklen_t sock_r_sz_len = sizeof(sock_r_sz);
+        if (cpe_getsockopt(endpoint->m_fd, SOL_SOCKET, SO_NREAD, (void*)&sock_r_sz, &sock_r_sz_len) == -1) {
+            CPE_ERROR(
+                driver->m_em, "dq: %s: on read: get socket NREAD fail, errno=%d (%s)!",
+                net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
+                cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
 
-    for(;net_endpoint_state(base_endpoint) == net_endpoint_state_established;) {
-        uint32_t capacity = 0;
+            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) return -1;
+        }
+
+        if (sock_r_sz == 0) {
+            net_dq_endpoint_start_r(driver, endpoint, base_endpoint);
+            return 0;
+        }
+    
+        uint32_t capacity = (uint32_t)sock_r_sz;
         void * rbuf = net_endpoint_rbuf_alloc(base_endpoint, &capacity);
         if (rbuf == NULL) {
-            assert(net_endpoint_rbuf_is_full(base_endpoint));
-            break;
+            CPE_ERROR(
+                driver->m_em, "dq: %s: on read: endpoint rbuf full!",
+                net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
+                cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) return -1;
+            return 0;
         }
-            
+
         ssize_t bytes = cpe_recv(endpoint->m_fd, rbuf, capacity, 0);
         if (bytes > 0) {
             if (driver->m_debug) {
                 CPE_INFO(
-                    driver->m_em, "dq: %s: recv %d bytes data!",
+                    driver->m_em, "dq: %s: recv %d/%d bytes data!",
                     net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
-                    (int)bytes);
+                    (int)bytes, capacity);
             }
 
             if (net_endpoint_rbuf_supply(base_endpoint, (uint32_t)bytes) != 0) {
@@ -349,16 +358,15 @@ static void net_dq_endpoint_on_read(net_dq_endpoint_t endpoint) {
                             driver->m_em, "dq: %s: free for process fail!",
                             net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
                     }
-                    net_endpoint_free(base_endpoint);
+                    return -1;
                 }
-                return;
             }
 
             if (driver->m_data_monitor_fun) {
                 driver->m_data_monitor_fun(driver->m_data_monitor_ctx, base_endpoint, net_data_in, (uint32_t)bytes);
             }
 
-            break;
+            continue;
         }
         else if (bytes == 0) {
             if (driver->m_debug) {
@@ -367,10 +375,8 @@ static void net_dq_endpoint_on_read(net_dq_endpoint_t endpoint) {
                     net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
             }
                 
-            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_disable) != 0) {
-                net_endpoint_free(base_endpoint);
-            }
-            return;
+            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_disable) != 0) return -1;
+            return 0;
         }
         else {
             assert(bytes == -1);
@@ -378,7 +384,8 @@ static void net_dq_endpoint_on_read(net_dq_endpoint_t endpoint) {
             switch(errno) {
             case EWOULDBLOCK:
             case EINPROGRESS:
-                break;
+                net_dq_endpoint_start_r(driver, endpoint, base_endpoint);
+                return 0;
             case EINTR:
                 continue;
             default:
@@ -387,29 +394,22 @@ static void net_dq_endpoint_on_read(net_dq_endpoint_t endpoint) {
                     net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
                     cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
 
-                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
-                    net_endpoint_free(base_endpoint);
-                }
-                return;
+                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) return -1;
+                return 0;
             }
         }
-    }
-
-    if (net_endpoint_state(base_endpoint) == net_endpoint_state_established) {
-        net_dq_endpoint_start_rw_watcher(driver, base_endpoint, endpoint);
+        assert(0);
     }
 }
 
-static void net_dq_endpoint_on_write(net_dq_endpoint_t endpoint) {
-    net_endpoint_t base_endpoint = net_endpoint_from_data(endpoint);
-    net_dq_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
-
-    net_dq_endpoint_stop_w(endpoint);
-
-    while(net_endpoint_state(base_endpoint) == net_endpoint_state_established && !net_endpoint_wbuf_is_empty(base_endpoint)) {
-        uint32_t data_size;
+int net_dq_endpoint_on_write(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint) {
+    while(endpoint->m_can_write
+          && net_endpoint_state(base_endpoint) == net_endpoint_state_established
+          && !net_endpoint_wbuf_is_empty(base_endpoint)
+        )
+    {
+        uint32_t data_size = net_endpoint_wbuf_size(base_endpoint);
         void * data = net_endpoint_wbuf(base_endpoint, &data_size);
-
         assert(data_size > 0);
         assert(data);
 
@@ -417,9 +417,9 @@ static void net_dq_endpoint_on_write(net_dq_endpoint_t endpoint) {
         if (bytes > 0) {
             if (driver->m_debug) {
                 CPE_INFO(
-                    driver->m_em, "dq: %s: send %d bytes data!",
+                    driver->m_em, "dq: %s: send %d/%d bytes data!",
                     net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
-                    (int)bytes);
+                    (int)bytes, data_size);
             }
 
             net_endpoint_wbuf_consume(base_endpoint, (uint32_t)bytes);
@@ -435,16 +435,18 @@ static void net_dq_endpoint_on_write(net_dq_endpoint_t endpoint) {
                     net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
             }
 
-            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
-                net_endpoint_free(base_endpoint);
-            }
-            return;
+            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) return -1;
+            return 0;
         }
         else {
             int err = cpe_sock_errno();
             assert(bytes == -1);
 
-            if (err == EWOULDBLOCK || err == EINPROGRESS) break;
+            if (err == EWOULDBLOCK || err == EINPROGRESS) {
+                net_dq_endpoint_start_w(driver, endpoint, base_endpoint);
+                return 0;
+            }
+        
             if (err == EINTR) continue;
 
             CPE_ERROR(
@@ -452,26 +454,23 @@ static void net_dq_endpoint_on_write(net_dq_endpoint_t endpoint) {
                 net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
                 cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
 
-            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
-                net_endpoint_free(base_endpoint);
-            }
-            return;
+            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) return -1;
+
+            return 0;
         }
     }
-
-    if (net_endpoint_state(base_endpoint) == net_endpoint_state_established) {
-        net_dq_endpoint_start_rw_watcher(driver, base_endpoint, endpoint);
-    }
+    
+    return 0;
 }
 
-static void net_dq_endpoint_on_connect(net_dq_endpoint_t endpoint) {
-    net_endpoint_t base_endpoint = net_endpoint_from_data(endpoint);
-    net_dq_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
-
-    net_dq_endpoint_stop_w(endpoint);
+static void net_dq_endpoint_on_connect(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint) {
+    assert(endpoint->m_source_r == NULL);
+    endpoint->m_can_read = 1;
+    assert(endpoint->m_source_w == NULL);
+    endpoint->m_can_write = 1;
 
     int err;
-    socklen_t err_len;
+    socklen_t err_len = sizeof(err);
     if (cpe_getsockopt(endpoint->m_fd, SOL_SOCKET, SO_ERROR, (void*)&err, &err_len) == -1) {
         CPE_ERROR(
             driver->m_em, "dq: %s: connect_cb get socket error fail, errno=%d (%s)!",
@@ -505,27 +504,90 @@ static void net_dq_endpoint_on_connect(net_dq_endpoint_t endpoint) {
         net_dq_endpoint_update_local_address(endpoint);
     }
 
-    net_dq_endpoint_start_rw_watcher(driver, base_endpoint, endpoint);
     if (net_endpoint_set_state(base_endpoint, net_endpoint_state_established) != 0) {
+        net_endpoint_free(base_endpoint);
+        return;
+    }
+
+    if (net_dq_endpoint_on_read(driver, endpoint, base_endpoint) != 0
+        || net_dq_endpoint_on_write(driver, endpoint, base_endpoint) != 0)
+    {
         net_endpoint_free(base_endpoint);
         return;
     }
 }
 
-static void net_dq_endpoint_stop_w(net_dq_endpoint_t endpoint) {
-    if (endpoint->m_source_w) {
-        dispatch_source_set_event_handler(endpoint->m_source_w, nil);
-        dispatch_source_cancel(endpoint->m_source_w);
-        dispatch_release(endpoint->m_source_w);
-        endpoint->m_source_w = nil;
+static void net_dq_endpoint_start_w(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint) {
+    assert(endpoint->m_source_w == NULL);
+    
+    if (driver->m_debug >= 2) {
+        CPE_INFO(
+            driver->m_em, "dq: %s: start write watcher",
+            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
     }
+    
+    endpoint->m_can_write = 0;
+    endpoint->m_source_w = dispatch_source_create(DISPATCH_SOURCE_TYPE_WRITE, endpoint->m_fd, 0, dispatch_get_main_queue());
+    dispatch_retain(endpoint->m_source_w);
+    dispatch_source_set_event_handler(endpoint->m_source_w, ^{
+            net_dq_endpoint_stop_w(driver, endpoint, base_endpoint);
+            if (net_dq_endpoint_on_write(driver, endpoint, base_endpoint) != 0) {
+                net_endpoint_free(base_endpoint);
+            }
+        });
+    dispatch_resume(endpoint->m_source_w);
+}
+    
+static void net_dq_endpoint_stop_w(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint) {
+    assert(endpoint->m_source_w != NULL);
+    
+    if (driver->m_debug >= 2) {
+        CPE_INFO(
+            driver->m_em, "dq: %s: stop write watcher",
+            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
+    }
+
+    endpoint->m_can_write = 1;
+    dispatch_source_set_event_handler(endpoint->m_source_w, nil);
+    dispatch_source_cancel(endpoint->m_source_w);
+    dispatch_release(endpoint->m_source_w);
+    endpoint->m_source_w = nil;
 }
 
-static void net_dq_endpoint_stop_r(net_dq_endpoint_t endpoint) {
-    if (endpoint->m_source_r) {
-        dispatch_source_set_event_handler(endpoint->m_source_r, nil);
-        dispatch_source_cancel(endpoint->m_source_r);
-        dispatch_release(endpoint->m_source_r);
-        endpoint->m_source_r = nil;
+static void net_dq_endpoint_start_r(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint) {
+    assert(endpoint->m_source_r == NULL);
+
+    if (driver->m_debug >= 2) {
+        CPE_INFO(
+            driver->m_em, "dq: %s: start read watcher",
+            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
     }
+    
+    endpoint->m_can_read = 0;
+    endpoint->m_source_r = dispatch_source_create(DISPATCH_SOURCE_TYPE_READ, endpoint->m_fd, 0, dispatch_get_main_queue());
+    dispatch_retain(endpoint->m_source_r);
+    dispatch_source_set_event_handler(endpoint->m_source_r, ^{
+            net_dq_endpoint_stop_r(driver, endpoint, base_endpoint);
+            if (net_dq_endpoint_on_read(driver, endpoint, base_endpoint) != 0) {
+                net_endpoint_free(base_endpoint);
+            }
+        });
+    dispatch_resume(endpoint->m_source_r);
+    
+}
+
+static void net_dq_endpoint_stop_r(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint) {
+    assert(endpoint->m_source_r != NULL);
+
+    if (driver->m_debug >= 2) {
+        CPE_INFO(
+            driver->m_em, "dq: %s: stop read watcher",
+            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
+    }
+    
+    endpoint->m_can_read = 1;
+    dispatch_source_set_event_handler(endpoint->m_source_r, nil);
+    dispatch_source_cancel(endpoint->m_source_r);
+    dispatch_release(endpoint->m_source_r);
+    endpoint->m_source_r = nil;
 }
