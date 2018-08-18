@@ -40,6 +40,8 @@
 		C9506CD82127A8400015DDBC /* net_dns_cli_protocol.c in Sources */ = {isa = PBXBuildFile; fileRef = C9506CD52127A8400015DDBC /* net_dns_cli_protocol.c */; };
 		C9506CD92127A8400015DDBC /* net_dns_cli_endpoint.c in Sources */ = {isa = PBXBuildFile; fileRef = C9506CD62127A8400015DDBC /* net_dns_cli_endpoint.c */; };
 		C9506CDC2127ABE90015DDBC /* net_dns_scope.c in Sources */ = {isa = PBXBuildFile; fileRef = C9506CDB2127ABE90015DDBC /* net_dns_scope.c */; };
+		C9506CE0212819520015DDBC /* net_proxy_http_svr_endpoint_basic_rsp.c in Sources */ = {isa = PBXBuildFile; fileRef = C9506CDE212819510015DDBC /* net_proxy_http_svr_endpoint_basic_rsp.c */; };
+		C9506CE1212819520015DDBC /* net_proxy_http_svr_endpoint_basic_req.c in Sources */ = {isa = PBXBuildFile; fileRef = C9506CDF212819510015DDBC /* net_proxy_http_svr_endpoint_basic_req.c */; };
 		C96A82F02110054D000CB30D /* net_dq_driver.m in Sources */ = {isa = PBXBuildFile; fileRef = C96A82E22110054D000CB30D /* net_dq_driver.m */; };
 		C96A82F12110054D000CB30D /* net_dq_acceptor.m in Sources */ = {isa = PBXBuildFile; fileRef = C96A82E42110054D000CB30D /* net_dq_acceptor.m */; };
 		C96A82F22110054D000CB30D /* net_dq_endpoint.m in Sources */ = {isa = PBXBuildFile; fileRef = C96A82E62110054D000CB30D /* net_dq_endpoint.m */; };
@@ -49,7 +51,6 @@
 		C99AAEB521215523001FA074 /* net_dns_svr_query.c in Sources */ = {isa = PBXBuildFile; fileRef = C99AAEB321215523001FA074 /* net_dns_svr_query.c */; };
 		C99AAEBA2121805F001FA074 /* net_dns_svr_query_entry.c in Sources */ = {isa = PBXBuildFile; fileRef = C99AAEB82121805F001FA074 /* net_dns_svr_query_entry.c */; };
 		C99AAEBC21218819001FA074 /* net_dns_svr_query_process.c in Sources */ = {isa = PBXBuildFile; fileRef = C99AAEBB21218819001FA074 /* net_dns_svr_query_process.c */; };
-		C99C3FEF21250FDF00E985D2 /* net_proxy_http_svr_endpoint_basic.c in Sources */ = {isa = PBXBuildFile; fileRef = C99C3FED21250FDE00E985D2 /* net_proxy_http_svr_endpoint_basic.c */; };
 		C99C3FF021250FDF00E985D2 /* net_proxy_http_svr_endpoint_tunnel.c in Sources */ = {isa = PBXBuildFile; fileRef = C99C3FEE21250FDF00E985D2 /* net_proxy_http_svr_endpoint_tunnel.c */; };
 		C9B0C46F2123F35F008DB367 /* net_proxy_http_svr_endpoint.c in Sources */ = {isa = PBXBuildFile; fileRef = C9B0C46B2123F35F008DB367 /* net_proxy_http_svr_endpoint.c */; };
 		C9B0C4882124099F008DB367 /* net_proxy_http_svr_protocol.c in Sources */ = {isa = PBXBuildFile; fileRef = C9B0C4872124099F008DB367 /* net_proxy_http_svr_protocol.c */; };
@@ -257,6 +258,8 @@
 		C9506CDA2127ABE90015DDBC /* net_dns_scope_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_scope_i.h; sourceTree = "<group>"; };
 		C9506CDB2127ABE90015DDBC /* net_dns_scope.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_dns_scope.c; sourceTree = "<group>"; };
 		C9506CDD2127ABF10015DDBC /* net_dns_scope.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_scope.h; sourceTree = "<group>"; };
+		C9506CDE212819510015DDBC /* net_proxy_http_svr_endpoint_basic_rsp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_proxy_http_svr_endpoint_basic_rsp.c; sourceTree = "<group>"; };
+		C9506CDF212819510015DDBC /* net_proxy_http_svr_endpoint_basic_req.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_proxy_http_svr_endpoint_basic_req.c; sourceTree = "<group>"; };
 		C96A82D821100505000CB30D /* libnet_driver_dq.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_driver_dq.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		C96A82E22110054D000CB30D /* net_dq_driver.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = net_dq_driver.m; sourceTree = "<group>"; };
 		C96A82E32110054D000CB30D /* net_dq_timer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dq_timer.h; sourceTree = "<group>"; };
@@ -278,7 +281,6 @@
 		C99AAEB82121805F001FA074 /* net_dns_svr_query_entry.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_dns_svr_query_entry.c; sourceTree = "<group>"; };
 		C99AAEB92121805F001FA074 /* net_dns_svr_query_entry_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_svr_query_entry_i.h; sourceTree = "<group>"; };
 		C99AAEBB21218819001FA074 /* net_dns_svr_query_process.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_dns_svr_query_process.c; sourceTree = "<group>"; };
-		C99C3FED21250FDE00E985D2 /* net_proxy_http_svr_endpoint_basic.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_proxy_http_svr_endpoint_basic.c; sourceTree = "<group>"; };
 		C99C3FEE21250FDF00E985D2 /* net_proxy_http_svr_endpoint_tunnel.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_proxy_http_svr_endpoint_tunnel.c; sourceTree = "<group>"; };
 		C9B0C44F2123F30F008DB367 /* libnet_protocol_proxy_http.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_protocol_proxy_http.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		C9B0C4672123F35F008DB367 /* net_proxy_http_types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_proxy_http_types.h; sourceTree = "<group>"; };
@@ -688,7 +690,8 @@
 		C9B0C4692123F35F008DB367 /* src */ = {
 			isa = PBXGroup;
 			children = (
-				C99C3FED21250FDE00E985D2 /* net_proxy_http_svr_endpoint_basic.c */,
+				C9506CDF212819510015DDBC /* net_proxy_http_svr_endpoint_basic_req.c */,
+				C9506CDE212819510015DDBC /* net_proxy_http_svr_endpoint_basic_rsp.c */,
 				C99C3FEE21250FDF00E985D2 /* net_proxy_http_svr_endpoint_tunnel.c */,
 				C9B0C4862124099F008DB367 /* net_proxy_http_svr_protocol_i.h */,
 				C9B0C4872124099F008DB367 /* net_proxy_http_svr_protocol.c */,
@@ -1219,10 +1222,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C99C3FEF21250FDF00E985D2 /* net_proxy_http_svr_endpoint_basic.c in Sources */,
 				C9B0C4882124099F008DB367 /* net_proxy_http_svr_protocol.c in Sources */,
 				C9B0C46F2123F35F008DB367 /* net_proxy_http_svr_endpoint.c in Sources */,
+				C9506CE0212819520015DDBC /* net_proxy_http_svr_endpoint_basic_rsp.c in Sources */,
 				C99C3FF021250FDF00E985D2 /* net_proxy_http_svr_endpoint_tunnel.c in Sources */,
+				C9506CE1212819520015DDBC /* net_proxy_http_svr_endpoint_basic_req.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -129,9 +129,11 @@ static int net_proxy_http_svr_endpoint_input_first_header(
     }
     else {
         http_ep->m_way = net_proxy_http_way_basic;
-        http_ep->m_basic.m_read_state = proxy_http_svr_basic_state_reading_header;
-        http_ep->m_basic.m_read_context_length = 0;
-        rv = net_proxy_http_svr_endpoint_basic_read_head(http_protocol, http_ep, endpoint, data);
+        http_ep->m_basic.m_req_state = proxy_http_svr_basic_req_state_header;
+        http_ep->m_basic.m_req_context_length = 0;
+        http_ep->m_basic.m_rsp_state = proxy_http_svr_basic_rsp_state_header;
+        http_ep->m_basic.m_rsp_context_length = 0;
+        rv = net_proxy_http_svr_endpoint_basic_req_read_head(http_protocol, http_ep, endpoint, data);
     }
     
     net_endpoint_rbuf_consume(endpoint, size);
