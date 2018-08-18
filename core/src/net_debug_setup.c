@@ -1,3 +1,4 @@
+#include "net_address.h"
 #include "net_debug_setup_i.h"
 #include "net_debug_condition_i.h"
 #include "net_endpoint_i.h"

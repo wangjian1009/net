@@ -13,6 +13,7 @@
 #include "net_direct_endpoint_i.h"
 #include "net_dns_query_i.h"
 #include "net_debug_setup_i.h"
+#include "net_debug_condition_i.h"
 
 static void net_schedule_do_delay_process(net_timer_t timer, void * input_ctx);
 
@@ -205,6 +206,64 @@ void net_schedule_set_dns_resolver(
 
 void * net_schedule_dns_resolver(net_schedule_t schedule) {
     return schedule->m_dns_resolver_ctx;
+}
+
+int net_debug_remote_host(net_schedule_t schedule, const char * remote, uint8_t protocol_debug, uint8_t driver_debug) {
+    net_address_t remote_address = net_address_create_auto(schedule, remote);
+    if (remote_address == NULL) {
+        CPE_ERROR(schedule->m_em, "core: debug: host %s format error!", remote);
+        return -1;
+    }
+    
+    net_debug_setup_t setup = net_debug_setup_create(schedule, protocol_debug, driver_debug);
+    if (setup == NULL) {
+        CPE_ERROR(schedule->m_em, "core: debug: create setup for host %s fail!", remote);
+        net_address_free(remote_address);
+        return -1;
+    }
+
+    if (net_debug_condition_address_create(setup, net_debug_condition_scope_remote, remote_address) == NULL) {
+        net_address_free(remote_address);
+        return -1;
+    }
+
+    if (schedule->m_debug) {
+        CPE_INFO(schedule->m_em, "core: debug: remote %s -> protocol=%d, driver=%d!", remote, protocol_debug, driver_debug);
+    }
+    
+    return 0;
+}
+
+int net_debug_protocol(net_schedule_t schedule, const char * protocol_name, uint8_t debug) {
+    net_protocol_t protocol = net_protocol_find(schedule, protocol_name);
+    if (protocol == NULL) {
+        CPE_ERROR(schedule->m_em, "core: debug: protocol %s not exist!", protocol_name);
+        return -1;
+    }
+
+    protocol->m_debug = debug;
+
+    if (schedule->m_debug) {
+        CPE_INFO(schedule->m_em, "core: debug: protocol %s -> %d", protocol_name, debug);
+    }
+    
+    return 0;
+}
+
+int net_debug_driver(net_schedule_t schedule, const char * driver_name, uint8_t debug) {
+    net_driver_t driver = net_driver_find(schedule, driver_name);
+    if (driver == NULL) {
+        CPE_ERROR(schedule->m_em, "core: debug: driver %s not exist!", driver_name);
+        return -1;
+    }
+
+    driver->m_debug = debug;
+
+    if (schedule->m_debug) {
+        CPE_INFO(schedule->m_em, "core: debug: driver %s -> %d", driver_name, debug);
+    }
+    
+    return 0;
 }
 
 void net_schedule_start_delay_process(net_schedule_t schedule) {

@@ -510,7 +510,6 @@ static void net_dq_endpoint_start_w(net_dq_driver_t driver, net_dq_endpoint_t en
     endpoint->m_source_w = dispatch_source_create(DISPATCH_SOURCE_TYPE_WRITE, endpoint->m_fd, 0, dispatch_get_main_queue());
     dispatch_retain(endpoint->m_source_w);
     dispatch_source_set_event_handler(endpoint->m_source_w, ^{
-            CPE_ERROR(driver->m_em, "444");
             net_dq_endpoint_stop_w(driver, endpoint, base_endpoint);
             if (net_dq_endpoint_on_write(driver, endpoint, base_endpoint) != 0) {
                 net_endpoint_free(base_endpoint);

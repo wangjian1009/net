@@ -369,6 +369,8 @@ int net_endpoint_set_address(net_endpoint_t endpoint, net_address_t address, uin
             endpoint->m_address = net_address_copy(endpoint->m_driver->m_schedule, address);
             if (endpoint->m_address == NULL) return -1;
         }
+
+        net_endpoint_update_debug_info(endpoint);
     }
 
     return 0;
@@ -397,6 +399,8 @@ int net_endpoint_set_remote_address(net_endpoint_t endpoint, net_address_t addre
             endpoint->m_remote_address = net_address_copy(endpoint->m_driver->m_schedule, address);
             if (endpoint->m_remote_address == NULL) return -1;
         }
+
+        net_endpoint_update_debug_info(endpoint);
     }
 
     return 0;
