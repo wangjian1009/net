@@ -181,7 +181,6 @@ int net_dq_endpoint_connect(net_endpoint_t base_endpoint) {
             endpoint->m_source_w = dispatch_source_create(DISPATCH_SOURCE_TYPE_WRITE, endpoint->m_fd, 0, dispatch_get_main_queue());
             dispatch_retain(endpoint->m_source_w);
             dispatch_source_set_event_handler(endpoint->m_source_w, ^{
-                CPE_ERROR(driver->m_em, "222");
                     net_dq_endpoint_stop_w(driver, endpoint, base_endpoint);
                     net_dq_endpoint_on_connect(driver, endpoint, base_endpoint);
                 });

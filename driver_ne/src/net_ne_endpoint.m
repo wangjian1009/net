@@ -375,8 +375,6 @@ static int net_ne_endpoint_do_write(net_ne_driver_t driver, net_ne_endpoint_t en
                        change:(NSDictionary *)change 
                       context:(void *)context
 {
-    //NSLog(@"xxxxx observeValueForKeyPath: keyPath=%@, change=%@", keyPath, change);
-    
     dispatch_sync(
         dispatch_get_main_queue(),
         ^{
