@@ -69,12 +69,6 @@ int net_proxy_http_svr_endpoint_tunnel_on_connect(
                 net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint));
             return -1;
         }
-
-        /* if (http_ep->m_debug) { */
-        /*     CPE_INFO( */
-        /*         http_protocol->m_em, "http-proxy-svr: %s: tunnel: create other endpoint state monitor created", */
-        /*         net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint)); */
-        /* } */
     }
     
     return 0;
@@ -101,7 +95,7 @@ int net_proxy_http_svr_endpoint_tunnel_forward(
         break;
     }
 
-    if (http_ep->m_debug) {
+    if (http_ep->m_debug >= 2) {
         CPE_INFO(
             http_protocol->m_em, "http-proxy-svr: %s: tunnel: ==> %d data",
             net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
@@ -118,7 +112,7 @@ int net_proxy_http_svr_endpoint_tunnel_backword(
 {
     switch(http_ep->m_tunnel.m_state) {
     case proxy_http_svr_tunnel_state_established:
-        if (http_ep->m_debug) {
+        if (http_ep->m_debug >= 2) {
             CPE_INFO(
                 http_protocol->m_em, "http-proxy-svr: %s: tunnel: <== %d data",
                 net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
@@ -197,7 +191,7 @@ static int net_proxy_http_svr_endpoint_tunnel_do_link(
     net_address_t address = net_address_create_auto(net_proxy_http_svr_protocol_schedule(http_protocol), str_address);
     if (address == NULL) {
         CPE_ERROR(
-            http_protocol->m_em, "http-proxy-svr: %s: Host %s format error",
+            http_protocol->m_em, "http-proxy-svr: %s: tunnel: %s format error",
             net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
             str_address);
         return -1;
@@ -206,10 +200,11 @@ static int net_proxy_http_svr_endpoint_tunnel_do_link(
 
     if (http_ep->m_debug) {
         CPE_INFO(
-            http_protocol->m_em, "http-proxy-svr: %s: request connect to %s!",
+            http_protocol->m_em, "http-proxy-svr: %s: tunnel: request connect to %s!",
             net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
             str_address);
     }
+    net_endpoint_set_remote_address(endpoint, address, 0);
 
     if (http_ep->m_on_connect_fun &&
         http_ep->m_on_connect_fun(http_ep->m_on_connect_ctx, endpoint, address, 1) != 0)
@@ -271,10 +266,14 @@ static int net_proxy_http_svr_endpoint_tunnel_check_send_response(
     char * response = mem_buffer_make_continuous(&http_protocol->m_data_buffer, 0);
 
     if (http_ep->m_debug) {
+        char *p = strstr(response, "\r\n\r\n");
+        assert(p);
+        *p = 0;
         CPE_INFO(
-            http_protocol->m_em, "http-proxy-svr: %s: tunnel: --> %s!",
+            http_protocol->m_em, "http-proxy-svr: %s: tunnel: <== %s",
             net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
             response);
+        *p = '\r';
     }
     
     if (net_endpoint_wbuf_append(endpoint, response, (uint32_t)mem_buffer_size(&http_protocol->m_data_buffer) - 1u) != 0) {

@@ -69,7 +69,7 @@ CHECK_AGAIN:
     }
     else if (http_ep->m_basic.m_read_state == proxy_http_svr_basic_state_reading_content) {
         if (http_ep->m_basic.m_read_context_length == 0) {
-            if (http_ep->m_debug) {
+            if (http_ep->m_debug >= 2) {
                 CPE_INFO(
                     http_protocol->m_em, "http-proxy-svr: %s: basic: ==> body %d data",
                     net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
@@ -92,7 +92,7 @@ CHECK_AGAIN:
                 forward_sz = http_ep->m_basic.m_read_context_length;
             }
 
-            if (http_ep->m_debug) {
+            if (http_ep->m_debug >= 2) {
                 CPE_INFO(
                     http_protocol->m_em, "http-proxy-svr: %s: basic: ==> body %d data(left=%d)",
                     net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
@@ -138,7 +138,7 @@ CHECK_AGAIN:
 int net_proxy_http_svr_endpoint_basic_backword(
     net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep, net_endpoint_t endpoint, net_endpoint_t from)
 {
-    if (http_ep->m_debug) {
+    if (http_ep->m_debug >= 2) {
         CPE_INFO(
             http_protocol->m_em, "http-proxy-svr: %s: basic: <== %d data",
             net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
@@ -198,9 +198,9 @@ int net_proxy_http_svr_endpoint_basic_read_head(
         net_proxy_http_svr_endpoint_basic_set_read_state(http_protocol, http_ep, endpoint, proxy_http_svr_basic_state_reading_content);
     }
     
-    if (http_ep->m_debug) {
+    if (http_ep->m_debug >= 2) {
         CPE_INFO(
-            http_protocol->m_em, "http-proxy-svr: %s: basic: ==> %s",
+            http_protocol->m_em, "http-proxy-svr: %s: basic: ==> head %s",
             net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
             ctx.m_output);
     }
@@ -275,7 +275,7 @@ static int net_proxy_http_svr_endpoint_basic_parse_header_method(
     
     assert(ctx->m_output_size + 1u < ctx->m_output_capacity);
 
-    if (http_ep->m_debug) {
+    if (http_ep->m_debug >= 2) {
         CPE_INFO(
             http_protocol->m_em, "http-proxy-svr: %s: basic: relative target %s => %s",
             net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
@@ -343,6 +343,7 @@ static int net_proxy_http_svr_endpoint_basic_parse_header_line(
                     net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
                     str_address);
             }
+            net_endpoint_set_remote_address(endpoint, address, 0);
 
             if (http_ep->m_on_connect_fun &&
                 http_ep->m_on_connect_fun(http_ep->m_on_connect_ctx, endpoint, address, 1) != 0)
