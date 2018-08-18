@@ -42,6 +42,8 @@
 		C9506CDC2127ABE90015DDBC /* net_dns_scope.c in Sources */ = {isa = PBXBuildFile; fileRef = C9506CDB2127ABE90015DDBC /* net_dns_scope.c */; };
 		C9506CE0212819520015DDBC /* net_proxy_http_svr_endpoint_basic_rsp.c in Sources */ = {isa = PBXBuildFile; fileRef = C9506CDE212819510015DDBC /* net_proxy_http_svr_endpoint_basic_rsp.c */; };
 		C9506CE1212819520015DDBC /* net_proxy_http_svr_endpoint_basic_req.c in Sources */ = {isa = PBXBuildFile; fileRef = C9506CDF212819510015DDBC /* net_proxy_http_svr_endpoint_basic_req.c */; };
+		C9506CE8212861F90015DDBC /* net_debug_setup.c in Sources */ = {isa = PBXBuildFile; fileRef = C9506CE4212861F80015DDBC /* net_debug_setup.c */; };
+		C9506CE9212861F90015DDBC /* net_debug_condition.c in Sources */ = {isa = PBXBuildFile; fileRef = C9506CE5212861F90015DDBC /* net_debug_condition.c */; };
 		C96A82F02110054D000CB30D /* net_dq_driver.m in Sources */ = {isa = PBXBuildFile; fileRef = C96A82E22110054D000CB30D /* net_dq_driver.m */; };
 		C96A82F12110054D000CB30D /* net_dq_acceptor.m in Sources */ = {isa = PBXBuildFile; fileRef = C96A82E42110054D000CB30D /* net_dq_acceptor.m */; };
 		C96A82F22110054D000CB30D /* net_dq_endpoint.m in Sources */ = {isa = PBXBuildFile; fileRef = C96A82E62110054D000CB30D /* net_dq_endpoint.m */; };
@@ -260,6 +262,12 @@
 		C9506CDD2127ABF10015DDBC /* net_dns_scope.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_scope.h; sourceTree = "<group>"; };
 		C9506CDE212819510015DDBC /* net_proxy_http_svr_endpoint_basic_rsp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_proxy_http_svr_endpoint_basic_rsp.c; sourceTree = "<group>"; };
 		C9506CDF212819510015DDBC /* net_proxy_http_svr_endpoint_basic_req.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_proxy_http_svr_endpoint_basic_req.c; sourceTree = "<group>"; };
+		C9506CE2212861D60015DDBC /* net_debug_condition.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_debug_condition.h; sourceTree = "<group>"; };
+		C9506CE3212861D60015DDBC /* net_debug_setup.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_debug_setup.h; sourceTree = "<group>"; };
+		C9506CE4212861F80015DDBC /* net_debug_setup.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_debug_setup.c; sourceTree = "<group>"; };
+		C9506CE5212861F90015DDBC /* net_debug_condition.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_debug_condition.c; sourceTree = "<group>"; };
+		C9506CE6212861F90015DDBC /* net_debug_condition_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_debug_condition_i.h; sourceTree = "<group>"; };
+		C9506CE7212861F90015DDBC /* net_debug_setup_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_debug_setup_i.h; sourceTree = "<group>"; };
 		C96A82D821100505000CB30D /* libnet_driver_dq.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_driver_dq.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		C96A82E22110054D000CB30D /* net_dq_driver.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = net_dq_driver.m; sourceTree = "<group>"; };
 		C96A82E32110054D000CB30D /* net_dq_timer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dq_timer.h; sourceTree = "<group>"; };
@@ -442,6 +450,8 @@
 		C91E1EB32105E4150080FAD8 /* include */ = {
 			isa = PBXGroup;
 			children = (
+				C9506CE2212861D60015DDBC /* net_debug_condition.h */,
+				C9506CE3212861D60015DDBC /* net_debug_setup.h */,
 				C96A830D2110273D000CB30D /* net_acceptor.h */,
 				C91E1EB42105E4150080FAD8 /* net_protocol.h */,
 				C91E1EB52105E4150080FAD8 /* net_endpoint.h */,
@@ -465,6 +475,10 @@
 		C91E1EC32105E4160080FAD8 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				C9506CE6212861F90015DDBC /* net_debug_condition_i.h */,
+				C9506CE5212861F90015DDBC /* net_debug_condition.c */,
+				C9506CE7212861F90015DDBC /* net_debug_setup_i.h */,
+				C9506CE4212861F80015DDBC /* net_debug_setup.c */,
 				C96A830F21102748000CB30D /* net_acceptor_i.h */,
 				C96A830E21102747000CB30D /* net_acceptor.c */,
 				C91E1EC42105E4160080FAD8 /* net_address_matcher_i.h */,
@@ -1176,6 +1190,7 @@
 				C91E1EED2105E4160080FAD8 /* net_timer.c in Sources */,
 				C91E1EF12105E4160080FAD8 /* net_endpoint_wbuf.c in Sources */,
 				C91E1EFB2105E4160080FAD8 /* net_endpoint_stream.c in Sources */,
+				C9506CE9212861F90015DDBC /* net_debug_condition.c in Sources */,
 				C91E1EFA2105E4160080FAD8 /* net_endpoint_fbuf.c in Sources */,
 				C91E1EF22105E4160080FAD8 /* net_ipset_node.c in Sources */,
 				C91E1F012105E4160080FAD8 /* net_ipset_node_cache.c in Sources */,
@@ -1188,6 +1203,7 @@
 				C91E1EF42105E4160080FAD8 /* net_ipset_ipv4.c in Sources */,
 				C91E1EF32105E4160080FAD8 /* net_ipset.c in Sources */,
 				C91E1F022105E4160080FAD8 /* net_address_rule.c in Sources */,
+				C9506CE8212861F90015DDBC /* net_debug_setup.c in Sources */,
 				C91E1EF72105E4160080FAD8 /* net_protocol.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

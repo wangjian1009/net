@@ -23,6 +23,9 @@ typedef struct net_dns_query * net_dns_query_t;
 typedef struct net_address_data_ipv4 * net_address_data_ipv4_t;
 typedef struct net_address_data_ipv6 * net_address_data_ipv6_t;
 
+typedef struct net_debug_setup * net_debug_setup_t;
+typedef struct net_debug_condition * net_debug_condition_t;
+
 typedef enum net_address_type {
     net_address_ipv4,
     net_address_ipv6,

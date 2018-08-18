@@ -86,6 +86,7 @@ int net_endpoint_fbuf_append_from_rbuf(net_endpoint_t endpoint, uint32_t size);
 uint32_t net_endpoint_fbuf_size(net_endpoint_t endpoint);
 int net_endpoint_fbuf(net_endpoint_t endpoint, uint32_t require, void * * data);
 int net_endpoint_fbuf_by_sep(net_endpoint_t endpoint, const char * seps, void * * r_data, uint32_t *r_size);
+int net_endpoint_fbuf_by_str(net_endpoint_t endpoint, const char * str, void * * r_data, uint32_t * r_size);
 void net_endpoint_fbuf_consume(net_endpoint_t endpoint, uint32_t size);
 
 /*forward*/

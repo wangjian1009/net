@@ -12,6 +12,7 @@
 #include "net_link_i.h"
 #include "net_direct_endpoint_i.h"
 #include "net_dns_query_i.h"
+#include "net_debug_setup_i.h"
 
 static void net_schedule_do_delay_process(net_timer_t timer, void * input_ctx);
 
@@ -40,6 +41,7 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em, uint32_t common_
     schedule->m_endpoint_max_id = 0;
     schedule->m_endpoint_protocol_capacity = 0;
 
+    TAILQ_INIT(&schedule->m_debug_setups);
     TAILQ_INIT(&schedule->m_drivers);
     TAILQ_INIT(&schedule->m_protocols);
     TAILQ_INIT(&schedule->m_links);
@@ -122,6 +124,10 @@ void net_schedule_free(net_schedule_t schedule) {
 
     while(!TAILQ_EMPTY(&schedule->m_protocols)) {
         net_protocol_free(TAILQ_FIRST(&schedule->m_protocols));
+    }
+
+    while(!TAILQ_EMPTY(&schedule->m_debug_setups)) {
+        net_debug_setup_free(TAILQ_FIRST(&schedule->m_debug_setups));
     }
 
     while(!TAILQ_EMPTY(&schedule->m_free_addresses)) {

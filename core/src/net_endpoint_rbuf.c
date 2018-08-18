@@ -225,7 +225,7 @@ int net_endpoint_rbuf_by_sep(net_endpoint_t endpoint, const char * seps, void * 
     return 0;
 }
 
-static uint8_t net_endpoint_rbuf_match_forward(
+uint8_t net_endpoint_block_match_forward(
     net_schedule_t schedule, ringbuffer_block_t block, char * block_data, int block_data_len, int block_pos,
     const char * look_str, size_t look_str_len)
 {
@@ -271,7 +271,7 @@ int net_endpoint_rbuf_by_str(net_endpoint_t endpoint, const char * str, void * *
         int block_pos;
         for(block_pos = 0; block_pos < block_data_len; ++block_pos) {
             if (block_data[block_pos] == str[0]
-                && net_endpoint_rbuf_match_forward(
+                && net_endpoint_block_match_forward(
                     schedule, block, block_data, block_data_len, block_pos + 1, str + 1, str_len - 1)
                 )
             {

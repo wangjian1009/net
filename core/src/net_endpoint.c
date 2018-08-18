@@ -5,6 +5,7 @@
 #include "cpe/utils/string_utils.h"
 #include "net_endpoint_i.h"
 #include "net_endpoint_monitor_i.h"
+#include "net_debug_setup_i.h"
 #include "net_protocol_i.h"
 #include "net_driver_i.h"
 #include "net_schedule_i.h"
@@ -255,6 +256,23 @@ uint8_t net_endpoint_driver_debug(net_endpoint_t endpoint) {
 
 void net_endpoint_set_driver_debug(net_endpoint_t endpoint, uint8_t debug) {
     endpoint->m_driver_debug = debug;
+}
+
+void net_endpoint_update_debug_info(net_endpoint_t endpoint) {
+    net_schedule_t schedule = endpoint->m_driver->m_schedule;
+    net_debug_setup_t debug_setup;
+
+    TAILQ_FOREACH(debug_setup, &schedule->m_debug_setups, m_next_for_schedule) {
+        if (!net_debug_setup_check(debug_setup, endpoint)) continue;
+
+        if (debug_setup->m_protocol_debug > endpoint->m_protocol_debug) {
+            endpoint->m_protocol_debug = debug_setup->m_protocol_debug;
+        }
+
+        if (debug_setup->m_driver_debug > endpoint->m_driver_debug) {
+            endpoint->m_driver_debug = debug_setup->m_driver_debug;
+        }
+    }
 }
 
 net_endpoint_state_t net_endpoint_state(net_endpoint_t endpoint) {
