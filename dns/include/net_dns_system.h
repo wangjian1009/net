@@ -22,7 +22,7 @@ typedef struct net_dns_task_builder * net_dns_task_builder_t;
 typedef struct net_dns_source * net_dns_source_t;
 typedef struct net_dns_source_it * net_dns_source_it_t;
 
-typedef struct net_dns_source_nameserver * net_dns_source_nameserver_t;
+typedef struct net_dns_source_ns * net_dns_source_ns_t;
 
 typedef enum net_dns_entry_state {
     net_dns_entry_runing,

@@ -12,167 +12,167 @@
 #include "net_dns_task_ctx.h"
 #include "net_dns_entry.h"
 #include "net_dns_entry_item.h"
-#include "net_dns_source_nameserver_i.h"
+#include "net_dns_source_ns_i.h"
 #include "net_dns_source_i.h"
 
-static int net_dns_source_nameserver_init(net_dns_source_t source);
-static void net_dns_source_nameserver_fini(net_dns_source_t source);
-static void net_dns_source_nameserver_dump(write_stream_t ws, net_dns_source_t source);
-static void net_dns_source_nameserver_dgram_input(
+static int net_dns_source_ns_init(net_dns_source_t source);
+static void net_dns_source_ns_fini(net_dns_source_t source);
+static void net_dns_source_ns_dump(write_stream_t ws, net_dns_source_t source);
+static void net_dns_source_ns_dgram_input(
     net_dgram_t dgram, void * ctx, void * data, size_t data_size, net_address_t source);
 
-static int net_dns_source_nameserver_dgram_output(
-    net_dns_manage_t manage, net_dns_source_nameserver_t nameserver, void const * data, uint16_t buf_size);
+static int net_dns_source_ns_dgram_output(
+    net_dns_manage_t manage, net_dns_source_ns_t ns, void const * data, uint16_t buf_size);
 
-static int net_dns_source_nameserver_ctx_init(net_dns_source_t source, net_dns_task_ctx_t task_ctx);
-static void net_dns_source_nameserver_ctx_fini(net_dns_source_t source, net_dns_task_ctx_t task_ctx);
-static int net_dns_source_nameserver_ctx_start(net_dns_source_t source, net_dns_task_ctx_t task_ctx);
-static void net_dns_source_nameserver_ctx_cancel(net_dns_source_t source, net_dns_task_ctx_t task_ctx);
+static int net_dns_source_ns_ctx_init(net_dns_source_t source, net_dns_task_ctx_t task_ctx);
+static void net_dns_source_ns_ctx_fini(net_dns_source_t source, net_dns_task_ctx_t task_ctx);
+static int net_dns_source_ns_ctx_start(net_dns_source_t source, net_dns_task_ctx_t task_ctx);
+static void net_dns_source_ns_ctx_cancel(net_dns_source_t source, net_dns_task_ctx_t task_ctx);
 
-static char const * net_dns_source_nameserver_req_print_name(
+static char const * net_dns_source_ns_req_print_name(
     net_dns_manage_t manage, write_stream_t ws, char const * p, char const * buf, uint32_t buf_size, uint8_t level);
-static const char * net_dns_source_nameserver_req_dump(
+static const char * net_dns_source_ns_req_dump(
     net_dns_manage_t manage, mem_buffer_t buffer, char const * buf, uint32_t data_size);
 
-net_dns_source_nameserver_t
-net_dns_source_nameserver_create(net_dns_manage_t manage, net_driver_t driver, net_address_t addr, uint8_t is_own) {
+net_dns_source_ns_t
+net_dns_source_ns_create(net_dns_manage_t manage, net_driver_t driver, net_address_t addr, uint8_t is_own) {
     net_dns_source_t source =
         net_dns_source_create(
             manage,
-            sizeof(struct net_dns_source_nameserver),
-            net_dns_source_nameserver_init,
-            net_dns_source_nameserver_fini,
-            net_dns_source_nameserver_dump,
-            sizeof(struct net_dns_source_nameserver_ctx),
-            net_dns_source_nameserver_ctx_init,
-            net_dns_source_nameserver_ctx_fini,
-            net_dns_source_nameserver_ctx_start,
-            net_dns_source_nameserver_ctx_cancel);
+            sizeof(struct net_dns_source_ns),
+            net_dns_source_ns_init,
+            net_dns_source_ns_fini,
+            net_dns_source_ns_dump,
+            sizeof(struct net_dns_source_ns_ctx),
+            net_dns_source_ns_ctx_init,
+            net_dns_source_ns_ctx_fini,
+            net_dns_source_ns_ctx_start,
+            net_dns_source_ns_ctx_cancel);
     if (source == NULL) return NULL;
 
-    net_dns_source_nameserver_t nameserver = net_dns_source_data(source);
+    net_dns_source_ns_t ns = net_dns_source_data(source);
 
-    nameserver->m_driver = driver;
+    ns->m_driver = driver;
     
     if (is_own) {
-        nameserver->m_address = addr;
+        ns->m_address = addr;
     }
     else {
-        nameserver->m_address = net_address_copy(manage->m_schedule, addr);
-        if (nameserver->m_address == NULL) {
-            CPE_ERROR(manage->m_em, "dns-cli: nameserver: copy address fail!");
+        ns->m_address = net_address_copy(manage->m_schedule, addr);
+        if (ns->m_address == NULL) {
+            CPE_ERROR(manage->m_em, "dns-cli: ns: copy address fail!");
             net_dns_source_free(source);
             return NULL;
         }
     }
 
-    if (net_address_port(nameserver->m_address) == 0) {
-        net_address_set_port(nameserver->m_address, 53);
+    if (net_address_port(ns->m_address) == 0) {
+        net_address_set_port(ns->m_address, 53);
     }
 
     if (manage->m_debug) {
         CPE_INFO(
-            manage->m_em, "dns-cli: nameserver %s created!",
+            manage->m_em, "dns-cli: ns %s created!",
             net_dns_source_dump(net_dns_manage_tmp_buffer(manage), source));
     }
     
-    return nameserver;
+    return ns;
 }
 
-net_dns_source_nameserver_t net_dns_source_nameserver_find(net_dns_manage_t manage, net_address_t addr) {
+net_dns_source_ns_t net_dns_source_ns_find(net_dns_manage_t manage, net_address_t addr) {
     net_dns_source_t source;
 
     uint16_t port = net_address_port(addr);
     if (port == 0) port = 53; 
     
     TAILQ_FOREACH(source, &manage->m_sources, m_next) {
-        if (source->m_init != net_dns_source_nameserver_init) continue;
+        if (source->m_init != net_dns_source_ns_init) continue;
 
-        net_dns_source_nameserver_t nameserver = net_dns_source_data(source);
+        net_dns_source_ns_t ns = net_dns_source_data(source);
 
-        if (net_address_cmp_without_port(nameserver->m_address, addr) != 0) continue;
-        if (net_address_port(nameserver->m_address) != port) continue;
+        if (net_address_cmp_without_port(ns->m_address, addr) != 0) continue;
+        if (net_address_port(ns->m_address) != port) continue;
 
-        return nameserver;
+        return ns;
     }
 
     return 0;
 }
 
-void net_dns_source_nameserver_free(net_dns_source_nameserver_t nameserver) {
-    net_dns_source_free(net_dns_source_from_data(nameserver));
+void net_dns_source_ns_free(net_dns_source_ns_t ns) {
+    net_dns_source_free(net_dns_source_from_data(ns));
 }
 
-int net_dns_source_nameserver_init(net_dns_source_t source) {
-    net_dns_source_nameserver_t nameserver = net_dns_source_data(source);
+int net_dns_source_ns_init(net_dns_source_t source) {
+    net_dns_source_ns_t ns = net_dns_source_data(source);
 
-    nameserver->m_driver = NULL;
-    nameserver->m_address = NULL;
-    nameserver->m_dgram = NULL;
-    nameserver->m_endpoint = NULL;
-    nameserver->m_retry_count = 0;
-    nameserver->m_timeout_ms = 2000;
-    nameserver->m_max_transaction = 0;
+    ns->m_driver = NULL;
+    ns->m_address = NULL;
+    ns->m_dgram = NULL;
+    ns->m_endpoint = NULL;
+    ns->m_retry_count = 0;
+    ns->m_timeout_ms = 2000;
+    ns->m_max_transaction = 0;
     
     return 0;
 }
 
-void net_dns_source_nameserver_fini(net_dns_source_t source) {
-    net_dns_source_nameserver_t nameserver = net_dns_source_data(source);
+void net_dns_source_ns_fini(net_dns_source_t source) {
+    net_dns_source_ns_t ns = net_dns_source_data(source);
     net_dns_manage_t manage = net_dns_source_manager(source);
 
     if (manage->m_debug) {
         CPE_INFO(
-            manage->m_em, "dns-cli: nameserver %s free!",
+            manage->m_em, "dns-cli: ns %s free!",
             net_dns_source_dump(net_dns_manage_tmp_buffer(manage), source));
     }
     
-    if (nameserver->m_address) {
-        net_address_free(nameserver->m_address);
-        nameserver->m_address = NULL;
+    if (ns->m_address) {
+        net_address_free(ns->m_address);
+        ns->m_address = NULL;
     }
 
-    if (nameserver->m_dgram) {
-        net_dgram_free(nameserver->m_dgram);
-        nameserver->m_dgram = NULL;
+    if (ns->m_dgram) {
+        net_dgram_free(ns->m_dgram);
+        ns->m_dgram = NULL;
     }
     
-    if (nameserver->m_endpoint) {
-        net_endpoint_free(nameserver->m_endpoint);
-        nameserver->m_endpoint = NULL;
+    if (ns->m_endpoint) {
+        net_endpoint_free(ns->m_endpoint);
+        ns->m_endpoint = NULL;
     }
 }
 
-void net_dns_source_nameserver_dump(write_stream_t ws, net_dns_source_t source) {
-    net_dns_source_nameserver_t nameserver = net_dns_source_data(source);
+void net_dns_source_ns_dump(write_stream_t ws, net_dns_source_t source) {
+    net_dns_source_ns_t ns = net_dns_source_data(source);
     
-    stream_printf(ws, "nameserver[");
-    if (nameserver->m_address) {
-        net_address_print(ws, nameserver->m_address);
+    stream_printf(ws, "ns[");
+    if (ns->m_address) {
+        net_address_print(ws, ns->m_address);
     }
     stream_printf(ws, "]");
 }
 
-int net_dns_source_nameserver_ctx_init(net_dns_source_t source, net_dns_task_ctx_t task_ctx) {
-    struct net_dns_source_nameserver_ctx * nameserver_ctx = net_dns_task_ctx_data(task_ctx);
-    net_dns_source_nameserver_t nameserver = net_dns_source_data(source);
+int net_dns_source_ns_ctx_init(net_dns_source_t source, net_dns_task_ctx_t task_ctx) {
+    struct net_dns_source_ns_ctx * ns_ctx = net_dns_task_ctx_data(task_ctx);
+    net_dns_source_ns_t ns = net_dns_source_data(source);
     
-    net_dns_task_ctx_set_retry_count(task_ctx, nameserver->m_retry_count);
-    net_dns_task_ctx_set_timeout(task_ctx, nameserver->m_timeout_ms);
+    net_dns_task_ctx_set_retry_count(task_ctx, ns->m_retry_count);
+    net_dns_task_ctx_set_timeout(task_ctx, ns->m_timeout_ms);
 
-    nameserver_ctx->m_transaction = ++nameserver->m_max_transaction;
+    ns_ctx->m_transaction = ++ns->m_max_transaction;
     
     return 0;
 }
 
-void net_dns_source_nameserver_ctx_fini(net_dns_source_t source, net_dns_task_ctx_t task_ctx) {
+void net_dns_source_ns_ctx_fini(net_dns_source_t source, net_dns_task_ctx_t task_ctx) {
 }
 
-int net_dns_source_nameserver_ctx_start(net_dns_source_t source, net_dns_task_ctx_t task_ctx) {
+int net_dns_source_ns_ctx_start(net_dns_source_t source, net_dns_task_ctx_t task_ctx) {
     net_dns_task_t task = net_dns_task_ctx_task(task_ctx);
     net_dns_manage_t manage = net_dns_task_ctx_manage(task_ctx);
-    net_dns_source_nameserver_t nameserver = net_dns_source_data(source);
-    struct net_dns_source_nameserver_ctx * nameserver_ctx = net_dns_task_ctx_data(task_ctx);
+    net_dns_source_ns_t ns = net_dns_source_data(source);
+    struct net_dns_source_ns_ctx * ns_ctx = net_dns_task_ctx_data(task_ctx);
 
     mem_buffer_t buffer = &manage->m_data_buffer;
     mem_buffer_clear_data(buffer);
@@ -180,14 +180,14 @@ int net_dns_source_nameserver_ctx_start(net_dns_source_t source, net_dns_task_ct
     size_t buf_capacity = 1500;
     char * buf = mem_buffer_alloc(buffer, buf_capacity);
     if (buf == NULL) {
-        CPE_ERROR(manage->m_em, "dns-cli: build nameserver req: alloc fail!");
+        CPE_ERROR(manage->m_em, "dns-cli: build ns req: alloc fail!");
         return -1; 
     }
 
     char *p = buf;
 
     /* head */
-    CPE_COPY_HTON16(p, &nameserver_ctx->m_transaction); p+=2;
+    CPE_COPY_HTON16(p, &ns_ctx->m_transaction); p+=2;
 
     uint16_t flag = 0x0100;
     CPE_COPY_HTON16(p, &flag); p+=2;
@@ -232,17 +232,17 @@ int net_dns_source_nameserver_ctx_start(net_dns_source_t source, net_dns_task_ct
 
     uint16_t buf_size = (uint32_t)(p - buf);
 
-    return net_dns_source_nameserver_dgram_output(manage, nameserver, buf, buf_size);
+    return net_dns_source_ns_dgram_output(manage, ns, buf, buf_size);
 }
 
-void net_dns_source_nameserver_ctx_cancel(net_dns_source_t source, net_dns_task_ctx_t task_ctx) {
+void net_dns_source_ns_ctx_cancel(net_dns_source_t source, net_dns_task_ctx_t task_ctx) {
 }
 
-static void net_dns_source_nameserver_dgram_input(
+static void net_dns_source_ns_dgram_input(
     net_dgram_t dgram, void * ctx, void * data, size_t data_size, net_address_t from)
 {
-    net_dns_source_nameserver_t nameserver = ctx;
-    net_dns_source_t source = net_dns_source_from_data(nameserver);
+    net_dns_source_ns_t ns = ctx;
+    net_dns_source_t source = net_dns_source_from_data(ns);
     net_dns_manage_t manage = net_dns_source_manager(source);
 
     if (data_size < 12) {
@@ -253,7 +253,7 @@ static void net_dns_source_nameserver_dgram_input(
     if (manage->m_debug >= 2) {
         CPE_INFO(
             manage->m_em, "dns-cli: udp <-- %s",
-            net_dns_source_nameserver_req_dump(manage, net_dns_manage_tmp_buffer(manage), data, (uint32_t)data_size));
+            net_dns_source_ns_req_dump(manage, net_dns_manage_tmp_buffer(manage), data, (uint32_t)data_size));
     }
     
     char const * p = data;
@@ -278,7 +278,7 @@ static void net_dns_source_nameserver_dgram_input(
 
     uint16_t i;
     for(i = 0; i < qdcount; i++) {
-        p = net_dns_source_nameserver_req_print_name(manage, NULL, p, data, (uint32_t)data_size, 0);
+        p = net_dns_source_ns_req_print_name(manage, NULL, p, data, (uint32_t)data_size, 0);
         p += 2 + 2; /*type + class*/
     }
 
@@ -289,7 +289,7 @@ static void net_dns_source_nameserver_dgram_input(
     for(i = 0; i < ancount; i++) {
         struct write_stream_buffer ws = CPE_WRITE_STREAM_BUFFER_INITIALIZER(buffer);
         mem_buffer_clear_data(buffer);
-        p = net_dns_source_nameserver_req_print_name(manage, (write_stream_t)&ws, p, data, (uint32_t)data_size, 0);
+        p = net_dns_source_ns_req_print_name(manage, (write_stream_t)&ws, p, data, (uint32_t)data_size, 0);
         stream_putc((write_stream_t)&ws, 0);
 
         const char * hostname = mem_buffer_make_continuous(buffer, 0);
@@ -318,7 +318,7 @@ static void net_dns_source_nameserver_dgram_input(
             }
 
             mem_buffer_clear_data(buffer);
-            p = net_dns_source_nameserver_req_print_name(manage, (write_stream_t)&ws, p, data, (uint32_t)data_size, 0);
+            p = net_dns_source_ns_req_print_name(manage, (write_stream_t)&ws, p, data, (uint32_t)data_size, 0);
             stream_putc((write_stream_t)&ws, 0);
 
             const char * cname = mem_buffer_make_continuous(buffer, 0);
@@ -394,8 +394,8 @@ static void net_dns_source_nameserver_dgram_input(
                 while((task_ctx = net_dns_task_ctx_it_next(&task_ctx_it))) {
                     if (net_dns_task_ctx_source(task_ctx) != source) continue;
 
-                    struct net_dns_source_nameserver_ctx * nameserver_ctx = net_dns_task_ctx_data(task_ctx);
-                    if (nameserver_ctx->m_transaction == ident) {
+                    struct net_dns_source_ns_ctx * ns_ctx = net_dns_task_ctx_data(task_ctx);
+                    if (ns_ctx->m_transaction == ident) {
                         net_dns_task_ctx_set_success(task_ctx);
                         break;;
                     }
@@ -406,7 +406,7 @@ static void net_dns_source_nameserver_dgram_input(
 }
 
 static char const *
-net_dns_source_nameserver_req_print_name(
+net_dns_source_ns_req_print_name(
     net_dns_manage_t manage, write_stream_t ws, char const * p, char const * buf, uint32_t buf_size, uint8_t level)
 {
     while(*p != 0) {
@@ -425,7 +425,7 @@ net_dns_source_nameserver_req_print_name(
                 return p;
             }
 
-            net_dns_source_nameserver_req_print_name(manage, ws, buf + offset, buf, buf_size, level + 1);
+            net_dns_source_ns_req_print_name(manage, ws, buf + offset, buf, buf_size, level + 1);
 
             return p;
         }
@@ -443,7 +443,7 @@ net_dns_source_nameserver_req_print_name(
     return p;
 }
 
-static void net_dns_source_nameserver_req_print(net_dns_manage_t manage, write_stream_t ws, char const * buf, uint32_t buf_size) {
+static void net_dns_source_ns_req_print(net_dns_manage_t manage, write_stream_t ws, char const * buf, uint32_t buf_size) {
     char const * p = buf;
 
     uint16_t ident;
@@ -481,7 +481,7 @@ static void net_dns_source_nameserver_req_print(net_dns_manage_t manage, write_s
     unsigned int i;
     for(i = 0; i < qdcount; i++) {
         stream_printf(ws, "\n    question[%u]: ", i);
-        p = net_dns_source_nameserver_req_print_name(manage, ws, p, buf, buf_size, 0);
+        p = net_dns_source_ns_req_print_name(manage, ws, p, buf, buf_size, 0);
 
         uint16_t type;
         CPE_COPY_NTOH16(&type, p); p+=2;
@@ -494,7 +494,7 @@ static void net_dns_source_nameserver_req_print(net_dns_manage_t manage, write_s
  
     for(i = 0; i < ancount; i++) {
         stream_printf(ws, "\n    answer[%u]: ", i);
-        p = net_dns_source_nameserver_req_print_name(manage, ws, p, buf, buf_size, 0);
+        p = net_dns_source_ns_req_print_name(manage, ws, p, buf, buf_size, 0);
 
         uint16_t type;
         CPE_COPY_NTOH16(&type, p); p+=2;
@@ -514,7 +514,7 @@ static void net_dns_source_nameserver_req_print(net_dns_manage_t manage, write_s
 
         if (type == 5) {
             stream_printf(ws, ", cname=");
-            p = net_dns_source_nameserver_req_print_name(manage, ws, p, buf, buf_size, 0);
+            p = net_dns_source_ns_req_print_name(manage, ws, p, buf, buf_size, 0);
         }
         else {
             stream_printf(ws, ", rd=");
@@ -528,46 +528,46 @@ static void net_dns_source_nameserver_req_print(net_dns_manage_t manage, write_s
     }
 }
 
-static const char * net_dns_source_nameserver_req_dump(net_dns_manage_t manage, mem_buffer_t buffer, char const * buf, uint32_t data_size) {
+static const char * net_dns_source_ns_req_dump(net_dns_manage_t manage, mem_buffer_t buffer, char const * buf, uint32_t data_size) {
     struct write_stream_buffer stream = CPE_WRITE_STREAM_BUFFER_INITIALIZER(buffer);
 
     mem_buffer_clear_data(buffer);
     
-    net_dns_source_nameserver_req_print(manage, (write_stream_t)&stream, buf, data_size);
+    net_dns_source_ns_req_print(manage, (write_stream_t)&stream, buf, data_size);
     stream_putc((write_stream_t)&stream, 0);
 
     return mem_buffer_make_continuous(buffer, 0);
 }
 
-static int net_dns_source_nameserver_dgram_output(
-    net_dns_manage_t manage, net_dns_source_nameserver_t nameserver, void const * buf, uint16_t buf_size)
+static int net_dns_source_ns_dgram_output(
+    net_dns_manage_t manage, net_dns_source_ns_t ns, void const * buf, uint16_t buf_size)
 {
-    if (nameserver->m_dgram == NULL) {
-        nameserver->m_dgram = net_dgram_create(
-            nameserver->m_driver, NULL, net_dns_source_nameserver_dgram_input, nameserver);
-        if (nameserver->m_dgram == NULL) {
+    if (ns->m_dgram == NULL) {
+        ns->m_dgram = net_dgram_create(
+            ns->m_driver, NULL, net_dns_source_ns_dgram_input, ns);
+        if (ns->m_dgram == NULL) {
             CPE_ERROR(
-                manage->m_em, "dns-cli: nameserver[%s]: create dgram fail",
-                net_address_dump(net_dns_manage_tmp_buffer(manage), nameserver->m_address));
+                manage->m_em, "dns-cli: ns[%s]: create dgram fail",
+                net_address_dump(net_dns_manage_tmp_buffer(manage), ns->m_address));
             return -1;
         }
     }
     
-    if (net_dgram_send(nameserver->m_dgram, nameserver->m_address, buf, buf_size) < 0) {
+    if (net_dgram_send(ns->m_dgram, ns->m_address, buf, buf_size) < 0) {
         CPE_ERROR(
-            manage->m_em, "dns-cli: nameserver[%s]: send data fail",
-            net_address_dump(net_dns_manage_tmp_buffer(manage), nameserver->m_address));
+            manage->m_em, "dns-cli: ns[%s]: send data fail",
+            net_address_dump(net_dns_manage_tmp_buffer(manage), ns->m_address));
         return -1;
     }
 
     if (manage->m_debug >= 2) {
         char address_buf[128];
-        snprintf(address_buf, sizeof(address_buf), "%s", net_address_dump(net_dns_manage_tmp_buffer(manage), nameserver->m_address));
+        snprintf(address_buf, sizeof(address_buf), "%s", net_address_dump(net_dns_manage_tmp_buffer(manage), ns->m_address));
         
         CPE_INFO(
-            manage->m_em, "dns-cli: nameserver[%s]: udp --> %s",
+            manage->m_em, "dns-cli: ns[%s]: udp --> %s",
             address_buf,
-            net_dns_source_nameserver_req_dump(manage, net_dns_manage_tmp_buffer(manage), buf, buf_size));
+            net_dns_source_ns_req_dump(manage, net_dns_manage_tmp_buffer(manage), buf, buf_size));
     }
 
     return 0;

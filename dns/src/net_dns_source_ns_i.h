@@ -5,7 +5,7 @@
 
 NET_BEGIN_DECL
 
-struct net_dns_source_nameserver {
+struct net_dns_source_ns {
     net_driver_t m_driver;
     net_address_t m_address;
     net_dgram_t m_dgram;
@@ -15,11 +15,11 @@ struct net_dns_source_nameserver {
     uint16_t m_max_transaction;
 };
 
-struct net_dns_source_nameserver_ctx {
+struct net_dns_source_ns_ctx {
     uint16_t m_transaction;
 };
 
-int net_dns_source_nameserver_build_req(
+int net_dns_source_ns_build_req(
     net_dns_manage_t manage, mem_buffer_t buffer, net_address_t address,
     net_dns_task_ctx_t task_ctx);
 

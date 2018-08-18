@@ -6,7 +6,7 @@
 #include "cpe/utils/string_utils.h"
 #include "cpe/utils_sock/sock_utils.h"
 #include "net_address.h"
-#include "net_dns_source_nameserver.h"
+#include "net_dns_source_ns.h"
 #include "net_dns_manage_i.h"
 #if defined __APPLE__
 #define NET_DNS_USE_RESOLVE_H
@@ -17,8 +17,8 @@
 #endif
 
 int net_dns_manage_load_resolv(net_dns_manage_t manage, net_driver_t driver, const char * path);
-int net_dns_manage_load_nameserver_by_addr(net_dns_manage_t manage, net_driver_t driver, struct sockaddr * addr, socklen_t addr_len);
-int net_dns_manage_load_nameserver_by_str(net_dns_manage_t manage, net_driver_t driver, char * str);
+int net_dns_manage_load_ns_by_addr(net_dns_manage_t manage, net_driver_t driver, struct sockaddr * addr, socklen_t addr_len);
+int net_dns_manage_load_ns_by_str(net_dns_manage_t manage, net_driver_t driver, char * str);
 
 int net_dns_manage_auto_conf(net_dns_manage_t manage, net_driver_t driver) {
     int rv = 0;
@@ -34,7 +34,7 @@ int net_dns_manage_auto_conf(net_dns_manage_t manage, net_driver_t driver) {
             rv = -1;
             break;
         }
-        if (net_dns_manage_load_nameserver_by_str(manage, propvalue) != 0) rv = -1;
+        if (net_dns_manage_load_ns_by_str(manage, propvalue) != 0) rv = -1;
     }
 #else
 # if defined (NET_DNS_USE_RESOLVE_H)
@@ -46,7 +46,7 @@ int net_dns_manage_auto_conf(net_dns_manage_t manage, net_driver_t driver) {
     else {
         int i;
         for(i = 0; i < res.nscount; ++i) {
-            if (net_dns_manage_load_nameserver_by_addr(
+            if (net_dns_manage_load_ns_by_addr(
                     manage, driver, (struct sockaddr *)&res.nsaddr_list[i], (socklen_t)sizeof(res.nsaddr_list[i])) != 0)
             {
                 rv = -1;
@@ -88,8 +88,8 @@ int net_dns_manage_load_resolv(net_dns_manage_t manage, net_driver_t driver, con
 
         if (line == NULL) break;
 
-        if (cpe_str_start_with(line, "nameserver")) {
-            if (net_dns_manage_load_nameserver_by_str(manage, driver, cpe_str_trim_head(line + strlen("nameserver"))) != 0) rv = -1;
+        if (cpe_str_start_with(line, "ns")) {
+            if (net_dns_manage_load_ns_by_str(manage, driver, cpe_str_trim_head(line + strlen("ns"))) != 0) rv = -1;
         }
         else if (cpe_str_start_with(line, "domain")) {
         }
@@ -109,20 +109,20 @@ int net_dns_manage_load_resolv(net_dns_manage_t manage, net_driver_t driver, con
     return rv;
 }
 
-int net_dns_manage_load_nameserver(net_dns_manage_t manage, net_driver_t driver, net_address_t address) {
-    if (net_dns_source_nameserver_find(manage, address) != NULL) {
+int net_dns_manage_load_ns(net_dns_manage_t manage, net_driver_t driver, net_address_t address) {
+    if (net_dns_source_ns_find(manage, address) != NULL) {
         if (manage->m_debug) {
             CPE_INFO(
-                manage->m_em, "dns-cli: load nameserver: ignore duplicate address %s",
+                manage->m_em, "dns-cli: load ns: ignore duplicate address %s",
                 net_address_dump(net_dns_manage_tmp_buffer(manage), address));
         }
         net_address_free(address);
         return 0;
     }
     
-    net_dns_source_nameserver_t nameserver = net_dns_source_nameserver_create(manage, driver, address, 1);
-    if (nameserver == NULL) {
-        CPE_ERROR(manage->m_em, "dns-cli: load nameserver: create nameserver fail");
+    net_dns_source_ns_t ns = net_dns_source_ns_create(manage, driver, address, 1);
+    if (ns == NULL) {
+        CPE_ERROR(manage->m_em, "dns-cli: load ns: create ns fail");
         net_address_free(address);
         return -1;
     }
@@ -130,22 +130,22 @@ int net_dns_manage_load_nameserver(net_dns_manage_t manage, net_driver_t driver,
     return 0;
 }
 
-int net_dns_manage_load_nameserver_by_addr(net_dns_manage_t manage, net_driver_t driver, struct sockaddr * addr, socklen_t addr_len) {
+int net_dns_manage_load_ns_by_addr(net_dns_manage_t manage, net_driver_t driver, struct sockaddr * addr, socklen_t addr_len) {
     net_address_t address = net_address_create_from_sockaddr(manage->m_schedule, addr, addr_len);
     if (address == NULL) {
-        CPE_ERROR(manage->m_em, "dns-cli: load nameserver: create address from sock addr fail");
+        CPE_ERROR(manage->m_em, "dns-cli: load ns: create address from sock addr fail");
         return -1;
     }
 
-    return net_dns_manage_load_nameserver(manage, driver, address);
+    return net_dns_manage_load_ns(manage, driver, address);
 }
 
-int net_dns_manage_load_nameserver_by_str(net_dns_manage_t manage, net_driver_t driver, char * str) {
+int net_dns_manage_load_ns_by_str(net_dns_manage_t manage, net_driver_t driver, char * str) {
     net_address_t address = net_address_create_auto(manage->m_schedule, str);
     if (address == NULL) {
-        CPE_ERROR(manage->m_em, "dns-cli: load nameserver: create address %s fail", str);
+        CPE_ERROR(manage->m_em, "dns-cli: load ns: create address %s fail", str);
         return -1;
     }
 
-    return net_dns_manage_load_nameserver(manage, driver, address);
+    return net_dns_manage_load_ns(manage, driver, address);
 }

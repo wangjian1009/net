@@ -10,6 +10,8 @@
 NET_BEGIN_DECL
 
 typedef struct net_dns_query_ex * net_dns_query_ex_t;
+typedef struct net_dns_cli_protocol * net_dns_cli_protocol_t;
+typedef struct net_dns_cli_endpoint * net_dns_cli_endpoint_t;
 
 typedef TAILQ_HEAD(net_dns_entry_list, net_dns_entry) net_dns_entry_list_t;
 typedef TAILQ_HEAD(net_dns_entry_item_list, net_dns_entry_item) net_dns_entry_item_list_t;
