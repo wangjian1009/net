@@ -31,7 +31,7 @@ uint32_t net_endpoint_wbuf_size(net_endpoint_t endpoint) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
 
     if (endpoint->m_wb) {
-		return ringbuffer_block_len(schedule->m_endpoint_buf, endpoint->m_wb, 0);
+		return ringbuffer_block_total_len(schedule->m_endpoint_buf, endpoint->m_wb);
 	}
     else {
         return 0;

@@ -85,7 +85,7 @@ uint32_t net_endpoint_fbuf_size(net_endpoint_t endpoint) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
 
     if (endpoint->m_fb) {
-		return ringbuffer_block_len(schedule->m_endpoint_buf, endpoint->m_fb, 0);
+		return ringbuffer_block_total_len(schedule->m_endpoint_buf, endpoint->m_fb);
 	}
     else {
         return 0;
