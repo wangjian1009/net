@@ -20,6 +20,8 @@ net_debug_condition_address_create(net_debug_setup_t setup, net_debug_condition_
         mem_free(schedule->m_alloc, condition);
         return NULL;
     }
+
+    TAILQ_INSERT_TAIL(&setup->m_conditions, condition, m_next);
     
     return condition;
 }
