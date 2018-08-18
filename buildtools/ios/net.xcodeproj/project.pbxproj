@@ -39,6 +39,7 @@
 		C9506CD72127A8400015DDBC /* net_dns_source_ns.c in Sources */ = {isa = PBXBuildFile; fileRef = C9506CD22127A83F0015DDBC /* net_dns_source_ns.c */; };
 		C9506CD82127A8400015DDBC /* net_dns_cli_protocol.c in Sources */ = {isa = PBXBuildFile; fileRef = C9506CD52127A8400015DDBC /* net_dns_cli_protocol.c */; };
 		C9506CD92127A8400015DDBC /* net_dns_cli_endpoint.c in Sources */ = {isa = PBXBuildFile; fileRef = C9506CD62127A8400015DDBC /* net_dns_cli_endpoint.c */; };
+		C9506CDC2127ABE90015DDBC /* net_dns_scope.c in Sources */ = {isa = PBXBuildFile; fileRef = C9506CDB2127ABE90015DDBC /* net_dns_scope.c */; };
 		C96A82F02110054D000CB30D /* net_dq_driver.m in Sources */ = {isa = PBXBuildFile; fileRef = C96A82E22110054D000CB30D /* net_dq_driver.m */; };
 		C96A82F12110054D000CB30D /* net_dq_acceptor.m in Sources */ = {isa = PBXBuildFile; fileRef = C96A82E42110054D000CB30D /* net_dq_acceptor.m */; };
 		C96A82F22110054D000CB30D /* net_dq_endpoint.m in Sources */ = {isa = PBXBuildFile; fileRef = C96A82E62110054D000CB30D /* net_dq_endpoint.m */; };
@@ -253,6 +254,9 @@
 		C9506CD42127A8400015DDBC /* net_dns_cli_protocol_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_cli_protocol_i.h; sourceTree = "<group>"; };
 		C9506CD52127A8400015DDBC /* net_dns_cli_protocol.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_dns_cli_protocol.c; sourceTree = "<group>"; };
 		C9506CD62127A8400015DDBC /* net_dns_cli_endpoint.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_dns_cli_endpoint.c; sourceTree = "<group>"; };
+		C9506CDA2127ABE90015DDBC /* net_dns_scope_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_scope_i.h; sourceTree = "<group>"; };
+		C9506CDB2127ABE90015DDBC /* net_dns_scope.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_dns_scope.c; sourceTree = "<group>"; };
+		C9506CDD2127ABF10015DDBC /* net_dns_scope.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_scope.h; sourceTree = "<group>"; };
 		C96A82D821100505000CB30D /* libnet_driver_dq.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_driver_dq.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		C96A82E22110054D000CB30D /* net_dq_driver.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = net_dq_driver.m; sourceTree = "<group>"; };
 		C96A82E32110054D000CB30D /* net_dq_timer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dq_timer.h; sourceTree = "<group>"; };
@@ -727,6 +731,7 @@
 		C9C4B11E210862460045A1A3 /* include */ = {
 			isa = PBXGroup;
 			children = (
+				C9506CDD2127ABF10015DDBC /* net_dns_scope.h */,
 				C9506CD02127A82A0015DDBC /* net_dns_source_ns.h */,
 				C9C4B11F210862460045A1A3 /* net_dns_source.h */,
 				C9C4B121210862460045A1A3 /* net_dns_entry_item.h */,
@@ -744,6 +749,8 @@
 		C9C4B12A210862460045A1A3 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				C9506CDA2127ABE90015DDBC /* net_dns_scope_i.h */,
+				C9506CDB2127ABE90015DDBC /* net_dns_scope.c */,
 				C9506CD32127A83F0015DDBC /* net_dns_cli_endpoint_i.h */,
 				C9506CD62127A8400015DDBC /* net_dns_cli_endpoint.c */,
 				C9506CD42127A8400015DDBC /* net_dns_cli_protocol_i.h */,
@@ -1231,6 +1238,7 @@
 				C9C4B14A210862470045A1A3 /* net_dns_task_ctx.c in Sources */,
 				C9C4B145210862470045A1A3 /* net_dns_manage_conf.c in Sources */,
 				C9C4B149210862470045A1A3 /* net_dns_manage.c in Sources */,
+				C9506CDC2127ABE90015DDBC /* net_dns_scope.c in Sources */,
 				C9C4B146210862470045A1A3 /* net_dns_query_ex.c in Sources */,
 				C9C4B14D210862470045A1A3 /* net_dns_entry.c in Sources */,
 				C9C4B14B210862470045A1A3 /* net_dns_task_step.c in Sources */,

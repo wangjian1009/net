@@ -5,6 +5,7 @@
 #include "net_timer.h"
 #include "net_dns_query.h"
 #include "net_dns_manage_i.h"
+#include "net_dns_scope_i.h"
 #include "net_dns_query_ex_i.h"
 #include "net_dns_source_i.h"
 #include "net_dns_entry_i.h"
@@ -51,6 +52,18 @@ net_dns_manage_t net_dns_manage_create(
     TAILQ_INIT(&manage->m_builders);
 
     if (cpe_hash_table_init(
+            &manage->m_scopes,
+            alloc,
+            (cpe_hash_fun_t) net_dns_scope_hash,
+            (cpe_hash_eq_t) net_dns_scope_eq,
+            CPE_HASH_OBJ2ENTRY(net_dns_scope, m_hh),
+            -1) != 0)
+    {
+        mem_free(alloc, manage);
+        return NULL;
+    }
+    
+    if (cpe_hash_table_init(
             &manage->m_entries,
             alloc,
             (cpe_hash_fun_t) net_dns_entry_hash,
@@ -58,6 +71,7 @@ net_dns_manage_t net_dns_manage_create(
             CPE_HASH_OBJ2ENTRY(net_dns_entry, m_hh),
             -1) != 0)
     {
+        cpe_hash_table_fini(&manage->m_scopes);
         mem_free(alloc, manage);
         return NULL;
     }
@@ -65,6 +79,7 @@ net_dns_manage_t net_dns_manage_create(
     manage->m_builder_internal = net_dns_task_builder_internal_create(manage);
     if (manage->m_builder_internal == NULL) {
         cpe_hash_table_fini(&manage->m_entries);
+        cpe_hash_table_fini(&manage->m_scopes);
         mem_free(alloc, manage);
         return NULL;
     }
@@ -97,8 +112,8 @@ void net_dns_manage_free(net_dns_manage_t manage) {
     }
     
     net_dns_entry_free_all(manage);
-    cpe_hash_table_fini(&manage->m_entries);
-    
+    net_dns_scope_free_all(manage);
+
     while(!TAILQ_EMPTY(&manage->m_sources)) {
         net_dns_source_free(TAILQ_FIRST(&manage->m_sources));
     }
@@ -113,7 +128,10 @@ void net_dns_manage_free(net_dns_manage_t manage) {
         net_timer_free(manage->m_delay_process);
         manage->m_delay_process = NULL;
     }
-    
+
+    cpe_hash_table_fini(&manage->m_entries);
+    cpe_hash_table_fini(&manage->m_scopes);
+
     while(!TAILQ_EMPTY(&manage->m_free_entries)) {
         net_dns_entry_real_free(TAILQ_FIRST(&manage->m_free_entries));
     }

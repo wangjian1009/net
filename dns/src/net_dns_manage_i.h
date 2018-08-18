@@ -33,6 +33,8 @@ struct net_dns_manage {
     net_dns_item_select_policy_t m_default_item_select_policy;
     
     net_dns_query_ex_list_t m_to_notify_querys;
+
+    struct cpe_hash_table m_scopes;
     
     struct cpe_hash_table m_entries;
     net_dns_entry_list_t m_free_entries;
