@@ -64,3 +64,22 @@ void net_link_real_free(net_link_t link) {
     mem_free(schedule->m_alloc, link);
 }
 
+uint8_t net_link_is_tie(net_link_t link, net_endpoint_t endpoint) {
+    if (link->m_local == endpoint) {
+        return link->m_local_is_tie;
+    }
+    else {
+        assert(link->m_remote == endpoint);
+        return link->m_remote_is_tie;
+    }
+}
+
+void net_link_set_tie(net_link_t link, net_endpoint_t endpoint, uint8_t is_tie) {
+    if (link->m_local == endpoint) {
+        link->m_local_is_tie = is_tie;
+    }
+    else {
+        assert(link->m_remote == endpoint);
+        link->m_remote_is_tie = is_tie;
+    }
+}

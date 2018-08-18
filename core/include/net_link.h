@@ -10,6 +10,9 @@ net_link_create(
 
 void net_link_free(net_link_t link);
 
+uint8_t net_link_is_tie(net_link_t link, net_endpoint_t endpoint);
+void net_link_set_tie(net_link_t link, net_endpoint_t endpoint, uint8_t is_tie);
+
 NET_END_DECL
 
 #endif
