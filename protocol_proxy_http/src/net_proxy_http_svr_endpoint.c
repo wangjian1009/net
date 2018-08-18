@@ -11,6 +11,7 @@ static int net_proxy_http_svr_endpoint_input_first_header(
 
 int net_proxy_http_svr_endpoint_init(net_endpoint_t endpoint) {
     net_proxy_http_svr_endpoint_t http_ep = net_endpoint_protocol_data(endpoint);
+    http_ep->m_max_head_len = 8192;
     http_ep->m_debug = 0;
     http_ep->m_way = net_proxy_http_way_unknown;
     http_ep->m_keep_alive = 0;
@@ -107,11 +108,12 @@ static int net_proxy_http_svr_endpoint_input_first_header(
     }
 
     if (data == NULL) {
-        if(net_endpoint_rbuf_size(endpoint) > 8192) {
+        if(net_endpoint_rbuf_size(endpoint) > http_ep->m_max_head_len) {
             CPE_ERROR(
-                http_protocol->m_em, "http-proxy-svr: %s: first head Too big response head!, size=%d",
+                http_protocol->m_em, "http-proxy-svr: %s: head too big! size=%d, max-head-len=%d",
                 net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
-                net_endpoint_rbuf_size(endpoint));
+                net_endpoint_rbuf_size(endpoint),
+                http_ep->m_max_head_len);
             return -1;
         }
         else {

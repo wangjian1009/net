@@ -17,6 +17,7 @@ struct net_proxy_http_svr_endpoint_basic_head_context {
     net_endpoint_t m_other;
     uint8_t m_keep_alive;
     uint32_t m_context_length;
+    const char * m_method;
     char * m_output;
     uint32_t m_output_size;
     uint32_t m_output_capacity;
@@ -43,19 +44,38 @@ CHECK_AGAIN:
         uint32_t size;
         if (net_endpoint_rbuf_by_str(endpoint, "\r\n\r\n", (void**)&data, &size) != 0) {
             CPE_ERROR(
-                http_protocol->m_em, "http-proxy-svr: %s: search http request head fail",
+                http_protocol->m_em, "http-proxy-svr: %s: basic: search http request head fail",
                 net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint));
             return -1;
+        }
+
+        if (data == NULL) {
+            if(net_endpoint_rbuf_size(endpoint) > http_ep->m_max_head_len) {
+                CPE_ERROR(
+                    http_protocol->m_em, "http-proxy-svr: %s: basic: head too big! size=%d, max-head-len=%d",
+                    net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
+                    net_endpoint_rbuf_size(endpoint),
+                    http_ep->m_max_head_len);
+                return -1;
+            }
+            else {
+                return 0;
+            }
         }
 
         if (net_proxy_http_svr_endpoint_basic_read_head(http_protocol, http_ep, endpoint, data) != 0) return -1;
 
         if (http_ep->m_basic.m_read_state != proxy_http_svr_basic_state_reading_header) goto CHECK_AGAIN;
     }
-    else {
-        assert(http_ep->m_basic.m_read_state == proxy_http_svr_basic_state_reading_content);
-
+    else if (http_ep->m_basic.m_read_state == proxy_http_svr_basic_state_reading_content) {
         if (http_ep->m_basic.m_read_context_length == 0) {
+            if (http_ep->m_debug) {
+                CPE_INFO(
+                    http_protocol->m_em, "http-proxy-svr: %s: basic: ==> body %d data",
+                    net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
+                    net_endpoint_rbuf_size(endpoint));
+            }
+    
             if (net_endpoint_fbuf_append_from_rbuf(endpoint, 0) != 0
                 || net_endpoint_forward(endpoint) != 0
                 )
@@ -67,11 +87,18 @@ CHECK_AGAIN:
             }
         }
         else {
-            uint32_t forward_sz = net_endpoint_fbuf_size(endpoint);
+            uint32_t forward_sz = net_endpoint_rbuf_size(endpoint);
             if (forward_sz > http_ep->m_basic.m_read_context_length) {
                 forward_sz = http_ep->m_basic.m_read_context_length;
             }
 
+            if (http_ep->m_debug) {
+                CPE_INFO(
+                    http_protocol->m_em, "http-proxy-svr: %s: basic: ==> body %d data(left=%d)",
+                    net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
+                    forward_sz, http_ep->m_basic.m_read_context_length - forward_sz);
+            }
+    
             if (net_endpoint_fbuf_append_from_rbuf(endpoint, forward_sz) != 0
                 || net_endpoint_forward(endpoint) != 0
                 )
@@ -85,18 +112,39 @@ CHECK_AGAIN:
 
             http_ep->m_basic.m_read_context_length -= forward_sz;
             if (http_ep->m_basic.m_read_context_length == 0) {
-                net_proxy_http_svr_endpoint_basic_set_read_state(http_protocol, http_ep, endpoint, proxy_http_svr_basic_state_reading_header);
+                net_proxy_http_svr_endpoint_basic_set_read_state(
+                    http_protocol, http_ep, endpoint,
+                    http_ep->m_keep_alive
+                    ? proxy_http_svr_basic_state_reading_header
+                    : proxy_http_svr_basic_state_reading_stop);
                 goto CHECK_AGAIN;
             }
         }
     }
+    else {
+        assert(http_ep->m_basic.m_read_state == proxy_http_svr_basic_state_reading_stop);
 
+        if(net_endpoint_rbuf_size(endpoint) > 0) {
+            CPE_ERROR(
+                http_protocol->m_em, "http-proxy-svr: %s: basic: reading is stoped, still incoming data",
+                net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint));
+            return -1;
+        }
+    }
+    
     return 0;
 }
 
 int net_proxy_http_svr_endpoint_basic_backword(
     net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep, net_endpoint_t endpoint, net_endpoint_t from)
 {
+    if (http_ep->m_debug) {
+        CPE_INFO(
+            http_protocol->m_em, "http-proxy-svr: %s: basic: <== %d data",
+            net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
+            net_endpoint_fbuf_size(from));
+    }
+    
     return net_endpoint_wbuf_append_from_other(endpoint, from, 0);
 }
 
@@ -132,32 +180,27 @@ int net_proxy_http_svr_endpoint_basic_read_head(
 
     if (ctx.m_other == NULL) {
         CPE_ERROR(
-            http_protocol->m_em, "http-proxy-svr: %s: after read head, no linked other endpoint, error!",
-            net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint));
-        return -1;
-    }
-
-    if (http_ep->m_keep_alive && ctx.m_context_length == 0) {
-        CPE_ERROR(
-            http_protocol->m_em, "http-proxy-svr: %s: after read head, keep-alive but no content length, error!",
+            http_protocol->m_em, "http-proxy-svr: %s: basic: after read head, no linked other endpoint, error!",
             net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint));
         return -1;
     }
 
     if (net_endpoint_fbuf_append(ctx.m_other, ctx.m_output, ctx.m_output_capacity) != 0) {
         CPE_ERROR(
-            http_protocol->m_em, "http-proxy-svr: %s: forward head to other fail!\n%s",
+            http_protocol->m_em, "http-proxy-svr: %s: basic: forward head to other fail!\n%s",
             net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
             ctx.m_output);
         return -1;
     }
 
-    http_ep->m_basic.m_read_context_length = ctx.m_context_length;
-    net_proxy_http_svr_endpoint_basic_set_read_state(http_protocol, http_ep, endpoint, proxy_http_svr_basic_state_reading_content);
-
+    if (http_ep->m_keep_alive || ctx.m_context_length > 0) {
+        http_ep->m_basic.m_read_context_length = ctx.m_context_length;
+        net_proxy_http_svr_endpoint_basic_set_read_state(http_protocol, http_ep, endpoint, proxy_http_svr_basic_state_reading_content);
+    }
+    
     if (http_ep->m_debug) {
         CPE_INFO(
-            http_protocol->m_em, "http-proxy-svr: %s: ==> %s",
+            http_protocol->m_em, "http-proxy-svr: %s: basic: ==> %s",
             net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
             ctx.m_output);
     }
@@ -202,6 +245,7 @@ static int net_proxy_http_svr_endpoint_basic_parse_header_method(
 
     char * method = line;
     *sep1 = 0;
+    ctx->m_method = method;
 
     const char * origin_target = sep1 + 1;
     *sep2 = 0;
@@ -371,5 +415,7 @@ const char * proxy_http_svr_basic_state_str(proxy_http_svr_basic_state_t state) 
         return "r-reading-header";
     case proxy_http_svr_basic_state_reading_content:
         return "r-reading-content";
+    case proxy_http_svr_basic_state_reading_stop:
+        return "r-reading-stop";
     }
 }

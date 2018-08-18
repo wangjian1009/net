@@ -8,6 +8,7 @@ NET_BEGIN_DECL
 typedef enum proxy_http_svr_basic_state {
     proxy_http_svr_basic_state_reading_header
     , proxy_http_svr_basic_state_reading_content
+    , proxy_http_svr_basic_state_reading_stop
 } proxy_http_svr_basic_state_t;
 
 typedef enum proxy_http_svr_tunnel_state {
@@ -17,6 +18,7 @@ typedef enum proxy_http_svr_tunnel_state {
 
 struct net_proxy_http_svr_endpoint {
     uint8_t m_debug;
+    uint16_t m_max_head_len;
     net_proxy_http_way_t m_way;
     union {
         struct {

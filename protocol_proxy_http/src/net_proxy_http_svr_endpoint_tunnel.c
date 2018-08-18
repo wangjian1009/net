@@ -101,6 +101,13 @@ int net_proxy_http_svr_endpoint_tunnel_forward(
         break;
     }
 
+    if (http_ep->m_debug) {
+        CPE_INFO(
+            http_protocol->m_em, "http-proxy-svr: %s: tunnel: ==> %d data",
+            net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
+            net_endpoint_rbuf_size(endpoint));
+    }
+    
     if (net_endpoint_fbuf_append_from_rbuf(endpoint, 0) != 0) return -1;
     if (net_endpoint_forward(endpoint) != 0) return -1;
     return 0;
@@ -111,6 +118,13 @@ int net_proxy_http_svr_endpoint_tunnel_backword(
 {
     switch(http_ep->m_tunnel.m_state) {
     case proxy_http_svr_tunnel_state_established:
+        if (http_ep->m_debug) {
+            CPE_INFO(
+                http_protocol->m_em, "http-proxy-svr: %s: tunnel: <== %d data",
+                net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
+                net_endpoint_fbuf_size(from));
+        }
+    
         return net_endpoint_wbuf_append_from_other(endpoint, from, 0);
     default:
         return 0;
