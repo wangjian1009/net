@@ -11,9 +11,6 @@ net_ev_driver_t net_ev_driver_create(
 
 void net_ev_driver_free(net_ev_driver_t driver);
 
-uint8_t net_ev_driver_debug(net_ev_driver_t driver);
-void net_ev_driver_set_debug(net_ev_driver_t driver, uint8_t debug);
-
 typedef int (*net_ev_driver_sock_create_process_fun_t)(
     net_ev_driver_t driver, void * ctx, int fd, net_address_t remote_addr);
 

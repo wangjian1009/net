@@ -60,7 +60,6 @@ static int net_ev_driver_init(net_driver_t base_driver) {
     driver->m_sock_process_ctx = NULL;
     driver->m_data_monitor_fun = NULL;
     driver->m_data_monitor_ctx = NULL;
-    driver->m_debug = 0;
 
     return 0;
 }
@@ -70,14 +69,6 @@ static void net_ev_driver_fini(net_driver_t base_driver) {
 
 void net_ev_driver_free(net_ev_driver_t driver) {
     net_driver_free(net_driver_from_data(driver));
-}
-
-uint8_t net_ev_driver_debug(net_ev_driver_t driver) {
-    return driver->m_debug;
-}
-
-void net_ev_driver_set_debug(net_ev_driver_t driver, uint8_t debug) {
-    driver->m_debug = debug;
 }
 
 void net_ev_driver_set_sock_create_processor(

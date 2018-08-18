@@ -24,6 +24,8 @@ net_dgram_t net_dgram_create(
 
     dgram->m_driver = driver;
     dgram->m_address = address;
+    dgram->m_driver_debug = driver->m_debug;
+    
     dgram->m_process_fun = process_fun;
     dgram->m_process_ctx = process_ctx;
 
@@ -95,6 +97,14 @@ void net_dgram_set_address(net_dgram_t dgram, net_address_t address) {
     }
 
     dgram->m_address = address;
+}
+
+uint8_t net_dgram_driver_debug(net_dgram_t dgram) {
+    return dgram->m_driver_debug;
+}
+
+void net_dgram_set_driver_debug(net_dgram_t dgram, uint8_t debug) {
+    dgram->m_driver_debug = debug;
 }
 
 void * net_dgram_data(net_dgram_t dgram) {

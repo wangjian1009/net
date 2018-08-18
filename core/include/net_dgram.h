@@ -30,6 +30,9 @@ void net_dgram_set_address(net_dgram_t dgram, net_address_t address);
 void * net_dgram_data(net_dgram_t dgram);
 net_dgram_t net_dgram_from_data(void * data);
 
+uint8_t net_dgram_driver_debug(net_dgram_t dgram);
+void net_dgram_set_driver_debug(net_dgram_t dgram, uint8_t debug);
+
 int net_dgram_send(net_dgram_t dgram, net_address_t target, void const * data, size_t data_size);
 void net_dgram_recv(net_dgram_t dgram, net_address_t from, void * data, size_t data_size);
 

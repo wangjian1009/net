@@ -14,6 +14,9 @@ struct net_endpoint {
     net_protocol_t m_protocol;
     net_link_t m_link;
     uint32_t m_id;
+    uint8_t m_close_after_send;
+    uint8_t m_protocol_debug;
+    uint8_t m_driver_debug;
     struct cpe_hash_entry m_hh;
     net_endpoint_state_t m_state;
     net_dns_query_t m_dns_query;

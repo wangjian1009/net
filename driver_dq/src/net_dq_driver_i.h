@@ -16,7 +16,6 @@ typedef struct net_dq_timer * net_dq_timer_t;
 struct net_dq_driver {
     mem_allocrator_t m_alloc;
     error_monitor_t m_em;
-    uint8_t m_debug;
     net_data_monitor_fun_t m_data_monitor_fun;
     void * m_data_monitor_ctx;
 };

@@ -49,6 +49,7 @@ net_driver_create(
 
     driver->m_schedule = schedule;
     cpe_str_dup(driver->m_name, sizeof(driver->m_name), driver_name);
+    driver->m_debug = 0;
 
     /*driver*/
     driver->m_driver_capacity = driver_capacity;
@@ -169,6 +170,14 @@ net_schedule_t net_driver_schedule(net_driver_t driver) {
 
 const char * net_driver_name(net_driver_t driver) {
     return driver->m_name;
+}
+
+uint8_t net_driver_debug(net_driver_t driver) {
+    return driver->m_debug;
+}
+
+void net_driver_set_debug(net_driver_t driver, uint8_t debug) {
+    driver->m_debug = debug;
 }
 
 void * net_driver_data(net_driver_t driver) {

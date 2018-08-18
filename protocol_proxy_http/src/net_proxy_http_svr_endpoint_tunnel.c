@@ -95,7 +95,7 @@ int net_proxy_http_svr_endpoint_tunnel_forward(
         break;
     }
 
-    if (http_ep->m_debug >= 2) {
+    if (net_endpoint_protocol_debug(endpoint) >= 2) {
         CPE_INFO(
             http_protocol->m_em, "http-proxy-svr: %s: tunnel: ==> %d data",
             net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
@@ -112,7 +112,7 @@ int net_proxy_http_svr_endpoint_tunnel_backword(
 {
     switch(http_ep->m_tunnel.m_state) {
     case proxy_http_svr_tunnel_state_established:
-        if (http_ep->m_debug >= 2) {
+        if (net_endpoint_protocol_debug(endpoint) >= 2) {
             CPE_INFO(
                 http_protocol->m_em, "http-proxy-svr: %s: tunnel: <== %d data",
                 net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
@@ -198,7 +198,7 @@ static int net_proxy_http_svr_endpoint_tunnel_do_link(
     }
     if (net_address_port(address) == 0) net_address_set_port(address, 80);
 
-    if (http_ep->m_debug) {
+    if (net_endpoint_protocol_debug(endpoint)) {
         CPE_INFO(
             http_protocol->m_em, "http-proxy-svr: %s: tunnel: request connect to %s!",
             net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
@@ -265,7 +265,7 @@ static int net_proxy_http_svr_endpoint_tunnel_check_send_response(
 
     char * response = mem_buffer_make_continuous(&http_protocol->m_data_buffer, 0);
 
-    if (http_ep->m_debug) {
+    if (net_endpoint_protocol_debug(endpoint)) {
         char *p = strstr(response, "\r\n\r\n");
         assert(p);
         *p = 0;

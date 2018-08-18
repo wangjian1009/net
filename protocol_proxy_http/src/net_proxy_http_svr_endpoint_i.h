@@ -17,7 +17,6 @@ typedef enum proxy_http_svr_tunnel_state {
 } proxy_http_svr_tunnel_state_t;
 
 struct net_proxy_http_svr_endpoint {
-    uint8_t m_debug;
     uint16_t m_max_head_len;
     net_proxy_http_way_t m_way;
     union {

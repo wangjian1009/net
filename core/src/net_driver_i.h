@@ -9,6 +9,7 @@ struct net_driver {
     net_schedule_t m_schedule;
     TAILQ_ENTRY(net_driver) m_next_for_schedule;
     char m_name[64];
+    uint8_t m_debug;
     /*driver*/
     uint16_t m_driver_capacity;
     net_driver_fini_fun_t m_driver_fini;

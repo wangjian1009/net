@@ -54,14 +54,6 @@ net_endpoint_t net_ws_cli_endpoint_net_endpoint(net_ws_cli_endpoint_t ws_ep) {
     return ws_ep->m_endpoint;
 }
 
-uint8_t net_ws_cli_endpoint_debug(net_ws_cli_endpoint_t ws_ep) {
-    return ws_ep->m_debug;
-}
-
-void net_ws_cli_endpoint_set_debug(net_ws_cli_endpoint_t ws_ep, uint8_t debug) {
-    ws_ep->m_debug = debug;
-}
-
 const char * net_ws_cli_endpoint_path(net_ws_cli_endpoint_t ws_ep) {
     return ws_ep->m_cfg_path ? ws_ep->m_cfg_path : "/";
 }
@@ -108,7 +100,7 @@ int net_ws_cli_endpoint_send_msg_text(net_ws_cli_endpoint_t ws_ep, const char * 
         return -1;
     }
 
-    if (ws_ep->m_debug >= 2) {
+    if (net_endpoint_protocol_debug(ws_ep->m_endpoint) >= 2) {
         CPE_INFO(
             ws_protocol->m_em, "ws: %s: msg text: >>>\n%s",
             net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), ws_ep->m_endpoint),
@@ -132,7 +124,7 @@ int net_ws_cli_endpoint_send_msg_bin(net_ws_cli_endpoint_t ws_ep, const void * m
         return -1;
     }
 
-    if (ws_ep->m_debug >= 2) {
+    if (net_endpoint_protocol_debug(ws_ep->m_endpoint) >= 2) {
         CPE_INFO(
             ws_protocol->m_em, "ws: %s: msg bin: >>> %d data",
             net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), ws_ep->m_endpoint),
@@ -151,7 +143,7 @@ void net_ws_cli_endpoint_enable(net_ws_cli_endpoint_t ws_ep) {
 int net_ws_cli_endpoint_set_state(net_ws_cli_endpoint_t ws_ep, net_ws_cli_state_t state) {
     if (ws_ep->m_state == state) return 0;
     
-    if (ws_ep->m_debug >= 1) {
+    if (net_endpoint_protocol_debug(ws_ep->m_endpoint) >= 1) {
         net_ws_cli_protocol_t ws_protocol = net_protocol_data(net_endpoint_protocol(ws_ep->m_endpoint));
         CPE_INFO(
             ws_protocol->m_em, "ws: %s: state %s ==> %s",
@@ -261,7 +253,7 @@ static void net_ws_cli_endpoint_on_msg_recv_cb(
         memcpy(buf, arg->msg, arg->msg_length);
         buf[arg->msg_length] = 0;
 
-        if (ws_ep->m_debug >= 2) {
+        if (net_endpoint_protocol_debug(ws_ep->m_endpoint) >= 2) {
             CPE_INFO(
                 ws_protocol->m_em, "ws: %s: msg text: <<<\n%s",
                 net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), ws_ep->m_endpoint),
@@ -276,7 +268,7 @@ static void net_ws_cli_endpoint_on_msg_recv_cb(
         break;
     }
     case WSLAY_BINARY_FRAME:
-        if (ws_ep->m_debug >= 2) {
+        if (net_endpoint_protocol_debug(ws_ep->m_endpoint) >= 2) {
             CPE_INFO(
                 ws_protocol->m_em, "ws: %s: msg bin: <<< %d data",
                 net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), ws_ep->m_endpoint),
@@ -324,7 +316,6 @@ int net_ws_cli_endpoint_init(net_endpoint_t endpoint) {
 
     ws_ep->m_endpoint = NULL;
     ws_ep->m_state = net_ws_cli_state_init;
-    ws_ep->m_debug = 0;
     ws_ep->m_cfg_reconnect_span_ms = 3u * 1000u;
     ws_ep->m_cfg_path = NULL;
     ws_ep->m_handshake_token = NULL;
@@ -563,7 +554,7 @@ static int net_ws_cli_endpoint_send_handshake(net_ws_cli_endpoint_t ws_ep) {
         net_address_port(address),
         ws_ep->m_handshake_token);
 
-    if (ws_ep->m_debug >= 2) {
+    if (net_endpoint_protocol_debug(ws_ep->m_endpoint) >= 2) {
         ((char*)buf)[n] = 0;
         CPE_INFO(
             ws_protocol->m_em, "ws: %s: handshake request: >>>\n%s",
@@ -618,7 +609,7 @@ static int net_ws_cli_endpoint_on_handshake_line(net_ws_cli_protocol_t ws_protoc
 }
 
 static int net_ws_cli_endpoint_on_handshake(net_ws_cli_protocol_t ws_protocol, net_ws_cli_endpoint_t ws_ep, char * response) {
-    if (ws_ep->m_debug >= 2) {
+    if (net_endpoint_protocol_debug(ws_ep->m_endpoint) >= 2) {
         CPE_INFO(
             ws_protocol->m_em, "ws: %s: handshake response: <<<\n%s",
             net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), ws_ep->m_endpoint),

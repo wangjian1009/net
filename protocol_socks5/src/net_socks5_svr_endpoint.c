@@ -177,7 +177,7 @@ int net_socks5_svr_endpoint_input(net_endpoint_t endpoint) {
                 ss_ep->m_stage = net_socks5_svr_endpoint_stage_stream;
                 net_endpoint_rbuf_consume(endpoint, used_len);
 
-                if (net_schedule_debug(schedule) >= 2) {
+                if (net_endpoint_protocol_debug(endpoint) >= 2) {
                     CPE_INFO(
                         em, "ss: %s: request connect to %s!",
                         net_endpoint_dump(net_schedule_tmp_buffer(schedule), endpoint),

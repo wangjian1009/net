@@ -13,7 +13,6 @@ typedef struct net_ev_timer * net_ev_timer_t;
 
 struct net_ev_driver {
     struct ev_loop * m_ev_loop;
-    uint8_t m_debug;
     net_ev_driver_sock_create_process_fun_t m_sock_process_fun;
     void * m_sock_process_ctx;
     net_data_monitor_fun_t m_data_monitor_fun;

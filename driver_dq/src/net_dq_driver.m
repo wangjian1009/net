@@ -59,7 +59,6 @@ static int net_dq_driver_init(net_driver_t base_driver) {
     driver->m_em = net_schedule_em(schedule);
     driver->m_data_monitor_fun = NULL;
     driver->m_data_monitor_ctx = NULL;
-    driver->m_debug = 0;
     
     return 0;
 }
@@ -69,14 +68,6 @@ static void net_dq_driver_fini(net_driver_t base_driver) {
 
 void net_dq_driver_free(net_dq_driver_t driver) {
     net_driver_free(net_driver_from_data(driver));
-}
-
-uint8_t net_dq_driver_debug(net_dq_driver_t driver) {
-    return driver->m_debug;
-}
-
-void net_dq_driver_set_debug(net_dq_driver_t driver, uint8_t debug) {
-    driver->m_debug = debug;
 }
 
 void net_dq_driver_set_data_monitor(

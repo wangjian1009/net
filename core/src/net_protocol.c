@@ -34,6 +34,7 @@ net_protocol_create(
 
     protocol->m_schedule = schedule;
     cpe_str_dup(protocol->m_name, sizeof(protocol->m_name), name);
+    protocol->m_debug = 0;
 
     protocol->m_protocol_capacity = protocol_capacity;
     protocol->m_protocol_init = protocol_init;
@@ -87,6 +88,14 @@ net_schedule_t net_protocol_schedule(net_protocol_t protocol) {
 
 const char * net_protocol_name(net_protocol_t protocol) {
     return protocol->m_name;
+}
+
+uint8_t net_protocol_debug(net_protocol_t protocol) {
+    return protocol->m_debug;
+}
+
+void net_protocol_set_debug(net_protocol_t protocol, uint8_t debug) {
+    protocol->m_debug = debug;
 }
 
 uint8_t net_protocol_support_direct(net_protocol_t protocol) {

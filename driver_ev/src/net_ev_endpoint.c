@@ -184,7 +184,7 @@ int net_ev_endpoint_connect(net_endpoint_t base_endpoint) {
         }
     }
     else {
-        if (driver->m_debug || net_schedule_debug(schedule) >= 2) {
+        if (net_endpoint_driver_debug(base_endpoint) >= 2) {
             if (local_address) {
                 char local_addr_buf[128];
                 cpe_str_dup(
@@ -312,7 +312,7 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
             
             int bytes = cpe_recv(endpoint->m_fd, rbuf, capacity, 0);
             if (bytes > 0) {
-                if (driver->m_debug) {
+                if (net_endpoint_driver_debug(base_endpoint)) {
                     CPE_INFO(
                         em, "ev: %s: recv %d bytes data!",
                         net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
@@ -321,7 +321,7 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
 
                 if (net_endpoint_rbuf_supply(base_endpoint, (uint32_t)bytes) != 0) {
                     if (net_endpoint_set_state(base_endpoint, net_endpoint_state_logic_error) != 0) {
-                        if (driver->m_debug || net_schedule_debug(schedule) >= 2) {
+                        if (net_endpoint_driver_debug(base_endpoint) >= 2) {
                             CPE_INFO(
                                 em, "ev: %s: free for process fail!",
                                 net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
@@ -338,7 +338,7 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
                 break;
             }
             else if (bytes == 0) {
-                if (driver->m_debug || net_schedule_debug(schedule) >= 2) {
+                if (net_endpoint_driver_debug(base_endpoint) >= 2) {
                     CPE_INFO(
                         em, "ev: %s: remote disconnected(recv 0)!",
                         net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
@@ -383,7 +383,7 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
 
             int bytes = cpe_send(endpoint->m_fd, data, data_size, 0);
             if (bytes > 0) {
-                if (driver->m_debug) {
+                if (net_endpoint_driver_debug(base_endpoint)) {
                     CPE_INFO(
                         em, "ev: %s: send %d bytes data!",
                         net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
@@ -397,7 +397,7 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
                 }
             }
             else if (bytes == 0) {
-                if (driver->m_debug || net_schedule_debug(schedule) >= 2) {
+                if (net_endpoint_driver_debug(base_endpoint) >= 2) {
                     CPE_INFO(
                         em, "ev: %s: free for send return 0!",
                         net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
@@ -467,7 +467,7 @@ static void net_ev_endpoint_connect_cb(EV_P_ ev_io *w, int revents) {
         return;
     }
 
-    if (driver->m_debug || net_schedule_debug(schedule) >= 2) {
+    if (net_endpoint_driver_debug(base_endpoint) >= 2) {
         CPE_INFO(
             em, "ev: %s: connect success",
             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));

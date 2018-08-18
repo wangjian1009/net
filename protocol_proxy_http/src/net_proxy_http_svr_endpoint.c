@@ -12,7 +12,6 @@ static int net_proxy_http_svr_endpoint_input_first_header(
 int net_proxy_http_svr_endpoint_init(net_endpoint_t endpoint) {
     net_proxy_http_svr_endpoint_t http_ep = net_endpoint_protocol_data(endpoint);
     http_ep->m_max_head_len = 8192;
-    http_ep->m_debug = 0;
     http_ep->m_way = net_proxy_http_way_unknown;
     http_ep->m_keep_alive = 0;
 
@@ -25,6 +24,11 @@ int net_proxy_http_svr_endpoint_init(net_endpoint_t endpoint) {
 void net_proxy_http_svr_endpoint_fini(net_endpoint_t endpoint) {
     net_proxy_http_svr_endpoint_t http_ep = net_endpoint_protocol_data(endpoint);
 
+    net_proxy_http_svr_protocol_t http_protocol = net_protocol_data(net_endpoint_protocol(endpoint));
+    CPE_ERROR(
+        http_protocol->m_em, "http-proxy-svr: %s: fini",
+        net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint));
+    
     switch(http_ep->m_way) {
     case net_proxy_http_way_unknown:
         break;
@@ -87,14 +91,6 @@ net_proxy_http_way_t net_proxy_http_svr_endpoint_way(net_proxy_http_svr_endpoint
     return http_ep->m_way;
 }
 
-uint8_t net_proxy_http_svr_endpoint_debug(net_proxy_http_svr_endpoint_t http_ep) {
-    return http_ep->m_debug;
-}
-
-void net_proxy_http_svr_endpoint_set_debug(net_proxy_http_svr_endpoint_t http_ep, uint8_t debug) {
-    http_ep->m_debug = debug;
-}
-
 static int net_proxy_http_svr_endpoint_input_first_header(
     net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep, net_endpoint_t endpoint)
 {
@@ -121,7 +117,7 @@ static int net_proxy_http_svr_endpoint_input_first_header(
         }
     }
         
-    if (http_ep->m_debug) {
+    if (net_endpoint_protocol_debug(endpoint)) {
         CPE_INFO(
             http_protocol->m_em, "http-proxy-svr: %s: read first head\n%s",
             net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),

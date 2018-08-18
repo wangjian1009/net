@@ -39,6 +39,9 @@ net_endpoint_create(net_driver_t driver, net_endpoint_type_t type, net_protocol_
     endpoint->m_address = NULL;
     endpoint->m_remote_address = NULL;
     endpoint->m_protocol = protocol;
+    endpoint->m_close_after_send = 0;
+    endpoint->m_protocol_debug = protocol->m_debug;
+    endpoint->m_driver_debug = driver->m_debug;
     endpoint->m_link = NULL;
     endpoint->m_id = schedule->m_endpoint_max_id + 1;
     endpoint->m_state = net_endpoint_state_disable;
@@ -209,6 +212,30 @@ net_endpoint_t net_endpoint_find(net_schedule_t schedule, uint32_t id) {
     return cpe_hash_table_find(&schedule->m_endpoints, &key);
 }
 
+uint8_t net_endpoint_close_after_send(net_endpoint_t endpoint) {
+    return endpoint->m_close_after_send;
+}
+
+void  net_endpoint_set_close_after_send(net_endpoint_t endpoint, uint8_t is_close_after_send) {
+    endpoint->m_close_after_send = is_close_after_send;
+}
+
+uint8_t net_endpoint_protocol_debug(net_endpoint_t endpoint) {
+    return endpoint->m_protocol_debug;
+}
+
+void net_endpoint_set_protocol_debug(net_endpoint_t endpoint, uint8_t debug) {
+    endpoint->m_protocol_debug = debug;
+}
+
+uint8_t net_endpoint_driver_debug(net_endpoint_t endpoint) {
+    return endpoint->m_driver_debug;
+}
+
+void net_endpoint_set_driver_debug(net_endpoint_t endpoint, uint8_t debug) {
+    endpoint->m_driver_debug = debug;
+}
+
 net_endpoint_state_t net_endpoint_state(net_endpoint_t endpoint) {
     return endpoint->m_state;
 }
@@ -241,6 +268,10 @@ int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) 
     
     endpoint->m_state = state;
 
+    if (state == net_endpoint_state_established) {
+        endpoint->m_close_after_send = 0;
+    }
+    
     if (old_is_active && !net_endpoint_is_active(endpoint)) {
         if (endpoint->m_rb) {
             assert(endpoint->m_rb->id == endpoint->m_id);

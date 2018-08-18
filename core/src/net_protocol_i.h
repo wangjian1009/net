@@ -9,6 +9,7 @@ struct net_protocol {
     net_schedule_t m_schedule;
     TAILQ_ENTRY(net_protocol) m_next_for_schedule;
     char m_name[32];
+    uint8_t m_debug;
     /*protocol*/
     uint16_t m_protocol_capacity;
     net_protocol_init_fun_t m_protocol_init;

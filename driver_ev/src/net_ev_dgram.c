@@ -70,7 +70,7 @@ int net_ev_dgram_init(net_dgram_t base_dgram) {
             return -1;
         }
 
-        if (driver->m_debug || net_schedule_debug(schedule) >= 2) {
+        if (net_dgram_driver_debug(base_dgram) >= 2) {
             CPE_INFO(
                 em, "ev: dgram: bind to %s",
                 net_address_dump(net_schedule_tmp_buffer(schedule), address));
@@ -97,7 +97,7 @@ int net_ev_dgram_init(net_dgram_t base_dgram) {
             return -1;
         }
 
-        if (driver->m_debug || net_schedule_debug(schedule) >= 2) {
+        if (net_dgram_driver_debug(base_dgram) >= 2) {
             CPE_INFO(
                 em, "ev: dgram: auto bind at %s",
                 net_address_dump(net_schedule_tmp_buffer(schedule), address));
@@ -147,7 +147,7 @@ int net_ev_dgram_send(net_dgram_t base_dgram, net_address_t target, void const *
         return -1;
     }
     else {
-        if (driver->m_debug) {
+        if (net_dgram_driver_debug(base_dgram)) {
             CPE_INFO(
                 net_schedule_em(schedule), "ev: dgram: send %d data to %s",
                 (int)data_len,
