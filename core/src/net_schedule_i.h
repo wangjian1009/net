@@ -28,6 +28,8 @@ struct net_schedule {
     error_monitor_t m_em;
     uint8_t m_debug;
 
+    net_timer_t m_delay_processor;
+    
     /*dns resolver*/
     void * m_dns_resolver_ctx;
     void (*m_dns_resolver_ctx_fini_fun)(void * ctx);
@@ -59,6 +61,8 @@ struct net_schedule {
 
     struct mem_buffer m_tmp_buffer;
 };
+
+void net_schedule_start_delay_process(net_schedule_t schedule);
 
 NET_END_DECL
 

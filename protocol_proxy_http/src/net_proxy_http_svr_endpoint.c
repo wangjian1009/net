@@ -24,11 +24,6 @@ int net_proxy_http_svr_endpoint_init(net_endpoint_t endpoint) {
 void net_proxy_http_svr_endpoint_fini(net_endpoint_t endpoint) {
     net_proxy_http_svr_endpoint_t http_ep = net_endpoint_protocol_data(endpoint);
 
-    net_proxy_http_svr_protocol_t http_protocol = net_protocol_data(net_endpoint_protocol(endpoint));
-    CPE_ERROR(
-        http_protocol->m_em, "http-proxy-svr: %s: fini",
-        net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint));
-    
     switch(http_ep->m_way) {
     case net_proxy_http_way_unknown:
         break;

@@ -259,6 +259,9 @@ static int net_proxy_http_svr_endpoint_tunnel_check_send_response(
     case net_endpoint_state_network_error:
         stream_printf((write_stream_t)&ws, "HTTP/1.1 500 Connection Error\r\n\r\n");
         break;
+    case net_endpoint_state_deleting:
+        assert(0);
+        return -1;
     }
 
     mem_buffer_append_char(&http_protocol->m_data_buffer, 0);

@@ -78,7 +78,7 @@ net_endpoint_create(net_driver_t driver, net_endpoint_type_t type, net_protocol_
     schedule->m_endpoint_max_id++;
     TAILQ_INSERT_TAIL(&driver->m_endpoints, endpoint, m_next_for_driver);
 
-    if (schedule->m_debug >= 2) {
+    if (endpoint->m_protocol_debug || endpoint->m_driver_debug || schedule->m_debug >= 2) {
         CPE_INFO(schedule->m_em, "core: %s created!", net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
     }
     
@@ -88,7 +88,7 @@ net_endpoint_create(net_driver_t driver, net_endpoint_type_t type, net_protocol_
 void net_endpoint_free(net_endpoint_t endpoint) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
 
-    if (schedule->m_debug >= 2) {
+    if (endpoint->m_protocol_debug || endpoint->m_driver_debug || schedule->m_debug >= 2) {
         CPE_INFO(schedule->m_em, "core: %s free!", net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
     }
 
@@ -155,7 +155,13 @@ void net_endpoint_free(net_endpoint_t endpoint) {
 
     cpe_hash_table_remove_by_ins(&endpoint->m_driver->m_schedule->m_endpoints, endpoint);
 
-    TAILQ_REMOVE(&endpoint->m_driver->m_endpoints, endpoint, m_next_for_driver);
+    if (endpoint->m_state == net_endpoint_state_deleting) {
+        TAILQ_REMOVE(&endpoint->m_driver->m_deleting_endpoints, endpoint, m_next_for_driver);
+    }
+    else {
+        TAILQ_REMOVE(&endpoint->m_driver->m_endpoints, endpoint, m_next_for_driver);
+    }
+
     TAILQ_INSERT_TAIL(&endpoint->m_driver->m_free_endpoints, endpoint, m_next_for_driver);
 }
 
@@ -167,13 +173,17 @@ int net_endpoint_set_protocol(net_endpoint_t endpoint, net_protocol_t protocol) 
     endpoint->m_protocol = protocol;
     if (endpoint->m_protocol->m_endpoint_init(endpoint) != 0) goto SET_PROTOCOL_ERROR;
 
+    if (protocol->m_debug > endpoint->m_protocol_debug) {
+        endpoint->m_protocol_debug = protocol->m_debug;
+    }
+    
     return 0;
 
 SET_PROTOCOL_ERROR:
     endpoint->m_protocol = old_protocol;
     endpoint->m_protocol->m_endpoint_init(endpoint);
     CPE_ERROR(
-        endpoint->m_driver->m_schedule->m_em, "core: %s set protocol %s fail!",
+        endpoint->m_driver->m_schedule->m_em, "core: %s: set protocol %s fail!",
         net_endpoint_dump(&endpoint->m_driver->m_schedule->m_tmp_buffer, endpoint),
         protocol->m_name);
     return -1;
@@ -216,8 +226,19 @@ uint8_t net_endpoint_close_after_send(net_endpoint_t endpoint) {
     return endpoint->m_close_after_send;
 }
 
-void  net_endpoint_set_close_after_send(net_endpoint_t endpoint, uint8_t is_close_after_send) {
+void net_endpoint_set_close_after_send(net_endpoint_t endpoint, uint8_t is_close_after_send) {
     endpoint->m_close_after_send = is_close_after_send;
+
+    if (net_endpoint_wbuf_is_empty(endpoint)) {
+        if (endpoint->m_protocol_debug || endpoint->m_driver_debug) {
+            net_schedule_t schedule = endpoint->m_driver->m_schedule;
+            CPE_INFO(
+                schedule->m_em, "core: %s: auto close on set close-after-send!",
+                net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
+        }
+
+        net_endpoint_set_state(endpoint, net_endpoint_state_deleting);
+    }
 }
 
 uint8_t net_endpoint_protocol_debug(net_endpoint_t endpoint) {
@@ -253,9 +274,12 @@ uint8_t net_endpoint_is_active(net_endpoint_t endpoint) {
 
 int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) {
     if (endpoint->m_state == state) return 0;
-    
+
+    assert(endpoint->m_state != net_endpoint_state_deleting);
+    if (endpoint->m_state == net_endpoint_state_deleting) return 0;
+
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
-    if (schedule->m_debug >= 2) {
+    if (endpoint->m_protocol_debug || endpoint->m_driver_debug || schedule->m_debug >= 2) {
         CPE_INFO(
             schedule->m_em, "core: %s: state %s ==> %s",
             net_endpoint_dump(&schedule->m_tmp_buffer, endpoint),
@@ -268,6 +292,13 @@ int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) 
     
     endpoint->m_state = state;
 
+    if (state == net_endpoint_state_deleting) {
+        TAILQ_REMOVE(&endpoint->m_driver->m_endpoints, endpoint, m_next_for_driver);
+        TAILQ_INSERT_TAIL(&endpoint->m_driver->m_deleting_endpoints, endpoint, m_next_for_driver);
+        net_schedule_start_delay_process(schedule);
+        return 0;
+    }
+    
     if (state == net_endpoint_state_established) {
         endpoint->m_close_after_send = 0;
     }
@@ -549,6 +580,8 @@ const char * net_endpoint_state_str(net_endpoint_state_t state) {
         return "logic-error";
     case net_endpoint_state_network_error:
         return "network-error";
+    case net_endpoint_state_deleting:
+        return "deleting";
     }
 }
 

@@ -8,9 +8,12 @@
 #include "net_endpoint_monitor_i.h"
 #include "net_address_i.h"
 #include "net_address_matcher_i.h"
+#include "net_timer_i.h"
 #include "net_link_i.h"
 #include "net_direct_endpoint_i.h"
 #include "net_dns_query_i.h"
+
+static void net_schedule_do_delay_process(net_timer_t timer, void * input_ctx);
 
 net_schedule_t
 net_schedule_create(mem_allocrator_t alloc, error_monitor_t em, uint32_t common_buff_capacity) {
@@ -24,7 +27,8 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em, uint32_t common_
 
     schedule->m_alloc = alloc;
     schedule->m_em = em;
-    schedule->m_debug = 2;
+    schedule->m_debug = 0;
+    schedule->m_delay_processor = NULL;
     schedule->m_dns_resolver_ctx = NULL;
     schedule->m_dns_resolver_ctx_fini_fun = NULL;
     schedule->m_dns_query_capacity = 0;
@@ -92,6 +96,11 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em, uint32_t common_
 void net_schedule_free(net_schedule_t schedule) {
     net_dns_query_free_all(schedule);
     cpe_hash_table_fini(&schedule->m_dns_querys);
+
+    if (schedule->m_delay_processor != NULL) {
+        net_timer_free(schedule->m_delay_processor);
+        schedule->m_delay_processor = NULL;
+    }
     
     if (schedule->m_dns_resolver_ctx && schedule->m_dns_resolver_ctx_fini_fun) {
         schedule->m_dns_resolver_ctx_fini_fun(schedule->m_dns_resolver_ctx);
@@ -190,4 +199,29 @@ void net_schedule_set_dns_resolver(
 
 void * net_schedule_dns_resolver(net_schedule_t schedule) {
     return schedule->m_dns_resolver_ctx;
+}
+
+void net_schedule_start_delay_process(net_schedule_t schedule) {
+    if (schedule->m_delay_processor == NULL) {
+        schedule->m_delay_processor = net_timer_auto_create(schedule, net_schedule_do_delay_process, schedule);
+        if (schedule->m_delay_processor == NULL) {
+            CPE_ERROR(schedule->m_em, "schedule: create delay processor fail!");
+            return;
+        }
+    }
+
+    if (!net_timer_is_active(schedule->m_delay_processor)) {
+        net_timer_active(schedule->m_delay_processor, 0);
+    }
+}
+
+static void net_schedule_do_delay_process(net_timer_t timer, void * input_ctx) {
+    net_schedule_t schedule = input_ctx;
+    net_driver_t driver;
+
+    TAILQ_FOREACH(driver, &schedule->m_drivers, m_next_for_schedule) {
+        while(!TAILQ_EMPTY(&driver->m_deleting_endpoints)) {
+            net_endpoint_free(TAILQ_FIRST(&driver->m_deleting_endpoints));
+        }
+    }
 }

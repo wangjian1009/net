@@ -1,3 +1,4 @@
+#include "assert.h"
 #include "cpe/pal/pal_string.h"
 #include "cpe/utils/string_utils.h"
 #include "cpe/utils/stream_mem.h"
@@ -453,6 +454,9 @@ int net_ws_cli_endpoint_on_state_change(net_endpoint_t endpoint, net_endpoint_st
         }
         
         break;
+    case net_endpoint_state_deleting:
+        assert(0);
+        return -1;
     }
 
     return 0;

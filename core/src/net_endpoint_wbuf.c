@@ -124,6 +124,16 @@ void net_endpoint_wbuf_consume(net_endpoint_t endpoint, uint32_t size) {
     if (endpoint->m_data_watcher_fun) {
         endpoint->m_data_watcher_fun(endpoint->m_data_watcher_ctx, endpoint, net_endpoint_data_w_consume, size);
     }
+
+    if (endpoint->m_close_after_send) {
+        if (endpoint->m_protocol_debug || endpoint->m_driver_debug) {
+            CPE_INFO(
+                schedule->m_em, "core: %s: auto close aftern all data sended!",
+                net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
+        }
+        
+        net_endpoint_set_state(endpoint, net_endpoint_state_deleting);
+    }
 }
 
 int net_endpoint_wbuf_append(net_endpoint_t endpoint, void const * i_data, uint32_t size) {

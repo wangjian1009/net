@@ -88,6 +88,7 @@ net_driver_create(
 
     TAILQ_INIT(&driver->m_free_endpoints);
     TAILQ_INIT(&driver->m_endpoints);
+    TAILQ_INIT(&driver->m_deleting_endpoints);
     
     TAILQ_INIT(&driver->m_free_dgrams);
     TAILQ_INIT(&driver->m_dgrams);
@@ -122,6 +123,10 @@ void net_driver_free(net_driver_t driver) {
 
     while(!TAILQ_EMPTY(&driver->m_endpoints)) {
         net_endpoint_free(TAILQ_FIRST(&driver->m_endpoints));
+    }
+
+    while(!TAILQ_EMPTY(&driver->m_deleting_endpoints)) {
+        net_endpoint_free(TAILQ_FIRST(&driver->m_deleting_endpoints));
     }
 
     while(!TAILQ_EMPTY(&driver->m_free_endpoints)) {

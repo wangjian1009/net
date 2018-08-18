@@ -42,6 +42,7 @@ struct net_driver {
     net_acceptor_list_t m_free_acceptors;
 
     net_endpoint_list_t m_endpoints;
+    net_endpoint_list_t m_deleting_endpoints;
     net_endpoint_list_t m_free_endpoints;
 
     net_dgram_list_t m_dgrams;
