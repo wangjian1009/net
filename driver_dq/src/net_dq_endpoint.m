@@ -20,8 +20,6 @@ int net_dq_endpoint_init(net_endpoint_t base_endpoint) {
     net_dq_endpoint_t endpoint = net_endpoint_data(base_endpoint);
 
     endpoint->m_fd = -1;
-    endpoint->m_can_read = 0;
-    endpoint->m_can_write = 0;
     endpoint->m_source_r = nil;
     endpoint->m_source_w = nil;
 
@@ -305,9 +303,7 @@ int net_dq_endpoint_update_remote_address(net_dq_endpoint_t endpoint) {
 
 int net_dq_endpoint_set_established(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint) {
     assert(endpoint->m_source_r == NULL);
-    endpoint->m_can_read = 1;
     assert(endpoint->m_source_w == NULL);
-    endpoint->m_can_write = 1;
 
     if (net_endpoint_set_state(base_endpoint, net_endpoint_state_established) != 0) return -1;
 
@@ -400,7 +396,7 @@ int net_dq_endpoint_on_read(net_dq_driver_t driver, net_dq_endpoint_t endpoint, 
 }
 
 int net_dq_endpoint_on_write(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint) {
-    while(endpoint->m_can_write
+    while(endpoint->m_source_w == NULL /*can write*/
           && net_endpoint_state(base_endpoint) == net_endpoint_state_established
           && !net_endpoint_wbuf_is_empty(base_endpoint)
         )
@@ -511,7 +507,6 @@ static void net_dq_endpoint_start_w(net_dq_driver_t driver, net_dq_endpoint_t en
             net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
     }
     
-    endpoint->m_can_write = 0;
     endpoint->m_source_w = dispatch_source_create(DISPATCH_SOURCE_TYPE_WRITE, endpoint->m_fd, 0, dispatch_get_main_queue());
     dispatch_retain(endpoint->m_source_w);
     dispatch_source_set_event_handler(endpoint->m_source_w, ^{
@@ -533,7 +528,6 @@ static void net_dq_endpoint_stop_w(net_dq_driver_t driver, net_dq_endpoint_t end
             net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
     }
 
-    endpoint->m_can_write = 1;
     dispatch_source_set_event_handler(endpoint->m_source_w, nil);
     dispatch_source_cancel(endpoint->m_source_w);
     dispatch_release(endpoint->m_source_w);
@@ -549,7 +543,6 @@ static void net_dq_endpoint_start_r(net_dq_driver_t driver, net_dq_endpoint_t en
             net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
     }
     
-    endpoint->m_can_read = 0;
     endpoint->m_source_r = dispatch_source_create(DISPATCH_SOURCE_TYPE_READ, endpoint->m_fd, 0, dispatch_get_main_queue());
     dispatch_retain(endpoint->m_source_r);
     dispatch_source_set_event_handler(endpoint->m_source_r, ^{
@@ -571,7 +564,6 @@ static void net_dq_endpoint_stop_r(net_dq_driver_t driver, net_dq_endpoint_t end
             net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
     }
     
-    endpoint->m_can_read = 1;
     dispatch_source_set_event_handler(endpoint->m_source_r, nil);
     dispatch_source_cancel(endpoint->m_source_r);
     dispatch_release(endpoint->m_source_r);

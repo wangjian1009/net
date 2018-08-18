@@ -5,8 +5,6 @@
 
 struct net_dq_endpoint {
     int m_fd;
-    uint8_t m_can_write;
-    uint8_t m_can_read;
     __unsafe_unretained dispatch_source_t m_source_r;
     __unsafe_unretained dispatch_source_t m_source_w;
 };
