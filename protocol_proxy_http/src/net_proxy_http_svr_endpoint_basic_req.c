@@ -359,6 +359,13 @@ static int net_proxy_http_svr_endpoint_basic_req_parse_header_line(
             return -1;
         }
     }
+    else if (strcasecmp(name, "Transfer-Encoding") == 0) {
+        CPE_ERROR(
+            http_protocol->m_em, "http-proxy-svr: %s: req: Transfer-Encoding %s not support",
+            net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
+            value);
+        return -1;
+    }
     
     if (keep_line) {
         ctx->m_output_size +=
