@@ -89,10 +89,6 @@ net_endpoint_create(net_driver_t driver, net_endpoint_type_t type, net_protocol_
 void net_endpoint_free(net_endpoint_t endpoint) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
 
-    if (endpoint->m_protocol_debug || endpoint->m_driver_debug || schedule->m_debug >= 2) {
-        CPE_INFO(schedule->m_em, "core: %s free!", net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
-    }
-
     if (endpoint->m_data_watcher_fini) {
         endpoint->m_data_watcher_fini(endpoint->m_data_watcher_ctx);
     }
@@ -152,6 +148,10 @@ void net_endpoint_free(net_endpoint_t endpoint) {
         assert(!monitor->m_is_processing);
         assert(!monitor->m_is_free);
         net_endpoint_monitor_free(monitor);
+    }
+
+    if (endpoint->m_protocol_debug || endpoint->m_driver_debug || schedule->m_debug >= 2) {
+        CPE_INFO(schedule->m_em, "core: %s free!", net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
     }
 
     cpe_hash_table_remove_by_ins(&endpoint->m_driver->m_schedule->m_endpoints, endpoint);

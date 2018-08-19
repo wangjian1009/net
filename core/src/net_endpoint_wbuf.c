@@ -178,7 +178,6 @@ int net_endpoint_wbuf_append_from_other(net_endpoint_t endpoint, net_endpoint_t 
 
         ringbuffer_copy(schedule->m_endpoint_buf, other->m_fb, 0, tb);
         net_endpoint_fbuf_consume(other, size);
-        assert(other->m_fb == NULL);
 
         net_endpoint_wbuf_link(tb);
     }
