@@ -57,7 +57,6 @@ int net_dq_acceptor_init(net_acceptor_t base_acceptor) {
     }
 
     acceptor->m_source = dispatch_source_create(DISPATCH_SOURCE_TYPE_READ, acceptor->m_fd, 0, dispatch_get_main_queue());
-    dispatch_retain(acceptor->m_source);
     dispatch_source_set_event_handler(acceptor->m_source, ^{ net_dq_acceptor_on_accept(acceptor); });
     dispatch_resume(acceptor->m_source);
     

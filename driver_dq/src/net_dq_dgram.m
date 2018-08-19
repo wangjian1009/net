@@ -97,7 +97,6 @@ int net_dq_dgram_init(net_dgram_t base_dgram) {
     }
 
     dgram->m_source_r = dispatch_source_create(DISPATCH_SOURCE_TYPE_READ, dgram->m_fd, 0, dispatch_get_main_queue());
-    dispatch_retain(dgram->m_source_r);
     dispatch_source_set_event_handler(dgram->m_source_r, ^{ net_dq_dgram_on_read(dgram); });
     dispatch_resume(dgram->m_source_r);
 

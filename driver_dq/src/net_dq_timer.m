@@ -40,7 +40,6 @@ void net_dq_timer_active(net_timer_t base_timer, uint32_t delay_ms) {
     dispatch_source_t cur_timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_main_queue());
 
     timer->m_timer = cur_timer;
-    dispatch_retain(timer->m_timer);
     
     dispatch_source_set_event_handler(timer->m_timer, ^{
             if (timer->m_timer != cur_timer) return;

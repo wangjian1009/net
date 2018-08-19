@@ -500,17 +500,17 @@ static int net_proxy_http_svr_endpoint_basic_req_parse_header_line(
         }
     }
     else if (strcasecmp(name, "Host") == 0) {
-        net_address_t address = net_address_create_auto(net_proxy_http_svr_protocol_schedule(http_protocol), value);
-        if (address == NULL) {
-            CPE_ERROR(
-                http_protocol->m_em, "http-proxy-svr: %s: Host %s format error",
-                net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
-                value);
-            return -1;
-        }
-        if (net_address_port(address) == 0) net_address_set_port(address, 80);
-
         if (ctx->m_other == NULL) {
+            net_address_t address = net_address_create_auto(net_proxy_http_svr_protocol_schedule(http_protocol), value);
+            if (address == NULL) {
+                CPE_ERROR(
+                    http_protocol->m_em, "http-proxy-svr: %s: Host %s format error",
+                    net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
+                    value);
+                return -1;
+            }
+            if (net_address_port(address) == 0) net_address_set_port(address, 80);
+
             char str_address[128];
             cpe_str_dup(
                 str_address, sizeof(str_address),
