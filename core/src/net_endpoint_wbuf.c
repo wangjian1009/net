@@ -191,7 +191,6 @@ int net_endpoint_wbuf_append_from_other(net_endpoint_t endpoint, net_endpoint_t 
     if (other->m_data_watcher_fun) {
         other->m_data_watcher_fun(other->m_data_watcher_ctx, other, net_endpoint_data_f_consume, size);
     }
-    
 
     if (endpoint->m_data_watcher_fun) {
         endpoint->m_data_watcher_fun(endpoint->m_data_watcher_ctx, endpoint, net_endpoint_data_w_supply, size);

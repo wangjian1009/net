@@ -417,6 +417,13 @@ static int net_proxy_http_svr_endpoint_basic_req_parse_header_method(
 
     const char * version = sep2 + 1;
 
+    if (strcasecmp(version, "HTTP/1.0") == 0) {
+        http_ep->m_keep_alive = 0;
+    }
+    else {
+        http_ep->m_keep_alive = 1;
+    }
+    
     const char * target = origin_target;
     uint8_t remove_host_name = 0;
     if (cpe_str_start_with(target, "http://")) {

@@ -315,15 +315,15 @@ int net_dq_endpoint_set_established(net_dq_driver_t driver, net_dq_endpoint_t en
 }
 
 int net_dq_endpoint_on_read(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint) {
-    if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) {
-        CPE_ERROR(
-            driver->m_em, "dq: %s: on read: state is %s, can`t read",
-            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
-            net_endpoint_state_str(net_endpoint_state(base_endpoint)));
-        return -1;
-    }
-
     while(1) {
+        if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) {
+            CPE_ERROR(
+                driver->m_em, "dq: %s: on read: state is %s, can`t read",
+                net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
+                net_endpoint_state_str(net_endpoint_state(base_endpoint)));
+            return -1;
+        }
+
         uint32_t capacity = 0;
         void * rbuf = net_endpoint_rbuf_alloc(base_endpoint, &capacity);
         if (rbuf == NULL) {
