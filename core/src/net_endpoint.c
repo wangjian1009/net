@@ -133,16 +133,6 @@ void net_endpoint_free(net_endpoint_t endpoint) {
         endpoint->m_fb = NULL;
     }
     
-    if (endpoint->m_address) {
-        net_address_free(endpoint->m_address);
-        endpoint->m_address = NULL;
-    }
-
-    if (endpoint->m_remote_address) {
-        net_address_free(endpoint->m_remote_address);
-        endpoint->m_remote_address = NULL;
-    }
-
     while(!TAILQ_EMPTY(&endpoint->m_monitors)) {
         net_endpoint_monitor_t monitor = TAILQ_FIRST(&endpoint->m_monitors);
         assert(!monitor->m_is_processing);
@@ -152,6 +142,16 @@ void net_endpoint_free(net_endpoint_t endpoint) {
 
     if (endpoint->m_protocol_debug || endpoint->m_driver_debug || schedule->m_debug >= 2) {
         CPE_INFO(schedule->m_em, "core: %s free!", net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
+    }
+
+    if (endpoint->m_address) {
+        net_address_free(endpoint->m_address);
+        endpoint->m_address = NULL;
+    }
+
+    if (endpoint->m_remote_address) {
+        net_address_free(endpoint->m_remote_address);
+        endpoint->m_remote_address = NULL;
     }
 
     cpe_hash_table_remove_by_ins(&endpoint->m_driver->m_schedule->m_endpoints, endpoint);

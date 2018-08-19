@@ -5,6 +5,11 @@
 
 NET_BEGIN_DECL
 
+typedef enum proxy_http_svr_basic_trans_encoding {
+    proxy_http_svr_basic_trans_encoding_none
+    , proxy_http_svr_basic_trans_encoding_trunked
+} proxy_http_svr_basic_trans_encoding_t;
+
 typedef enum proxy_http_svr_basic_req_state {
     proxy_http_svr_basic_req_state_header
     , proxy_http_svr_basic_req_state_content
@@ -15,11 +20,6 @@ typedef enum proxy_http_svr_basic_rsp_state {
     proxy_http_svr_basic_rsp_state_header
     , proxy_http_svr_basic_rsp_state_content
 } proxy_http_svr_basic_rsp_state_t;
-
-typedef enum proxy_http_svr_basic_rsp_trans_way {
-    proxy_http_svr_basic_rsp_trans_content
-    , proxy_http_svr_basic_rsp_trans_trunked
-} proxy_http_svr_basic_rsp_trans_way_t;
 
 typedef enum proxy_http_svr_tunnel_state {
     proxy_http_svr_tunnel_state_connecting
@@ -37,11 +37,20 @@ struct net_proxy_http_svr_endpoint {
         struct {
             struct {
                 proxy_http_svr_basic_req_state_t m_state;
-                uint32_t m_context_length;
+                proxy_http_svr_basic_trans_encoding_t m_trans_encoding;
+                union {
+                    struct {
+                        uint32_t m_length;
+                    } m_content;
+                    struct {
+                        uint16_t m_count;
+                        uint32_t m_length;
+                    } m_trunked;
+                };
             } m_req;
             struct {
                 proxy_http_svr_basic_rsp_state_t m_state;
-                proxy_http_svr_basic_rsp_trans_way_t m_trans_way;
+                proxy_http_svr_basic_trans_encoding_t m_trans_encoding;
                 union {
                     struct {
                         uint32_t m_length;

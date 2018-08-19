@@ -22,10 +22,10 @@ static int net_proxy_http_svr_endpoint_basic_rsp_parse_header_line(
 static int net_proxy_http_svr_endpoint_basic_backword_head(
     net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep, net_endpoint_t endpoint, net_endpoint_t from);
 
-static int net_proxy_http_svr_endpoint_basic_backword_body_content(
+static int net_proxy_http_svr_endpoint_basic_backword_content_encoding_none(
     net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep, net_endpoint_t endpoint, net_endpoint_t from);
 
-static int net_proxy_http_svr_endpoint_basic_backword_body_trunk(
+static int net_proxy_http_svr_endpoint_basic_backword_content_encoding_trunked(
     net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep, net_endpoint_t endpoint, net_endpoint_t from);
 
 int net_proxy_http_svr_endpoint_basic_backword(
@@ -39,12 +39,12 @@ CHECK_AGAIN:
     else {
         assert(http_ep->m_basic.m_rsp.m_state == proxy_http_svr_basic_rsp_state_content);
 
-        switch(http_ep->m_basic.m_rsp.m_trans_way) {
-        case proxy_http_svr_basic_rsp_trans_content:
-            if (net_proxy_http_svr_endpoint_basic_backword_body_content(http_protocol, http_ep, endpoint, from) != 0) return -1;
+        switch(http_ep->m_basic.m_rsp.m_trans_encoding) {
+        case proxy_http_svr_basic_trans_encoding_none:
+            if (net_proxy_http_svr_endpoint_basic_backword_content_encoding_none(http_protocol, http_ep, endpoint, from) != 0) return -1;
             break;
-        case proxy_http_svr_basic_rsp_trans_trunked:
-            if (net_proxy_http_svr_endpoint_basic_backword_body_trunk(http_protocol, http_ep, endpoint, from) != 0) return -1;
+        case proxy_http_svr_basic_trans_encoding_trunked:
+            if (net_proxy_http_svr_endpoint_basic_backword_content_encoding_trunked(http_protocol, http_ep, endpoint, from) != 0) return -1;
             break;
         }
 
@@ -87,7 +87,7 @@ static int net_proxy_http_svr_endpoint_basic_backword_head(
     return 0;
 }
 
-static int net_proxy_http_svr_endpoint_basic_backword_body_content(
+static int net_proxy_http_svr_endpoint_basic_backword_content_encoding_none(
     net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep, net_endpoint_t endpoint, net_endpoint_t from)
 {
     uint32_t forward_sz = net_endpoint_fbuf_size(from);
@@ -118,7 +118,7 @@ static int net_proxy_http_svr_endpoint_basic_backword_body_content(
 
         if (net_endpoint_protocol_debug(endpoint) >= 2) {
             CPE_INFO(
-                http_protocol->m_em, "http-proxy-svr: %s: basic: ==> body %d data(left=%d)",
+                http_protocol->m_em, "http-proxy-svr: %s: basic: <== body %d data(left=%d)",
                 net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
                 forward_sz, http_ep->m_basic.m_rsp.m_content.m_length - forward_sz);
         }
@@ -152,7 +152,7 @@ static int net_proxy_http_svr_endpoint_basic_backword_body_content(
     return 0;
 }
 
-static int net_proxy_http_svr_endpoint_basic_backword_body_trunk(
+static int net_proxy_http_svr_endpoint_basic_backword_content_encoding_trunked(
     net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep, net_endpoint_t endpoint, net_endpoint_t from)
 {
     uint32_t forward_sz;
@@ -251,7 +251,7 @@ static int net_proxy_http_svr_endpoint_basic_backword_body_trunk(
 
             if (net_endpoint_protocol_debug(endpoint) >= 2) {
                 CPE_INFO(
-                    http_protocol->m_em, "http-proxy-svr: %s: basic: ==> trunk[%d]: %d data(left=%d)",
+                    http_protocol->m_em, "http-proxy-svr: %s: basic: <== trunk[%d]: %d data(left=%d)",
                     net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
                     http_ep->m_basic.m_rsp.m_trunked.m_count,
                     forward_sz, http_ep->m_basic.m_rsp.m_trunked.m_length - forward_sz);
@@ -330,7 +330,7 @@ static int net_proxy_http_svr_endpoint_basic_rsp_parse_header_line(
     *sep = 0;
 
     if (strcasecmp(name, "Content-Length") == 0) {
-        http_ep->m_basic.m_rsp.m_trans_way = proxy_http_svr_basic_rsp_trans_content;
+        http_ep->m_basic.m_rsp.m_trans_encoding = proxy_http_svr_basic_trans_encoding_none;
         char * endptr = NULL;
         http_ep->m_basic.m_rsp.m_content.m_length = (uint32_t)strtol(value, &endptr, 10);
         if (endptr == NULL || *endptr != 0) {
@@ -344,7 +344,7 @@ static int net_proxy_http_svr_endpoint_basic_rsp_parse_header_line(
     }
     else if (strcasecmp(name, "Transfer-Encoding") == 0) {
         if (strcasecmp(value, "chunked") == 0) {
-            http_ep->m_basic.m_rsp.m_trans_way = proxy_http_svr_basic_rsp_trans_trunked;
+            http_ep->m_basic.m_rsp.m_trans_encoding = proxy_http_svr_basic_trans_encoding_trunked;
             http_ep->m_basic.m_rsp.m_trunked.m_count = 0;
             http_ep->m_basic.m_rsp.m_trunked.m_length = 0;
         }
@@ -387,7 +387,7 @@ static void net_proxy_http_svr_endpoint_basic_set_rsp_state(
     http_ep->m_basic.m_rsp.m_state = rsp_state;
 
     if (rsp_state == proxy_http_svr_basic_rsp_state_header) {
-        http_ep->m_basic.m_rsp.m_trans_way = proxy_http_svr_basic_rsp_trans_content;
+        http_ep->m_basic.m_rsp.m_trans_encoding = proxy_http_svr_basic_trans_encoding_none;
         http_ep->m_basic.m_rsp.m_content.m_length = 0;
     }
 }
