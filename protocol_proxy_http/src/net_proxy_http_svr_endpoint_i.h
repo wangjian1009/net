@@ -34,6 +34,7 @@ struct net_proxy_http_svr_endpoint {
             uint32_t m_req_context_length;
             proxy_http_svr_basic_rsp_state_t m_rsp_state;
             uint32_t m_rsp_context_length;
+            uint8_t m_rsp_context_transfer_encoding_chunked;
         } m_basic;
     };
     uint8_t m_keep_alive;

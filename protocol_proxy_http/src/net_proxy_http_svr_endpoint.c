@@ -133,6 +133,7 @@ static int net_proxy_http_svr_endpoint_input_first_header(
         http_ep->m_basic.m_req_context_length = 0;
         http_ep->m_basic.m_rsp_state = proxy_http_svr_basic_rsp_state_header;
         http_ep->m_basic.m_rsp_context_length = 0;
+        http_ep->m_basic.m_rsp_context_transfer_encoding_chunked = 0;
         rv = net_proxy_http_svr_endpoint_basic_req_read_head(http_protocol, http_ep, endpoint, data);
     }
     

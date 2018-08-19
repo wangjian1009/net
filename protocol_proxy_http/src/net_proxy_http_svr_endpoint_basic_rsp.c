@@ -178,6 +178,17 @@ static int net_proxy_http_svr_endpoint_basic_rsp_parse_header_line(
             return -1;
         }
     }
+    else if (strcasecmp(name, "Transfer-Encoding") == 0) {
+        if (strcasecmp(value, "chunked") == 0) {
+            http_ep->m_basic.m_rsp_context_transfer_encoding_chunked = 1;
+        }
+        else {
+            CPE_ERROR(
+                http_protocol->m_em, "http-proxy-svr: %s: basic: rsp: Transfer-Encoding %s unknown",
+                net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
+                value);
+        }
+    }
     
     *sep = keep;
     return 0;
@@ -208,6 +219,11 @@ static void net_proxy_http_svr_endpoint_basic_set_rsp_state(
     }
 
     http_ep->m_basic.m_rsp_state = rsp_state;
+
+    if (rsp_state == proxy_http_svr_basic_rsp_state_header) {
+        http_ep->m_basic.m_rsp_context_length = 0;
+        http_ep->m_basic.m_rsp_context_transfer_encoding_chunked = 0;
+    }
 }
 
 const char * proxy_http_svr_basic_rsp_state_str(proxy_http_svr_basic_rsp_state_t state) {

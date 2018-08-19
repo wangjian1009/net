@@ -290,7 +290,12 @@ static int net_proxy_http_svr_endpoint_basic_req_parse_header_line(
         keep_line = 0;
     }
     else if (strcasecmp(name, "Proxy-Connection") == 0) {
-        http_ep->m_keep_alive = 1;
+        if (strcasecmp(name, "keep-alive") == 0) {
+            http_ep->m_keep_alive = 1;
+        }
+        else if (strcasecmp(name, "close") == 0) {
+            http_ep->m_keep_alive = 0;
+        }
         keep_line = 0;
     }
     else if (strcasecmp(name, "Host") == 0) {
@@ -346,7 +351,12 @@ static int net_proxy_http_svr_endpoint_basic_req_parse_header_line(
         }
     }
     else if (strcasecmp(name, "Connection") == 0) {
-        ctx->m_keep_alive = strcasecmp(name, "keep-alive") == 0 ? 1 : 0;
+        if (strcasecmp(name, "keep-alive") == 0) {
+            ctx->m_keep_alive = 1;
+        }
+        else if (strcasecmp(name, "close") == 0) {
+            ctx->m_keep_alive = 0;
+        }
     }
     
     if (keep_line) {
