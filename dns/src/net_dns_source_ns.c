@@ -397,11 +397,13 @@ static void net_dns_source_ns_dgram_input(
                     struct net_dns_source_ns_ctx * ns_ctx = net_dns_task_ctx_data(task_ctx);
                     if (ns_ctx->m_transaction == ident) {
                         net_dns_task_ctx_set_success(task_ctx);
-                        break;;
+                        break;
                     }
                 }
             }
         }
+
+        net_address_free(address);
     }
 }
 
