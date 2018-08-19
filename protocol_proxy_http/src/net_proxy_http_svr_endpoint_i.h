@@ -16,6 +16,11 @@ typedef enum proxy_http_svr_basic_rsp_state {
     , proxy_http_svr_basic_rsp_state_content
 } proxy_http_svr_basic_rsp_state_t;
 
+typedef enum proxy_http_svr_basic_rsp_trans_way {
+    proxy_http_svr_basic_rsp_trans_content
+    , proxy_http_svr_basic_rsp_trans_trunked
+} proxy_http_svr_basic_rsp_trans_way_t;
+
 typedef enum proxy_http_svr_tunnel_state {
     proxy_http_svr_tunnel_state_connecting
     , proxy_http_svr_tunnel_state_established
@@ -30,11 +35,23 @@ struct net_proxy_http_svr_endpoint {
             net_endpoint_monitor_t m_other_state_monitor;
         } m_tunnel;
         struct {
-            proxy_http_svr_basic_req_state_t m_req_state;
-            uint32_t m_req_context_length;
-            proxy_http_svr_basic_rsp_state_t m_rsp_state;
-            uint32_t m_rsp_context_length;
-            uint8_t m_rsp_context_transfer_encoding_chunked;
+            struct {
+                proxy_http_svr_basic_req_state_t m_state;
+                uint32_t m_context_length;
+            } m_req;
+            struct {
+                proxy_http_svr_basic_rsp_state_t m_state;
+                proxy_http_svr_basic_rsp_trans_way_t m_trans_way;
+                union {
+                    struct {
+                        uint32_t m_length;
+                    } m_content;
+                    struct {
+                        uint16_t m_count;
+                        uint32_t m_length;
+                    } m_trunked;
+                };
+            } m_rsp;
         } m_basic;
     };
     uint8_t m_keep_alive;
