@@ -33,11 +33,6 @@ CHECK_AGAIN:
             return -1;
         }
 
-        if (net_endpoint_protocol_debug(endpoint) >= 2) {
-            CPE_ERROR(http_protocol->m_em, "xxxx: sz=%d, strlen=%d\n%s",
-                      size, (int)strlen(data), data);
-        }
-
         if (data == NULL) {
             if(net_endpoint_fbuf_size(from) > http_ep->m_max_head_len) {
                 CPE_ERROR(
@@ -142,7 +137,7 @@ static int net_proxy_http_svr_endpoint_basic_rsp_read_head(
             net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
             data);
     }
-    
+
     if (net_endpoint_wbuf_append(endpoint, data, (uint32_t)strlen(data)) != 0
         || net_endpoint_wbuf_append(endpoint, "\r\n\r\n", 4) != 0)
     {
