@@ -21,6 +21,13 @@ typedef enum proxy_http_svr_basic_rsp_state {
     , proxy_http_svr_basic_rsp_state_content
 } proxy_http_svr_basic_rsp_state_t;
 
+typedef enum proxy_http_svr_basic_trunked_state {
+    proxy_http_svr_basic_trunked_length
+    , proxy_http_svr_basic_trunked_content
+    , proxy_http_svr_basic_trunked_content_complete
+    , proxy_http_svr_basic_trunked_complete
+} proxy_http_svr_basic_trunked_state_t;
+
 typedef enum proxy_http_svr_tunnel_state {
     proxy_http_svr_tunnel_state_connecting
     , proxy_http_svr_tunnel_state_established
@@ -43,6 +50,7 @@ struct net_proxy_http_svr_endpoint {
                         uint32_t m_length;
                     } m_content;
                     struct {
+                        proxy_http_svr_basic_trunked_state_t m_state;
                         uint16_t m_count;
                         uint32_t m_length;
                     } m_trunked;
@@ -56,6 +64,7 @@ struct net_proxy_http_svr_endpoint {
                         uint32_t m_length;
                     } m_content;
                     struct {
+                        proxy_http_svr_basic_trunked_state_t m_state;
                         uint16_t m_count;
                         uint32_t m_length;
                     } m_trunked;

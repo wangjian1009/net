@@ -576,6 +576,9 @@ void * net_endpoint_protocol_data(net_endpoint_t endpoint) {
 
 int net_endpoint_forward(net_endpoint_t endpoint) {
     net_endpoint_t other = net_endpoint_other(endpoint);
+
+    if (other->m_state == net_endpoint_state_deleting) return -1;
+    
     return other ? other->m_protocol->m_endpoint_forward(other, endpoint) : 0;
 }
 
