@@ -250,6 +250,7 @@ static void net_ws_cli_endpoint_on_msg_recv_cb(
                 ws_protocol->m_em, "ws: %s: msg text: alloc buf fail, msg-length=%d!",
                 net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), ws_ep->m_endpoint),
                 (int)arg->msg_length);
+            break;
         }
         memcpy(buf, arg->msg, arg->msg_length);
         buf[arg->msg_length] = 0;

@@ -228,7 +228,8 @@ static const char * net_ne_endpoint_state_str(NWTCPConnectionState state) {
 static void net_ne_endpoint_do_read(net_ne_driver_t driver, net_ne_endpoint_t endpoint, net_endpoint_t base_endpoint) {
     NetNeEndpointObserver * observer = endpoint->m_observer;
     //NSLog(@"doRead observer = %d", (int)[observer retainCount]);
-    
+    assert(observer);
+
     [endpoint->m_connection
         readMinimumLength: 1
         maximumLength: 255
@@ -269,8 +270,8 @@ static void net_ne_endpoint_do_read(net_ne_driver_t driver, net_ne_endpoint_t en
                 
                         if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
                             net_endpoint_free(base_endpoint);
-                            return;
                         }
+                        return;
                     }
 
                     [data getBytes: buf length: bytes];
