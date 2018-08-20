@@ -5,7 +5,7 @@
 static int net_dns_cli_protocol_init(net_protocol_t protocol);
 static void net_dns_cli_protocol_fini(net_protocol_t protocol);
 
-net_protocol_t net_dns_cli_protocol_create(net_dns_manage_t manage) {
+net_dns_cli_protocol_t net_dns_cli_protocol_create(net_dns_manage_t manage) {
     net_protocol_t protocol =
         net_protocol_create(
             manage->m_schedule,
@@ -29,7 +29,7 @@ net_protocol_t net_dns_cli_protocol_create(net_dns_manage_t manage) {
     net_dns_cli_protocol_t dns_protocol = net_protocol_data(protocol);
     dns_protocol->m_manage = manage;
 
-    return protocol;
+    return dns_protocol;
 }
 
 void net_dns_cli_protocol_free(net_dns_cli_protocol_t dns_protocol) {

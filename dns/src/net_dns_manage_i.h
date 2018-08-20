@@ -27,6 +27,7 @@ struct net_dns_manage {
     error_monitor_t m_em;
     uint8_t m_debug;
     net_schedule_t m_schedule;
+    net_dns_cli_protocol_t m_protocol_dns_cli;
     net_dns_mode_t m_mode;
     net_dns_source_list_t m_sources;
 

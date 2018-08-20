@@ -43,6 +43,13 @@ typedef enum net_dns_item_select_policy {
     net_dns_item_select_policy_max_ttl,
 } net_dns_item_select_policy_t;
 
+typedef enum net_dns_ns_trans_type {
+    net_dns_trans_udp_first,
+    net_dns_trans_tcp_first,
+    net_dns_trans_udp,
+    net_dns_trans_tcp,
+} net_dns_ns_trans_type_t;
+
 NET_END_DECL
 
 #endif
