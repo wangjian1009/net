@@ -8,6 +8,7 @@ NET_BEGIN_DECL
 struct net_dns_source {
     net_dns_manage_t m_manage;
     TAILQ_ENTRY(net_dns_source) m_next;
+    net_dns_scope_source_list_t m_scopes;
 
     uint32_t m_capacity;
     net_dns_source_init_fun_t m_init;

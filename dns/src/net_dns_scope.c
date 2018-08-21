@@ -3,6 +3,7 @@
 #include "cpe/pal/pal_string.h"
 #include "net_address.h"
 #include "net_dns_scope_i.h"
+#include "net_dns_scope_source_i.h"
 
 net_dns_scope_t
 net_dns_scope_create(net_dns_manage_t manage, const char * name) {
@@ -17,6 +18,7 @@ net_dns_scope_create(net_dns_manage_t manage, const char * name) {
     scope->m_manage = manage;
     scope->m_name = (void*)(scope + 1);
     memcpy((void*)scope->m_name, name, name_len);
+    TAILQ_INIT(&scope->m_sources);
     
     cpe_hash_entry_init(&scope->m_hh);
     if (cpe_hash_table_insert_unique(&manage->m_scopes, scope) != 0) {
@@ -30,6 +32,10 @@ net_dns_scope_create(net_dns_manage_t manage, const char * name) {
 
 void net_dns_scope_free(net_dns_scope_t scope) {
     net_dns_manage_t manage = scope->m_manage;
+
+    while(!TAILQ_EMPTY(&scope->m_sources)) {
+        net_dns_scope_source_free(TAILQ_FIRST(&scope->m_sources));
+    }
 
     cpe_hash_table_remove_by_ins(&manage->m_scopes, scope);
 
@@ -59,6 +65,37 @@ net_dns_scope_find(net_dns_manage_t manage, const char * name) {
     struct net_dns_scope key;
     key.m_name = name;
     return cpe_hash_table_find(&manage->m_entries, &key);
+}
+
+void net_dns_scope_clear(net_dns_scope_t scope) {
+    while(!TAILQ_EMPTY(&scope->m_sources)) {
+        net_dns_scope_source_t scope_source = TAILQ_FIRST(&scope->m_sources);
+        net_dns_source_t source = scope_source->m_source;
+        net_dns_scope_source_free(scope_source);
+
+        if (TAILQ_EMPTY(&source->m_scopes)) {
+            net_dns_source_free(source);
+        }
+    }
+}
+
+int net_dns_scope_add_source(net_dns_scope_t scope, net_dns_source_t source) {
+    if (net_dns_scope_have_source(scope, source)) return 0;
+
+    net_dns_scope_source_t scope_source = net_dns_scope_source_create(scope, source);
+    if (scope_source == NULL) return -1;
+
+    return 0;
+}
+
+uint8_t net_dns_scope_have_source(net_dns_scope_t scope, net_dns_source_t source) {
+    net_dns_scope_source_t scope_source;
+
+    TAILQ_FOREACH(scope_source, &source->m_scopes, m_next_for_source) {
+        if (scope_source->m_scope == scope) return 1;
+    }
+    
+    return 0;
 }
 
 static net_dns_scope_t net_dns_scope_cname_it_next(net_dns_scope_it_t it) {

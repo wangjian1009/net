@@ -3,6 +3,7 @@
 #include "net_dns_source_i.h"
 #include "net_dns_task_ctx_i.h"
 #include "net_dns_entry_item_i.h"
+#include "net_dns_scope_source_i.h"
 
 net_dns_source_t
 net_dns_source_create(
@@ -38,6 +39,7 @@ net_dns_source_create(
     source->m_task_ctx_start = task_ctx_start;
     source->m_task_ctx_cancel = task_ctx_cancel;
 
+    TAILQ_INIT(&source->m_scopes);
     TAILQ_INIT(&source->m_ctxs);
     TAILQ_INIT(&source->m_items);
 
@@ -56,6 +58,10 @@ net_dns_source_create(
 
 void net_dns_source_free(net_dns_source_t source) {
     net_dns_manage_t manage = source->m_manage;
+
+    while(!TAILQ_EMPTY(&source->m_scopes)) {
+        net_dns_scope_source_free(TAILQ_FIRST(&source->m_scopes));
+    }
 
     while(!TAILQ_EMPTY(&source->m_ctxs)) {
         net_dns_task_ctx_t ctx = TAILQ_FIRST(&source->m_ctxs);

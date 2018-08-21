@@ -6,6 +6,8 @@
 #include "cpe/utils/string_utils.h"
 #include "cpe/utils_sock/sock_utils.h"
 #include "net_address.h"
+#include "net_dns_scope.h"
+#include "net_dns_source.h"
 #include "net_dns_source_ns.h"
 #include "net_dns_manage_i.h"
 #if defined __APPLE__
@@ -16,11 +18,19 @@
 #include "resolv.h"
 #endif
 
-int net_dns_manage_load_resolv(net_dns_manage_t manage, net_driver_t driver, const char * path);
-int net_dns_manage_load_ns_by_addr(net_dns_manage_t manage, net_driver_t driver, struct sockaddr * addr, socklen_t addr_len);
-int net_dns_manage_load_ns_by_str(net_dns_manage_t manage, net_driver_t driver, char * str);
+int net_dns_manage_load_resolv(
+    net_dns_manage_t manage, net_driver_t driver, net_dns_scope_t scope,
+    const char * path);
 
-int net_dns_manage_auto_conf(net_dns_manage_t manage, net_driver_t driver) {
+int net_dns_manage_load_ns_by_addr(
+    net_dns_manage_t manage, net_driver_t driver, net_dns_scope_t scope,
+    struct sockaddr * addr, socklen_t addr_len);
+
+int net_dns_manage_load_ns_by_str(
+    net_dns_manage_t manage, net_driver_t driver, net_dns_scope_t scope,
+    char * str);
+
+int net_dns_manage_auto_conf(net_dns_manage_t manage, net_driver_t driver, net_dns_scope_t scope) {
     int rv = 0;
 
 #if defined(ANDROID) || defined(__ANDROID__)
@@ -34,7 +44,7 @@ int net_dns_manage_auto_conf(net_dns_manage_t manage, net_driver_t driver) {
             rv = -1;
             break;
         }
-        if (net_dns_manage_load_ns_by_str(manage, propvalue) != 0) rv = -1;
+        if (net_dns_manage_load_ns_by_str(manage, driver, scope, propvalue) != 0) rv = -1;
     }
 #else
 # if defined (NET_DNS_USE_RESOLVE_H)
@@ -47,7 +57,8 @@ int net_dns_manage_auto_conf(net_dns_manage_t manage, net_driver_t driver) {
         int i;
         for(i = 0; i < res.nscount; ++i) {
             if (net_dns_manage_load_ns_by_addr(
-                    manage, driver, (struct sockaddr *)&res.nsaddr_list[i], (socklen_t)sizeof(res.nsaddr_list[i])) != 0)
+                    manage, driver, scope,
+                    (struct sockaddr *)&res.nsaddr_list[i], (socklen_t)sizeof(res.nsaddr_list[i])) != 0)
             {
                 rv = -1;
             }
@@ -55,14 +66,14 @@ int net_dns_manage_auto_conf(net_dns_manage_t manage, net_driver_t driver) {
     }
     
 #else    
-    if (net_dns_manage_load_resolv(manage, driver, "/etc/resolv.conf") != 0) rv = -1;
+    if (net_dns_manage_load_resolv(manage, driver, scope, "/etc/resolv.conf") != 0) rv = -1;
 #endif
 #endif
 
     return rv;
 }
 
-int net_dns_manage_load_resolv(net_dns_manage_t manage, net_driver_t driver, const char * path) {
+int net_dns_manage_load_resolv(net_dns_manage_t manage, net_driver_t driver, net_dns_scope_t scope, const char * path) {
     FILE *fp = file_stream_open(path, "r", NULL);
     if (fp == NULL) {
         CPE_ERROR(
@@ -89,7 +100,7 @@ int net_dns_manage_load_resolv(net_dns_manage_t manage, net_driver_t driver, con
         if (line == NULL) break;
 
         if (cpe_str_start_with(line, "ns")) {
-            if (net_dns_manage_load_ns_by_str(manage, driver, cpe_str_trim_head(line + strlen("ns"))) != 0) rv = -1;
+            if (net_dns_manage_load_ns_by_str(manage, driver, scope, cpe_str_trim_head(line + strlen("ns"))) != 0) rv = -1;
         }
         else if (cpe_str_start_with(line, "domain")) {
         }
@@ -109,7 +120,7 @@ int net_dns_manage_load_resolv(net_dns_manage_t manage, net_driver_t driver, con
     return rv;
 }
 
-int net_dns_manage_load_ns(net_dns_manage_t manage, net_driver_t driver, net_address_t address) {
+int net_dns_manage_load_ns(net_dns_manage_t manage, net_driver_t driver, net_dns_scope_t scope, net_address_t address) {
     if (net_dns_source_ns_find(manage, address) != NULL) {
         if (manage->m_debug) {
             CPE_INFO(
@@ -127,25 +138,36 @@ int net_dns_manage_load_ns(net_dns_manage_t manage, net_driver_t driver, net_add
         return -1;
     }
 
+    if (scope) {
+        if (net_dns_scope_add_source(scope, net_dns_source_from_data(ns)) != 0) {
+            CPE_ERROR(manage->m_em, "dns-cli: load ns: add to scope fail");
+            net_dns_source_ns_free(ns);
+            return -1;
+        }
+    }
+    
     return 0;
 }
 
-int net_dns_manage_load_ns_by_addr(net_dns_manage_t manage, net_driver_t driver, struct sockaddr * addr, socklen_t addr_len) {
+int net_dns_manage_load_ns_by_addr(
+    net_dns_manage_t manage, net_driver_t driver, net_dns_scope_t scope,
+    struct sockaddr * addr, socklen_t addr_len)
+{
     net_address_t address = net_address_create_from_sockaddr(manage->m_schedule, addr, addr_len);
     if (address == NULL) {
         CPE_ERROR(manage->m_em, "dns-cli: load ns: create address from sock addr fail");
         return -1;
     }
 
-    return net_dns_manage_load_ns(manage, driver, address);
+    return net_dns_manage_load_ns(manage, driver, scope, address);
 }
 
-int net_dns_manage_load_ns_by_str(net_dns_manage_t manage, net_driver_t driver, char * str) {
+int net_dns_manage_load_ns_by_str(net_dns_manage_t manage, net_driver_t driver, net_dns_scope_t scope, char * str) {
     net_address_t address = net_address_create_auto(manage->m_schedule, str);
     if (address == NULL) {
         CPE_ERROR(manage->m_em, "dns-cli: load ns: create address %s fail", str);
         return -1;
     }
 
-    return net_dns_manage_load_ns(manage, driver, address);
+    return net_dns_manage_load_ns(manage, driver, scope, address);
 }
