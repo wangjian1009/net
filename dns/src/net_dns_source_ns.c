@@ -97,6 +97,12 @@ net_dns_source_ns_t net_dns_source_ns_find(net_dns_manage_t manage, net_address_
     return 0;
 }
 
+net_dns_source_ns_t net_dns_source_ns_from_source(net_dns_source_t source) {
+    return source->m_init == net_dns_source_ns_init
+        ? net_dns_source_data(source)
+        : NULL;
+}
+
 net_address_t net_dns_source_ns_address(net_dns_source_ns_t server) {
     return server->m_address;
 }
