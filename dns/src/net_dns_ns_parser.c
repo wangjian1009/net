@@ -1,6 +1,5 @@
 #include "assert.h"
 #include "cpe/pal/pal_platform.h"
-#include "cpe/utils/stream_buffer.h"
 #include "cpe/utils/time_utils.h"
 #include "net_address.h"
 #include "net_dns_ns_parser.h"
@@ -128,7 +127,7 @@ static int net_dns_ns_parser_read_head(
     CPE_COPY_NTOH16(&parser->m_nscount, p); p+=2;
     CPE_COPY_NTOH16(&parser->m_arcount, p); p+=2;
 
-    *used_size = p - rp;
+    *used_size = (uint32_t)(p - rp);
     
     return 0;
 }
@@ -140,7 +139,7 @@ static int net_dns_ns_parser_read_qd_record(
     uint8_t const * p = net_dns_ns_req_print_name(parser->m_manage, NULL, rp, base, total_sz, 0);
     if (p == NULL) return 0;
 
-    uint32_t name_sz = p - rp;
+    uint32_t name_sz = (uint32_t)(p - rp);
     uint32_t record_sz = name_sz + 2 + 2; /*type + class*/
 
     if (record_sz > left_sz) return 0;
@@ -159,16 +158,12 @@ static int net_dns_ns_parser_read_an_record(
     uint8_t const *  p = rp;
 
     /*读取名字 */
-    mem_buffer_t buffer = &parser->m_manage->m_data_buffer;
-    struct write_stream_buffer ws = CPE_WRITE_STREAM_BUFFER_INITIALIZER(buffer);
-    mem_buffer_clear_data(buffer);
-    p = net_dns_ns_req_print_name(manage, (write_stream_t)&ws, rp, base, total_sz, 0);
+    p = net_dns_ns_req_dump_name(manage, &parser->m_manage->m_data_buffer, rp, base, total_sz, 0);
     if (p == NULL) return 0;
 
-    stream_putc((write_stream_t)&ws, 0);
-    const char * hostname = mem_buffer_make_continuous(buffer, 0);
+    const char * hostname = mem_buffer_make_continuous(&parser->m_manage->m_data_buffer, 0);
 
-    uint32_t name_sz = p - rp;
+    uint32_t name_sz = (uint32_t)(p - rp);
     uint32_t record_sz = name_sz + 2 + 2 + 4 + 2; /*type + class + ttl + rdlength*/
 
     if (record_sz > left_sz) return 0;
@@ -193,10 +188,8 @@ static int net_dns_ns_parser_read_an_record(
     net_address_t address = NULL;
     switch(res_type) {
     case 5: {
-        mem_buffer_clear_data(net_dns_manage_tmp_buffer(manage));
-        p = net_dns_ns_req_print_name(manage, (write_stream_t)&ws, p, base, total_sz, 0);
+        p = net_dns_ns_req_dump_name(manage, net_dns_manage_tmp_buffer(manage), p, base, total_sz, 0);
         assert(p);
-        stream_putc((write_stream_t)&ws, 0);
         const char * cname = mem_buffer_make_continuous(net_dns_manage_tmp_buffer(manage), 0);
 
         address = net_address_create_domain(manage->m_schedule, cname, 0, NULL);

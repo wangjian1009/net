@@ -50,13 +50,13 @@ net_dns_entry_item_create(
                 manage->m_em, "dns-cli: resolved %s[%s] ==> %s",
                 entry->m_main->m_hostname,
                 entry->m_hostname,
-                net_address_dump(net_dns_manage_tmp_buffer(manage), item->m_address));
+                net_address_host(net_dns_manage_tmp_buffer(manage), item->m_address));
         }
         else {
             CPE_INFO(
                 manage->m_em, "dns-cli: resolved %s ==> %s",
                 entry->m_hostname,
-                net_address_dump(net_dns_manage_tmp_buffer(manage), item->m_address));
+                net_address_host(net_dns_manage_tmp_buffer(manage), item->m_address));
         }
     }
 

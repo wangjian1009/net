@@ -162,3 +162,15 @@ uint8_t const * net_dns_ns_req_print_name(
     return p;
 }
 
+uint8_t const * net_dns_ns_req_dump_name(
+    net_dns_manage_t manage, mem_buffer_t buffer, uint8_t const * p, uint8_t const * buf, uint32_t buf_size, uint8_t level)
+{
+    struct write_stream_buffer ws = CPE_WRITE_STREAM_BUFFER_INITIALIZER(buffer);
+    mem_buffer_clear_data(buffer);
+
+    p = net_dns_ns_req_print_name(manage, (write_stream_t)&ws, p, buf, buf_size, 0);
+
+    stream_putc((write_stream_t)&ws, 0);
+
+    return p;
+}
