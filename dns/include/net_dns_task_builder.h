@@ -18,6 +18,9 @@ net_dns_task_builder_create(
 
 void net_dns_task_builder_free(net_dns_task_builder_t builder);
 
+void * net_dns_task_builder_data(net_dns_task_builder_t builder);
+net_dns_task_builder_t net_dns_task_builder_from_data(void * data);
+
 int net_dns_task_builder_build(net_dns_task_builder_t builder, net_dns_task_t task);
 
 NET_END_DECL

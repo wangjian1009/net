@@ -194,6 +194,18 @@ void net_dns_manage_set_debug(net_dns_manage_t manage, uint8_t debug) {
     manage->m_debug = debug;
 }
 
+net_dns_task_builder_t net_dns_task_builder_internal(net_dns_manage_t manage) {
+    return manage->m_builder_internal;
+}
+
+net_dns_task_builder_t net_dns_task_builder_default(net_dns_manage_t manage) {
+    return manage->m_builder_default;
+}
+
+void net_dns_task_builder_set_default(net_dns_manage_t manage, net_dns_task_builder_t builder) {
+    manage->m_builder_default = builder ? builder : manage->m_builder_internal;
+}
+
 mem_buffer_t net_dns_manage_tmp_buffer(net_dns_manage_t manage) {
     return net_schedule_tmp_buffer(manage->m_schedule);
 }

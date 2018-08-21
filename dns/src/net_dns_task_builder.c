@@ -84,6 +84,14 @@ net_dns_task_builder_internal_create(net_dns_manage_t manage) {
     return net_dns_task_builder_create(manage, 0, NULL, NULL, net_dns_task_build_internal);
 }
 
+void * net_dns_task_builder_data(net_dns_task_builder_t builder) {
+    return builder + 1;
+}
+
+net_dns_task_builder_t net_dns_task_builder_from_data(void * data) {
+    return ((net_dns_task_builder_t)data) - 1;
+}
+
 int net_dns_task_builder_build(net_dns_task_builder_t builder, net_dns_task_t task) {
     return builder->m_build(builder, task);
 }
