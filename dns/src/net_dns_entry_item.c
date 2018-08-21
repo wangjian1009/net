@@ -6,7 +6,7 @@ net_dns_entry_item_t
 net_dns_entry_item_create(
     net_dns_entry_t entry, net_dns_source_t source,
     net_address_t address, uint8_t is_own,
-    int64_t expire_time_ms)
+    uint32_t expire_time_s)
 {
     net_dns_manage_t manage = entry->m_manage;
 
@@ -24,7 +24,7 @@ net_dns_entry_item_create(
 
     item->m_entry = entry;
     item->m_source = source;
-    item->m_expire_time_ms = expire_time_ms;
+    item->m_expire_time_s = expire_time_s;
 
     if (address) {
         if (is_own) {
@@ -65,7 +65,24 @@ net_dns_entry_item_create(
         
 void net_dns_entry_item_free(net_dns_entry_item_t item) {
     net_dns_entry_t entry = item->m_entry;
-    
+    net_dns_manage_t manage = entry->m_manage;
+
+    if (manage->m_debug) {
+        if (entry->m_main) {
+            CPE_INFO(
+                manage->m_em, "dns-cli: removed %s[%s] ==> %s",
+                entry->m_main->m_hostname,
+                entry->m_hostname,
+                net_address_host(net_dns_manage_tmp_buffer(manage), item->m_address));
+        }
+        else {
+            CPE_INFO(
+                manage->m_em, "dns-cli: removed %s ==> %s",
+                entry->m_hostname,
+                net_address_host(net_dns_manage_tmp_buffer(manage), item->m_address));
+        }
+    }
+
     net_address_free(item->m_address);
     item->m_address = NULL;
 

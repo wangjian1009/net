@@ -176,11 +176,11 @@ net_dns_entry_select_item(net_dns_entry_t entry, net_dns_item_select_policy_t po
     struct net_dns_entry_item_it item_it;
     net_dns_entry_items(entry, &item_it);
 
-    int64_t cur_time = cur_time_ms();
+    uint32_t cur_time_s = (uint32_t)(cur_time_ms() / 1000);
     for(check = net_dns_entry_item_it_next(&item_it); check; check = next) {
         next = net_dns_entry_item_it_next(&item_it);
-        
-        if (check->m_expire_time_ms != 0 && check->m_expire_time_ms < cur_time) { /*超期 */
+
+        if (check->m_expire_time_s != 0 && check->m_expire_time_s < cur_time_s) { /*超期 */
             net_dns_entry_item_free(check);
             continue;
         }
@@ -218,21 +218,21 @@ net_dns_entry_select_item(net_dns_entry_t entry, net_dns_item_select_policy_t po
         
         switch(policy) {
         case net_dns_item_select_policy_first:
-            if (item != NULL) {
+            if (item == NULL) {
                 item = check;
             }
             break;
         case net_dns_item_select_policy_max_ttl:
-            if (item != NULL) {
+            if (item == NULL) {
                 item = check;
             }
-            else if (check->m_expire_time_ms > item->m_expire_time_ms) {
+            else if (check->m_expire_time_s > item->m_expire_time_s) {
                 item = check;
             }
             break;
         }
     }
-    
+
     return item;
 }
 

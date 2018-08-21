@@ -25,7 +25,9 @@ int net_dns_manage_add_record(
         return -1;
     }
 
-    net_dns_entry_item_t item = net_dns_entry_item_create(entry, source, address, 0, cur_time_ms() + ttl);
+    net_dns_entry_item_t item = net_dns_entry_item_create(
+        entry, source, address, 0,
+        ttl ? ((uint32_t)(cur_time_ms() / 1000) + ttl) : 0);
     if (item == NULL) {
         CPE_ERROR(
             manage->m_em, "dns-cli: add record %s ==> %s ttl=%d, create item fail",
