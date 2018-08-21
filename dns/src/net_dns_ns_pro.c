@@ -3,14 +3,22 @@
 #include "cpe/utils/stream.h"
 #include "net_dns_ns_pro.h"
 
-void net_dns_ns_req_print(net_dns_manage_t manage, write_stream_t ws, char const * buf, uint32_t buf_size) {
-    char const * p = buf;
+#define net_dns_ns_req_print_check_size(__sz)   \
+    if (((p - buf) + (__sz)) > buf_size) {      \
+        stream_printf(ws, "...(%d)", buf_size); \
+        return;                                 \
+    }                                           \
+
+void net_dns_ns_req_print(net_dns_manage_t manage, write_stream_t ws, uint8_t const * buf, uint32_t buf_size) {
+    uint8_t const * p = buf;
 
     uint16_t ident;
+    net_dns_ns_req_print_check_size(2);
     CPE_COPY_NTOH16(&ident, p); p+=2;
     stream_printf(ws, "ident=%#x", ident);
 
     uint16_t flags;
+    net_dns_ns_req_print_check_size(2);
     CPE_COPY_NTOH16(&flags, p); p+=2;
     stream_printf(ws, ", flags=%#x", flags);
     stream_printf(ws, ", qr=%u", flags >> 15);
@@ -23,18 +31,22 @@ void net_dns_ns_req_print(net_dns_manage_t manage, write_stream_t ws, char const
     stream_printf(ws, ", rcode=%u", flags & 15); 
 
     uint16_t qdcount;
+    net_dns_ns_req_print_check_size(2);
     CPE_COPY_NTOH16(&qdcount, p); p+=2;
     stream_printf(ws, ", qdcount=%u", qdcount);
 
     uint16_t ancount;
+    net_dns_ns_req_print_check_size(2);
     CPE_COPY_NTOH16(&ancount, p); p+=2;
     stream_printf(ws, ", ancount=%u", ancount);
 
     uint16_t nscount;
+    net_dns_ns_req_print_check_size(2);
     CPE_COPY_NTOH16(&nscount, p); p+=2;
     stream_printf(ws, ", nscount=%u", nscount);
  
     uint16_t arcount;
+    net_dns_ns_req_print_check_size(2);
     CPE_COPY_NTOH16(&arcount, p); p+=2;
     stream_printf(ws, ", arcount=%u", arcount);
  
@@ -42,7 +54,8 @@ void net_dns_ns_req_print(net_dns_manage_t manage, write_stream_t ws, char const
     for(i = 0; i < qdcount; i++) {
         stream_printf(ws, "\n    question[%u]: ", i);
         p = net_dns_ns_req_print_name(manage, ws, p, buf, buf_size, 0);
-
+        if (p == NULL) return;
+        
         uint16_t type;
         CPE_COPY_NTOH16(&type, p); p+=2;
         stream_printf(ws, ", type=%u",type);
@@ -55,6 +68,7 @@ void net_dns_ns_req_print(net_dns_manage_t manage, write_stream_t ws, char const
     for(i = 0; i < ancount; i++) {
         stream_printf(ws, "\n    answer[%u]: ", i);
         p = net_dns_ns_req_print_name(manage, ws, p, buf, buf_size, 0);
+        if (p == NULL) return;
 
         uint16_t type;
         CPE_COPY_NTOH16(&type, p); p+=2;
@@ -75,6 +89,7 @@ void net_dns_ns_req_print(net_dns_manage_t manage, write_stream_t ws, char const
         if (type == 5) {
             stream_printf(ws, ", cname=");
             p = net_dns_ns_req_print_name(manage, ws, p, buf, buf_size, 0);
+            if (p == NULL) return;
         }
         else {
             stream_printf(ws, ", rd=");
@@ -88,7 +103,7 @@ void net_dns_ns_req_print(net_dns_manage_t manage, write_stream_t ws, char const
     }
 }
 
-const char * net_dns_ns_req_dump(net_dns_manage_t manage, mem_buffer_t buffer, char const * buf, uint32_t data_size) {
+const char * net_dns_ns_req_dump(net_dns_manage_t manage, mem_buffer_t buffer, uint8_t const * buf, uint32_t data_size) {
     struct write_stream_buffer stream = CPE_WRITE_STREAM_BUFFER_INITIALIZER(buffer);
 
     mem_buffer_clear_data(buffer);
@@ -99,9 +114,16 @@ const char * net_dns_ns_req_dump(net_dns_manage_t manage, mem_buffer_t buffer, c
     return mem_buffer_make_continuous(buffer, 0);
 }
 
-char const * net_dns_ns_req_print_name(
-    net_dns_manage_t manage, write_stream_t ws, char const * p, char const * buf, uint32_t buf_size, uint8_t level)
+#define net_dns_ns_req_print_name_check_size(__sz)  \
+    if (((p - buf) + (__sz)) > buf_size) {          \
+        stream_printf(ws, "...(%d)", buf_size);     \
+        return NULL;                                \
+    }                                               \
+
+uint8_t const * net_dns_ns_req_print_name(
+    net_dns_manage_t manage, write_stream_t ws, uint8_t const * p, uint8_t const * buf, uint32_t buf_size, uint8_t level)
 {
+    net_dns_ns_req_print_name_check_size(2); /*一个ns至少2字节 */
     while(*p != 0) {
         uint16_t nchars = *(uint8_t const *)p++;
         if((nchars & 0xc0) == 0xc0) {
@@ -123,13 +145,17 @@ char const * net_dns_ns_req_print_name(
             return p;
         }
         else {
+            net_dns_ns_req_print_name_check_size(nchars);
             if (ws) stream_printf(ws, "%*.*s", nchars, nchars, p);
             p += nchars;
         }
 
+        net_dns_ns_req_print_name_check_size(1);
         if(*p != 0) {
             if (ws) stream_printf(ws, ".");
         }
+
+        net_dns_ns_req_print_name_check_size(2); /*一个ns至少2字节 */
     }
     
     p++;

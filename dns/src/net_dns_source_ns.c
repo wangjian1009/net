@@ -6,19 +6,19 @@
 #include "net_dgram.h"
 #include "net_timer.h"
 #include "net_dns_task.h"
-#include "net_dns_task_step.h"
 #include "net_dns_task_ctx.h"
-#include "net_dns_entry.h"
-#include "net_dns_entry_item.h"
 #include "net_dns_source_ns_i.h"
 #include "net_dns_source_i.h"
-#include "net_dns_ns_cli_dgram_i.h"
 #include "net_dns_ns_cli_endpoint_i.h"
 #include "net_dns_ns_pro.h"
+#include "net_dns_ns_parser.h"
 
 static int net_dns_source_ns_init(net_dns_source_t source);
 static void net_dns_source_ns_fini(net_dns_source_t source);
 static void net_dns_source_ns_dump(write_stream_t ws, net_dns_source_t source);
+
+static void net_dns_source_ns_dgram_input(
+    net_dgram_t dgram, void * ctx, void * data, size_t data_size, net_address_t from);
 
 static int net_dns_source_ns_dgram_output(
     net_dns_manage_t manage, net_dns_source_ns_t ns, void const * data, uint16_t buf_size);
@@ -245,12 +245,44 @@ int net_dns_source_ns_ctx_start(net_dns_source_t source, net_dns_task_ctx_t task
 void net_dns_source_ns_ctx_cancel(net_dns_source_t source, net_dns_task_ctx_t task_ctx) {
 }
 
+void net_dns_source_ns_dgram_input(
+    net_dgram_t dgram, void * ctx, void * data, size_t data_size, net_address_t from)
+{
+    net_dns_source_ns_t ns = ctx;
+    net_dns_source_t source = net_dns_source_from_data(ns);
+    net_dns_manage_t manage = net_dns_source_manager(source);
+
+    struct net_dns_ns_parser parser;
+
+    if (net_dns_ns_parser_init(&parser, manage, source) != 0) {
+        CPE_ERROR(manage->m_em, "dns-cli: udp <-- init parser fail");
+        return;
+    }
+    
+    if (manage->m_debug >= 2) {
+        CPE_INFO(
+            manage->m_em, "dns-cli: udp <-- %s",
+            net_dns_ns_req_dump(manage, net_dns_manage_tmp_buffer(manage), data, (uint32_t)data_size));
+    }
+
+    int rv = net_dns_ns_parser_input(&parser, data, (uint32_t)data_size);
+    if (rv < 0) {
+        CPE_ERROR(manage->m_em, "dns-cli: udp <-- parse data fail");
+    }
+    else if (rv == 0) {
+        CPE_ERROR(manage->m_em, "dns-cli: udp <-- not enough data, input=%d", (int)data_size);
+    }
+    else if (rv < data_size) {
+        CPE_ERROR(manage->m_em, "dns-cli: udp <-- read part data, used=%d, input=%d", rv, (int)data_size);
+    }
+}
+
 static int net_dns_source_ns_dgram_output(
     net_dns_manage_t manage, net_dns_source_ns_t ns, void const * buf, uint16_t buf_size)
 {
     if (ns->m_dgram == NULL) {
         ns->m_dgram = net_dgram_create(
-            ns->m_driver, NULL, net_dns_ns_cli_dgram_input, ns);
+            ns->m_driver, NULL, net_dns_source_ns_dgram_input, ns);
         if (ns->m_dgram == NULL) {
             CPE_ERROR(
                 manage->m_em, "dns-cli: ns[%s]: create dgram fail",

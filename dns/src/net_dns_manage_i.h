@@ -62,6 +62,10 @@ struct net_dns_manage {
 mem_buffer_t net_dns_manage_tmp_buffer(net_dns_manage_t manage);
 int net_dns_manage_active_delay_process(net_dns_manage_t manage);
 
+int net_dns_manage_add_record(
+    net_dns_manage_t manage, net_dns_source_t source, uint16_t task_ident,
+    const char * hostname, net_address_t address, uint32_t ttl);
+
 NET_END_DECL
 
 #endif
