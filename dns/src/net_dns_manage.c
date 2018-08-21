@@ -14,7 +14,7 @@
 #include "net_dns_task_step_i.h"
 #include "net_dns_task_ctx_i.h"
 #include "net_dns_task_builder_i.h"
-#include "net_dns_cli_protocol_i.h"
+#include "net_dns_ns_cli_protocol_i.h"
 
 static void net_dns_manage_fini(void * ctx);
 static void net_dns_manage_do_delay_process(net_timer_t timer, void * input_ctx);
@@ -77,8 +77,8 @@ net_dns_manage_t net_dns_manage_create(
         return NULL;
     }
 
-    manage->m_protocol_dns_cli = net_dns_cli_protocol_create(manage);
-    if (manage->m_protocol_dns_cli == NULL) {
+    manage->m_protocol_dns_ns_cli = net_dns_ns_cli_protocol_create(manage);
+    if (manage->m_protocol_dns_ns_cli == NULL) {
         cpe_hash_table_fini(&manage->m_scopes);
         cpe_hash_table_fini(&manage->m_entries);
         mem_free(alloc, manage);
@@ -87,7 +87,7 @@ net_dns_manage_t net_dns_manage_create(
     
     manage->m_builder_internal = net_dns_task_builder_internal_create(manage);
     if (manage->m_builder_internal == NULL) {
-        net_dns_cli_protocol_free(manage->m_protocol_dns_cli);
+        net_dns_ns_cli_protocol_free(manage->m_protocol_dns_ns_cli);
         cpe_hash_table_fini(&manage->m_entries);
         cpe_hash_table_fini(&manage->m_scopes);
         mem_free(alloc, manage);
@@ -139,9 +139,9 @@ void net_dns_manage_free(net_dns_manage_t manage) {
         manage->m_delay_process = NULL;
     }
 
-    if (manage->m_protocol_dns_cli) {
-        net_dns_cli_protocol_free(manage->m_protocol_dns_cli);
-        manage->m_protocol_dns_cli = NULL;
+    if (manage->m_protocol_dns_ns_cli) {
+        net_dns_ns_cli_protocol_free(manage->m_protocol_dns_ns_cli);
+        manage->m_protocol_dns_ns_cli = NULL;
     }
     
     cpe_hash_table_fini(&manage->m_entries);

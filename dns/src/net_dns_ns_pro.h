@@ -1,5 +1,5 @@
-#ifndef NET_DNS_NS_I_H_INCLEDED
-#define NET_DNS_NS_I_H_INCLEDED
+#ifndef NET_DNS_NS_PRO_H_INCLEDED
+#define NET_DNS_NS_PRO_H_INCLEDED
 #include "net_dns_manage_i.h"
 
 NET_BEGIN_DECL
