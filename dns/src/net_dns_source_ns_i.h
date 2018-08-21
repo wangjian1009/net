@@ -10,7 +10,7 @@ struct net_dns_source_ns {
     net_address_t m_address;
     net_dns_ns_trans_type_t m_trans_type;
     net_dgram_t m_dgram;
-    net_endpoint_t m_endpoint;
+    net_dns_ns_cli_endpoint_t m_tcp_cli;
     uint16_t m_timeout_ms;
     uint16_t m_retry_count;
     uint16_t m_max_transaction;

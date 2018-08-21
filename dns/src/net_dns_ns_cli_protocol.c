@@ -21,7 +21,7 @@ net_dns_ns_cli_protocol_t net_dns_ns_cli_protocol_create(net_dns_manage_t manage
             net_dns_ns_cli_endpoint_input,
             NULL,
             NULL,
-            NULL);
+            net_dns_ns_cli_endpoint_on_state_change);
     if (protocol == NULL) {
         return NULL;
     }

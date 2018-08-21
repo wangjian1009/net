@@ -23,6 +23,9 @@ static void net_dns_source_ns_dgram_input(
 static int net_dns_source_ns_dgram_output(
     net_dns_manage_t manage, net_dns_source_ns_t ns, void const * data, uint16_t buf_size);
 
+static int net_dns_source_ns_tcp_output(
+    net_dns_manage_t manage, net_dns_source_ns_t ns, void const * data, uint16_t buf_size);
+
 static int net_dns_source_ns_ctx_init(net_dns_source_t source, net_dns_task_ctx_t task_ctx);
 static void net_dns_source_ns_ctx_fini(net_dns_source_t source, net_dns_task_ctx_t task_ctx);
 static int net_dns_source_ns_ctx_start(net_dns_source_t source, net_dns_task_ctx_t task_ctx);
@@ -120,9 +123,9 @@ static int net_dns_source_ns_init(net_dns_source_t source) {
 
     ns->m_driver = NULL;
     ns->m_address = NULL;
-    ns->m_trans_type = net_dns_trans_udp_first;
+    ns->m_trans_type = net_dns_trans_udp;
     ns->m_dgram = NULL;
-    ns->m_endpoint = NULL;
+    ns->m_tcp_cli = NULL;
     ns->m_retry_count = 0;
     ns->m_timeout_ms = 2000;
     ns->m_max_transaction = 0;
@@ -150,9 +153,9 @@ static void net_dns_source_ns_fini(net_dns_source_t source) {
         ns->m_dgram = NULL;
     }
     
-    if (ns->m_endpoint) {
-        net_endpoint_free(ns->m_endpoint);
-        ns->m_endpoint = NULL;
+    if (ns->m_tcp_cli) {
+        net_dns_ns_cli_endpoint_free(ns->m_tcp_cli);
+        ns->m_tcp_cli = NULL;
     }
 }
 
@@ -245,7 +248,12 @@ int net_dns_source_ns_ctx_start(net_dns_source_t source, net_dns_task_ctx_t task
 
     uint16_t buf_size = (uint32_t)(p - buf);
 
-    return net_dns_source_ns_dgram_output(manage, ns, buf, buf_size);
+    switch(ns->m_trans_type) {
+    case net_dns_trans_udp:
+        return net_dns_source_ns_dgram_output(manage, ns, buf, buf_size);
+    case net_dns_trans_tcp:
+        return net_dns_source_ns_tcp_output(manage, ns, buf, buf_size);
+    }
 }
 
 void net_dns_source_ns_ctx_cancel(net_dns_source_t source, net_dns_task_ctx_t task_ctx) {
@@ -316,3 +324,20 @@ static int net_dns_source_ns_dgram_output(
 
     return 0;
 }
+
+static int net_dns_source_ns_tcp_output(
+    net_dns_manage_t manage, net_dns_source_ns_t ns, void const * data, uint16_t buf_size)
+{
+    if (ns->m_tcp_cli == NULL) {
+        ns->m_tcp_cli = net_dns_ns_cli_endpoint_create(net_dns_source_from_data(ns), ns->m_driver);
+        if (ns->m_tcp_cli == NULL) {
+            CPE_ERROR(
+                manage->m_em, "dns-cli: ns[%s]: create endpoint fail",
+                net_address_dump(net_dns_manage_tmp_buffer(manage), ns->m_address));
+            return -1;
+        }
+    }
+
+    return net_dns_ns_cli_endpoint_send(ns->m_tcp_cli, ns->m_address, data, buf_size);
+}
+
