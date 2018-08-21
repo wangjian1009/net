@@ -193,11 +193,11 @@ static int net_dns_ns_parser_read_an_record(
     net_address_t address = NULL;
     switch(res_type) {
     case 5: {
-        mem_buffer_clear_data(buffer);
+        mem_buffer_clear_data(net_dns_manage_tmp_buffer(manage));
         p = net_dns_ns_req_print_name(manage, (write_stream_t)&ws, p, base, total_sz, 0);
         assert(p);
         stream_putc((write_stream_t)&ws, 0);
-        const char * cname = mem_buffer_make_continuous(buffer, 0);
+        const char * cname = mem_buffer_make_continuous(net_dns_manage_tmp_buffer(manage), 0);
 
         address = net_address_create_domain(manage->m_schedule, cname, 0, NULL);
         if (address == NULL) {

@@ -1,6 +1,7 @@
 #include "assert.h"
 #include "cpe/pal/pal_types.h"
 #include "cpe/pal/pal_string.h"
+#include "cpe/utils/time_utils.h"
 #include "net_address.h"
 #include "net_dns_entry_i.h"
 #include "net_dns_entry_item_i.h"
@@ -170,29 +171,68 @@ net_dns_entry_find(net_dns_manage_t manage, const char * hostname) {
 net_dns_entry_item_t
 net_dns_entry_select_item(net_dns_entry_t entry, net_dns_item_select_policy_t policy) {
     net_dns_entry_item_t item = NULL;
-    net_dns_entry_item_t check;
+    net_dns_entry_item_t check, next;
 
     struct net_dns_entry_item_it item_it;
     net_dns_entry_items(entry, &item_it);
-    
-    switch(policy) {
-    case net_dns_item_select_policy_first:
-        item = net_dns_entry_item_it_next(&item_it);
-        break;
-    case net_dns_item_select_policy_max_ttl:
-        while((check = net_dns_entry_item_it_next(&item_it))) {
-            if (check->m_expire_time_ms == 0) {
-                item = check;
+
+    int64_t cur_time = cur_time_ms();
+    for(check = net_dns_entry_item_it_next(&item_it); check; check = next) {
+        next = net_dns_entry_item_it_next(&item_it);
+        
+        if (check->m_expire_time_ms != 0 && check->m_expire_time_ms < cur_time) { /*超期 */
+            net_dns_entry_item_free(check);
+            continue;
+        }
+
+        if (net_address_type(check->m_address) == net_address_domain) continue;
+
+        if (item) {
+            switch(entry->m_manage->m_mode) {
+            case net_dns_ipv4_first:
+                if (net_address_type(check->m_address) == net_address_ipv6) {
+                    if (net_address_type(item->m_address) == net_address_ipv4) continue;
+                }
+                else {
+                    assert(net_address_type(check->m_address) == net_address_ipv4);
+                    if (net_address_type(item->m_address) == net_address_ipv6) {
+                        item = NULL;
+                    }
+                }
+                break;
+            case net_dns_ipv6_first:
+                if (net_address_type(check->m_address) == net_address_ipv6) {
+                    if (net_address_type(item->m_address) == net_address_ipv4) {
+                        item = NULL;
+                    }
+                }
+                else {
+                    assert(net_address_type(check->m_address) == net_address_ipv4);
+                    if (net_address_type(item->m_address) == net_address_ipv6) {
+                        continue;
+                    }
+                }
                 break;
             }
-
-            if (item == NULL || check->m_expire_time_ms > item->m_expire_time_ms) {
+        }
+        
+        switch(policy) {
+        case net_dns_item_select_policy_first:
+            if (item != NULL) {
                 item = check;
             }
+            break;
+        case net_dns_item_select_policy_max_ttl:
+            if (item != NULL) {
+                item = check;
+            }
+            else if (check->m_expire_time_ms > item->m_expire_time_ms) {
+                item = check;
+            }
+            break;
         }
-        break;
     }
-
+    
     return item;
 }
 

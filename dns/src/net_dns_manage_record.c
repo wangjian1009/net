@@ -19,7 +19,7 @@ int net_dns_manage_add_record(
             CPE_INFO(
                 manage->m_em, "dns-cli: add record %s ==> %s ttl=%d, entry not exist",
                 hostname,
-                net_address_dump(net_dns_manage_tmp_buffer(manage), address),
+                net_address_host(net_dns_manage_tmp_buffer(manage), address),
                 ttl);
         }
         return -1;
@@ -30,7 +30,7 @@ int net_dns_manage_add_record(
         CPE_ERROR(
             manage->m_em, "dns-cli: add record %s ==> %s ttl=%d, create item fail",
             hostname,
-            net_address_dump(net_dns_manage_tmp_buffer(manage), address),
+            net_address_host(net_dns_manage_tmp_buffer(manage), address),
             ttl);
         return -1;
     }
@@ -44,7 +44,7 @@ int net_dns_manage_add_record(
                 CPE_ERROR(
                     manage->m_em, "dns-cli: add record %s ==> %s ttl=%d, create cname entry fail",
                     hostname,
-                    net_address_dump(net_dns_manage_tmp_buffer(manage), address),
+                    net_address_host(net_dns_manage_tmp_buffer(manage), address),
                     ttl);
                 net_dns_entry_item_free(item);
                 return -1;
