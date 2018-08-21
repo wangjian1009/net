@@ -35,7 +35,7 @@ void net_dns_ns_parser_fini(net_dns_ns_parser_t parser) {
 int net_dns_ns_parser_input(net_dns_ns_parser_t parser, void const * data, uint32_t total_sz) {
     uint8_t const * base = data;
 
-    while(parser->m_r_pos < total_sz) {
+    while(parser->m_r_pos <= total_sz) {
         uint32_t once_size = 0;
         uint8_t const * rp = base + parser->m_r_pos;
         uint32_t left_sz = total_sz - parser->m_r_pos;
