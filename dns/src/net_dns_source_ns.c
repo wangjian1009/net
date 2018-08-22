@@ -282,7 +282,7 @@ static void net_dns_source_ns_dgram_input(
         return;
     }
     
-    if (manage->m_debug >= 2) {
+    if (net_dgram_protocol_debug(ns->m_dgram, ns->m_address) >= 2) {
         CPE_INFO(
             manage->m_em, "dns-cli: udp <-- %s",
             net_dns_ns_req_dump(manage, net_dns_manage_tmp_buffer(manage), data, (uint32_t)data_size));
@@ -321,7 +321,7 @@ static int net_dns_source_ns_dgram_output(
         return -1;
     }
 
-    if (manage->m_debug >= 2) {
+    if (net_dgram_protocol_debug(ns->m_dgram, ns->m_address) >= 2) {
         char address_buf[128];
         snprintf(address_buf, sizeof(address_buf), "%s", net_address_dump(net_dns_manage_tmp_buffer(manage), ns->m_address));
         

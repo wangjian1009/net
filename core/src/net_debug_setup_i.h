@@ -13,7 +13,8 @@ struct net_debug_setup {
     net_debug_condition_list_t m_conditions;
 };
 
-uint8_t net_debug_setup_check(net_debug_setup_t setup, net_endpoint_t endpoint);
+uint8_t net_debug_setup_check_endpoint(net_debug_setup_t setup, net_endpoint_t endpoint);
+uint8_t net_debug_setup_check_dgram(net_debug_setup_t setup, net_dgram_t dgram, net_address_t remote);
     
 NET_END_DECL
 

@@ -259,7 +259,7 @@ void net_endpoint_update_debug_info(net_endpoint_t endpoint) {
     net_debug_setup_t debug_setup;
 
     TAILQ_FOREACH(debug_setup, &schedule->m_debug_setups, m_next_for_schedule) {
-        if (!net_debug_setup_check(debug_setup, endpoint)) continue;
+        if (!net_debug_setup_check_endpoint(debug_setup, endpoint)) continue;
 
         if (debug_setup->m_protocol_debug > endpoint->m_protocol_debug) {
             endpoint->m_protocol_debug = debug_setup->m_protocol_debug;

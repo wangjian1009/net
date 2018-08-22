@@ -56,8 +56,21 @@ void net_dns_ns_cli_endpoint_fini(net_endpoint_t base_endpoint) {
 }
 
 static int net_dns_ns_cli_process_data(
-    net_dns_manage_t manage, net_dns_ns_cli_endpoint_t dns_cli, net_endpoint_t base_endpoint, void * input, uint32_t input_sz)
+    net_endpoint_t base_endpoint, net_endpoint_t from_ep, net_endpoint_buf_type_t from_buf)
 {
+    net_dns_ns_cli_endpoint_t dns_cli = net_endpoint_protocol_data(base_endpoint);
+    net_dns_ns_cli_protocol_t dns_protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
+    net_dns_manage_t manage = dns_protocol->m_manage;
+    
+    uint32_t input_sz = net_endpoint_buf_size(from_ep, from_buf);
+    void * input;
+    if (net_endpoint_buf_peak_with_size(from_ep, from_buf, input_sz, &input) != 0) {
+        CPE_ERROR(
+            manage->m_em, "dns-cli: %s: <-- get input buf fail, sz=%d!",
+            net_endpoint_dump(net_dns_manage_tmp_buffer(manage), base_endpoint), input_sz);
+        return -1;
+    }
+    
     if (input_sz < 2) return 0;
 
     uint16_t req_sz;
@@ -85,7 +98,7 @@ static int net_dns_ns_cli_process_data(
         return -1;
     }
 
-    if (manage->m_debug) {
+    if (net_endpoint_protocol_debug(base_endpoint) >= 2) {
         CPE_INFO(
             manage->m_em, "dns-cli: %s: tcp <-- (%d/%d) %s",
             net_endpoint_dump(&manage->m_data_buffer, base_endpoint),
@@ -93,53 +106,17 @@ static int net_dns_ns_cli_process_data(
             net_dns_ns_req_dump(manage, net_dns_manage_tmp_buffer(manage), input, (uint32_t)rv));
     }
 
-    return all_req_sz;
+    net_endpoint_buf_consume(from_ep, from_buf, all_req_sz);
+
+    return 0;
 }
     
 int net_dns_ns_cli_endpoint_forward(net_endpoint_t base_endpoint, net_endpoint_t from) {
-    net_dns_ns_cli_endpoint_t dns_cli = net_endpoint_protocol_data(base_endpoint);
-    net_dns_ns_cli_protocol_t dns_protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
-    net_dns_manage_t manage = dns_protocol->m_manage;
-    
-    uint32_t input_sz = net_endpoint_buf_size(from, net_ep_buf_forward);
-    void * input;
-    if (net_endpoint_buf_peak_with_size(from, net_ep_buf_forward, input_sz, &input) != 0) {
-        CPE_ERROR(
-            manage->m_em, "dns-cli: %s: <-- get input buf fail, sz=%d!",
-            net_endpoint_dump(net_dns_manage_tmp_buffer(manage), base_endpoint), input_sz);
-        return -1;
-    }
-
-    int rv = net_dns_ns_cli_process_data(manage, dns_cli, base_endpoint, input, input_sz);
-
-    if (rv > 0) {
-        net_endpoint_buf_consume(from, net_ep_buf_forward, (uint32_t)rv);
-    }
-
-    return 0;
+    return net_dns_ns_cli_process_data(base_endpoint, from, net_ep_buf_forward);
 }
 
 int net_dns_ns_cli_endpoint_input(net_endpoint_t base_endpoint) {
-    net_dns_ns_cli_endpoint_t dns_cli = net_endpoint_protocol_data(base_endpoint);
-    net_dns_ns_cli_protocol_t dns_protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
-    net_dns_manage_t manage = dns_protocol->m_manage;
-    
-    uint32_t input_sz = net_endpoint_buf_size(base_endpoint, net_ep_buf_read);
-    void * input;
-    if (net_endpoint_buf_peak_with_size(base_endpoint, net_ep_buf_read, input_sz, &input) != 0) {
-        CPE_ERROR(
-            manage->m_em, "dns-cli: %s: <-- get input buf fail, sz=%d!",
-            net_endpoint_dump(net_dns_manage_tmp_buffer(manage), base_endpoint), input_sz);
-        return -1;
-    }
-
-    int rv = net_dns_ns_cli_process_data(manage, dns_cli, base_endpoint, input, input_sz);
-
-    if (rv > 0) {
-        net_endpoint_buf_consume(base_endpoint, net_ep_buf_read, (uint32_t)rv);
-    }
-
-    return 0;
+    return net_dns_ns_cli_process_data(base_endpoint, base_endpoint, net_ep_buf_read);
 }
 
 int net_dns_ns_cli_endpoint_on_state_change(net_endpoint_t endpoint, net_endpoint_state_t from_state) {
@@ -222,7 +199,7 @@ int net_dns_ns_cli_endpoint_send(
         }
     }
 
-    if (manage->m_debug >= 2) {
+    if (net_endpoint_protocol_debug(dns_cli->m_endpoint) >= 2) {
         CPE_INFO(
             manage->m_em, "dns-cli: %s: tcp --> %s",
             net_endpoint_dump(net_dns_manage_tmp_buffer(manage), dns_cli->m_endpoint),

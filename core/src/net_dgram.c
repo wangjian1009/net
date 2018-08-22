@@ -1,6 +1,7 @@
 #include "net_address.h"
 #include "net_dgram_i.h"
 #include "net_driver_i.h"
+#include "net_debug_setup_i.h"
 
 net_dgram_t net_dgram_create(
     net_driver_t driver,
@@ -105,6 +106,22 @@ uint8_t net_dgram_driver_debug(net_dgram_t dgram) {
 
 void net_dgram_set_driver_debug(net_dgram_t dgram, uint8_t debug) {
     dgram->m_driver_debug = debug;
+}
+
+uint8_t net_dgram_protocol_debug(net_dgram_t dgram, net_address_t remote) {
+    net_schedule_t schedule = dgram->m_driver->m_schedule;
+    net_debug_setup_t debug_setup;
+    uint8_t debug = 0;
+    
+    TAILQ_FOREACH(debug_setup, &schedule->m_debug_setups, m_next_for_schedule) {
+        if (!net_debug_setup_check_dgram(debug_setup, dgram, remote)) continue;
+
+        if (debug_setup->m_protocol_debug > debug) {
+            debug = debug_setup->m_protocol_debug;
+        }
+    }
+
+    return debug;
 }
 
 void * net_dgram_data(net_dgram_t dgram) {
