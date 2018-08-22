@@ -31,7 +31,7 @@ void net_socks5_svr_endpoint_set_connect_fun(
 }
 
 #define net_socks5_svr_endpoint_check_read(__sz) \
-    if (net_endpoint_rbuf(endpoint, (__sz), &data) != 0) return -1;  \
+    if (net_endpoint_buf_peak_with_size(endpoint, net_ep_buf_read, (__sz), &data) != 0) return -1; \
     if (data == NULL) break
 
 #define net_socks5_svr_endpoint_verify_version()                      \
@@ -50,9 +50,9 @@ int net_socks5_svr_endpoint_input(net_endpoint_t endpoint) {
     void * data;
 
     uint32_t left_size;
-    for(left_size = net_endpoint_rbuf_size(endpoint);
+    for(left_size = net_endpoint_buf_size(endpoint, net_ep_buf_read);
         left_size > 0;
-        left_size = net_endpoint_rbuf_size(endpoint)
+        left_size = net_endpoint_buf_size(endpoint, net_ep_buf_read)
         )
     {
         if (ss_ep->m_stage == net_socks5_svr_endpoint_stage_stream) {
@@ -73,7 +73,7 @@ int net_socks5_svr_endpoint_input(net_endpoint_t endpoint) {
                 break;
             }
             
-            if (net_endpoint_fbuf_append_from_rbuf(endpoint, 0) != 0) return -1;
+            if (net_endpoint_buf_append_from_self(endpoint, net_ep_buf_forward, net_ep_buf_read, 0) != 0) return -1;
             if (net_endpoint_forward(endpoint) != 0) return -1;
             return 0;
         }
@@ -100,7 +100,7 @@ int net_socks5_svr_endpoint_input(net_endpoint_t endpoint) {
                 }
             }
 
-            if (net_endpoint_wbuf_append(endpoint, &response, sizeof(response)) != 0) {
+            if (net_endpoint_buf_append(endpoint, net_ep_buf_write,  &response, sizeof(response)) != 0) {
                 CPE_ERROR(
                     em, "ss: %s: send select response fail!",
                     net_endpoint_dump(net_schedule_tmp_buffer(schedule), endpoint));
@@ -108,7 +108,7 @@ int net_socks5_svr_endpoint_input(net_endpoint_t endpoint) {
             }
 
             ss_ep->m_stage = net_socks5_svr_endpoint_stage_handshake;
-            net_endpoint_rbuf_consume(endpoint, select_request_len);
+            net_endpoint_buf_consume(endpoint, net_ep_buf_read, select_request_len);
         }
         else if (ss_ep->m_stage == net_socks5_svr_endpoint_stage_handshake
                  || ss_ep->m_stage == net_socks5_svr_endpoint_stage_parse
@@ -175,7 +175,7 @@ int net_socks5_svr_endpoint_input(net_endpoint_t endpoint) {
                 if (address == NULL) return -1;
 
                 ss_ep->m_stage = net_socks5_svr_endpoint_stage_stream;
-                net_endpoint_rbuf_consume(endpoint, used_len);
+                net_endpoint_buf_consume(endpoint, net_ep_buf_read, used_len);
 
                 if (net_endpoint_protocol_debug(endpoint) >= 2) {
                     CPE_INFO(
@@ -199,7 +199,7 @@ int net_socks5_svr_endpoint_input(net_endpoint_t endpoint) {
             }
             else if (request->cmd == SOCKS5_CMD_UDP_ASSOCIATE) {
                 if (net_socks5_svr_send_socks5_response(endpoint, net_endpoint_address(endpoint)) != 0) return -1;
-                net_endpoint_rbuf_consume(endpoint, sizeof(struct socks5_request));
+                net_endpoint_buf_consume(endpoint, net_ep_buf_read, sizeof(struct socks5_request));
             }
             else {
                 CPE_ERROR(
@@ -268,7 +268,7 @@ static int net_socks5_svr_send_socks5_response(net_endpoint_t endpoint, net_addr
     response->rep = 0;
     response->rsv = 0;
     
-    if (net_endpoint_wbuf_append(endpoint, response, buf_len) != 0) {
+    if (net_endpoint_buf_append(endpoint, net_ep_buf_write,  response, buf_len) != 0) {
         CPE_ERROR(
             net_schedule_em(schedule), "ss: %s: send response %d fail!",
             net_endpoint_dump(net_schedule_tmp_buffer(schedule), endpoint), buf_len);
@@ -279,5 +279,5 @@ static int net_socks5_svr_send_socks5_response(net_endpoint_t endpoint, net_addr
 }
 
 int net_socks5_svr_endpoint_forward(net_endpoint_t endpoint, net_endpoint_t from) {
-    return net_endpoint_wbuf_append_from_other(endpoint, from, 0);
+    return net_endpoint_buf_append_from_other(endpoint, net_ep_buf_write, from, net_ep_buf_forward, 0);
 }

@@ -51,45 +51,32 @@ net_link_t net_endpoint_link(net_endpoint_t endpoint);
 net_endpoint_t net_endpoint_other(net_endpoint_t endpoint);
 
 /*rbuf*/
-/*    --> */
-uint8_t net_endpoint_rbuf_is_empty(net_endpoint_t endpoint);
-uint8_t net_endpoint_rbuf_is_full(net_endpoint_t endpoint);
-void * net_endpoint_rbuf_alloc(net_endpoint_t endpoint, uint32_t * inout_size);
-int net_endpoint_rbuf_supply(net_endpoint_t endpoint, uint32_t size);
+/*    check */
+uint32_t net_endpoint_buf_size(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type);
+uint8_t net_endpoint_buf_is_empty(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type);
+uint8_t net_endpoint_buf_is_full(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type);
+void net_endpoint_buf_clear(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type);
 
-/*    <-- */
-uint32_t net_endpoint_rbuf_size(net_endpoint_t endpoint);
-void net_endpoint_rbuf_consume(net_endpoint_t endpoint, uint32_t size);
-int net_endpoint_rbuf(net_endpoint_t endpoint, uint32_t require, void * * data);
-int net_endpoint_rbuf_recv(net_endpoint_t endpoint, void * data, uint32_t * size);
-int net_endpoint_rbuf_by_sep(net_endpoint_t endpoint, const char * seps, void * * r_data, uint32_t * r_size);
-int net_endpoint_rbuf_by_str(net_endpoint_t endpoint, const char * str, void * * r_data, uint32_t * r_size);
+/*    write*/
+void * net_endpoint_buf_alloc(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, uint32_t * inout_size);
+int net_endpoint_buf_supply(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, uint32_t size);
+int net_endpoint_buf_append(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, void const * data, uint32_t size);
 
-/*wbuf*/
-/*    <-- */
-uint8_t net_endpoint_wbuf_is_empty(net_endpoint_t endpoint);
-uint8_t net_endpoint_wbuf_is_full(net_endpoint_t endpoint);
-uint32_t net_endpoint_wbuf_size(net_endpoint_t endpoint);
-void * net_endpoint_wbuf(net_endpoint_t endpoint, uint32_t * size);
-void * net_endpoint_wbuf_alloc(net_endpoint_t endpoint, uint32_t * inout_size);
-int net_endpoint_wbuf_supply(net_endpoint_t endpoint, uint32_t size);
-void net_endpoint_wbuf_consume(net_endpoint_t endpoint, uint32_t size);
+/*    read*/
+void * net_endpoint_buf_peak(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, uint32_t * size);
+int net_endpoint_buf_peak_with_size(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, uint32_t require, void * * data);
+int net_endpoint_buf_recv(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, void * data, uint32_t * size);
+int net_endpoint_buf_by_sep(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, const char * seps, void * * r_data, uint32_t * r_size);
+int net_endpoint_buf_by_str(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, const char * str, void * * r_data, uint32_t * r_size);
+void net_endpoint_buf_consume(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, uint32_t size);
 
-/*    --> */
-int net_endpoint_wbuf_append(net_endpoint_t endpoint, void const * data, uint32_t size);
-int net_endpoint_wbuf_append_from_other(net_endpoint_t endpoint, net_endpoint_t other, uint32_t size);
+/*    move*/
+int net_endpoint_buf_append_from_other(
+    net_endpoint_t endpoint, net_endpoint_buf_type_t to,
+    net_endpoint_t other, net_endpoint_buf_type_t from, uint32_t size);
 
-/*forward buf*/
-/*    --> */
-int net_endpoint_fbuf_append(net_endpoint_t endpoint, void const * data, uint32_t size);
-int net_endpoint_fbuf_append_from_rbuf(net_endpoint_t endpoint, uint32_t size);
-
-/*    <-- */
-uint32_t net_endpoint_fbuf_size(net_endpoint_t endpoint);
-int net_endpoint_fbuf(net_endpoint_t endpoint, uint32_t require, void * * data);
-int net_endpoint_fbuf_by_sep(net_endpoint_t endpoint, const char * seps, void * * r_data, uint32_t *r_size);
-int net_endpoint_fbuf_by_str(net_endpoint_t endpoint, const char * str, void * * r_data, uint32_t * r_size);
-void net_endpoint_fbuf_consume(net_endpoint_t endpoint, uint32_t size);
+int net_endpoint_buf_append_from_self(
+    net_endpoint_t endpoint, net_endpoint_buf_type_t to, net_endpoint_buf_type_t from, uint32_t size);
 
 /*forward*/
 int net_endpoint_forward(net_endpoint_t endpoint);

@@ -17,13 +17,13 @@ static void net_direct_endpoint_fini(net_endpoint_t endpoint) {
 }
 
 static int net_direct_endpoint_input(net_endpoint_t endpoint) {
-    if (net_endpoint_fbuf_append_from_rbuf(endpoint, 0) != 0) return -1;
+    if (net_endpoint_buf_append_from_self(endpoint, net_ep_buf_forward, net_ep_buf_read, 0) != 0) return -1;
     if (net_endpoint_forward(endpoint) != 0) return -1;
     return 0;
 }
 
 static int net_direct_endpoint_forward(net_endpoint_t endpoint, net_endpoint_t from) {
-    return net_endpoint_wbuf_append_from_other(endpoint, from, 0);    
+    return net_endpoint_buf_append_from_other(endpoint, net_ep_buf_write, from, net_ep_buf_forward, 0);    
 }
 
 net_protocol_t

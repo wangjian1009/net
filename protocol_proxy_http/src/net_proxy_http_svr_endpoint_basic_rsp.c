@@ -64,7 +64,7 @@ static int net_proxy_http_svr_endpoint_basic_backword_head(
 {
     char * data;
     uint32_t size;
-    if (net_endpoint_fbuf_by_str(from, "\r\n\r\n", (void**)&data, &size) != 0) {
+    if (net_endpoint_buf_by_str(from, net_ep_buf_forward, "\r\n\r\n", (void**)&data, &size) != 0) {
         CPE_ERROR(
             http_protocol->m_em, "http-proxy-svr: %s: basic: search http response head fail",
             net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint));
@@ -72,11 +72,11 @@ static int net_proxy_http_svr_endpoint_basic_backword_head(
     }
 
     if (data == NULL) {
-        if(net_endpoint_fbuf_size(from) > http_ep->m_max_head_len) {
+        if(net_endpoint_buf_size(from, net_ep_buf_forward) > http_ep->m_max_head_len) {
             CPE_ERROR(
                 http_protocol->m_em, "http-proxy-svr: %s: basic: response head too big! size=%d, max-head-len=%d",
                 net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
-                net_endpoint_fbuf_size(from),
+                net_endpoint_buf_size(from, net_ep_buf_forward),
                 http_ep->m_max_head_len);
             return -1;
         }
@@ -87,7 +87,7 @@ static int net_proxy_http_svr_endpoint_basic_backword_head(
 
     if (net_proxy_http_svr_endpoint_basic_rsp_read_head(http_protocol, http_ep, endpoint, data) != 0) return -1;
 
-    net_endpoint_fbuf_consume(from, size);
+    net_endpoint_buf_consume(from, net_ep_buf_forward, size);
 
     return 0;
 }
@@ -95,7 +95,7 @@ static int net_proxy_http_svr_endpoint_basic_backword_head(
 static int net_proxy_http_svr_endpoint_basic_backword_content_encoding_none(
     net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep, net_endpoint_t endpoint, net_endpoint_t from)
 {
-    uint32_t forward_sz = net_endpoint_fbuf_size(from);
+    uint32_t forward_sz = net_endpoint_buf_size(from, net_ep_buf_forward);
     if (forward_sz == 0) return 0;
     
     if (http_ep->m_basic.m_rsp.m_content.m_length == 0) {
@@ -106,7 +106,8 @@ static int net_proxy_http_svr_endpoint_basic_backword_content_encoding_none(
                 forward_sz);
         }
     
-        if (net_endpoint_wbuf_append_from_other(endpoint, from, 0) != 0
+        if (net_endpoint_buf_append_from_other(endpoint, net_ep_buf_write, from, net_ep_buf_forward, 0) != 0
+            //TODO: Loki
             || net_endpoint_forward(endpoint) != 0
             )
         {
@@ -128,7 +129,7 @@ static int net_proxy_http_svr_endpoint_basic_backword_content_encoding_none(
                 forward_sz, http_ep->m_basic.m_rsp.m_content.m_length - forward_sz);
         }
 
-        if (net_endpoint_wbuf_append_from_other(endpoint, from, forward_sz) != 0) {
+        if (net_endpoint_buf_append_from_other(endpoint, net_ep_buf_write, from, net_ep_buf_forward, forward_sz) != 0) {
             CPE_ERROR(
                 http_protocol->m_em, "http-proxy-svr: %s: basic: forward response content data(%d) fail",
                 net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
@@ -162,11 +163,11 @@ static int net_proxy_http_svr_endpoint_basic_backword_content_encoding_trunked(
 {
     uint32_t forward_sz;
     
-    while((forward_sz = net_endpoint_fbuf_size(from)) > 0) {
+    while((forward_sz = net_endpoint_buf_size(from, net_ep_buf_forward)) > 0) {
         if (http_ep->m_basic.m_rsp.m_trunked.m_state == proxy_http_svr_basic_trunked_length) {
             char * data;
             uint32_t size;
-            if (net_endpoint_fbuf_by_str(from, "\r\n", (void**)&data, &size) != 0) {
+            if (net_endpoint_buf_by_str(from, net_ep_buf_forward, "\r\n", (void**)&data, &size) != 0) {
                 CPE_ERROR(
                     http_protocol->m_em, "http-proxy-svr: %s: basic: <== trunked: search trunk len fail",
                     net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint));
@@ -174,11 +175,11 @@ static int net_proxy_http_svr_endpoint_basic_backword_content_encoding_trunked(
             }
 
             if (data == NULL) {
-                if(net_endpoint_fbuf_size(from) > 30) {
+                if(net_endpoint_buf_size(from, net_ep_buf_forward) > 30) {
                     CPE_ERROR(
                         http_protocol->m_em, "http-proxy-svr: %s: basic: <== trunked: length linke too big! size=%d",
                         net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
-                        net_endpoint_fbuf_size(from));
+                        net_endpoint_buf_size(from, net_ep_buf_forward));
                     return -1;
                 }
                 else {
@@ -208,7 +209,7 @@ static int net_proxy_http_svr_endpoint_basic_backword_content_encoding_trunked(
 
             assert(size == (uint32_t)strlen(data) + 2);
             memcpy(data + (size - 2), "\r\n", 2);
-            if (net_endpoint_wbuf_append(endpoint, data, size) != 0) {
+            if (net_endpoint_buf_append(endpoint, net_ep_buf_write, data, size) != 0) {
                 CPE_ERROR(
                     http_protocol->m_em, "http-proxy-svr: %s: basic: <== trunk[%d]: write length fail",
                     net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
@@ -216,7 +217,7 @@ static int net_proxy_http_svr_endpoint_basic_backword_content_encoding_trunked(
                 return -1;
             }
 
-            net_endpoint_fbuf_consume(from, size);
+            net_endpoint_buf_consume(from, net_ep_buf_forward, size);
 
             http_ep->m_basic.m_rsp.m_trunked.m_state =
                 http_ep->m_basic.m_rsp.m_trunked.m_length == 0
@@ -236,7 +237,7 @@ static int net_proxy_http_svr_endpoint_basic_backword_content_encoding_trunked(
                     forward_sz, http_ep->m_basic.m_rsp.m_trunked.m_length - forward_sz);
             }
 
-            if (net_endpoint_wbuf_append_from_other(endpoint, from, forward_sz) != 0) {
+            if (net_endpoint_buf_append_from_other(endpoint, net_ep_buf_write, from, net_ep_buf_forward, forward_sz) != 0) {
                 CPE_ERROR(
                     http_protocol->m_em, "http-proxy-svr: %s: basic: <== trunk[%d]: %d write fail",
                     net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
@@ -254,7 +255,7 @@ static int net_proxy_http_svr_endpoint_basic_backword_content_encoding_trunked(
             if (forward_sz < 2) return 0;
             
             char * data;
-            net_endpoint_fbuf(from, 2, (void**)&data);
+            net_endpoint_buf_peak_with_size(from, net_ep_buf_forward, 2, (void**)&data);
             assert(data);
             if (data[0] != '\r' || data[1] != '\n') {
                 CPE_ERROR(
@@ -264,7 +265,7 @@ static int net_proxy_http_svr_endpoint_basic_backword_content_encoding_trunked(
                 return -1;
             }
 
-            if (net_endpoint_wbuf_append_from_other(endpoint, from, 2) != 0) {
+            if (net_endpoint_buf_append_from_other(endpoint, net_ep_buf_write, from, net_ep_buf_forward, 2) != 0) {
                 CPE_ERROR(
                     http_protocol->m_em, "http-proxy-svr: %s: basic: <== trunk[%d]: write trunk rn fail",
                     net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
@@ -280,7 +281,7 @@ static int net_proxy_http_svr_endpoint_basic_backword_content_encoding_trunked(
             if (forward_sz < 2) return 0;
             
             char * data;
-            net_endpoint_fbuf(from, 2, (void**)&data);
+            net_endpoint_buf_peak_with_size(from, net_ep_buf_forward, 2, (void**)&data);
             assert(data);
             if (data[0] != '\r' || data[1] != '\n') {
                 CPE_ERROR(
@@ -296,7 +297,7 @@ static int net_proxy_http_svr_endpoint_basic_backword_content_encoding_trunked(
                     http_ep->m_basic.m_rsp.m_trunked.m_count);
             }
 
-            if (net_endpoint_wbuf_append_from_other(endpoint, from, 2) != 0) {
+            if (net_endpoint_buf_append_from_other(endpoint, net_ep_buf_write, from, net_ep_buf_forward, 2) != 0) {
                 CPE_ERROR(
                     http_protocol->m_em, "http-proxy-svr: %s: basic: <== trunked: write last rn fail",
                     net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint));
@@ -357,7 +358,7 @@ static int net_proxy_http_svr_endpoint_basic_rsp_read_head(
     uint32_t data_len =  (uint32_t)strlen(data);
     memcpy(data + data_len, "\r\n\r\n", 4);
     data_len += 4;
-    if (net_endpoint_wbuf_append(endpoint, data, data_len) != 0) {
+    if (net_endpoint_buf_append(endpoint, net_ep_buf_write, data, data_len) != 0) {
         CPE_ERROR(
             http_protocol->m_em, "http-proxy-svr: %s: basic: <== write response head fail",
             net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint));

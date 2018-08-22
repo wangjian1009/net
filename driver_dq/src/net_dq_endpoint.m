@@ -324,7 +324,7 @@ int net_dq_endpoint_on_read(net_dq_driver_t driver, net_dq_endpoint_t endpoint, 
         }
 
         uint32_t capacity = 0;
-        void * rbuf = net_endpoint_rbuf_alloc(base_endpoint, &capacity);
+        void * rbuf = net_endpoint_buf_alloc(base_endpoint, net_ep_buf_read, &capacity);
         if (rbuf == NULL) {
             CPE_ERROR(
                 driver->m_em, "dq: %s: on read: endpoint rbuf full!",
@@ -343,7 +343,7 @@ int net_dq_endpoint_on_read(net_dq_driver_t driver, net_dq_endpoint_t endpoint, 
                     (int)bytes);
             }
 
-            if (net_endpoint_rbuf_supply(base_endpoint, (uint32_t)bytes) != 0) {
+            if (net_endpoint_buf_supply(base_endpoint, net_ep_buf_read, (uint32_t)bytes) != 0) {
                 if (net_endpoint_set_state(base_endpoint, net_endpoint_state_logic_error) != 0) {
                     if (net_endpoint_driver_debug(base_endpoint)) {
                         CPE_INFO(
@@ -397,11 +397,11 @@ int net_dq_endpoint_on_read(net_dq_driver_t driver, net_dq_endpoint_t endpoint, 
 int net_dq_endpoint_on_write(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint) {
     while(endpoint->m_source_w == NULL /*can write*/
           && net_endpoint_state(base_endpoint) == net_endpoint_state_established
-          && !net_endpoint_wbuf_is_empty(base_endpoint)
+          && !net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write)
         )
     {
-        uint32_t data_size = net_endpoint_wbuf_size(base_endpoint);
-        void * data = net_endpoint_wbuf(base_endpoint, &data_size);
+        uint32_t data_size = net_endpoint_buf_size(base_endpoint, net_ep_buf_write);
+        void * data = net_endpoint_buf_peak(base_endpoint, net_ep_buf_write, &data_size);
         assert(data_size > 0);
         assert(data);
 
@@ -414,7 +414,7 @@ int net_dq_endpoint_on_write(net_dq_driver_t driver, net_dq_endpoint_t endpoint,
                     (int)bytes, data_size);
             }
 
-            net_endpoint_wbuf_consume(base_endpoint, (uint32_t)bytes);
+            net_endpoint_buf_consume(base_endpoint, net_ep_buf_write, (uint32_t)bytes);
 
             if (driver->m_data_monitor_fun) {
                 driver->m_data_monitor_fun(driver->m_data_monitor_ctx, base_endpoint, net_data_out, (uint32_t)bytes);

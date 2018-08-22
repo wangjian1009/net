@@ -192,7 +192,7 @@ static ssize_t net_ws_cli_endpoint_recv_cb(
     net_ws_cli_endpoint_t ws_ep = (net_ws_cli_endpoint_t)user_data;
 
     uint32_t size = (uint32_t)len;
-    if (net_endpoint_rbuf_recv(ws_ep->m_endpoint, data, &size) != 0) {
+    if (net_endpoint_buf_recv(ws_ep->m_endpoint, net_ep_buf_read, data, &size) != 0) {
         net_ws_cli_protocol_t ws_protocol = net_protocol_data(net_endpoint_protocol(ws_ep->m_endpoint));
         CPE_ERROR(
             ws_protocol->m_em,
@@ -210,7 +210,7 @@ static ssize_t net_ws_cli_endpoint_send_cb(
 {
     net_ws_cli_endpoint_t ws_ep = (net_ws_cli_endpoint_t)user_data;
 
-    if (net_endpoint_wbuf_append(ws_ep->m_endpoint, data, (uint32_t)len) != 0) {
+    if (net_endpoint_buf_append(ws_ep->m_endpoint, net_ep_buf_write, data, (uint32_t)len) != 0) {
         net_ws_cli_protocol_t ws_protocol = net_protocol_data(net_endpoint_protocol(ws_ep->m_endpoint));
         CPE_ERROR(
             ws_protocol->m_em,
@@ -390,7 +390,7 @@ int net_ws_cli_endpoint_input(net_endpoint_t endpoint) {
     if (ws_ep->m_state == net_ws_cli_state_handshake) {
         char * data;
         uint32_t size;
-        if (net_endpoint_rbuf_by_str(endpoint, "\r\n\r\n", (void**)&data, &size) != 0) {
+        if (net_endpoint_buf_by_str(endpoint, net_ep_buf_read, "\r\n\r\n", (void**)&data, &size) != 0) {
             CPE_ERROR(
                 ws_protocol->m_em, "ws: %s: handshake response: search sep fail",
                 net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), endpoint));
@@ -398,11 +398,11 @@ int net_ws_cli_endpoint_input(net_endpoint_t endpoint) {
         }
 
         if (data == NULL) {
-            if(net_endpoint_rbuf_size(endpoint) > 8192) {
+            if(net_endpoint_buf_size(endpoint, net_ep_buf_read) > 8192) {
                 CPE_ERROR(
                     ws_protocol->m_em, "ws: %s: handshake response: Too big response head!, size=%d",
                     net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), endpoint),
-                    net_endpoint_rbuf_size(endpoint));
+                    net_endpoint_buf_size(endpoint, net_ep_buf_read));
                 return -1;
             }
             else {
@@ -412,7 +412,7 @@ int net_ws_cli_endpoint_input(net_endpoint_t endpoint) {
 
         if (net_ws_cli_endpoint_on_handshake(ws_protocol, ws_ep, data) != 0) return -1;
 
-        net_endpoint_rbuf_consume(endpoint, size);
+        net_endpoint_buf_consume(endpoint, net_ep_buf_read, size);
     }
 
     if (ws_ep->m_state == net_ws_cli_state_established) {
@@ -474,7 +474,7 @@ static void net_ws_cli_endpoint_do_connect(net_timer_t timer, void * ctx) {
 static void net_ws_cli_endpoint_do_process(net_timer_t timer, void * ctx) {
     net_ws_cli_endpoint_t ws_ep = ctx;
 
-    if (wslay_event_want_read(ws_ep->m_ctx) && !net_endpoint_rbuf_is_empty(ws_ep->m_endpoint)) {
+    if (wslay_event_want_read(ws_ep->m_ctx) && !net_endpoint_buf_is_empty(ws_ep->m_endpoint, net_ep_buf_read)) {
         if (wslay_event_recv(ws_ep->m_ctx) != 0) {
             net_ws_cli_protocol_t ws_protocol = net_protocol_data(net_endpoint_protocol(ws_ep->m_endpoint));
             CPE_ERROR(
@@ -485,7 +485,7 @@ static void net_ws_cli_endpoint_do_process(net_timer_t timer, void * ctx) {
         }
     }
 
-    if (wslay_event_want_write(ws_ep->m_ctx) && !net_endpoint_wbuf_is_full(ws_ep->m_endpoint)) {
+    if (wslay_event_want_write(ws_ep->m_ctx) && !net_endpoint_buf_is_full(ws_ep->m_endpoint, net_ep_buf_write)) {
         if (wslay_event_send(ws_ep->m_ctx) != 0) {
             net_ws_cli_protocol_t ws_protocol = net_protocol_data(net_endpoint_protocol(ws_ep->m_endpoint));
             CPE_ERROR(
@@ -532,7 +532,7 @@ static int net_ws_cli_endpoint_send_handshake(net_ws_cli_endpoint_t ws_ep) {
     }
             
     uint32_t size = 2048;
-    void * buf = net_endpoint_wbuf_alloc(ws_ep->m_endpoint, &size);
+    void * buf = net_endpoint_buf_alloc(ws_ep->m_endpoint, net_ep_buf_write,  &size);
     if (buf == NULL) {
         CPE_ERROR(
             ws_protocol->m_em, "ws: %s:    handshake: alloc buf fail, size=%d",
@@ -567,7 +567,7 @@ static int net_ws_cli_endpoint_send_handshake(net_ws_cli_endpoint_t ws_ep) {
             buf);
     }
     
-    if (net_endpoint_wbuf_supply(ws_ep->m_endpoint, (uint32_t)n) != 0) {
+    if (net_endpoint_buf_supply(ws_ep->m_endpoint, net_ep_buf_write,  (uint32_t)n) != 0) {
         CPE_ERROR(
             ws_protocol->m_em, "ws: %s: handshake: write fail",
             net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), ws_ep->m_endpoint));

@@ -91,7 +91,7 @@ static int net_proxy_http_svr_endpoint_input_first_header(
 {
     char * data;
     uint32_t size;
-    if (net_endpoint_rbuf_by_str(endpoint, "\r\n\r\n", (void**)&data, &size) != 0) {
+    if (net_endpoint_buf_by_str(endpoint, net_ep_buf_read, "\r\n\r\n", (void**)&data, &size) != 0) {
         CPE_ERROR(
             http_protocol->m_em, "http-proxy-svr: %s: search http request head fail",
             net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint));
@@ -99,11 +99,11 @@ static int net_proxy_http_svr_endpoint_input_first_header(
     }
 
     if (data == NULL) {
-        if(net_endpoint_rbuf_size(endpoint) > http_ep->m_max_head_len) {
+        if(net_endpoint_buf_size(endpoint, net_ep_buf_read) > http_ep->m_max_head_len) {
             CPE_ERROR(
                 http_protocol->m_em, "http-proxy-svr: %s: head too big! size=%d, max-head-len=%d",
                 net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
-                net_endpoint_rbuf_size(endpoint),
+                net_endpoint_buf_size(endpoint, net_ep_buf_read),
                 http_ep->m_max_head_len);
             return -1;
         }
@@ -138,7 +138,7 @@ static int net_proxy_http_svr_endpoint_input_first_header(
         rv = net_proxy_http_svr_endpoint_basic_req_read_head(http_protocol, http_ep, endpoint, data);
     }
     
-    net_endpoint_rbuf_consume(endpoint, size);
+    net_endpoint_buf_consume(endpoint, net_ep_buf_read, size);
 
     return rv;
 }

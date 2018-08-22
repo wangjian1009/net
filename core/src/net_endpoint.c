@@ -49,9 +49,12 @@ net_endpoint_create(net_driver_t driver, net_endpoint_type_t type, net_protocol_
     endpoint->m_id = schedule->m_endpoint_max_id + 1;
     endpoint->m_state = net_endpoint_state_disable;
     endpoint->m_dns_query = NULL;
-    endpoint->m_rb = NULL;
-    endpoint->m_wb = NULL;
-    endpoint->m_fb = NULL;
+
+    uint8_t i;
+    for(i = 0; i < CPE_ARRAY_SIZE(endpoint->m_bufs); ++i) {
+        endpoint->m_bufs[i] = NULL;
+    }
+    
     endpoint->m_data_watcher_ctx = NULL;
     endpoint->m_data_watcher_fun = NULL;
     endpoint->m_data_watcher_fini = NULL;
@@ -117,24 +120,15 @@ void net_endpoint_free(net_endpoint_t endpoint) {
     endpoint->m_driver->m_endpoint_fini(endpoint);
     endpoint->m_protocol->m_endpoint_fini(endpoint);
 
-    if (endpoint->m_rb) {
-        assert(endpoint->m_rb->id == endpoint->m_id);
-        ringbuffer_free(schedule->m_endpoint_buf, endpoint->m_rb);
-        endpoint->m_rb = NULL;
+    uint8_t i;
+    for(i = 0; i < CPE_ARRAY_SIZE(endpoint->m_bufs); ++i) {
+        if (endpoint->m_bufs[i]) {
+            assert(endpoint->m_bufs[i]->id == endpoint->m_id);
+            ringbuffer_free(schedule->m_endpoint_buf, endpoint->m_bufs[i]);
+            endpoint->m_bufs[i] = NULL;
+        }
     }
 
-    if (endpoint->m_wb) {
-        assert(endpoint->m_wb->id == endpoint->m_id);
-        ringbuffer_free(schedule->m_endpoint_buf, endpoint->m_wb);
-        endpoint->m_wb = NULL;
-    }
-
-    if (endpoint->m_fb) {
-        assert(endpoint->m_fb->id == endpoint->m_id);
-        ringbuffer_free(schedule->m_endpoint_buf, endpoint->m_fb);
-        endpoint->m_fb = NULL;
-    }
-    
     while(!TAILQ_EMPTY(&endpoint->m_monitors)) {
         net_endpoint_monitor_t monitor = TAILQ_FIRST(&endpoint->m_monitors);
         assert(!monitor->m_is_processing);
@@ -232,7 +226,7 @@ uint8_t net_endpoint_close_after_send(net_endpoint_t endpoint) {
 void net_endpoint_set_close_after_send(net_endpoint_t endpoint, uint8_t is_close_after_send) {
     endpoint->m_close_after_send = is_close_after_send;
 
-    if (net_endpoint_wbuf_is_empty(endpoint)) {
+    if (net_endpoint_buf_is_empty(endpoint, net_ep_buf_write)) {
         if (endpoint->m_protocol_debug || endpoint->m_driver_debug) {
             net_schedule_t schedule = endpoint->m_driver->m_schedule;
             CPE_INFO(
@@ -333,22 +327,13 @@ int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) 
     }
     
     if (old_is_active && !net_endpoint_is_active(endpoint)) {
-        if (endpoint->m_rb) {
-            assert(endpoint->m_rb->id == endpoint->m_id);
-            ringbuffer_free(schedule->m_endpoint_buf, endpoint->m_rb);
-            endpoint->m_rb = NULL;
-        }
-
-        if (endpoint->m_wb) {
-            assert(endpoint->m_wb->id == endpoint->m_id);
-            ringbuffer_free(schedule->m_endpoint_buf, endpoint->m_wb);
-            endpoint->m_wb = NULL;
-        }
-
-        if (endpoint->m_fb) {
-            assert(endpoint->m_fb->id == endpoint->m_id);
-            ringbuffer_free(schedule->m_endpoint_buf, endpoint->m_fb);
-            endpoint->m_fb = NULL;
+        uint8_t i;
+        for(i = 0; i < CPE_ARRAY_SIZE(endpoint->m_bufs); ++i) {
+            if (endpoint->m_bufs[i]) {
+                assert(endpoint->m_bufs[i]->id == endpoint->m_id);
+                ringbuffer_free(schedule->m_endpoint_buf, endpoint->m_bufs[i]);
+                endpoint->m_bufs[i] = NULL;
+            }
         }
 
         endpoint->m_driver->m_endpoint_close(endpoint);
@@ -545,9 +530,11 @@ ringbuffer_block_t net_endpoint_common_buf_alloc(net_endpoint_t endpoint, uint32
         net_endpoint_t free_endpoint = net_endpoint_find(schedule, (uint32_t)collect_id);
         assert(free_endpoint);
         assert(free_endpoint != endpoint);
-        free_endpoint->m_rb = NULL;
-        free_endpoint->m_wb = NULL;
-        free_endpoint->m_fb = NULL;
+
+        uint8_t i;
+        for(i = 0; i < CPE_ARRAY_SIZE(endpoint->m_bufs); ++i) {
+            endpoint->m_bufs[i] = NULL;
+        }
 
         char free_endpoint_name[128];
         cpe_str_dup(free_endpoint_name, sizeof(free_endpoint_name), net_endpoint_dump(&schedule->m_tmp_buffer, free_endpoint));

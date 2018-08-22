@@ -261,7 +261,7 @@ static void net_ne_endpoint_do_read(net_ne_driver_t driver, net_ne_endpoint_t en
                     }
 
                     uint32_t bytes = (uint32_t)data.length;
-                    void * buf = net_endpoint_rbuf_alloc(base_endpoint, &bytes);
+                    void * buf = net_endpoint_buf_alloc(base_endpoint, net_ep_buf_read, &bytes);
                     if (buf == NULL || bytes != (uint32_t)data.length) {
                         CPE_ERROR(
                             driver->m_em, "ne: %s: recv %d bytes data, alloc endpoint rbuf fail, r-size=%d!",
@@ -282,7 +282,7 @@ static void net_ne_endpoint_do_read(net_ne_driver_t driver, net_ne_endpoint_t en
                             bytes);
                     }
 
-                    if (net_endpoint_rbuf_supply(base_endpoint, bytes) != 0) {
+                    if (net_endpoint_buf_supply(base_endpoint, net_ep_buf_read, bytes) != 0) {
                         if (net_endpoint_set_state(base_endpoint, net_endpoint_state_logic_error) != 0) {
                             if (driver->m_debug) {
                                 CPE_INFO(
@@ -308,7 +308,7 @@ static int net_ne_endpoint_do_write(net_ne_driver_t driver, net_ne_endpoint_t en
     if (endpoint->m_is_writing) return 0;
 
     uint32_t sz;
-    void * buf = net_endpoint_wbuf(base_endpoint, &sz);
+    void * buf = net_endpoint_buf_peak(base_endpoint, net_ep_buf_write, &sz);
     if (buf == NULL) return 0;
 
     NSData * data = [NSData dataWithBytes: buf length: sz];
@@ -318,7 +318,7 @@ static int net_ne_endpoint_do_write(net_ne_driver_t driver, net_ne_endpoint_t en
             net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint));
         return -1;
     }
-    net_endpoint_wbuf_consume(base_endpoint, sz);
+    net_endpoint_buf_consume(base_endpoint, net_ep_buf_write, sz);
 
     if (driver->m_data_monitor_fun) {
         driver->m_data_monitor_fun(driver->m_data_monitor_ctx, base_endpoint, net_data_out, sz);

@@ -231,8 +231,8 @@ void net_ev_endpoint_start_rw_watcher(
     ev_io_init(
         &endpoint->m_watcher,
         net_ev_endpoint_rw_cb, endpoint->m_fd,
-        (net_endpoint_rbuf_is_full(base_endpoint) ? 0 : EV_READ)
-        | (net_endpoint_wbuf_is_empty(base_endpoint) ? 0 : EV_WRITE));
+        (net_endpoint_buf_is_full(base_endpoint, net_ep_buf_read) ? 0 : EV_READ)
+        | (net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write) ? 0 : EV_WRITE));
     ev_io_start(driver->m_ev_loop, &endpoint->m_watcher);
 }
 
@@ -304,9 +304,9 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
     if (revents & EV_READ) {
         for(;net_endpoint_state(base_endpoint) == net_endpoint_state_established;) {
             uint32_t capacity = 0;
-            void * rbuf = net_endpoint_rbuf_alloc(base_endpoint, &capacity);
+            void * rbuf = net_endpoint_buf_alloc(base_endpoint, net_ep_buf_read, &capacity);
             if (rbuf == NULL) {
-                assert(net_endpoint_rbuf_is_full(base_endpoint));
+                assert(net_endpoint_buf_is_full(base_endpoint, net_ep_buf_read));
                 break;
             }
             
@@ -319,7 +319,7 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
                         bytes);
                 }
 
-                if (net_endpoint_rbuf_supply(base_endpoint, (uint32_t)bytes) != 0) {
+                if (net_endpoint_buf_supply(base_endpoint, net_ep_buf_read, (uint32_t)bytes) != 0) {
                     if (net_endpoint_set_state(base_endpoint, net_endpoint_state_logic_error) != 0) {
                         if (net_endpoint_driver_debug(base_endpoint) >= 2) {
                             CPE_INFO(
@@ -374,9 +374,11 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
     }
 
     if (revents & EV_WRITE) {
-        while(net_endpoint_state(base_endpoint) == net_endpoint_state_established && !net_endpoint_wbuf_is_empty(base_endpoint)) {
+        while(net_endpoint_state(base_endpoint) == net_endpoint_state_established
+              && !net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write))
+        {
             uint32_t data_size;
-            void * data = net_endpoint_wbuf(base_endpoint, &data_size);
+            void * data = net_endpoint_buf_peak(base_endpoint, net_ep_buf_write, &data_size);
 
             assert(data_size > 0);
             assert(data);
@@ -390,7 +392,7 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
                         bytes);
                 }
 
-                net_endpoint_wbuf_consume(base_endpoint, (uint32_t)bytes);
+                net_endpoint_buf_consume(base_endpoint, net_ep_buf_write,  (uint32_t)bytes);
 
                 if (driver->m_data_monitor_fun) {
                     driver->m_data_monitor_fun(driver->m_data_monitor_ctx, base_endpoint, net_data_out, (uint32_t)bytes);

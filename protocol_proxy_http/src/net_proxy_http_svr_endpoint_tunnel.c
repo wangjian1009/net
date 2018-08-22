@@ -99,10 +99,10 @@ int net_proxy_http_svr_endpoint_tunnel_forward(
         CPE_INFO(
             http_protocol->m_em, "http-proxy-svr: %s: tunnel: ==> %d data",
             net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
-            net_endpoint_rbuf_size(endpoint));
+            net_endpoint_buf_size(endpoint, net_ep_buf_read));
     }
     
-    if (net_endpoint_fbuf_append_from_rbuf(endpoint, 0) != 0) return -1;
+    if (net_endpoint_buf_append_from_self(endpoint, net_ep_buf_forward, net_ep_buf_read, 0) != 0) return -1;
     if (net_endpoint_forward(endpoint) != 0) return -1;
     return 0;
 }
@@ -116,10 +116,10 @@ int net_proxy_http_svr_endpoint_tunnel_backword(
             CPE_INFO(
                 http_protocol->m_em, "http-proxy-svr: %s: tunnel: <== %d data",
                 net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
-                net_endpoint_fbuf_size(from));
+                net_endpoint_buf_size(from, net_ep_buf_forward));
         }
     
-        return net_endpoint_wbuf_append_from_other(endpoint, from, 0);
+        return net_endpoint_buf_append_from_other(endpoint, net_ep_buf_write, from, net_ep_buf_forward, 0);
     default:
         return 0;
     }
@@ -279,7 +279,7 @@ static int net_proxy_http_svr_endpoint_tunnel_check_send_response(
         *p = '\r';
     }
     
-    if (net_endpoint_wbuf_append(endpoint, response, (uint32_t)mem_buffer_size(&http_protocol->m_data_buffer) - 1u) != 0) {
+    if (net_endpoint_buf_append(endpoint, net_ep_buf_write, response, (uint32_t)mem_buffer_size(&http_protocol->m_data_buffer) - 1u) != 0) {
         CPE_ERROR(
             http_protocol->m_em, "http-proxy-svr: %s: tunnel: write response error\n%s!",
             net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
@@ -293,7 +293,7 @@ static int net_proxy_http_svr_endpoint_tunnel_check_send_response(
         http_ep->m_tunnel.m_other_state_monitor = NULL;
     }
 
-    if (net_endpoint_fbuf_append_from_rbuf(endpoint, 0) != 0
+    if (net_endpoint_buf_append_from_self(endpoint, net_ep_buf_forward, net_ep_buf_read, 0) != 0
         || net_endpoint_forward(endpoint) != 0
         )
     {
@@ -303,7 +303,7 @@ static int net_proxy_http_svr_endpoint_tunnel_check_send_response(
         return -1;
     }
 
-    if (net_endpoint_wbuf_append_from_other(endpoint, other, 0) != 0) {
+    if (net_endpoint_buf_append_from_other(endpoint, net_ep_buf_write, other, net_ep_buf_forward, 0) != 0) {
         CPE_ERROR(
             http_protocol->m_em, "http-proxy-svr: %s: tunnel: forward output data fail",
             net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint));
