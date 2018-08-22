@@ -106,16 +106,23 @@ net_dns_source_ns_t net_dns_source_ns_from_source(net_dns_source_t source) {
         : NULL;
 }
 
-net_address_t net_dns_source_ns_address(net_dns_source_ns_t server) {
-    return server->m_address;
+net_address_t net_dns_source_ns_address(net_dns_source_ns_t ns) {
+    return ns->m_address;
 }
 
-net_dns_ns_trans_type_t net_dns_source_ns_trans_type(net_dns_source_ns_t server) {
-    return server->m_trans_type;
+net_dns_ns_trans_type_t net_dns_source_ns_trans_type(net_dns_source_ns_t ns) {
+    return ns->m_trans_type;
 }
 
-void net_dns_source_ns_set_trans_type(net_dns_source_ns_t server, net_dns_ns_trans_type_t trans_type) {
-    server->m_trans_type = trans_type;
+void net_dns_source_ns_set_trans_type(net_dns_source_ns_t ns, net_dns_ns_trans_type_t trans_type) {
+    ns->m_trans_type = trans_type;
+}
+
+void net_dns_source_ns_set_tcp_connect(
+    net_dns_source_ns_t ns, net_endpoint_prepare_connect_fun_t tcp_connect, void * tcp_connect_ctx)
+{
+    ns->m_tcp_connect = tcp_connect;
+    ns->m_tcp_connect_ctx = tcp_connect_ctx;
 }
 
 static int net_dns_source_ns_init(net_dns_source_t source) {
@@ -124,6 +131,8 @@ static int net_dns_source_ns_init(net_dns_source_t source) {
     ns->m_driver = NULL;
     ns->m_address = NULL;
     ns->m_trans_type = net_dns_trans_udp;
+    ns->m_tcp_connect = NULL;
+    ns->m_tcp_connect_ctx = NULL;
     ns->m_dgram = NULL;
     ns->m_tcp_cli = NULL;
     ns->m_retry_count = 0;
@@ -259,7 +268,7 @@ int net_dns_source_ns_ctx_start(net_dns_source_t source, net_dns_task_ctx_t task
 void net_dns_source_ns_ctx_cancel(net_dns_source_t source, net_dns_task_ctx_t task_ctx) {
 }
 
-void net_dns_source_ns_dgram_input(
+static void net_dns_source_ns_dgram_input(
     net_dgram_t dgram, void * ctx, void * data, size_t data_size, net_address_t from)
 {
     net_dns_source_ns_t ns = ctx;
@@ -336,6 +345,7 @@ static int net_dns_source_ns_tcp_output(
                 net_address_dump(net_dns_manage_tmp_buffer(manage), ns->m_address));
             return -1;
         }
+        net_endpoint_set_prepare_connect(ns->m_tcp_cli->m_endpoint, ns->m_tcp_connect, ns->m_tcp_connect_ctx);
     }
 
     return net_dns_ns_cli_endpoint_send(ns->m_tcp_cli, ns->m_address, data, buf_size);

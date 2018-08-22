@@ -12,6 +12,8 @@ struct net_endpoint {
     net_address_t m_address;
     net_address_t m_remote_address;
     net_protocol_t m_protocol;
+    net_endpoint_prepare_connect_fun_t m_prepare_connect;
+    void * m_prepare_connect_ctx;
     net_link_t m_link;
     uint32_t m_id;
     uint8_t m_close_after_send;

@@ -40,6 +40,8 @@ net_endpoint_create(net_driver_t driver, net_endpoint_type_t type, net_protocol_
     endpoint->m_address = NULL;
     endpoint->m_remote_address = NULL;
     endpoint->m_protocol = protocol;
+    endpoint->m_prepare_connect = NULL;
+    endpoint->m_prepare_connect_ctx = NULL;
     endpoint->m_close_after_send = 0;
     endpoint->m_protocol_debug = protocol->m_debug;
     endpoint->m_driver_debug = driver->m_debug;
@@ -279,6 +281,15 @@ net_endpoint_state_t net_endpoint_state(net_endpoint_t endpoint) {
     return endpoint->m_state;
 }
 
+int net_endpoint_set_prepare_connect(net_endpoint_t endpoint, net_endpoint_prepare_connect_fun_t fun, void * ctx) {
+    if (net_endpoint_is_active(endpoint)) {
+    }
+        
+    endpoint->m_prepare_connect = fun;
+    endpoint->m_prepare_connect_ctx = ctx;
+    return 0;
+}
+
 uint8_t net_endpoint_is_active(net_endpoint_t endpoint) {
     switch(endpoint->m_state) {
     case net_endpoint_state_disable:
@@ -448,6 +459,18 @@ int net_endpoint_connect(net_endpoint_t endpoint) {
         return -1;
     }
 
+    if (endpoint->m_prepare_connect) {
+        uint8_t do_connect = 0;
+        if (endpoint->m_prepare_connect(endpoint->m_prepare_connect_ctx, endpoint, &do_connect) != 0) {
+            CPE_ERROR(
+                schedule->m_em, "%s: connect: external prepare fail!",
+                net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
+            return -1;
+        }
+
+        if (!do_connect) return 0;
+    }
+    
     if (net_address_resolved(endpoint->m_remote_address) == NULL) {
         if (net_schedule_dns_resolver(schedule) == NULL) {
             CPE_ERROR(

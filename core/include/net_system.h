@@ -61,6 +61,8 @@ typedef enum net_endpoint_data_event {
     net_endpoint_data_w_consume,
 } net_endpoint_data_event_t;
 
+typedef int (*net_endpoint_prepare_connect_fun_t)(void * ctx, net_endpoint_t endpoint, uint8_t * do_connect);
+
 typedef void (*net_endpoint_data_watch_fun_t)(void * ctx, net_endpoint_t endpoint, net_endpoint_data_event_t evt, uint32_t size);
 
 /*acceptor*/

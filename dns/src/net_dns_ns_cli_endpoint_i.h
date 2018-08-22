@@ -21,6 +21,7 @@ int net_dns_ns_cli_endpoint_send(
 int net_dns_ns_cli_endpoint_init(net_endpoint_t base_endpoint);
 void net_dns_ns_cli_endpoint_fini(net_endpoint_t base_endpoint);
 int net_dns_ns_cli_endpoint_input(net_endpoint_t base_endpoint);
+int net_dns_ns_cli_endpoint_forward(net_endpoint_t base_endpoint, net_endpoint_t from);
 int net_dns_ns_cli_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoint_state_t from_state);
 
 NET_END_DECL

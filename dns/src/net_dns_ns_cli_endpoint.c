@@ -1,3 +1,4 @@
+#include "assert.h"
 #include "cpe/pal/pal_strings.h"
 #include "net_endpoint.h"
 #include "net_protocol.h"
@@ -53,20 +54,9 @@ void net_dns_ns_cli_endpoint_fini(net_endpoint_t base_endpoint) {
     return net_dns_ns_parser_fini(&dns_cli->m_parser);
 }
 
-int net_dns_ns_cli_endpoint_input(net_endpoint_t base_endpoint) {
-    net_dns_ns_cli_endpoint_t dns_cli = net_endpoint_protocol_data(base_endpoint);
-    net_dns_ns_cli_protocol_t dns_protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
-    net_dns_manage_t manage = dns_protocol->m_manage;
-    
-    uint32_t input_sz = net_endpoint_rbuf_size(base_endpoint);
-    void * input;
-    if (net_endpoint_rbuf(base_endpoint, input_sz, &input) != 0) {
-        CPE_ERROR(
-            manage->m_em, "dns-cli: %s: <-- get input buf fail, sz=%d!",
-            net_endpoint_dump(net_dns_manage_tmp_buffer(manage), base_endpoint), input_sz);
-        return -1;
-    }
-
+static int net_dns_ns_cli_process_data(
+    net_dns_manage_t manage, net_dns_ns_cli_endpoint_t dns_cli, net_endpoint_t base_endpoint, void * input, uint32_t input_sz)
+{
     int rv = net_dns_ns_parser_input(&dns_cli->m_parser, input, input_sz);
     if (rv < 0) {
         CPE_ERROR(
@@ -86,7 +76,51 @@ int net_dns_ns_cli_endpoint_input(net_endpoint_t base_endpoint) {
             net_dns_ns_req_dump(manage, net_dns_manage_tmp_buffer(manage), input, (uint32_t)rv));
     }
 
-    net_endpoint_rbuf_consume(base_endpoint, (uint32_t)rv);
+    return rv;
+}
+    
+int net_dns_ns_cli_endpoint_forward(net_endpoint_t base_endpoint, net_endpoint_t from) {
+    net_dns_ns_cli_endpoint_t dns_cli = net_endpoint_protocol_data(base_endpoint);
+    net_dns_ns_cli_protocol_t dns_protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
+    net_dns_manage_t manage = dns_protocol->m_manage;
+    
+    uint32_t input_sz = net_endpoint_fbuf_size(from);
+    void * input;
+    if (net_endpoint_fbuf(from, input_sz, &input) != 0) {
+        CPE_ERROR(
+            manage->m_em, "dns-cli: %s: <-- get input buf fail, sz=%d!",
+            net_endpoint_dump(net_dns_manage_tmp_buffer(manage), base_endpoint), input_sz);
+        return -1;
+    }
+
+    int rv = net_dns_ns_cli_process_data(manage, dns_cli, base_endpoint, input, input_sz);
+
+    if (rv > 0) {
+        net_endpoint_fbuf_consume(from, (uint32_t)rv);
+    }
+
+    return 0;
+}
+
+int net_dns_ns_cli_endpoint_input(net_endpoint_t base_endpoint) {
+    net_dns_ns_cli_endpoint_t dns_cli = net_endpoint_protocol_data(base_endpoint);
+    net_dns_ns_cli_protocol_t dns_protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
+    net_dns_manage_t manage = dns_protocol->m_manage;
+    
+    uint32_t input_sz = net_endpoint_rbuf_size(base_endpoint);
+    void * input;
+    if (net_endpoint_rbuf(base_endpoint, input_sz, &input) != 0) {
+        CPE_ERROR(
+            manage->m_em, "dns-cli: %s: <-- get input buf fail, sz=%d!",
+            net_endpoint_dump(net_dns_manage_tmp_buffer(manage), base_endpoint), input_sz);
+        return -1;
+    }
+
+    int rv = net_dns_ns_cli_process_data(manage, dns_cli, base_endpoint, input, input_sz);
+
+    if (rv > 0) {
+        net_endpoint_rbuf_consume(base_endpoint, (uint32_t)rv);
+    }
 
     return 0;
 }
@@ -103,26 +137,65 @@ int net_dns_ns_cli_endpoint_send(
     if (net_endpoint_remote_address(dns_cli->m_endpoint) == NULL) {
         if (net_endpoint_set_remote_address(dns_cli->m_endpoint, address, 0) != 0) {
             CPE_ERROR(
-                manage->m_em, "dns-cli: %s: set endpoint remote address fail",
+                manage->m_em, "dns-cli: %s: --> set remote address fail",
                 net_endpoint_dump(net_dns_manage_tmp_buffer(manage), dns_cli->m_endpoint));
             return -1;
         }
     }
-    
-    if (net_endpoint_is_active(dns_cli->m_endpoint)) {
+
+    if (net_endpoint_other(dns_cli->m_endpoint) == NULL
+        && !net_endpoint_is_active(dns_cli->m_endpoint))
+    {
         if (net_endpoint_connect(dns_cli->m_endpoint) != 0) {
             CPE_ERROR(
-                manage->m_em, "dns-cli: %s: connect fail",
+                manage->m_em, "dns-cli: %s: --> connect fail",
                 net_endpoint_dump(net_dns_manage_tmp_buffer(manage), dns_cli->m_endpoint));
             return -1;
         }
     }
     
-    if (net_endpoint_wbuf_append(dns_cli->m_endpoint, buf, buf_size) < 0) {
-        CPE_ERROR(
-            manage->m_em, "dns-cli: %s: send data fail",
-            net_endpoint_dump(net_dns_manage_tmp_buffer(manage), dns_cli->m_endpoint));
-        return -1;
+    net_endpoint_t other = net_endpoint_other(dns_cli->m_endpoint);
+    if (other) {
+        if (!net_endpoint_is_active(other)) {
+            if (net_endpoint_connect(other) != 0) {
+                CPE_ERROR(
+                    manage->m_em, "dns-cli: %s: --> chanel connect fail",
+                    net_endpoint_dump(net_dns_manage_tmp_buffer(manage), dns_cli->m_endpoint));
+                return -1;
+            }
+
+            if (net_endpoint_direct(other, net_endpoint_remote_address(dns_cli->m_endpoint)) != 0) {
+                CPE_ERROR(
+                    manage->m_em, "dns-cli: %s: --> chanel direct fail",
+                    net_endpoint_dump(net_dns_manage_tmp_buffer(manage), dns_cli->m_endpoint));
+                net_endpoint_free(other);
+                return -1;
+            }
+        }
+        
+        if (net_endpoint_fbuf_append(dns_cli->m_endpoint, buf, buf_size) < 0
+            || net_endpoint_forward(other) != 0)
+        {
+            CPE_ERROR(
+                manage->m_em, "dns-cli: %s: --> fbuf append fail",
+                net_endpoint_dump(net_dns_manage_tmp_buffer(manage), dns_cli->m_endpoint));
+            return -1;
+        }
+    }
+    else {
+        if (!net_endpoint_is_active(dns_cli->m_endpoint)) {
+            CPE_ERROR(
+                manage->m_em, "dns-cli: %s: --> not active!",
+                net_endpoint_dump(net_dns_manage_tmp_buffer(manage), dns_cli->m_endpoint));
+            return -1;
+        }
+    
+        if (net_endpoint_wbuf_append(dns_cli->m_endpoint, buf, buf_size) < 0) {
+            CPE_ERROR(
+                manage->m_em, "dns-cli: %s: --> wbuf append fail",
+                net_endpoint_dump(net_dns_manage_tmp_buffer(manage), dns_cli->m_endpoint));
+            return -1;
+        }
     }
 
     if (manage->m_debug >= 2) {
