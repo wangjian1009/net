@@ -289,6 +289,7 @@ uint8_t net_endpoint_is_active(net_endpoint_t endpoint) {
     case net_endpoint_state_disable:
     case net_endpoint_state_logic_error:
     case net_endpoint_state_network_error:
+    case net_endpoint_state_deleting:
         return 0;
     default:
         return 1;
@@ -296,6 +297,7 @@ uint8_t net_endpoint_is_active(net_endpoint_t endpoint) {
 }
 
 int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) {
+PROCESS_AGAIN:
     if (endpoint->m_state == state) return 0;
 
     assert(endpoint->m_state != net_endpoint_state_deleting);
@@ -586,10 +588,17 @@ void * net_endpoint_protocol_data(net_endpoint_t endpoint) {
 
 int net_endpoint_forward(net_endpoint_t endpoint) {
     net_endpoint_t other = net_endpoint_other(endpoint);
+    if (other == NULL) {
+        net_schedule_t schedule = endpoint->m_driver->m_schedule;
+        CPE_ERROR(
+            schedule->m_em, "%s: forward: no other endpoint",
+            net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
+        return -1;
+    }
 
-    if (other->m_state == net_endpoint_state_deleting) return -1;
+    if (!net_endpoint_is_active(other)) return -1;
     
-    return other ? other->m_protocol->m_endpoint_forward(other, endpoint) : 0;
+    return other->m_protocol->m_endpoint_forward(other, endpoint);
 }
 
 void net_endpoint_set_data_watcher(
