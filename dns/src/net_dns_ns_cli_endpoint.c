@@ -61,52 +61,55 @@ static int net_dns_ns_cli_process_data(
     net_dns_ns_cli_endpoint_t dns_cli = net_endpoint_protocol_data(base_endpoint);
     net_dns_ns_cli_protocol_t dns_protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
     net_dns_manage_t manage = dns_protocol->m_manage;
+
+    while(1) {
+        uint32_t input_sz = net_endpoint_buf_size(from_ep, from_buf);
+        void * input;
+        if (net_endpoint_buf_peak_with_size(from_ep, from_buf, input_sz, &input) != 0) {
+            CPE_ERROR(
+                manage->m_em, "dns-cli: %s: <-- get input buf fail, sz=%d!",
+                net_endpoint_dump(net_dns_manage_tmp_buffer(manage), base_endpoint), input_sz);
+            return -1;
+        }
     
-    uint32_t input_sz = net_endpoint_buf_size(from_ep, from_buf);
-    void * input;
-    if (net_endpoint_buf_peak_with_size(from_ep, from_buf, input_sz, &input) != 0) {
-        CPE_ERROR(
-            manage->m_em, "dns-cli: %s: <-- get input buf fail, sz=%d!",
-            net_endpoint_dump(net_dns_manage_tmp_buffer(manage), base_endpoint), input_sz);
-        return -1;
+        if (input_sz < 2) return 0;
+
+        uint16_t req_sz;
+        CPE_COPY_NTOH16(&req_sz, input);
+
+        uint32_t all_req_sz = req_sz + (uint32_t)sizeof(req_sz);
+        if (all_req_sz > input_sz) return 0;
+
+        input = ((char*)input) + sizeof(req_sz);
+            
+        net_dns_ns_parser_reset(&dns_cli->m_parser);
+        int rv = net_dns_ns_parser_input(&dns_cli->m_parser, input, req_sz);
+        if (rv < 0) {
+            CPE_ERROR(
+                manage->m_em, "dns-cli: %s: <-- parse data fail, req-sz=%d, parser.state=%d, parser.r-pos=%d!",
+                net_endpoint_dump(net_dns_manage_tmp_buffer(manage), base_endpoint),
+                req_sz, dns_cli->m_parser.m_state, dns_cli->m_parser.m_r_pos);
+            return -1;
+        }
+
+        if (dns_cli->m_parser.m_state != net_dns_ns_parser_completed) {
+            CPE_ERROR(
+                manage->m_em, "dns-cli: %s: <-- parse data complete, state error, state=%d, req-sz=%d, parser.state=%d, parser.r-pos=%d!",
+                net_endpoint_dump(net_dns_manage_tmp_buffer(manage), base_endpoint),
+                dns_cli->m_parser.m_state, req_sz, dns_cli->m_parser.m_state, dns_cli->m_parser.m_r_pos);
+            return -1;
+        }
+
+        if (net_endpoint_protocol_debug(base_endpoint) >= 2) {
+            CPE_INFO(
+                manage->m_em, "dns-cli: %s: tcp <-- (%d/%d) %s",
+                net_endpoint_dump(&manage->m_data_buffer, base_endpoint),
+                rv, req_sz,
+                net_dns_ns_req_dump(manage, net_dns_manage_tmp_buffer(manage), input, (uint32_t)rv));
+        }
+
+        net_endpoint_buf_consume(from_ep, from_buf, all_req_sz);
     }
-    
-    if (input_sz < 2) return 0;
-
-    uint16_t req_sz;
-    CPE_COPY_NTOH16(&req_sz, input);
-
-    uint32_t all_req_sz = req_sz + (uint32_t)sizeof(req_sz);
-    if (all_req_sz > input_sz) return 0;
-
-    net_dns_ns_parser_reset(&dns_cli->m_parser);
-
-    int rv = net_dns_ns_parser_input(&dns_cli->m_parser, ((char*)input) + sizeof(req_sz), req_sz);
-    if (rv < 0) {
-        CPE_ERROR(
-            manage->m_em, "dns-cli: %s: <-- parse data fail, req-sz=%d, parser.state=%d, parser.r-pos=%d!",
-            net_endpoint_dump(net_dns_manage_tmp_buffer(manage), base_endpoint),
-            req_sz, dns_cli->m_parser.m_state, dns_cli->m_parser.m_r_pos);
-        return -1;
-    }
-
-    if (dns_cli->m_parser.m_state != net_dns_ns_parser_completed) {
-        CPE_ERROR(
-            manage->m_em, "dns-cli: %s: <-- parse data complete, state error, state=%d, req-sz=%d, parser.state=%d, parser.r-pos=%d!",
-            net_endpoint_dump(net_dns_manage_tmp_buffer(manage), base_endpoint),
-            dns_cli->m_parser.m_state, req_sz, dns_cli->m_parser.m_state, dns_cli->m_parser.m_r_pos);
-        return -1;
-    }
-
-    if (net_endpoint_protocol_debug(base_endpoint) >= 2) {
-        CPE_INFO(
-            manage->m_em, "dns-cli: %s: tcp <-- (%d/%d) %s",
-            net_endpoint_dump(&manage->m_data_buffer, base_endpoint),
-            rv, req_sz,
-            net_dns_ns_req_dump(manage, net_dns_manage_tmp_buffer(manage), input, (uint32_t)rv));
-    }
-
-    net_endpoint_buf_consume(from_ep, from_buf, all_req_sz);
 
     return 0;
 }
