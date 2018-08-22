@@ -147,9 +147,6 @@ int net_dns_ns_cli_endpoint_send(
             return -1;
         }
     }
-
-    uint16_t net_buf_size;
-    CPE_COPY_HTON16(&net_buf_size, &buf_size);
     
     net_endpoint_t other = net_endpoint_other(dns_cli->m_endpoint);
     if (other) {
@@ -171,8 +168,7 @@ int net_dns_ns_cli_endpoint_send(
             }
         }
 
-        if (net_endpoint_buf_append(dns_cli->m_endpoint, net_ep_buf_forward, &net_buf_size, sizeof(net_buf_size)) < 0
-            || net_endpoint_buf_append(dns_cli->m_endpoint, net_ep_buf_forward, buf, buf_size) < 0
+        if (net_endpoint_buf_append(dns_cli->m_endpoint, net_ep_buf_forward, buf, buf_size) < 0
             || net_endpoint_forward(other) != 0)
         {
             CPE_ERROR(
@@ -189,9 +185,7 @@ int net_dns_ns_cli_endpoint_send(
             return -1;
         }
     
-        if (net_endpoint_buf_append(dns_cli->m_endpoint, net_ep_buf_write, &net_buf_size, sizeof(net_buf_size)) < 0
-            || net_endpoint_buf_append(dns_cli->m_endpoint, net_ep_buf_write, buf, buf_size) < 0)
-        {
+        if (net_endpoint_buf_append(dns_cli->m_endpoint, net_ep_buf_write, buf, buf_size) < 0) {
             CPE_ERROR(
                 manage->m_em, "dns-cli: %s: --> wbuf append fail",
                 net_endpoint_dump(net_dns_manage_tmp_buffer(manage), dns_cli->m_endpoint));

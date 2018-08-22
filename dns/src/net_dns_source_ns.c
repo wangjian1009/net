@@ -209,7 +209,7 @@ int net_dns_source_ns_ctx_start(net_dns_source_t source, net_dns_task_ctx_t task
         return -1; 
     }
 
-    char *p = buf;
+    char *p = buf + 2; /*空两个字节存储长度，用于tcp发送，udp则忽略 */
 
     /* head */
     CPE_COPY_HTON16(p, &ns_ctx->m_transaction); p+=2;
@@ -255,13 +255,16 @@ int net_dns_source_ns_ctx_start(net_dns_source_t source, net_dns_task_ctx_t task
     uint16_t qclass = 1;
     CPE_COPY_HTON16(p, &qclass); p+=2;
 
-    uint16_t buf_size = (uint32_t)(p - buf);
+    uint16_t msg_size = (uint16_t)(p - buf) - 2;
 
     switch(ns->m_trans_type) {
     case net_dns_trans_udp:
-        return net_dns_source_ns_dgram_output(manage, ns, buf, buf_size);
-    case net_dns_trans_tcp:
+        return net_dns_source_ns_dgram_output(manage, ns, buf + 2, msg_size);
+    case net_dns_trans_tcp: {
+        uint16_t buf_size = (uint16_t)(p - buf);
+        CPE_COPY_HTON16(buf, &msg_size);
         return net_dns_source_ns_tcp_output(manage, ns, buf, buf_size);
+    }
     }
 }
 
