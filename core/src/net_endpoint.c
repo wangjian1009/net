@@ -596,7 +596,13 @@ int net_endpoint_forward(net_endpoint_t endpoint) {
         return -1;
     }
 
-    if (!net_endpoint_is_active(other)) return -1;
+    if (other->m_state == net_endpoint_state_deleting) {
+        net_schedule_t schedule = endpoint->m_driver->m_schedule;
+        CPE_ERROR(
+            schedule->m_em, "%s: forward: other endpoint is deleting",
+            net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
+        return -1;
+    }
     
     return other->m_protocol->m_endpoint_forward(other, endpoint);
 }

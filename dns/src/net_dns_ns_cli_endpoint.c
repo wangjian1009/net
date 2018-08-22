@@ -171,13 +171,20 @@ int net_dns_ns_cli_endpoint_send(
             }
         }
 
-        if (net_endpoint_buf_append(dns_cli->m_endpoint, net_ep_buf_forward, buf, buf_size) < 0
-            || net_endpoint_forward(other) != 0)
-        {
+        if (net_endpoint_buf_append(dns_cli->m_endpoint, net_ep_buf_forward, buf, buf_size) < 0) {
             CPE_ERROR(
                 manage->m_em, "dns-cli: %s: --> fbuf append fail",
                 net_endpoint_dump(net_dns_manage_tmp_buffer(manage), dns_cli->m_endpoint));
             return -1;
+        }
+
+        if (net_endpoint_is_active(other)) {
+            if (net_endpoint_forward(other) != 0) {
+                CPE_ERROR(
+                    manage->m_em, "dns-cli: %s: --> fbuf forward fail",
+                    net_endpoint_dump(net_dns_manage_tmp_buffer(manage), dns_cli->m_endpoint));
+                return -1;
+            }
         }
     }
     else {
@@ -198,9 +205,10 @@ int net_dns_ns_cli_endpoint_send(
 
     if (net_endpoint_protocol_debug(dns_cli->m_endpoint) >= 2) {
         CPE_INFO(
-            manage->m_em, "dns-cli: %s: tcp --> %s",
+            manage->m_em, "dns-cli: %s: tcp --> (%d)%s",
             net_endpoint_dump(net_dns_manage_tmp_buffer(manage), dns_cli->m_endpoint),
-            net_dns_ns_req_dump(manage, &manage->m_data_buffer, buf, buf_size));
+            buf_size - 2,
+            net_dns_ns_req_dump(manage, &manage->m_data_buffer, ((uint8_t const *)buf) + 2, buf_size - 2));
     }
     
     return 0;
