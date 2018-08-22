@@ -101,6 +101,15 @@ uint32_t net_endpoint_rbuf_size(net_endpoint_t endpoint) {
     }
 }
 
+void net_endpoint_rbuf_clear(net_endpoint_t endpoint) {
+    net_schedule_t schedule = endpoint->m_driver->m_schedule;
+
+    if (endpoint->m_rb) {
+        ringbuffer_free(schedule->m_endpoint_buf, endpoint->m_rb);
+        endpoint->m_rb = NULL;
+    }
+}
+
 void net_endpoint_rbuf_consume(net_endpoint_t endpoint, uint32_t size) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
 

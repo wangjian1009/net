@@ -1,4 +1,5 @@
 #include "assert.h"
+#include "cpe/pal/pal_platform.h"
 #include "cpe/pal/pal_strings.h"
 #include "net_endpoint.h"
 #include "net_protocol.h"
@@ -57,26 +58,42 @@ void net_dns_ns_cli_endpoint_fini(net_endpoint_t base_endpoint) {
 static int net_dns_ns_cli_process_data(
     net_dns_manage_t manage, net_dns_ns_cli_endpoint_t dns_cli, net_endpoint_t base_endpoint, void * input, uint32_t input_sz)
 {
-    int rv = net_dns_ns_parser_input(&dns_cli->m_parser, input, input_sz);
+    if (input_sz < 2) return 0;
+
+    uint16_t req_sz;
+    CPE_COPY_NTOH16(&req_sz, input);
+
+    uint32_t all_req_sz = req_sz + (uint32_t)sizeof(req_sz);
+    if (all_req_sz > input_sz) return 0;
+
+    net_dns_ns_parser_reset(&dns_cli->m_parser);
+
+    int rv = net_dns_ns_parser_input(&dns_cli->m_parser, ((char*)input) + sizeof(req_sz), req_sz);
     if (rv < 0) {
         CPE_ERROR(
-            manage->m_em, "dns-cli: %s: <-- parse data fail, input-sz=%d, parser.state=%d, parser.r-pos=%d!",
+            manage->m_em, "dns-cli: %s: <-- parse data fail, req-sz=%d, parser.state=%d, parser.r-pos=%d!",
             net_endpoint_dump(net_dns_manage_tmp_buffer(manage), base_endpoint),
-            input_sz, dns_cli->m_parser.m_state, dns_cli->m_parser.m_r_pos);
+            req_sz, dns_cli->m_parser.m_state, dns_cli->m_parser.m_r_pos);
         return -1;
     }
 
-    if (rv == 0) return 0;
-    
+    if (dns_cli->m_parser.m_state != net_dns_ns_parser_completed) {
+        CPE_ERROR(
+            manage->m_em, "dns-cli: %s: <-- parse data complete, state error, state=%d, req-sz=%d, parser.state=%d, parser.r-pos=%d!",
+            net_endpoint_dump(net_dns_manage_tmp_buffer(manage), base_endpoint),
+            dns_cli->m_parser.m_state, req_sz, dns_cli->m_parser.m_state, dns_cli->m_parser.m_r_pos);
+        return -1;
+    }
+
     if (manage->m_debug) {
         CPE_INFO(
             manage->m_em, "dns-cli: %s: tcp <-- (%d/%d) %s",
             net_endpoint_dump(&manage->m_data_buffer, base_endpoint),
-            rv, input_sz,
+            rv, req_sz,
             net_dns_ns_req_dump(manage, net_dns_manage_tmp_buffer(manage), input, (uint32_t)rv));
     }
 
-    return rv;
+    return all_req_sz;
 }
     
 int net_dns_ns_cli_endpoint_forward(net_endpoint_t base_endpoint, net_endpoint_t from) {
@@ -153,10 +170,14 @@ int net_dns_ns_cli_endpoint_send(
             return -1;
         }
     }
+
+    uint16_t net_buf_size;
+    CPE_COPY_HTON16(&net_buf_size, &buf_size);
     
     net_endpoint_t other = net_endpoint_other(dns_cli->m_endpoint);
     if (other) {
         if (!net_endpoint_is_active(other)) {
+            //net_endpoint_is_active
             if (net_endpoint_connect(other) != 0) {
                 CPE_ERROR(
                     manage->m_em, "dns-cli: %s: --> chanel connect fail",
@@ -172,8 +193,9 @@ int net_dns_ns_cli_endpoint_send(
                 return -1;
             }
         }
-        
-        if (net_endpoint_fbuf_append(dns_cli->m_endpoint, buf, buf_size) < 0
+
+        if (net_endpoint_fbuf_append(dns_cli->m_endpoint, &net_buf_size, sizeof(net_buf_size)) < 0
+            || net_endpoint_fbuf_append(dns_cli->m_endpoint, buf, buf_size) < 0
             || net_endpoint_forward(other) != 0)
         {
             CPE_ERROR(
@@ -190,7 +212,9 @@ int net_dns_ns_cli_endpoint_send(
             return -1;
         }
     
-        if (net_endpoint_wbuf_append(dns_cli->m_endpoint, buf, buf_size) < 0) {
+        if (net_endpoint_wbuf_append(dns_cli->m_endpoint, &net_buf_size, sizeof(net_buf_size)) < 0
+            || net_endpoint_wbuf_append(dns_cli->m_endpoint, buf, buf_size) < 0)
+        {
             CPE_ERROR(
                 manage->m_em, "dns-cli: %s: --> wbuf append fail",
                 net_endpoint_dump(net_dns_manage_tmp_buffer(manage), dns_cli->m_endpoint));
