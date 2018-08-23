@@ -37,6 +37,7 @@ void * net_schedule_dns_resolver(net_schedule_t schedule);
 
 /*debug*/
 int net_debug_remote_host(net_schedule_t schedule, const char * remote, uint8_t protocol_debug, uint8_t driver_debug);
+int net_debug_local_host(net_schedule_t schedule, const char * local, uint8_t protocol_debug, uint8_t driver_debug);
 int net_debug_protocol(net_schedule_t schedule, const char * protocol, uint8_t debug);
 int net_debug_driver(net_schedule_t schedule, const char * protocol, uint8_t debug);
 

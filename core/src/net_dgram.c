@@ -18,20 +18,29 @@ net_dgram_t net_dgram_create(
     else {
         dgram = mem_alloc(schedule->m_alloc, sizeof(struct net_dgram) + driver->m_dgram_capacity);
         if (dgram == NULL) {
-            CPE_ERROR(schedule->m_em, "net_dgram_auto_create: alloc fail");
+            CPE_ERROR(schedule->m_em, "core: dgram: create: alloc fail");
             return NULL;
         }
     }
 
     dgram->m_driver = driver;
-    dgram->m_address = address;
+    dgram->m_address = NULL;
     dgram->m_driver_debug = driver->m_debug;
-    
+
     dgram->m_process_fun = process_fun;
     dgram->m_process_ctx = process_ctx;
 
+    if (address) {
+        dgram->m_address = net_address_copy(schedule, address);
+        if (dgram->m_address == NULL) {
+            CPE_ERROR(schedule->m_em, "core: dgram: create: dup address fail");
+            return NULL;
+        }
+    }
+    
     if (driver->m_dgram_init(dgram) != 0) {
         CPE_ERROR(schedule->m_em, "net_dgram_auto_create: init fail");
+        if (dgram->m_address) net_address_free(dgram->m_address);
         TAILQ_INSERT_TAIL(&driver->m_free_dgrams, dgram, m_next_for_driver);
         return NULL;
     }

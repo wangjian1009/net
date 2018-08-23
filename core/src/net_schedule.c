@@ -208,6 +208,32 @@ void * net_schedule_dns_resolver(net_schedule_t schedule) {
     return schedule->m_dns_resolver_ctx;
 }
 
+int net_debug_local_host(net_schedule_t schedule, const char * local, uint8_t protocol_debug, uint8_t driver_debug) {
+    net_address_t local_address = net_address_create_auto(schedule, local);
+    if (local_address == NULL) {
+        CPE_ERROR(schedule->m_em, "core: debug: host %s format error!", local);
+        return -1;
+    }
+    
+    net_debug_setup_t setup = net_debug_setup_create(schedule, protocol_debug, driver_debug);
+    if (setup == NULL) {
+        CPE_ERROR(schedule->m_em, "core: debug: create setup for host %s fail!", local);
+        net_address_free(local_address);
+        return -1;
+    }
+
+    if (net_debug_condition_address_create(setup, net_debug_condition_scope_local, local_address) == NULL) {
+        net_address_free(local_address);
+        return -1;
+    }
+
+    if (schedule->m_debug) {
+        CPE_INFO(schedule->m_em, "core: debug: local %s -> protocol=%d, driver=%d!", local, protocol_debug, driver_debug);
+    }
+    
+    return 0;
+}
+
 int net_debug_remote_host(net_schedule_t schedule, const char * remote, uint8_t protocol_debug, uint8_t driver_debug) {
     net_address_t remote_address = net_address_create_auto(schedule, remote);
     if (remote_address == NULL) {
