@@ -193,12 +193,14 @@ void net_schedule_set_dns_resolver(
     net_schedule_t schedule,
     void * ctx,
     void (*ctx_fini)(void * ctx),
+    net_schedule_dns_local_query_fun_t local_query,
     uint16_t dns_query_capacity,
     net_schedule_dns_query_init_fun_t init_fun,
     net_schedule_dns_query_fini_fun_t fini_fun)
 {
     schedule->m_dns_resolver_ctx = ctx;
     schedule->m_dns_resolver_ctx_fini_fun = ctx_fini;
+    schedule->m_dns_local_query = local_query;
     schedule->m_dns_query_capacity = dns_query_capacity;
     schedule->m_dns_query_init_fun = init_fun;
     schedule->m_dns_query_fini_fun = fini_fun;
@@ -206,6 +208,18 @@ void net_schedule_set_dns_resolver(
 
 void * net_schedule_dns_resolver(net_schedule_t schedule) {
     return schedule->m_dns_resolver_ctx;
+}
+
+int net_schedule_dns_local_query(
+    net_schedule_t schedule,
+    const char * hostname, net_address_it_t resolved_it, uint8_t recursive)
+{
+    if (schedule->m_dns_local_query == NULL) {
+        CPE_ERROR(schedule->m_em, "core: dns: not support local query!");
+        return -1;
+    }
+
+    return schedule->m_dns_local_query(schedule->m_dns_resolver_ctx, hostname, resolved_it, recursive);
 }
 
 int net_debug_local_host(net_schedule_t schedule, const char * local, uint8_t protocol_debug, uint8_t driver_debug) {

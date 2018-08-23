@@ -21,7 +21,7 @@ int net_dns_query_ex_init(void * ctx, net_dns_query_t query, const char * hostna
     }
 
     struct net_dns_entry_item_it item_it;
-    net_dns_entry_items(entry, &item_it);
+    net_dns_entry_items(entry, &item_it, 1);
 
     if (net_dns_entry_item_it_next(&item_it) == NULL) {
         if (entry->m_task == NULL) {

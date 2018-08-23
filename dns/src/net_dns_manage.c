@@ -19,6 +19,7 @@
 
 static void net_dns_manage_fini(void * ctx);
 static void net_dns_manage_do_delay_process(net_timer_t timer, void * input_ctx);
+static int net_dns_manage_local_query(void * manage, const char * hostname, net_address_it_t resolved_it, uint8_t recursive);
 
 net_dns_manage_t net_dns_manage_create(
     mem_allocrator_t alloc, error_monitor_t em, net_schedule_t schedule)
@@ -103,6 +104,7 @@ net_dns_manage_t net_dns_manage_create(
         schedule,
         manage,
         net_dns_manage_fini,
+        net_dns_manage_local_query,
         sizeof(struct net_dns_query_ex),
         net_dns_query_ex_init,
         net_dns_query_ex_fini);
@@ -112,7 +114,7 @@ net_dns_manage_t net_dns_manage_create(
 
 void net_dns_manage_free(net_dns_manage_t manage) {
     if (net_schedule_dns_resolver(manage->m_schedule) == manage) {
-        net_schedule_set_dns_resolver(manage->m_schedule, NULL, NULL, 0, NULL, NULL);
+        net_schedule_set_dns_resolver(manage->m_schedule, NULL, NULL, NULL, 0, NULL, NULL);
     }
 
     while(!TAILQ_EMPTY(&manage->m_runing_tasks)) {
@@ -226,6 +228,19 @@ int net_dns_manage_active_delay_process(net_dns_manage_t manage) {
     return 0;
 }
 
+static int net_dns_manage_local_query(void * ctx, const char * hostname, net_address_it_t resolved_it, uint8_t recursive) {
+    net_dns_manage_t manage = ctx;
+
+    net_dns_entry_t entry = net_dns_entry_find(manage, hostname);
+    if (entry == NULL) {
+        net_address_it_init(resolved_it);
+        return 0;
+    }
+
+    net_dns_entry_addresses(entry, resolved_it, recursive);
+    return 0;
+}
+
 static void net_dns_manage_do_delay_process(net_timer_t timer, void * input_ctx) {
     net_dns_manage_t manage = input_ctx;
 
@@ -260,7 +275,7 @@ static void net_dns_manage_do_delay_process(net_timer_t timer, void * input_ctx)
                 address = item->m_address;
             }
 
-            net_dns_entry_addresses(query_ex->m_entry, &address_it);
+            net_dns_entry_addresses(query_ex->m_entry, &address_it, 1);
         }
 
         net_dns_query_notify_result_and_free(query, address, &address_it);

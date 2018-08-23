@@ -174,7 +174,7 @@ net_dns_entry_select_item(net_dns_entry_t entry, net_dns_item_select_policy_t po
     net_dns_entry_item_t check, next;
 
     struct net_dns_entry_item_it item_it;
-    net_dns_entry_items(entry, &item_it);
+    net_dns_entry_items(entry, &item_it, 1);
 
     uint32_t cur_time_s = (uint32_t)(cur_time_ms() / 1000);
     for(check = net_dns_entry_item_it_next(&item_it); check; check = next) {
@@ -265,7 +265,7 @@ static void net_dns_entry_address_it_data_go_next(struct net_dns_entry_address_i
     }
 }
 
-static net_address_t net_dns_entry_address_it_next(net_address_it_t it) {
+static net_address_t net_dns_entry_address_it_recursive_next(net_address_it_t it) {
     struct net_dns_entry_address_it_data * data = (struct net_dns_entry_address_it_data *)it->data;
 
     if (data->m_item == NULL) return NULL;
@@ -276,15 +276,33 @@ static net_address_t net_dns_entry_address_it_next(net_address_it_t it) {
     return r;
 }
 
-void net_dns_entry_addresses(net_dns_entry_t entry, net_address_it_t it) {
-    struct net_dns_entry_address_it_data * data = (struct net_dns_entry_address_it_data *)it->data;
-    data->m_entry = entry;
-    data->m_item = NULL;
-    net_dns_entry_address_it_data_go_next(data);
-    it->next = net_dns_entry_address_it_next;
+static net_address_t net_dns_entry_address_it_basic_next(net_address_it_t it) {
+    net_dns_entry_item_t * item = (net_dns_entry_item_t *)it->data;
+
+    net_dns_entry_item_t r = *item;
+    if (r == NULL) return NULL;
+    
+    *item = TAILQ_NEXT(r, m_next_for_entry);
+    
+    return r->m_address;
 }
 
-static net_dns_entry_item_t net_dns_entry_item_it_do_next(net_dns_entry_item_it_t it) {
+void net_dns_entry_addresses(net_dns_entry_t entry, net_address_it_t it, uint8_t recursive) {
+    if (recursive) {
+        struct net_dns_entry_address_it_data * data = (struct net_dns_entry_address_it_data *)it->data;
+        data->m_entry = entry;
+        data->m_item = NULL;
+        net_dns_entry_address_it_data_go_next(data);
+        it->next = net_dns_entry_address_it_recursive_next;
+    }
+    else {
+        net_dns_entry_item_t * item = (net_dns_entry_item_t *)it->data;
+        *item = TAILQ_FIRST(&entry->m_items);
+        it->next = net_dns_entry_address_it_basic_next;
+    }
+}
+
+static net_dns_entry_item_t net_dns_entry_item_it_recursive_next(net_dns_entry_item_it_t it) {
     struct net_dns_entry_address_it_data * data = (struct net_dns_entry_address_it_data *)it->data;
 
     if (data->m_item == NULL) return NULL;
@@ -295,12 +313,32 @@ static net_dns_entry_item_t net_dns_entry_item_it_do_next(net_dns_entry_item_it_
     return r;
 }
 
-void net_dns_entry_items(net_dns_entry_t entry, net_dns_entry_item_it_t it) {
-    struct net_dns_entry_address_it_data * data = (struct net_dns_entry_address_it_data *)it->data;
-    data->m_entry = entry;
-    data->m_item = NULL;
-    net_dns_entry_address_it_data_go_next(data);
-    it->next = net_dns_entry_item_it_do_next;
+static net_dns_entry_item_t net_dns_entry_item_it_basic_next(net_dns_entry_item_it_t it) {
+    net_dns_entry_item_t * item = (net_dns_entry_item_t *)it->data;
+
+    net_dns_entry_item_t r = *item;
+
+    if (r) {
+        *item = TAILQ_NEXT(r, m_next_for_entry);
+    }
+
+    return r;
+}
+
+void net_dns_entry_items(net_dns_entry_t entry, net_dns_entry_item_it_t it, uint8_t recursive) {
+    if (recursive) {
+        struct net_dns_entry_address_it_data * data = (struct net_dns_entry_address_it_data *)it->data;
+        data->m_entry = entry;
+        data->m_item = NULL;
+
+        net_dns_entry_address_it_data_go_next(data);
+        it->next = net_dns_entry_item_it_recursive_next;
+    }
+    else {
+        net_dns_entry_item_t * item = (net_dns_entry_item_t *)it->data;
+        *item = TAILQ_FIRST(&entry->m_items);
+        it->next = net_dns_entry_item_it_basic_next;
+    }
 }
 
 static net_dns_entry_t net_dns_entry_cname_it_next(net_dns_entry_it_t it) {

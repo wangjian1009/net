@@ -37,6 +37,7 @@ struct net_schedule {
     /*dns resolver*/
     void * m_dns_resolver_ctx;
     void (*m_dns_resolver_ctx_fini_fun)(void * ctx);
+    net_schedule_dns_local_query_fun_t m_dns_local_query;
     uint16_t m_dns_query_capacity;
     net_schedule_dns_query_init_fun_t m_dns_query_init_fun;
     net_schedule_dns_query_fini_fun_t m_dns_query_fini_fun;
