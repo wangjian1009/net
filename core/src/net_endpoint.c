@@ -468,7 +468,7 @@ int net_endpoint_connect(net_endpoint_t endpoint) {
 
         endpoint->m_dns_query =
             net_dns_query_create(
-                schedule, (const char *)net_address_data(endpoint->m_remote_address),
+                schedule, (const char *)net_address_data(endpoint->m_remote_address), NULL,
                 net_endpoint_dns_query_callback, NULL, endpoint);
         if (endpoint->m_dns_query == NULL) {
             CPE_ERROR(

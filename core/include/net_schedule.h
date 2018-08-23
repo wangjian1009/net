@@ -22,7 +22,7 @@ net_driver_t net_schedule_direct_driver(net_schedule_t schedule);
 void net_schedule_set_direct_driver(net_schedule_t schedule, net_driver_t driver);
 
 /*dns*/
-typedef int (*net_schedule_dns_query_init_fun_t)(void * ctx, net_dns_query_t query, const char * hostname);
+typedef int (*net_schedule_dns_query_init_fun_t)(void * ctx, net_dns_query_t query, const char * hostname, const char * policy);
 typedef void (*net_schedule_dns_query_fini_fun_t)(void * ctx, net_dns_query_t query);
 
 void net_schedule_set_dns_resolver(

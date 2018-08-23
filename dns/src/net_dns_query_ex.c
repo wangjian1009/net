@@ -6,7 +6,7 @@
 #include "net_dns_task_i.h"
 #include "net_dns_task_builder_i.h"
 
-int net_dns_query_ex_init(void * ctx, net_dns_query_t query, const char * hostname) {
+int net_dns_query_ex_init(void * ctx, net_dns_query_t query, const char * hostname, const char * policy) {
     net_dns_manage_t manage = ctx;
     struct net_dns_query_ex * query_ex = net_dns_query_data(query);
 
