@@ -9,6 +9,7 @@ struct net_dns_scope {
     net_dns_manage_t m_manage;
     struct cpe_hash_entry m_hh;
     const char * m_name;
+    uint16_t m_source_count;
     net_dns_scope_source_list_t m_sources;
 };
 

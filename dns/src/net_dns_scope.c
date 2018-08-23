@@ -18,6 +18,7 @@ net_dns_scope_create(net_dns_manage_t manage, const char * name) {
     scope->m_manage = manage;
     scope->m_name = (void*)(scope + 1);
     memcpy((void*)scope->m_name, name, name_len);
+    scope->m_source_count = 0;
     TAILQ_INIT(&scope->m_sources);
     
     cpe_hash_entry_init(&scope->m_hh);
@@ -36,7 +37,8 @@ void net_dns_scope_free(net_dns_scope_t scope) {
     while(!TAILQ_EMPTY(&scope->m_sources)) {
         net_dns_scope_source_free(TAILQ_FIRST(&scope->m_sources));
     }
-
+    assert(scope->m_source_count == 0);
+    
     cpe_hash_table_remove_by_ins(&manage->m_scopes, scope);
 
     mem_free(manage->m_alloc, scope);
@@ -96,6 +98,27 @@ uint8_t net_dns_scope_have_source(net_dns_scope_t scope, net_dns_source_t source
     }
     
     return 0;
+}
+
+uint16_t net_dns_scope_source_count(net_dns_scope_t scope) {
+    return scope->m_source_count;
+}
+
+static net_dns_source_t net_dns_cope_source_it_next(struct net_dns_source_it * it) {
+    net_dns_scope_source_t * d = (net_dns_scope_source_t *)it->m_data;
+
+    net_dns_scope_source_t r = *d;
+    if (r == NULL) return NULL;
+
+    *d = TAILQ_NEXT(r, m_next_for_scope);
+
+    return r->m_source;
+}
+
+void net_dns_scope_sources(net_dns_scope_t scope, net_dns_source_it_t source_it) {
+    net_dns_scope_source_t * d = (net_dns_scope_source_t *)source_it->m_data;
+    *d = TAILQ_FIRST(&scope->m_sources);
+    source_it->next = net_dns_cope_source_it_next;
 }
 
 static net_dns_scope_t net_dns_scope_cname_it_next(net_dns_scope_it_t it) {

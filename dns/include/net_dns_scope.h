@@ -21,6 +21,9 @@ void net_dns_scope_clear(net_dns_scope_t scope);
 int net_dns_scope_add_source(net_dns_scope_t scope, net_dns_source_t source);
 uint8_t net_dns_scope_have_source(net_dns_scope_t scope, net_dns_source_t source);
 
+uint16_t net_dns_scope_source_count(net_dns_scope_t scope);
+void net_dns_scope_sources(net_dns_scope_t scope, net_dns_source_it_t source_it);
+
 #define net_dns_scope_it_next(__it) ((__it)->next(__it))
 
 NET_END_DECL

@@ -1,3 +1,4 @@
+#include "assert.h"
 #include "net_dns_scope_source_i.h"
 
 net_dns_scope_source_t
@@ -19,6 +20,7 @@ net_dns_scope_source_create(net_dns_scope_t scope, net_dns_source_t source) {
     scope_source->m_scope = scope;
     scope_source->m_source = source;
 
+    scope->m_source_count++;
     TAILQ_INSERT_TAIL(&scope->m_sources, scope_source, m_next_for_scope);
     TAILQ_INSERT_TAIL(&source->m_scopes, scope_source, m_next_for_source);
 
@@ -28,6 +30,8 @@ net_dns_scope_source_create(net_dns_scope_t scope, net_dns_source_t source) {
 void net_dns_scope_source_free(net_dns_scope_source_t scope_source) {
     net_dns_manage_t manage = scope_source->m_scope->m_manage;
 
+    assert(scope_source->m_scope->m_source_count > 0);
+    scope_source->m_scope->m_source_count--;
     TAILQ_REMOVE(&scope_source->m_scope->m_sources, scope_source, m_next_for_scope);
     TAILQ_REMOVE(&scope_source->m_source->m_scopes, scope_source, m_next_for_source);
 

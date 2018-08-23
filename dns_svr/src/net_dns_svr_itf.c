@@ -122,7 +122,7 @@ int net_dns_svr_itf_send_response(net_dns_svr_itf_t dns_itf, net_dns_svr_query_t
         }
         assert((uint32_t)rv <= capacity);
 
-        if (net_dgram_protocol_debug(dns_itf->m_dgram, query->m_source_addr) >= 0) {
+        if (net_dgram_protocol_debug(dns_itf->m_dgram, query->m_source_addr) >= 2) {
             char address_buf[128];
             cpe_str_dup(address_buf, sizeof(address_buf), net_address_dump(net_dns_svr_tmp_buffer(svr), net_dgram_address(dns_itf->m_dgram)));
             CPE_INFO(

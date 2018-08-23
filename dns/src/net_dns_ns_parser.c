@@ -189,7 +189,8 @@ static int net_dns_ns_parser_read_an_record(
     switch(res_type) {
     case 5: {
         p = net_dns_ns_req_dump_name(manage, net_dns_manage_tmp_buffer(manage), p, base, total_sz, 0);
-        assert(p);
+        if (p == NULL) return -1;
+        
         const char * cname = mem_buffer_make_continuous(net_dns_manage_tmp_buffer(manage), 0);
 
         address = net_address_create_domain(manage->m_schedule, cname, 0, NULL);
