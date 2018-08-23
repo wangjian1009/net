@@ -166,25 +166,18 @@ int net_dns_ns_cli_endpoint_send(
                 CPE_ERROR(
                     manage->m_em, "dns-cli: %s: --> chanel direct fail",
                     net_endpoint_dump(net_dns_manage_tmp_buffer(manage), dns_cli->m_endpoint));
-                net_endpoint_free(other);
+                net_endpoint_set_state(other, net_endpoint_state_logic_error);
                 return -1;
             }
         }
 
-        if (net_endpoint_buf_append(dns_cli->m_endpoint, net_ep_buf_forward, buf, buf_size) < 0) {
+        if (net_endpoint_buf_append(dns_cli->m_endpoint, net_ep_buf_forward, buf, buf_size) < 0
+            || net_endpoint_forward(dns_cli->m_endpoint) != 0)
+        {
             CPE_ERROR(
                 manage->m_em, "dns-cli: %s: --> fbuf append fail",
                 net_endpoint_dump(net_dns_manage_tmp_buffer(manage), dns_cli->m_endpoint));
             return -1;
-        }
-
-        if (net_endpoint_is_active(other)) {
-            if (net_endpoint_forward(other) != 0) {
-                CPE_ERROR(
-                    manage->m_em, "dns-cli: %s: --> fbuf forward fail",
-                    net_endpoint_dump(net_dns_manage_tmp_buffer(manage), dns_cli->m_endpoint));
-                return -1;
-            }
         }
     }
     else {
