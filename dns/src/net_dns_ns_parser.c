@@ -240,14 +240,60 @@ static int net_dns_ns_parser_read_ns_record(
     net_dns_ns_parser_t parser, uint8_t const * base, uint32_t total_sz,
     uint8_t const * rp, uint32_t left_sz, uint32_t * used_size)
 {
-    CPE_ERROR(parser->m_manage->m_em, "dns: ns: parser: not support read ns record!");
-    return -1;
+    net_dns_manage_t manage = parser->m_manage;
+
+    uint8_t const *  p = rp;
+
+    /*读取名字 */
+    p = net_dns_ns_req_dump_name(manage, &parser->m_manage->m_data_buffer, rp, base, total_sz, 0);
+    if (p == NULL) return 0;
+
+    uint32_t name_sz = (uint32_t)(p - rp);
+    uint32_t record_sz = name_sz + 2 + 2 + 4 + 2; /*type + class + ttl + rdlength*/
+
+    if (record_sz > left_sz) return 0;
+    
+    p+=2; /*type*/
+    p+=2; /*class*/
+    p+=4; /*ttl*/
+
+    uint16_t rdlength;
+    CPE_COPY_NTOH16(&rdlength, p); p+=2;
+
+    record_sz += rdlength;
+    if (record_sz > left_sz) return 0;
+
+    *used_size = record_sz;
+    return 0;
 }
 
 static int net_dns_ns_parser_read_ar_record(
     net_dns_ns_parser_t parser, uint8_t const * base, uint32_t total_sz,
     uint8_t const * rp, uint32_t left_sz, uint32_t * used_size)
 {
-    CPE_ERROR(parser->m_manage->m_em, "dns: ns: parser: not support read ar record!");
-    return -1;
+    net_dns_manage_t manage = parser->m_manage;
+
+    uint8_t const *  p = rp;
+
+    /*读取名字 */
+    p = net_dns_ns_req_dump_name(manage, &parser->m_manage->m_data_buffer, rp, base, total_sz, 0);
+    if (p == NULL) return 0;
+
+    uint32_t name_sz = (uint32_t)(p - rp);
+    uint32_t record_sz = name_sz + 2 + 2 + 4 + 2; /*type + class + ttl + rdlength*/
+
+    if (record_sz > left_sz) return 0;
+    
+    p+=2; /*type*/
+    p+=2; /*class*/
+    p+=4; /*ttl*/
+
+    uint16_t rdlength;
+    CPE_COPY_NTOH16(&rdlength, p); p+=2;
+
+    record_sz += rdlength;
+    if (record_sz > left_sz) return 0;
+
+    *used_size = record_sz;
+    return 0;
 }
