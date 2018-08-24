@@ -2,6 +2,7 @@
 #include "cpe/pal/pal_string.h"
 #include "cpe/utils/string_utils.h"
 #include "cpe/utils/stream_mem.h"
+#include "cpe/utils/stream_buffer.h"
 #include "cpe/utils/random.h"
 #include "cpe/utils/base64.h"
 #include "cpe/utils/sha1.h"
@@ -706,6 +707,22 @@ static int net_ws_cli_endpoint_on_handshake(net_ws_cli_protocol_t ws_protocol, n
     }
     
     return 0;
+}
+
+void net_ws_cli_endpoint_url_print(write_stream_t s, net_ws_cli_endpoint_t ws_ep) {
+    stream_printf(s, ws_ep->m_cfg_use_https ? "wss://" : "ws://");
+    net_address_print(s, net_endpoint_remote_address(ws_ep->m_endpoint));
+    stream_printf(s, "%s", net_ws_cli_endpoint_path(ws_ep));
+}
+
+const char * net_ws_cli_endpoint_url_dump(mem_buffer_t buffer, net_ws_cli_endpoint_t ws_ep) {
+    struct write_stream_buffer stream = CPE_WRITE_STREAM_BUFFER_INITIALIZER(buffer);
+
+    mem_buffer_clear_data(buffer);
+    net_ws_cli_endpoint_url_print((write_stream_t)&stream, ws_ep);
+    stream_putc((write_stream_t)&stream, 0);
+    
+    return mem_buffer_make_continuous(buffer, 0);
 }
 
 const char * net_ws_cli_state_str(net_ws_cli_state_t state) {
