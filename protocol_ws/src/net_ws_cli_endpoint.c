@@ -57,8 +57,14 @@ net_endpoint_t net_ws_cli_endpoint_net_endpoint(net_ws_cli_endpoint_t ws_ep) {
 
 int net_ws_cli_endpoint_set_remote_and_path(net_ws_cli_endpoint_t ws_ep, const char * url) {
     net_ws_cli_protocol_t ws_protocol = net_protocol_data(net_endpoint_protocol(ws_ep->m_endpoint));
-    
-    if (!cpe_str_start_with(url, "ws://")) {
+
+    if (cpe_str_start_with(url, "ws://")) {
+        ws_ep->m_cfg_use_https = 0;
+    }
+    else if (cpe_str_start_with(url, "wss://")) {
+        ws_ep->m_cfg_use_https = 1;
+    }
+    else {
         CPE_ERROR(
             ws_protocol->m_em,
             "ws: %s: set remote and path: url %s check protocol fail!",
@@ -97,7 +103,11 @@ int net_ws_cli_endpoint_set_remote_and_path(net_ws_cli_endpoint_t ws_ep, const c
             net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), ws_ep->m_endpoint), url);
         return -1;
     }
-    
+
+    if (net_address_port(address) == 0) {
+        net_address_set_port(address, ws_ep->m_cfg_use_https ? 443 : 80);
+    }
+        
     if (net_endpoint_set_remote_address(ws_ep->m_endpoint, address, 1) != 0) {
         CPE_ERROR(
             ws_protocol->m_em,
@@ -373,8 +383,9 @@ int net_ws_cli_endpoint_init(net_endpoint_t endpoint) {
 
     ws_ep->m_endpoint = NULL;
     ws_ep->m_state = net_ws_cli_state_init;
-    ws_ep->m_cfg_reconnect_span_ms = 3u * 1000u;
+    ws_ep->m_cfg_use_https = 0;
     ws_ep->m_cfg_path = NULL;
+    ws_ep->m_cfg_reconnect_span_ms = 3u * 1000u;
     ws_ep->m_handshake_token = NULL;
 
     ws_ep->m_connect_timer = net_timer_auto_create(schedule, net_ws_cli_endpoint_do_connect, ws_ep);
