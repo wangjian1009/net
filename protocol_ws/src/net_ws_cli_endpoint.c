@@ -55,6 +55,61 @@ net_endpoint_t net_ws_cli_endpoint_net_endpoint(net_ws_cli_endpoint_t ws_ep) {
     return ws_ep->m_endpoint;
 }
 
+int net_ws_cli_endpoint_set_remote_and_path(net_ws_cli_endpoint_t ws_ep, const char * url) {
+    net_ws_cli_protocol_t ws_protocol = net_protocol_data(net_endpoint_protocol(ws_ep->m_endpoint));
+    
+    if (!cpe_str_start_with(url, "ws://")) {
+        CPE_ERROR(
+            ws_protocol->m_em,
+            "ws: %s: set remote and path: url %s check protocol fail!",
+            net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), ws_ep->m_endpoint), url);
+        return -1;
+    }
+
+    const char * addr_begin = url + 5; /*ws://*/
+    const char * addr_end = strchr(addr_begin, '/');
+
+    const char * str_address = NULL;
+    const char * path = NULL;
+    
+    if (addr_end) {
+        mem_buffer_t tmp_buffer = net_ws_cli_protocol_tmp_buffer(ws_protocol);
+        mem_buffer_clear_data(tmp_buffer);
+        str_address = mem_buffer_strdup_range(tmp_buffer, addr_begin, addr_end);
+        if (str_address == NULL) {
+            CPE_ERROR(
+                ws_protocol->m_em,
+                "ws: %s: set remote and path: url %s address dup fail!",
+                net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), ws_ep->m_endpoint), url);
+            return -1;
+        }
+        path = addr_end;
+    }
+    else {
+        str_address = addr_begin;
+    }
+
+    net_address_t address = net_address_create_auto(net_endpoint_schedule(ws_ep->m_endpoint), addr_begin);
+    if (address == NULL) {
+        CPE_ERROR(
+            ws_protocol->m_em,
+            "ws: %s: set remote and path: url %s address format error!",
+            net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), ws_ep->m_endpoint), url);
+        return -1;
+    }
+    
+    if (net_endpoint_set_remote_address(ws_ep->m_endpoint, address, 1) != 0) {
+        CPE_ERROR(
+            ws_protocol->m_em,
+            "ws: %s: set remote and path: url %s set remote address fail!",
+            net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), ws_ep->m_endpoint), url);
+        net_address_free(address);
+        return -1;
+    }
+
+    return net_ws_cli_endpoint_set_path(ws_ep, path);
+}
+
 const char * net_ws_cli_endpoint_path(net_ws_cli_endpoint_t ws_ep) {
     return ws_ep->m_cfg_path ? ws_ep->m_cfg_path : "/";
 }

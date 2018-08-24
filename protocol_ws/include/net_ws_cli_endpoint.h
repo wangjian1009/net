@@ -10,6 +10,8 @@ void net_ws_cli_endpoint_free(net_ws_cli_endpoint_t ws_ep);
 
 net_ws_cli_endpoint_t net_ws_cli_endpoint_get(net_endpoint_t endpoint);
 
+int net_ws_cli_endpoint_set_remote_and_path(net_ws_cli_endpoint_t ws_ep, const char * url);
+
 const char * net_ws_cli_endpoint_path(net_ws_cli_endpoint_t ws_ep);
 int net_ws_cli_endpoint_set_path(net_ws_cli_endpoint_t ws_ep, const char * path);
 
