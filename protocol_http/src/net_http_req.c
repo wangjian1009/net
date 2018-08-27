@@ -38,6 +38,9 @@ net_http_req_create(net_http_endpoint_t http_ep, net_http_req_method_t method, c
     req->m_http_ep = http_ep;
     req->m_id = ++http_ep->m_max_req_id;
     req->m_req_state = net_http_req_state_prepare_head;
+    req->m_head_size = 0;
+    req->m_body_size = 0;
+    req->m_flushed_size = 0;
 
     req->m_res_state = net_http_res_state_init;
     req->m_res_ctx = NULL;

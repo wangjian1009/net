@@ -33,7 +33,11 @@ int net_http_endpoint_on_state_change(net_endpoint_t endpoint, net_endpoint_stat
 
 int net_http_endpoint_set_state(net_http_endpoint_t http_ep, net_http_state_t state);
 
-int net_http_endpoint_write(net_http_endpoint_t http_ep, void const * data, uint32_t size);
+int net_http_endpoint_write(
+    net_http_protocol_t http_protocol,
+    net_http_endpoint_t http_ep, net_http_req_t http_req, void const * data, uint32_t size);
+
+int net_http_endpoint_flush(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t http_req);
 
 NET_END_DECL
 

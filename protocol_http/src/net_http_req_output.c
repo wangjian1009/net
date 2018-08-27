@@ -5,6 +5,8 @@
 #include "net_address.h"
 #include "net_http_req_i.h"
 
+static void net_http_req_debug_dump_head(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t req);
+
 net_http_req_state_t net_http_req_state(net_http_req_t req) {
     return req->m_req_state;
 }
@@ -29,9 +31,9 @@ int net_http_req_write_head_host(net_http_req_t http_req) {
         net_address_host(net_http_protocol_tmp_buffer(http_protocol), address),
         net_address_port(address));
 
-    if (net_http_endpoint_write(http_req->m_http_ep, buf, (uint32_t)n) != 0) return -1;
+    if (net_http_endpoint_write(http_protocol, http_req->m_http_ep, http_req, buf, (uint32_t)n) != 0) return -1;
 
-    http_req->m_req_size += n;
+    http_req->m_head_size += n;
     return 0;
 }
 
@@ -54,9 +56,9 @@ int net_http_req_write_head_pair(net_http_req_t http_req, const char * attr_name
     char buf[256];
     int n = snprintf(buf, sizeof(buf), "%s: %s\r\n", attr_name, attr_value);
 
-    if (net_http_endpoint_write(http_req->m_http_ep, buf, (uint32_t)n) != 0) return -1;
+    if (net_http_endpoint_write(http_protocol, http_req->m_http_ep, http_req, buf, (uint32_t)n) != 0) return -1;
 
-    http_req->m_req_size += n;
+    http_req->m_head_size += n;
     return 0;
 }
 
@@ -79,16 +81,43 @@ int net_http_req_write_body_full(net_http_req_t http_req, void const * data, siz
         assert(http_req->m_body_size == data_sz);
     }
 
-    if (net_http_endpoint_write(http_req->m_http_ep, "\r\n", 2) != 0) return -1;
-    http_req->m_req_size += 2;
+    if (net_http_endpoint_write(http_protocol, http_req->m_http_ep, http_req, "\r\n", 2) != 0) return -1;
+    http_req->m_head_size += 2;
     
     http_req->m_req_state = net_http_req_state_prepare_body;
-    if (net_http_endpoint_write(http_req->m_http_ep, data, data_sz) != 0) return -1;
+    if (net_http_endpoint_write(http_protocol, http_req->m_http_ep, http_req, data, data_sz) != 0) return -1;
     
     return 0;
 }
 
 int net_http_req_write_commit(net_http_req_t http_req) {
+    net_http_endpoint_t http_ep = http_req->m_http_ep;
+    net_http_protocol_t http_protocol = net_http_endpoint_protocol(http_req->m_http_ep);
+
+    if (http_req->m_req_state != net_http_req_state_prepare_head
+        && http_req->m_req_state != net_http_req_state_prepare_body)
+    {
+        CPE_ERROR(
+            http_protocol->m_em, "http: %s: req %d: req-state=%s, can`t commit!",
+            net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_req->m_http_ep->m_endpoint),
+            http_req->m_id,
+            net_http_req_state_str(http_req->m_req_state));
+        return -1;
+    }
+
+    if (http_req->m_req_state == net_http_req_state_prepare_head) {
+        if (net_http_endpoint_write(http_protocol, http_req->m_http_ep, http_req, "\r\n", 2) != 0) return -1;
+        http_req->m_head_size += 2;
+    }
+
+    if (net_endpoint_protocol_debug(http_ep->m_endpoint) >= 2) {
+        net_http_req_debug_dump_head(http_protocol, http_ep, http_req);
+    }
+    
+    if (net_http_endpoint_flush(http_protocol, http_req->m_http_ep, http_req) != 0) return -1;
+
+    http_req->m_req_state = net_http_req_state_completed;
+    
     return 0;
 }
 
@@ -101,10 +130,37 @@ int net_http_req_do_send_first_line(
         method == net_http_req_method_get ? "GET" : "POST",
         url);
 
-    if (net_http_endpoint_write(http_req->m_http_ep, buf, (uint32_t)n) != 0) return -1;
+    if (net_http_endpoint_write(http_protocol, http_req->m_http_ep, http_req, buf, (uint32_t)n) != 0) return -1;
 
-    http_req->m_req_size += n;
+    http_req->m_head_size += n;
     return 0;
+}
+
+static void net_http_req_debug_dump_head(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t http_req) {
+    if (http_req->m_head_size >= http_req->m_flushed_size + 4) {
+        char * p = ((char*)http_ep->m_write_buf) + (http_req->m_head_size - http_req->m_flushed_size - 4);
+        *p = 0;
+        
+        CPE_INFO(
+            http_protocol->m_em, "http: %s: req %d: >>> head=%d (flushed=%d)\n%s",
+            net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_req->m_http_ep->m_endpoint),
+            http_req->m_id,
+            http_req->m_head_size,
+            http_req->m_flushed_size,
+            (const char *)http_ep->m_write_buf);
+
+        *p = '\r';
+    }
+    else {
+        CPE_INFO(
+            http_protocol->m_em, "http: %s: req %d: >>> head=%d, body=%d, total=%d (flushed=%d)",
+            net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_req->m_http_ep->m_endpoint),
+            http_req->m_id,
+            http_req->m_head_size,
+            http_req->m_body_size,
+            http_req->m_head_size + http_req->m_body_size,
+            http_req->m_flushed_size);
+    }
 }
 
 const char * net_http_req_state_str(net_http_req_state_t req_state) {

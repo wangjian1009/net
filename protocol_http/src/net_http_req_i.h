@@ -12,8 +12,9 @@ struct net_http_req {
 
     /*req*/
     net_http_req_state_t m_req_state;
-    uint32_t m_req_size;
+    uint32_t m_head_size;
     uint32_t m_body_size;
+    uint32_t m_flushed_size;
 
     /*res*/
     net_http_res_state_t m_res_state;
