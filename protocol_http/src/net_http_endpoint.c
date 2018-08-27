@@ -12,8 +12,8 @@
 #include "net_http_endpoint_i.h"
 #include "net_http_protocol_i.h"
 
+static void net_http_endpoint_reset_data(net_http_endpoint_t http_ep);
 static void net_http_endpoint_do_connect(net_timer_t timer, void * ctx);
-static int net_http_endpoint_send_handshake(net_http_endpoint_t http_ep);
 static int net_http_endpoint_notify_state_changed(net_http_endpoint_t http_ep, net_http_state_t old_state);
 
 net_http_endpoint_t
@@ -57,11 +57,11 @@ net_endpoint_t net_http_endpoint_net_ep(net_http_endpoint_t http_ep) {
 }
 
 uint32_t net_http_endpoint_reconnect_span_ms(net_http_endpoint_t http_ep) {
-    return http_ep->m_cfg_reconnect_span_ms;
+    return http_ep->m_reconnect_span_ms;
 }
 
 void net_http_endpoint_set_reconnect_span_ms(net_http_endpoint_t http_ep, uint32_t span_ms) {
-    http_ep->m_cfg_reconnect_span_ms = span_ms;
+    http_ep->m_reconnect_span_ms = span_ms;
 }
 
 net_http_protocol_t net_http_endpoint_protocol(net_http_endpoint_t http_ep) {
@@ -69,21 +69,27 @@ net_http_protocol_t net_http_endpoint_protocol(net_http_endpoint_t http_ep) {
 }
 
 uint8_t net_http_endpoint_use_https(net_http_endpoint_t http_ep) {
-    return http_ep->m_cfg_use_https;
+    return http_ep->m_use_https;
 }
 
 void net_http_endpoint_set_use_https(net_http_endpoint_t http_ep, uint8_t use_https) {
-    http_ep->m_cfg_use_https = 0;
+    http_ep->m_use_https = 0;
 }
+
+uint8_t net_http_endpoint_keep_alive(net_http_endpoint_t http_ep) {
+    return http_ep->m_keep_alive;
+}
+
+void net_http_endpoint_set_kee_alive(net_http_endpoint_t http_ep, uint8_t use_https);
 
 int net_http_endpoint_set_remote_and_path(net_http_endpoint_t http_ep, const char * url) {
     net_http_protocol_t ws_protocol = net_protocol_data(net_endpoint_protocol(http_ep->m_endpoint));
 
     if (cpe_str_start_with(url, "http://")) {
-        http_ep->m_cfg_use_https = 0;
+        http_ep->m_use_https = 0;
     }
     else if (cpe_str_start_with(url, "https://")) {
-        http_ep->m_cfg_use_https = 1;
+        http_ep->m_use_https = 1;
     }
     else {
         CPE_ERROR(
@@ -126,7 +132,7 @@ int net_http_endpoint_set_remote_and_path(net_http_endpoint_t http_ep, const cha
     }
 
     if (net_address_port(address) == 0) {
-        net_address_set_port(address, http_ep->m_cfg_use_https ? 443 : 80);
+        net_address_set_port(address, http_ep->m_use_https ? 443 : 80);
     }
         
     if (net_endpoint_set_remote_address(http_ep->m_endpoint, address, 1) != 0) {
@@ -197,9 +203,12 @@ int net_http_endpoint_init(net_endpoint_t endpoint) {
 
     http_ep->m_endpoint = NULL;
     http_ep->m_state = net_http_state_disable;
-    http_ep->m_cfg_use_https = 0;
-    http_ep->m_cfg_reconnect_span_ms = 3u * 1000u;
-
+    http_ep->m_use_https = 0;
+    http_ep->m_reconnect_span_ms = 3u * 1000u;
+    http_ep->m_max_req_id = 0;
+    TAILQ_INIT(&http_ep->m_runing_reqs);
+    TAILQ_INIT(&http_ep->m_completed_reqs);
+    
     http_ep->m_connect_timer = net_timer_auto_create(schedule, net_http_endpoint_do_connect, http_ep);
     if (http_ep->m_connect_timer == NULL) {
         CPE_ERROR(ws_protocol->m_em, "http: ???: init: create connect timer fail!");
@@ -235,59 +244,51 @@ int net_http_endpoint_input(net_endpoint_t endpoint) {
     net_http_endpoint_t http_ep = net_endpoint_protocol_data(endpoint);
     net_http_protocol_t ws_protocol = net_protocol_data(net_endpoint_protocol(endpoint));
 
-    /* if (http_ep->m_state == net_http_state_established) { */
-    /*     net_timer_active(http_ep->m_process_timer, 0); */
-    /* } */
-    
     return http_ep->m_state == net_http_state_established ? 0 : -1;
 }
 
 int net_http_endpoint_on_state_change(net_endpoint_t endpoint, net_endpoint_state_t old_state) {
-    /* net_http_endpoint_t http_ep = net_endpoint_protocol_data(endpoint); */
+    net_http_endpoint_t http_ep = net_endpoint_protocol_data(endpoint);
 
-    /* switch(net_endpoint_state(endpoint)) { */
-    /* case net_endpoint_state_disable: */
-    /*     if (net_http_endpoint_set_state(http_ep, net_http_state_init) != 0) return -1; */
-    /*     net_http_endpoint_reset_data(http_ep); */
-    /*     net_timer_active(http_ep->m_connect_timer, (int32_t)http_ep->m_cfg_reconnect_span_ms); */
-    /*     break; */
-    /* case net_endpoint_state_network_error: */
-    /*     if (net_http_endpoint_set_state(http_ep, net_http_state_error) != 0) return -1; */
-    /*     net_http_endpoint_reset_data(http_ep); */
-    /*     net_timer_active(http_ep->m_connect_timer, (int32_t)http_ep->m_cfg_reconnect_span_ms); */
-    /*     break; */
-    /* case net_endpoint_state_logic_error: */
-    /*     if (net_http_endpoint_set_state(http_ep, net_http_state_error) != 0) return -1; */
-    /*     net_http_endpoint_reset_data(http_ep); */
-    /*     net_timer_active(http_ep->m_connect_timer, 0); */
-    /*     break; */
-    /* case net_endpoint_state_resolving: */
-    /* case net_endpoint_state_connecting: */
-    /*     if (net_http_endpoint_set_state(http_ep, net_http_state_connecting) != 0) return -1; */
-    /*     break; */
-    /* case net_endpoint_state_established: */
-    /*     if (net_http_endpoint_send_handshake(http_ep) != 0) { */
-    /*         if (net_http_endpoint_set_state(http_ep, net_http_state_error) != 0) return -1; */
-    /*         net_timer_active(http_ep->m_connect_timer, (int32_t)http_ep->m_cfg_reconnect_span_ms); */
-    /*     } */
-    /*     else { */
-    /*         if (net_http_endpoint_set_state(http_ep, net_http_state_handshake) != 0) return -1; */
-    /*     } */
-        
-    /*     break; */
-    /* case net_endpoint_state_deleting: */
-    /*     assert(0); */
-    /*     return -1; */
-    /* } */
+    switch(net_endpoint_state(endpoint)) {
+    case net_endpoint_state_disable:
+        if (net_http_endpoint_set_state(http_ep, net_http_state_disable) != 0) return -1;
+        net_http_endpoint_reset_data(http_ep);
+        net_timer_active(http_ep->m_connect_timer, (int32_t)http_ep->m_reconnect_span_ms);
+        break;
+    case net_endpoint_state_network_error:
+        if (net_http_endpoint_set_state(http_ep, net_http_state_error) != 0) return -1;
+        net_http_endpoint_reset_data(http_ep);
+        net_timer_active(http_ep->m_connect_timer, (int32_t)http_ep->m_reconnect_span_ms);
+        break;
+    case net_endpoint_state_logic_error:
+        if (net_http_endpoint_set_state(http_ep, net_http_state_error) != 0) return -1;
+        net_http_endpoint_reset_data(http_ep);
+        net_timer_active(http_ep->m_connect_timer, 0);
+        break;
+    case net_endpoint_state_resolving:
+    case net_endpoint_state_connecting:
+        if (net_http_endpoint_set_state(http_ep, net_http_state_connecting) != 0) return -1;
+        break;
+    case net_endpoint_state_established:
+        if (net_http_endpoint_set_state(http_ep, net_http_state_established) != 0) return -1;
+        break;
+    case net_endpoint_state_deleting:
+        assert(0);
+        return -1;
+    }
 
     return 0;
+}
+
+static void net_http_endpoint_reset_data(net_http_endpoint_t http_ep) {
 }
 
 static void net_http_endpoint_do_connect(net_timer_t timer, void * ctx) {
     net_http_endpoint_t http_ep = ctx;
 
     if (net_endpoint_connect(http_ep->m_endpoint) != 0) {
-        //net_timer_active(timer, (int32_t)http_ep->m_cfg_reconnect_span_ms);
+        net_timer_active(timer, (int32_t)http_ep->m_reconnect_span_ms);
     }
 }
 

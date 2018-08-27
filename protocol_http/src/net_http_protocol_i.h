@@ -1,9 +1,12 @@
 #ifndef NET_WS_CLI_PROTOCOL_I_H_INCLEDED
 #define NET_WS_CLI_PROTOCOL_I_H_INCLEDED
 #include "cpe/utils/buffer.h"
+#include "cpe/utils/error.h"
 #include "net_http_protocol.h"
 
 NET_BEGIN_DECL
+
+typedef TAILQ_HEAD(net_http_req_list, net_http_req) net_http_req_list_t;
 
 struct net_http_protocol {
     mem_allocrator_t m_alloc;
@@ -18,6 +21,9 @@ struct net_http_protocol {
     net_http_endpoint_init_fun_t m_endpoint_init;
     net_http_endpoint_fini_fun_t m_endpoint_fini;
     net_http_endpoint_on_state_change_fun_t m_endpoint_on_state_change;
+
+    /*runtime*/
+    net_http_req_list_t m_free_reqs;
 };
 
 mem_buffer_t net_http_protocol_tmp_buffer(net_http_protocol_t ws_protocol);
