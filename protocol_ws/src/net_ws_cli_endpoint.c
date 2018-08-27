@@ -428,7 +428,6 @@ static struct wslay_event_callbacks s_net_ws_cli_endpoint_callbacks = {
 int net_ws_cli_endpoint_init(net_http_endpoint_t http_ep) {
     net_ws_cli_endpoint_t ws_ep = net_http_endpoint_data(http_ep);
     net_ws_cli_protocol_t ws_protocol = net_http_protocol_data(net_http_endpoint_protocol(http_ep));
-    net_schedule_t schedule = net_http_endpoint_schedule(http_ep);
 
     ws_ep->m_http_ep = NULL;
     ws_ep->m_state = net_ws_cli_state_init;
@@ -473,7 +472,6 @@ void net_ws_cli_endpoint_fini(net_http_endpoint_t http_ep) {
 
 int net_ws_cli_endpoint_input(net_http_endpoint_t http_ep) {
     net_ws_cli_endpoint_t ws_ep = net_http_endpoint_data(http_ep);
-    net_ws_cli_protocol_t ws_protocol = net_http_protocol_data(net_http_endpoint_protocol(http_ep));
 
     if (net_ws_cli_endpoint_do_process(ws_ep) != 0) return -1;
         

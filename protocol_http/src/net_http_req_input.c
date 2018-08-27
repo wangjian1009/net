@@ -83,7 +83,7 @@ int net_http_endpoint_req_input(net_http_protocol_t http_protocol, net_http_endp
             if (net_http_req_input_body_encoding_none(http_protocol, http_ep, req, endpoint) != 0) return -1;
             break;
         case net_http_trans_encoding_trunked:
-            //if (net_proxy_http_svr_endpoint_basic_backword_content_encoding_trunked(http_protocol, http_ep, endpoint, from) != 0) return -1;
+            if (net_http_req_input_body_encoding_trunked(http_protocol, http_ep, req, endpoint) != 0) return -1;
             break;
         }
     }
@@ -357,4 +357,11 @@ static int net_http_req_input_body_encoding_none(
             }
         }
     } while(1);
+}
+
+static int net_http_req_input_body_encoding_trunked(
+    net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t req,
+    net_endpoint_t endpoint)
+{
+    return -1;
 }

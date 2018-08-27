@@ -273,6 +273,9 @@ int net_http_endpoint_input(net_endpoint_t endpoint) {
                     net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint));
                 return -1;
             }
+            else {
+                return 0;
+            }
         }
     }
 
