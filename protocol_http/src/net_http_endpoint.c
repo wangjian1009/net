@@ -11,6 +11,7 @@
 #include "net_timer.h"
 #include "net_http_endpoint_i.h"
 #include "net_http_protocol_i.h"
+#include "net_http_req_i.h"
 
 static void net_http_endpoint_reset_data(net_http_endpoint_t http_ep);
 static void net_http_endpoint_do_connect(net_timer_t timer, void * ctx);
@@ -23,8 +24,6 @@ net_http_endpoint_create(net_driver_t driver, net_endpoint_type_t type, net_http
     
     net_http_endpoint_t http_ep = net_endpoint_protocol_data(endpoint);
 
-    http_ep->m_endpoint = endpoint;
-    
     return http_ep;
 }
 
@@ -80,9 +79,15 @@ uint8_t net_http_endpoint_keep_alive(net_http_endpoint_t http_ep) {
     return http_ep->m_keep_alive;
 }
 
-void net_http_endpoint_set_kee_alive(net_http_endpoint_t http_ep, uint8_t use_https);
+void net_http_endpoint_set_kee_alive(net_http_endpoint_t http_ep, uint8_t keep_alive) {
+    http_ep->m_keep_alive = keep_alive;
+}
 
-int net_http_endpoint_set_remote_and_path(net_http_endpoint_t http_ep, const char * url) {
+void net_http_endpoint_upgrade_connection(net_http_endpoint_t http_ep, net_http_endpoint_input_fun_t input_processor) {
+    http_ep->m_upgraded_processor = input_processor;
+}
+
+int net_http_endpoint_set_remote(net_http_endpoint_t http_ep, const char * url) {
     net_http_protocol_t ws_protocol = net_protocol_data(net_endpoint_protocol(http_ep->m_endpoint));
 
     if (cpe_str_start_with(url, "http://")) {
@@ -201,13 +206,14 @@ int net_http_endpoint_init(net_endpoint_t endpoint) {
     net_http_protocol_t ws_protocol = net_protocol_data(net_endpoint_protocol(endpoint));
     net_schedule_t schedule = net_endpoint_schedule(endpoint);
 
-    http_ep->m_endpoint = NULL;
+    http_ep->m_endpoint = endpoint;
     http_ep->m_state = net_http_state_disable;
     http_ep->m_use_https = 0;
     http_ep->m_reconnect_span_ms = 3u * 1000u;
     http_ep->m_max_req_id = 0;
     TAILQ_INIT(&http_ep->m_runing_reqs);
     TAILQ_INIT(&http_ep->m_completed_reqs);
+    http_ep->m_upgraded_processor = NULL;
     
     http_ep->m_connect_timer = net_timer_auto_create(schedule, net_http_endpoint_do_connect, http_ep);
     if (http_ep->m_connect_timer == NULL) {
@@ -228,10 +234,18 @@ void net_http_endpoint_fini(net_endpoint_t endpoint) {
     net_http_endpoint_t http_ep = net_endpoint_protocol_data(endpoint);
     net_http_protocol_t ws_protocol = net_protocol_data(net_endpoint_protocol(endpoint));
 
+    while(!TAILQ_EMPTY(&http_ep->m_runing_reqs)) {
+        net_http_req_free(TAILQ_FIRST(&http_ep->m_runing_reqs));
+    }
+    
+    while(!TAILQ_EMPTY(&http_ep->m_completed_reqs)) {
+        net_http_req_free(TAILQ_FIRST(&http_ep->m_completed_reqs));
+    }
+    
     if (ws_protocol->m_endpoint_fini) {
         ws_protocol->m_endpoint_fini(http_ep);
     }
-    
+
     if (http_ep->m_connect_timer) {
         net_timer_free(http_ep->m_connect_timer);
         http_ep->m_connect_timer = NULL;
@@ -243,6 +257,35 @@ void net_http_endpoint_fini(net_endpoint_t endpoint) {
 int net_http_endpoint_input(net_endpoint_t endpoint) {
     net_http_endpoint_t http_ep = net_endpoint_protocol_data(endpoint);
     net_http_protocol_t ws_protocol = net_protocol_data(net_endpoint_protocol(endpoint));
+
+    while(http_ep->m_state == net_http_state_established) {
+        net_http_req_t processing_req;
+        while((processing_req = TAILQ_FIRST(&http_ep->m_runing_reqs))) {
+            int rv = net_http_endpoint_req_input(ws_protocol, processing_req);
+            if (rv < 0) return 0;
+
+            switch(processing_req->m_res_state) {
+            case net_http_res_state_completed:
+                net_http_req_free(processing_req);
+                continue; /* */
+            default:
+                /*当前请求没有完成，比如还需要等待后续数据 */
+                return 0;
+            }
+        }
+
+        if (http_ep->m_upgraded_processor) {
+            return http_ep->m_upgraded_processor(http_ep);
+        }
+
+        if (!net_endpoint_buf_is_empty(endpoint, net_ep_buf_read)) {
+            CPE_ERROR(
+                ws_protocol->m_em,
+                "http: %s: input without req or upgraded-processor!",
+                net_endpoint_dump(net_http_protocol_tmp_buffer(ws_protocol), http_ep->m_endpoint));
+            return -1;
+        }
+    }
 
     return http_ep->m_state == net_http_state_established ? 0 : -1;
 }
@@ -281,7 +324,18 @@ int net_http_endpoint_on_state_change(net_endpoint_t endpoint, net_endpoint_stat
     return 0;
 }
 
+int net_http_endpoint_write(net_http_endpoint_t http_ep, void const * data, uint32_t size) {
+    return net_endpoint_buf_append(http_ep->m_endpoint, net_ep_buf_write, data, size);
+}
+
 static void net_http_endpoint_reset_data(net_http_endpoint_t http_ep) {
+    while(!TAILQ_EMPTY(&http_ep->m_runing_reqs)) {
+        net_http_req_free(TAILQ_FIRST(&http_ep->m_runing_reqs));
+    }
+    
+    while(!TAILQ_EMPTY(&http_ep->m_completed_reqs)) {
+        net_http_req_free(TAILQ_FIRST(&http_ep->m_completed_reqs));
+    }
 }
 
 static void net_http_endpoint_do_connect(net_timer_t timer, void * ctx) {

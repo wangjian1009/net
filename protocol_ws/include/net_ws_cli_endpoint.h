@@ -1,5 +1,6 @@
 #ifndef NET_WS_CLI_ENDPOINT_H_INCLEDED
 #define NET_WS_CLI_ENDPOINT_H_INCLEDED
+#include "net_http_types.h"
 #include "net_ws_types.h"
 
 NET_BEGIN_DECL

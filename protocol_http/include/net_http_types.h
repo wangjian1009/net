@@ -20,7 +20,6 @@ typedef int (*net_http_endpoint_input_fun_t)(net_http_endpoint_t http_ep);
 typedef enum net_http_req_state {
     net_http_req_state_prepare_head,
     net_http_req_state_prepare_body,
-    net_http_req_state_runing,
     net_http_req_state_completed,
 } net_http_req_state_t;
 
@@ -28,6 +27,13 @@ typedef enum net_http_req_method {
     net_http_req_method_get,
     net_http_req_method_post,
 } net_http_req_method_t;
+
+typedef enum net_http_res_state {
+    net_http_res_state_init,
+    net_http_res_state_reading_head,
+    net_http_res_state_reading_body,
+    net_http_res_state_completed,
+} net_http_res_state_t;
 
 NET_END_DECL
 

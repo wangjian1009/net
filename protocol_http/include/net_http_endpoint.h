@@ -26,6 +26,8 @@ void net_http_endpoint_set_use_https(net_http_endpoint_t http_ep, uint8_t use_ht
 uint8_t net_http_endpoint_keep_alive(net_http_endpoint_t http_ep);
 void net_http_endpoint_set_kee_alive(net_http_endpoint_t http_ep, uint8_t use_https);
 
+int net_http_endpoint_set_remote(net_http_endpoint_t http_ep, const char * url);
+
 void net_http_endpoint_enable(net_http_endpoint_t http_ep);
 void net_http_endpoint_upgrade_connection(net_http_endpoint_t http_ep, net_http_endpoint_input_fun_t input_processor);
 

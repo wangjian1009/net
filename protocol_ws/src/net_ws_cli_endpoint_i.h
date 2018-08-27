@@ -16,7 +16,6 @@ struct net_ws_cli_endpoint {
 
 int net_ws_cli_endpoint_init(net_http_endpoint_t endpoint);
 void net_ws_cli_endpoint_fini(net_http_endpoint_t endpoint);
-int net_ws_cli_endpoint_input(net_http_endpoint_t endpoint);
 int net_ws_cli_endpoint_on_state_change(net_http_endpoint_t endpoint, net_http_state_t from_state);
 
 int net_ws_cli_endpoint_set_state(net_ws_cli_endpoint_t ws_ep, net_ws_cli_state_t state);
