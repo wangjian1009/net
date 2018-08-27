@@ -8,7 +8,7 @@ net_ws_cli_endpoint_t net_ws_cli_endpoint_create(
     net_driver_t driver, net_endpoint_type_t type, net_ws_cli_protocol_t ws_protocol);
 void net_ws_cli_endpoint_free(net_ws_cli_endpoint_t ws_ep);
 
-net_ws_cli_endpoint_t net_ws_cli_endpoint_get(net_endpoint_t endpoint);
+net_ws_cli_endpoint_t net_ws_cli_endpoint_get(net_http_endpoint_t endpoint);
 
 int net_ws_cli_endpoint_set_remote_and_path(net_ws_cli_endpoint_t ws_ep, const char * url);
 
@@ -28,7 +28,8 @@ net_ws_cli_state_t net_ws_cli_endpoint_state(net_ws_cli_endpoint_t ws_ep);
 
 void net_ws_cli_endpoint_enable(net_ws_cli_endpoint_t ws_ep);
 
-net_endpoint_t net_ws_cli_endpoint_net_endpoint(net_ws_cli_endpoint_t ws_ep);
+net_endpoint_t net_ws_cli_endpoint_net_ep(net_ws_cli_endpoint_t ws_ep);
+net_http_endpoint_t net_ws_cli_endpoint_http_ep(net_ws_cli_endpoint_t ws_ep);
 
 int net_ws_cli_endpoint_send_msg_text(net_ws_cli_endpoint_t ws_ep, const char * msg);
 int net_ws_cli_endpoint_send_msg_bin(net_ws_cli_endpoint_t ws_ep, const void * msg, uint32_t msg_len);

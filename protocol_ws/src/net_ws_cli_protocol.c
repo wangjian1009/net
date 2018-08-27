@@ -1,10 +1,10 @@
 #include "net_schedule.h"
-#include "net_protocol.h"
+#include "net_http_protocol.h"
 #include "net_ws_cli_protocol_i.h"
 #include "net_ws_cli_endpoint_i.h"
 
-static int net_ws_cli_protocol_init(net_protocol_t protocol);
-static void net_ws_cli_protocol_fini(net_protocol_t protocol);
+static int net_ws_cli_protocol_init(net_http_protocol_t protocol);
+static void net_ws_cli_protocol_fini(net_http_protocol_t protocol);
 
 net_ws_cli_protocol_t net_ws_cli_protocol_create(
     net_schedule_t schedule,
@@ -21,8 +21,8 @@ net_ws_cli_protocol_t net_ws_cli_protocol_create(
     net_ws_cli_endpoint_on_text_msg_fun_t endpoint_on_text_msg,
     net_ws_cli_endpoint_on_bin_msg_fun_t endpoint_on_bin_msg)
 {
-    net_protocol_t protocol =
-        net_protocol_create(
+    net_http_protocol_t protocol =
+        net_http_protocol_create(
             schedule,
             protocol_name,
             /*protocol*/
@@ -33,15 +33,12 @@ net_ws_cli_protocol_t net_ws_cli_protocol_create(
             sizeof(struct net_ws_cli_endpoint) + endpoint_capacity,
             net_ws_cli_endpoint_init,
             net_ws_cli_endpoint_fini,
-            net_ws_cli_endpoint_input,
-            NULL,
-            NULL,
             net_ws_cli_endpoint_on_state_change);
     if (protocol == NULL) {
         return NULL;
     }
 
-    net_ws_cli_protocol_t ws_protocol = net_protocol_data(protocol);
+    net_ws_cli_protocol_t ws_protocol = net_http_protocol_data(protocol);
     ws_protocol->m_protocol_capacity = protocol_capacity;
     ws_protocol->m_protocol_init = protocol_init;
     ws_protocol->m_protocol_fini = protocol_fini;
@@ -56,12 +53,12 @@ net_ws_cli_protocol_t net_ws_cli_protocol_create(
 }
 
 void net_ws_cli_protocol_free(net_ws_cli_protocol_t ws_protocol) {
-    net_protocol_free(net_protocol_from_data(ws_protocol));
+    net_http_protocol_free(net_http_protocol_from_data(ws_protocol));
 }
 
-static int net_ws_cli_protocol_init(net_protocol_t protocol) {
-    net_schedule_t schedule = net_protocol_schedule(protocol);
-    net_ws_cli_protocol_t ws_protocol = net_protocol_data(protocol);
+static int net_ws_cli_protocol_init(net_http_protocol_t protocol) {
+    net_schedule_t schedule = net_http_protocol_schedule(protocol);
+    net_ws_cli_protocol_t ws_protocol = net_http_protocol_data(protocol);
 
     ws_protocol->m_alloc = net_schedule_allocrator(schedule);
     ws_protocol->m_em = net_schedule_em(schedule);
@@ -80,15 +77,15 @@ static int net_ws_cli_protocol_init(net_protocol_t protocol) {
     return 0;
 }
 
-static void net_ws_cli_protocol_fini(net_protocol_t protocol) {
-    net_ws_cli_protocol_t ws_protocol = net_protocol_data(protocol);
+static void net_ws_cli_protocol_fini(net_http_protocol_t protocol) {
+    net_ws_cli_protocol_t ws_protocol = net_http_protocol_data(protocol);
     mem_buffer_clear(&ws_protocol->m_data_buffer);
 }
 
 mem_buffer_t net_ws_cli_protocol_tmp_buffer(net_ws_cli_protocol_t ws_protocol) {
-    return net_schedule_tmp_buffer(net_protocol_schedule(net_protocol_from_data(ws_protocol)));
+    return net_schedule_tmp_buffer(net_http_protocol_schedule(net_http_protocol_from_data(ws_protocol)));
 }
 
 net_schedule_t net_ws_cli_protocol_schedule(net_ws_cli_protocol_t ws_protocol) {
-    return net_protocol_schedule(net_protocol_from_data(ws_protocol));
+    return net_http_protocol_schedule(net_http_protocol_from_data(ws_protocol));
 }
