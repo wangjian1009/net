@@ -11,7 +11,7 @@ typedef TAILQ_HEAD(net_http_req_list, net_http_req) net_http_req_list_t;
 struct net_http_protocol {
     mem_allocrator_t m_alloc;
     error_monitor_t m_em;
-    struct mem_buffer m_data_buffer;
+    struct mem_buffer m_input_data_buffer;
     uint32_t m_write_buf_block_size;
 
     /*protocol*/
@@ -22,6 +22,7 @@ struct net_http_protocol {
     uint16_t m_endpoint_capacity;
     net_http_endpoint_init_fun_t m_endpoint_init;
     net_http_endpoint_fini_fun_t m_endpoint_fini;
+    net_http_endpoint_init_fun_t m_endpoint_upgraded_input;
     net_http_endpoint_on_state_change_fun_t m_endpoint_on_state_change;
 
     /*runtime*/

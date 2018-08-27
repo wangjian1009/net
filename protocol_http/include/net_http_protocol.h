@@ -9,6 +9,7 @@ typedef void (*net_http_protocol_fini_fun_t)(net_http_protocol_t http_protocol);
 
 typedef int (*net_http_endpoint_init_fun_t)(net_http_endpoint_t http_ep);
 typedef void (*net_http_endpoint_fini_fun_t)(net_http_endpoint_t http_ep);
+typedef int (*net_http_endpoint_input_fun_t)(net_http_endpoint_t http_ep);
 typedef int (*net_http_endpoint_on_state_change_fun_t)(net_http_endpoint_t http_ep, net_http_state_t from_state);
 
 net_http_protocol_t
@@ -23,6 +24,7 @@ net_http_protocol_create(
     uint16_t endpoint_capacity,
     net_http_endpoint_init_fun_t endpoint_init,
     net_http_endpoint_fini_fun_t endpoint_fini,
+    net_http_endpoint_input_fun_t endpoint_input_for_upgraded,
     net_http_endpoint_on_state_change_fun_t endpoint_on_state_change);
 
 void net_http_protocol_free(net_http_protocol_t http_protocol);

@@ -33,6 +33,7 @@ net_ws_cli_protocol_t net_ws_cli_protocol_create(
             sizeof(struct net_ws_cli_endpoint) + endpoint_capacity,
             net_ws_cli_endpoint_init,
             net_ws_cli_endpoint_fini,
+            net_ws_cli_endpoint_input,
             net_ws_cli_endpoint_on_state_change);
     if (protocol == NULL) {
         return NULL;

@@ -11,18 +11,16 @@
 #include "net_http_req.h"
 #include "net_http_protocol.h"
 #include "net_address.h"
-#include "net_timer.h"
 #include "net_ws_cli_endpoint_i.h"
 #include "net_ws_cli_protocol_i.h"
 
-static void net_ws_cli_endpoint_do_process(net_timer_t timer, void * ctx);
+static int net_ws_cli_endpoint_do_process(net_ws_cli_endpoint_t ws_ep);
 static void net_ws_cli_endpoint_reset_data(net_ws_cli_endpoint_t ws_ep);
 static int net_ws_cli_endpoint_send_handshake(net_ws_cli_endpoint_t ws_ep);
 
 static net_http_res_op_result_t net_ws_cli_endpoint_on_handshake_rcode(void * ctx, net_http_req_t req, uint16_t code, const char * msg);
 static net_http_res_op_result_t net_ws_cli_endpoint_on_handshake_head(void * ctx, net_http_req_t req, const char * name, const char * value);
 static net_http_res_op_result_t net_ws_cli_endpoint_on_handshake_complete(void * ctx, net_http_req_t req);
-static int net_ws_cli_endpoint_ws_input(net_http_endpoint_t endpoint);
 
 static int net_ws_cli_endpoint_notify_state_changed(net_ws_cli_endpoint_t ws_ep, net_ws_cli_state_t old_state);
 
@@ -200,7 +198,7 @@ int net_ws_cli_endpoint_send_msg_text(net_ws_cli_endpoint_t ws_ep, const char * 
             msg);
     }
 
-    net_timer_active(ws_ep->m_process_timer, 0);
+    if (net_ws_cli_endpoint_do_process(ws_ep) != 0) return -1;
     
     return 0;
 }
@@ -228,7 +226,7 @@ int net_ws_cli_endpoint_send_msg_bin(net_ws_cli_endpoint_t ws_ep, const void * m
             msg_len);
     }
 
-    net_timer_active(ws_ep->m_process_timer, 0);
+    if (net_ws_cli_endpoint_do_process(ws_ep) != 0) return -1;
         
     return 0;
 }
@@ -437,17 +435,10 @@ int net_ws_cli_endpoint_init(net_http_endpoint_t http_ep) {
     ws_ep->m_cfg_path = NULL;
     ws_ep->m_handshake_token = NULL;
 
-    ws_ep->m_process_timer = net_timer_auto_create(schedule, net_ws_cli_endpoint_do_process, ws_ep);
-    if (ws_ep->m_process_timer == NULL) {
-        CPE_ERROR(ws_protocol->m_em, "ws: ???: init: create process timer fail!");
-        return -1;
-    }
-    
     wslay_event_context_client_init(&ws_ep->m_ctx, &s_net_ws_cli_endpoint_callbacks, ws_ep);
 
     if (ws_protocol->m_endpoint_init && ws_protocol->m_endpoint_init(ws_ep) != 0) {
         CPE_ERROR(ws_protocol->m_em, "ws: ???: init: external init fail!");
-        net_timer_free(ws_ep->m_process_timer);
         return -1;
     }
     
@@ -467,11 +458,6 @@ void net_ws_cli_endpoint_fini(net_http_endpoint_t http_ep) {
         ws_ep->m_ctx = NULL;
     }
 
-    if (ws_ep->m_process_timer) {
-        net_timer_free(ws_ep->m_process_timer);
-        ws_ep->m_process_timer = NULL;
-    }
-
     if (ws_ep->m_handshake_token) {
         mem_free(ws_protocol->m_alloc, ws_ep->m_handshake_token);
         ws_ep->m_handshake_token = NULL;
@@ -485,14 +471,12 @@ void net_ws_cli_endpoint_fini(net_http_endpoint_t http_ep) {
     ws_ep->m_http_ep = NULL;
 }
 
-static int net_ws_cli_endpoint_ws_input(net_http_endpoint_t http_ep) {
+int net_ws_cli_endpoint_input(net_http_endpoint_t http_ep) {
     net_ws_cli_endpoint_t ws_ep = net_http_endpoint_data(http_ep);
     net_ws_cli_protocol_t ws_protocol = net_http_protocol_data(net_http_endpoint_protocol(http_ep));
 
-    if (ws_ep->m_state == net_ws_cli_state_established) {
-        net_timer_active(ws_ep->m_process_timer, 0);
-    }
-    
+    if (net_ws_cli_endpoint_do_process(ws_ep) != 0) return -1;
+        
     return ws_ep->m_state == net_ws_cli_state_established ? 0 : -1;
 }
 
@@ -525,8 +509,7 @@ int net_ws_cli_endpoint_on_state_change(net_http_endpoint_t http_ep, net_http_st
     return 0;
 }
 
-static void net_ws_cli_endpoint_do_process(net_timer_t timer, void * ctx) {
-    net_ws_cli_endpoint_t ws_ep = ctx;
+static int net_ws_cli_endpoint_do_process(net_ws_cli_endpoint_t ws_ep) {
 
     if (wslay_event_want_read(ws_ep->m_ctx)
         && !net_endpoint_buf_is_empty(net_http_endpoint_net_ep(ws_ep->m_http_ep), net_ep_buf_read))
@@ -538,8 +521,7 @@ static void net_ws_cli_endpoint_do_process(net_timer_t timer, void * ctx) {
                 net_endpoint_dump(
                     net_ws_cli_protocol_tmp_buffer(ws_protocol),
                     net_http_endpoint_net_ep(ws_ep->m_http_ep)));
-            net_endpoint_set_state(net_http_endpoint_net_ep(ws_ep->m_http_ep), net_endpoint_state_disable);
-            return;
+            return -1;
         }
     }
 
@@ -551,15 +533,16 @@ static void net_ws_cli_endpoint_do_process(net_timer_t timer, void * ctx) {
             CPE_ERROR(
                 ws_protocol->m_em, "ws: %s: process: send fail, auto disconnect",
                 net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), net_http_endpoint_net_ep(ws_ep->m_http_ep)));
-            net_endpoint_set_state(net_http_endpoint_net_ep(ws_ep->m_http_ep), net_endpoint_state_disable);
-            return;
+            return -1;
         }
     }
+
+    return 0;
 }
 
 static void net_ws_cli_endpoint_reset_data(net_ws_cli_endpoint_t ws_ep) {
     net_ws_cli_protocol_t ws_protocol = net_http_protocol_data(net_http_endpoint_protocol(ws_ep->m_http_ep));
-    
+
     if (ws_ep->m_handshake_token) {
         mem_free(ws_protocol->m_alloc, ws_ep->m_handshake_token);
         ws_ep->m_handshake_token = NULL;
@@ -620,21 +603,6 @@ static int net_ws_cli_endpoint_send_handshake(net_ws_cli_endpoint_t ws_ep) {
         return -1;
     }
 
-    /* if (net_endpoint_protocol_debug(net_http_endpoint_net_ep(ws_ep->m_http_ep)) >= 2) { */
-    /*     ((char*)buf)[n] = 0; */
-    /*     CPE_INFO( */
-    /*         ws_protocol->m_em, "ws: %s: handshake request: >>>\n%s", */
-    /*         net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), net_http_endpoint_net_ep(ws_ep->m_http_ep)), */
-    /*         buf); */
-    /* } */
-    
-    /* if (net_endpoint_buf_supply(net_http_endpoint_net_ep(ws_ep->m_http_ep), net_ep_buf_write,  (uint32_t)n) != 0) { */
-    /*     CPE_ERROR( */
-    /*         ws_protocol->m_em, "ws: %s: handshake: write fail", */
-    /*         net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), net_http_endpoint_net_ep(ws_ep->m_http_ep))); */
-    /*     return -1; */
-    /* } */
-    
     return 0;
 }
 
@@ -642,7 +610,7 @@ static net_http_res_op_result_t net_ws_cli_endpoint_on_handshake_rcode(void * ct
     net_ws_cli_endpoint_t ws_ep = ctx;
     net_ws_cli_protocol_t ws_protocol = net_ws_cli_endpoint_protocol(ws_ep);
     
-    if (code != 200) {
+    if (code != 101) {
         CPE_ERROR(
             ws_protocol->m_em, "ws: %s: handshake response: connect error, error=%d (%s)",
             net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), net_http_endpoint_net_ep(ws_ep->m_http_ep)),
@@ -656,7 +624,7 @@ static net_http_res_op_result_t net_ws_cli_endpoint_on_handshake_rcode(void * ct
 static net_http_res_op_result_t net_ws_cli_endpoint_on_handshake_head(void * ctx, net_http_req_t req, const char * name, const char * value) {
     net_ws_cli_endpoint_t ws_ep = ctx;
     net_ws_cli_protocol_t ws_protocol = net_ws_cli_endpoint_protocol(ws_ep);
-    
+
     if (strcasecmp(name, "sec-websocket-accept") == 0) {
         char accept_token_buf[64];
         snprintf(accept_token_buf, sizeof(accept_token_buf), "%s258EAFA5-E914-47DA-95CA-C5AB0DC85B11", ws_ep->m_handshake_token);
@@ -699,41 +667,8 @@ static net_http_res_op_result_t net_ws_cli_endpoint_on_handshake_complete(void *
         return -1;
     }
     
-    net_http_endpoint_upgrade_connection(ws_ep->m_http_ep, net_ws_cli_endpoint_ws_input);
-    
     return net_http_res_success;
 }
-
-/* static int net_ws_cli_endpoint_on_handshake(net_ws_cli_protocol_t ws_protocol, net_ws_cli_endpoint_t ws_ep, char * response) { */
-/*     if (net_endpoint_protocol_debug(net_http_endpoint_net_ep(ws_ep->m_http_ep)) >= 2) { */
-/*         CPE_INFO( */
-/*             ws_protocol->m_em, "ws: %s: handshake response: <<<\n%s", */
-/*             net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(ws_protocol), net_http_endpoint_net_ep(ws_ep->m_http_ep)), */
-/*             response); */
-/*     } */
-
-/*     char * line = response; */
-/*     char * sep = strstr(line, "\r\n"); */
-/*     for(; sep; line = sep + 2, sep = strstr(line, "\r\n")) { */
-/*         *sep = 0; */
-/*         if (net_ws_cli_endpoint_on_handshake_line(ws_protocol, ws_ep, line) != 0) return -1; */
-/*     } */
-
-/*     if (line[0]) { */
-/*         if (net_ws_cli_endpoint_on_handshake_line(ws_protocol, ws_ep, line) != 0) return -1; */
-/*     } */
-
-/*     if (ws_ep->m_state != net_ws_cli_state_established) { */
-/*         CPE_ERROR( */
-/*             ws_protocol->m_em, "ws: %s: handshake response: no sec-websocket-accept data!", */
-/*             net_endpoint_dump( */
-/*                 net_ws_cli_protocol_tmp_buffer(ws_protocol), */
-/*                 net_http_endpoint_net_ep(ws_ep->m_http_ep))); */
-/*         return -1; */
-/*     } */
-    
-/*     return 0; */
-/* } */
 
 void net_ws_cli_endpoint_url_print(write_stream_t s, net_ws_cli_endpoint_t ws_ep) {
     stream_printf(s, net_http_endpoint_use_https(ws_ep->m_http_ep) ? "wss://" : "ws://");

@@ -23,13 +23,11 @@ void net_http_endpoint_set_reconnect_span_ms(net_http_endpoint_t http_ep, uint32
 uint8_t net_http_endpoint_use_https(net_http_endpoint_t http_ep);
 void net_http_endpoint_set_use_https(net_http_endpoint_t http_ep, uint8_t use_https);
 
-uint8_t net_http_endpoint_keep_alive(net_http_endpoint_t http_ep);
-void net_http_endpoint_set_kee_alive(net_http_endpoint_t http_ep, uint8_t use_https);
+net_http_connection_type_t net_http_endpoint_connection_type(net_http_endpoint_t http_ep);
 
 int net_http_endpoint_set_remote(net_http_endpoint_t http_ep, const char * url);
 
 void net_http_endpoint_enable(net_http_endpoint_t http_ep);
-void net_http_endpoint_upgrade_connection(net_http_endpoint_t http_ep, net_http_endpoint_input_fun_t input_processor);
 
 void * net_http_endpoint_data(net_http_endpoint_t http_ep);
 net_http_endpoint_t net_http_endpoint_from_data(void * data);

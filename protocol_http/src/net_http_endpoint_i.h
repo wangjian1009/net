@@ -8,7 +8,7 @@ NET_BEGIN_DECL
 struct net_http_endpoint {
     net_endpoint_t m_endpoint;
     uint8_t m_use_https;
-    uint8_t m_keep_alive;
+    net_http_connection_type_t m_connection_type;
     uint32_t m_reconnect_span_ms;
 
     /*runtime*/
@@ -17,9 +17,7 @@ struct net_http_endpoint {
     net_timer_t m_process_timer;
 
     uint16_t m_max_req_id;
-    net_http_req_list_t m_runing_reqs;
-    net_http_req_list_t m_completed_reqs;
-    net_http_endpoint_input_fun_t m_upgraded_processor;
+    net_http_req_list_t m_reqs;
 
     void * m_write_buf;
     uint32_t m_write_size;

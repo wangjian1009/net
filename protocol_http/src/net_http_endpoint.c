@@ -75,16 +75,8 @@ void net_http_endpoint_set_use_https(net_http_endpoint_t http_ep, uint8_t use_ht
     http_ep->m_use_https = 0;
 }
 
-uint8_t net_http_endpoint_keep_alive(net_http_endpoint_t http_ep) {
-    return http_ep->m_keep_alive;
-}
-
-void net_http_endpoint_set_kee_alive(net_http_endpoint_t http_ep, uint8_t keep_alive) {
-    http_ep->m_keep_alive = keep_alive;
-}
-
-void net_http_endpoint_upgrade_connection(net_http_endpoint_t http_ep, net_http_endpoint_input_fun_t input_processor) {
-    http_ep->m_upgraded_processor = input_processor;
+net_http_connection_type_t net_http_endpoint_connection_type(net_http_endpoint_t http_ep) {
+    return http_ep->m_connection_type;
 }
 
 int net_http_endpoint_set_remote(net_http_endpoint_t http_ep, const char * url) {
@@ -182,22 +174,6 @@ static int net_http_endpoint_notify_state_changed(net_http_endpoint_t http_ep, n
         ? http_protocol->m_endpoint_on_state_change(http_ep, old_state)
         : 0;
     
-    /* net_endpoint_monitor_t monitor = TAILQ_FIRST(&endpoint->m_monitors); */
-    /* while(monitor) { */
-    /*     net_endpoint_monitor_t next_monitor = TAILQ_NEXT(monitor, m_next); */
-    /*     assert(!monitor->m_is_free); */
-    /*     assert(!monitor->m_is_processing); */
-
-    /*     if (monitor->m_on_state_change) { */
-    /*         monitor->m_is_processing = 1; */
-    /*         monitor->m_on_state_change(monitor->m_ctx, endpoint, old_state); */
-    /*         monitor->m_is_processing = 0; */
-    /*         if (monitor->m_is_free) net_endpoint_monitor_free(monitor); */
-    /*     } */
-        
-    /*     monitor = next_monitor; */
-    /* } */
-
     return rv;
 }
 
@@ -208,12 +184,11 @@ int net_http_endpoint_init(net_endpoint_t endpoint) {
 
     http_ep->m_endpoint = endpoint;
     http_ep->m_state = net_http_state_disable;
+    http_ep->m_connection_type = net_http_connection_type_keep_alive;
     http_ep->m_use_https = 0;
     http_ep->m_reconnect_span_ms = 3u * 1000u;
     http_ep->m_max_req_id = 0;
-    TAILQ_INIT(&http_ep->m_runing_reqs);
-    TAILQ_INIT(&http_ep->m_completed_reqs);
-    http_ep->m_upgraded_processor = NULL;
+    TAILQ_INIT(&http_ep->m_reqs);
     http_ep->m_write_buf = NULL;
     http_ep->m_write_size = 0;
     http_ep->m_write_capacity = 0;
@@ -237,12 +212,8 @@ void net_http_endpoint_fini(net_endpoint_t endpoint) {
     net_http_endpoint_t http_ep = net_endpoint_protocol_data(endpoint);
     net_http_protocol_t http_protocol = net_protocol_data(net_endpoint_protocol(endpoint));
 
-    while(!TAILQ_EMPTY(&http_ep->m_runing_reqs)) {
-        net_http_req_free(TAILQ_FIRST(&http_ep->m_runing_reqs));
-    }
-    
-    while(!TAILQ_EMPTY(&http_ep->m_completed_reqs)) {
-        net_http_req_free(TAILQ_FIRST(&http_ep->m_completed_reqs));
+    while(!TAILQ_EMPTY(&http_ep->m_reqs)) {
+        net_http_req_free(TAILQ_FIRST(&http_ep->m_reqs));
     }
     
     if (http_protocol->m_endpoint_fini) {
@@ -262,31 +233,46 @@ int net_http_endpoint_input(net_endpoint_t endpoint) {
     net_http_protocol_t http_protocol = net_protocol_data(net_endpoint_protocol(endpoint));
 
     while(http_ep->m_state == net_http_state_established) {
-        net_http_req_t processing_req;
-        while((processing_req = TAILQ_FIRST(&http_ep->m_runing_reqs))) {
-            int rv = net_http_endpoint_req_input(http_protocol, processing_req);
-            if (rv < 0) return 0;
+        if (http_ep->m_connection_type != net_http_connection_type_upgrade) {
+            net_http_req_t processing_req;
+            while((processing_req = TAILQ_FIRST(&http_ep->m_reqs))) {
+                int rv = net_http_endpoint_req_input(http_protocol, http_ep, processing_req);
+                if (rv < 0) return -1;
 
-            switch(processing_req->m_res_state) {
-            case net_http_res_state_completed:
-                net_http_req_free(processing_req);
-                continue; /* */
-            default:
-                /*当前请求没有完成，比如还需要等待后续数据 */
-                return 0;
+                switch(processing_req->m_res_state) {
+                case net_http_res_state_completed:
+                    net_http_req_free(processing_req);
+                    continue; /* */
+                default:
+                    /*当前请求没有完成，比如还需要等待后续数据 */
+                    return 0;
+                }
+            }
+
+            if (!net_endpoint_buf_is_empty(endpoint, net_ep_buf_read)) {
+                CPE_ERROR(
+                    http_protocol->m_em,
+                    "http: %s: input without req or upgraded-processor!",
+                    net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint));
+                return -1;
             }
         }
-
-        if (http_ep->m_upgraded_processor) {
-            return http_ep->m_upgraded_processor(http_ep);
-        }
-
-        if (!net_endpoint_buf_is_empty(endpoint, net_ep_buf_read)) {
-            CPE_ERROR(
-                http_protocol->m_em,
-                "http: %s: input without req or upgraded-processor!",
-                net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint));
-            return -1;
+        else {
+            if (http_protocol->m_endpoint_upgraded_input == NULL) {
+                CPE_ERROR(
+                    http_protocol->m_em,
+                    "http: %s: connection upgraded, no input processor!",
+                    net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint));
+                return -1;
+            }
+            
+            if (http_protocol->m_endpoint_upgraded_input(http_ep) != 0) {
+                CPE_ERROR(
+                    http_protocol->m_em,
+                    "http: %s: upgraded connection process fail",
+                    net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint));
+                return -1;
+            }
         }
     }
 
@@ -305,7 +291,11 @@ int net_http_endpoint_on_state_change(net_endpoint_t endpoint, net_endpoint_stat
     case net_endpoint_state_network_error:
         if (net_http_endpoint_set_state(http_ep, net_http_state_error) != 0) return -1;
         net_http_endpoint_reset_data(http_ep);
-        net_timer_active(http_ep->m_connect_timer, (int32_t)http_ep->m_reconnect_span_ms);
+        net_timer_active(
+            http_ep->m_connect_timer,
+            old_state == net_endpoint_state_established
+            ? 0
+            : (int32_t)http_ep->m_reconnect_span_ms);
         break;
     case net_endpoint_state_logic_error:
         if (net_http_endpoint_set_state(http_ep, net_http_state_error) != 0) return -1;
@@ -399,13 +389,15 @@ int net_http_endpoint_flush(net_http_protocol_t http_protocol, net_http_endpoint
 }
 
 static void net_http_endpoint_reset_data(net_http_endpoint_t http_ep) {
-    while(!TAILQ_EMPTY(&http_ep->m_runing_reqs)) {
-        net_http_req_free(TAILQ_FIRST(&http_ep->m_runing_reqs));
+    http_ep->m_connection_type = net_http_connection_type_keep_alive;
+
+    while(!TAILQ_EMPTY(&http_ep->m_reqs)) {
+        net_http_req_free(TAILQ_FIRST(&http_ep->m_reqs));
     }
     
-    while(!TAILQ_EMPTY(&http_ep->m_completed_reqs)) {
-        net_http_req_free(TAILQ_FIRST(&http_ep->m_completed_reqs));
-    }
+    http_ep->m_write_buf = NULL;
+    http_ep->m_write_size = 0;
+    http_ep->m_write_capacity = 0;
 }
 
 static void net_http_endpoint_do_connect(net_timer_t timer, void * ctx) {

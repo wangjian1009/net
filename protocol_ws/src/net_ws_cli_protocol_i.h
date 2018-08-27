@@ -1,6 +1,7 @@
 #ifndef NET_WS_CLI_PROTOCOL_I_H_INCLEDED
 #define NET_WS_CLI_PROTOCOL_I_H_INCLEDED
 #include "cpe/utils/buffer.h"
+#include "cpe/utils/error.h"
 #include "net_ws_cli_protocol.h"
 
 NET_BEGIN_DECL
