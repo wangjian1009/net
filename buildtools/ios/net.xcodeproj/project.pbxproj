@@ -60,6 +60,8 @@
 		C99B017F213453DE00352CCB /* net_http_endpoint.c in Sources */ = {isa = PBXBuildFile; fileRef = C99B0174213453DD00352CCB /* net_http_endpoint.c */; };
 		C99B0180213453DE00352CCB /* net_http_req_output.c in Sources */ = {isa = PBXBuildFile; fileRef = C99B0175213453DD00352CCB /* net_http_req_output.c */; };
 		C99B0181213453DE00352CCB /* net_http_req_input.c in Sources */ = {isa = PBXBuildFile; fileRef = C99B0176213453DD00352CCB /* net_http_req_input.c */; };
+		C99B018A2134D5BC00352CCB /* net_ws_endpoint.c in Sources */ = {isa = PBXBuildFile; fileRef = C99B01862134D5BC00352CCB /* net_ws_endpoint.c */; };
+		C99B018B2134D5BC00352CCB /* net_ws_protocol.c in Sources */ = {isa = PBXBuildFile; fileRef = C99B01882134D5BC00352CCB /* net_ws_protocol.c */; };
 		C99C3FF021250FDF00E985D2 /* net_proxy_http_svr_endpoint_tunnel.c in Sources */ = {isa = PBXBuildFile; fileRef = C99C3FEE21250FDF00E985D2 /* net_proxy_http_svr_endpoint_tunnel.c */; };
 		C9B0C46F2123F35F008DB367 /* net_proxy_http_svr_endpoint.c in Sources */ = {isa = PBXBuildFile; fileRef = C9B0C46B2123F35F008DB367 /* net_proxy_http_svr_endpoint.c */; };
 		C9B0C4882124099F008DB367 /* net_proxy_http_svr_protocol.c in Sources */ = {isa = PBXBuildFile; fileRef = C9B0C4872124099F008DB367 /* net_proxy_http_svr_protocol.c */; };
@@ -85,8 +87,6 @@
 		C9F3116121094392006A7621 /* wslay_queue.c in Sources */ = {isa = PBXBuildFile; fileRef = C9F3115821094392006A7621 /* wslay_queue.c */; };
 		C9F3116221094392006A7621 /* wslay_event.c in Sources */ = {isa = PBXBuildFile; fileRef = C9F3115A21094392006A7621 /* wslay_event.c */; };
 		C9F3116321094392006A7621 /* wslay_frame.c in Sources */ = {isa = PBXBuildFile; fileRef = C9F3115E21094392006A7621 /* wslay_frame.c */; };
-		C9F31199210960A3006A7621 /* net_ws_cli_endpoint.c in Sources */ = {isa = PBXBuildFile; fileRef = C9F31192210960A3006A7621 /* net_ws_cli_endpoint.c */; };
-		C9F3119A210960A3006A7621 /* net_ws_cli_protocol.c in Sources */ = {isa = PBXBuildFile; fileRef = C9F31193210960A3006A7621 /* net_ws_cli_protocol.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -323,6 +323,12 @@
 		C99B017A213453DD00352CCB /* net_http_req.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_http_req.h; sourceTree = "<group>"; };
 		C99B017B213453DD00352CCB /* net_http_endpoint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_http_endpoint.h; sourceTree = "<group>"; };
 		C99B017C213453DD00352CCB /* net_http_protocol.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_http_protocol.h; sourceTree = "<group>"; };
+		C99B01842134D5B100352CCB /* net_ws_protocol.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ws_protocol.h; sourceTree = "<group>"; };
+		C99B01852134D5B100352CCB /* net_ws_endpoint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ws_endpoint.h; sourceTree = "<group>"; };
+		C99B01862134D5BC00352CCB /* net_ws_endpoint.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ws_endpoint.c; sourceTree = "<group>"; };
+		C99B01872134D5BC00352CCB /* net_ws_protocol_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ws_protocol_i.h; sourceTree = "<group>"; };
+		C99B01882134D5BC00352CCB /* net_ws_protocol.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ws_protocol.c; sourceTree = "<group>"; };
+		C99B01892134D5BC00352CCB /* net_ws_endpoint_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ws_endpoint_i.h; sourceTree = "<group>"; };
 		C99C3FEE21250FDF00E985D2 /* net_proxy_http_svr_endpoint_tunnel.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_proxy_http_svr_endpoint_tunnel.c; sourceTree = "<group>"; };
 		C9B0C44F2123F30F008DB367 /* libnet_protocol_proxy_http.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_protocol_proxy_http.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		C9B0C4672123F35F008DB367 /* net_proxy_http_types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_proxy_http_types.h; sourceTree = "<group>"; };
@@ -398,13 +404,7 @@
 		C9F3115D21094392006A7621 /* wslay_queue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = wslay_queue.h; sourceTree = "<group>"; };
 		C9F3115E21094392006A7621 /* wslay_frame.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = wslay_frame.c; sourceTree = "<group>"; };
 		C9F3117A21095931006A7621 /* libnet_protocol_ws.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_protocol_ws.a; sourceTree = BUILT_PRODUCTS_DIR; };
-		C9F31191210960A3006A7621 /* net_ws_cli_protocol_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ws_cli_protocol_i.h; sourceTree = "<group>"; };
-		C9F31192210960A3006A7621 /* net_ws_cli_endpoint.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ws_cli_endpoint.c; sourceTree = "<group>"; };
-		C9F31193210960A3006A7621 /* net_ws_cli_protocol.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ws_cli_protocol.c; sourceTree = "<group>"; };
-		C9F31194210960A3006A7621 /* net_ws_cli_endpoint_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ws_cli_endpoint_i.h; sourceTree = "<group>"; };
 		C9F31196210960A3006A7621 /* net_ws_types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ws_types.h; sourceTree = "<group>"; };
-		C9F31197210960A3006A7621 /* net_ws_cli_protocol.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ws_cli_protocol.h; sourceTree = "<group>"; };
-		C9F31198210960A3006A7621 /* net_ws_cli_endpoint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ws_cli_endpoint.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -988,10 +988,10 @@
 		C9F31190210960A3006A7621 /* src */ = {
 			isa = PBXGroup;
 			children = (
-				C9F31191210960A3006A7621 /* net_ws_cli_protocol_i.h */,
-				C9F31192210960A3006A7621 /* net_ws_cli_endpoint.c */,
-				C9F31193210960A3006A7621 /* net_ws_cli_protocol.c */,
-				C9F31194210960A3006A7621 /* net_ws_cli_endpoint_i.h */,
+				C99B01892134D5BC00352CCB /* net_ws_endpoint_i.h */,
+				C99B01862134D5BC00352CCB /* net_ws_endpoint.c */,
+				C99B01872134D5BC00352CCB /* net_ws_protocol_i.h */,
+				C99B01882134D5BC00352CCB /* net_ws_protocol.c */,
 			);
 			path = src;
 			sourceTree = "<group>";
@@ -999,9 +999,9 @@
 		C9F31195210960A3006A7621 /* include */ = {
 			isa = PBXGroup;
 			children = (
+				C99B01852134D5B100352CCB /* net_ws_endpoint.h */,
+				C99B01842134D5B100352CCB /* net_ws_protocol.h */,
 				C9F31196210960A3006A7621 /* net_ws_types.h */,
-				C9F31197210960A3006A7621 /* net_ws_cli_protocol.h */,
-				C9F31198210960A3006A7621 /* net_ws_cli_endpoint.h */,
 			);
 			path = include;
 			sourceTree = "<group>";
@@ -1420,8 +1420,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C9F3119A210960A3006A7621 /* net_ws_cli_protocol.c in Sources */,
-				C9F31199210960A3006A7621 /* net_ws_cli_endpoint.c in Sources */,
+				C99B018A2134D5BC00352CCB /* net_ws_endpoint.c in Sources */,
+				C99B018B2134D5BC00352CCB /* net_ws_protocol.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
