@@ -364,7 +364,9 @@ static int net_http_req_input_body_encoding_none(
                 if (net_http_req_input_body_set_complete(http_protocol, http_ep, req, endpoint, net_http_res_complete) != 0) return -1;
             }
         }
-    } while(1);
+    }
+
+    return 0;
 }
 
 static int net_http_req_input_body_encoding_trunked(

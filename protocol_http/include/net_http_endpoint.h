@@ -34,7 +34,6 @@ net_http_endpoint_t net_http_endpoint_from_data(void * data);
 
 const char * net_http_state_str(net_http_state_t state);
 
-
 NET_END_DECL
 
 #endif

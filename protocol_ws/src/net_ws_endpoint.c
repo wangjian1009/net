@@ -40,8 +40,28 @@ void net_ws_endpoint_free(net_ws_endpoint_t ws_ep) {
     return net_http_endpoint_free(ws_ep->m_http_ep);
 }
 
-net_ws_endpoint_t net_ws_endpoint_get(net_http_endpoint_t http_ep) {
-    return net_http_endpoint_data(http_ep);
+net_ws_endpoint_t net_ws_endpoint_get(net_endpoint_t endpoint) {
+    return net_http_endpoint_data(net_endpoint_protocol_data(endpoint));
+}
+
+net_ws_protocol_t net_ws_endpoint_protocol(net_ws_endpoint_t ws_ep) {
+    return net_http_protocol_data(net_http_endpoint_protocol(net_http_endpoint_from_data(ws_ep)));
+}
+
+uint32_t net_ws_endpoint_reconnect_span_ms(net_ws_endpoint_t ws_ep) {
+    return net_http_endpoint_reconnect_span_ms(ws_ep->m_http_ep);
+}
+
+void net_http_ws_set_reconnect_span_ms(net_ws_endpoint_t ws_ep, uint32_t span_ms) {
+    net_http_endpoint_set_reconnect_span_ms(ws_ep->m_http_ep, span_ms);
+}
+
+uint8_t net_ws_endpoint_use_https(net_ws_endpoint_t ws_ep) {
+    return net_http_endpoint_use_https(ws_ep->m_http_ep);
+}
+
+void net_ws_endpoint_set_use_https(net_ws_endpoint_t ws_ep, uint8_t use_https) {
+    net_http_endpoint_set_use_https(ws_ep->m_http_ep, use_https);
 }
 
 void * net_ws_endpoint_data(net_ws_endpoint_t ws_ep) {
@@ -62,10 +82,6 @@ net_http_endpoint_t net_ws_endpoint_http_ep(net_ws_endpoint_t ws_ep) {
 
 net_endpoint_t net_ws_endpoint_net_ep(net_ws_endpoint_t ws_ep) {
     return net_http_endpoint_net_ep(ws_ep->m_http_ep);
-}
-
-net_ws_protocol_t net_ws_endpoint_protocol(net_ws_endpoint_t ws_ep) {
-    return net_http_protocol_data(net_http_endpoint_protocol(ws_ep->m_http_ep));
 }
 
 int net_ws_endpoint_set_remote_and_path(net_ws_endpoint_t ws_ep, const char * url) {

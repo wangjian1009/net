@@ -250,6 +250,16 @@ int net_http_endpoint_input(net_endpoint_t endpoint) {
                 switch(processing_req->m_res_state) {
                 case net_http_res_state_completed:
                     net_http_req_free(processing_req);
+
+                    if (http_ep->m_connection_type == net_http_connection_type_close) {
+                        if (net_endpoint_set_state(endpoint, net_endpoint_state_disable) != 0) {
+                            return -1;
+                        }
+                        else {
+                            return 0;
+                        }
+                    }
+
                     continue; /* */
                 default:
                     /*当前请求没有完成，比如还需要等待后续数据 */
@@ -297,21 +307,27 @@ int net_http_endpoint_on_state_change(net_endpoint_t endpoint, net_endpoint_stat
     case net_endpoint_state_disable:
         if (net_http_endpoint_set_state(http_ep, net_http_state_disable) != 0) return -1;
         net_http_endpoint_reset_data(http_ep, net_http_res_canceled);
-        net_timer_active(http_ep->m_connect_timer, (int32_t)http_ep->m_reconnect_span_ms);
+        if (http_ep->m_reconnect_span_ms) {
+            net_timer_active(http_ep->m_connect_timer, (int32_t)http_ep->m_reconnect_span_ms);
+        }
         break;
     case net_endpoint_state_network_error:
         if (net_http_endpoint_set_state(http_ep, net_http_state_error) != 0) return -1;
         net_http_endpoint_reset_data(http_ep, net_http_res_disconnected);
-        net_timer_active(
-            http_ep->m_connect_timer,
-            old_state == net_endpoint_state_established
-            ? 0
-            : (int32_t)http_ep->m_reconnect_span_ms);
+        if (http_ep->m_reconnect_span_ms) {
+            net_timer_active(
+                http_ep->m_connect_timer,
+                old_state == net_endpoint_state_established
+                ? 0
+                : (int32_t)http_ep->m_reconnect_span_ms);
+        }
         break;
     case net_endpoint_state_logic_error:
         if (net_http_endpoint_set_state(http_ep, net_http_state_error) != 0) return -1;
         net_http_endpoint_reset_data(http_ep, net_http_res_canceled);
-        net_timer_active(http_ep->m_connect_timer, 0);
+        if (http_ep->m_reconnect_span_ms) {
+            net_timer_active(http_ep->m_connect_timer, 0);
+        }
         break;
     case net_endpoint_state_resolving:
     case net_endpoint_state_connecting:
@@ -421,7 +437,9 @@ static void net_http_endpoint_do_connect(net_timer_t timer, void * ctx) {
     net_http_endpoint_t http_ep = ctx;
 
     if (net_endpoint_connect(http_ep->m_endpoint) != 0) {
-        net_timer_active(timer, (int32_t)http_ep->m_reconnect_span_ms);
+        if (http_ep->m_reconnect_span_ms) {
+            net_timer_active(timer, (int32_t)http_ep->m_reconnect_span_ms);
+        }
     }
 }
 
