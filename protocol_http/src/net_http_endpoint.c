@@ -85,11 +85,11 @@ int net_http_endpoint_set_remote(net_http_endpoint_t http_ep, const char * url) 
     const char * addr_begin;
     if (cpe_str_start_with(url, "http://")) {
         http_ep->m_use_https = 0;
-        addr_begin += 7;
+        addr_begin = url + 7;
     }
     else if (cpe_str_start_with(url, "https://")) {
         http_ep->m_use_https = 1;
-        addr_begin += 8;
+        addr_begin = url + 8;
     }
     else {
         CPE_ERROR(
