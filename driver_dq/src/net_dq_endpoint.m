@@ -439,6 +439,17 @@ int net_dq_endpoint_on_write(net_dq_driver_t driver, net_dq_endpoint_t endpoint,
         
             if (err == EINTR) continue;
 
+            if (err == EPIPE) {
+                if (net_endpoint_driver_debug(base_endpoint)) {
+                    CPE_INFO(
+                        driver->m_em, "dq: %s: free for send recv EPIPE!",
+                        net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
+                }
+
+                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) return -1;
+                return 0;
+            }
+            
             CPE_ERROR(
                 driver->m_em, "dq: %s: send error, errno=%d (%s)!",
                 net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
