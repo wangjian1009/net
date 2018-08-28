@@ -417,6 +417,19 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
                 if (err == EWOULDBLOCK || err == EINPROGRESS) break;
                 if (err == EINTR) continue;
 
+                if (err == EPIPE) {
+                    if (net_endpoint_driver_debug(base_endpoint) >= 2) {
+                        CPE_INFO(
+                            em, "ev: %s: free for send recv EPIPE!",
+                            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+                    }
+
+                    if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
+                        net_endpoint_free(base_endpoint);
+                    }
+                    return;
+                }
+                
                 CPE_ERROR(
                     em, "ev: %s: free for send error, errno=%d (%s)!",
                     net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
@@ -444,8 +457,8 @@ static void net_ev_endpoint_connect_cb(EV_P_ ev_io *w, int revents) {
 
     ev_io_stop(driver->m_ev_loop, &endpoint->m_watcher);
 
-    int err;
-    socklen_t err_len;
+    int err = 0;
+    socklen_t err_len = sizeof(err);
     if (cpe_getsockopt(endpoint->m_fd, SOL_SOCKET, SO_ERROR, (void*)&err, &err_len) == -1) {
         CPE_ERROR(
             em, "ev: %s: connect_cb get socket error fail, errno=%d (%s)!",
