@@ -82,11 +82,14 @@ net_http_connection_type_t net_http_endpoint_connection_type(net_http_endpoint_t
 int net_http_endpoint_set_remote(net_http_endpoint_t http_ep, const char * url) {
     net_http_protocol_t http_protocol = net_protocol_data(net_endpoint_protocol(http_ep->m_endpoint));
 
+    const char * addr_begin;
     if (cpe_str_start_with(url, "http://")) {
         http_ep->m_use_https = 0;
+        addr_begin += 7;
     }
     else if (cpe_str_start_with(url, "https://")) {
         http_ep->m_use_https = 1;
+        addr_begin += 8;
     }
     else {
         CPE_ERROR(
@@ -96,7 +99,6 @@ int net_http_endpoint_set_remote(net_http_endpoint_t http_ep, const char * url) 
         return -1;
     }
 
-    const char * addr_begin = url + 5; /*http://*/
     const char * addr_end = strchr(addr_begin, '/');
 
     const char * str_address = NULL;

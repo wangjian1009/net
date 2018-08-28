@@ -71,11 +71,14 @@ net_ws_protocol_t net_ws_endpoint_protocol(net_ws_endpoint_t ws_ep) {
 int net_ws_endpoint_set_remote_and_path(net_ws_endpoint_t ws_ep, const char * url) {
     net_ws_protocol_t ws_protocol = net_http_protocol_data(net_http_endpoint_protocol(ws_ep->m_http_ep));
 
+    const char * addr_begin;
     if (cpe_str_start_with(url, "ws://")) {
         net_http_endpoint_set_use_https(ws_ep->m_http_ep, 0);
+        addr_begin = url + 5;
     }
     else if (cpe_str_start_with(url, "wss://")) {
         net_http_endpoint_set_use_https(ws_ep->m_http_ep, 1);
+        addr_begin = url + 6;
     }
     else {
         CPE_ERROR(
@@ -88,7 +91,6 @@ int net_ws_endpoint_set_remote_and_path(net_ws_endpoint_t ws_ep, const char * ur
         return -1;
     }
 
-    const char * addr_begin = url + 5; /*ws://*/
     const char * addr_end = strchr(addr_begin, '/');
 
     const char * str_address = NULL;
