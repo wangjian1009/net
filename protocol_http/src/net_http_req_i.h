@@ -46,6 +46,7 @@ struct net_http_req {
     net_http_req_on_res_head_fun_t m_res_on_head;
     net_http_req_on_res_body_fun_t m_res_on_body;
     net_http_req_on_res_complete_fun_t m_res_on_complete;
+    uint16_t m_res_code;
 };
 
 int net_http_req_do_send_first_line(

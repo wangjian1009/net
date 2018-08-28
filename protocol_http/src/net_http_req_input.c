@@ -43,6 +43,14 @@ int net_http_req_set_reader(
     return 0;
 }
 
+uint16_t net_http_req_res_code(net_http_req_t req) {
+    return req->m_res_code;
+}
+
+uint32_t net_http_req_res_length(net_http_req_t req) {
+    return req->m_res_trans_encoding == net_http_trans_encoding_none ? req->m_res_content.m_length : 0;
+}
+
 int net_http_endpoint_req_input(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t req) {
     net_endpoint_t endpoint = http_ep->m_endpoint;
     void * buf;
@@ -256,12 +264,12 @@ static int net_http_req_input_read_head(
 }
 
 static int net_http_req_input_body_set_complete(
-    net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t req, net_endpoint_t endpoint)
+    net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t req, net_endpoint_t endpoint, net_http_res_result_t result)
 {
     req->m_res_state = net_http_res_state_completed;
         
     if (!req->m_res_ignore && req->m_res_on_complete) {
-        switch(req->m_res_on_complete(req->m_res_ctx, req)) {
+        switch(req->m_res_on_complete(req->m_res_ctx, req, result)) {
         case net_http_res_success:
             break;
         case net_http_res_ignore:
@@ -286,7 +294,7 @@ static int net_http_req_input_body_encoding_none(
     if (http_ep->m_connection_type != net_http_connection_type_close
         && req->m_res_content.m_length == 0)
     {
-        if (net_http_req_input_body_set_complete(http_protocol, http_ep, req, endpoint) != 0) return -1;
+        if (net_http_req_input_body_set_complete(http_protocol, http_ep, req, endpoint, net_http_res_complete) != 0) return -1;
         return 0;
     }
     
@@ -353,7 +361,7 @@ static int net_http_req_input_body_encoding_none(
             
             req->m_res_content.m_length -= buf_sz;
             if (req->m_res_content.m_length == 0) {
-                if (net_http_req_input_body_set_complete(http_protocol, http_ep, req, endpoint) != 0) return -1;
+                if (net_http_req_input_body_set_complete(http_protocol, http_ep, req, endpoint, net_http_res_complete) != 0) return -1;
             }
         }
     } while(1);

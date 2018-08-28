@@ -28,10 +28,17 @@ typedef enum net_http_res_op_result {
     net_http_res_error_and_reconnect,
 } net_http_res_op_result_t;
 
+typedef enum net_http_res_result {
+    net_http_res_complete,
+    net_http_res_timeout,
+    net_http_res_canceled,
+    net_http_res_disconnected,
+} net_http_res_result_t;
+
 typedef net_http_res_op_result_t (*net_http_req_on_res_begin_fun_t)(void * ctx, net_http_req_t req, uint16_t code, const char * msg);
 typedef net_http_res_op_result_t (*net_http_req_on_res_head_fun_t)(void * ctx, net_http_req_t req, const char * name, const char * value);
 typedef net_http_res_op_result_t (*net_http_req_on_res_body_fun_t)(void * ctx, net_http_req_t req, void const * data, size_t data_size);
-typedef net_http_res_op_result_t (*net_http_req_on_res_complete_fun_t)(void * ctx, net_http_req_t req);
+typedef net_http_res_op_result_t (*net_http_req_on_res_complete_fun_t)(void * ctx, net_http_req_t req, net_http_res_result_t result);
 
 int net_http_req_set_reader(
     net_http_req_t req,
@@ -40,6 +47,9 @@ int net_http_req_set_reader(
     net_http_req_on_res_head_fun_t on_head,
     net_http_req_on_res_body_fun_t on_body,
     net_http_req_on_res_complete_fun_t on_complete);
+
+uint16_t net_http_req_res_code(net_http_req_t req);
+uint32_t net_http_req_res_length(net_http_req_t req);
 
 const char * net_http_res_state_str(net_http_res_state_t res_state);
 

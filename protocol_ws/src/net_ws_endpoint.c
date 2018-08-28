@@ -20,7 +20,7 @@ static int net_ws_endpoint_send_handshake(net_ws_endpoint_t ws_ep);
 
 static net_http_res_op_result_t net_ws_endpoint_on_handshake_rcode(void * ctx, net_http_req_t req, uint16_t code, const char * msg);
 static net_http_res_op_result_t net_ws_endpoint_on_handshake_head(void * ctx, net_http_req_t req, const char * name, const char * value);
-static net_http_res_op_result_t net_ws_endpoint_on_handshake_complete(void * ctx, net_http_req_t req);
+static net_http_res_op_result_t net_ws_endpoint_on_handshake_complete(void * ctx, net_http_req_t req, net_http_res_result_t result);
 
 static int net_ws_endpoint_notify_state_changed(net_ws_endpoint_t ws_ep, net_ws_state_t old_state);
 
@@ -654,7 +654,7 @@ static net_http_res_op_result_t net_ws_endpoint_on_handshake_head(void * ctx, ne
     return net_http_res_success;
 }
 
-static net_http_res_op_result_t net_ws_endpoint_on_handshake_complete(void * ctx, net_http_req_t req) {
+static net_http_res_op_result_t net_ws_endpoint_on_handshake_complete(void * ctx, net_http_req_t req, net_http_res_result_t result) {
     net_ws_endpoint_t ws_ep = ctx;
     net_ws_protocol_t ws_protocol = net_ws_endpoint_protocol(ws_ep);
 

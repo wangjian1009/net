@@ -13,7 +13,7 @@
 #include "net_http_protocol_i.h"
 #include "net_http_req_i.h"
 
-static void net_http_endpoint_reset_data(net_http_endpoint_t http_ep);
+static void net_http_endpoint_reset_data(net_http_endpoint_t http_ep, net_http_res_result_t result);
 static void net_http_endpoint_do_connect(net_timer_t timer, void * ctx);
 static int net_http_endpoint_notify_state_changed(net_http_endpoint_t http_ep, net_http_state_t old_state);
 
@@ -215,7 +215,13 @@ void net_http_endpoint_fini(net_endpoint_t endpoint) {
     net_http_protocol_t http_protocol = net_protocol_data(net_endpoint_protocol(endpoint));
 
     while(!TAILQ_EMPTY(&http_ep->m_reqs)) {
-        net_http_req_free(TAILQ_FIRST(&http_ep->m_reqs));
+        net_http_req_t req = TAILQ_FIRST(&http_ep->m_reqs);
+        
+        if (!req->m_res_ignore && req->m_res_on_complete) {
+            req->m_res_on_complete(req->m_res_ctx, req, net_http_res_canceled);
+        }
+
+        net_http_req_free(req);
     }
     
     if (http_protocol->m_endpoint_fini) {
@@ -290,12 +296,12 @@ int net_http_endpoint_on_state_change(net_endpoint_t endpoint, net_endpoint_stat
     switch(net_endpoint_state(endpoint)) {
     case net_endpoint_state_disable:
         if (net_http_endpoint_set_state(http_ep, net_http_state_disable) != 0) return -1;
-        net_http_endpoint_reset_data(http_ep);
+        net_http_endpoint_reset_data(http_ep, net_http_res_canceled);
         net_timer_active(http_ep->m_connect_timer, (int32_t)http_ep->m_reconnect_span_ms);
         break;
     case net_endpoint_state_network_error:
         if (net_http_endpoint_set_state(http_ep, net_http_state_error) != 0) return -1;
-        net_http_endpoint_reset_data(http_ep);
+        net_http_endpoint_reset_data(http_ep, net_http_res_disconnected);
         net_timer_active(
             http_ep->m_connect_timer,
             old_state == net_endpoint_state_established
@@ -304,7 +310,7 @@ int net_http_endpoint_on_state_change(net_endpoint_t endpoint, net_endpoint_stat
         break;
     case net_endpoint_state_logic_error:
         if (net_http_endpoint_set_state(http_ep, net_http_state_error) != 0) return -1;
-        net_http_endpoint_reset_data(http_ep);
+        net_http_endpoint_reset_data(http_ep, net_http_res_canceled);
         net_timer_active(http_ep->m_connect_timer, 0);
         break;
     case net_endpoint_state_resolving:
@@ -393,11 +399,17 @@ int net_http_endpoint_flush(net_http_protocol_t http_protocol, net_http_endpoint
     return 0;
 }
 
-static void net_http_endpoint_reset_data(net_http_endpoint_t http_ep) {
+static void net_http_endpoint_reset_data(net_http_endpoint_t http_ep, net_http_res_result_t result) {
     http_ep->m_connection_type = net_http_connection_type_keep_alive;
 
     while(!TAILQ_EMPTY(&http_ep->m_reqs)) {
-        net_http_req_free(TAILQ_FIRST(&http_ep->m_reqs));
+        net_http_req_t req = TAILQ_FIRST(&http_ep->m_reqs);
+        
+        if (!req->m_res_ignore && req->m_res_on_complete) {
+            req->m_res_on_complete(req->m_res_ctx, req, result);
+        }
+
+        net_http_req_free(req);
     }
     
     http_ep->m_write_buf = NULL;
