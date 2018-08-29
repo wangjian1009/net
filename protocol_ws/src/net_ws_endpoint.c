@@ -631,10 +631,10 @@ static net_http_res_op_result_t net_ws_endpoint_on_handshake_rcode(void * ctx, n
             ws_protocol->m_em, "ws: %s: handshake response: connect error, error=%d (%s)",
             net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_http_endpoint_net_ep(ws_ep->m_http_ep)),
             code, msg);
-        return net_http_res_error_and_reconnect;
+        return net_http_res_op_error_and_reconnect;
     }
 
-    return net_http_res_success;
+    return net_http_res_op_success;
 }
 
 static net_http_res_op_result_t net_ws_endpoint_on_handshake_head(void * ctx, net_http_req_t req, const char * name, const char * value) {
@@ -650,7 +650,7 @@ static net_http_res_op_result_t net_ws_endpoint_on_handshake_head(void * ctx, ne
             CPE_ERROR(
                 ws_protocol->m_em, "ws: %s: handshake response: calc accept token fail",
                 net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_http_endpoint_net_ep(ws_ep->m_http_ep)));
-            return net_http_res_error_and_reconnect;
+            return net_http_res_op_error_and_reconnect;
         }
 
         const char * expect_accept = cpe_base64_dump(net_ws_protocol_tmp_buffer(ws_protocol), sha1_value.digest, sizeof(sha1_value.digest));
@@ -659,15 +659,15 @@ static net_http_res_op_result_t net_ws_endpoint_on_handshake_head(void * ctx, ne
                 ws_protocol->m_em, "ws: %s: handshake response: expect token %s, but %s",
                 net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_http_endpoint_net_ep(ws_ep->m_http_ep)),
                 expect_accept, value);
-            return net_http_res_error_and_reconnect;
+            return net_http_res_op_error_and_reconnect;
         }
 
         if (net_ws_endpoint_set_state(ws_ep, net_ws_state_established) != 0) {
-            return net_http_res_error_and_reconnect;
+            return net_http_res_op_error_and_reconnect;
         }
     }
 
-    return net_http_res_success;
+    return net_http_res_op_success;
 }
 
 static net_http_res_op_result_t net_ws_endpoint_on_handshake_complete(void * ctx, net_http_req_t req, net_http_res_result_t result) {
@@ -683,7 +683,7 @@ static net_http_res_op_result_t net_ws_endpoint_on_handshake_complete(void * ctx
         return -1;
     }
     
-    return net_http_res_success;
+    return net_http_res_op_success;
 }
 
 void net_ws_endpoint_url_print(write_stream_t s, net_ws_endpoint_t ws_ep) {
