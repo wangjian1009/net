@@ -121,7 +121,7 @@ int net_http_endpoint_set_remote(net_http_endpoint_t http_ep, const char * url) 
         str_address = addr_begin;
     }
 
-    net_address_t address = net_address_create_auto(net_endpoint_schedule(http_ep->m_endpoint), addr_begin);
+    net_address_t address = net_address_create_auto(net_endpoint_schedule(http_ep->m_endpoint), str_address);
     if (address == NULL) {
         CPE_ERROR(
             http_protocol->m_em,

@@ -108,7 +108,6 @@ int net_ws_endpoint_set_remote_and_path(net_ws_endpoint_t ws_ep, const char * ur
     }
 
     const char * addr_end = strchr(addr_begin, '/');
-
     const char * str_address = NULL;
     const char * path = NULL;
     
@@ -132,7 +131,7 @@ int net_ws_endpoint_set_remote_and_path(net_ws_endpoint_t ws_ep, const char * ur
         str_address = addr_begin;
     }
 
-    net_address_t address = net_address_create_auto(net_endpoint_schedule(net_http_endpoint_net_ep(ws_ep->m_http_ep)), addr_begin);
+    net_address_t address = net_address_create_auto(net_endpoint_schedule(net_http_endpoint_net_ep(ws_ep->m_http_ep)), str_address);
     if (address == NULL) {
         CPE_ERROR(
             ws_protocol->m_em,
