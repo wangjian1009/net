@@ -139,8 +139,10 @@ static int net_http_req_input_read_head_line(
 
         char * msg = sep2 + 1;
 
+        req->m_res_code = (uint16_t)atoi(code);
+        
         if (!req->m_res_ignore && req->m_res_on_begin) {
-            switch(req->m_res_on_begin(req->m_res_ctx, req, (uint16_t)atoi(code), msg)) {
+            switch(req->m_res_on_begin(req->m_res_ctx, req, req->m_res_code, msg)) {
             case net_http_res_op_success:
                 break;
             case net_http_res_op_ignore:
@@ -151,7 +153,7 @@ static int net_http_req_input_read_head_line(
                     http_protocol->m_em, "http: %s: req %d: <== process res begin fail, version=%s, code=%d, msg=%s",
                     net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
                     req->m_id,
-                    version, atoi(code), msg);
+                    version, req->m_res_code, msg);
                 return -1;
             }
         }
