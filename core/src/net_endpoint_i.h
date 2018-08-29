@@ -22,7 +22,7 @@ struct net_endpoint {
     struct cpe_hash_entry m_hh;
     net_endpoint_state_t m_state;
     net_dns_query_t m_dns_query;
-    ringbuffer_block_t m_bufs[3];
+    ringbuffer_block_t m_bufs[4];
     void * m_data_watcher_ctx;
     net_endpoint_data_watch_fun_t m_data_watcher_fun;
     void (*m_data_watcher_fini)(void*);

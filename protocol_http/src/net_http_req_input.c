@@ -8,6 +8,10 @@
 static int net_http_req_input_read_head(
     net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t req, net_endpoint_t endpoint, char * data);
 
+static int net_http_req_input_body_consume_body_part(
+    net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t req,
+    net_endpoint_t endpoint, uint16_t buf_sz);
+
 static int net_http_req_input_body_encoding_none(
     net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t req,
     net_endpoint_t endpoint);
@@ -137,12 +141,12 @@ static int net_http_req_input_read_head_line(
 
         if (!req->m_res_ignore && req->m_res_on_begin) {
             switch(req->m_res_on_begin(req->m_res_ctx, req, (uint16_t)atoi(code), msg)) {
-            case net_http_res_success:
+            case net_http_res_op_success:
                 break;
-            case net_http_res_ignore:
+            case net_http_res_op_ignore:
                 req->m_res_ignore = 1;
                 break;
-            case net_http_res_error_and_reconnect:
+            case net_http_res_op_error_and_reconnect:
                 CPE_ERROR(
                     http_protocol->m_em, "http: %s: req %d: <== process res begin fail, version=%s, code=%d, msg=%s",
                     net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
@@ -214,12 +218,12 @@ static int net_http_req_input_read_head_line(
 
         if (!req->m_res_ignore && req->m_res_on_head) {
             switch(req->m_res_on_head(req->m_res_ctx, req, name, value)) {
-            case net_http_res_success:
+            case net_http_res_op_success:
                 break;
-            case net_http_res_ignore:
+            case net_http_res_op_ignore:
                 req->m_res_ignore = 1;
                 break;
-            case net_http_res_error_and_reconnect:
+            case net_http_res_op_error_and_reconnect:
                 CPE_ERROR(
                     http_protocol->m_em, "http: %s: req %d: <== process head fail, %s: %s",
                     net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
@@ -271,16 +275,65 @@ static int net_http_req_input_body_set_complete(
         
     if (!req->m_res_ignore && req->m_res_on_complete) {
         switch(req->m_res_on_complete(req->m_res_ctx, req, result)) {
-        case net_http_res_success:
+        case net_http_res_op_success:
             break;
-        case net_http_res_ignore:
+        case net_http_res_op_ignore:
             req->m_res_ignore = 1;
             break;
-        case net_http_res_error_and_reconnect:
+        case net_http_res_op_error_and_reconnect:
             CPE_ERROR(
                 http_protocol->m_em, "http: %s: req %d: <== on complete fail",
                 net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
                 req->m_id);
+            return -1;
+        }
+    }
+
+    net_endpoint_buf_clear(endpoint, net_ep_buf_tmp);
+    return 0;
+}
+
+static int net_http_req_input_body_consume_body_part(
+    net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t req,
+    net_endpoint_t endpoint, uint16_t buf_sz)
+{
+    if (req->m_res_ignore) {
+        net_endpoint_buf_consume(endpoint, net_ep_buf_read, buf_sz);
+        return 0;
+    }
+
+    if (req->m_res_on_body) {
+        void * buf;
+        if (net_endpoint_buf_peak_with_size(endpoint, net_ep_buf_read, buf_sz, &buf) != 0) {
+            CPE_ERROR(
+                http_protocol->m_em, "http: %s: req %d: <== peak body data fail, size=%d",
+                net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
+                req->m_id, buf_sz);
+            return -1;
+        }
+
+        switch(req->m_res_on_body(req->m_res_ctx, req, buf, buf_sz)) {
+        case net_http_res_op_success:
+            break;
+        case net_http_res_op_ignore:
+            req->m_res_ignore = 1;
+            break;
+        case net_http_res_op_error_and_reconnect:
+            CPE_ERROR(
+                http_protocol->m_em, "http: %s: req %d: <== process body fail, size=%d",
+                net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
+                req->m_id, buf_sz);
+            return -1;
+        }
+
+        net_endpoint_buf_consume(endpoint, net_ep_buf_read, buf_sz);
+    }
+    else {
+        if (net_endpoint_buf_append_from_self(endpoint, net_ep_buf_tmp, net_ep_buf_read, buf_sz) != 0) {
+            CPE_ERROR(
+                http_protocol->m_em, "http: %s: req %d: <== move body to tmp buf fail, size=%d",
+                net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
+                req->m_id, buf_sz);
             return -1;
         }
     }
@@ -300,9 +353,7 @@ static int net_http_req_input_body_encoding_none(
     }
     
     while(req->m_res_state != net_http_res_state_completed) {
-        uint32_t buf_sz;
-        void * buf = net_endpoint_buf_peak(endpoint, net_ep_buf_read, &buf_sz);
-        if (buf == NULL) return 0;
+        uint32_t buf_sz = net_endpoint_buf_size(endpoint, net_ep_buf_read);
 
         if (req->m_res_content.m_length == 0) {
             if (net_endpoint_protocol_debug(endpoint) >= 2) {
@@ -312,23 +363,7 @@ static int net_http_req_input_body_encoding_none(
                     req->m_id, buf_sz);
             }
 
-            if (!req->m_res_ignore && req->m_res_on_body) {
-                switch(req->m_res_on_body(req->m_res_ctx, req, buf, buf_sz)) {
-                case net_http_res_success:
-                    break;
-                case net_http_res_ignore:
-                    req->m_res_ignore = 1;
-                    break;
-                case net_http_res_error_and_reconnect:
-                    CPE_ERROR(
-                        http_protocol->m_em, "http: %s: req %d: <== process body fail, size=%d",
-                        net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
-                        req->m_id, buf_sz);
-                    return -1;
-                }
-            }
-
-            net_endpoint_buf_consume(endpoint, net_ep_buf_read, buf_sz);
+            if (net_http_req_input_body_consume_body_part(http_protocol, http_ep, req, endpoint, buf_sz) != 0) return -1;
         }
         else {
             if (buf_sz > req->m_res_content.m_length) {
@@ -342,23 +377,7 @@ static int net_http_req_input_body_encoding_none(
                     req->m_id, buf_sz, req->m_res_content.m_length - buf_sz);
             }
 
-            if (!req->m_res_ignore && req->m_res_on_body) {
-                switch(req->m_res_on_body(req->m_res_ctx, req, buf, buf_sz)) {
-                case net_http_res_success:
-                    break;
-                case net_http_res_ignore:
-                    req->m_res_ignore = 1;
-                    break;
-                case net_http_res_error_and_reconnect:
-                    CPE_ERROR(
-                        http_protocol->m_em, "http: %s: req %d: <== process body fail, size=%d",
-                        net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
-                        req->m_id, buf_sz);
-                    return -1;
-                }
-            }
-
-            net_endpoint_buf_consume(endpoint, net_ep_buf_read, buf_sz);
+            if (net_http_req_input_body_consume_body_part(http_protocol, http_ep, req, endpoint, buf_sz) != 0) return -1;
             
             req->m_res_content.m_length -= buf_sz;
             if (req->m_res_content.m_length == 0) {
@@ -448,32 +467,7 @@ static int net_http_req_input_body_encoding_trunked(
                     buf_sz, req->m_res_trunked.m_length - buf_sz);
             }
 
-            if (!req->m_res_ignore && req->m_res_on_body) {
-                void * buf;
-                if (net_endpoint_buf_peak_with_size(endpoint, net_ep_buf_read, buf_sz, &buf) != 0) {
-                    CPE_ERROR(
-                        http_protocol->m_em, "http: %s: req %d: <== peak body data fail, size=%d",
-                        net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
-                        req->m_id, buf_sz);
-                    return -1;
-                }
-                
-                switch(req->m_res_on_body(req->m_res_ctx, req, buf, buf_sz)) {
-                case net_http_res_success:
-                    break;
-                case net_http_res_ignore:
-                    req->m_res_ignore = 1;
-                    break;
-                case net_http_res_error_and_reconnect:
-                    CPE_ERROR(
-                        http_protocol->m_em, "http: %s: req %d: <== process body fail, size=%d",
-                        net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
-                        req->m_id, buf_sz);
-                    return -1;
-                }
-            }
-
-            net_endpoint_buf_consume(endpoint, net_ep_buf_read, buf_sz);
+            if (net_http_req_input_body_consume_body_part(http_protocol, http_ep, req, endpoint, buf_sz) != 0) return -1;
             
             req->m_res_trunked.m_length -= buf_sz;
             if (req->m_res_trunked.m_length == 0) {

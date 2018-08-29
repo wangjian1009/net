@@ -369,6 +369,10 @@ int net_endpoint_buf_append(net_endpoint_t endpoint, net_endpoint_buf_type_t buf
     return 0;
 }
 
+int net_endpoint_buf_append_char(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, uint8_t c) {
+    return net_endpoint_buf_append(endpoint, buf_type, &c, sizeof(c));
+}
+
 int net_endpoint_buf_append_from_other(
     net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, net_endpoint_t other, net_endpoint_buf_type_t from, uint32_t size)
 {

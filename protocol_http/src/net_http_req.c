@@ -84,6 +84,19 @@ void net_http_req_real_free(net_http_req_t req) {
     mem_free(http_protocol->m_alloc, req);
 }
 
+const char * net_http_res_result_str(net_http_res_result_t res_result) {
+    switch(res_result) {
+    case net_http_res_complete:
+        return "http-res-complete";
+    case net_http_res_timeout:
+        return "http-res-timeout";
+    case net_http_res_canceled:
+        return "http-res-canceled";
+    case net_http_res_disconnected:
+        return "http-res-disconnected";
+    }
+}
+
 uint16_t net_http_req_id(net_http_req_t req) {
     return req->m_id;
 }

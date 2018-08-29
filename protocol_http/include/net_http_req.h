@@ -23,9 +23,9 @@ const char * net_http_req_state_str(net_http_req_state_t req_state);
 net_http_res_state_t net_http_req_res_state(net_http_req_t req);
 
 typedef enum net_http_res_op_result {
-    net_http_res_success,
-    net_http_res_ignore,
-    net_http_res_error_and_reconnect,
+    net_http_res_op_success,
+    net_http_res_op_ignore,
+    net_http_res_op_error_and_reconnect,
 } net_http_res_op_result_t;
 
 typedef enum net_http_res_result {
@@ -52,6 +52,8 @@ uint16_t net_http_req_res_code(net_http_req_t req);
 uint32_t net_http_req_res_length(net_http_req_t req);
 
 const char * net_http_res_state_str(net_http_res_state_t res_state);
+
+const char * net_http_res_result_str(net_http_res_result_t res_result);
 
 NET_END_DECL
 

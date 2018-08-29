@@ -36,6 +36,7 @@ typedef enum net_endpoint_buf_type {
     net_ep_buf_read,
     net_ep_buf_forward,
     net_ep_buf_write,
+    net_ep_buf_tmp,
 } net_endpoint_buf_type_t;
 
 typedef enum net_endpoint_state {
