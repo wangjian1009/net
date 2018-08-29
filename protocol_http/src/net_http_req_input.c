@@ -1,3 +1,4 @@
+#include "assert.h"
 #include "cpe/pal/pal_string.h"
 #include "cpe/pal/pal_stdlib.h"
 #include "cpe/utils/string_utils.h"
@@ -373,5 +374,164 @@ static int net_http_req_input_body_encoding_trunked(
     net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t req,
     net_endpoint_t endpoint)
 {
-    return -1;
+    uint32_t buf_sz;
+    
+    while(
+        req->m_res_state != net_http_res_state_completed
+        && (buf_sz = net_endpoint_buf_size(endpoint, net_ep_buf_read)) > 0)
+    {
+        if (req->m_res_trunked.m_state == net_http_trunked_length) {
+            char * data;
+            uint32_t size;
+            if (net_endpoint_buf_by_str(endpoint, net_ep_buf_read, "\r\n", (void**)&data, &size) != 0) {
+                CPE_ERROR(
+                    http_protocol->m_em, "http: %s: req %d: <== trunked: search trunk len fail",
+                    net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
+                    req->m_id);
+                return -1;
+            }
+
+            if (data == NULL) {
+                if(net_endpoint_buf_size(endpoint, net_ep_buf_forward) > 30) {
+                    CPE_ERROR(
+                        http_protocol->m_em, "http: %s: req %d: <== trunked: length linke too big! size=%d",
+                        net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
+                        req->m_id,
+                        net_endpoint_buf_size(endpoint, net_ep_buf_read));
+                    return -1;
+                }
+                else {
+                    return 0;
+                }
+            }
+
+            char * endptr = NULL;
+            req->m_res_trunked.m_length = (uint32_t)strtol(data, &endptr, 16);
+            if (endptr == NULL || *endptr != 0) {
+                CPE_ERROR(
+                    http_protocol->m_em, "http: %s: req %d: <== trunk[%d]: length %s format error",
+                    net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
+                    req->m_id,
+                    req->m_res_trunked.m_count,
+                    data);
+                return -1;
+            }
+
+            if (net_endpoint_protocol_debug(endpoint) >= 2) {
+                CPE_INFO(
+                    http_protocol->m_em, "http: %s: req %d: <== trunk[%d].length = 0x%s(%d)",
+                    net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
+                    req->m_id,
+                    req->m_res_trunked.m_count,
+                    data,
+                    req->m_res_trunked.m_length);
+            }
+
+            net_endpoint_buf_consume(endpoint, net_ep_buf_read, size);
+
+            req->m_res_trunked.m_state =
+                req->m_res_trunked.m_length == 0
+                ? net_http_trunked_complete
+                : net_http_trunked_content;
+        }
+        else if (req->m_res_trunked.m_state == net_http_trunked_content) {
+            if (buf_sz > req->m_res_trunked.m_length) {
+                buf_sz = req->m_res_trunked.m_length;
+            }
+
+            if (net_endpoint_protocol_debug(endpoint) >= 2) {
+                CPE_INFO(
+                    http_protocol->m_em, "http: %s: req %d: <== trunk[%d]: %d data(left=%d)",
+                    net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
+                    req->m_id,
+                    req->m_res_trunked.m_count,
+                    buf_sz, req->m_res_trunked.m_length - buf_sz);
+            }
+
+            if (!req->m_res_ignore && req->m_res_on_body) {
+                void * buf;
+                if (net_endpoint_buf_peak_with_size(endpoint, net_ep_buf_read, buf_sz, &buf) != 0) {
+                    CPE_ERROR(
+                        http_protocol->m_em, "http: %s: req %d: <== peak body data fail, size=%d",
+                        net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
+                        req->m_id, buf_sz);
+                    return -1;
+                }
+                
+                switch(req->m_res_on_body(req->m_res_ctx, req, buf, buf_sz)) {
+                case net_http_res_success:
+                    break;
+                case net_http_res_ignore:
+                    req->m_res_ignore = 1;
+                    break;
+                case net_http_res_error_and_reconnect:
+                    CPE_ERROR(
+                        http_protocol->m_em, "http: %s: req %d: <== process body fail, size=%d",
+                        net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
+                        req->m_id, buf_sz);
+                    return -1;
+                }
+            }
+
+            net_endpoint_buf_consume(endpoint, net_ep_buf_read, buf_sz);
+            
+            req->m_res_trunked.m_length -= buf_sz;
+            if (req->m_res_trunked.m_length == 0) {
+                req->m_res_trunked.m_state = net_http_trunked_content_complete;
+            }
+        }
+        else if (req->m_res_trunked.m_state == net_http_trunked_content_complete) {
+            if (buf_sz < 2) return 0;
+            
+            char * data;
+            net_endpoint_buf_peak_with_size(endpoint, net_ep_buf_read, 2, (void**)&data);
+            assert(data);
+            if (data[0] != '\r' || data[1] != '\n') {
+                CPE_ERROR(
+                    http_protocol->m_em, "http: %s: req %d: <== trunk[%d]: trunk rn mismatch",
+                    net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
+                    req->m_id,
+                    req->m_res_trunked.m_count);
+                return -1;
+            }
+
+            net_endpoint_buf_consume(endpoint, net_ep_buf_read, 2);
+            
+            req->m_res_trunked.m_state = net_http_trunked_length;
+            req->m_res_trunked.m_count++;
+        }
+        else {
+            assert(req->m_res_trunked.m_state == net_http_trunked_complete);
+            if (buf_sz < 2) return 0;
+            
+            char * data;
+            net_endpoint_buf_peak_with_size(endpoint, net_ep_buf_read, 2, (void**)&data);
+            assert(data);
+            if (data[0] != '\r' || data[1] != '\n') {
+                CPE_ERROR(
+                    http_protocol->m_em, "http: %s: req %d: <== trunked: last rn mismach",
+                    net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
+                    req->m_id);
+                return -1;
+            }
+
+            if (net_endpoint_protocol_debug(endpoint) >= 2) {
+                CPE_INFO(
+                    http_protocol->m_em, "http: %s: req %d: <== trunked: completed, trunk-count=%d",
+                    net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
+                    req->m_id,
+                    req->m_res_trunked.m_count);
+            }
+
+            net_endpoint_buf_consume(endpoint, net_ep_buf_read, 2);
+
+            if (net_http_req_input_body_set_complete(http_protocol, http_ep, req, endpoint, net_http_res_complete) != 0) {
+                return -1;
+            }
+
+            return 0;
+        }
+    }
+    
+    return 0;
 }

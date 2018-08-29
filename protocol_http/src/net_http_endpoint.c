@@ -240,39 +240,39 @@ int net_http_endpoint_input(net_endpoint_t endpoint) {
     net_http_endpoint_t http_ep = net_endpoint_protocol_data(endpoint);
     net_http_protocol_t http_protocol = net_protocol_data(net_endpoint_protocol(endpoint));
 
-    while(http_ep->m_state == net_http_state_established) {
+    while(http_ep->m_state == net_http_state_established
+          && !net_endpoint_buf_is_empty(endpoint, net_ep_buf_read))
+    {
         if (http_ep->m_connection_type != net_http_connection_type_upgrade) {
-            net_http_req_t processing_req;
-            while((processing_req = TAILQ_FIRST(&http_ep->m_reqs))) {
-                int rv = net_http_endpoint_req_input(http_protocol, http_ep, processing_req);
-                if (rv < 0) return -1;
-
-                switch(processing_req->m_res_state) {
-                case net_http_res_state_completed:
-                    net_http_req_free(processing_req);
-
-                    if (http_ep->m_connection_type == net_http_connection_type_close) {
-                        if (net_endpoint_set_state(endpoint, net_endpoint_state_disable) != 0) {
-                            return -1;
-                        }
-                        else {
-                            return 0;
-                        }
-                    }
-
-                    continue; /* */
-                default:
-                    /*当前请求没有完成，比如还需要等待后续数据 */
-                    return 0;
-                }
-            }
-
-            if (!net_endpoint_buf_is_empty(endpoint, net_ep_buf_read)) {
+            net_http_req_t processing_req = TAILQ_FIRST(&http_ep->m_reqs);
+            if (processing_req == NULL) {
                 CPE_ERROR(
                     http_protocol->m_em,
                     "http: %s: input without req or upgraded-processor!",
                     net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint));
                 return -1;
+            }
+            
+            int rv = net_http_endpoint_req_input(http_protocol, http_ep, processing_req);
+            if (rv < 0) return -1;
+
+            if (processing_req->m_res_state == net_http_res_state_completed) {
+                net_http_req_free(processing_req);
+
+                if (http_ep->m_connection_type == net_http_connection_type_close) {
+                    if (net_endpoint_set_state(endpoint, net_endpoint_state_disable) != 0) {
+                        return -1;
+                    }
+                    else {
+                        return 0;
+                    }
+                }
+                else {
+                    continue;
+                }
+            }
+            else {
+                return 0; /*当前请求没有完成，比如还需要等待后续数据 */
             }
         }
         else {
