@@ -274,7 +274,7 @@ static int net_http_req_input_body_set_complete(
     net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t req, net_endpoint_t endpoint, net_http_res_result_t result)
 {
     req->m_res_state = net_http_res_state_completed;
-        
+    
     if (!req->m_res_ignore && req->m_res_on_complete) {
         switch(req->m_res_on_complete(req->m_res_ctx, req, result)) {
         case net_http_res_op_success:

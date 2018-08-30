@@ -486,7 +486,8 @@ int net_http_endpoint_flush(net_http_endpoint_t http_ep) {
                 TAILQ_FOREACH(req, &http_ep->m_reqs, m_next) {
                     uint32_t req_used_sz = req->m_head_size + req->m_body_size - req->m_flushed_size;
                     if (req_used_sz > left_sz) req_used_sz = left_sz;
-                    
+                    if (req_used_sz == 0) continue;
+
                     if (req->m_flushed_size == 0 && req->m_head_size > 4 && req_used_sz >= req->m_head_size) { /*包含完整头部 */
                         char * p = buf + req->m_head_size - 4;
                         *p = 0;
