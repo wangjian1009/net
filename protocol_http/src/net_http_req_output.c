@@ -89,7 +89,7 @@ int net_http_req_write_body_full(net_http_req_t http_req, void const * data, siz
 
     if (net_http_req_complete_head(http_protocol, http_ep, http_req) != 0) return -1;
     
-    if (net_http_endpoint_write(http_protocol, http_ep, http_req, data, data_sz) != 0) return -1;
+    if (net_http_endpoint_write(http_protocol, http_ep, http_req, data, (uint32_t)data_sz) != 0) return -1;
     
     return 0;
 }

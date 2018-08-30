@@ -21,7 +21,10 @@ uint32_t net_http_endpoint_reconnect_span_ms(net_http_endpoint_t http_ep);
 void net_http_endpoint_set_reconnect_span_ms(net_http_endpoint_t http_ep, uint32_t span_ms);
 
 uint8_t net_http_endpoint_use_https(net_http_endpoint_t http_ep);
-void net_http_endpoint_set_use_https(net_http_endpoint_t http_ep, uint8_t use_https);
+
+net_http_ssl_ctx_t net_http_endpoint_ssl_ctx(net_http_endpoint_t http_ep);
+net_http_ssl_ctx_t net_http_endpoint_ssl_enable(net_http_endpoint_t http_ep);
+int net_http_endpoint_ssl_disable(net_http_endpoint_t http_ep);
 
 net_http_connection_type_t net_http_endpoint_connection_type(net_http_endpoint_t http_ep);
 

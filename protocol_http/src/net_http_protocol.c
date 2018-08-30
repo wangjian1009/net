@@ -2,6 +2,7 @@
 #include "net_protocol.h"
 #include "net_http_endpoint_i.h"
 #include "net_http_req_i.h"
+#include "net_http_ssl_ctx_i.h"
 
 static int net_http_protocol_init(net_protocol_t protocol);
 static void net_http_protocol_fini(net_protocol_t protocol);
@@ -84,6 +85,7 @@ static int net_http_protocol_init(net_protocol_t protocol) {
     http_protocol->m_write_buf_block_size = 512;
 
     TAILQ_INIT(&http_protocol->m_free_reqs);
+    TAILQ_INIT(&http_protocol->m_free_ssl_ctxes);
     
     return 0;
 }
@@ -97,6 +99,10 @@ static void net_http_protocol_fini(net_protocol_t protocol) {
     
     while(!TAILQ_EMPTY(&http_protocol->m_free_reqs)) {
         net_http_req_real_free(TAILQ_FIRST(&http_protocol->m_free_reqs));
+    }
+    
+    while(!TAILQ_EMPTY(&http_protocol->m_free_ssl_ctxes)) {
+        net_http_ssl_ctx_real_free(TAILQ_FIRST(&http_protocol->m_free_ssl_ctxes));
     }
     
     mem_buffer_clear(&http_protocol->m_input_data_buffer);

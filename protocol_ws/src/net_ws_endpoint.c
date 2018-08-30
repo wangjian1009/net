@@ -60,8 +60,15 @@ uint8_t net_ws_endpoint_use_https(net_ws_endpoint_t ws_ep) {
     return net_http_endpoint_use_https(ws_ep->m_http_ep);
 }
 
-void net_ws_endpoint_set_use_https(net_ws_endpoint_t ws_ep, uint8_t use_https) {
-    net_http_endpoint_set_use_https(ws_ep->m_http_ep, use_https);
+int net_ws_endpoint_set_use_https(net_ws_endpoint_t ws_ep, uint8_t use_https) {
+    if (use_https) {
+        if (net_http_endpoint_ssl_enable(ws_ep->m_http_ep) != 0) return -1;
+    }
+    else {
+        if (net_http_endpoint_ssl_disable(ws_ep->m_http_ep) != 0) return -1;
+    }
+
+    return 0;
 }
 
 void * net_ws_endpoint_data(net_ws_endpoint_t ws_ep) {
@@ -89,11 +96,11 @@ int net_ws_endpoint_set_remote_and_path(net_ws_endpoint_t ws_ep, const char * ur
 
     const char * addr_begin;
     if (cpe_str_start_with(url, "ws://")) {
-        net_http_endpoint_set_use_https(ws_ep->m_http_ep, 0);
+        if (net_http_endpoint_ssl_disable(ws_ep->m_http_ep) != 0) return -1;
         addr_begin = url + 5;
     }
     else if (cpe_str_start_with(url, "wss://")) {
-        net_http_endpoint_set_use_https(ws_ep->m_http_ep, 1);
+        if (net_http_endpoint_ssl_enable(ws_ep->m_http_ep) != 0) return -1;
         addr_begin = url + 6;
     }
     else {

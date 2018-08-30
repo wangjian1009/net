@@ -7,6 +7,7 @@
 NET_BEGIN_DECL
 
 typedef TAILQ_HEAD(net_http_req_list, net_http_req) net_http_req_list_t;
+typedef TAILQ_HEAD(net_http_ssl_ctx_list, net_http_ssl_ctx) net_http_ssl_ctx_list_t;
 
 struct net_http_protocol {
     mem_allocrator_t m_alloc;
@@ -27,6 +28,7 @@ struct net_http_protocol {
 
     /*runtime*/
     net_http_req_list_t m_free_reqs;
+    net_http_ssl_ctx_list_t m_free_ssl_ctxes;
 };
 
 mem_buffer_t net_http_protocol_tmp_buffer(net_http_protocol_t ws_protocol);

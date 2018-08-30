@@ -86,6 +86,7 @@
 		C904629E21369E2D00330168 /* cipher.c in Sources */ = {isa = PBXBuildFile; fileRef = C904624E21369E2D00330168 /* cipher.c */; };
 		C904629F21369E2D00330168 /* ecdsa.c in Sources */ = {isa = PBXBuildFile; fileRef = C904624F21369E2D00330168 /* ecdsa.c */; };
 		C90462A021369E2D00330168 /* nist_kw.c in Sources */ = {isa = PBXBuildFile; fileRef = C904625021369E2D00330168 /* nist_kw.c */; };
+		C9046461213777B300330168 /* net_http_ssl_ctx.c in Sources */ = {isa = PBXBuildFile; fileRef = C9046460213777B300330168 /* net_http_ssl_ctx.c */; };
 		C91E1EEC2105E4160080FAD8 /* net_endpoint_link_to.c in Sources */ = {isa = PBXBuildFile; fileRef = C91E1EC52105E4160080FAD8 /* net_endpoint_link_to.c */; };
 		C91E1EED2105E4160080FAD8 /* net_timer.c in Sources */ = {isa = PBXBuildFile; fileRef = C91E1EC62105E4160080FAD8 /* net_timer.c */; };
 		C91E1EEE2105E4160080FAD8 /* net_address.c in Sources */ = {isa = PBXBuildFile; fileRef = C91E1EC72105E4160080FAD8 /* net_address.c */; };
@@ -360,6 +361,8 @@
 		C904624E21369E2D00330168 /* cipher.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = cipher.c; sourceTree = "<group>"; };
 		C904624F21369E2D00330168 /* ecdsa.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ecdsa.c; sourceTree = "<group>"; };
 		C904625021369E2D00330168 /* nist_kw.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = nist_kw.c; sourceTree = "<group>"; };
+		C904645F213777B300330168 /* net_http_ssl_ctx_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_http_ssl_ctx_i.h; sourceTree = "<group>"; };
+		C9046460213777B300330168 /* net_http_ssl_ctx.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_http_ssl_ctx.c; sourceTree = "<group>"; };
 		C91E1EB42105E4150080FAD8 /* net_protocol.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_protocol.h; sourceTree = "<group>"; };
 		C91E1EB52105E4150080FAD8 /* net_endpoint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_endpoint.h; sourceTree = "<group>"; };
 		C91E1EB62105E4150080FAD8 /* net_dns_query.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_query.h; sourceTree = "<group>"; };
@@ -1007,6 +1010,8 @@
 		C99B016F213453DD00352CCB /* src */ = {
 			isa = PBXGroup;
 			children = (
+				C904645F213777B300330168 /* net_http_ssl_ctx_i.h */,
+				C9046460213777B300330168 /* net_http_ssl_ctx.c */,
 				C99B0170213453DD00352CCB /* net_http_endpoint_i.h */,
 				C99B0171213453DD00352CCB /* net_http_req.c */,
 				C99B0172213453DD00352CCB /* net_http_req_i.h */,
@@ -1720,6 +1725,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C9046461213777B300330168 /* net_http_ssl_ctx.c in Sources */,
 				C99B017D213453DE00352CCB /* net_http_req.c in Sources */,
 				C99B0181213453DE00352CCB /* net_http_req_input.c in Sources */,
 				C99B017F213453DE00352CCB /* net_http_endpoint.c in Sources */,
@@ -2068,10 +2074,13 @@
 		C99B016C2134538C00352CCB /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
 				CODE_SIGN_STYLE = Automatic;
 				HEADER_SEARCH_PATHS = (
 					../../../cpe/include,
 					../../core/include,
+					../../depends/mbedtls/include,
+					../../protocol_http/include,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -2082,10 +2091,13 @@
 		C99B016D2134538C00352CCB /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
 				CODE_SIGN_STYLE = Automatic;
 				HEADER_SEARCH_PATHS = (
 					../../../cpe/include,
 					../../core/include,
+					../../depends/mbedtls/include,
+					../../protocol_http/include,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;

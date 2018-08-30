@@ -12,10 +12,12 @@
 #include "net_http_endpoint_i.h"
 #include "net_http_protocol_i.h"
 #include "net_http_req_i.h"
+#include "net_http_ssl_ctx_i.h"
 
 static void net_http_endpoint_reset_data(net_http_endpoint_t http_ep, net_http_res_result_t result);
 static void net_http_endpoint_do_connect(net_timer_t timer, void * ctx);
 static int net_http_endpoint_notify_state_changed(net_http_endpoint_t http_ep, net_http_state_t old_state);
+static int net_http_endpoint_do_ssl_handshake(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep);
 
 net_http_endpoint_t
 net_http_endpoint_create(net_driver_t driver, net_endpoint_type_t type, net_http_protocol_t http_protocol) {
@@ -68,11 +70,35 @@ net_http_protocol_t net_http_endpoint_protocol(net_http_endpoint_t http_ep) {
 }
 
 uint8_t net_http_endpoint_use_https(net_http_endpoint_t http_ep) {
-    return http_ep->m_use_https;
+    return http_ep->m_ssl_ctx ? 1 : 0;
 }
 
-void net_http_endpoint_set_use_https(net_http_endpoint_t http_ep, uint8_t use_https) {
-    http_ep->m_use_https = 0;
+net_http_ssl_ctx_t net_http_endpoint_ssl_ctx(net_http_endpoint_t http_ep) {
+    return http_ep->m_ssl_ctx;
+}
+
+net_http_ssl_ctx_t net_http_endpoint_ssl_enable(net_http_endpoint_t http_ep) {
+    return NULL;
+}
+
+int net_http_endpoint_ssl_disable(net_http_endpoint_t http_ep) {
+    net_http_protocol_t http_protocol = net_http_endpoint_protocol(http_ep);
+    
+    if (http_ep->m_state != net_http_state_disable) {
+        CPE_ERROR(
+            http_protocol->m_em,
+            "http: %s: can`t disable ssl in state %s",
+            net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint),
+            net_http_state_str(http_ep->m_state));
+        return -1;
+    }
+
+    if (http_ep->m_ssl_ctx) {
+        net_http_ssl_ctx_free(http_ep->m_ssl_ctx);
+        http_ep->m_ssl_ctx = NULL;
+    }
+    
+    return 0;
 }
 
 net_http_connection_type_t net_http_endpoint_connection_type(net_http_endpoint_t http_ep) {
@@ -80,15 +106,24 @@ net_http_connection_type_t net_http_endpoint_connection_type(net_http_endpoint_t
 }
 
 int net_http_endpoint_set_remote(net_http_endpoint_t http_ep, const char * url) {
-    net_http_protocol_t http_protocol = net_protocol_data(net_endpoint_protocol(http_ep->m_endpoint));
+    net_http_protocol_t http_protocol = net_http_endpoint_protocol(http_ep);;
 
+    if (http_ep->m_state != net_http_state_disable) {
+        CPE_ERROR(
+            http_protocol->m_em,
+            "http: %s: set remote and path: can`t set remote in state %s",
+            net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint),
+            net_http_state_str(http_ep->m_state));
+        return -1;
+    }
+    
     const char * addr_begin;
     if (cpe_str_start_with(url, "http://")) {
-        http_ep->m_use_https = 0;
+        if (net_http_endpoint_ssl_disable(http_ep) != 0) return -1;
         addr_begin = url + 7;
     }
     else if (cpe_str_start_with(url, "https://")) {
-        http_ep->m_use_https = 1;
+        if (net_http_endpoint_ssl_enable(http_ep) != 0) return -1;
         addr_begin = url + 8;
     }
     else {
@@ -131,7 +166,7 @@ int net_http_endpoint_set_remote(net_http_endpoint_t http_ep, const char * url) 
     }
 
     if (net_address_port(address) == 0) {
-        net_address_set_port(address, http_ep->m_use_https ? 443 : 80);
+        net_address_set_port(address, http_ep->m_ssl_ctx ? 443 : 80);
     }
         
     if (net_endpoint_set_remote_address(http_ep->m_endpoint, address, 1) != 0) {
@@ -154,7 +189,7 @@ int net_http_endpoint_set_state(net_http_endpoint_t http_ep, net_http_state_t st
     if (http_ep->m_state == state) return 0;
     
     if (net_endpoint_protocol_debug(http_ep->m_endpoint) >= 1) {
-        net_http_protocol_t http_protocol = net_protocol_data(net_endpoint_protocol(http_ep->m_endpoint));
+        net_http_protocol_t http_protocol = net_http_endpoint_protocol(http_ep);;
         CPE_INFO(
             http_protocol->m_em, "http: %s: state %s ==> %s",
             net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint),
@@ -170,7 +205,7 @@ int net_http_endpoint_set_state(net_http_endpoint_t http_ep, net_http_state_t st
 }
 
 static int net_http_endpoint_notify_state_changed(net_http_endpoint_t http_ep, net_http_state_t old_state) {
-    net_http_protocol_t http_protocol = net_protocol_data(net_endpoint_protocol(http_ep->m_endpoint));
+    net_http_protocol_t http_protocol = net_http_endpoint_protocol(http_ep);;
         
     int rv = http_protocol->m_endpoint_on_state_change
         ? http_protocol->m_endpoint_on_state_change(http_ep, old_state)
@@ -187,7 +222,7 @@ int net_http_endpoint_init(net_endpoint_t endpoint) {
     http_ep->m_endpoint = endpoint;
     http_ep->m_state = net_http_state_disable;
     http_ep->m_connection_type = net_http_connection_type_keep_alive;
-    http_ep->m_use_https = 0;
+    http_ep->m_ssl_ctx = NULL;
     http_ep->m_reconnect_span_ms = 3u * 1000u;
     http_ep->m_max_req_id = 0;
     TAILQ_INIT(&http_ep->m_reqs);
@@ -228,6 +263,11 @@ void net_http_endpoint_fini(net_endpoint_t endpoint) {
         http_protocol->m_endpoint_fini(http_ep);
     }
 
+    if (http_ep->m_ssl_ctx) {
+        net_http_ssl_ctx_free(http_ep->m_ssl_ctx);
+        http_ep->m_ssl_ctx = NULL;
+    }
+    
     if (http_ep->m_connect_timer) {
         net_timer_free(http_ep->m_connect_timer);
         http_ep->m_connect_timer = NULL;
@@ -240,6 +280,14 @@ int net_http_endpoint_input(net_endpoint_t endpoint) {
     net_http_endpoint_t http_ep = net_endpoint_protocol_data(endpoint);
     net_http_protocol_t http_protocol = net_protocol_data(net_endpoint_protocol(endpoint));
 
+    if (http_ep->m_state == net_http_state_connecting
+        && http_ep->m_ssl_ctx != NULL
+        && net_endpoint_state(http_ep->m_endpoint) == net_endpoint_state_established
+        && !net_endpoint_buf_is_empty(endpoint, net_ep_buf_read))
+    {
+        if (net_http_endpoint_do_ssl_handshake(http_protocol, http_ep) != 0) return -1;
+    }
+    
     while(http_ep->m_state == net_http_state_established
           && !net_endpoint_buf_is_empty(endpoint, net_ep_buf_read))
     {
@@ -334,7 +382,12 @@ int net_http_endpoint_on_state_change(net_endpoint_t endpoint, net_endpoint_stat
         if (net_http_endpoint_set_state(http_ep, net_http_state_connecting) != 0) return -1;
         break;
     case net_endpoint_state_established:
-        if (net_http_endpoint_set_state(http_ep, net_http_state_established) != 0) return -1;
+        if (http_ep->m_ssl_ctx) {
+            if (net_http_endpoint_do_ssl_handshake(net_http_endpoint_protocol(http_ep), http_ep) != 0) return -1;
+        }
+        else {
+            if (net_http_endpoint_set_state(http_ep, net_http_state_established) != 0) return -1;
+        }
         break;
     case net_endpoint_state_deleting:
         assert(0);
@@ -441,6 +494,28 @@ static void net_http_endpoint_do_connect(net_timer_t timer, void * ctx) {
             net_timer_active(timer, (int32_t)http_ep->m_reconnect_span_ms);
         }
     }
+}
+
+static int net_http_endpoint_do_ssl_handshake(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep) {
+    int rv = mbedtls_ssl_handshake(&http_ep->m_ssl_ctx->m_ssl);
+    if (rv != 0) {
+        if(rv == MBEDTLS_ERR_SSL_WANT_READ || rv == MBEDTLS_ERR_SSL_WANT_WRITE) {
+            return 0;
+        }
+        else {
+            CPE_ERROR(
+                http_protocol->m_em,
+                "http: %s: ssl: handshake fail, rv=%d!",
+                net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint),
+                rv);
+            return -1;
+        }
+    }
+    else {
+        if (net_http_endpoint_set_state(http_ep, net_http_state_established) != 0) return -1;
+    }
+
+    return 0;
 }
 
 const char * net_http_state_str(net_http_state_t state) {

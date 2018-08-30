@@ -24,7 +24,7 @@ uint32_t net_ws_endpoint_reconnect_span_ms(net_ws_endpoint_t ws_ep);
 void net_ws_endpoint_set_reconnect_span_ms(net_ws_endpoint_t ws_ep, uint32_t span_ms);
 
 uint8_t net_ws_endpoint_use_https(net_ws_endpoint_t ws_ep);
-void net_ws_endpoint_set_use_https(net_ws_endpoint_t ws_ep, uint8_t use_wss);
+int net_ws_endpoint_set_use_https(net_ws_endpoint_t ws_ep, uint8_t use_wss);
 
 void * net_ws_endpoint_data(net_ws_endpoint_t ws_ep);
 net_ws_endpoint_t net_ws_endpoint_from_data(void * data);

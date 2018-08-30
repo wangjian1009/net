@@ -7,7 +7,7 @@ NET_BEGIN_DECL
 
 struct net_http_endpoint {
     net_endpoint_t m_endpoint;
-    uint8_t m_use_https;
+    net_http_ssl_ctx_t m_ssl_ctx;
     net_http_connection_type_t m_connection_type;
     uint32_t m_reconnect_span_ms;
 
