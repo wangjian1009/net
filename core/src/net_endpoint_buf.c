@@ -473,7 +473,7 @@ int net_endpoint_buf_append_from_self(net_endpoint_t endpoint, net_endpoint_buf_
 
         net_endpoint_buf_link(tb);
 
-        net_endpoint_buf_consume(endpoint, net_ep_buf_read, size);
+        net_endpoint_buf_consume(endpoint, from, size);
     }
     else {
         if (endpoint->m_bufs[from]) {

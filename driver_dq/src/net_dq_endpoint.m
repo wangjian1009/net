@@ -320,7 +320,7 @@ int net_dq_endpoint_on_read(net_dq_driver_t driver, net_dq_endpoint_t endpoint, 
         )
     {
         uint32_t capacity = 0;
-        void * rbuf = net_endpoint_buf_alloc(base_endpoint, net_ep_buf_read, &capacity);
+        void * rbuf = net_endpoint_buf_alloc(base_endpoint, &capacity);
         if (rbuf == NULL) {
             CPE_ERROR(
                 driver->m_em, "dq: %s: on read: endpoint rbuf full!",
@@ -357,6 +357,7 @@ int net_dq_endpoint_on_read(net_dq_driver_t driver, net_dq_endpoint_t endpoint, 
             continue;
         }
         else if (bytes == 0) {
+            net_endpoint_buf_release(base_endpoint);
             if (net_endpoint_driver_debug(base_endpoint)) {
                 CPE_INFO(
                     driver->m_em, "dq: %s: remote disconnected(recv 0)!",
@@ -367,6 +368,7 @@ int net_dq_endpoint_on_read(net_dq_driver_t driver, net_dq_endpoint_t endpoint, 
             return 0;
         }
         else {
+            net_endpoint_buf_release(base_endpoint);
             assert(bytes == -1);
 
             switch(errno) {

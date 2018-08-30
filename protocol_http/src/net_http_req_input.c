@@ -305,7 +305,7 @@ static int net_http_req_input_body_consume_body_part(
     }
 
     if (req->m_res_on_body) {
-        void * buf;
+        void * buf = NULL;
         if (net_endpoint_buf_peak_with_size(endpoint, net_ep_buf_http_in, buf_sz, &buf) != 0) {
             CPE_ERROR(
                 http_protocol->m_em, "http: %s: req %d: <== peak body data fail, size=%d",
@@ -479,15 +479,16 @@ static int net_http_req_input_body_encoding_trunked(
         else if (req->m_res_trunked.m_state == net_http_trunked_content_complete) {
             if (buf_sz < 2) return 0;
             
-            char * data;
+            char * data = NULL;
             net_endpoint_buf_peak_with_size(endpoint, net_ep_buf_http_in, 2, (void**)&data);
             assert(data);
             if (data[0] != '\r' || data[1] != '\n') {
                 CPE_ERROR(
-                    http_protocol->m_em, "http: %s: req %d: <== trunk[%d]: trunk rn mismatch",
+                    http_protocol->m_em, "http: %s: req %d: <== trunk[%d]: trunk rn mismatch, '%c', '%c'",
                     net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
                     req->m_id,
-                    req->m_res_trunked.m_count);
+                    req->m_res_trunked.m_count,
+                    data[0], data[1]);
                 return -1;
             }
 
