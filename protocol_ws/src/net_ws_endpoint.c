@@ -14,7 +14,7 @@
 #include "net_ws_endpoint_i.h"
 #include "net_ws_protocol_i.h"
 
-static int net_ws_endpoint_do_process(net_ws_endpoint_t ws_ep);
+static const char * net_ws_wslay_err_str(int err);
 static void net_ws_endpoint_reset_data(net_ws_endpoint_t ws_ep);
 static int net_ws_endpoint_send_handshake(net_ws_endpoint_t ws_ep);
 
@@ -92,7 +92,7 @@ net_endpoint_t net_ws_endpoint_net_ep(net_ws_endpoint_t ws_ep) {
 }
 
 int net_ws_endpoint_set_remote_and_path(net_ws_endpoint_t ws_ep, const char * url) {
-    net_ws_protocol_t ws_protocol = net_http_protocol_data(net_http_endpoint_protocol(ws_ep->m_http_ep));
+    net_ws_protocol_t ws_protocol = net_ws_endpoint_protocol(ws_ep);
 
     const char * addr_begin;
     if (cpe_str_start_with(url, "ws://")) {
@@ -109,7 +109,7 @@ int net_ws_endpoint_set_remote_and_path(net_ws_endpoint_t ws_ep, const char * ur
             "ws: %s: set remote and path: url %s check protocol fail!",
             net_endpoint_dump(
                 net_ws_protocol_tmp_buffer(ws_protocol),
-                net_http_endpoint_net_ep(ws_ep->m_http_ep)),
+                net_ws_endpoint_net_ep(ws_ep)),
             url);
         return -1;
     }
@@ -128,7 +128,7 @@ int net_ws_endpoint_set_remote_and_path(net_ws_endpoint_t ws_ep, const char * ur
                 "ws: %s: set remote and path: url %s address dup fail!",
                 net_endpoint_dump(
                     net_ws_protocol_tmp_buffer(ws_protocol),
-                    net_http_endpoint_net_ep(ws_ep->m_http_ep)),
+                    net_ws_endpoint_net_ep(ws_ep)),
                 url);
             return -1;
         }
@@ -138,14 +138,14 @@ int net_ws_endpoint_set_remote_and_path(net_ws_endpoint_t ws_ep, const char * ur
         str_address = addr_begin;
     }
 
-    net_address_t address = net_address_create_auto(net_endpoint_schedule(net_http_endpoint_net_ep(ws_ep->m_http_ep)), str_address);
+    net_address_t address = net_address_create_auto(net_endpoint_schedule(net_ws_endpoint_net_ep(ws_ep)), str_address);
     if (address == NULL) {
         CPE_ERROR(
             ws_protocol->m_em,
             "ws: %s: set remote and path: url %s address format error!",
             net_endpoint_dump(
                 net_ws_protocol_tmp_buffer(ws_protocol),
-                net_http_endpoint_net_ep(ws_ep->m_http_ep)),
+                net_ws_endpoint_net_ep(ws_ep)),
             url);
         return -1;
     }
@@ -155,13 +155,13 @@ int net_ws_endpoint_set_remote_and_path(net_ws_endpoint_t ws_ep, const char * ur
     }
         
     if (net_endpoint_set_remote_address(
-            net_http_endpoint_net_ep(ws_ep->m_http_ep), address, 1) != 0) {
+            net_ws_endpoint_net_ep(ws_ep), address, 1) != 0) {
         CPE_ERROR(
             ws_protocol->m_em,
             "ws: %s: set remote and path: url %s set remote address fail!",
             net_endpoint_dump(
                 net_ws_protocol_tmp_buffer(ws_protocol),
-                net_http_endpoint_net_ep(ws_ep->m_http_ep)),
+                net_ws_endpoint_net_ep(ws_ep)),
             url);
         net_address_free(address);
         return -1;
@@ -175,7 +175,7 @@ const char * net_ws_endpoint_path(net_ws_endpoint_t ws_ep) {
 }
 
 int net_ws_endpoint_set_path(net_ws_endpoint_t ws_ep, const char * path) {
-    net_ws_protocol_t ws_protocol = net_http_protocol_data(net_http_endpoint_protocol(ws_ep->m_http_ep));
+    net_ws_protocol_t ws_protocol = net_ws_endpoint_protocol(ws_ep);
 
     if (ws_ep->m_cfg_path) {
         mem_free(ws_protocol->m_alloc, ws_ep->m_cfg_path);
@@ -190,7 +190,7 @@ int net_ws_endpoint_set_path(net_ws_endpoint_t ws_ep, const char * path) {
                 "ws: %s: set path: copy path %s fail!",
                 net_endpoint_dump(
                     net_ws_protocol_tmp_buffer(ws_protocol),
-                    net_http_endpoint_net_ep(ws_ep->m_http_ep)),
+                    net_ws_endpoint_net_ep(ws_ep)),
                 path);
             return -1;
         }
@@ -200,58 +200,101 @@ int net_ws_endpoint_set_path(net_ws_endpoint_t ws_ep, const char * path) {
 }
 
 int net_ws_endpoint_send_msg_text(net_ws_endpoint_t ws_ep, const char * msg) {
-    net_ws_protocol_t ws_protocol = net_http_protocol_data(net_http_endpoint_protocol(ws_ep->m_http_ep));
-    struct wslay_event_msg ws_msg = { WSLAY_TEXT_FRAME,  (const uint8_t *)msg, strlen(msg) };
+    net_ws_protocol_t ws_protocol = net_ws_endpoint_protocol(ws_ep);
 
+    if (ws_ep->m_state != net_ws_state_established) {
+        CPE_ERROR(
+            ws_protocol->m_em,
+            "ws: %s: msg text: >>> curent state %s, can`t send msg!\n%s",
+            net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_ws_endpoint_net_ep(ws_ep)),
+            net_ws_state_str(ws_ep->m_state),
+            msg);
+        return -1;
+    }
+    
+    struct wslay_event_msg ws_msg = { WSLAY_TEXT_FRAME,  (const uint8_t *)msg, strlen(msg) };
     if (wslay_event_queue_msg(ws_ep->m_ctx, &ws_msg) != 0) {
         CPE_ERROR(
             ws_protocol->m_em,
-            "ws: %s: send msg text: queue msg fail!",
-            net_endpoint_dump(
-                net_ws_protocol_tmp_buffer(ws_protocol),
-                net_http_endpoint_net_ep(ws_ep->m_http_ep)));
+            "ws: %s: msg text: >>> queue msg fail!\n%s",
+            net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_ws_endpoint_net_ep(ws_ep)),
+            msg);
         return -1;
     }
 
-    if (net_endpoint_protocol_debug(net_http_endpoint_net_ep(ws_ep->m_http_ep)) >= 2) {
+    net_endpoint_t endpoint = net_ws_endpoint_net_ep(ws_ep);
+    if (wslay_event_want_write(ws_ep->m_ctx)
+        && !net_endpoint_buf_is_full(endpoint, net_ep_buf_write))
+    {
+        int rv = wslay_event_send(ws_ep->m_ctx);
+        if (rv != 0) {
+            
+            CPE_ERROR(
+                ws_protocol->m_em, "ws: %s: msg text: >>> send fail, rv=%d (%s)\n%s",
+                net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_ws_endpoint_net_ep(ws_ep)),
+                rv, net_ws_wslay_err_str(rv),
+                msg);
+            return -1;
+        }
+    }
+    
+    if (net_endpoint_protocol_debug(net_ws_endpoint_net_ep(ws_ep)) >= 2) {
         CPE_INFO(
             ws_protocol->m_em, "ws: %s: msg text: >>>\n%s",
             net_endpoint_dump(
                 net_ws_protocol_tmp_buffer(ws_protocol),
-                net_http_endpoint_net_ep(ws_ep->m_http_ep)),
+                net_ws_endpoint_net_ep(ws_ep)),
             msg);
     }
 
-    if (net_ws_endpoint_do_process(ws_ep) != 0) return -1;
-    
     return 0;
 }
 
 int net_ws_endpoint_send_msg_bin(net_ws_endpoint_t ws_ep, const void * msg, uint32_t msg_len) {
-    net_ws_protocol_t ws_protocol = net_http_protocol_data(net_http_endpoint_protocol(ws_ep->m_http_ep));
-    struct wslay_event_msg ws_msg = { WSLAY_BINARY_FRAME,  (const uint8_t *)msg, msg_len };
+    net_ws_protocol_t ws_protocol = net_ws_endpoint_protocol(ws_ep);
 
+    if (ws_ep->m_state != net_ws_state_established) {
+        CPE_ERROR(
+            ws_protocol->m_em,
+            "ws: %s: msg bin: >>> %d data fail, curent state %s, can`t send msg!",
+            net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_ws_endpoint_net_ep(ws_ep)),
+            msg_len,
+            net_ws_state_str(ws_ep->m_state));
+        return -1;
+    }
+    
+    struct wslay_event_msg ws_msg = { WSLAY_BINARY_FRAME,  (const uint8_t *)msg, msg_len };
     if (wslay_event_queue_msg(ws_ep->m_ctx, &ws_msg) != 0) {
         CPE_ERROR(
             ws_protocol->m_em,
-            "ws: %s: send msg text: queue bintray fail, len=%d!",
-            net_endpoint_dump(
-                net_ws_protocol_tmp_buffer(ws_protocol),
-                net_http_endpoint_net_ep(ws_ep->m_http_ep)), msg_len);
+            "ws: %s: msg bin: >>> %d data fail, queue fail",
+            net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_ws_endpoint_net_ep(ws_ep)),
+            msg_len);
         return -1;
     }
 
-    if (net_endpoint_protocol_debug(net_http_endpoint_net_ep(ws_ep->m_http_ep)) >= 2) {
+    net_endpoint_t endpoint = net_ws_endpoint_net_ep(ws_ep);
+    if (wslay_event_want_write(ws_ep->m_ctx)
+        && !net_endpoint_buf_is_full(endpoint, net_ep_buf_write))
+    {
+        int rv = wslay_event_send(ws_ep->m_ctx);
+        if (rv != 0) {
+            CPE_ERROR(
+                ws_protocol->m_em, "ws: %s: msg bin: >>> %d data fail, rv=%d(%s)",
+                net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_ws_endpoint_net_ep(ws_ep)),
+                msg_len,
+                rv, net_ws_wslay_err_str(rv));
+            return -1;
+        }
+    }
+    
+    if (net_endpoint_protocol_debug(net_ws_endpoint_net_ep(ws_ep)) >= 2) {
         CPE_INFO(
-            ws_protocol->m_em, "ws: %s: msg bin: >>> %d data",
-            net_endpoint_dump(
-                net_ws_protocol_tmp_buffer(ws_protocol),
-                net_http_endpoint_net_ep(ws_ep->m_http_ep)),
+            ws_protocol->m_em, "ws: %s: msg bin: >>> %d data success",
+            net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_ws_endpoint_net_ep(ws_ep)),
             msg_len);
     }
 
-    if (net_ws_endpoint_do_process(ws_ep) != 0) return -1;
-        
     return 0;
 }
 
@@ -262,13 +305,13 @@ void net_ws_endpoint_enable(net_ws_endpoint_t ws_ep) {
 int net_ws_endpoint_set_state(net_ws_endpoint_t ws_ep, net_ws_state_t state) {
     if (ws_ep->m_state == state) return 0;
     
-    if (net_endpoint_protocol_debug(net_http_endpoint_net_ep(ws_ep->m_http_ep)) >= 1) {
-        net_ws_protocol_t ws_protocol = net_http_protocol_data(net_http_endpoint_protocol(ws_ep->m_http_ep));
+    if (net_endpoint_protocol_debug(net_ws_endpoint_net_ep(ws_ep)) >= 1) {
+        net_ws_protocol_t ws_protocol = net_ws_endpoint_protocol(ws_ep);
         CPE_INFO(
             ws_protocol->m_em, "ws: %s: state %s ==> %s",
             net_endpoint_dump(
                 net_ws_protocol_tmp_buffer(ws_protocol),
-                net_http_endpoint_net_ep(ws_ep->m_http_ep)),
+                net_ws_endpoint_net_ep(ws_ep)),
             net_ws_state_str(ws_ep->m_state),
             net_ws_state_str(state));
     }
@@ -281,7 +324,7 @@ int net_ws_endpoint_set_state(net_ws_endpoint_t ws_ep, net_ws_state_t state) {
 }
 
 static int net_ws_endpoint_notify_state_changed(net_ws_endpoint_t ws_ep, net_ws_state_t old_state) {
-    net_ws_protocol_t ws_protocol = net_http_protocol_data(net_http_endpoint_protocol(ws_ep->m_http_ep));
+    net_ws_protocol_t ws_protocol = net_ws_endpoint_protocol(ws_ep);
         
     int rv = ws_protocol->m_endpoint_on_state_change
         ? ws_protocol->m_endpoint_on_state_change(ws_ep, old_state)
@@ -312,14 +355,14 @@ static ssize_t net_ws_endpoint_recv_cb(
     net_ws_endpoint_t ws_ep = (net_ws_endpoint_t)user_data;
 
     uint32_t size = (uint32_t)len;
-    if (net_endpoint_buf_recv(net_http_endpoint_net_ep(ws_ep->m_http_ep), net_ep_buf_read, data, &size) != 0) {
-        net_ws_protocol_t ws_protocol = net_http_protocol_data(net_http_endpoint_protocol(ws_ep->m_http_ep));
+    if (net_endpoint_buf_recv(net_ws_endpoint_net_ep(ws_ep), net_ep_buf_read, data, &size) != 0) {
+        net_ws_protocol_t ws_protocol = net_ws_endpoint_protocol(ws_ep);
         CPE_ERROR(
             ws_protocol->m_em,
             "ws: %s: rbuf recv fail!",
             net_endpoint_dump(
                 net_ws_protocol_tmp_buffer(ws_protocol),
-                net_http_endpoint_net_ep(ws_ep->m_http_ep)));
+                net_ws_endpoint_net_ep(ws_ep)));
         wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE);
         return -1;
     }
@@ -332,14 +375,14 @@ static ssize_t net_ws_endpoint_send_cb(
 {
     net_ws_endpoint_t ws_ep = (net_ws_endpoint_t)user_data;
 
-    if (net_endpoint_buf_append(net_http_endpoint_net_ep(ws_ep->m_http_ep), net_ep_buf_write, data, (uint32_t)len) != 0) {
-        net_ws_protocol_t ws_protocol = net_http_protocol_data(net_http_endpoint_protocol(ws_ep->m_http_ep));
+    if (net_endpoint_buf_append(net_ws_endpoint_net_ep(ws_ep), net_ep_buf_write, data, (uint32_t)len) != 0) {
+        net_ws_protocol_t ws_protocol = net_ws_endpoint_protocol(ws_ep);
         CPE_ERROR(
             ws_protocol->m_em,
             "ws: %s: wbuf append fail!",
             net_endpoint_dump(
                 net_ws_protocol_tmp_buffer(ws_protocol),
-                net_http_endpoint_net_ep(ws_ep->m_http_ep)));
+                net_ws_endpoint_net_ep(ws_ep)));
         wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE);
         return -1;
     }
@@ -358,7 +401,7 @@ static void net_ws_endpoint_on_msg_recv_cb(
     wslay_event_context_ptr ctx, const struct wslay_event_on_msg_recv_arg *arg, void *user_data)
 {
     net_ws_endpoint_t ws_ep = user_data;
-    net_ws_protocol_t ws_protocol = net_http_protocol_data(net_http_endpoint_protocol(ws_ep->m_http_ep));
+    net_ws_protocol_t ws_protocol = net_ws_endpoint_protocol(ws_ep);
     
     switch(arg->opcode) {
     case WSLAY_CONTINUATION_FRAME:
@@ -366,7 +409,7 @@ static void net_ws_endpoint_on_msg_recv_cb(
             ws_protocol->m_em, "ws: %s: continuation: not support!",
             net_endpoint_dump(
                 net_ws_protocol_tmp_buffer(ws_protocol),
-                net_http_endpoint_net_ep(ws_ep->m_http_ep)));
+                net_ws_endpoint_net_ep(ws_ep)));
         break;
     case WSLAY_TEXT_FRAME: {
         mem_buffer_clear_data(&ws_protocol->m_data_buffer);
@@ -376,19 +419,19 @@ static void net_ws_endpoint_on_msg_recv_cb(
                 ws_protocol->m_em, "ws: %s: msg text: alloc buf fail, msg-length=%d!",
                 net_endpoint_dump(
                     net_ws_protocol_tmp_buffer(ws_protocol),
-                    net_http_endpoint_net_ep(ws_ep->m_http_ep)),
+                    net_ws_endpoint_net_ep(ws_ep)),
                 (int)arg->msg_length);
             break;
         }
         memcpy(buf, arg->msg, arg->msg_length);
         buf[arg->msg_length] = 0;
 
-        if (net_endpoint_protocol_debug(net_http_endpoint_net_ep(ws_ep->m_http_ep)) >= 2) {
+        if (net_endpoint_protocol_debug(net_ws_endpoint_net_ep(ws_ep)) >= 2) {
             CPE_INFO(
                 ws_protocol->m_em, "ws: %s: msg text: <<<\n%s",
                 net_endpoint_dump(
                     net_ws_protocol_tmp_buffer(ws_protocol),
-                    net_http_endpoint_net_ep(ws_ep->m_http_ep)),
+                    net_ws_endpoint_net_ep(ws_ep)),
                 buf);
         }
         
@@ -400,12 +443,12 @@ static void net_ws_endpoint_on_msg_recv_cb(
         break;
     }
     case WSLAY_BINARY_FRAME:
-        if (net_endpoint_protocol_debug(net_http_endpoint_net_ep(ws_ep->m_http_ep)) >= 2) {
+        if (net_endpoint_protocol_debug(net_ws_endpoint_net_ep(ws_ep)) >= 2) {
             CPE_INFO(
                 ws_protocol->m_em, "ws: %s: msg bin: <<< %d data",
                 net_endpoint_dump(
                     net_ws_protocol_tmp_buffer(ws_protocol),
-                    net_http_endpoint_net_ep(ws_ep->m_http_ep)),
+                    net_ws_endpoint_net_ep(ws_ep)),
                 (int)arg->msg_length);
         }
         
@@ -420,21 +463,21 @@ static void net_ws_endpoint_on_msg_recv_cb(
             ws_protocol->m_em, "ws: %s: close: not support!",
             net_endpoint_dump(
                 net_ws_protocol_tmp_buffer(ws_protocol),
-                net_http_endpoint_net_ep(ws_ep->m_http_ep)));
+                net_ws_endpoint_net_ep(ws_ep)));
         break;
     case WSLAY_PING:
         CPE_ERROR(
             ws_protocol->m_em, "ws: %s: ping: not support!",
             net_endpoint_dump(
                 net_ws_protocol_tmp_buffer(ws_protocol),
-                net_http_endpoint_net_ep(ws_ep->m_http_ep)));
+                net_ws_endpoint_net_ep(ws_ep)));
         break;
     case WSLAY_PONG:
         CPE_ERROR(
             ws_protocol->m_em, "ws: %s: pong: not support!",
             net_endpoint_dump(
                 net_ws_protocol_tmp_buffer(ws_protocol),
-                net_http_endpoint_net_ep(ws_ep->m_http_ep)));
+                net_ws_endpoint_net_ep(ws_ep)));
         break;
     }
 }
@@ -497,7 +540,34 @@ void net_ws_endpoint_fini(net_http_endpoint_t http_ep) {
 int net_ws_endpoint_input(net_http_endpoint_t http_ep) {
     net_ws_endpoint_t ws_ep = net_http_endpoint_data(http_ep);
 
-    if (net_ws_endpoint_do_process(ws_ep) != 0) return -1;
+    net_endpoint_t endpoint = net_ws_endpoint_net_ep(ws_ep);
+    if (wslay_event_want_read(ws_ep->m_ctx)
+        && !net_endpoint_buf_is_empty(endpoint, net_ep_buf_read))
+    {
+        int rv = wslay_event_recv(ws_ep->m_ctx);
+        if (rv != 0) {
+            net_ws_protocol_t ws_protocol = net_ws_endpoint_protocol(ws_ep);
+            CPE_ERROR(
+                ws_protocol->m_em, "ws: %s: input: recv fail, rv=%d (%s)",
+                net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_ws_endpoint_net_ep(ws_ep)),
+                rv, net_ws_wslay_err_str(rv));
+            return -1;
+        }
+    }
+
+    if (wslay_event_want_write(ws_ep->m_ctx)
+        && !net_endpoint_buf_is_full(net_ws_endpoint_net_ep(ws_ep), net_ep_buf_write))
+    {
+        int rv = wslay_event_send(ws_ep->m_ctx);
+        if (rv != 0) {
+            net_ws_protocol_t ws_protocol = net_ws_endpoint_protocol(ws_ep);
+            CPE_ERROR(
+                ws_protocol->m_em, "ws: %s: input: send fail, rv=%d (%s)",
+                net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_ws_endpoint_net_ep(ws_ep)),
+                rv, net_ws_wslay_err_str(rv));
+            return -1;
+        }
+    }
         
     return ws_ep->m_state == net_ws_state_established ? 0 : -1;
 }
@@ -531,39 +601,8 @@ int net_ws_endpoint_on_state_change(net_http_endpoint_t http_ep, net_http_state_
     return 0;
 }
 
-static int net_ws_endpoint_do_process(net_ws_endpoint_t ws_ep) {
-
-    if (wslay_event_want_read(ws_ep->m_ctx)
-        && !net_endpoint_buf_is_empty(net_http_endpoint_net_ep(ws_ep->m_http_ep), net_ep_buf_read))
-    {
-        if (wslay_event_recv(ws_ep->m_ctx) != 0) {
-            net_ws_protocol_t ws_protocol = net_http_protocol_data(net_http_endpoint_protocol(ws_ep->m_http_ep));
-            CPE_ERROR(
-                ws_protocol->m_em, "ws: %s: process: recv fail, auto disconnect",
-                net_endpoint_dump(
-                    net_ws_protocol_tmp_buffer(ws_protocol),
-                    net_http_endpoint_net_ep(ws_ep->m_http_ep)));
-            return -1;
-        }
-    }
-
-    if (wslay_event_want_write(ws_ep->m_ctx)
-        && !net_endpoint_buf_is_full(net_http_endpoint_net_ep(ws_ep->m_http_ep), net_ep_buf_write))
-    {
-        if (wslay_event_send(ws_ep->m_ctx) != 0) {
-            net_ws_protocol_t ws_protocol = net_http_protocol_data(net_http_endpoint_protocol(ws_ep->m_http_ep));
-            CPE_ERROR(
-                ws_protocol->m_em, "ws: %s: process: send fail, auto disconnect",
-                net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_http_endpoint_net_ep(ws_ep->m_http_ep)));
-            return -1;
-        }
-    }
-
-    return 0;
-}
-
 static void net_ws_endpoint_reset_data(net_ws_endpoint_t ws_ep) {
-    net_ws_protocol_t ws_protocol = net_http_protocol_data(net_http_endpoint_protocol(ws_ep->m_http_ep));
+    net_ws_protocol_t ws_protocol = net_ws_endpoint_protocol(ws_ep);
 
     if (ws_ep->m_handshake_token) {
         mem_free(ws_protocol->m_alloc, ws_ep->m_handshake_token);
@@ -575,7 +614,7 @@ static void net_ws_endpoint_reset_data(net_ws_endpoint_t ws_ep) {
 }
 
 static int net_ws_endpoint_send_handshake(net_ws_endpoint_t ws_ep) {
-    net_ws_protocol_t ws_protocol = net_http_protocol_data(net_http_endpoint_protocol(ws_ep->m_http_ep));
+    net_ws_protocol_t ws_protocol = net_ws_endpoint_protocol(ws_ep);
 
     /*生成token */
     if (ws_ep->m_handshake_token) {
@@ -592,7 +631,7 @@ static int net_ws_endpoint_send_handshake(net_ws_endpoint_t ws_ep) {
     if (ws_ep->m_handshake_token == NULL) {
         CPE_ERROR(
             ws_protocol->m_em, "ws: %s:    handshake: generate token fail",
-            net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_http_endpoint_net_ep(ws_ep->m_http_ep)));
+            net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_ws_endpoint_net_ep(ws_ep)));
         return -1;
     }
 
@@ -600,7 +639,7 @@ static int net_ws_endpoint_send_handshake(net_ws_endpoint_t ws_ep) {
     if (http_req == NULL) {
         CPE_ERROR(
             ws_protocol->m_em, "ws: %s:    handshake: create http-req fail",
-            net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_http_endpoint_net_ep(ws_ep->m_http_ep)));
+            net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_ws_endpoint_net_ep(ws_ep)));
         return -1;
     }
 
@@ -621,7 +660,7 @@ static int net_ws_endpoint_send_handshake(net_ws_endpoint_t ws_ep) {
     {
         CPE_ERROR(
             ws_protocol->m_em, "ws: %s: handshake: write fail",
-            net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_http_endpoint_net_ep(ws_ep->m_http_ep)));
+            net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_ws_endpoint_net_ep(ws_ep)));
         return -1;
     }
 
@@ -635,7 +674,7 @@ static net_http_res_op_result_t net_ws_endpoint_on_handshake_rcode(void * ctx, n
     if (code != 101) {
         CPE_ERROR(
             ws_protocol->m_em, "ws: %s: handshake response: connect error, error=%d (%s)",
-            net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_http_endpoint_net_ep(ws_ep->m_http_ep)),
+            net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_ws_endpoint_net_ep(ws_ep)),
             code, msg);
         return net_http_res_op_error_and_reconnect;
     }
@@ -655,7 +694,7 @@ static net_http_res_op_result_t net_ws_endpoint_on_handshake_head(void * ctx, ne
         if (cpe_sha1_encode_str(&sha1_value, accept_token_buf) != 0) {
             CPE_ERROR(
                 ws_protocol->m_em, "ws: %s: handshake response: calc accept token fail",
-                net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_http_endpoint_net_ep(ws_ep->m_http_ep)));
+                net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_ws_endpoint_net_ep(ws_ep)));
             return net_http_res_op_error_and_reconnect;
         }
 
@@ -663,7 +702,7 @@ static net_http_res_op_result_t net_ws_endpoint_on_handshake_head(void * ctx, ne
         if (strcmp(value, expect_accept) != 0) {
             CPE_ERROR(
                 ws_protocol->m_em, "ws: %s: handshake response: expect token %s, but %s",
-                net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_http_endpoint_net_ep(ws_ep->m_http_ep)),
+                net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_ws_endpoint_net_ep(ws_ep)),
                 expect_accept, value);
             return net_http_res_op_error_and_reconnect;
         }
@@ -685,7 +724,7 @@ static net_http_res_op_result_t net_ws_endpoint_on_handshake_complete(void * ctx
             ws_protocol->m_em, "ws: %s: handshake response: no sec-websocket-accept data!",
             net_endpoint_dump(
                 net_ws_protocol_tmp_buffer(ws_protocol),
-                net_http_endpoint_net_ep(ws_ep->m_http_ep)));
+                net_ws_endpoint_net_ep(ws_ep)));
         return -1;
     }
     
@@ -694,7 +733,7 @@ static net_http_res_op_result_t net_ws_endpoint_on_handshake_complete(void * ctx
 
 void net_ws_endpoint_url_print(write_stream_t s, net_ws_endpoint_t ws_ep) {
     stream_printf(s, net_http_endpoint_use_https(ws_ep->m_http_ep) ? "wss://" : "ws://");
-    net_address_print(s, net_endpoint_remote_address(net_http_endpoint_net_ep(ws_ep->m_http_ep)));
+    net_address_print(s, net_endpoint_remote_address(net_ws_endpoint_net_ep(ws_ep)));
     stream_printf(s, "%s", net_ws_endpoint_path(ws_ep));
 }
 
@@ -720,5 +759,30 @@ const char * net_ws_state_str(net_ws_state_t state) {
         return "ws-established";
     case net_ws_state_error:
         return "ws-error";
+    }
+}
+
+static const char * net_ws_wslay_err_str(int err) {
+    switch(err) {
+    case WSLAY_ERR_WANT_READ:
+        return "wslay-want-read";
+    case WSLAY_ERR_WANT_WRITE:
+        return "wslay-want-write";
+    case WSLAY_ERR_PROTO:
+        return "wslay-proto";
+    case WSLAY_ERR_INVALID_ARGUMENT:
+        return "wslay-invalid-argument";
+    case WSLAY_ERR_INVALID_CALLBACK:
+        return "wslay-invalid-callback";
+    case WSLAY_ERR_NO_MORE_MSG:
+        return "wslay-no-more-msg";
+    case WSLAY_ERR_CALLBACK_FAILURE:
+        return "wslay-callback-failure";
+    case WSLAY_ERR_WOULDBLOCK:
+        return "wslay-wouldblock";
+    case WSLAY_ERR_NOMEM:
+        return "wslay-no-mem";
+    default:
+        return "wslay-unknown-error";
     }
 }
