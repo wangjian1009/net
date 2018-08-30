@@ -78,7 +78,29 @@ net_http_ssl_ctx_t net_http_endpoint_ssl_ctx(net_http_endpoint_t http_ep) {
 }
 
 net_http_ssl_ctx_t net_http_endpoint_ssl_enable(net_http_endpoint_t http_ep) {
-    return NULL;
+    net_http_protocol_t http_protocol = net_http_endpoint_protocol(http_ep);
+    
+    if (http_ep->m_state != net_http_state_disable) {
+        CPE_ERROR(
+            http_protocol->m_em,
+            "http: %s: can`t enable ssl in state %s",
+            net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint),
+            net_http_state_str(http_ep->m_state));
+        return NULL;
+    }
+
+    if (http_ep->m_ssl_ctx == NULL) {
+        http_ep->m_ssl_ctx = net_http_ssl_ctx_create(http_ep);
+        if (http_ep->m_ssl_ctx == NULL) {
+            CPE_ERROR(
+                http_protocol->m_em,
+                "http: %s: enable ssl fail",
+                net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint));
+            return NULL;
+        }
+    }
+    
+    return http_ep->m_ssl_ctx;
 }
 
 int net_http_endpoint_ssl_disable(net_http_endpoint_t http_ep) {

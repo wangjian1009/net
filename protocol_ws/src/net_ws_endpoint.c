@@ -100,7 +100,7 @@ int net_ws_endpoint_set_remote_and_path(net_ws_endpoint_t ws_ep, const char * ur
         addr_begin = url + 5;
     }
     else if (cpe_str_start_with(url, "wss://")) {
-        if (net_http_endpoint_ssl_enable(ws_ep->m_http_ep) != 0) return -1;
+        if (net_http_endpoint_ssl_enable(ws_ep->m_http_ep) == NULL) return -1;
         addr_begin = url + 6;
     }
     else {
