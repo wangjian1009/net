@@ -62,7 +62,7 @@ int net_http_endpoint_req_input(net_http_protocol_t http_protocol, net_http_endp
     uint32_t buf_size;
 
     if (req->m_res_state == net_http_res_state_reading_head) {
-        if (net_endpoint_buf_by_str(endpoint, net_ep_buf_read, "\r\n\r\n", &buf, &buf_size)) {
+        if (net_endpoint_buf_by_str(endpoint, net_ep_buf_http_in, "\r\n\r\n", &buf, &buf_size)) {
             CPE_ERROR(
                 http_protocol->m_em, "http: %s: req %d: response: search sep fail",
                 net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
@@ -71,11 +71,11 @@ int net_http_endpoint_req_input(net_http_protocol_t http_protocol, net_http_endp
         }
 
         if (buf == NULL) {
-            if(net_endpoint_buf_size(endpoint, net_ep_buf_read) > 8192) {
+            if(net_endpoint_buf_size(endpoint, net_ep_buf_http_in) > 8192) {
                 CPE_ERROR(
                     http_protocol->m_em, "http: %s: handshake response: Too big response head!, size=%d",
                     net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
-                    net_endpoint_buf_size(endpoint, net_ep_buf_read));
+                    net_endpoint_buf_size(endpoint, net_ep_buf_http_in));
                 return -1;
             }
             else {
@@ -85,7 +85,7 @@ int net_http_endpoint_req_input(net_http_protocol_t http_protocol, net_http_endp
 
         if (net_http_req_input_read_head(http_protocol, http_ep, req, endpoint, buf) != 0) return -1;
 
-        net_endpoint_buf_consume(endpoint, net_ep_buf_read, buf_size);
+        net_endpoint_buf_consume(endpoint, net_ep_buf_http_in, buf_size);
         
         req->m_res_state = net_http_res_state_reading_body;
     }
@@ -291,7 +291,7 @@ static int net_http_req_input_body_set_complete(
         }
     }
 
-    net_endpoint_buf_clear(endpoint, net_ep_buf_tmp);
+    net_endpoint_buf_clear(endpoint, net_ep_buf_http_body);
     return 0;
 }
 
@@ -300,13 +300,13 @@ static int net_http_req_input_body_consume_body_part(
     net_endpoint_t endpoint, uint16_t buf_sz)
 {
     if (req->m_res_ignore) {
-        net_endpoint_buf_consume(endpoint, net_ep_buf_read, buf_sz);
+        net_endpoint_buf_consume(endpoint, net_ep_buf_http_in, buf_sz);
         return 0;
     }
 
     if (req->m_res_on_body) {
         void * buf;
-        if (net_endpoint_buf_peak_with_size(endpoint, net_ep_buf_read, buf_sz, &buf) != 0) {
+        if (net_endpoint_buf_peak_with_size(endpoint, net_ep_buf_http_in, buf_sz, &buf) != 0) {
             CPE_ERROR(
                 http_protocol->m_em, "http: %s: req %d: <== peak body data fail, size=%d",
                 net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
@@ -328,10 +328,10 @@ static int net_http_req_input_body_consume_body_part(
             return -1;
         }
 
-        net_endpoint_buf_consume(endpoint, net_ep_buf_read, buf_sz);
+        net_endpoint_buf_consume(endpoint, net_ep_buf_http_in, buf_sz);
     }
     else {
-        if (net_endpoint_buf_append_from_self(endpoint, net_ep_buf_tmp, net_ep_buf_read, buf_sz) != 0) {
+        if (net_endpoint_buf_append_from_self(endpoint, net_ep_buf_http_body, net_ep_buf_http_in, buf_sz) != 0) {
             CPE_ERROR(
                 http_protocol->m_em, "http: %s: req %d: <== move body to tmp buf fail, size=%d",
                 net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
@@ -355,7 +355,7 @@ static int net_http_req_input_body_encoding_none(
     }
     
     while(req->m_res_state != net_http_res_state_completed) {
-        uint32_t buf_sz = net_endpoint_buf_size(endpoint, net_ep_buf_read);
+        uint32_t buf_sz = net_endpoint_buf_size(endpoint, net_ep_buf_http_in);
 
         if (req->m_res_content.m_length == 0) {
             if (net_endpoint_protocol_debug(endpoint) >= 2) {
@@ -399,12 +399,12 @@ static int net_http_req_input_body_encoding_trunked(
     
     while(
         req->m_res_state != net_http_res_state_completed
-        && (buf_sz = net_endpoint_buf_size(endpoint, net_ep_buf_read)) > 0)
+        && (buf_sz = net_endpoint_buf_size(endpoint, net_ep_buf_http_in)) > 0)
     {
         if (req->m_res_trunked.m_state == net_http_trunked_length) {
             char * data;
             uint32_t size;
-            if (net_endpoint_buf_by_str(endpoint, net_ep_buf_read, "\r\n", (void**)&data, &size) != 0) {
+            if (net_endpoint_buf_by_str(endpoint, net_ep_buf_http_in, "\r\n", (void**)&data, &size) != 0) {
                 CPE_ERROR(
                     http_protocol->m_em, "http: %s: req %d: <== trunked: search trunk len fail",
                     net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
@@ -418,7 +418,7 @@ static int net_http_req_input_body_encoding_trunked(
                         http_protocol->m_em, "http: %s: req %d: <== trunked: length linke too big! size=%d",
                         net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
                         req->m_id,
-                        net_endpoint_buf_size(endpoint, net_ep_buf_read));
+                        net_endpoint_buf_size(endpoint, net_ep_buf_http_in));
                     return -1;
                 }
                 else {
@@ -448,7 +448,7 @@ static int net_http_req_input_body_encoding_trunked(
                     req->m_res_trunked.m_length);
             }
 
-            net_endpoint_buf_consume(endpoint, net_ep_buf_read, size);
+            net_endpoint_buf_consume(endpoint, net_ep_buf_http_in, size);
 
             req->m_res_trunked.m_state =
                 req->m_res_trunked.m_length == 0
@@ -480,7 +480,7 @@ static int net_http_req_input_body_encoding_trunked(
             if (buf_sz < 2) return 0;
             
             char * data;
-            net_endpoint_buf_peak_with_size(endpoint, net_ep_buf_read, 2, (void**)&data);
+            net_endpoint_buf_peak_with_size(endpoint, net_ep_buf_http_in, 2, (void**)&data);
             assert(data);
             if (data[0] != '\r' || data[1] != '\n') {
                 CPE_ERROR(
@@ -491,7 +491,7 @@ static int net_http_req_input_body_encoding_trunked(
                 return -1;
             }
 
-            net_endpoint_buf_consume(endpoint, net_ep_buf_read, 2);
+            net_endpoint_buf_consume(endpoint, net_ep_buf_http_in, 2);
             
             req->m_res_trunked.m_state = net_http_trunked_length;
             req->m_res_trunked.m_count++;
@@ -501,7 +501,7 @@ static int net_http_req_input_body_encoding_trunked(
             if (buf_sz < 2) return 0;
             
             char * data;
-            net_endpoint_buf_peak_with_size(endpoint, net_ep_buf_read, 2, (void**)&data);
+            net_endpoint_buf_peak_with_size(endpoint, net_ep_buf_http_in, 2, (void**)&data);
             assert(data);
             if (data[0] != '\r' || data[1] != '\n') {
                 CPE_ERROR(
@@ -519,7 +519,7 @@ static int net_http_req_input_body_encoding_trunked(
                     req->m_res_trunked.m_count);
             }
 
-            net_endpoint_buf_consume(endpoint, net_ep_buf_read, 2);
+            net_endpoint_buf_consume(endpoint, net_ep_buf_http_in, 2);
 
             if (net_http_req_input_body_set_complete(http_protocol, http_ep, req, endpoint, net_http_res_complete) != 0) {
                 return -1;

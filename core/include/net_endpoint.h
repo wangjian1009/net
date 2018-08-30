@@ -50,7 +50,7 @@ int net_endpoint_link_direct(net_endpoint_t endpoint, net_address_t target_addr,
 net_link_t net_endpoint_link(net_endpoint_t endpoint);
 net_endpoint_t net_endpoint_other(net_endpoint_t endpoint);
 
-/*rbuf*/
+/*buf*/
 /*    check */
 uint32_t net_endpoint_buf_size(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type);
 uint8_t net_endpoint_buf_is_empty(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type);
@@ -58,7 +58,8 @@ uint8_t net_endpoint_buf_is_full(net_endpoint_t endpoint, net_endpoint_buf_type_
 void net_endpoint_buf_clear(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type);
 
 /*    write*/
-void * net_endpoint_buf_alloc(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, uint32_t * inout_size);
+void * net_endpoint_buf_alloc(net_endpoint_t endpoint, uint32_t * inout_size);
+void net_endpoint_buf_release(net_endpoint_t endpoint);
 int net_endpoint_buf_supply(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, uint32_t size);
 int net_endpoint_buf_append(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, void const * data, uint32_t size);
 int net_endpoint_buf_append_char(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, uint8_t c);

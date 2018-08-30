@@ -18,10 +18,6 @@ struct net_http_endpoint {
 
     uint16_t m_max_req_id;
     net_http_req_list_t m_reqs;
-
-    void * m_write_buf;
-    uint32_t m_write_size;
-    uint32_t m_write_capacity;
 };
 
 int net_http_endpoint_init(net_endpoint_t endpoint);
@@ -34,8 +30,6 @@ int net_http_endpoint_set_state(net_http_endpoint_t http_ep, net_http_state_t st
 int net_http_endpoint_write(
     net_http_protocol_t http_protocol,
     net_http_endpoint_t http_ep, net_http_req_t http_req, void const * data, uint32_t size);
-
-int net_http_endpoint_flush(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t http_req);
 
 NET_END_DECL
 

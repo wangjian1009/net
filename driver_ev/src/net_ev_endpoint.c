@@ -304,7 +304,7 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
     if (revents & EV_READ) {
         for(;net_endpoint_state(base_endpoint) == net_endpoint_state_established;) {
             uint32_t capacity = 0;
-            void * rbuf = net_endpoint_buf_alloc(base_endpoint, net_ep_buf_read, &capacity);
+            void * rbuf = net_endpoint_buf_alloc(base_endpoint, &capacity);
             if (rbuf == NULL) {
                 assert(net_endpoint_buf_is_full(base_endpoint, net_ep_buf_read));
                 break;
@@ -338,6 +338,8 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
                 break;
             }
             else if (bytes == 0) {
+                net_endpoint_buf_release(base_endpoint);
+                
                 if (net_endpoint_driver_debug(base_endpoint) >= 2) {
                     CPE_INFO(
                         em, "ev: %s: remote disconnected(recv 0)!",
@@ -351,7 +353,8 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
             }
             else {
                 assert(bytes == -1);
-
+                net_endpoint_buf_release(base_endpoint);
+                
                 switch(errno) {
                 case EWOULDBLOCK:
                 case EINPROGRESS:

@@ -23,6 +23,11 @@ net_http_ssl_ctx_t net_http_ssl_ctx_create(net_http_endpoint_t http_ep);
 void net_http_ssl_ctx_free(net_http_ssl_ctx_t ssl_ctx);
 void net_http_ssl_ctx_real_free(net_http_ssl_ctx_t ssl_ctx);
 
+void net_http_ssl_ctx_reset(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_ssl_ctx_t ssl_ctx);
+int net_http_ssl_ctx_setup(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_ssl_ctx_t ssl_ctx);
+
+const char * net_http_ssl_error_str(int rv);
+
 NET_END_DECL
 
 #endif

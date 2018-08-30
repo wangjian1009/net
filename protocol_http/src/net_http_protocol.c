@@ -73,7 +73,6 @@ static int net_http_protocol_init(net_protocol_t protocol) {
 
     http_protocol->m_alloc = net_schedule_allocrator(schedule);
     http_protocol->m_em = net_schedule_em(schedule);
-    mem_buffer_init(&http_protocol->m_input_data_buffer, http_protocol->m_alloc);
 
     http_protocol->m_protocol_capacity = 0;
     http_protocol->m_protocol_init = NULL;
@@ -82,7 +81,6 @@ static int net_http_protocol_init(net_protocol_t protocol) {
     http_protocol->m_endpoint_init = NULL;
     http_protocol->m_endpoint_fini = NULL;
     http_protocol->m_endpoint_on_state_change = NULL;
-    http_protocol->m_write_buf_block_size = 512;
 
     TAILQ_INIT(&http_protocol->m_free_reqs);
     TAILQ_INIT(&http_protocol->m_free_ssl_ctxes);
@@ -104,8 +102,6 @@ static void net_http_protocol_fini(net_protocol_t protocol) {
     while(!TAILQ_EMPTY(&http_protocol->m_free_ssl_ctxes)) {
         net_http_ssl_ctx_real_free(TAILQ_FIRST(&http_protocol->m_free_ssl_ctxes));
     }
-    
-    mem_buffer_clear(&http_protocol->m_input_data_buffer);
 }
 
 void * net_http_protocol_data(net_http_protocol_t http_protocol) {

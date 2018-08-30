@@ -5,7 +5,6 @@
 #include "net_address.h"
 #include "net_http_req_i.h"
 
-static void net_http_req_debug_dump_head(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t req);
 static int net_http_req_complete_head(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t req);
 
 net_http_req_state_t net_http_req_state(net_http_req_t req) {
@@ -113,21 +112,9 @@ int net_http_req_write_commit(net_http_req_t http_req) {
         if (net_http_req_complete_head(http_protocol, http_ep, http_req) != 0) return -1;
     }
 
-    if (http_req->m_head_size + http_req->m_body_size != http_ep->m_write_size + http_req->m_flushed_size) {
-        CPE_ERROR(
-            http_protocol->m_em, "http: %s: req %d: write size mismatch, head-size=%d, body-size=%d, total-size=%d, write-size=%d",
-            net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_req->m_http_ep->m_endpoint),
-            http_req->m_id,
-            http_req->m_head_size, http_req->m_body_size, (http_req->m_head_size + http_req->m_body_size),
-            (http_req->m_flushed_size + http_ep->m_write_size));
-    }
-    
-    if (net_http_endpoint_flush(http_protocol, http_req->m_http_ep, http_req) != 0) return -1;
+    if (net_http_endpoint_flush(http_req->m_http_ep) != 0) return -1;
 
     http_req->m_req_state = net_http_req_state_completed;
-
-    assert(http_ep->m_write_buf == NULL);
-    assert(http_ep->m_write_size == 0);
 
     return 0;
 }
@@ -161,18 +148,14 @@ static int net_http_req_complete_head(net_http_protocol_t http_protocol, net_htt
     if (net_http_endpoint_write(http_protocol, http_ep, http_req, "\r\n", 2) != 0) return -1;
     http_req->m_head_size += 2;
 
-    if (net_endpoint_protocol_debug(http_ep->m_endpoint) >= 2) {
-        net_http_req_debug_dump_head(http_protocol, http_ep, http_req);
-    }
-
     http_req->m_req_state = net_http_req_state_prepare_body;
     
     return 0;
 }
 
-static void net_http_req_debug_dump_head(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t http_req) {
+void net_http_req_debug_dump_head(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t http_req, char * buf) {
     if (http_req->m_head_size >= http_req->m_flushed_size + 4) {
-        char * p = ((char*)http_ep->m_write_buf) + (http_req->m_head_size - http_req->m_flushed_size - 4);
+        char * p = buf + (http_req->m_head_size - http_req->m_flushed_size - 4);
         *p = 0;
         
         CPE_INFO(
@@ -181,7 +164,7 @@ static void net_http_req_debug_dump_head(net_http_protocol_t http_protocol, net_
             http_req->m_id,
             http_req->m_head_size,
             http_req->m_flushed_size,
-            (const char *)http_ep->m_write_buf);
+            buf);
 
         *p = '\r';
     }

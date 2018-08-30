@@ -22,7 +22,7 @@ struct net_endpoint {
     struct cpe_hash_entry m_hh;
     net_endpoint_state_t m_state;
     net_dns_query_t m_dns_query;
-    ringbuffer_block_t m_bufs[4];
+    ringbuffer_block_t m_bufs[net_ep_buf_count];
     void * m_data_watcher_ctx;
     net_endpoint_data_watch_fun_t m_data_watcher_fun;
     void (*m_data_watcher_fini)(void*);
@@ -39,10 +39,6 @@ ringbuffer_block_t net_endpoint_common_buf_alloc(net_endpoint_t endpoint, uint32
 
 uint32_t net_endpoint_hash(net_endpoint_t o, void * user_data);
 int net_endpoint_eq(net_endpoint_t l, net_endpoint_t r, void * user_data);
-
-uint8_t net_endpoint_block_match_forward(
-    net_schedule_t schedule, ringbuffer_block_t block, char * block_data, int block_data_len, int block_pos,
-    const char * look_str, size_t look_str_len);
 
 NET_END_DECL
 

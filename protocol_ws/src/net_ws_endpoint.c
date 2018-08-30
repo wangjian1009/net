@@ -224,7 +224,7 @@ int net_ws_endpoint_send_msg_text(net_ws_endpoint_t ws_ep, const char * msg) {
 
     net_endpoint_t endpoint = net_ws_endpoint_net_ep(ws_ep);
     if (wslay_event_want_write(ws_ep->m_ctx)
-        && !net_endpoint_buf_is_full(endpoint, net_ep_buf_write))
+        && !net_endpoint_buf_is_full(endpoint, net_ep_buf_http_out))
     {
         int rv = wslay_event_send(ws_ep->m_ctx);
         if (rv != 0) {
@@ -274,9 +274,7 @@ int net_ws_endpoint_send_msg_bin(net_ws_endpoint_t ws_ep, const void * msg, uint
     }
 
     net_endpoint_t endpoint = net_ws_endpoint_net_ep(ws_ep);
-    if (wslay_event_want_write(ws_ep->m_ctx)
-        && !net_endpoint_buf_is_full(endpoint, net_ep_buf_write))
-    {
+    if (wslay_event_want_write(ws_ep->m_ctx) && !net_endpoint_buf_is_full(endpoint, net_ep_buf_http_out)) {
         int rv = wslay_event_send(ws_ep->m_ctx);
         if (rv != 0) {
             CPE_ERROR(
@@ -355,7 +353,7 @@ static ssize_t net_ws_endpoint_recv_cb(
     net_ws_endpoint_t ws_ep = (net_ws_endpoint_t)user_data;
 
     uint32_t size = (uint32_t)len;
-    if (net_endpoint_buf_recv(net_ws_endpoint_net_ep(ws_ep), net_ep_buf_read, data, &size) != 0) {
+    if (net_endpoint_buf_recv(net_ws_endpoint_net_ep(ws_ep), net_ep_buf_http_in, data, &size) != 0) {
         net_ws_protocol_t ws_protocol = net_ws_endpoint_protocol(ws_ep);
         CPE_ERROR(
             ws_protocol->m_em,
@@ -375,15 +373,21 @@ static ssize_t net_ws_endpoint_send_cb(
 {
     net_ws_endpoint_t ws_ep = (net_ws_endpoint_t)user_data;
 
-    if (net_endpoint_buf_append(net_ws_endpoint_net_ep(ws_ep), net_ep_buf_write, data, (uint32_t)len) != 0) {
+    if (net_endpoint_buf_append(net_ws_endpoint_net_ep(ws_ep), net_ep_buf_http_out, data, (uint32_t)len) != 0) {
         net_ws_protocol_t ws_protocol = net_ws_endpoint_protocol(ws_ep);
         CPE_ERROR(
             ws_protocol->m_em,
-            "ws: %s: wbuf append fail!",
-            net_endpoint_dump(
-                net_ws_protocol_tmp_buffer(ws_protocol),
-                net_ws_endpoint_net_ep(ws_ep)));
+            "ws: %s: >>> http-out buf append fail!",
+            net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_ws_endpoint_net_ep(ws_ep)));
         wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE);
+        return -1;
+    }
+
+    if (net_http_endpoint_flush(ws_ep->m_http_ep) != 0) {
+        net_ws_protocol_t ws_protocol = net_ws_endpoint_protocol(ws_ep);
+        CPE_ERROR(
+            ws_protocol->m_em, "ws: %s: >>> flush fail",
+            net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_ws_endpoint_net_ep(ws_ep)));
         return -1;
     }
     
@@ -539,14 +543,12 @@ void net_ws_endpoint_fini(net_http_endpoint_t http_ep) {
 
 int net_ws_endpoint_input(net_http_endpoint_t http_ep) {
     net_ws_endpoint_t ws_ep = net_http_endpoint_data(http_ep);
+    net_ws_protocol_t ws_protocol = net_ws_endpoint_protocol(ws_ep);
 
     net_endpoint_t endpoint = net_ws_endpoint_net_ep(ws_ep);
-    if (wslay_event_want_read(ws_ep->m_ctx)
-        && !net_endpoint_buf_is_empty(endpoint, net_ep_buf_read))
-    {
+    if (wslay_event_want_read(ws_ep->m_ctx) && !net_endpoint_buf_is_empty(endpoint, net_ep_buf_http_in)) {
         int rv = wslay_event_recv(ws_ep->m_ctx);
         if (rv != 0) {
-            net_ws_protocol_t ws_protocol = net_ws_endpoint_protocol(ws_ep);
             CPE_ERROR(
                 ws_protocol->m_em, "ws: %s: input: recv fail, rv=%d (%s)",
                 net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_ws_endpoint_net_ep(ws_ep)),
@@ -555,12 +557,9 @@ int net_ws_endpoint_input(net_http_endpoint_t http_ep) {
         }
     }
 
-    if (wslay_event_want_write(ws_ep->m_ctx)
-        && !net_endpoint_buf_is_full(net_ws_endpoint_net_ep(ws_ep), net_ep_buf_write))
-    {
+    if (wslay_event_want_write(ws_ep->m_ctx) && !net_endpoint_buf_is_full(net_ws_endpoint_net_ep(ws_ep), net_ep_buf_http_out)) {
         int rv = wslay_event_send(ws_ep->m_ctx);
         if (rv != 0) {
-            net_ws_protocol_t ws_protocol = net_ws_endpoint_protocol(ws_ep);
             CPE_ERROR(
                 ws_protocol->m_em, "ws: %s: input: send fail, rv=%d (%s)",
                 net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_ws_endpoint_net_ep(ws_ep)),

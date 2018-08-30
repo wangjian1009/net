@@ -54,8 +54,9 @@ int net_http_req_do_send_first_line(
 
 int net_http_endpoint_req_input(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t req);
 
+void net_http_req_debug_dump_head(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t http_req, char * buf);
+
 void net_http_req_real_free(net_http_req_t req);
-int net_http_req_set_state(net_http_endpoint_t http_ep, net_http_state_t state);
     
 NET_END_DECL
 

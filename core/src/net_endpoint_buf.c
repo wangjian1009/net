@@ -21,14 +21,16 @@
     } while(0)
 
 uint8_t net_endpoint_buf_is_full(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type) {
+    assert(buf_type < net_ep_buf_count);
     return 0;
 }
 
 uint8_t net_endpoint_buf_is_empty(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type) {
+    assert(buf_type < net_ep_buf_count);
     return endpoint->m_bufs[buf_type] ? 0 : 1;
 }
 
-void * net_endpoint_buf_alloc(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, uint32_t * inout_size) {
+void * net_endpoint_buf_alloc(net_endpoint_t endpoint, uint32_t * inout_size) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
     void * data;
     int size;
@@ -36,18 +38,18 @@ void * net_endpoint_buf_alloc(net_endpoint_t endpoint, net_endpoint_buf_type_t b
     assert(inout_size);
     assert(*inout_size >= 0);
 
-    if (schedule->m_endpoint_tb) {
-        size = ringbuffer_block_data(schedule->m_endpoint_buf, schedule->m_endpoint_tb, 0, &data);
-        if (size > 0 && (*inout_size == 0 ||  (uint32_t)size > *inout_size)) {
-            if (*inout_size == 0) *inout_size = (uint32_t)size;
-            assert(data);
-            return data;
-        }
-        else {
-            ringbuffer_free(schedule->m_endpoint_buf, schedule->m_endpoint_tb);
-            schedule->m_endpoint_tb = NULL;
-        }
-    }
+    /* if (schedule->m_endpoint_tb) { */
+    /*     size = ringbuffer_block_data(schedule->m_endpoint_buf, schedule->m_endpoint_tb, 0, &data); */
+    /*     if (size > 0 && (*inout_size == 0 ||  (uint32_t)size > *inout_size)) { */
+    /*         if (*inout_size == 0) *inout_size = (uint32_t)size; */
+    /*         assert(data); */
+    /*         return data; */
+    /*     } */
+    /*     else { */
+    /*         ringbuffer_free(schedule->m_endpoint_buf, schedule->m_endpoint_tb); */
+    /*         schedule->m_endpoint_tb = NULL; */
+    /*     } */
+    /* } */
 
     assert(schedule->m_endpoint_tb == NULL);
 
@@ -68,9 +70,19 @@ void * net_endpoint_buf_alloc(net_endpoint_t endpoint, net_endpoint_buf_type_t b
     return data;
 }
 
+void net_endpoint_buf_release(net_endpoint_t endpoint) {
+    net_schedule_t schedule = endpoint->m_driver->m_schedule;
+
+   assert(schedule->m_endpoint_tb);
+
+   ringbuffer_free(schedule->m_endpoint_buf, schedule->m_endpoint_tb);
+   schedule->m_endpoint_tb = NULL;
+}
+
 int net_endpoint_buf_supply(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, uint32_t size) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
 
+    assert(buf_type < net_ep_buf_count);
     assert(schedule->m_endpoint_tb);
 
     if (size > 0) {
@@ -79,6 +91,8 @@ int net_endpoint_buf_supply(net_endpoint_t endpoint, net_endpoint_buf_type_t buf
     }
     else {
         ringbuffer_free(schedule->m_endpoint_buf, schedule->m_endpoint_tb);
+        schedule->m_endpoint_tb = NULL;
+        return 0;
     }
     
     schedule->m_endpoint_tb = NULL;
@@ -101,6 +115,8 @@ int net_endpoint_buf_supply(net_endpoint_t endpoint, net_endpoint_buf_type_t buf
 uint32_t net_endpoint_buf_size(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
 
+    assert(buf_type < net_ep_buf_count);
+    
     if (endpoint->m_bufs[buf_type]) {
         return ringbuffer_block_total_len(schedule->m_endpoint_buf, endpoint->m_bufs[buf_type]);
     }
@@ -112,6 +128,8 @@ uint32_t net_endpoint_buf_size(net_endpoint_t endpoint, net_endpoint_buf_type_t 
 void net_endpoint_buf_clear(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
 
+    assert(buf_type < net_ep_buf_count);
+    
     if (endpoint->m_bufs[buf_type]) {
         ringbuffer_free(schedule->m_endpoint_buf, endpoint->m_bufs[buf_type]);
         endpoint->m_bufs[buf_type] = NULL;
@@ -121,10 +139,7 @@ void net_endpoint_buf_clear(net_endpoint_t endpoint, net_endpoint_buf_type_t buf
 void net_endpoint_buf_consume(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, uint32_t size) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
 
-    if (schedule->m_endpoint_tb) {
-        ringbuffer_free(schedule->m_endpoint_buf, schedule->m_endpoint_tb);
-        schedule->m_endpoint_tb = NULL;
-    }
+    assert(buf_type < net_ep_buf_count);
 
     if (endpoint->m_bufs[buf_type]) {
         endpoint->m_bufs[buf_type] = ringbuffer_yield(schedule->m_endpoint_buf, endpoint->m_bufs[buf_type], size);
@@ -136,9 +151,10 @@ void net_endpoint_buf_consume(net_endpoint_t endpoint, net_endpoint_buf_type_t b
 }
 
 void * net_endpoint_buf_peak(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, uint32_t * size) {
-    if (endpoint->m_bufs[buf_type] == NULL) return NULL;
-
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
+
+    assert(buf_type < net_ep_buf_count);
+    if (endpoint->m_bufs[buf_type] == NULL) return NULL;
     
     void * data;
     int block_size = ringbuffer_block_data(schedule->m_endpoint_buf, endpoint->m_bufs[buf_type], 0, &data);
@@ -151,6 +167,8 @@ void * net_endpoint_buf_peak(net_endpoint_t endpoint, net_endpoint_buf_type_t bu
 }
 
 int net_endpoint_buf_peak_with_size(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, uint32_t require, void * * r_data) {
+    assert(buf_type < net_ep_buf_count);
+
     if (endpoint->m_bufs[buf_type] == NULL) {
         *r_data = NULL;
         return 0;
@@ -185,6 +203,8 @@ int net_endpoint_buf_peak_with_size(net_endpoint_t endpoint, net_endpoint_buf_ty
 int net_endpoint_buf_recv(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, void * data, uint32_t * size) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
 
+    assert(buf_type < net_ep_buf_count);
+    
     uint32_t capacity = *size;
     uint32_t received = 0;
 
@@ -217,6 +237,8 @@ int net_endpoint_buf_recv(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_t
 int net_endpoint_buf_by_sep(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, const char * seps, void * * r_data, uint32_t *r_size) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
 
+    assert(buf_type < net_ep_buf_count);
+    
     uint32_t sz = 0;
     ringbuffer_block_t block = endpoint->m_bufs[buf_type];
     while(block) {
@@ -257,7 +279,7 @@ int net_endpoint_buf_by_sep(net_endpoint_t endpoint, net_endpoint_buf_type_t buf
     return 0;
 }
 
-uint8_t net_endpoint_block_match_forward(
+static uint8_t net_endpoint_block_match_forward(
     net_schedule_t schedule, ringbuffer_block_t block, char * block_data, int block_data_len, int block_pos,
     const char * look_str, size_t look_str_len)
 {
@@ -293,6 +315,8 @@ int net_endpoint_buf_by_str(net_endpoint_t endpoint, net_endpoint_buf_type_t buf
     size_t str_len = strlen(str);
     if (str_len == 0) return -1;
 
+    assert(buf_type < net_ep_buf_count);
+    
     uint32_t sz = 0;
     ringbuffer_block_t block = endpoint->m_bufs[buf_type];
     while(block) {
@@ -340,6 +364,7 @@ int net_endpoint_buf_by_str(net_endpoint_t endpoint, net_endpoint_buf_type_t buf
 int net_endpoint_buf_append(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, void const * i_data, uint32_t size) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
 
+    assert(buf_type < net_ep_buf_count);
     if (size == 0) return 0;
 
     ringbuffer_block_t tb = net_endpoint_common_buf_alloc(endpoint, size);
@@ -377,6 +402,9 @@ int net_endpoint_buf_append_from_other(
     net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, net_endpoint_t other, net_endpoint_buf_type_t from, uint32_t size)
 {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
+
+    assert(buf_type < net_ep_buf_count);
+    assert(from < net_ep_buf_count);
 
     if (size > 0) {
         uint32_t from_buf_len = other->m_bufs[from] ? ringbuffer_block_total_len(schedule->m_endpoint_buf, other->m_bufs[from]) : 0;
@@ -424,7 +452,10 @@ int net_endpoint_buf_append_from_other(
 
 int net_endpoint_buf_append_from_self(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, net_endpoint_buf_type_t from, uint32_t size) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
-    
+
+    assert(buf_type < net_ep_buf_count);
+    assert(from < net_ep_buf_count);
+
     if (size > 0) {
         uint32_t from_buf_len = endpoint->m_bufs[from] ? ringbuffer_block_total_len(schedule->m_endpoint_buf, endpoint->m_bufs[from]) : 0;
         if (size > from_buf_len) {
