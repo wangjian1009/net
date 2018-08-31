@@ -1,3 +1,4 @@
+#include "assert.h"
 #include "net_address.h"
 #include "net_dgram_i.h"
 #include "net_driver_i.h"
@@ -10,6 +11,9 @@ net_dgram_t net_dgram_create(
 {
     net_schedule_t schedule = driver->m_schedule;
     net_dgram_t dgram;
+
+    assert(address);
+    assert(process_fun);
 
     dgram = TAILQ_FIRST(&driver->m_free_dgrams);
     if (dgram) {
@@ -30,12 +34,10 @@ net_dgram_t net_dgram_create(
     dgram->m_process_fun = process_fun;
     dgram->m_process_ctx = process_ctx;
 
-    if (address) {
-        dgram->m_address = net_address_copy(schedule, address);
-        if (dgram->m_address == NULL) {
-            CPE_ERROR(schedule->m_em, "core: dgram: create: dup address fail");
-            return NULL;
-        }
+    dgram->m_address = net_address_copy(schedule, address);
+    if (dgram->m_address == NULL) {
+        CPE_ERROR(schedule->m_em, "core: dgram: create: dup address fail");
+        return NULL;
     }
     
     if (driver->m_dgram_init(dgram) != 0) {

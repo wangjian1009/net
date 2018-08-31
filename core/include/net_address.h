@@ -29,11 +29,14 @@ struct net_address_data_ipv6 {
 };
 
 net_address_t net_address_create_auto(net_schedule_t schedule, const char * url);
+net_address_t net_address_create_any(net_schedule_t schedule, net_address_type_t type, uint16_t port);
 
 net_address_t net_address_create_ipv4(net_schedule_t schedule, const char * addr, uint16_t port);
+net_address_t net_address_create_ipv4_any(net_schedule_t schedule, uint16_t port);
 net_address_t net_address_create_from_data_ipv4(net_schedule_t schedule, net_address_data_ipv4_t addr, uint16_t port);
 
 net_address_t net_address_create_ipv6(net_schedule_t schedule, const char * addr, uint16_t port);
+net_address_t net_address_create_ipv6_any(net_schedule_t schedule, uint16_t port);
 net_address_t net_address_create_from_data_ipv6(net_schedule_t schedule, net_address_data_ipv6_t addr, uint16_t port);
 
 net_address_t net_address_create_domain(
@@ -50,6 +53,8 @@ int net_address_to_sockaddr(net_address_t address, struct sockaddr * addr, sockl
 net_address_type_t net_address_type(net_address_t address);
 uint16_t net_address_port(net_address_t address);
 void net_address_set_port(net_address_t address, uint16_t port);
+
+uint8_t net_address_is_any(net_address_t addr);
 
 void const * net_address_data(net_address_t address);
 

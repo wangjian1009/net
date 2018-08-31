@@ -50,6 +50,18 @@ net_address_t net_address_create_auto(net_schedule_t schedule, const char * url)
     }
 }
 
+net_address_t net_address_create_any(net_schedule_t schedule, net_address_type_t type, uint16_t port) {
+    switch(type) {
+    case net_address_ipv4:
+        return net_address_create_ipv4_any(schedule, port);
+    case net_address_ipv6:
+        return net_address_create_ipv6_any(schedule, port);
+    case net_address_domain:
+        CPE_ERROR(schedule->m_em, "net_address_create_any: not support address type domain!");
+        return NULL;
+    }
+}
+
 struct net_address_ipv4v6 *
 net_address_create_ipv4v6(net_schedule_t schedule, net_address_type_t type, uint16_t port) {
     struct net_address_ipv4v6 * address_ipv4v6
@@ -89,10 +101,41 @@ net_address_t net_address_create_ipv4(net_schedule_t schedule, const char * addr
     return (net_address_t)addr_ipv4v6;
 }
 
+net_address_t net_address_create_ipv4_any(net_schedule_t schedule, uint16_t port) {
+    struct net_address_ipv4v6 * addr_ipv4v6 = net_address_create_ipv4v6(schedule, net_address_ipv4, port);
+    if (addr_ipv4v6 == NULL) return NULL;
+    
+    addr_ipv4v6->m_ipv4.u32 = 0;
+
+    return (net_address_t)addr_ipv4v6;
+}
+
 net_address_t net_address_create_from_data_ipv4(net_schedule_t schedule, net_address_data_ipv4_t addr_data, uint16_t port) {
     struct net_address_ipv4v6 * addr_ipv4v6 = net_address_create_ipv4v6(schedule, net_address_ipv4, port);
     if (addr_ipv4v6 == NULL) return NULL;
     addr_ipv4v6->m_ipv4 = *addr_data;
+    return (net_address_t)addr_ipv4v6;
+}
+
+net_address_t net_address_create_ipv6(net_schedule_t schedule, const char * addr, uint16_t port) {
+    struct net_address_data_ipv6 ipv6;
+    bzero(&ipv6, sizeof(ipv6));
+    
+    struct net_address_ipv4v6 * addr_ipv4v6 = net_address_create_ipv4v6(schedule, net_address_ipv4, port);
+    if (addr_ipv4v6 == NULL) return NULL;
+    
+    addr_ipv4v6->m_ipv6 = ipv6;
+
+    return (net_address_t)addr_ipv4v6;
+}
+
+net_address_t net_address_create_ipv6_any(net_schedule_t schedule, uint16_t port) {
+    struct net_address_ipv4v6 * addr_ipv4v6 = net_address_create_ipv4v6(schedule, net_address_ipv6, port);
+    if (addr_ipv4v6 == NULL) return NULL;
+    
+    addr_ipv4v6->m_ipv6.u64[0] = 0;
+    addr_ipv4v6->m_ipv6.u64[1] = 0;
+
     return (net_address_t)addr_ipv4v6;
 }
 
@@ -290,6 +333,21 @@ uint16_t net_address_port(net_address_t address) {
 
 void net_address_set_port(net_address_t address, uint16_t port) {
     address->m_port = port;
+}
+
+uint8_t net_address_is_any(net_address_t address) {
+    struct net_address_ipv4v6 * ipv4v6;
+    
+    switch(address->m_type) {
+    case net_address_ipv4:
+        ipv4v6 = (struct net_address_ipv4v6 *)address;
+        return ipv4v6->m_ipv4.u32 == 0 ? 1 : 0;
+    case net_address_ipv6:
+        ipv4v6 = (struct net_address_ipv4v6 *)address;
+        return (ipv4v6->m_ipv6.u64[0] == 0 && ipv4v6->m_ipv6.u64[1] == 0) ? 1 : 0;
+    case net_address_domain:
+        return 0;
+    }
 }
 
 void const * net_address_data(net_address_t address) {

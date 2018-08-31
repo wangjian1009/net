@@ -307,14 +307,23 @@ static int net_dns_source_ns_dgram_output(
     net_dns_manage_t manage, net_dns_source_ns_t ns, void const * buf, uint16_t buf_size)
 {
     if (ns->m_dgram == NULL) {
-        ns->m_dgram = net_dgram_create(
-            ns->m_driver, NULL, net_dns_source_ns_dgram_input, ns);
+        net_address_t local_address = net_address_create_any(manage->m_schedule, net_address_type(ns->m_address), 0);
+        if (local_address == NULL) {
+            CPE_ERROR(
+                manage->m_em, "dns-cli: ns[%s]: create local address fail",
+                net_address_dump(net_dns_manage_tmp_buffer(manage), ns->m_address));
+            return -1;
+        }
+    
+        ns->m_dgram = net_dgram_create(ns->m_driver, local_address, net_dns_source_ns_dgram_input, ns);
         if (ns->m_dgram == NULL) {
+            net_address_free(local_address);
             CPE_ERROR(
                 manage->m_em, "dns-cli: ns[%s]: create dgram fail",
                 net_address_dump(net_dns_manage_tmp_buffer(manage), ns->m_address));
             return -1;
         }
+        net_address_free(local_address);
     }
     
     if (net_dgram_send(ns->m_dgram, ns->m_address, buf, buf_size) < 0) {

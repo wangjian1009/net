@@ -15,21 +15,18 @@ int net_dq_dgram_init(net_dgram_t base_dgram) {
     net_dq_driver_t driver = net_driver_data(net_dgram_driver(base_dgram));
     net_address_t address = net_dgram_address(base_dgram);
 
-    if (address) {
-        switch(net_address_type(address)) {
-        case net_address_ipv4:
-            dgram->m_fd = cpe_sock_open(AF_INET, SOCK_DGRAM, 0);
-            break;
-        case net_address_ipv6:
-            dgram->m_fd = cpe_sock_open(AF_INET6, SOCK_DGRAM, 0);
-            break;
-        case net_address_domain:
-            CPE_ERROR(driver->m_em, "dq: dgyam: not support domain address!");
-            return -1;
-        }
-    }
-    else {
+    assert(address);
+    
+    switch(net_address_type(address)) {
+    case net_address_ipv4:
         dgram->m_fd = cpe_sock_open(AF_INET, SOCK_DGRAM, 0);
+        break;
+    case net_address_ipv6:
+        dgram->m_fd = cpe_sock_open(AF_INET6, SOCK_DGRAM, 0);
+        break;
+    case net_address_domain:
+        CPE_ERROR(driver->m_em, "dq: dgyam: not support domain address!");
+        return -1;
     }
 
     if (dgram->m_fd == -1) {
@@ -39,7 +36,9 @@ int net_dq_dgram_init(net_dgram_t base_dgram) {
         return -1;
     }
     
-    if (address) {
+    if (address
+        && (!net_address_is_any(address) || net_address_port(address) != 0))
+    {
         struct sockaddr_storage addr;
         socklen_t addr_len = sizeof(addr);
 
@@ -53,7 +52,8 @@ int net_dq_dgram_init(net_dgram_t base_dgram) {
 
         if (cpe_bind(dgram->m_fd, (struct sockaddr *)&addr, addr_len) != 0) {
             CPE_ERROR(
-                driver->m_em, "dq: dgram: bind addr fail, errno=%d (%s)",
+                driver->m_em, "dq: dgram: bind addr %s fail, errno=%d (%s)",
+                net_address_dump(net_dq_driver_tmp_buffer(driver), address),
                 cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
             cpe_sock_close(dgram->m_fd);
             dgram->m_fd = -1;
