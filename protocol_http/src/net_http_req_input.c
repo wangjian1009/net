@@ -1,5 +1,6 @@
 #include "assert.h"
 #include "cpe/pal/pal_string.h"
+#include "cpe/pal/pal_strings.h"
 #include "cpe/pal/pal_stdlib.h"
 #include "cpe/utils/string_utils.h"
 #include "net_endpoint.h"

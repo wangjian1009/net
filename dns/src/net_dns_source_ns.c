@@ -1,4 +1,5 @@
 #include "cpe/pal/pal_platform.h"
+#include "cpe/pal/pal_stdio.h"
 #include "cpe/utils/stream_buffer.h"
 #include "cpe/utils/time_utils.h"
 #include "net_address.h"

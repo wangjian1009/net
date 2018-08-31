@@ -1,5 +1,7 @@
 #include "assert.h"
 #include "cpe/pal/pal_string.h"
+#include "cpe/pal/pal_strings.h"
+#include "cpe/pal/pal_stdio.h"
 #include "cpe/utils/string_utils.h"
 #include "cpe/utils/stream_mem.h"
 #include "cpe/utils/stream_buffer.h"
