@@ -208,7 +208,7 @@ static int net_dns_ns_parser_read_an_record(
             ipv4.u8[1] = p[1];
             ipv4.u8[2] = p[2];
             ipv4.u8[3] = p[3];
-            address = net_address_create_from_data_ipv4(manage->m_schedule, &ipv4, 0);
+            address = net_address_create_ipv4_from_data(manage->m_schedule, &ipv4, 0);
             if (address == NULL) {
                 CPE_ERROR(manage->m_em, "dns-cli: udp <-- create address ipv4 fail");
                 return 0;

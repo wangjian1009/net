@@ -110,23 +110,22 @@ net_address_t net_address_create_ipv4_any(net_schedule_t schedule, uint16_t port
     return (net_address_t)addr_ipv4v6;
 }
 
-net_address_t net_address_create_from_data_ipv4(net_schedule_t schedule, net_address_data_ipv4_t addr_data, uint16_t port) {
+net_address_t net_address_create_ipv4_from_data(net_schedule_t schedule, net_address_data_ipv4_t addr_data, uint16_t port) {
     struct net_address_ipv4v6 * addr_ipv4v6 = net_address_create_ipv4v6(schedule, net_address_ipv4, port);
     if (addr_ipv4v6 == NULL) return NULL;
     addr_ipv4v6->m_ipv4 = *addr_data;
     return (net_address_t)addr_ipv4v6;
 }
 
-net_address_t net_address_create_ipv6(net_schedule_t schedule, const char * addr, uint16_t port) {
-    struct net_address_data_ipv6 ipv6;
-    bzero(&ipv6, sizeof(ipv6));
-    
-    struct net_address_ipv4v6 * addr_ipv4v6 = net_address_create_ipv4v6(schedule, net_address_ipv4, port);
-    if (addr_ipv4v6 == NULL) return NULL;
-    
-    addr_ipv4v6->m_ipv6 = ipv6;
+net_address_t net_address_create_ipv6(net_schedule_t schedule, const char * str_addr, uint16_t port) {
+    struct sockaddr_storage addr;
+    socklen_t addr_len = sizeof(addr);
+    if (sock_ipv6_init((struct sockaddr *)&addr, &addr_len, str_addr, port, NULL) != 0) {
+        CPE_ERROR(schedule->m_em, "net_address_create_ipv6: addr %s format error!", str_addr);
+        return NULL;
+    }
 
-    return (net_address_t)addr_ipv4v6;
+    return net_address_create_from_sockaddr(schedule, (struct sockaddr *)&addr, addr_len);
 }
 
 net_address_t net_address_create_ipv6_any(net_schedule_t schedule, uint16_t port) {
@@ -139,7 +138,7 @@ net_address_t net_address_create_ipv6_any(net_schedule_t schedule, uint16_t port
     return (net_address_t)addr_ipv4v6;
 }
 
-net_address_t net_address_create_from_data_ipv6(net_schedule_t schedule, net_address_data_ipv6_t addr_data, uint16_t port) {
+net_address_t net_address_create_ipv6_from_data(net_schedule_t schedule, net_address_data_ipv6_t addr_data, uint16_t port) {
     struct net_address_ipv4v6 * addr_ipv4v6 = net_address_create_ipv4v6(schedule, net_address_ipv6, port);
     if (addr_ipv4v6 == NULL) return NULL;
     addr_ipv4v6->m_ipv6 = *addr_data;
@@ -571,7 +570,7 @@ static net_address_t net_address_rand_same_network_ipv4(net_schedule_t schedule,
         }
     }
     
-    return net_address_create_from_data_ipv4(schedule, &r_data, 0);
+    return net_address_create_ipv4_from_data(schedule, &r_data, 0);
 }
     
 net_address_t net_address_rand_same_network(net_address_t base_address, net_address_t mask) {
