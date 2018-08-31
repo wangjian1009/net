@@ -884,9 +884,9 @@
 				C9C4B116210861B50045A1A3 /* router */,
 				C9F3117B21095931006A7621 /* protocol_ws */,
 				C96A82D921100505000CB30D /* driver_dq */,
-				C9415A962121058E00400779 /* net_dns_svr */,
+				C9415A962121058E00400779 /* dns_svr */,
 				C9B0C4502123F30F008DB367 /* protocol_proxy_http */,
-				C99B01672134538C00352CCB /* net_protocol_http */,
+				C99B01672134538C00352CCB /* protocol_http */,
 				C90461F621369D6700330168 /* mbedtls */,
 				C9323A422105E2CD005DD3C0 /* Products */,
 			);
@@ -921,13 +921,13 @@
 			path = ../../core;
 			sourceTree = "<group>";
 		};
-		C9415A962121058E00400779 /* net_dns_svr */ = {
+		C9415A962121058E00400779 /* dns_svr */ = {
 			isa = PBXGroup;
 			children = (
 				C9415AA1212105CF00400779 /* include */,
 				C9415A9E212105CF00400779 /* src */,
 			);
-			name = net_dns_svr;
+			name = dns_svr;
 			path = ../../dns_svr;
 			sourceTree = "<group>";
 		};
@@ -997,13 +997,13 @@
 			path = include;
 			sourceTree = "<group>";
 		};
-		C99B01672134538C00352CCB /* net_protocol_http */ = {
+		C99B01672134538C00352CCB /* protocol_http */ = {
 			isa = PBXGroup;
 			children = (
 				C99B0178213453DD00352CCB /* include */,
 				C99B016F213453DD00352CCB /* src */,
 			);
-			name = net_protocol_http;
+			name = protocol_http;
 			path = ../../protocol_http;
 			sourceTree = "<group>";
 		};
