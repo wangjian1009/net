@@ -54,15 +54,19 @@ int net_dns_manage_auto_conf(net_dns_manage_t manage, net_driver_t driver, net_d
         rv = -1; 
     }
     else {
+        union res_sockaddr_union addr_union[MAXNS];
+        res_getservers(&res, addr_union, res.nscount);
+
         int i;
         for(i = 0; i < res.nscount; ++i) {
             if (net_dns_manage_load_ns_by_addr(
                     manage, driver, scope,
-                    (struct sockaddr *)&res.nsaddr_list[i], (socklen_t)sizeof(res.nsaddr_list[i])) != 0)
+                    (struct sockaddr *)&addr_union[i], (socklen_t)sizeof(addr_union[i])) != 0)
             {
                 rv = -1;
             }
         }
+        res_nclose(&res);
     }
     
 #else    
