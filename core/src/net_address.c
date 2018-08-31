@@ -13,21 +13,41 @@
 net_address_t net_address_create_auto(net_schedule_t schedule, const char * url) {
     size_t hostname_len;
     uint16_t port;
-    
-    const char * sep = strrchr(url, ':');
-    if (sep) {
-        port = (uint16_t)atoi(sep + 1);
-        hostname_len = sep - url;
+
+    if (url[0] == '[') {
+        const char * e = strchr(url + 1, ']');
+        if (e == NULL) {
+            CPE_ERROR(schedule->m_em, "net_address_create_auto: url %s format error", url);
+            return NULL;
+        }
+
+        url = url + 1;
+        hostname_len = e - url;
+        
+        const char * sep = strrchr(e, ':');
+        if (sep) {
+            port = (uint16_t)atoi(sep + 1);
+        }
+        else {
+            port = 0;
+        }
     }
     else {
-        port = 0;
-        hostname_len = strlen(url);
+        const char * sep = strrchr(url, ':');
+        if (sep) {
+            port = (uint16_t)atoi(sep + 1);
+            hostname_len = sep - url;
+        }
+        else {
+            port = 0;
+            hostname_len = strlen(url);
+        }
     }
-
+    
     if (sock_validate_hostname(url, (int)hostname_len)) {
         char buf[64];
         assert(hostname_len + 1 < sizeof(buf));
-        if (sep) {
+        if (url[hostname_len] != 0) {
             memcpy(buf, url, hostname_len);
             buf[hostname_len] = 0;
             url = buf;
@@ -117,6 +137,31 @@ net_address_t net_address_create_ipv4_from_data(net_schedule_t schedule, net_add
     return (net_address_t)addr_ipv4v6;
 }
 
+net_address_t net_address_create_ipv4_from_ipv6_wrap(net_schedule_t schedule, net_address_t addr_ipv6) {
+    if (net_address_type(addr_ipv6) != net_address_ipv6) {
+        CPE_ERROR(
+            schedule->m_em, "net_address_create_ipv4_from_ipv6_wrap: %s is not ipv6!",
+            net_address_dump(&schedule->m_tmp_buffer, addr_ipv6));
+        return NULL;
+    }
+
+    if (!net_address_ipv6_is_wrap_ipv4(addr_ipv6)) {
+        CPE_ERROR(
+            schedule->m_em, "net_address_create_ipv4_from_ipv6_wrap: %s is not wrap ipv4!",
+            net_address_dump(&schedule->m_tmp_buffer, addr_ipv6));
+        return NULL;
+    }
+
+    struct net_address_ipv4v6 * ipv6_data = (struct net_address_ipv4v6 *)addr_ipv6;
+        
+    struct net_address_ipv4v6 * addr_ipv4v6 = net_address_create_ipv4v6(schedule, net_address_ipv4, addr_ipv6->m_port);
+    if (addr_ipv4v6 == NULL) return NULL;
+    
+    addr_ipv4v6->m_ipv4.u32 = ipv6_data->m_ipv6.u32[3];
+    
+    return (net_address_t)addr_ipv4v6;
+}
+
 net_address_t net_address_create_ipv6(net_schedule_t schedule, const char * str_addr, uint16_t port) {
     struct sockaddr_storage addr;
     socklen_t addr_len = sizeof(addr);
@@ -142,6 +187,23 @@ net_address_t net_address_create_ipv6_from_data(net_schedule_t schedule, net_add
     struct net_address_ipv4v6 * addr_ipv4v6 = net_address_create_ipv4v6(schedule, net_address_ipv6, port);
     if (addr_ipv4v6 == NULL) return NULL;
     addr_ipv4v6->m_ipv6 = *addr_data;
+    return (net_address_t)addr_ipv4v6;
+}
+
+net_address_t net_address_create_ipv6_from_ipv4(net_schedule_t schedule, net_address_t addr_ipv4) {
+    if (net_address_type(addr_ipv4) != net_address_ipv4) {
+        CPE_ERROR(
+            schedule->m_em, "net_address_create_ipv6_from_ipv4: %s is not ipv4!",
+            net_address_dump(&schedule->m_tmp_buffer, addr_ipv4));
+        return NULL;
+    }
+
+    struct net_address_ipv4v6 * addr_ipv4v6 = net_address_create_ipv4v6(schedule, net_address_ipv6, addr_ipv4->m_port);
+
+    bzero(&addr_ipv4v6->m_ipv6, sizeof(addr_ipv4v6->m_ipv6));
+    addr_ipv4v6->m_ipv6.u16[5] = 0xFFFF;
+    addr_ipv4v6->m_ipv6.u32[3] = ((struct net_address_ipv4v6 *)addr_ipv4)->m_ipv4.u32;
+
     return (net_address_t)addr_ipv4v6;
 }
 
@@ -360,6 +422,18 @@ void const * net_address_data(net_address_t address) {
     }
 }
 
+uint8_t net_address_ipv6_is_wrap_ipv4(net_address_t address) {
+    if (net_address_type(address) != net_address_ipv6) return 0;
+
+    struct net_address_ipv4v6 * ipv4v6 = (struct net_address_ipv4v6 *)address;
+
+    return (ipv4v6->m_ipv6.u64[0] == 0
+            && ipv4v6->m_ipv6.u16[5] == 0
+            && ipv4v6->m_ipv6.u16[6] == 0xFFFF)
+        ? 1
+        : 0;
+}
+
 int net_address_set_resolved(net_address_t address, net_address_t resolved, uint8_t is_own) {
     switch(address->m_type) {
     case net_address_ipv4:
@@ -415,13 +489,23 @@ void net_address_print(write_stream_t ws, net_address_t address) {
     case net_address_ipv4: {
         char buf[INET_ADDRSTRLEN] = { 0 };
         inet_ntop(AF_INET, &((struct net_address_ipv4v6 *)address)->m_ipv4, buf, sizeof(buf));
-        stream_printf(ws, "%s:%d", buf, address->m_port);
+        if (address->m_port) {
+            stream_printf(ws, "%s:%d", buf, address->m_port);
+        }
+        else {
+            stream_printf(ws, "%s", buf);
+        }
         break;
     }
     case net_address_ipv6: {
         char buf[INET6_ADDRSTRLEN] = { 0 };
         inet_ntop(AF_INET6, &((struct net_address_ipv4v6 *)address)->m_ipv6, buf, sizeof(buf));
-        stream_printf(ws, "%s:%d", buf, address->m_port);
+        if (address->m_port) {
+            stream_printf(ws, "[%s]:%d", buf, address->m_port);
+        }
+        else {
+            stream_printf(ws, "%s", buf);
+        }
         break;
     }
     case net_address_domain: {

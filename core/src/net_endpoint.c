@@ -502,11 +502,6 @@ ringbuffer_block_t net_endpoint_common_buf_alloc(net_endpoint_t endpoint, uint32
 
     assert(size > 0);
 
-    if (schedule->m_endpoint_tb) {
-        ringbuffer_free(schedule->m_endpoint_buf, schedule->m_endpoint_tb);
-        schedule->m_endpoint_tb = NULL;
-    }
-
     blk = ringbuffer_alloc(schedule->m_endpoint_buf, size);
     while (blk == NULL) {
         int collect_id = ringbuffer_collect(schedule->m_endpoint_buf);

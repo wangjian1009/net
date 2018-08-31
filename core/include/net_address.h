@@ -34,6 +34,7 @@ net_address_t net_address_create_any(net_schedule_t schedule, net_address_type_t
 net_address_t net_address_create_ipv4(net_schedule_t schedule, const char * addr, uint16_t port);
 net_address_t net_address_create_ipv4_any(net_schedule_t schedule, uint16_t port);
 net_address_t net_address_create_ipv4_from_data(net_schedule_t schedule, net_address_data_ipv4_t addr, uint16_t port);
+net_address_t net_address_create_ipv4_from_ipv6_wrap(net_schedule_t schedule, net_address_t address);
 
 net_address_t net_address_create_ipv6(net_schedule_t schedule, const char * addr, uint16_t port);
 net_address_t net_address_create_ipv6_any(net_schedule_t schedule, uint16_t port);
@@ -74,6 +75,9 @@ net_address_t net_address_rand_same_network(net_address_t base_address, net_addr
 /*domain*/
 int net_address_set_resolved(net_address_t address, net_address_t resolved, uint8_t is_own);
 net_address_t net_address_resolved(net_address_t address);
+
+/*ipv6*/
+uint8_t net_address_ipv6_is_wrap_ipv4(net_address_t address);
 
 /**/
 uint32_t net_address_hash(net_address_t address);
