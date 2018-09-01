@@ -137,17 +137,42 @@ net_address_t net_address_create_ipv4_from_data(net_schedule_t schedule, net_add
     return (net_address_t)addr_ipv4v6;
 }
 
-net_address_t net_address_create_ipv4_from_ipv6_wrap(net_schedule_t schedule, net_address_t addr_ipv6) {
+net_address_t net_address_create_ipv4_from_ipv6_map(net_schedule_t schedule, net_address_t addr_ipv6) {
     if (net_address_type(addr_ipv6) != net_address_ipv6) {
         CPE_ERROR(
-            schedule->m_em, "net_address_create_ipv4_from_ipv6_wrap: %s is not ipv6!",
+            schedule->m_em, "net_address_create_ipv4_from_ipv6_map: %s is not ipv6!",
             net_address_dump(&schedule->m_tmp_buffer, addr_ipv6));
         return NULL;
     }
 
-    if (!net_address_ipv6_is_wrap_ipv4(addr_ipv6)) {
+    if (!net_address_ipv6_is_ipv4_map(addr_ipv6)) {
         CPE_ERROR(
-            schedule->m_em, "net_address_create_ipv4_from_ipv6_wrap: %s is not wrap ipv4!",
+            schedule->m_em, "net_address_create_ipv4_from_ipv6_map: %s is not wrap ipv4!",
+            net_address_dump(&schedule->m_tmp_buffer, addr_ipv6));
+        return NULL;
+    }
+
+    struct net_address_ipv4v6 * ipv6_data = (struct net_address_ipv4v6 *)addr_ipv6;
+        
+    struct net_address_ipv4v6 * addr_ipv4v6 = net_address_create_ipv4v6(schedule, net_address_ipv4, addr_ipv6->m_port);
+    if (addr_ipv4v6 == NULL) return NULL;
+    
+    addr_ipv4v6->m_ipv4.u32 = ipv6_data->m_ipv6.u32[3];
+    
+    return (net_address_t)addr_ipv4v6;
+}
+
+net_address_t net_address_create_ipv4_from_ipv6_nat(net_schedule_t schedule, net_address_t addr_ipv6) {
+    if (net_address_type(addr_ipv6) != net_address_ipv6) {
+        CPE_ERROR(
+            schedule->m_em, "net_address_create_ipv4_from_ipv6_nat: %s is not ipv6!",
+            net_address_dump(&schedule->m_tmp_buffer, addr_ipv6));
+        return NULL;
+    }
+
+    if (!net_address_ipv6_is_ipv4_nat(addr_ipv6)) {
+        CPE_ERROR(
+            schedule->m_em, "net_address_create_ipv4_from_ipv6_nat: %s is not wrap ipv4!",
             net_address_dump(&schedule->m_tmp_buffer, addr_ipv6));
         return NULL;
     }
@@ -190,10 +215,10 @@ net_address_t net_address_create_ipv6_from_data(net_schedule_t schedule, net_add
     return (net_address_t)addr_ipv4v6;
 }
 
-net_address_t net_address_create_ipv6_from_ipv4(net_schedule_t schedule, net_address_t addr_ipv4) {
+net_address_t net_address_create_ipv6_from_ipv4_map(net_schedule_t schedule, net_address_t addr_ipv4) {
     if (net_address_type(addr_ipv4) != net_address_ipv4) {
         CPE_ERROR(
-            schedule->m_em, "net_address_create_ipv6_from_ipv4: %s is not ipv4!",
+            schedule->m_em, "net_address_create_ipv6_from_ipv4_map: %s is not ipv4!",
             net_address_dump(&schedule->m_tmp_buffer, addr_ipv4));
         return NULL;
     }
@@ -202,6 +227,26 @@ net_address_t net_address_create_ipv6_from_ipv4(net_schedule_t schedule, net_add
 
     bzero(&addr_ipv4v6->m_ipv6, sizeof(addr_ipv4v6->m_ipv6));
     addr_ipv4v6->m_ipv6.u16[5] = 0xFFFF;
+    addr_ipv4v6->m_ipv6.u32[3] = ((struct net_address_ipv4v6 *)addr_ipv4)->m_ipv4.u32;
+
+    return (net_address_t)addr_ipv4v6;
+}
+
+net_address_t net_address_create_ipv6_from_ipv4_nat(net_schedule_t schedule, net_address_t addr_ipv4) {
+    if (net_address_type(addr_ipv4) != net_address_ipv4) {
+        CPE_ERROR(
+            schedule->m_em, "net_address_create_ipv6_from_ipv4_nat: %s is not ipv4!",
+            net_address_dump(&schedule->m_tmp_buffer, addr_ipv4));
+        return NULL;
+    }
+
+    struct net_address_ipv4v6 * addr_ipv4v6 = net_address_create_ipv4v6(schedule, net_address_ipv6, addr_ipv4->m_port);
+
+    bzero(&addr_ipv4v6->m_ipv6, sizeof(addr_ipv4v6->m_ipv6));
+
+    addr_ipv4v6->m_ipv6.u8[9] = 0x64;
+    addr_ipv4v6->m_ipv6.u8[10] = 0xFF;
+    addr_ipv4v6->m_ipv6.u8[11] = 0x9B;
     addr_ipv4v6->m_ipv6.u32[3] = ((struct net_address_ipv4v6 *)addr_ipv4)->m_ipv4.u32;
 
     return (net_address_t)addr_ipv4v6;
@@ -425,7 +470,7 @@ void const * net_address_data(net_address_t address) {
     }
 }
 
-uint8_t net_address_ipv6_is_wrap_ipv4(net_address_t address) {
+uint8_t net_address_ipv6_is_ipv4_map(net_address_t address) {
     if (net_address_type(address) != net_address_ipv6) return 0;
 
     struct net_address_ipv4v6 * ipv4v6 = (struct net_address_ipv4v6 *)address;
@@ -433,6 +478,20 @@ uint8_t net_address_ipv6_is_wrap_ipv4(net_address_t address) {
     return (ipv4v6->m_ipv6.u64[0] == 0
             && ipv4v6->m_ipv6.u16[5] == 0
             && ipv4v6->m_ipv6.u16[6] == 0xFFFF)
+        ? 1
+        : 0;
+}
+
+uint8_t net_address_ipv6_is_ipv4_nat(net_address_t address) {
+    if (net_address_type(address) != net_address_ipv6) return 0;
+
+    struct net_address_ipv4v6 * ipv4v6 = (struct net_address_ipv4v6 *)address;
+
+    return (ipv4v6->m_ipv6.u64[0] == 0
+            && ipv4v6->m_ipv6.u8[8] == 0
+            && ipv4v6->m_ipv6.u8[9] == 0x64
+            && ipv4v6->m_ipv6.u8[10] == 0xFF
+            && ipv4v6->m_ipv6.u8[10] == 0x94)
         ? 1
         : 0;
 }

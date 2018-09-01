@@ -91,7 +91,7 @@ int net_dq_endpoint_connect(net_endpoint_t base_endpoint) {
     }
 
 CREATE_SOCKET:
-    endpoint->m_fd = cpe_sock_open(domain, SOCK_STREAM, 0);
+    endpoint->m_fd = cpe_sock_open(domain, SOCK_STREAM, IPPROTO_TCP);
     if (endpoint->m_fd == -1) {
         CPE_ERROR(
             driver->m_em, "dq: %s: create socket fail, errno=%d (%s)",
@@ -194,18 +194,17 @@ CREATE_SOCKET:
         // }
         
         // CPE_ERROR(
-        //     driver->m_em, "dq: %s: xxxxxxx: domain=%s, ip=%s, errno=%d (%s), ENETUNREACH=%d (%s)",
+        //     driver->m_em, "dq: %s: xxxxxxx: domain=%s, ip=%s, errno=%d (%s)",
         //     net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
         //     (domain == AF_INET6 ? "ipv6" : domain == AF_INET ? "ipv4" : "unknown"),
         //     addr_buf,
-        //     cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()),
-        //     ENETUNREACH, cpe_sock_errstr(ENETUNREACH));
+        //     cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
         
         if (cpe_sock_errno() == ENETUNREACH) {
             if (domain == AF_INET && net_address_type(remote_addr) == net_address_ipv4) {
                 /*ipv4网络不可达，尝试ipv6 */
 
-                net_address_t remote_addr_ipv6 = net_address_create_ipv6_from_ipv4(net_endpoint_schedule(base_endpoint), remote_addr);
+                net_address_t remote_addr_ipv6 = net_address_create_ipv6_from_ipv4_nat(net_endpoint_schedule(base_endpoint), remote_addr);
                 if (remote_addr_ipv6 == NULL) {
                     CPE_ERROR(
                         driver->m_em, "dq: %s: ipv4 network unreachable, switch to ipv6, create address fail",
@@ -238,12 +237,12 @@ CREATE_SOCKET:
 
                 goto CREATE_SOCKET;
             }
-            else if (domain == AF_INET6 && net_address_type(remote_addr) == net_address_ipv6 && net_address_ipv6_is_wrap_ipv4(remote_addr)) {
+            else if (domain == AF_INET6 && net_address_type(remote_addr) == net_address_ipv6 && net_address_ipv6_is_ipv4_nat(remote_addr)) {
                 /*ipv6网络不可达，且是一个ipv4地址的封装，尝试ipv4网络 */
-                net_address_t remote_addr_ipv4 = net_address_create_ipv4_from_ipv6_wrap(net_endpoint_schedule(base_endpoint), remote_addr);
+                net_address_t remote_addr_ipv4 = net_address_create_ipv4_from_ipv6_nat(net_endpoint_schedule(base_endpoint), remote_addr);
                 if (remote_addr_ipv4 == NULL) {
                     CPE_ERROR(
-                        driver->m_em, "dq: %s: ipv6 network unreachable, try ipv4, create address fail",
+                        driver->m_em, "dq: %s: ipv6 network unreachable, try ipv4(nat), create address fail",
                         net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
                     cpe_sock_close(endpoint->m_fd);
                     endpoint->m_fd = -1;
@@ -602,12 +601,29 @@ static void net_dq_endpoint_on_connect(net_dq_driver_t driver, net_dq_endpoint_t
     }
 
     if (err != 0) {
-        CPE_ERROR(
-            driver->m_em, "dq: %s: connect error, errno=%d (%s)",
-            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
-            cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
-            net_endpoint_free(base_endpoint);
+        if (cpe_sock_errno() == EINPROGRESS || cpe_sock_errno() == EWOULDBLOCK) {
+            if (net_endpoint_driver_debug(base_endpoint)) {
+                CPE_INFO(
+                    driver->m_em, "dq: %s: connect still in progress",
+                    net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
+            }
+            
+            assert(endpoint->m_source_w == nil);
+            endpoint->m_source_w = dispatch_source_create(DISPATCH_SOURCE_TYPE_WRITE, endpoint->m_fd, 0, dispatch_get_main_queue());
+            dispatch_source_set_event_handler(endpoint->m_source_w, ^{
+                    net_dq_endpoint_stop_w(driver, endpoint, base_endpoint);
+                    net_dq_endpoint_on_connect(driver, endpoint, base_endpoint);
+                });
+            dispatch_resume(endpoint->m_source_w);
+        }
+        else {
+            CPE_ERROR(
+                driver->m_em, "dq: %s: connect error, errno=%d (%s)",
+                net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
+                err, cpe_sock_errstr(err));
+            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
+                net_endpoint_free(base_endpoint);
+            }
         }
         return;
     }
