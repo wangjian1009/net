@@ -121,6 +121,16 @@ int net_ev_endpoint_connect(net_endpoint_t base_endpoint) {
         }
     }
 
+    if (cpe_sock_set_no_sigpipe(endpoint->m_fd, 1) != 0) {
+        CPE_ERROR(
+            em, "ev: %s: set no-sig-pipe fail, errno=%d (%s)",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
+            cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+        cpe_sock_close(endpoint->m_fd);
+        endpoint->m_fd = -1;
+        return -1;
+    }
+    
     if (cpe_sock_set_none_block(endpoint->m_fd, 1) != 0) {
         CPE_ERROR(
             em, "ev: %s: set non-block fail, errno=%d (%s)",
@@ -475,12 +485,28 @@ static void net_ev_endpoint_connect_cb(EV_P_ ev_io *w, int revents) {
     }
 
     if (err != 0) {
-        CPE_ERROR(
-            em, "ev: %s: connect error, errno=%d (%s)",
-            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
-            cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
-            net_endpoint_free(base_endpoint);
+        if (err == EINPROGRESS || err == EWOULDBLOCK) {
+            if (net_schedule_debug(schedule) >= 2) {
+                CPE_INFO(
+                    em, "ev: %s: connect still in progress",
+                    net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+            }
+
+            assert(!ev_is_active(&endpoint->m_watcher));
+            ev_io_init(
+                &endpoint->m_watcher,
+                net_ev_endpoint_connect_cb, endpoint->m_fd,
+                EV_READ | EV_WRITE);
+            ev_io_start(driver->m_ev_loop, &endpoint->m_watcher);
+        }
+        else {
+            CPE_ERROR(
+                em, "ev: %s: connect error, errno=%d (%s)",
+                net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
+                err, cpe_sock_errstr(err));
+            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
+                net_endpoint_free(base_endpoint);
+            }
         }
         return;
     }
