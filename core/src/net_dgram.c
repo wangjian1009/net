@@ -12,7 +12,6 @@ net_dgram_t net_dgram_create(
     net_schedule_t schedule = driver->m_schedule;
     net_dgram_t dgram;
 
-    assert(address);
     assert(process_fun);
 
     dgram = TAILQ_FIRST(&driver->m_free_dgrams);

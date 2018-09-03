@@ -5,6 +5,7 @@
 
 struct net_dq_dgram {
     int m_fd;
+    int m_domain;
     __unsafe_unretained dispatch_source_t m_source_r;
 };
 
