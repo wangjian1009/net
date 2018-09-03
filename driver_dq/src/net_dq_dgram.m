@@ -236,6 +236,13 @@ static void net_dq_dgram_on_read(net_dq_dgram_t dgram) {
 
     net_address_t from = net_address_create_from_sockaddr(schedule, (struct sockaddr *) &addr, addr_len);
 
+    if (net_dgram_driver_debug(base_dgram)) {
+        CPE_INFO(
+            driver->m_em, "dq: dgram: recv %d data from %s",
+            (int)nrecv,
+            net_address_dump(net_dq_driver_tmp_buffer(driver), from));
+    }
+
     net_dgram_recv(base_dgram, from, buf, (size_t)nrecv);
 
     if (driver->m_data_monitor_fun) {
