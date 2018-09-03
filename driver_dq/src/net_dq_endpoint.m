@@ -11,11 +11,11 @@
 
 static void net_dq_endpoint_on_connect(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint);
 
+static void net_dq_endpoint_start_w_connect(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint);
 static void net_dq_endpoint_start_w(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint);
 static void net_dq_endpoint_stop_w(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint);
 static void net_dq_endpoint_start_r(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint);
 static void net_dq_endpoint_stop_r(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint);
-
 static void net_dq_endpoint_start_do_write(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint);
 static void net_dq_endpoint_stop_do_write(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint);
 
@@ -195,23 +195,6 @@ CREATE_SOCKET:
     }
 
     if (cpe_connect(endpoint->m_fd, (struct sockaddr *)&remote_addr_sock, remote_addr_sock_len) != 0) {
-        // char addr_buf[INET6_ADDRSTRLEN + 32];
-
-        // if (remote_addr_sock.ss_family == AF_INET) {
-        //     inet_ntop(AF_INET, &((struct sockaddr_in *)&remote_addr_sock)->sin_addr, addr_buf, sizeof(addr_buf));
-        // }
-        // else {
-        //     assert(remote_addr_sock.ss_family == AF_INET6);
-        //     inet_ntop(AF_INET6, &((struct sockaddr_in6 *)&remote_addr_sock)->sin6_addr, addr_buf, sizeof(addr_buf));
-        // }
-        
-        // CPE_ERROR(
-        //     driver->m_em, "dq: %s: xxxxxxx: domain=%s, ip=%s, errno=%d (%s)",
-        //     net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
-        //     (domain == AF_INET6 ? "ipv6" : domain == AF_INET ? "ipv4" : "unknown"),
-        //     addr_buf,
-        //     cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-        
         if (cpe_sock_errno() == ENETUNREACH) {
             if (domain == AF_INET && net_address_type(remote_addr) == net_address_ipv4) {
                 /*ipv4网络不可达，尝试ipv6 */
@@ -305,14 +288,8 @@ CREATE_SOCKET:
                         net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
                 }
             }
-            
-            assert(endpoint->m_source_w == nil);
-            endpoint->m_source_w = dispatch_source_create(DISPATCH_SOURCE_TYPE_WRITE, endpoint->m_fd, 0, dispatch_get_main_queue());
-            dispatch_source_set_event_handler(endpoint->m_source_w, ^{
-                    net_dq_endpoint_stop_w(driver, endpoint, base_endpoint);
-                    net_dq_endpoint_on_connect(driver, endpoint, base_endpoint);
-                });
-            dispatch_resume(endpoint->m_source_w);
+
+            net_dq_endpoint_start_w_connect(driver, endpoint, base_endpoint);
             
             return net_endpoint_set_state(base_endpoint, net_endpoint_state_connecting);
         }
@@ -619,14 +596,8 @@ static void net_dq_endpoint_on_connect(net_dq_driver_t driver, net_dq_endpoint_t
                     driver->m_em, "dq: %s: connect still in progress",
                     net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
             }
-            
-            assert(endpoint->m_source_w == nil);
-            endpoint->m_source_w = dispatch_source_create(DISPATCH_SOURCE_TYPE_WRITE, endpoint->m_fd, 0, dispatch_get_main_queue());
-            dispatch_source_set_event_handler(endpoint->m_source_w, ^{
-                    net_dq_endpoint_stop_w(driver, endpoint, base_endpoint);
-                    net_dq_endpoint_on_connect(driver, endpoint, base_endpoint);
-                });
-            dispatch_resume(endpoint->m_source_w);
+
+            net_dq_endpoint_start_w_connect(driver, endpoint, base_endpoint);
         }
         else {
             CPE_ERROR(
@@ -654,6 +625,16 @@ static void net_dq_endpoint_on_connect(net_dq_driver_t driver, net_dq_endpoint_t
         net_endpoint_free(base_endpoint);
         return;
     }
+}
+
+static void net_dq_endpoint_start_w_connect(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint) {
+    assert(endpoint->m_source_w == nil);
+    endpoint->m_source_w = dispatch_source_create(DISPATCH_SOURCE_TYPE_WRITE, endpoint->m_fd, 0, dispatch_get_main_queue());
+    dispatch_source_set_event_handler(endpoint->m_source_w, ^{
+            net_dq_endpoint_stop_w(driver, endpoint, base_endpoint);
+            net_dq_endpoint_on_connect(driver, endpoint, base_endpoint);
+        });
+    dispatch_resume(endpoint->m_source_w);
 }
 
 static void net_dq_endpoint_start_w(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint) {
