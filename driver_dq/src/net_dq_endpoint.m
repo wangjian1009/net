@@ -9,6 +9,13 @@
 #include "net_driver.h"
 #include "net_dq_endpoint.h"
 
+static int net_dq_endpoint_start_connect(
+    net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint, net_address_t remote_address);
+static int net_dq_endpoint_start_connect_ipv6(
+    net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint, net_address_t remote_address);
+static int net_dq_endpoint_start_connect_ipv4(
+    net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint, net_address_t remote_address);
+
 static void net_dq_endpoint_on_connect(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint);
 
 static void net_dq_endpoint_start_w_connect(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint);
@@ -19,7 +26,6 @@ static void net_dq_endpoint_stop_r(net_dq_driver_t driver, net_dq_endpoint_t end
 static void net_dq_endpoint_start_do_write(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint);
 static void net_dq_endpoint_stop_do_write(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint);
 
-static int net_dq_endpoint_connect_bind_local_addr(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint);
 static void net_dq_endpoint_connect_log_connect_start(
     net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint, uint8_t is_first);
 static void net_dq_endpoint_connect_log_connect_success(
@@ -89,136 +95,24 @@ int net_dq_endpoint_connect(net_endpoint_t base_endpoint) {
     }
     remote_addr = net_address_resolved(remote_addr);
 
-    struct sockaddr_storage remote_addr_sock;
-    socklen_t remote_addr_sock_len = sizeof(remote_addr_sock);
-    net_address_to_sockaddr(remote_addr, (struct sockaddr *)&remote_addr_sock, &remote_addr_sock_len);
+    int connect_rv = net_dq_endpoint_start_connect(driver, endpoint, base_endpoint, remote_addr);
 
-    int domain;
-    switch(net_address_type(remote_addr)) {
-    case net_address_ipv4:
-        domain = AF_INET;
-        break;
-    case net_address_ipv6:
-        domain = AF_INET6;
-        break;
-    case net_address_domain:
-        CPE_ERROR(
-            driver->m_em, "dq: %s: connect not support domain address!",
-            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
-        return -1;
-    }
-
-CREATE_SOCKET:
-    endpoint->m_fd = cpe_sock_open(domain, SOCK_STREAM, IPPROTO_TCP);
-    if (endpoint->m_fd == -1) {
-        CPE_ERROR(
-            driver->m_em, "dq: %s: create socket fail, errno=%d (%s)",
-            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
-            cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-        return -1;
-    }
-
-    if (net_dq_endpoint_connect_bind_local_addr(driver, endpoint, base_endpoint) != 0) {
-        cpe_sock_close(endpoint->m_fd);
-        endpoint->m_fd = -1;
-        return -1;
-    }
-
-    if (cpe_sock_set_none_block(endpoint->m_fd, 1) != 0) {
-        CPE_ERROR(
-            driver->m_em, "dq: %s: set non-block fail, errno=%d (%s)",
-            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
-            cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-        cpe_sock_close(endpoint->m_fd);
-        endpoint->m_fd = -1;
-        return -1;
-    }
-
-    if (cpe_sock_set_no_sigpipe(endpoint->m_fd, 1) != 0) {
-        CPE_ERROR(
-            driver->m_em, "dq: %s: set no-sig-pipe fail, errno=%d (%s)",
-            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
-            cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-        cpe_sock_close(endpoint->m_fd);
-        endpoint->m_fd = -1;
-        return -1;
-    }
-
-    if (cpe_connect(endpoint->m_fd, (struct sockaddr *)&remote_addr_sock, remote_addr_sock_len) != 0) {
-        if (cpe_sock_errno() == ENETUNREACH) {
-            if (domain == AF_INET && net_address_type(remote_addr) == net_address_ipv4) {
-                /*ipv4网络不可达，尝试ipv6 */
-
-                net_address_t remote_addr_ipv6 = net_address_create_ipv6_from_ipv4_nat(net_endpoint_schedule(base_endpoint), remote_addr);
-                if (remote_addr_ipv6 == NULL) {
-                    CPE_ERROR(
-                        driver->m_em, "dq: %s: ipv4 network unreachable, switch to ipv6, create address fail",
-                        net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
-                    cpe_sock_close(endpoint->m_fd);
-                    endpoint->m_fd = -1;
-                    return -1;
-                }
-
-                if (net_endpoint_driver_debug(base_endpoint) >= 0) {
-                    char addr_buf[INET6_ADDRSTRLEN + 32];
-                    cpe_str_dup(
-                        addr_buf, sizeof(addr_buf),
-                        net_address_dump(net_dq_driver_tmp_buffer(driver), remote_addr_ipv6));
-                    
-                    CPE_INFO(
-                        driver->m_em, "dq: %s: ipv4 network unreachable, try ipv6 %s!",
-                        net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
-                        addr_buf);
-                }
-
-                domain = AF_INET6;
-                
-                remote_addr_sock_len = sizeof(remote_addr_sock);
-                net_address_to_sockaddr(remote_addr_ipv6, (struct sockaddr *)&remote_addr_sock, &remote_addr_sock_len);
-                net_address_free(remote_addr_ipv6);
-                
-                cpe_sock_close(endpoint->m_fd);
-                endpoint->m_fd = -1;
-
-                goto CREATE_SOCKET;
-            }
-            else if (domain == AF_INET6 && net_address_type(remote_addr) == net_address_ipv6 && net_address_ipv6_is_ipv4_nat(remote_addr)) {
-                /*ipv6网络不可达，且是一个ipv4地址的封装，尝试ipv4网络 */
-                net_address_t remote_addr_ipv4 = net_address_create_ipv4_from_ipv6_nat(net_endpoint_schedule(base_endpoint), remote_addr);
-                if (remote_addr_ipv4 == NULL) {
-                    CPE_ERROR(
-                        driver->m_em, "dq: %s: ipv6 network unreachable, try ipv4(nat), create address fail",
-                        net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
-                    cpe_sock_close(endpoint->m_fd);
-                    endpoint->m_fd = -1;
-                    return -1;
-                }
-
-                if (net_endpoint_driver_debug(base_endpoint) >= 0) {
-                    char addr_buf[INET6_ADDRSTRLEN + 32];
-                    cpe_str_dup(
-                        addr_buf, sizeof(addr_buf),
-                        net_address_dump(net_dq_driver_tmp_buffer(driver), remote_addr_ipv4));
-                    
-                    CPE_INFO(
-                        driver->m_em, "dq: %s: ipv6 network unreachable, try ipv4 %s!",
-                        net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
-                        addr_buf);
-                }
-                
-                domain = AF_INET;
-                
-                remote_addr_sock_len = sizeof(remote_addr_sock);
-                net_address_to_sockaddr(remote_addr_ipv4, (struct sockaddr *)&remote_addr_sock, &remote_addr_sock_len);
-                net_address_free(remote_addr_ipv4);
-                
-                cpe_sock_close(endpoint->m_fd);
-                endpoint->m_fd = -1;
-                
-                goto CREATE_SOCKET;
-            }
+    if (connect_rv != 0 && cpe_sock_errno() == ENETUNREACH) {
+        if (net_address_type(remote_addr) == net_address_ipv4) {
+            /*ipv4网络不可达，尝试ipv6 */
+            cpe_sock_close(endpoint->m_fd);
+            endpoint->m_fd = -1;
+            connect_rv = net_dq_endpoint_start_connect_ipv6(driver, endpoint, base_endpoint, remote_addr);
         }
+        else if (net_address_type(remote_addr) == net_address_ipv6 && net_address_ipv6_is_ipv4_nat(remote_addr)) {
+            /*ipv6网络不可达，且是一个ipv4地址的封装，尝试ipv4网络 */
+            cpe_sock_close(endpoint->m_fd);
+            endpoint->m_fd = -1;
+            connect_rv = net_dq_endpoint_start_connect_ipv4(driver, endpoint, base_endpoint, remote_addr);
+        }
+    }
 
+    if (connect_rv != 0) {
         if (cpe_sock_errno() == EINPROGRESS || cpe_sock_errno() == EWOULDBLOCK) {
             if (net_endpoint_driver_debug(base_endpoint)) {
                 net_dq_endpoint_connect_log_connect_start(driver, endpoint, base_endpoint, 1);
@@ -239,6 +133,7 @@ CREATE_SOCKET:
         }
     }
     else {
+        /*连接成功 */
         if (net_endpoint_driver_debug(base_endpoint)) {
             net_dq_endpoint_connect_log_connect_success(driver, endpoint, base_endpoint);
         }
@@ -649,50 +544,6 @@ static void net_dq_endpoint_stop_do_write(net_dq_driver_t driver, net_dq_endpoin
     endpoint->m_source_do_write = nil;
 }
 
-static int net_dq_endpoint_connect_bind_local_addr(
-    net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint)
-{
-    net_address_t local_address = net_endpoint_address(base_endpoint);
-    if (local_address == NULL) return 0;
-
-    struct sockaddr_storage local_addr_sock;
-    socklen_t local_addr_sock_len;
-    bzero(&local_addr_sock, sizeof(local_addr_sock));
-    local_addr_sock_len = sizeof(local_addr_sock);
-
-    if (net_address_to_sockaddr(local_address, (struct sockaddr *)&local_addr_sock, &local_addr_sock_len) != 0) {
-        CPE_ERROR(
-            driver->m_em, "dq: %s: connect not support connect to domain address!",
-            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
-        return -1;
-    }
-
-    if (cpe_sock_set_reuseaddr(endpoint->m_fd, 1) != 0) {
-        CPE_ERROR(
-            driver->m_em, "dq: %s: set sock reuse address fail, errno=%d (%s)",
-            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
-            cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-        cpe_sock_close(endpoint->m_fd);
-        endpoint->m_fd = -1;
-        return -1;
-    }
-
-    if(cpe_bind(endpoint->m_fd, (struct sockaddr *)&local_addr_sock, local_addr_sock_len) != 0) {
-        char local_addr_buf[128];
-        cpe_str_dup(
-            local_addr_buf, sizeof(local_addr_buf),
-            net_address_dump(net_dq_driver_tmp_buffer(driver), local_address));
-
-        CPE_ERROR(
-            driver->m_em, "dq: %s: bind local address %s fail, errno=%d (%s)",
-            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint), local_addr_buf,
-            cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-        return -1;
-    }
-
-    return 0;
-}
-
 static void net_dq_endpoint_connect_log_connect_start(
     net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint, uint8_t is_first)
 {
@@ -737,4 +588,156 @@ static void net_dq_endpoint_connect_log_connect_success(
             driver->m_em, "dq: %s: connect success",
             net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
     }
+}
+
+static int net_dq_endpoint_start_connect(
+    net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint, net_address_t remote_addr)
+{
+    struct sockaddr_storage remote_addr_sock;
+    socklen_t remote_addr_sock_len = sizeof(remote_addr_sock);
+    net_address_to_sockaddr(remote_addr, (struct sockaddr *)&remote_addr_sock, &remote_addr_sock_len);
+
+    int domain;
+    switch(net_address_type(remote_addr)) {
+    case net_address_ipv4:
+        domain = AF_INET;
+        break;
+    case net_address_ipv6:
+        domain = AF_INET6;
+        break;
+    case net_address_domain:
+        CPE_ERROR(
+            driver->m_em, "dq: %s: connect not support domain address!",
+            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
+        return -1;
+    }
+
+    endpoint->m_fd = cpe_sock_open(domain, SOCK_STREAM, IPPROTO_TCP);
+    if (endpoint->m_fd == -1) {
+        CPE_ERROR(
+            driver->m_em, "dq: %s: create socket fail, errno=%d (%s)",
+            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
+            cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+        return -1;
+    }
+
+    net_address_t local_address = net_endpoint_address(base_endpoint);
+    if (local_address) {
+        struct sockaddr_storage local_addr_sock;
+        socklen_t local_addr_sock_len;
+        bzero(&local_addr_sock, sizeof(local_addr_sock));
+        local_addr_sock_len = sizeof(local_addr_sock);
+
+        if (net_address_to_sockaddr(local_address, (struct sockaddr *)&local_addr_sock, &local_addr_sock_len) != 0) {
+            CPE_ERROR(
+                driver->m_em, "dq: %s: connect not support connect to domain address!",
+                net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
+            return -1;
+        }
+
+        if (cpe_sock_set_reuseaddr(endpoint->m_fd, 1) != 0) {
+            CPE_ERROR(
+                driver->m_em, "dq: %s: set sock reuse address fail, errno=%d (%s)",
+                net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
+                cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+            cpe_sock_close(endpoint->m_fd);
+            endpoint->m_fd = -1;
+            return -1;
+        }
+
+        if(cpe_bind(endpoint->m_fd, (struct sockaddr *)&local_addr_sock, local_addr_sock_len) != 0) {
+            char local_addr_buf[128];
+            cpe_str_dup(
+                local_addr_buf, sizeof(local_addr_buf),
+                net_address_dump(net_dq_driver_tmp_buffer(driver), local_address));
+
+            CPE_ERROR(
+                driver->m_em, "dq: %s: bind local address %s fail, errno=%d (%s)",
+                net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint), local_addr_buf,
+                cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+            return -1;
+        }
+    }
+
+    if (cpe_sock_set_none_block(endpoint->m_fd, 1) != 0) {
+        CPE_ERROR(
+            driver->m_em, "dq: %s: set non-block fail, errno=%d (%s)",
+            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
+            cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+        cpe_sock_close(endpoint->m_fd);
+        endpoint->m_fd = -1;
+        return -1;
+    }
+
+    if (cpe_sock_set_no_sigpipe(endpoint->m_fd, 1) != 0) {
+        CPE_ERROR(
+            driver->m_em, "dq: %s: set no-sig-pipe fail, errno=%d (%s)",
+            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
+            cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+        cpe_sock_close(endpoint->m_fd);
+        endpoint->m_fd = -1;
+        return -1;
+    }
+
+    return cpe_connect(endpoint->m_fd, (struct sockaddr *)&remote_addr_sock, remote_addr_sock_len);
+}
+
+static int net_dq_endpoint_start_connect_ipv6(
+    net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint, net_address_t remote_addr)
+{
+    net_address_t remote_addr_ipv6 = net_address_create_ipv6_from_ipv4_nat(net_endpoint_schedule(base_endpoint), remote_addr);
+    if (remote_addr_ipv6 == NULL) {
+        CPE_ERROR(
+            driver->m_em, "dq: %s: ipv4 network unreachable, switch to ipv6, create address fail",
+            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
+        return -1;
+    }
+
+    if (net_endpoint_driver_debug(base_endpoint) >= 0) {
+        char addr_buf[INET6_ADDRSTRLEN + 32];
+        cpe_str_dup(
+            addr_buf, sizeof(addr_buf),
+            net_address_dump(net_dq_driver_tmp_buffer(driver), remote_addr_ipv6));
+                    
+        CPE_INFO(
+            driver->m_em, "dq: %s: ipv4 network unreachable, try ipv6 %s!",
+            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
+            addr_buf);
+    }
+
+    int rv = net_dq_endpoint_start_connect(driver, endpoint, base_endpoint, remote_addr_ipv6);
+
+    net_address_free(remote_addr_ipv6);
+
+    return rv;
+}
+
+static int net_dq_endpoint_start_connect_ipv4(
+    net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint, net_address_t remote_addr)
+{
+    net_address_t remote_addr_ipv4 = net_address_create_ipv4_from_ipv6_nat(net_endpoint_schedule(base_endpoint), remote_addr);
+    if (remote_addr_ipv4 == NULL) {
+        CPE_ERROR(
+            driver->m_em, "dq: %s: ipv6 network unreachable, try ipv4(nat), create address fail",
+            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
+        return -1;
+    }
+
+    if (net_endpoint_driver_debug(base_endpoint) >= 0) {
+        char addr_buf[INET6_ADDRSTRLEN + 32];
+        cpe_str_dup(
+            addr_buf, sizeof(addr_buf),
+            net_address_dump(net_dq_driver_tmp_buffer(driver), remote_addr_ipv4));
+                    
+        CPE_INFO(
+            driver->m_em, "dq: %s: ipv6 network unreachable, try ipv4 %s!",
+            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
+            addr_buf);
+    }
+                
+    int rv = net_dq_endpoint_start_connect(driver, endpoint, base_endpoint, remote_addr_ipv4);
+
+    net_address_free(remote_addr_ipv4);
+
+    return rv;
 }
