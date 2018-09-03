@@ -244,9 +244,9 @@ net_address_t net_address_create_ipv6_from_ipv4_nat(net_schedule_t schedule, net
 
     bzero(&addr_ipv4v6->m_ipv6, sizeof(addr_ipv4v6->m_ipv6));
 
-    addr_ipv4v6->m_ipv6.u8[9] = 0x64;
-    addr_ipv4v6->m_ipv6.u8[10] = 0xFF;
-    addr_ipv4v6->m_ipv6.u8[11] = 0x9B;
+    addr_ipv4v6->m_ipv6.u8[0] = 0x64;
+    addr_ipv4v6->m_ipv6.u8[1] = 0xFF;
+    addr_ipv4v6->m_ipv6.u8[2] = 0x9B;
     addr_ipv4v6->m_ipv6.u32[3] = ((struct net_address_ipv4v6 *)addr_ipv4)->m_ipv4.u32;
 
     return (net_address_t)addr_ipv4v6;
@@ -487,11 +487,12 @@ uint8_t net_address_ipv6_is_ipv4_nat(net_address_t address) {
 
     struct net_address_ipv4v6 * ipv4v6 = (struct net_address_ipv4v6 *)address;
 
-    return (ipv4v6->m_ipv6.u64[0] == 0
-            && ipv4v6->m_ipv6.u8[8] == 0
-            && ipv4v6->m_ipv6.u8[9] == 0x64
-            && ipv4v6->m_ipv6.u8[10] == 0xFF
-            && ipv4v6->m_ipv6.u8[10] == 0x94)
+    return (ipv4v6->m_ipv6.u8[0] == 0x64
+            && ipv4v6->m_ipv6.u8[1] == 0xFF
+            && ipv4v6->m_ipv6.u8[2] == 0x94
+            && ipv4v6->m_ipv6.u8[3] == 0x00
+            && ipv4v6->m_ipv6.u32[1] == 0x00000000
+            && ipv4v6->m_ipv6.u32[2] == 0x00000000)
         ? 1
         : 0;
 }
