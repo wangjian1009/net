@@ -11,10 +11,6 @@
 
 static int net_dq_endpoint_start_connect(
     net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint, net_address_t remote_address);
-static int net_dq_endpoint_start_connect_ipv6(
-    net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint, net_address_t remote_address);
-static int net_dq_endpoint_start_connect_ipv4(
-    net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint, net_address_t remote_address);
 
 static void net_dq_endpoint_on_connect(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint);
 
@@ -95,23 +91,83 @@ int net_dq_endpoint_connect(net_endpoint_t base_endpoint) {
     }
     remote_addr = net_address_resolved(remote_addr);
 
-    int connect_rv = net_dq_endpoint_start_connect(driver, endpoint, base_endpoint, remote_addr);
-
-    if (connect_rv != 0 && cpe_sock_errno() == ENETUNREACH) {
-        if (net_address_type(remote_addr) == net_address_ipv4) {
-            /*ipv4网络不可达，尝试ipv6 */
-            cpe_sock_close(endpoint->m_fd);
-            endpoint->m_fd = -1;
-            connect_rv = net_dq_endpoint_start_connect_ipv6(driver, endpoint, base_endpoint, remote_addr);
-        }
-        else if (net_address_type(remote_addr) == net_address_ipv6 && net_address_ipv6_is_ipv4_nat(remote_addr)) {
-            /*ipv6网络不可达，且是一个ipv4地址的封装，尝试ipv4网络 */
-            cpe_sock_close(endpoint->m_fd);
-            endpoint->m_fd = -1;
-            connect_rv = net_dq_endpoint_start_connect_ipv4(driver, endpoint, base_endpoint, remote_addr);
-        }
+    if (net_address_type(remote_addr) != net_address_ipv4 && net_address_type(remote_addr) != net_address_ipv6) {
+        CPE_ERROR(
+            driver->m_em, "dq: %s: connect not support domain address!",
+            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
+        return -1;
     }
+    
+    int connect_rv;
 
+    switch(net_schedule_local_ip_stack(net_endpoint_schedule(base_endpoint))) {
+    case net_local_ip_stack_none:
+        CPE_ERROR(
+            driver->m_em, "dq: %s: connect not in no network env!",
+            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
+        return -1;
+    case net_local_ip_stack_ipv4:
+        if (net_address_type(remote_addr) == net_address_ipv6) {
+            if (net_address_ipv6_is_ipv4_map(remote_addr)) {
+                net_address_t remote_addr_ipv4 = net_address_create_ipv4_from_ipv6_map(net_endpoint_schedule(base_endpoint), remote_addr);
+                if (remote_addr_ipv4 == NULL) {
+                    CPE_ERROR(
+                        driver->m_em, "dq: %s: convert ipv6 address to ipv4(map) fail",
+                        net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
+                    return -1;
+                }
+
+                connect_rv = net_dq_endpoint_start_connect(driver, endpoint, base_endpoint, remote_addr_ipv4);
+
+                net_address_free(remote_addr_ipv4);
+            }
+            else if (net_address_ipv6_is_ipv4_nat(remote_addr)) {
+                net_address_t remote_addr_ipv4 = net_address_create_ipv4_from_ipv6_nat(net_endpoint_schedule(base_endpoint), remote_addr);
+                if (remote_addr_ipv4 == NULL) {
+                    CPE_ERROR(
+                        driver->m_em, "dq: %s: convert ipv6 address to ipv4(nat) fail",
+                        net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
+                    return -1;
+                }
+
+                connect_rv = net_dq_endpoint_start_connect(driver, endpoint, base_endpoint, remote_addr_ipv4);
+
+                net_address_free(remote_addr_ipv4);
+            }
+            else {
+                CPE_ERROR(
+                    driver->m_em, "dq: %s: can`t connect to ipv6 network in ipv4 network env!",
+                    net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
+                return -1;
+            }
+        }
+        else {
+            connect_rv = net_dq_endpoint_start_connect(driver, endpoint, base_endpoint, remote_addr);
+        }
+        break;
+    case net_local_ip_stack_ipv6:
+        if (net_address_type(remote_addr) == net_address_ipv4) {
+            net_address_t remote_addr_ipv6 = net_address_create_ipv6_from_ipv4_nat(net_endpoint_schedule(base_endpoint), remote_addr);
+            if (remote_addr_ipv6 == NULL) {
+                CPE_ERROR(
+                    driver->m_em, "dq: %s: convert ipv4 address to ipv6(nat) fail",
+                    net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
+                return -1;
+            }
+
+            connect_rv = net_dq_endpoint_start_connect(driver, endpoint, base_endpoint, remote_addr_ipv6);
+
+            net_address_free(remote_addr_ipv6);
+        }
+        else {
+            connect_rv = net_dq_endpoint_start_connect(driver, endpoint, base_endpoint, remote_addr);
+        }
+        break;
+    case net_local_ip_stack_dual:
+        connect_rv = net_dq_endpoint_start_connect(driver, endpoint, base_endpoint, remote_addr);
+        break;
+    }
+    
     if (connect_rv != 0) {
         if (cpe_sock_errno() == EINPROGRESS || cpe_sock_errno() == EWOULDBLOCK) {
             if (net_endpoint_driver_debug(base_endpoint)) {
@@ -680,64 +736,4 @@ static int net_dq_endpoint_start_connect(
     }
 
     return cpe_connect(endpoint->m_fd, (struct sockaddr *)&remote_addr_sock, remote_addr_sock_len);
-}
-
-static int net_dq_endpoint_start_connect_ipv6(
-    net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint, net_address_t remote_addr)
-{
-    net_address_t remote_addr_ipv6 = net_address_create_ipv6_from_ipv4_nat(net_endpoint_schedule(base_endpoint), remote_addr);
-    if (remote_addr_ipv6 == NULL) {
-        CPE_ERROR(
-            driver->m_em, "dq: %s: ipv4 network unreachable, switch to ipv6, create address fail",
-            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
-        return -1;
-    }
-
-    if (net_endpoint_driver_debug(base_endpoint) >= 0) {
-        char addr_buf[INET6_ADDRSTRLEN + 32];
-        cpe_str_dup(
-            addr_buf, sizeof(addr_buf),
-            net_address_dump(net_dq_driver_tmp_buffer(driver), remote_addr_ipv6));
-                    
-        CPE_INFO(
-            driver->m_em, "dq: %s: ipv4 network unreachable, try ipv6 %s!",
-            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
-            addr_buf);
-    }
-
-    int rv = net_dq_endpoint_start_connect(driver, endpoint, base_endpoint, remote_addr_ipv6);
-
-    net_address_free(remote_addr_ipv6);
-
-    return rv;
-}
-
-static int net_dq_endpoint_start_connect_ipv4(
-    net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint, net_address_t remote_addr)
-{
-    net_address_t remote_addr_ipv4 = net_address_create_ipv4_from_ipv6_nat(net_endpoint_schedule(base_endpoint), remote_addr);
-    if (remote_addr_ipv4 == NULL) {
-        CPE_ERROR(
-            driver->m_em, "dq: %s: ipv6 network unreachable, try ipv4(nat), create address fail",
-            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
-        return -1;
-    }
-
-    if (net_endpoint_driver_debug(base_endpoint) >= 0) {
-        char addr_buf[INET6_ADDRSTRLEN + 32];
-        cpe_str_dup(
-            addr_buf, sizeof(addr_buf),
-            net_address_dump(net_dq_driver_tmp_buffer(driver), remote_addr_ipv4));
-                    
-        CPE_INFO(
-            driver->m_em, "dq: %s: ipv6 network unreachable, try ipv4 %s!",
-            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
-            addr_buf);
-    }
-                
-    int rv = net_dq_endpoint_start_connect(driver, endpoint, base_endpoint, remote_addr_ipv4);
-
-    net_address_free(remote_addr_ipv4);
-
-    return rv;
 }
