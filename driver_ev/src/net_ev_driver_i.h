@@ -12,11 +12,16 @@ typedef struct net_ev_dgram * net_ev_dgram_t;
 typedef struct net_ev_timer * net_ev_timer_t;
 
 struct net_ev_driver {
+    mem_allocrator_t m_alloc;
+    error_monitor_t m_em;
     struct ev_loop * m_ev_loop;
     net_ev_driver_sock_create_process_fun_t m_sock_process_fun;
     void * m_sock_process_ctx;
     net_data_monitor_fun_t m_data_monitor_fun;
     void * m_data_monitor_ctx;
 };
+
+net_schedule_t net_ev_driver_schedule(net_ev_driver_t driver);
+mem_buffer_t net_ev_driver_tmp_buffer(net_ev_driver_t driver);
 
 #endif

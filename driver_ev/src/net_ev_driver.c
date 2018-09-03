@@ -54,7 +54,10 @@ net_ev_driver_create(net_schedule_t schedule, struct ev_loop * ev_loop) {
 
 static int net_ev_driver_init(net_driver_t base_driver) {
     net_ev_driver_t driver = net_driver_data(base_driver);
+    net_schedule_t schedule = net_driver_schedule(base_driver);
 
+    driver->m_alloc = net_schedule_allocrator(schedule);
+    driver->m_em = net_schedule_em(schedule);
     driver->m_ev_loop = NULL;
     driver->m_sock_process_fun = NULL;
     driver->m_sock_process_ctx = NULL;
@@ -88,3 +91,10 @@ void net_ev_driver_set_data_monitor(
     driver->m_data_monitor_ctx = monitor_ctx;
 }
 
+net_schedule_t net_ev_driver_schedule(net_ev_driver_t driver) {
+    return net_driver_schedule(net_driver_from_data(driver));
+}
+
+mem_buffer_t net_ev_driver_tmp_buffer(net_ev_driver_t driver) {
+    return net_schedule_tmp_buffer(net_ev_driver_schedule(driver));
+}
