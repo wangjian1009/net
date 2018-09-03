@@ -581,7 +581,7 @@ static int net_ev_endpoint_start_connect_ipv6(
         return -1;
     }
 
-    if (net_endpoint_driver_debug(base_endpoint) >= 0) {
+    if (net_endpoint_driver_debug(base_endpoint) >= 1) {
         char addr_buf[INET6_ADDRSTRLEN + 32];
         cpe_str_dup(
             addr_buf, sizeof(addr_buf),
@@ -611,7 +611,7 @@ static int net_ev_endpoint_start_connect_ipv4(
         return -1;
     }
 
-    if (net_endpoint_driver_debug(base_endpoint) >= 0) {
+    if (net_endpoint_driver_debug(base_endpoint) >= 1) {
         char addr_buf[INET6_ADDRSTRLEN + 32];
         cpe_str_dup(
             addr_buf, sizeof(addr_buf),
