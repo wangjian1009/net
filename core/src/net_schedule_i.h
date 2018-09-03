@@ -34,6 +34,8 @@ struct net_schedule {
 
     net_debug_setup_list_t m_debug_setups;
 
+    net_local_ip_stack_t m_local_ip_stack;
+
     /*dns resolver*/
     void * m_dns_resolver_ctx;
     void (*m_dns_resolver_ctx_fini_fun)(void * ctx);

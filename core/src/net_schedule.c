@@ -41,7 +41,8 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em, uint32_t common_
     schedule->m_direct_driver = NULL;
     schedule->m_endpoint_max_id = 0;
     schedule->m_endpoint_protocol_capacity = 0;
-
+    schedule->m_local_ip_stack = net_local_ip_stack_ipv4;
+    
     TAILQ_INIT(&schedule->m_debug_setups);
     TAILQ_INIT(&schedule->m_drivers);
     TAILQ_INIT(&schedule->m_protocols);

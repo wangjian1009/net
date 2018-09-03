@@ -84,6 +84,14 @@ typedef void (*net_data_monitor_fun_t) (
 typedef void (*net_dns_query_callback_fun_t)(void * ctx, net_address_t main_address, net_address_it_t all_address);
 typedef void (*net_dns_query_ctx_free_fun_t)(void * ctx);
 
+/*ipstack*/
+typedef enum net_local_ip_stack {
+	net_local_ip_stack_none = 0,
+    net_local_ip_stack_ipv4 = 1,
+    net_local_ip_stack_ipv6 = 2,
+	net_local_ip_stack_dual = 3,
+} net_local_ip_stack_t;
+
 NET_END_DECL
 
 #endif
