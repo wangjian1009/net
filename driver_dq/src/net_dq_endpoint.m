@@ -16,12 +16,16 @@ static void net_dq_endpoint_stop_w(net_dq_driver_t driver, net_dq_endpoint_t end
 static void net_dq_endpoint_start_r(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint);
 static void net_dq_endpoint_stop_r(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint);
 
+static void net_dq_endpoint_start_do_write(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint);
+static void net_dq_endpoint_stop_do_write(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint);
+
 int net_dq_endpoint_init(net_endpoint_t base_endpoint) {
     net_dq_endpoint_t endpoint = net_endpoint_data(base_endpoint);
 
     endpoint->m_fd = -1;
     endpoint->m_source_r = nil;
     endpoint->m_source_w = nil;
+    endpoint->m_source_do_write = nil;
 
     return 0;
 }
@@ -38,6 +42,10 @@ void net_dq_endpoint_fini(net_endpoint_t base_endpoint) {
         net_dq_endpoint_stop_w(driver, endpoint, base_endpoint);
     }
 
+    if (endpoint->m_source_do_write) {
+        net_dq_endpoint_stop_do_write(driver, endpoint, base_endpoint);
+    }
+
     if (endpoint->m_fd != -1) {
         cpe_sock_close(endpoint->m_fd);
         endpoint->m_fd = -1;
@@ -48,7 +56,11 @@ int net_dq_endpoint_on_output(net_endpoint_t base_endpoint) {
     net_dq_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     net_dq_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
 
-    return net_dq_endpoint_on_write(driver, endpoint, base_endpoint);
+    if (endpoint->m_source_do_write == nil) {
+        net_dq_endpoint_start_do_write(driver, endpoint, base_endpoint);
+    }
+
+    return 0;
 }
 
 int net_dq_endpoint_connect(net_endpoint_t base_endpoint) {
@@ -602,7 +614,7 @@ static void net_dq_endpoint_on_connect(net_dq_driver_t driver, net_dq_endpoint_t
 
     if (err != 0) {
         if (cpe_sock_errno() == EINPROGRESS || cpe_sock_errno() == EWOULDBLOCK) {
-            if (net_endpoint_driver_debug(base_endpoint)) {
+            if (net_endpoint_driver_debug(base_endpoint) >= 2) {
                 CPE_INFO(
                     driver->m_em, "dq: %s: connect still in progress",
                     net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
@@ -618,7 +630,7 @@ static void net_dq_endpoint_on_connect(net_dq_driver_t driver, net_dq_endpoint_t
         }
         else {
             CPE_ERROR(
-                driver->m_em, "dq: %s: connect error, errno=%d (%s)",
+                driver->m_em, "dq: %s: connect error(callback), errno=%d (%s)",
                 net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
                 err, cpe_sock_errstr(err));
             if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
@@ -712,3 +724,29 @@ static void net_dq_endpoint_stop_r(net_dq_driver_t driver, net_dq_endpoint_t end
     dispatch_release(endpoint->m_source_r);
     endpoint->m_source_r = nil;
 }
+
+static void net_dq_endpoint_start_do_write(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint) {
+    assert(endpoint->m_source_do_write == NULL);
+    
+    endpoint->m_source_do_write = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_main_queue());
+		
+    dispatch_source_set_event_handler(
+        endpoint->m_source_do_write,
+        ^{
+            net_dq_endpoint_stop_do_write(driver, endpoint, base_endpoint);
+            net_dq_endpoint_on_write(driver, endpoint, base_endpoint);
+        });
+
+    dispatch_source_set_timer(endpoint->m_source_do_write, DISPATCH_TIME_NOW, 0, 0);
+    dispatch_resume(endpoint->m_source_do_write);
+}
+
+static void net_dq_endpoint_stop_do_write(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint) {
+    assert(endpoint->m_source_do_write != NULL);
+    
+    dispatch_source_set_event_handler(endpoint->m_source_do_write, nil);
+    dispatch_source_cancel(endpoint->m_source_do_write);
+    dispatch_release(endpoint->m_source_do_write);
+    endpoint->m_source_do_write = nil;
+}
+
