@@ -19,6 +19,12 @@ static void net_dq_endpoint_stop_r(net_dq_driver_t driver, net_dq_endpoint_t end
 static void net_dq_endpoint_start_do_write(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint);
 static void net_dq_endpoint_stop_do_write(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint);
 
+static int net_dq_endpoint_connect_bind_local_addr(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint);
+static void net_dq_endpoint_connect_log_connect_start(
+    net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint, uint8_t is_first);
+static void net_dq_endpoint_connect_log_connect_success(
+    net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint);
+
 int net_dq_endpoint_init(net_endpoint_t base_endpoint) {
     net_dq_endpoint_t endpoint = net_endpoint_data(base_endpoint);
 
@@ -112,63 +118,7 @@ CREATE_SOCKET:
         return -1;
     }
 
-    struct sockaddr_storage local_addr_sock;
-    socklen_t local_addr_sock_len;
-    bzero(&local_addr_sock, sizeof(local_addr_sock));
-    
-    net_address_t local_address = net_endpoint_address(base_endpoint);
-    if (local_address) {
-        local_addr_sock_len = sizeof(local_addr_sock);
-
-        if (net_address_to_sockaddr(local_address, (struct sockaddr *)&local_addr_sock, &local_addr_sock_len) != 0) {
-            CPE_ERROR(
-                driver->m_em, "dq: %s: connect not support connect to domain address!",
-                net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
-            return -1;
-        }
-    }
-    else {
-        if (domain == AF_INET) {
-            struct sockaddr_in * s = (struct sockaddr_in *)&local_addr_sock;
-            s->sin_len         = sizeof(*s);
-            s->sin_family      = AF_INET;
-            s->sin_port        = 0;
-            s->sin_addr.s_addr = htonl(INADDR_ANY);
-            local_addr_sock_len = sizeof(*s);
-        }
-        else {
-            assert(domain == AF_INET6);
-
-            struct sockaddr_in6 * s = (struct sockaddr_in6 *)&local_addr_sock;
-            s->sin6_len       = sizeof(*s);
-            s->sin6_family    = AF_INET6;
-            s->sin6_port      = 0;
-            s->sin6_addr      = in6addr_any;
-            local_addr_sock_len = sizeof(*s);
-        }
-    }
-
-    if (cpe_sock_set_reuseaddr(endpoint->m_fd, 1) != 0) {
-        CPE_ERROR(
-            driver->m_em, "dq: %s: set sock reuse address fail, errno=%d (%s)",
-            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
-            cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-        cpe_sock_close(endpoint->m_fd);
-        endpoint->m_fd = -1;
-        return -1;
-    }
-
-    if(cpe_bind(endpoint->m_fd, (struct sockaddr *)&local_addr_sock, local_addr_sock_len) != 0) {
-        char local_addr_buf[128];
-        cpe_str_dup(
-            local_addr_buf, sizeof(local_addr_buf),
-            net_address_dump(net_dq_driver_tmp_buffer(driver), local_address));
-
-        CPE_ERROR(
-            driver->m_em, "dq: %s: bind local address %s fail, errno=%d (%s)",
-            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint), local_addr_buf,
-            cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-
+    if (net_dq_endpoint_connect_bind_local_addr(driver, endpoint, base_endpoint) != 0) {
         cpe_sock_close(endpoint->m_fd);
         endpoint->m_fd = -1;
         return -1;
@@ -271,22 +221,7 @@ CREATE_SOCKET:
 
         if (cpe_sock_errno() == EINPROGRESS || cpe_sock_errno() == EWOULDBLOCK) {
             if (net_endpoint_driver_debug(base_endpoint)) {
-                if (local_address) {
-                    char local_addr_buf[128];
-                    cpe_str_dup(
-                        local_addr_buf, sizeof(local_addr_buf),
-                        net_address_dump(net_dq_driver_tmp_buffer(driver), local_address));
-
-                    CPE_INFO(
-                        driver->m_em, "dq: %s: connect start (local-address=%s)",
-                        net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
-                        local_addr_buf);
-                }
-                else {
-                    CPE_INFO(
-                        driver->m_em, "dq: %s: connect start",
-                        net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
-                }
+                net_dq_endpoint_connect_log_connect_start(driver, endpoint, base_endpoint, 1);
             }
 
             net_dq_endpoint_start_w_connect(driver, endpoint, base_endpoint);
@@ -305,22 +240,7 @@ CREATE_SOCKET:
     }
     else {
         if (net_endpoint_driver_debug(base_endpoint)) {
-            if (local_address) {
-                char local_addr_buf[128];
-                cpe_str_dup(
-                    local_addr_buf, sizeof(local_addr_buf),
-                    net_address_dump(net_dq_driver_tmp_buffer(driver), local_address));
-
-                CPE_INFO(
-                    driver->m_em, "dq: %s: connect success (local-address=%s)",
-                    net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
-                    local_addr_buf);
-            }
-            else {
-                CPE_INFO(
-                    driver->m_em, "dq: %s: connect success",
-                    net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
-            }
+            net_dq_endpoint_connect_log_connect_success(driver, endpoint, base_endpoint);
         }
 
         if (net_endpoint_address(base_endpoint) == NULL) {
@@ -592,9 +512,7 @@ static void net_dq_endpoint_on_connect(net_dq_driver_t driver, net_dq_endpoint_t
     if (err != 0) {
         if (cpe_sock_errno() == EINPROGRESS || cpe_sock_errno() == EWOULDBLOCK) {
             if (net_endpoint_driver_debug(base_endpoint) >= 2) {
-                CPE_INFO(
-                    driver->m_em, "dq: %s: connect still in progress",
-                    net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
+                net_dq_endpoint_connect_log_connect_start(driver, endpoint, base_endpoint, 1);
             }
 
             net_dq_endpoint_start_w_connect(driver, endpoint, base_endpoint);
@@ -731,3 +649,92 @@ static void net_dq_endpoint_stop_do_write(net_dq_driver_t driver, net_dq_endpoin
     endpoint->m_source_do_write = nil;
 }
 
+static int net_dq_endpoint_connect_bind_local_addr(
+    net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint)
+{
+    net_address_t local_address = net_endpoint_address(base_endpoint);
+    if (local_address == NULL) return 0;
+
+    struct sockaddr_storage local_addr_sock;
+    socklen_t local_addr_sock_len;
+    bzero(&local_addr_sock, sizeof(local_addr_sock));
+    local_addr_sock_len = sizeof(local_addr_sock);
+
+    if (net_address_to_sockaddr(local_address, (struct sockaddr *)&local_addr_sock, &local_addr_sock_len) != 0) {
+        CPE_ERROR(
+            driver->m_em, "dq: %s: connect not support connect to domain address!",
+            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
+        return -1;
+    }
+
+    if (cpe_sock_set_reuseaddr(endpoint->m_fd, 1) != 0) {
+        CPE_ERROR(
+            driver->m_em, "dq: %s: set sock reuse address fail, errno=%d (%s)",
+            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
+            cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+        cpe_sock_close(endpoint->m_fd);
+        endpoint->m_fd = -1;
+        return -1;
+    }
+
+    if(cpe_bind(endpoint->m_fd, (struct sockaddr *)&local_addr_sock, local_addr_sock_len) != 0) {
+        char local_addr_buf[128];
+        cpe_str_dup(
+            local_addr_buf, sizeof(local_addr_buf),
+            net_address_dump(net_dq_driver_tmp_buffer(driver), local_address));
+
+        CPE_ERROR(
+            driver->m_em, "dq: %s: bind local address %s fail, errno=%d (%s)",
+            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint), local_addr_buf,
+            cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+        return -1;
+    }
+
+    return 0;
+}
+
+static void net_dq_endpoint_connect_log_connect_start(
+    net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint, uint8_t is_first)
+{
+    net_address_t local_address = net_endpoint_address(base_endpoint);
+    if (local_address) {
+        char local_addr_buf[128];
+        cpe_str_dup(
+            local_addr_buf, sizeof(local_addr_buf),
+            net_address_dump(net_dq_driver_tmp_buffer(driver), local_address));
+
+        CPE_INFO(
+            driver->m_em, "dq: %s: connect %s (local-address=%s)",
+            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
+            local_addr_buf,
+            is_first ? "start" : "restart");
+    }
+    else {
+        CPE_INFO(
+            driver->m_em, "dq: %s: connect %s",
+            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
+            is_first ? "start" : "restart");
+    }
+}
+
+static void net_dq_endpoint_connect_log_connect_success(
+    net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint)
+{
+    net_address_t local_address = net_endpoint_address(base_endpoint);
+    if (local_address) {
+        char local_addr_buf[128];
+        cpe_str_dup(
+            local_addr_buf, sizeof(local_addr_buf),
+            net_address_dump(net_dq_driver_tmp_buffer(driver), local_address));
+
+        CPE_INFO(
+            driver->m_em, "dq: %s: connect success (local-address=%s)",
+            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
+            local_addr_buf);
+    }
+    else {
+        CPE_INFO(
+            driver->m_em, "dq: %s: connect success",
+            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
+    }
+}
