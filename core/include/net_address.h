@@ -35,7 +35,6 @@ net_address_t net_address_create_ipv4(net_schedule_t schedule, const char * addr
 net_address_t net_address_create_ipv4_any(net_schedule_t schedule, uint16_t port);
 net_address_t net_address_create_ipv4_from_data(net_schedule_t schedule, net_address_data_ipv4_t addr, uint16_t port);
 net_address_t net_address_create_ipv4_from_ipv6_map(net_schedule_t schedule, net_address_t address);
-net_address_t net_address_create_ipv4_from_ipv6_nat(net_schedule_t schedule, net_address_t address);
 
 net_address_t net_address_create_ipv6(net_schedule_t schedule, const char * addr, uint16_t port);
 net_address_t net_address_create_ipv6_any(net_schedule_t schedule, uint16_t port);
@@ -80,7 +79,6 @@ net_address_t net_address_resolved(net_address_t address);
 
 /*ipv6*/
 uint8_t net_address_ipv6_is_ipv4_map(net_address_t address);
-uint8_t net_address_ipv6_is_ipv4_nat(net_address_t address);
 
 /**/
 uint32_t net_address_hash(net_address_t address);

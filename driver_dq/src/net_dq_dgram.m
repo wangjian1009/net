@@ -149,19 +149,6 @@ int net_dq_dgram_send(net_dgram_t base_dgram, net_address_t target, void const *
 
                 net_address_free(remote_addr_ipv4);
             }
-            else if (net_address_ipv6_is_ipv4_nat(remote_addr)) {
-                net_address_t remote_addr_ipv4 = net_address_create_ipv4_from_ipv6_nat(schedule, remote_addr);
-                if (remote_addr_ipv4 == NULL) {
-                    CPE_ERROR(
-                        driver->m_em, "dq: dgram: convert ipv6 address %s to ipv4(nat) fail",
-                        net_address_dump(net_dq_driver_tmp_buffer(driver), remote_addr));
-                    return -1;
-                }
-
-                net_address_to_sockaddr(remote_addr_ipv4, (struct sockaddr *)&addr, &addr_len);
-
-                net_address_free(remote_addr_ipv4);
-            }
             else {
                 CPE_ERROR(
                     driver->m_em, "dq: dgram: can`t send to %s in ipv4 network env!",

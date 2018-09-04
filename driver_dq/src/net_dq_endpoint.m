@@ -121,19 +121,6 @@ int net_dq_endpoint_connect(net_endpoint_t base_endpoint) {
 
                 net_address_free(remote_addr_ipv4);
             }
-            else if (net_address_ipv6_is_ipv4_nat(remote_addr)) {
-                net_address_t remote_addr_ipv4 = net_address_create_ipv4_from_ipv6_nat(net_endpoint_schedule(base_endpoint), remote_addr);
-                if (remote_addr_ipv4 == NULL) {
-                    CPE_ERROR(
-                        driver->m_em, "dq: %s: convert ipv6 address to ipv4(nat) fail",
-                        net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
-                    return -1;
-                }
-
-                connect_rv = net_dq_endpoint_start_connect(driver, endpoint, base_endpoint, remote_addr_ipv4);
-
-                net_address_free(remote_addr_ipv4);
-            }
             else {
                 CPE_ERROR(
                     driver->m_em, "dq: %s: can`t connect to ipv6 network in ipv4 network env!",

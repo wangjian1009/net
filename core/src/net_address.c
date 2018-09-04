@@ -1,3 +1,6 @@
+#ifdef __APPLE__
+#include <netdb.h>
+#endif
 #include "assert.h"
 #include "cpe/pal/pal_string.h"
 #include "cpe/pal/pal_strings.h"
@@ -162,31 +165,6 @@ net_address_t net_address_create_ipv4_from_ipv6_map(net_schedule_t schedule, net
     return (net_address_t)addr_ipv4v6;
 }
 
-net_address_t net_address_create_ipv4_from_ipv6_nat(net_schedule_t schedule, net_address_t addr_ipv6) {
-    if (net_address_type(addr_ipv6) != net_address_ipv6) {
-        CPE_ERROR(
-            schedule->m_em, "net_address_create_ipv4_from_ipv6_nat: %s is not ipv6!",
-            net_address_dump(&schedule->m_tmp_buffer, addr_ipv6));
-        return NULL;
-    }
-
-    if (!net_address_ipv6_is_ipv4_nat(addr_ipv6)) {
-        CPE_ERROR(
-            schedule->m_em, "net_address_create_ipv4_from_ipv6_nat: %s is not wrap ipv4!",
-            net_address_dump(&schedule->m_tmp_buffer, addr_ipv6));
-        return NULL;
-    }
-
-    struct net_address_ipv4v6 * ipv6_data = (struct net_address_ipv4v6 *)addr_ipv6;
-        
-    struct net_address_ipv4v6 * addr_ipv4v6 = net_address_create_ipv4v6(schedule, net_address_ipv4, addr_ipv6->m_port);
-    if (addr_ipv4v6 == NULL) return NULL;
-    
-    addr_ipv4v6->m_ipv4.u32 = ipv6_data->m_ipv6.u32[3];
-    
-    return (net_address_t)addr_ipv4v6;
-}
-
 net_address_t net_address_create_ipv6(net_schedule_t schedule, const char * str_addr, uint16_t port) {
     struct sockaddr_storage addr;
     socklen_t addr_len = sizeof(addr);
@@ -240,16 +218,50 @@ net_address_t net_address_create_ipv6_from_ipv4_nat(net_schedule_t schedule, net
         return NULL;
     }
 
-    struct net_address_ipv4v6 * addr_ipv4v6 = net_address_create_ipv4v6(schedule, net_address_ipv6, addr_ipv4->m_port);
+#ifdef __APPLE__
+    char ipv4_str_buf[INET_ADDRSTRLEN];
+    const char *ipv4_str = inet_ntop(
+        AF_INET, &((struct net_address_ipv4v6 *)addr_ipv4)->m_ipv4.u32, ipv4_str_buf, sizeof(ipv4_str_buf));
 
-    bzero(&addr_ipv4v6->m_ipv6, sizeof(addr_ipv4v6->m_ipv6));
+    struct addrinfo hints;
+    struct addrinfo *res0;
+    bzero(&hints, sizeof(hints));
+    hints.ai_family = PF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_DEFAULT;
+    int err = getaddrinfo(ipv4_str, "http", &hints, &res0);
+    if (err != 0) {
+        CPE_ERROR(
+            schedule->m_em,
+            "net_address_create_ipv6_from_ipv4_nat: %s getaddrinfo fail, rv=%d (%s)!",
+            net_address_dump(&schedule->m_tmp_buffer, addr_ipv4),
+            err, gai_strerror(err));
+        return NULL;
+    }
 
-    addr_ipv4v6->m_ipv6.u8[0] = 0x64;
-    addr_ipv4v6->m_ipv6.u8[1] = 0xFF;
-    addr_ipv4v6->m_ipv6.u8[2] = 0x9B;
-    addr_ipv4v6->m_ipv6.u32[3] = ((struct net_address_ipv4v6 *)addr_ipv4)->m_ipv4.u32;
+    struct addrinfo * res;
+    for (res = res0; res; res = res->ai_next) {
+        if (res->ai_family == AF_INET6) {
+            net_address_t result = net_address_create_from_sockaddr(schedule, (struct sockaddr *)res->ai_addr, res->ai_addrlen);
+            net_address_set_port(result, net_address_port(addr_ipv4));
+            freeaddrinfo(res0);
+            return result;
+        }
+    }
 
-    return (net_address_t)addr_ipv4v6;
+    freeaddrinfo(res0);
+    CPE_ERROR(
+        schedule->m_em,
+        "net_address_create_ipv6_from_ipv4_nat: %s getaddrinfo success, no record!",
+        net_address_dump(&schedule->m_tmp_buffer, addr_ipv4));
+    return NULL;
+#else
+    CPE_ERROR(
+        schedule->m_em,
+        "net_address_create_ipv6_from_ipv4_nat: %s not support ipv4 to ipv6 nat!",
+        net_address_dump(&schedule->m_tmp_buffer, addr_ipv4));
+    return NULL;
+#endif    
 }
 
 net_address_t
@@ -293,13 +305,13 @@ net_address_create_from_sockaddr(net_schedule_t schedule, struct sockaddr * addr
 }
 
 int net_address_to_sockaddr(net_address_t address, struct sockaddr * addr, socklen_t * addr_len) {
-TRY_AGAIN:
+TO_SOCKADDR_TRY_AGAIN:
     switch(address->m_type) {
     case net_address_domain: {
         struct net_address_domain * domain = (struct net_address_domain *)address;
         if (domain->m_resolved) {
             address = domain->m_resolved;
-            goto TRY_AGAIN;
+            goto TO_SOCKADDR_TRY_AGAIN;
         }
         else {
             CPE_ERROR(address->m_schedule->m_em, "net_address_to_sockaddr: not support not resolved domain!");
@@ -478,21 +490,6 @@ uint8_t net_address_ipv6_is_ipv4_map(net_address_t address) {
     return (ipv4v6->m_ipv6.u64[0] == 0
             && ipv4v6->m_ipv6.u16[5] == 0
             && ipv4v6->m_ipv6.u16[6] == 0xFFFF)
-        ? 1
-        : 0;
-}
-
-uint8_t net_address_ipv6_is_ipv4_nat(net_address_t address) {
-    if (net_address_type(address) != net_address_ipv6) return 0;
-
-    struct net_address_ipv4v6 * ipv4v6 = (struct net_address_ipv4v6 *)address;
-
-    return (ipv4v6->m_ipv6.u8[0] == 0x64
-            && ipv4v6->m_ipv6.u8[1] == 0xFF
-            && ipv4v6->m_ipv6.u8[2] == 0x94
-            && ipv4v6->m_ipv6.u8[3] == 0x00
-            && ipv4v6->m_ipv6.u32[1] == 0x00000000
-            && ipv4v6->m_ipv6.u32[2] == 0x00000000)
         ? 1
         : 0;
 }
