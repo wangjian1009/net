@@ -5,6 +5,7 @@
 
 struct net_ev_dgram {
     int m_fd;
+    int m_domain;
     struct ev_io m_watcher;
 };
 

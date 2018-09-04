@@ -14,15 +14,13 @@ static void net_ev_endpoint_connect_cb(EV_P_ ev_io *w, int revents);
 
 static int net_ev_endpoint_start_connect(
     net_ev_driver_t driver, net_ev_endpoint_t endpoint, net_endpoint_t base_endpoint, net_address_t remote_address);
-static int net_ev_endpoint_start_connect_ipv6(
-    net_ev_driver_t driver, net_ev_endpoint_t endpoint, net_endpoint_t base_endpoint, net_address_t remote_address);
-static int net_ev_endpoint_start_connect_ipv4(
-    net_ev_driver_t driver, net_ev_endpoint_t endpoint, net_endpoint_t base_endpoint, net_address_t remote_address);
 
 static void net_ev_endpoint_connect_log_connect_start(
     net_ev_driver_t driver, net_ev_endpoint_t endpoint, net_endpoint_t base_endpoint, uint8_t is_first);
 static void net_ev_endpoint_connect_log_connect_success(
     net_ev_driver_t driver, net_ev_endpoint_t endpoint, net_endpoint_t base_endpoint);
+static void net_ev_endpoint_connect_log_connect_error(
+    net_ev_driver_t driver, net_ev_endpoint_t endpoint, net_endpoint_t base_endpoint, int err, uint8_t is_first);
 
 int net_ev_endpoint_init(net_endpoint_t base_endpoint) {
     net_ev_endpoint_t endpoint = net_endpoint_data(base_endpoint);
@@ -57,6 +55,7 @@ int net_ev_endpoint_on_output(net_endpoint_t base_endpoint) {
 }
 
 int net_ev_endpoint_connect(net_endpoint_t base_endpoint) {
+    net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
     net_ev_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     net_ev_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
 
@@ -74,24 +73,87 @@ int net_ev_endpoint_connect(net_endpoint_t base_endpoint) {
             net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint));
         return -1;
     }
-        
-    int connect_rv = net_ev_endpoint_start_connect(driver, endpoint, base_endpoint, remote_addr);
+    remote_addr = net_address_resolved(remote_addr);
 
-    if (connect_rv != 0 && cpe_sock_errno() == ENETUNREACH) {
-        if (net_address_type(remote_addr) == net_address_ipv4) {
-            /*ipv4网络不可达，尝试ipv6 */
-            cpe_sock_close(endpoint->m_fd);
-            endpoint->m_fd = -1;
-            connect_rv = net_ev_endpoint_start_connect_ipv6(driver, endpoint, base_endpoint, remote_addr);
-        }
-        else if (net_address_type(remote_addr) == net_address_ipv6 && net_address_ipv6_is_ipv4_nat(remote_addr)) {
-            /*ipv6网络不可达，且是一个ipv4地址的封装，尝试ipv4网络 */
-            cpe_sock_close(endpoint->m_fd);
-            endpoint->m_fd = -1;
-            connect_rv = net_ev_endpoint_start_connect_ipv4(driver, endpoint, base_endpoint, remote_addr);
-        }
+    if (net_address_type(remote_addr) != net_address_ipv4 && net_address_type(remote_addr) != net_address_ipv6) {
+        CPE_ERROR(
+            driver->m_em, "ev: %s: connect not support domain address!",
+            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint));
+        return -1;
     }
+    
+    int connect_rv;
 
+    net_local_ip_stack_t ip_stack = net_schedule_local_ip_stack(schedule);
+    switch(ip_stack) {
+    case net_local_ip_stack_none:
+        CPE_ERROR(
+            driver->m_em, "ev: %s: can`t connect in %s!",
+            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint),
+            net_local_ip_stack_str(ip_stack));
+        return -1;
+    case net_local_ip_stack_ipv4:
+        if (net_address_type(remote_addr) == net_address_ipv6) {
+            if (net_address_ipv6_is_ipv4_map(remote_addr)) {
+                net_address_t remote_addr_ipv4 = net_address_create_ipv4_from_ipv6_map(net_endpoint_schedule(base_endpoint), remote_addr);
+                if (remote_addr_ipv4 == NULL) {
+                    CPE_ERROR(
+                        driver->m_em, "ev: %s: convert ipv6 address to ipv4(map) fail",
+                        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint));
+                    return -1;
+                }
+
+                connect_rv = net_ev_endpoint_start_connect(driver, endpoint, base_endpoint, remote_addr_ipv4);
+
+                net_address_free(remote_addr_ipv4);
+            }
+            else if (net_address_ipv6_is_ipv4_nat(remote_addr)) {
+                net_address_t remote_addr_ipv4 = net_address_create_ipv4_from_ipv6_nat(net_endpoint_schedule(base_endpoint), remote_addr);
+                if (remote_addr_ipv4 == NULL) {
+                    CPE_ERROR(
+                        driver->m_em, "ev: %s: convert ipv6 address to ipv4(nat) fail",
+                        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint));
+                    return -1;
+                }
+
+                connect_rv = net_ev_endpoint_start_connect(driver, endpoint, base_endpoint, remote_addr_ipv4);
+
+                net_address_free(remote_addr_ipv4);
+            }
+            else {
+                CPE_ERROR(
+                    driver->m_em, "ev: %s: can`t connect to ipv6 network in ipv4 network env!",
+                    net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint));
+                return -1;
+            }
+        }
+        else {
+            connect_rv = net_ev_endpoint_start_connect(driver, endpoint, base_endpoint, remote_addr);
+        }
+        break;
+    case net_local_ip_stack_ipv6:
+        if (net_address_type(remote_addr) == net_address_ipv4) {
+            net_address_t remote_addr_ipv6 = net_address_create_ipv6_from_ipv4_nat(net_endpoint_schedule(base_endpoint), remote_addr);
+            if (remote_addr_ipv6 == NULL) {
+                CPE_ERROR(
+                    driver->m_em, "ev: %s: convert ipv4 address to ipv6(nat) fail",
+                    net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint));
+                return -1;
+            }
+
+            connect_rv = net_ev_endpoint_start_connect(driver, endpoint, base_endpoint, remote_addr_ipv6);
+
+            net_address_free(remote_addr_ipv6);
+        }
+        else {
+            connect_rv = net_ev_endpoint_start_connect(driver, endpoint, base_endpoint, remote_addr);
+        }
+        break;
+    case net_local_ip_stack_dual:
+        connect_rv = net_ev_endpoint_start_connect(driver, endpoint, base_endpoint, remote_addr);
+        break;
+    }
+    
     if (connect_rv != 0) {
         if (cpe_sock_errno() == EINPROGRESS || cpe_sock_errno() == EWOULDBLOCK) {
             if (net_endpoint_driver_debug(base_endpoint)) {
@@ -108,10 +170,7 @@ int net_ev_endpoint_connect(net_endpoint_t base_endpoint) {
             return net_endpoint_set_state(base_endpoint, net_endpoint_state_connecting);
         }
         else {
-            CPE_ERROR(
-                driver->m_em, "ev: %s: connect error, errno=%d (%s)",
-                net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint),
-                cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+            net_ev_endpoint_connect_log_connect_error(driver, endpoint, base_endpoint, cpe_sock_errno(), 1);
             cpe_sock_close(endpoint->m_fd);
             endpoint->m_fd = -1;
             return -1;
@@ -390,10 +449,8 @@ static void net_ev_endpoint_connect_cb(EV_P_ ev_io *w, int revents) {
 
     if (err != 0) {
         if (err == EINPROGRESS || err == EWOULDBLOCK) {
-            if (net_endpoint_driver_debug(base_endpoint) >= 2) {
-                CPE_INFO(
-                    driver->m_em, "ev: %s: connect still in progress",
-                    net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint));
+            if (net_endpoint_driver_debug(base_endpoint)) {
+                net_ev_endpoint_connect_log_connect_start(driver, endpoint, base_endpoint, 1);
             }
 
             assert(!ev_is_active(&endpoint->m_watcher));
@@ -404,10 +461,8 @@ static void net_ev_endpoint_connect_cb(EV_P_ ev_io *w, int revents) {
             ev_io_start(driver->m_ev_loop, &endpoint->m_watcher);
         }
         else {
-            CPE_ERROR(
-                driver->m_em, "ev: %s: connect error, errno=%d (%s)",
-                net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint),
-                err, cpe_sock_errstr(err));
+            net_ev_endpoint_connect_log_connect_error(driver, endpoint, base_endpoint, err, 0);
+
             if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
                 net_endpoint_free(base_endpoint);
             }
@@ -415,10 +470,8 @@ static void net_ev_endpoint_connect_cb(EV_P_ ev_io *w, int revents) {
         return;
     }
 
-    if (net_endpoint_driver_debug(base_endpoint) >= 2) {
-        CPE_INFO(
-            driver->m_em, "ev: %s: connect success",
-            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint));
+    if (net_endpoint_driver_debug(base_endpoint)) {
+        net_ev_endpoint_connect_log_connect_success(driver, endpoint, base_endpoint);
     }
 
     if (net_endpoint_address(base_endpoint) == NULL) {
@@ -476,6 +529,19 @@ static void net_ev_endpoint_connect_log_connect_success(
             driver->m_em, "ev: %s: connect success",
             net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint));
     }
+}
+
+static void net_ev_endpoint_connect_log_connect_error(
+    net_ev_driver_t driver, net_ev_endpoint_t endpoint, net_endpoint_t base_endpoint, int err, uint8_t is_first)
+{
+    char remote_addr_buf[64];
+
+    CPE_ERROR(
+        driver->m_em, "ev: %s: connect to %s error%s, errno=%d (%s)",
+        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint),
+        sock_get_remote_addr(remote_addr_buf, sizeof(remote_addr_buf), endpoint->m_fd, 1, NULL),
+        is_first ? "" : "(callback)",
+        err, cpe_sock_errstr(err));
 }
 
 static int net_ev_endpoint_start_connect(
@@ -568,64 +634,4 @@ static int net_ev_endpoint_start_connect(
     }
 
     return cpe_connect(endpoint->m_fd, (struct sockaddr *)&remote_addr_sock, remote_addr_sock_len);
-}
-
-static int net_ev_endpoint_start_connect_ipv6(
-    net_ev_driver_t driver, net_ev_endpoint_t endpoint, net_endpoint_t base_endpoint, net_address_t remote_addr)
-{
-    net_address_t remote_addr_ipv6 = net_address_create_ipv6_from_ipv4_nat(net_endpoint_schedule(base_endpoint), remote_addr);
-    if (remote_addr_ipv6 == NULL) {
-        CPE_ERROR(
-            driver->m_em, "ev: %s: ipv4 network unreachable, switch to ipv6, create address fail",
-            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint));
-        return -1;
-    }
-
-    if (net_endpoint_driver_debug(base_endpoint) >= 1) {
-        char addr_buf[INET6_ADDRSTRLEN + 32];
-        cpe_str_dup(
-            addr_buf, sizeof(addr_buf),
-            net_address_dump(net_ev_driver_tmp_buffer(driver), remote_addr_ipv6));
-                    
-        CPE_INFO(
-            driver->m_em, "ev: %s: ipv4 network unreachable, try ipv6 %s!",
-            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint),
-            addr_buf);
-    }
-
-    int rv = net_ev_endpoint_start_connect(driver, endpoint, base_endpoint, remote_addr_ipv6);
-
-    net_address_free(remote_addr_ipv6);
-
-    return rv;
-}
-
-static int net_ev_endpoint_start_connect_ipv4(
-    net_ev_driver_t driver, net_ev_endpoint_t endpoint, net_endpoint_t base_endpoint, net_address_t remote_addr)
-{
-    net_address_t remote_addr_ipv4 = net_address_create_ipv4_from_ipv6_nat(net_endpoint_schedule(base_endpoint), remote_addr);
-    if (remote_addr_ipv4 == NULL) {
-        CPE_ERROR(
-            driver->m_em, "ev: %s: ipv6 network unreachable, try ipv4(nat), create address fail",
-            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint));
-        return -1;
-    }
-
-    if (net_endpoint_driver_debug(base_endpoint) >= 1) {
-        char addr_buf[INET6_ADDRSTRLEN + 32];
-        cpe_str_dup(
-            addr_buf, sizeof(addr_buf),
-            net_address_dump(net_ev_driver_tmp_buffer(driver), remote_addr_ipv4));
-                    
-        CPE_INFO(
-            driver->m_em, "ev: %s: ipv6 network unreachable, try ipv4 %s!",
-            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint),
-            addr_buf);
-    }
-                
-    int rv = net_ev_endpoint_start_connect(driver, endpoint, base_endpoint, remote_addr_ipv4);
-
-    net_address_free(remote_addr_ipv4);
-
-    return rv;
 }

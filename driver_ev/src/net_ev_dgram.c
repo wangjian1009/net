@@ -12,40 +12,40 @@ static void net_ev_dgram_receive_cb(EV_P_ ev_io *w, int revents);
 
 int net_ev_dgram_init(net_dgram_t base_dgram) {
     net_schedule_t schedule = net_dgram_schedule(base_dgram);
-    error_monitor_t em = net_schedule_em(schedule);
     net_ev_dgram_t dgram = net_dgram_data(base_dgram);
     net_ev_driver_t driver = net_driver_data(net_dgram_driver(base_dgram));
-    net_address_t address = net_dgram_address(base_dgram);
 
-    assert(address);
-    
-    switch(net_address_type(address)) {
-    case net_address_ipv4:
-        dgram->m_fd = cpe_sock_open(AF_INET, SOCK_DGRAM, 0);
-        break;
-    case net_address_ipv6:
-        dgram->m_fd = cpe_sock_open(AF_INET6, SOCK_DGRAM, 0);
-        break;
-    case net_address_domain:
-        CPE_ERROR(em, "ev: dgyam: not support domain address!");
+    net_local_ip_stack_t ipstack = net_schedule_local_ip_stack(schedule);
+    switch(ipstack) {
+    case net_local_ip_stack_none:
+        CPE_ERROR(driver->m_em, "ev: dgram: can`t create dgram in %s!", net_local_ip_stack_str(ipstack));
         return -1;
+    case net_local_ip_stack_ipv4:
+        dgram->m_domain = AF_INET;
+        break;
+    case net_local_ip_stack_ipv6:
+    case net_local_ip_stack_dual:
+        dgram->m_domain = AF_INET6;
+        break;
     }
 
+    dgram->m_fd = cpe_sock_open(dgram->m_domain, SOCK_DGRAM, IPPROTO_UDP);
     if (dgram->m_fd == -1) {
         CPE_ERROR(
-            em, "ev: dgram: socket create error, errno=%d (%s)",
+            driver->m_em, "ev: dgram: socket create error, errno=%d (%s)",
             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
         return -1;
     }
-
+    
     if (driver->m_sock_process_fun) {
         if (driver->m_sock_process_fun(driver, driver->m_sock_process_ctx, dgram->m_fd, NULL) != 0) {
-            CPE_ERROR(em, "ev: dgram: sock process fail");
+            CPE_ERROR(driver->m_em, "ev: dgram: sock process fail");
             cpe_sock_close(dgram->m_fd);
             return -1;
         }
     }
 
+    net_address_t address = net_dgram_address(base_dgram);
     if (address
         && (!net_address_is_any(address) || net_address_port(address) != 0))
     {
@@ -53,7 +53,7 @@ int net_ev_dgram_init(net_dgram_t base_dgram) {
         socklen_t addr_len = sizeof(addr);
 
         if (net_address_to_sockaddr(address, (struct sockaddr *)&addr, &addr_len) != 0) {
-            CPE_ERROR(em, "ev: dgram: get sockaddr from address fail");
+            CPE_ERROR(driver->m_em, "ev: dgram: get sockaddr from address fail");
             cpe_sock_close(dgram->m_fd);
             return -1;
         }
@@ -62,7 +62,7 @@ int net_ev_dgram_init(net_dgram_t base_dgram) {
 
         if (cpe_bind(dgram->m_fd, (struct sockaddr *)&addr, addr_len) != 0) {
             CPE_ERROR(
-                em, "ev: dgram: bind addr %s fail, errno=%d (%s)",
+                driver->m_em, "ev: dgram: bind addr %s fail, errno=%d (%s)",
                 net_address_dump(net_schedule_tmp_buffer(schedule), address),
                 cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
             cpe_sock_close(dgram->m_fd);
@@ -72,7 +72,7 @@ int net_ev_dgram_init(net_dgram_t base_dgram) {
 
         if (net_dgram_driver_debug(base_dgram) >= 2) {
             CPE_INFO(
-                em, "ev: dgram: bind to %s",
+                driver->m_em, "ev: dgram: bind to %s",
                 net_address_dump(net_schedule_tmp_buffer(schedule), address));
         }
     }
@@ -82,7 +82,7 @@ int net_ev_dgram_init(net_dgram_t base_dgram) {
         memset(&addr, 0, addr_len);
         if (getsockname(dgram->m_fd, (struct sockaddr *)&addr, &addr_len) != 0) {
             CPE_ERROR(
-                em, "ev: dgram: sockaddr error, errno=%d (%s)",
+                driver->m_em, "ev: dgram: sockaddr error, errno=%d (%s)",
                 cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
             cpe_sock_close(dgram->m_fd);
             dgram->m_fd = -1;
@@ -99,7 +99,7 @@ int net_ev_dgram_init(net_dgram_t base_dgram) {
 
         if (net_dgram_driver_debug(base_dgram) >= 2) {
             CPE_INFO(
-                em, "ev: dgram: auto bind at %s",
+                driver->m_em, "ev: dgram: auto bind at %s",
                 net_address_dump(net_schedule_tmp_buffer(schedule), address));
         }
 
@@ -130,12 +130,72 @@ int net_ev_dgram_send(net_dgram_t base_dgram, net_address_t target, void const *
     net_schedule_t schedule = net_dgram_schedule(base_dgram);
     net_ev_driver_t driver = net_driver_data(net_dgram_driver(base_dgram));
 
+    net_address_t remote_addr = net_address_resolved(target);
+    if (net_address_type(remote_addr) != net_address_ipv4 && net_address_type(remote_addr) != net_address_ipv6) {
+        CPE_ERROR(
+            driver->m_em, "ev: dgram: send not support domain address %s!",
+            net_address_dump(net_ev_driver_tmp_buffer(driver), remote_addr));
+        return -1;
+    }
+    
     struct sockaddr_storage addr;
     socklen_t addr_len = sizeof(addr);
-    if (net_address_to_sockaddr(target, (struct sockaddr *)&addr, &addr_len) != 0) {
-        net_schedule_t schedule = net_dgram_schedule(base_dgram);
-        CPE_ERROR(net_schedule_em(schedule), "ev: dgram: get address to send fail");
-        return -1;
+    if (dgram->m_domain == AF_INET) {
+        if (net_address_type(remote_addr) == net_address_ipv6) {
+            if (net_address_ipv6_is_ipv4_map(remote_addr)) {
+                net_address_t remote_addr_ipv4 = net_address_create_ipv4_from_ipv6_map(schedule, remote_addr);
+                if (remote_addr_ipv4 == NULL) {
+                    CPE_ERROR(
+                        driver->m_em, "ev: dgram: convert ipv6 address %s to ipv4(map) fail",
+                        net_address_dump(net_ev_driver_tmp_buffer(driver), remote_addr));
+                    return -1;
+                }
+
+                net_address_to_sockaddr(remote_addr_ipv4, (struct sockaddr *)&addr, &addr_len);
+
+                net_address_free(remote_addr_ipv4);
+            }
+            else if (net_address_ipv6_is_ipv4_nat(remote_addr)) {
+                net_address_t remote_addr_ipv4 = net_address_create_ipv4_from_ipv6_nat(schedule, remote_addr);
+                if (remote_addr_ipv4 == NULL) {
+                    CPE_ERROR(
+                        driver->m_em, "ev: dgram: convert ipv6 address %s to ipv4(nat) fail",
+                        net_address_dump(net_ev_driver_tmp_buffer(driver), remote_addr));
+                    return -1;
+                }
+
+                net_address_to_sockaddr(remote_addr_ipv4, (struct sockaddr *)&addr, &addr_len);
+
+                net_address_free(remote_addr_ipv4);
+            }
+            else {
+                CPE_ERROR(
+                    driver->m_em, "ev: dgram: can`t send to %s in ipv4 network env!",
+                    net_address_dump(net_ev_driver_tmp_buffer(driver), remote_addr));
+                return -1;
+            }
+        }
+        else {
+            net_address_to_sockaddr(target, (struct sockaddr *)&addr, &addr_len);
+        }
+    }
+    else {
+        if (net_address_type(remote_addr) == net_address_ipv4) {
+            net_address_t remote_addr_ipv6 = net_address_create_ipv6_from_ipv4_nat(schedule, remote_addr);
+            if (remote_addr_ipv6 == NULL) {
+                CPE_ERROR(
+                    driver->m_em, "ev: dgram: convert ipv4 address %s to ipv6(nat) fail",
+                    net_address_dump(net_ev_driver_tmp_buffer(driver), remote_addr));
+                return -1;
+            }
+
+            net_address_to_sockaddr(remote_addr_ipv6, (struct sockaddr *)&addr, &addr_len);
+
+            net_address_free(remote_addr_ipv6);
+        }
+        else {
+            net_address_to_sockaddr(target, (struct sockaddr *)&addr, &addr_len);
+        }
     }
     
     int nret = sendto(dgram->m_fd, data, data_len, 0, (struct sockaddr *)&addr, addr_len);
