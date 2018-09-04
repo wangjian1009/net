@@ -128,8 +128,10 @@ static uint8_t net_schedule_local_ip_stack_test_connect(net_schedule_t schedule,
 }
 
 static uint8_t net_schedule_local_ip_stack_have_ipv6(net_schedule_t schedule) {
-    static const struct sockaddr_in6 sin6_test = {
+    struct sockaddr_in6 sin6_test = {
+#if defined __APPLE__
         .sin6_len = sizeof(struct sockaddr_in6),
+#endif
         .sin6_family = AF_INET6,
         .sin6_port = htons(0xFFFF),
         .sin6_addr.s6_addr = {
@@ -139,8 +141,10 @@ static uint8_t net_schedule_local_ip_stack_have_ipv6(net_schedule_t schedule) {
 }
 
 static uint8_t net_schedule_local_ip_stack_have_ipv4(net_schedule_t schedule) {
-    static const struct sockaddr_in sin_test = {
+    struct sockaddr_in sin_test = {
+#if defined __APPLE__
         .sin_len = sizeof(struct sockaddr_in),
+#endif
         .sin_family = AF_INET,
         .sin_port = htons(0xFFFF),
         .sin_addr.s_addr = htonl(0x08080808L),  // 8.8.8.8

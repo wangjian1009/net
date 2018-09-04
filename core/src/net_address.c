@@ -331,7 +331,9 @@ TO_SOCKADDR_TRY_AGAIN:
 
         bzero(s, sizeof(*s));
         s->sin_family = AF_INET;
+#if defined __APPLE__
         s->sin_len = sizeof(*s);
+#endif
         s->sin_port = htons(address_ipv4v6->m_port);
         s->sin_addr.s_addr = address_ipv4v6->m_ipv4.u32;
         *addr_len = sizeof(*s);
@@ -351,7 +353,9 @@ TO_SOCKADDR_TRY_AGAIN:
         
         bzero(s, sizeof(*s));
         s->sin6_family = AF_INET6;
+#if defined __APPLE__
         s->sin6_len = sizeof(*s);
+#endif
         s->sin6_port = htons(address_ipv4v6->m_port);
         assert(sizeof(s->sin6_addr) == sizeof(address_ipv4v6->m_ipv6));
         memcpy(&s->sin6_addr, &address_ipv4v6->m_ipv6, sizeof(address_ipv4v6->m_ipv6));
