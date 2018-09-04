@@ -537,9 +537,8 @@ static void net_ev_endpoint_connect_log_connect_error(
     char remote_addr_buf[64];
 
     CPE_ERROR(
-        driver->m_em, "ev: %s: connect to %s error%s, errno=%d (%s)",
+        driver->m_em, "ev: %s: connect error%s, errno=%d (%s)",
         net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint),
-        sock_get_remote_addr(remote_addr_buf, sizeof(remote_addr_buf), endpoint->m_fd, 1, NULL),
         is_first ? "" : "(callback)",
         err, cpe_sock_errstr(err));
 }
@@ -551,20 +550,9 @@ static int net_ev_endpoint_start_connect(
     socklen_t remote_addr_sock_len = sizeof(remote_addr_sock);
     net_address_to_sockaddr(remote_addr, (struct sockaddr *)&remote_addr_sock, &remote_addr_sock_len);
 
-    int domain;
-    switch(net_address_type(remote_addr)) {
-    case net_address_ipv4:
-        domain = AF_INET;
-        break;
-    case net_address_ipv6:
-        domain = AF_INET6;
-        break;
-    case net_address_domain:
-        CPE_ERROR(
-            driver->m_em, "ev: %s: connect not support domain address!",
-            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint));
-        return -1;
-    }
+    assert(net_address_type(remote_addr) == net_address_ipv4 || net_address_type(remote_addr) == net_address_ipv6);
+    
+    int domain = net_address_type(remote_addr) == net_address_ipv4 ? AF_INET : AF_INET6; 
 
     endpoint->m_fd = cpe_sock_open(domain, SOCK_STREAM, IPPROTO_TCP);
     if (endpoint->m_fd == -1) {
@@ -633,5 +621,13 @@ static int net_ev_endpoint_start_connect(
         return -1;
     }
 
+    /* char buf[128]; */
+    /* cpe_str_dup(buf, sizeof(buf), net_address_dump(net_ev_driver_tmp_buffer(driver), remote_addr)); */
+    
+    /* CPE_ERROR( */
+    /*     driver->m_em, "ev: %s: connect to %s", */
+    /*     net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), */
+    /*     buf); */
+    
     return cpe_connect(endpoint->m_fd, (struct sockaddr *)&remote_addr_sock, remote_addr_sock_len);
 }
