@@ -12,7 +12,7 @@ net_dns_task_builder_create(
     net_dns_task_builder_fini_fun_t fini,
     net_dns_task_build_fun_t build)
 {
-    net_dns_task_builder_t builder = mem_alloc(manage->m_alloc, sizeof(struct net_dns_task_builder));
+    net_dns_task_builder_t builder = mem_alloc(manage->m_alloc, sizeof(struct net_dns_task_builder) + capacity);
     if (builder == NULL) {
         CPE_ERROR(manage->m_em, "dns-cli: builder: alloc fail!");
         return NULL;
