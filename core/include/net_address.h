@@ -1,10 +1,11 @@
 #ifndef NET_ADDRESS_H_INCLEDED
 #define NET_ADDRESS_H_INCLEDED
-#include "cpe/pal/pal_socket.h"
 #include "cpe/utils/utils_types.h"
 #include "net_system.h"
 
 NET_BEGIN_DECL
+
+struct sockaddr;
 
 struct net_address_it {
     net_address_t (*next)(net_address_it_t it);

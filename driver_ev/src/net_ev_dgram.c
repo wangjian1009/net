@@ -58,7 +58,7 @@ int net_ev_dgram_init(net_dgram_t base_dgram) {
             return -1;
         }
 
-        sock_set_reuseport(dgram->m_fd);
+        cpe_sock_set_reuseport(dgram->m_fd, 1);
 
         if (cpe_bind(dgram->m_fd, (struct sockaddr *)&addr, addr_len) != 0) {
             CPE_ERROR(

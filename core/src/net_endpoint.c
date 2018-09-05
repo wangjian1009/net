@@ -297,7 +297,6 @@ uint8_t net_endpoint_is_active(net_endpoint_t endpoint) {
 }
 
 int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) {
-PROCESS_AGAIN:
     if (endpoint->m_state == state) return 0;
 
     assert(endpoint->m_state != net_endpoint_state_deleting);

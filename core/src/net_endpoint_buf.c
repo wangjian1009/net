@@ -217,7 +217,7 @@ int net_endpoint_buf_recv(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_t
         memcpy(data, block_data, copy_len);
 
         capacity -= copy_len;
-        data += copy_len;
+        data = ((char*)data) + copy_len;
         received += copy_len;
         
         endpoint->m_bufs[buf_type] = ringbuffer_yield(schedule->m_endpoint_buf, endpoint->m_bufs[buf_type], (int)copy_len);

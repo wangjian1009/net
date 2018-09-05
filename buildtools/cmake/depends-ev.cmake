@@ -11,7 +11,9 @@ set_property(TARGET ev PROPERTY INCLUDE_DIRECTORIES
   ${ev_base}/src/${OS_NAME}
   )
 
+if (GCC)
 set_property(TARGET ev PROPERTY COMPILE_OPTIONS
   -Wno-unused-value
   -Wno-bitwise-op-parentheses
   )
+endif ()

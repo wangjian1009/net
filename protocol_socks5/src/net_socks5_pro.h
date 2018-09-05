@@ -1,5 +1,6 @@
 #ifndef NET_SS_SOCKS5_H_INCLEDED
 #define NET_SS_SOCKS5_H_INCLEDED
+#include "cpe/pal/pal_platform.h"
 #include "net_socks5_types.h"
 
 #define SOCKS5_SVERSION 0x05
@@ -17,29 +18,32 @@
 
 #define CMD_NOT_SUPPORTED 0x07
 
+CPE_START_PACKED
 struct method_select_request {
     uint8_t ver;
     uint8_t nmethods;
     uint8_t methods[0];
-} __attribute__((packed, aligned(1)));
+} CPE_PACKED;
 
 struct method_select_response {
     uint8_t ver;
     uint8_t method;
-} __attribute__((packed, aligned(1)));
+} CPE_PACKED;
 
 struct socks5_request {
     uint8_t ver;
     uint8_t cmd;
     uint8_t rsv;
     uint8_t atyp;
-} __attribute__((packed, aligned(1)));
+} CPE_PACKED;
 
 struct socks5_response {
     uint8_t ver;
     uint8_t rep;
     uint8_t rsv;
     uint8_t atyp;
-} __attribute__((packed, aligned(1)));
+} CPE_PACKED;
+
+CPE_END_PACKED
 
 #endif

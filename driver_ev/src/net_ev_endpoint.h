@@ -1,6 +1,5 @@
 #ifndef NET_EV_ENDPOINT_H_INCLEDED
 #define NET_EV_ENDPOINT_H_INCLEDED
-#include "cpe/pal/pal_socket.h"
 #include "net_ev_driver_i.h"
 
 struct net_ev_endpoint {

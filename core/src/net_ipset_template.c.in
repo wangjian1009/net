@@ -12,7 +12,7 @@ static uint8_t NET_IPSET_NAME(assignment)(const void *addr, net_ipset_variable v
     }
 }
 
-uint8_t NET_IPSET_PRENAME(contains)(const net_ipset_t set, NET_ADDRESS_DATA *elem) {
+uint8_t NET_IPSET_PRENAME(contains)(net_ipset_t set, NET_ADDRESS_DATA *elem) {
     return net_ipset_node_evaluate
         (set->m_cache, set->m_set_bdd, NET_IPSET_NAME(assignment), elem);
 }

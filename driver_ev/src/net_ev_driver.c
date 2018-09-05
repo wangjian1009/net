@@ -1,3 +1,4 @@
+#include "cpe/pal/pal_socket.h"
 #include "net_schedule.h"
 #include "net_driver.h"
 #include "net_ev_driver_i.h"

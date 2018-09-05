@@ -39,7 +39,7 @@ net_ws_endpoint_create(net_driver_t driver, net_endpoint_type_t type, net_ws_pro
 }
 
 void net_ws_endpoint_free(net_ws_endpoint_t ws_ep) {
-    return net_http_endpoint_free(ws_ep->m_http_ep);
+    net_http_endpoint_free(ws_ep->m_http_ep);
 }
 
 net_ws_endpoint_t net_ws_endpoint_get(net_endpoint_t endpoint) {

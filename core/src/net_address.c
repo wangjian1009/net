@@ -2,6 +2,7 @@
 #include <netdb.h>
 #endif
 #include "assert.h"
+#include "cpe/pal/pal_socket.h"
 #include "cpe/pal/pal_string.h"
 #include "cpe/pal/pal_strings.h"
 #include "cpe/pal/pal_stdlib.h"
@@ -69,7 +70,7 @@ net_address_t net_address_create_auto(net_schedule_t schedule, const char * url)
         return net_address_create_domain(schedule, url, port, NULL);
     }
     else {
-        return net_address_create_domain_with_len(schedule, url, hostname_len, port, NULL);
+        return net_address_create_domain_with_len(schedule, url, (uint16_t)hostname_len, port, NULL);
     }
 }
 
@@ -368,7 +369,7 @@ TO_SOCKADDR_TRY_AGAIN:
 
 net_address_t
 net_address_create_domain(net_schedule_t schedule, const char * url, uint16_t port, net_address_t resolved) {
-    return net_address_create_domain_with_len(schedule, url, strlen(url), port, resolved);
+    return net_address_create_domain_with_len(schedule, url, (uint16_t)strlen(url), port, resolved);
 }
 
 net_address_t
