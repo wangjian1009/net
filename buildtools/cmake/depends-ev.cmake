@@ -4,6 +4,15 @@ set(ev_source
   ${ev_base}/src/ev.c
   )
 
+if (MSVC)
+  set(ev_compile_options /wd4244)
+elseif (GCC)
+  set(ev_compile_options
+    -Wno-unused-value
+    -Wno-bitwise-op-parentheses
+    )
+endif ()
+
 add_library(ev STATIC ${ev_source})
 
 set_property(TARGET ev PROPERTY INCLUDE_DIRECTORIES
@@ -11,9 +20,4 @@ set_property(TARGET ev PROPERTY INCLUDE_DIRECTORIES
   ${ev_base}/src/${OS_NAME}
   )
 
-if (GCC)
-set_property(TARGET ev PROPERTY COMPILE_OPTIONS
-  -Wno-unused-value
-  -Wno-bitwise-op-parentheses
-  )
-endif ()
+set_property(TARGET ev PROPERTY COMPILE_OPTIONS ${ev_compile_options})

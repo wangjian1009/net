@@ -52,7 +52,7 @@ int net_dns_ns_cli_endpoint_init(net_endpoint_t base_endpoint) {
 
 void net_dns_ns_cli_endpoint_fini(net_endpoint_t base_endpoint) {
     net_dns_ns_cli_endpoint_t dns_cli = net_endpoint_protocol_data(base_endpoint);
-    return net_dns_ns_parser_fini(&dns_cli->m_parser);
+    net_dns_ns_parser_fini(&dns_cli->m_parser);
 }
 
 static int net_dns_ns_cli_process_data(

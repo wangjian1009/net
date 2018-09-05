@@ -32,7 +32,7 @@ net_http_endpoint_create(net_driver_t driver, net_endpoint_type_t type, net_http
 }
 
 void net_http_endpoint_free(net_http_endpoint_t http_ep) {
-    return net_endpoint_free(http_ep->m_endpoint);
+    net_endpoint_free(http_ep->m_endpoint);
 }
 
 net_http_endpoint_t net_http_endpoint_get(net_endpoint_t endpoint) {

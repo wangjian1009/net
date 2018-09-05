@@ -178,13 +178,13 @@ int net_endpoint_buf_peak_with_size(net_endpoint_t endpoint, net_endpoint_buf_ty
     
     void * data;
     int size = ringbuffer_block_data(schedule->m_endpoint_buf, endpoint->m_bufs[buf_type], 0, &data);
-    if (size >= require) {
+    if (size > 0 && (uint32_t)size >= require) {
         *r_data = data;
         return 0;
     }
 
     size = ringbuffer_block_total_len(schedule->m_endpoint_buf, endpoint->m_bufs[buf_type]);
-    if (size >= require) {
+    if (size > 0 && (uint32_t)size >= require) {
         ringbuffer_block_t combine_blk = net_endpoint_common_buf_alloc(endpoint, (uint32_t)size);
         if (combine_blk == NULL) return -1;
 

@@ -251,7 +251,7 @@ static int net_socks5_svr_send_socks5_response(net_endpoint_t endpoint, net_addr
             break;
         case net_address_domain: {
             const char * url = net_address_data(address);
-            uint16_t url_len = strlen(url);
+            uint16_t url_len = (uint16_t)strlen(url);
             buf_len = sizeof(struct socks5_response) + 1 + url_len + 2;
             response = mem_buffer_alloc(tmp_buffer, buf_len);
             *(uint8_t*)(response + 1) = (uint8_t)url_len;
