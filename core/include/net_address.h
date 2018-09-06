@@ -8,6 +8,10 @@ NET_BEGIN_DECL
 struct sockaddr;
 #if defined CPE_OS_MAC
 typedef __darwin_socklen_t socklen_t;
+#else
+#if defined CPE_OS_LINUX
+typedef __socklen_t socklen_t;
+#endif
 #endif
 
 struct net_address_it {
