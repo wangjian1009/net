@@ -179,7 +179,7 @@ int net_dq_dgram_send(net_dgram_t base_dgram, net_address_t target, void const *
         }
     }
     
-    ssize_t nret = sendto(dgram->m_fd, data, data_len, CPE_SOCKET_DEFAULT_SEND_FLAGS, (struct sockaddr *)&addr, addr_len);
+    ssize_t nret = cpe_sendto(dgram->m_fd, data, data_len, CPE_SOCKET_DEFAULT_SEND_FLAGS, (struct sockaddr *)&addr, addr_len);
     if (nret < 0) {
         CPE_ERROR(
             driver->m_em, "dq: dgram: send %d data to %s fail, errno=%d (%s)",

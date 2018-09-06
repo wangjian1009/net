@@ -207,7 +207,7 @@ int net_ev_endpoint_update_local_address(net_ev_endpoint_t endpoint) {
     struct sockaddr_storage addr;
     socklen_t addr_len = sizeof(struct sockaddr_storage);
     memset(&addr, 0, addr_len);
-    if (getsockname(endpoint->m_fd, (struct sockaddr *)&addr, &addr_len) != 0) {
+    if (cpe_getsockname(endpoint->m_fd, (struct sockaddr *)&addr, &addr_len) != 0) {
         CPE_ERROR(
             driver->m_em, "ev: %s: sockaddr error, errno=%d (%s)",
             net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint),
@@ -236,7 +236,7 @@ int net_ev_endpoint_update_remote_address(net_ev_endpoint_t endpoint) {
     struct sockaddr_storage addr;
     socklen_t addr_len = sizeof(struct sockaddr_storage);
     memset(&addr, 0, addr_len);
-    if (getpeername(endpoint->m_fd, (struct sockaddr *)&addr, &addr_len) != 0) {
+    if (cpe_getpeername(endpoint->m_fd, (struct sockaddr *)&addr, &addr_len) != 0) {
         CPE_ERROR(
             driver->m_em, "ev: %s: getpeername error, errno=%d (%s)",
             net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint),
