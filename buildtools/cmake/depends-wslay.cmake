@@ -6,6 +6,7 @@ if (MSVC)
 set(wslay_compile_definitions
   ${wslay_compile_definitions}
   ssize_t=int
+  HAVE_WINSOCK2_H
   )
 set(wslay_compile_options
   /wd4013 /wd4244
