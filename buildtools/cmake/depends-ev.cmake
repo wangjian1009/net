@@ -6,7 +6,7 @@ set(ev_source
 
 if (MSVC)
   set(ev_compile_options /wd4244)
-elseif (GCC)
+elseif (CMAKE_C_COMPILER_ID MATCHES "Clang" OR CMAKE_C_COMPILER_IS_GNUCC)
   set(ev_compile_options
     -Wno-unused-value
     -Wno-bitwise-op-parentheses

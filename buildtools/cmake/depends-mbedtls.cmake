@@ -3,7 +3,7 @@ set(mbedtls_base ${CMAKE_CURRENT_LIST_DIR}/../../depends/mbedtls)
 file(GLOB mbedtls_source ${mbedtls_base}/library/*.c)
 
 if (MSVC)
-elseif (GCC)  
+elseif (CMAKE_C_COMPILER_ID MATCHES "Clang" OR CMAKE_C_COMPILER_IS_GNUCC)
 set(mbedtls_compile_options
   -Wno-implicit-function-declaration
   )

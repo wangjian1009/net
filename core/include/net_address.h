@@ -6,6 +6,9 @@
 NET_BEGIN_DECL
 
 struct sockaddr;
+#if defined CPE_OS_MAC
+typedef __darwin_socklen_t socklen_t;
+#endif
 
 struct net_address_it {
     net_address_t (*next)(net_address_it_t it);
