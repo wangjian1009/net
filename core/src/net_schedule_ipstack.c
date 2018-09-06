@@ -58,7 +58,7 @@ int net_schedule_local_ip_stack_detect(net_schedule_t schedule) {
     int dns_ip_stack = 0;
     struct sockaddr_storage dnsaddrs[5];
     uint8_t dnsaddrs_count = CPE_ARRAY_SIZE(dnsaddrs);
-    getdnssvraddrs(dnsaddrs, &dnsaddrs_count);
+    getdnssvraddrs(dnsaddrs, &dnsaddrs_count, schedule->m_em);
     int i;
     for (i = 0; i < dnsaddrs_count; ++i) {
         if (AF_INET == dnsaddrs[i].ss_family) {
