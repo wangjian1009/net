@@ -348,7 +348,7 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
             assert(data_size > 0);
             assert(data);
 
-            int bytes = cpe_send(endpoint->m_fd, data, data_size, 0);
+            int bytes = cpe_send(endpoint->m_fd, data, data_size, CPE_SOCKET_DEFAULT_SEND_FLAGS);
             if (bytes > 0) {
                 if (net_endpoint_driver_debug(base_endpoint)) {
                     CPE_INFO(

@@ -371,7 +371,7 @@ int net_dq_endpoint_on_write(net_dq_driver_t driver, net_dq_endpoint_t endpoint,
         assert(data_size > 0);
         assert(data);
 
-        ssize_t bytes = cpe_send(endpoint->m_fd, data, data_size, 0);
+        ssize_t bytes = cpe_send(endpoint->m_fd, data, data_size, CPE_SOCKET_DEFAULT_SEND_FLAGS);
         if (bytes > 0) {
             if (net_endpoint_driver_debug(base_endpoint)) {
                 CPE_INFO(
