@@ -152,7 +152,7 @@ int net_socks5_svr_endpoint_input(net_endpoint_t endpoint) {
                     if (pos >= peak_data_size) break; /* 数据不足 */
                     
                     used_len = pos + 1;
-                    username = ((uint8_t*)data) + sizeof(struct socks4_connect_request);
+                    username = ((const char *)data) + sizeof(struct socks4_connect_request);
                     struct socks4_connect_request * request = data;
                     struct sockaddr_in in_addr;
                     in_addr.sin_family = AF_INET;
