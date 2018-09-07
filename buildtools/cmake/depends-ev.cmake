@@ -6,6 +6,11 @@ set(ev_source
 
 if (MSVC)
   set(ev_compile_options /wd4244)
+
+  set(ev_compile_definitions
+    FD_SETSIZE=2048
+    )
+
 elseif (CMAKE_C_COMPILER_ID MATCHES "Clang" OR CMAKE_C_COMPILER_IS_GNUCC)
   set(ev_compile_options
     -Wno-unused-value
@@ -21,3 +26,4 @@ set_property(TARGET ev PROPERTY INCLUDE_DIRECTORIES
   )
 
 set_property(TARGET ev PROPERTY COMPILE_OPTIONS ${ev_compile_options})
+set_property(TARGET ev PROPERTY COMPILE_DEFINITIONS ${ev_compile_definitions})
