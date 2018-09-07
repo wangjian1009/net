@@ -3,6 +3,7 @@
 #include "cpe/pal/pal_platform.h"
 #include "net_socks5_types.h"
 
+#define SOCKS4_SVERSION 0x04
 #define SOCKS5_SVERSION 0x05
 
 #define SOCKS5_CMD_CONNECT 0x01
@@ -19,29 +20,44 @@
 #define CMD_NOT_SUPPORTED 0x07
 
 CPE_START_PACKED
-struct method_select_request {
+struct socks5_select_request {
     uint8_t ver;
     uint8_t nmethods;
     uint8_t methods[0];
 } CPE_PACKED;
 
-struct method_select_response {
+struct socks5_select_response {
     uint8_t ver;
     uint8_t method;
 } CPE_PACKED;
 
-struct socks5_request {
+struct socks5_connect_request {
     uint8_t ver;
     uint8_t cmd;
     uint8_t rsv;
     uint8_t atyp;
 } CPE_PACKED;
 
-struct socks5_response {
+struct socks5_connect_response {
     uint8_t ver;
     uint8_t rep;
     uint8_t rsv;
     uint8_t atyp;
+} CPE_PACKED;
+
+struct socks4_connect_request {
+    uint8_t ver;
+    uint8_t cmd;
+    uint16_t dst_port;
+    uint32_t dst_ip;
+    char user_id[];
+} CPE_PACKED;
+
+struct socks4_connect_response {
+    uint8_t ver;
+    uint8_t rep;
+    uint16_t dst_port;
+    uint32_t dst_ip;
 } CPE_PACKED;
 
 CPE_END_PACKED
