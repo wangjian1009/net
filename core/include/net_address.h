@@ -9,7 +9,7 @@ struct sockaddr;
 #if defined CPE_OS_MAC
 typedef __darwin_socklen_t socklen_t;
 #else
-#if defined CPE_OS_LINUX
+#if defined CPE_OS_LINUX || defined CPE_OS_CYGWIN
 typedef __socklen_t socklen_t;
 #endif
 #endif

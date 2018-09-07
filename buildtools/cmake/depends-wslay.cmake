@@ -17,7 +17,14 @@ set(wslay_compile_options
   -Wno-bitwise-op-parentheses
   )  
 endif ()
-    
+
+if (OS_NAME MATCHES "cygwin")
+set(wslay_compile_definitions
+  ${wslay_compile_definitions}
+  HAVE_NETINET_IN_H
+  )
+endif ()
+  
 add_library(wslay STATIC ${wslay_source})
 set_property(TARGET wslay PROPERTY COMPILE_OPTIONS ${wslay_compile_options})
 set_property(TARGET wslay PROPERTY COMPILE_DEFINITIONS ${wslay_compile_definitions})
