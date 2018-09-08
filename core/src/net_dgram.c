@@ -33,12 +33,14 @@ net_dgram_t net_dgram_create(
     dgram->m_process_fun = process_fun;
     dgram->m_process_ctx = process_ctx;
 
-    dgram->m_address = net_address_copy(schedule, address);
-    if (dgram->m_address == NULL) {
-        CPE_ERROR(schedule->m_em, "core: dgram: create: dup address fail");
-        return NULL;
+    if (address) {
+        dgram->m_address = net_address_copy(schedule, address);
+        if (dgram->m_address == NULL) {
+            CPE_ERROR(schedule->m_em, "core: dgram: create: dup address fail");
+            return NULL;
+        }
     }
-    
+
     if (driver->m_dgram_init(dgram) != 0) {
         CPE_ERROR(schedule->m_em, "net_dgram_auto_create: init fail");
         if (dgram->m_address) net_address_free(dgram->m_address);
