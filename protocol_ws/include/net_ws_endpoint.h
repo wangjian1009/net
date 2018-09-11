@@ -20,6 +20,9 @@ const char * net_ws_endpoint_url_dump(mem_buffer_t buffer, net_ws_endpoint_t ws_
 const char * net_ws_endpoint_path(net_ws_endpoint_t ws_ep);
 int net_ws_endpoint_set_path(net_ws_endpoint_t ws_ep, const char * path);
 
+uint32_t net_ws_endpoint_pingpong_span_ms(net_ws_endpoint_t ws_ep);
+int net_ws_endpoint_set_pingpong_span_ms(net_ws_endpoint_t ws_ep, uint32_t span_ms);
+
 uint32_t net_ws_endpoint_reconnect_span_ms(net_ws_endpoint_t ws_ep);
 void net_ws_endpoint_set_reconnect_span_ms(net_ws_endpoint_t ws_ep, uint32_t span_ms);
 

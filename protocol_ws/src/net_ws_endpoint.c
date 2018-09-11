@@ -9,6 +9,7 @@
 #include "cpe/utils/base64.h"
 #include "cpe/utils/sha1.h"
 #include "net_endpoint.h"
+#include "net_timer.h"
 #include "net_http_endpoint.h"
 #include "net_http_req.h"
 #include "net_http_protocol.h"
@@ -17,9 +18,13 @@
 #include "net_ws_protocol_i.h"
 
 static const char * net_ws_wslay_err_str(int err);
+static const char * net_ws_wslay_op_type_str(int op_type);
+
 static void net_ws_endpoint_reset_data(net_ws_endpoint_t ws_ep);
 static int net_ws_endpoint_send_handshake(net_ws_endpoint_t ws_ep);
-
+static void net_ws_endpoint_send_pingpong(net_timer_t timer, void * ctx);
+static int net_ws_endpoint_send_event(net_ws_protocol_t ws_protocol, net_ws_endpoint_t ws_ep, struct wslay_event_msg * ws_msg);
+                                      
 static net_http_res_op_result_t net_ws_endpoint_on_handshake_rcode(void * ctx, net_http_req_t req, uint16_t code, const char * msg);
 static net_http_res_op_result_t net_ws_endpoint_on_handshake_head(void * ctx, net_http_req_t req, const char * name, const char * value);
 static net_http_res_op_result_t net_ws_endpoint_on_handshake_complete(void * ctx, net_http_req_t req, net_http_res_result_t result);
@@ -32,8 +37,6 @@ net_ws_endpoint_create(net_driver_t driver, net_endpoint_type_t type, net_ws_pro
     if (http_ep == NULL) return NULL;
     
     net_ws_endpoint_t ws_ep = net_http_endpoint_data(http_ep);
-
-    ws_ep->m_http_ep = http_ep;
     
     return ws_ep;
 }
@@ -48,6 +51,43 @@ net_ws_endpoint_t net_ws_endpoint_get(net_endpoint_t endpoint) {
 
 net_ws_protocol_t net_ws_endpoint_protocol(net_ws_endpoint_t ws_ep) {
     return net_http_protocol_data(net_http_endpoint_protocol(net_http_endpoint_from_data(ws_ep)));
+}
+
+uint32_t net_ws_endpoint_pingpong_span_ms(net_ws_endpoint_t ws_ep) {
+    return ws_ep->m_cfg_pingpong_span_ms;
+}
+
+int net_ws_endpoint_set_pingpong_span_ms(net_ws_endpoint_t ws_ep, uint32_t span_ms) {
+    if (span_ms == 0) {
+        if (ws_ep->m_pingpong_timer) {
+            net_timer_free(ws_ep->m_pingpong_timer);
+            ws_ep->m_pingpong_timer = NULL;
+        }
+    }
+    else {
+        if (ws_ep->m_pingpong_timer == NULL) {
+            ws_ep->m_pingpong_timer = net_timer_auto_create(
+                net_endpoint_schedule(net_ws_endpoint_net_ep(ws_ep)), net_ws_endpoint_send_pingpong, ws_ep);
+            if (ws_ep->m_pingpong_timer == NULL) {
+                net_ws_protocol_t ws_protocol = net_ws_endpoint_protocol(ws_ep);
+                CPE_ERROR(
+                    ws_protocol->m_em,
+                    "ws: %s: set pingpong span ms: create timer fail!",
+                    net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_ws_endpoint_net_ep(ws_ep)));
+                return -1;
+            }
+        }
+    }
+
+    ws_ep->m_cfg_pingpong_span_ms = span_ms;
+
+    if (ws_ep->m_cfg_pingpong_span_ms != 0
+        && ws_ep->m_state == net_ws_state_established)
+    {
+        net_timer_active(ws_ep->m_pingpong_timer, ws_ep->m_cfg_pingpong_span_ms);
+    }
+    
+    return 0;
 }
 
 uint32_t net_ws_endpoint_reconnect_span_ms(net_ws_endpoint_t ws_ep) {
@@ -203,99 +243,14 @@ int net_ws_endpoint_set_path(net_ws_endpoint_t ws_ep, const char * path) {
 
 int net_ws_endpoint_send_msg_text(net_ws_endpoint_t ws_ep, const char * msg) {
     net_ws_protocol_t ws_protocol = net_ws_endpoint_protocol(ws_ep);
-
-    if (ws_ep->m_state != net_ws_state_established) {
-        CPE_ERROR(
-            ws_protocol->m_em,
-            "ws: %s: msg text: >>> curent state %s, can`t send msg!\n%s",
-            net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_ws_endpoint_net_ep(ws_ep)),
-            net_ws_state_str(ws_ep->m_state),
-            msg);
-        return -1;
-    }
-    
     struct wslay_event_msg ws_msg = { WSLAY_TEXT_FRAME,  (const uint8_t *)msg, strlen(msg) };
-    if (wslay_event_queue_msg(ws_ep->m_ctx, &ws_msg) != 0) {
-        CPE_ERROR(
-            ws_protocol->m_em,
-            "ws: %s: msg text: >>> queue msg fail!\n%s",
-            net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_ws_endpoint_net_ep(ws_ep)),
-            msg);
-        return -1;
-    }
-
-    net_endpoint_t endpoint = net_ws_endpoint_net_ep(ws_ep);
-    if (wslay_event_want_write(ws_ep->m_ctx)
-        && !net_endpoint_buf_is_full(endpoint, net_ep_buf_http_out))
-    {
-        int rv = wslay_event_send(ws_ep->m_ctx);
-        if (rv != 0) {
-            
-            CPE_ERROR(
-                ws_protocol->m_em, "ws: %s: msg text: >>> send fail, rv=%d (%s)\n%s",
-                net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_ws_endpoint_net_ep(ws_ep)),
-                rv, net_ws_wslay_err_str(rv),
-                msg);
-            return -1;
-        }
-    }
-    
-    if (net_endpoint_protocol_debug(net_ws_endpoint_net_ep(ws_ep)) >= 2) {
-        CPE_INFO(
-            ws_protocol->m_em, "ws: %s: msg text: >>>\n%s",
-            net_endpoint_dump(
-                net_ws_protocol_tmp_buffer(ws_protocol),
-                net_ws_endpoint_net_ep(ws_ep)),
-            msg);
-    }
-
-    return 0;
+    return net_ws_endpoint_send_event(ws_protocol, ws_ep, &ws_msg);
 }
 
 int net_ws_endpoint_send_msg_bin(net_ws_endpoint_t ws_ep, const void * msg, uint32_t msg_len) {
     net_ws_protocol_t ws_protocol = net_ws_endpoint_protocol(ws_ep);
-
-    if (ws_ep->m_state != net_ws_state_established) {
-        CPE_ERROR(
-            ws_protocol->m_em,
-            "ws: %s: msg bin: >>> %d data fail, curent state %s, can`t send msg!",
-            net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_ws_endpoint_net_ep(ws_ep)),
-            msg_len,
-            net_ws_state_str(ws_ep->m_state));
-        return -1;
-    }
-    
     struct wslay_event_msg ws_msg = { WSLAY_BINARY_FRAME,  (const uint8_t *)msg, msg_len };
-    if (wslay_event_queue_msg(ws_ep->m_ctx, &ws_msg) != 0) {
-        CPE_ERROR(
-            ws_protocol->m_em,
-            "ws: %s: msg bin: >>> %d data fail, queue fail",
-            net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_ws_endpoint_net_ep(ws_ep)),
-            msg_len);
-        return -1;
-    }
-
-    net_endpoint_t endpoint = net_ws_endpoint_net_ep(ws_ep);
-    if (wslay_event_want_write(ws_ep->m_ctx) && !net_endpoint_buf_is_full(endpoint, net_ep_buf_http_out)) {
-        int rv = wslay_event_send(ws_ep->m_ctx);
-        if (rv != 0) {
-            CPE_ERROR(
-                ws_protocol->m_em, "ws: %s: msg bin: >>> %d data fail, rv=%d(%s)",
-                net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_ws_endpoint_net_ep(ws_ep)),
-                msg_len,
-                rv, net_ws_wslay_err_str(rv));
-            return -1;
-        }
-    }
-    
-    if (net_endpoint_protocol_debug(net_ws_endpoint_net_ep(ws_ep)) >= 2) {
-        CPE_INFO(
-            ws_protocol->m_em, "ws: %s: msg bin: >>> %d data success",
-            net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_ws_endpoint_net_ep(ws_ep)),
-            msg_len);
-    }
-
-    return 0;
+    return net_ws_endpoint_send_event(ws_protocol, ws_ep, &ws_msg);
 }
 
 void net_ws_endpoint_enable(net_ws_endpoint_t ws_ep) {
@@ -320,6 +275,12 @@ int net_ws_endpoint_set_state(net_ws_endpoint_t ws_ep, net_ws_state_t state) {
     
     ws_ep->m_state = state;
 
+    if (ws_ep->m_state == net_ws_state_established) {
+        if (ws_ep->m_pingpong_timer) {
+            net_timer_active(ws_ep->m_pingpong_timer, ws_ep->m_cfg_pingpong_span_ms);
+        }
+    }
+    
     return net_ws_endpoint_notify_state_changed(ws_ep, old_state);
 }
 
@@ -479,11 +440,17 @@ static void net_ws_endpoint_on_msg_recv_cb(
                 net_ws_endpoint_net_ep(ws_ep)));
         break;
     case WSLAY_PONG:
-        CPE_ERROR(
-            ws_protocol->m_em, "ws: %s: pong: not support!",
-            net_endpoint_dump(
-                net_ws_protocol_tmp_buffer(ws_protocol),
-                net_ws_endpoint_net_ep(ws_ep)));
+        ws_ep->m_pingpong_count = 0;
+
+        if (net_endpoint_protocol_debug(net_ws_endpoint_net_ep(ws_ep)) >= 2) {
+            CPE_INFO(
+                ws_protocol->m_em, "ws: %s: msg poing: <<< %d data",
+                net_endpoint_dump(
+                    net_ws_protocol_tmp_buffer(ws_protocol),
+                    net_ws_endpoint_net_ep(ws_ep)),
+                (int)arg->msg_length);
+        }
+        
         break;
     }
 }
@@ -502,10 +469,13 @@ int net_ws_endpoint_init(net_http_endpoint_t http_ep) {
     net_ws_endpoint_t ws_ep = net_http_endpoint_data(http_ep);
     net_ws_protocol_t ws_protocol = net_http_protocol_data(net_http_endpoint_protocol(http_ep));
 
-    ws_ep->m_http_ep = NULL;
+    ws_ep->m_http_ep = http_ep;
     ws_ep->m_state = net_ws_state_init;
     ws_ep->m_cfg_path = NULL;
+    ws_ep->m_cfg_pingpong_span_ms = 0;
     ws_ep->m_handshake_token = NULL;
+    ws_ep->m_pingpong_count = 0;
+    ws_ep->m_pingpong_timer = NULL;
 
     wslay_event_context_client_init(&ws_ep->m_ctx, &s_net_ws_endpoint_callbacks, ws_ep);
 
@@ -539,7 +509,12 @@ void net_ws_endpoint_fini(net_http_endpoint_t http_ep) {
         mem_free(ws_protocol->m_alloc, ws_ep->m_cfg_path);
         ws_ep->m_cfg_path = NULL;
     }
-    
+
+    if (ws_ep->m_pingpong_timer) {
+        net_timer_free(ws_ep->m_pingpong_timer);
+        ws_ep->m_pingpong_timer = NULL;
+    }
+
     ws_ep->m_http_ep = NULL;
 }
 
@@ -740,6 +715,94 @@ void net_ws_endpoint_url_print(write_stream_t s, net_ws_endpoint_t ws_ep) {
     stream_printf(s, "%s", net_ws_endpoint_path(ws_ep));
 }
 
+static void net_ws_endpoint_send_pingpong(net_timer_t timer, void * ctx) {
+    net_ws_endpoint_t ws_ep = ctx;
+    net_ws_protocol_t ws_protocol = net_ws_endpoint_protocol(ws_ep);
+
+    ws_ep->m_pingpong_count++;
+
+    if (ws_ep->m_pingpong_count < 3) {
+        if (net_endpoint_protocol_debug(net_ws_endpoint_net_ep(ws_ep)) >= 2) {
+            CPE_INFO(
+                ws_protocol->m_em, "ws: %s: ping send success, count=%d!",
+                net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_ws_endpoint_net_ep(ws_ep)),
+                ws_ep->m_pingpong_count);
+        }
+
+        struct wslay_event_msg ws_msg = { WSLAY_PING,  NULL, 0 };
+        net_ws_endpoint_send_event(ws_protocol, ws_ep, &ws_msg);
+        net_timer_active(ws_ep->m_pingpong_timer, ws_ep->m_cfg_pingpong_span_ms);
+    }
+    else {
+        CPE_ERROR(
+            ws_protocol->m_em, "ws: %s: pint timeout, count=%d!",
+            net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_ws_endpoint_net_ep(ws_ep)),
+            ws_ep->m_pingpong_count);
+
+        net_endpoint_t endpoint = net_ws_endpoint_net_ep(ws_ep);
+        if (net_endpoint_set_state(endpoint, net_endpoint_state_network_error) != 0) {
+            net_endpoint_free(endpoint);
+        }
+    }
+}
+
+static int net_ws_endpoint_send_event(net_ws_protocol_t ws_protocol, net_ws_endpoint_t ws_ep, struct wslay_event_msg * ws_msg) {
+    if (ws_ep->m_state != net_ws_state_established) {
+        CPE_ERROR(
+            ws_protocol->m_em,
+            "ws: %s: msg %s: >>> curent state %s, can`t send msg!",
+            net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_ws_endpoint_net_ep(ws_ep)),
+            net_ws_wslay_op_type_str(ws_msg->opcode),
+            net_ws_state_str(ws_ep->m_state));
+        return -1;
+    }
+    
+    if (wslay_event_queue_msg(ws_ep->m_ctx, ws_msg) != 0) {
+        CPE_ERROR(
+            ws_protocol->m_em,
+            "ws: %s: msg %s: >>> queue msg fail!",
+            net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_ws_endpoint_net_ep(ws_ep)),
+            net_ws_wslay_op_type_str(ws_msg->opcode));
+        return -1;
+    }
+
+    net_endpoint_t endpoint = net_ws_endpoint_net_ep(ws_ep);
+    if (wslay_event_want_write(ws_ep->m_ctx)
+        && !net_endpoint_buf_is_full(endpoint, net_ep_buf_http_out))
+    {
+        int rv = wslay_event_send(ws_ep->m_ctx);
+        if (rv != 0) {
+            CPE_ERROR(
+                ws_protocol->m_em, "ws: %s: msg %s: >>> send fail, rv=%d (%s)",
+                net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_ws_endpoint_net_ep(ws_ep)),
+                net_ws_wslay_op_type_str(ws_msg->opcode),
+                rv, net_ws_wslay_err_str(rv));
+            return -1;
+        }
+    }
+    
+    if (net_endpoint_protocol_debug(net_ws_endpoint_net_ep(ws_ep)) >= 2) {
+        if (ws_msg->opcode == WSLAY_TEXT_FRAME) {
+            CPE_INFO(
+                ws_protocol->m_em, "ws: %s: msg %s: >>>\n%s",
+                net_endpoint_dump(
+                    net_ws_protocol_tmp_buffer(ws_protocol),
+                    net_ws_endpoint_net_ep(ws_ep)),
+                net_ws_wslay_op_type_str(ws_msg->opcode),
+                (const char *)ws_msg->msg);
+        }
+        else {
+            CPE_INFO(
+                ws_protocol->m_em, "ws: %s: msg %s: >>> %d data success",
+                net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_ws_endpoint_net_ep(ws_ep)),
+                net_ws_wslay_op_type_str(ws_msg->opcode),
+                (int)ws_msg->msg_length);
+        }
+    }
+
+    return 0;
+}
+
 const char * net_ws_endpoint_url_dump(mem_buffer_t buffer, net_ws_endpoint_t ws_ep) {
     struct write_stream_buffer stream = CPE_WRITE_STREAM_BUFFER_INITIALIZER(buffer);
 
@@ -787,5 +850,24 @@ static const char * net_ws_wslay_err_str(int err) {
         return "wslay-no-mem";
     default:
         return "wslay-unknown-error";
+    }
+}
+
+static const char * net_ws_wslay_op_type_str(int op_type) {
+    switch(op_type) {
+    case WSLAY_CONTINUATION_FRAME:
+        return "continuation-frame";
+    case WSLAY_TEXT_FRAME:
+        return "text";
+    case WSLAY_BINARY_FRAME:
+        return "binary";
+    case WSLAY_CONNECTION_CLOSE:
+        return "close";
+    case WSLAY_PING:
+        return "ping";
+    case WSLAY_PONG:
+        return "pong";
+    default:
+        return "unknown-wslay-op";
     }
 }

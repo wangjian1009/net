@@ -8,9 +8,12 @@ NET_BEGIN_DECL
 struct net_ws_endpoint {
     net_http_endpoint_t m_http_ep;
     char * m_cfg_path;
+    uint32_t m_cfg_pingpong_span_ms;
     net_ws_state_t m_state;
     wslay_event_context_ptr m_ctx;
     char * m_handshake_token;
+    uint8_t m_pingpong_count;
+    net_timer_t m_pingpong_timer;
 };
 
 int net_ws_endpoint_init(net_http_endpoint_t endpoint);
