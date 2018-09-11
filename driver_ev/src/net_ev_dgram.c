@@ -168,14 +168,28 @@ int net_ev_dgram_send(net_dgram_t base_dgram, net_address_t target, void const *
     }
     else {
         if (net_address_type(remote_addr) == net_address_ipv4) {
-            net_address_t remote_addr_ipv6 = net_address_create_ipv6_from_ipv4_nat(schedule, remote_addr);
-            if (remote_addr_ipv6 == NULL) {
-                CPE_ERROR(
-                    driver->m_em, "ev: dgram: convert ipv4 address %s to ipv6(nat) fail",
-                    net_address_dump(net_ev_driver_tmp_buffer(driver), remote_addr));
-                return -1;
-            }
+            net_address_t remote_addr_ipv6;
 
+            net_local_ip_stack_t ipstack = net_schedule_local_ip_stack(schedule);
+            if (ipstack == net_local_ip_stack_dual) {
+                remote_addr_ipv6 = net_address_create_ipv6_from_ipv4_map(schedule, remote_addr);
+                if (remote_addr_ipv6 == NULL) {
+                    CPE_ERROR(
+                        driver->m_em, "ev: dgram: convert ipv4 address %s to ipv6(map) fail",
+                        net_address_dump(net_ev_driver_tmp_buffer(driver), remote_addr));
+                    return -1;
+                }
+            }
+            else {
+                remote_addr_ipv6 = net_address_create_ipv6_from_ipv4_nat(schedule, remote_addr);
+                if (remote_addr_ipv6 == NULL) {
+                    CPE_ERROR(
+                        driver->m_em, "ev: dgram: convert ipv4 address %s to ipv6(nat) fail",
+                        net_address_dump(net_ev_driver_tmp_buffer(driver), remote_addr));
+                    return -1;
+                }
+            }
+            
             net_address_to_sockaddr(remote_addr_ipv6, (struct sockaddr *)&addr, &addr_len);
 
             net_address_free(remote_addr_ipv6);
