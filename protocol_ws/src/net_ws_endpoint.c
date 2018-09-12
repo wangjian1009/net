@@ -722,13 +722,6 @@ static void net_ws_endpoint_send_pingpong(net_timer_t timer, void * ctx) {
     ws_ep->m_pingpong_count++;
 
     if (ws_ep->m_pingpong_count < 3) {
-        if (net_endpoint_protocol_debug(net_ws_endpoint_net_ep(ws_ep)) >= 2) {
-            CPE_INFO(
-                ws_protocol->m_em, "ws: %s: ping send success, count=%d!",
-                net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_ws_endpoint_net_ep(ws_ep)),
-                ws_ep->m_pingpong_count);
-        }
-
         struct wslay_event_msg ws_msg = { WSLAY_PING,  NULL, 0 };
         net_ws_endpoint_send_event(ws_protocol, ws_ep, &ws_msg);
         net_timer_active(ws_ep->m_pingpong_timer, ws_ep->m_cfg_pingpong_span_ms);
