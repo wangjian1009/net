@@ -444,7 +444,7 @@ static void net_ws_endpoint_on_msg_recv_cb(
 
         if (net_endpoint_protocol_debug(net_ws_endpoint_net_ep(ws_ep)) >= 2) {
             CPE_INFO(
-                ws_protocol->m_em, "ws: %s: msg poing: <<< %d data",
+                ws_protocol->m_em, "ws: %s: msg pong: <<< %d data",
                 net_endpoint_dump(
                     net_ws_protocol_tmp_buffer(ws_protocol),
                     net_ws_endpoint_net_ep(ws_ep)),
