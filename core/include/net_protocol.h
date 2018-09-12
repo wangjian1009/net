@@ -46,6 +46,8 @@ net_protocol_t net_protocol_from_data(void * data);
 uint8_t net_protocol_debug(net_protocol_t protocol);
 void net_protocol_set_debug(net_protocol_t protocol, uint8_t debug);
 
+net_protocol_init_fun_t net_protocol_init_fun(net_protocol_t protocol);
+
 NET_END_DECL
 
 #endif

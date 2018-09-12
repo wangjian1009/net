@@ -119,3 +119,12 @@ mem_buffer_t net_http_protocol_tmp_buffer(net_http_protocol_t http_protocol) {
 net_schedule_t net_http_protocol_schedule(net_http_protocol_t http_protocol) {
     return net_protocol_schedule(net_protocol_from_data(http_protocol));
 }
+
+net_http_protocol_t net_http_protocol_find(net_schedule_t schedule, const char * protocol_name) {
+    net_protocol_t base_protocol = net_protocol_find(schedule, protocol_name);
+    if (base_protocol == NULL) return NULL;
+
+    if (net_protocol_init_fun(base_protocol) != net_http_protocol_init) return NULL;
+
+    return net_protocol_data(base_protocol);
+}

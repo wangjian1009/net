@@ -23,8 +23,6 @@ void net_dns_task_builder_set_default(net_dns_manage_t manage, net_dns_task_buil
 
 int net_dns_manage_auto_conf(net_dns_manage_t manage, net_driver_t driver, net_dns_scope_t scope);
 
-int net_dns_manage_dgram_send(net_dns_manage_t manage, net_address_t target, void const * data, size_t data_size);
-
 NET_END_DECL
 
 #endif

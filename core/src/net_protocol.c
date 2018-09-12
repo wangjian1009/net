@@ -98,6 +98,10 @@ void net_protocol_set_debug(net_protocol_t protocol, uint8_t debug) {
     protocol->m_debug = debug;
 }
 
+net_protocol_init_fun_t net_protocol_init_fun(net_protocol_t protocol) {
+    return protocol->m_protocol_init;
+}
+
 uint8_t net_protocol_support_direct(net_protocol_t protocol) {
     return protocol->m_endpoint_direct == NULL ? 0 : 1;
 }

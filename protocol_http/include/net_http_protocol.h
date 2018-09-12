@@ -29,6 +29,8 @@ net_http_protocol_create(
 
 void net_http_protocol_free(net_http_protocol_t http_protocol);
 
+net_http_protocol_t net_http_protocol_find(net_schedule_t schedule, const char * protocol_name);
+
 net_schedule_t net_http_protocol_schedule(net_http_protocol_t http_protocol);
 
 void * net_http_protocol_data(net_http_protocol_t http_protocol);
