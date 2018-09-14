@@ -56,6 +56,25 @@ int net_dq_acceptor_init(net_acceptor_t base_acceptor) {
         return -1;
     }
 
+    if (net_address_port(address) == 0) {
+        addr_len = sizeof(addr);
+        memset(&addr, 0, addr_len);
+        if (cpe_getsockname(acceptor->m_fd, (struct sockaddr *)&addr, &addr_len) != 0) {
+            CPE_ERROR(
+                driver->m_em, "dq: acceptor: sockaddr error, errno=%d (%s)",
+                cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+            cpe_sock_close(acceptor->m_fd);
+            return -1;
+        }
+
+        if (((struct sockaddr*)&addr)->sa_family == AF_INET) {
+            net_address_set_port(address, ntohs(((struct sockaddr_in*)&addr)->sin_port));
+        }
+        else {
+            net_address_set_port(address, ntohs(((struct sockaddr_in6*)&addr)->sin6_port));
+        }
+    }
+    
     acceptor->m_source = dispatch_source_create(DISPATCH_SOURCE_TYPE_READ, acceptor->m_fd, 0, dispatch_get_main_queue());
     dispatch_source_set_event_handler(acceptor->m_source, ^{ net_dq_acceptor_on_accept(acceptor); });
     dispatch_resume(acceptor->m_source);

@@ -66,6 +66,25 @@ int net_ev_acceptor_init(net_acceptor_t base_acceptor) {
         return -1;
     }
 
+    if (net_address_port(address) == 0) {
+        addr_len = sizeof(addr);
+        memset(&addr, 0, addr_len);
+        if (cpe_getsockname(acceptor->m_fd, (struct sockaddr *)&addr, &addr_len) != 0) {
+            CPE_ERROR(
+                driver->m_em, "ev: acceptor: sockaddr error, errno=%d (%s)",
+                cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+            cpe_sock_close(acceptor->m_fd);
+            return -1;
+        }
+
+        if (((struct sockaddr*)&addr)->sa_family == AF_INET) {
+            net_address_set_port(address, ntohs(((struct sockaddr_in*)&addr)->sin_port));
+        }
+        else {
+            net_address_set_port(address, ntohs(((struct sockaddr_in6*)&addr)->sin6_port));
+        }
+    }
+    
     acceptor->m_watcher.data = acceptor;
     ev_io_init(&acceptor->m_watcher, net_ev_acceptor_cb, acceptor->m_fd, EV_READ);
     ev_io_start(driver->m_ev_loop, &acceptor->m_watcher);
