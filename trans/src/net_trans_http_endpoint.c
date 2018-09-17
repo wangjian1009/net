@@ -17,7 +17,6 @@ net_trans_http_endpoint_create(net_trans_manage_t manage) {
     }
 
     net_trans_http_endpoint_t trans_http = net_http_endpoint_data(http_endpoint);
-    
     return trans_http;
 }
 
@@ -34,4 +33,8 @@ int net_trans_http_endpoint_init(net_http_endpoint_t http_endpoint) {
 void net_trans_http_endpoint_fini(net_http_endpoint_t http_endpoint) {
     /* net_trans_http_endpoint_t trahttp = net_endpoint_protocol_data(base_endpoint); */
     /* net_trans_ns_parser_fini(&trahttp->m_parser); */
+}
+
+int net_trans_http_endpoint_on_state_change(net_http_endpoint_t http_endpoint, net_http_state_t from_state) {
+    return 0;
 }
