@@ -5,6 +5,7 @@
 #include "cpe/utils/memory.h"
 #include "cpe/utils/error.h"
 #include "cpe/utils/buffer.h"
+#include "net_http_types.h"
 #include "net_trans_manage.h"
 
 NET_BEGIN_DECL

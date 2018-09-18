@@ -1,15 +1,19 @@
 #include "cpe/pal/pal_string.h"
 #include "cpe/utils/string_utils.h"
 #include "net_address.h"
+#include "net_http_req.h"
+#include "net_http_endpoint.h"
 #include "net_trans_task_i.h"
 #include "net_trans_host_i.h"
 #include "net_trans_http_endpoint_i.h"
 
 static net_address_t net_trans_task_parse_address(
     net_trans_manage_t mgr, const char * url, uint8_t * is_https, const char * * relative_url);
+static net_http_res_op_result_t net_trans_task_on_body(void * ctx, net_http_req_t req, void const * data, size_t data_size);
+static net_http_res_op_result_t net_trans_task_on_complete(void * ctx, net_http_req_t req, net_http_res_result_t result);
 
 net_trans_task_t
-net_trans_task_create(net_trans_manage_t mgr, const char *method, const char * uri) {
+net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const char * uri) {
     net_address_t address = NULL;
     net_trans_host_t host = NULL;
     net_trans_http_endpoint_t http_ep = NULL;
@@ -42,7 +46,6 @@ net_trans_task_create(net_trans_manage_t mgr, const char *method, const char * u
 
     task->m_ep = http_ep;
     task->m_id = mgr->m_max_task_id + 1;
-    task->m_state = net_trans_task_init;
     task->m_result = net_trans_result_unknown;
     task->m_errno = net_trans_errno_none;
     task->m_in_callback = 0;
@@ -53,6 +56,28 @@ net_trans_task_create(net_trans_manage_t mgr, const char *method, const char * u
     task->m_ctx = NULL;
     task->m_ctx_free = NULL;
 
+    task->m_http_req = net_http_req_create(
+        net_http_endpoint_from_data(http_ep),
+        method == net_trans_method_get ? net_http_req_method_get : net_http_req_method_post, relative_url);
+    if (task->m_http_req == NULL) {
+        CPE_ERROR(mgr->m_em, "trans: task: create http req fail!");
+        goto CREATED_ERROR;
+    }
+
+    if (net_http_req_set_reader(
+            task->m_http_req,
+            task,
+            NULL,
+            NULL,
+            net_trans_task_on_body,
+            net_trans_task_on_complete) != 0)
+    {
+    }
+    
+    if (!net_trans_http_endpoint_is_active(http_ep)) {
+        net_http_endpoint_enable(net_http_endpoint_from_data(http_ep));
+    }
+    
     cpe_hash_entry_init(&task->m_hh_for_mgr);
     if (cpe_hash_table_insert_unique(&mgr->m_tasks, task) != 0) {
         CPE_ERROR(mgr->m_em, "trans: task: id duplicate!");
@@ -62,6 +87,20 @@ net_trans_task_create(net_trans_manage_t mgr, const char *method, const char * u
     return task;
 
 CREATED_ERROR:
+    if (task) {
+        if (task->m_http_req) {
+            net_http_req_free(task->m_http_req);
+            task->m_http_req = NULL;
+
+            net_trans_http_endpoint_free(http_ep);
+            http_ep = NULL;
+        }
+        
+        task->m_ep = (net_trans_http_endpoint_t)mgr;
+        TAILQ_INSERT_TAIL(&mgr->m_free_tasks, task, m_next_for_mgr);
+        task = NULL;
+    }
+    
     if (http_ep) {
         if (!net_trans_http_endpoint_is_active(http_ep)) {
             net_trans_http_endpoint_free(http_ep);
@@ -79,12 +118,6 @@ CREATED_ERROR:
     if (address) {
         net_address_free(address);
         address = NULL;
-    }
-
-    if (task) {
-        task->m_ep = (net_trans_http_endpoint_t)mgr;
-        TAILQ_INSERT_TAIL(&mgr->m_free_tasks, task, m_next_for_mgr);
-        task = NULL;
     }
     
     return NULL;
@@ -166,6 +199,17 @@ void net_trans_task_set_callback(
 int net_trans_task_set_timeout(net_trans_task_t task, uint64_t timeout_ms);
 
 int net_trans_task_append_header(net_trans_task_t task, const char * header_one);
+
+int net_trans_task_start(net_trans_task_t task) {
+    net_trans_manage_t mgr = task->m_ep->m_host->m_mgr;
+
+    if (net_http_req_write_commit(task->m_http_req) != 0) {
+        CPE_ERROR(mgr->m_em, "trans: task: start fail!");
+        return -1;
+    }
+
+    return 0;
+}
 
 const char * net_trans_task_state_str(net_trans_task_state_t state) {
     switch(state) {
@@ -254,4 +298,12 @@ static net_address_t net_trans_task_parse_address(
     }
     
     return address;
+}
+
+static net_http_res_op_result_t net_trans_task_on_body(void * ctx, net_http_req_t req, void const * data, size_t data_size) {
+    return net_http_res_op_success;
+}
+
+static net_http_res_op_result_t net_trans_task_on_complete(void * ctx, net_http_req_t req, net_http_res_result_t result) {
+    return net_http_res_op_success;
 }

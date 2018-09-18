@@ -9,7 +9,7 @@
 #include "net_trans_host_i.h"
 
 net_trans_manage_t net_trans_manage_create(
-    mem_allocrator_t alloc, error_monitor_t em, net_schedule_t schedule)
+    mem_allocrator_t alloc, error_monitor_t em, net_schedule_t schedule, net_driver_t driver)
 {
     net_trans_manage_t manage = mem_alloc(alloc, sizeof(struct net_trans_manage));
     if (manage == NULL) {
@@ -23,6 +23,7 @@ net_trans_manage_t net_trans_manage_create(
     manage->m_em = em;
     manage->m_debug = 0;
     manage->m_schedule = schedule;
+    manage->m_driver = driver;
     manage->m_cfg_host_endpoint_limit = 0;
 
     TAILQ_INIT(&manage->m_free_tasks);

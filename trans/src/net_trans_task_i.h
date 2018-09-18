@@ -12,7 +12,7 @@ struct net_trans_task {
         TAILQ_ENTRY(net_trans_task) m_next_for_mgr;
     };
     uint32_t m_id;
-    net_trans_task_state_t m_state;
+    net_http_req_t m_http_req;
     net_trans_task_result_t m_result;
     net_trans_errno_t m_errno;
     uint8_t m_in_callback;

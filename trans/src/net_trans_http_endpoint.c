@@ -1,6 +1,7 @@
 #include "assert.h"
 #include "cpe/pal/pal_platform.h"
 #include "cpe/pal/pal_strings.h"
+#include "net_endpoint.h"
 #include "net_http_endpoint.h"
 #include "net_http_protocol.h"
 #include "net_trans_http_endpoint_i.h"
@@ -21,6 +22,12 @@ net_trans_http_endpoint_create(net_trans_host_t host) {
 
     net_trans_http_endpoint_t trans_http = net_http_endpoint_data(http_endpoint);
 
+    if (net_endpoint_set_remote_address(net_http_endpoint_net_ep(http_endpoint), host->m_address, 0) != 0) {
+        CPE_ERROR(mgr->m_em, "trans: create http-endpoint: set remote address fail!");
+        net_http_endpoint_free(http_endpoint);
+        return NULL;
+    }
+    
     trans_http->m_host = host;
     host->m_endpoint_count++;
     TAILQ_INSERT_TAIL(&host->m_endpoints, trans_http, m_next);

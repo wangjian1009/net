@@ -23,6 +23,11 @@ typedef enum net_trans_errno {
     , net_trans_errno_range_error = 33
 } net_trans_errno_t;
 
+typedef enum net_trans_method {
+    net_trans_method_get,
+    net_trans_method_post,
+} net_trans_method_t;
+
 typedef struct net_trans_manage * net_trans_manage_t;
 typedef struct net_trans_task * net_trans_task_t;
 

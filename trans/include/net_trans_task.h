@@ -4,7 +4,7 @@
 
 NET_BEGIN_DECL
 
-net_trans_task_t net_trans_task_create(net_trans_manage_t mgr, const char *method, const char * url);
+net_trans_task_t net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const char * url);
 void net_trans_task_free(net_trans_task_t task);
 
 uint32_t net_trans_task_id(net_trans_task_t task);
@@ -23,6 +23,8 @@ void net_trans_task_set_callback(
 int net_trans_task_set_timeout(net_trans_task_t task, uint64_t timeout_ms);
 
 int net_trans_task_append_header(net_trans_task_t task, const char * header_one);
+
+int net_trans_task_start(net_trans_task_t task);
 
 const char * net_trans_task_state_str(net_trans_task_state_t state);
 const char * net_trans_task_result_str(net_trans_task_result_t result);
