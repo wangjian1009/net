@@ -22,8 +22,13 @@ struct net_trans_task {
     net_trans_task_progress_op_t m_progress_op;
     void * m_ctx;
     void (*m_ctx_free)(void *);
-    
 };
+
+void net_trans_task_free_all(net_trans_manage_t mgr);
+void net_trans_task_real_free(net_trans_task_t task);
+
+uint32_t net_trans_task_hash(net_trans_task_t o, void * user_data);
+int net_trans_task_eq(net_trans_task_t l, net_trans_task_t r, void * user_data);
 
 NET_END_DECL
 

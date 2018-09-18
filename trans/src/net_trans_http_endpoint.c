@@ -5,6 +5,7 @@
 #include "net_http_protocol.h"
 #include "net_trans_http_endpoint_i.h"
 #include "net_trans_host_i.h"
+#include "net_trans_task_i.h"
 
 net_trans_http_endpoint_t
 net_trans_http_endpoint_create(net_trans_host_t host) {
@@ -21,6 +22,7 @@ net_trans_http_endpoint_create(net_trans_host_t host) {
     net_trans_http_endpoint_t trans_http = net_http_endpoint_data(http_endpoint);
 
     trans_http->m_host = host;
+    host->m_endpoint_count++;
     TAILQ_INSERT_TAIL(&host->m_endpoints, trans_http, m_next);
     
     return trans_http;
@@ -33,13 +35,22 @@ void net_trans_http_endpoint_free(net_trans_http_endpoint_t trans_http) {
 int net_trans_http_endpoint_init(net_http_endpoint_t http_endpoint) {
     net_trans_http_endpoint_t trans_http = net_http_endpoint_data(http_endpoint);
     trans_http->m_host = NULL;
+    trans_http->m_task_count = 0;
+    TAILQ_INIT(&trans_http->m_tasks);
     return 0;
 }
 
 void net_trans_http_endpoint_fini(net_http_endpoint_t http_endpoint) {
     net_trans_http_endpoint_t trans_http = net_http_endpoint_data(http_endpoint);
 
+    while(!TAILQ_EMPTY(&trans_http->m_tasks)) {
+        net_trans_task_free(TAILQ_FIRST(&trans_http->m_tasks));
+    }
+    assert(trans_http->m_task_count == 0);
+
     if (trans_http->m_host) {
+        assert(trans_http->m_host->m_endpoint_count > 0);
+        trans_http->m_host->m_endpoint_count--;
         TAILQ_REMOVE(&trans_http->m_host->m_endpoints, trans_http, m_next);
         trans_http->m_host = NULL;
     }
@@ -47,4 +58,14 @@ void net_trans_http_endpoint_fini(net_http_endpoint_t http_endpoint) {
 
 int net_trans_http_endpoint_on_state_change(net_http_endpoint_t http_endpoint, net_http_state_t from_state) {
     return 0;
+}
+
+uint8_t net_trans_http_endpoint_is_active(net_trans_http_endpoint_t trans_http) {
+    switch(net_http_endpoint_state(net_http_endpoint_from_data(trans_http))) {
+    case net_http_state_disable:
+    case net_http_state_error:
+        return 0;
+    default:
+        return 1;
+    }
 }

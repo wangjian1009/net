@@ -40,6 +40,25 @@ net_trans_task_create(net_trans_manage_t mgr, const char *method, const char * u
         }
     }
 
+    task->m_ep = http_ep;
+    task->m_id = mgr->m_max_task_id + 1;
+    task->m_state = net_trans_task_init;
+    task->m_result = net_trans_result_unknown;
+    task->m_errno = net_trans_errno_none;
+    task->m_in_callback = 0;
+    task->m_is_free = 0;
+    task->m_commit_op = NULL;
+    task->m_write_op = NULL;
+    task->m_progress_op = NULL;
+    task->m_ctx = NULL;
+    task->m_ctx_free = NULL;
+
+    cpe_hash_entry_init(&task->m_hh_for_mgr);
+    if (cpe_hash_table_insert_unique(&mgr->m_tasks, task) != 0) {
+        CPE_ERROR(mgr->m_em, "trans: task: id duplicate!");
+        goto CREATED_ERROR;
+    }
+    mgr->m_max_task_id++;
     return task;
 
 CREATED_ERROR:
@@ -69,6 +88,117 @@ CREATED_ERROR:
     }
     
     return NULL;
+}
+
+void net_trans_task_free(net_trans_task_t task) {
+    net_trans_http_endpoint_t http_ep = task->m_ep;
+    net_trans_manage_t mgr = http_ep->m_host->m_mgr;
+
+    if (task->m_ctx_free) {
+        task->m_ctx_free(task->m_ctx);
+        task->m_ctx = NULL;
+        task->m_ctx_free = NULL;
+    }
+
+    cpe_hash_table_remove_by_ins(&mgr->m_tasks, task);
+
+    task->m_ep = (net_trans_http_endpoint_t)mgr;
+    TAILQ_INSERT_TAIL(&mgr->m_free_tasks, task, m_next_for_mgr);
+}
+
+void net_trans_task_free_all(net_trans_manage_t mgr) {
+    struct cpe_hash_it task_it;
+    net_trans_task_t task;
+
+    cpe_hash_it_init(&task_it, &mgr->m_tasks);
+
+    task = cpe_hash_it_next(&task_it);
+    while(task) {
+        net_trans_task_t next = cpe_hash_it_next(&task_it);
+        net_trans_task_free(task);
+        task = next;
+    }
+}
+
+void net_trans_task_real_free(net_trans_task_t task) {
+    net_trans_manage_t mgr = (net_trans_manage_t)task->m_ep;
+
+    TAILQ_REMOVE(&mgr->m_free_tasks, task, m_next_for_mgr);
+
+    mem_free(mgr->m_alloc, task);
+}
+
+uint32_t net_trans_task_id(net_trans_task_t task) {
+    return task->m_id;
+}
+
+net_trans_task_t net_trans_task_find(net_trans_manage_t mgr, uint32_t task_id) {
+    struct net_trans_task key;
+    key.m_id = task_id;
+    return cpe_hash_table_find(&mgr->m_tasks, &key);
+}
+
+net_trans_manage_t net_trans_task_manage(net_trans_task_t task) {
+    return task->m_ep->m_host->m_mgr;
+}
+
+void net_trans_task_set_debug(net_trans_task_t task, uint8_t is_debug) {
+}
+
+void net_trans_task_set_callback(
+    net_trans_task_t task,
+    net_trans_task_commit_op_t commit,
+    net_trans_task_progress_op_t progress,
+    net_trans_task_write_op_t write,
+    void * ctx, void (*ctx_free)(void *))
+{
+    if (task->m_ctx_free) {
+        task->m_ctx_free(task->m_ctx);
+    }
+
+    task->m_commit_op = commit;
+    task->m_write_op = write;
+    task->m_progress_op = progress;
+    task->m_ctx = commit;
+    task->m_ctx_free = ctx_free;
+}
+
+int net_trans_task_set_timeout(net_trans_task_t task, uint64_t timeout_ms);
+
+int net_trans_task_append_header(net_trans_task_t task, const char * header_one);
+
+const char * net_trans_task_state_str(net_trans_task_state_t state) {
+    switch(state) {
+    case net_trans_task_init:
+        return "trans-task-init";
+    case net_trans_task_working:
+        return "trans-task-working";
+    case net_trans_task_done:
+        return "trans-task-done";
+    }
+}
+
+const char * net_trans_task_result_str(net_trans_task_result_t result) {
+    switch(result) {
+    case net_trans_result_unknown:
+        return "trans-task-result-unknown";
+    case net_trans_result_ok:
+        return "trans-task-result-ok";
+    case net_trans_result_error:
+        return "trans-task-result-error";
+    case net_trans_result_timeout:
+        return "trans-task-result-timeout";
+    case net_trans_result_cancel:
+        return "trans-task-result-cancel";
+    }
+}
+
+uint32_t net_trans_task_hash(net_trans_task_t o, void * user_data) {
+    return o->m_id;
+}
+
+int net_trans_task_eq(net_trans_task_t l, net_trans_task_t r, void * user_data) {
+    return l->m_id == r->m_id;
 }
 
 static net_address_t net_trans_task_parse_address(

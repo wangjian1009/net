@@ -8,6 +8,8 @@ NET_BEGIN_DECL
 struct net_trans_http_endpoint {
     net_trans_host_t m_host;
     TAILQ_ENTRY(net_trans_http_endpoint) m_next;
+    uint16_t m_task_count;
+    net_trans_task_list_t m_tasks;
 };
 
 net_trans_http_endpoint_t net_trans_http_endpoint_create(net_trans_host_t host);

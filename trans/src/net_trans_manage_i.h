@@ -23,8 +23,9 @@ struct net_trans_manage {
     uint8_t m_debug;
     net_schedule_t m_schedule;
     net_driver_t m_driver;
+    uint16_t m_cfg_host_endpoint_limit;
     net_trans_http_protocol_t m_http_protocol;
-
+    
     struct cpe_hash_table m_hosts;
     struct cpe_hash_table m_tasks;
     
