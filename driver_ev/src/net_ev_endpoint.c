@@ -284,21 +284,26 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
                         bytes);
                 }
 
-                if (net_endpoint_buf_supply(base_endpoint, net_ep_buf_read, (uint32_t)bytes) != 0) {
-                    net_ev_endpoint_close_sock(driver, endpoint);
-                    if (net_endpoint_set_state(base_endpoint, net_endpoint_state_logic_error) != 0) {
-                        if (net_endpoint_driver_debug(base_endpoint) >= 2) {
-                            CPE_INFO(
-                                driver->m_em, "ev: %s: free for process fail!",
-                                net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint));
-                        }
-                        net_endpoint_free(base_endpoint);
-                    }
-                    return;
-                }
-
                 if (driver->m_data_monitor_fun) {
                     driver->m_data_monitor_fun(driver->m_data_monitor_ctx, base_endpoint, net_data_in, (uint32_t)bytes);
+                }
+                
+                if (net_endpoint_buf_supply(base_endpoint, net_ep_buf_read, (uint32_t)bytes) != 0) {
+                    if (endpoint->m_fd != -1) {
+                        net_ev_endpoint_close_sock(driver, endpoint);
+                    }
+
+                    if (net_endpoint_is_active(base_endpoint)) {
+                        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_logic_error) != 0) {
+                            if (net_endpoint_driver_debug(base_endpoint) >= 2) {
+                                CPE_INFO(
+                                    driver->m_em, "ev: %s: free for process fail!",
+                                    net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint));
+                            }
+                            net_endpoint_free(base_endpoint);
+                        }
+                    }
+                    return;
                 }
 
                 break;

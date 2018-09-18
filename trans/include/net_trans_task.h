@@ -11,6 +11,9 @@ uint32_t net_trans_task_id(net_trans_task_t task);
 net_trans_task_t net_trans_task_find(net_trans_manage_t mgr, uint32_t task_id);
 net_trans_manage_t net_trans_task_manage(net_trans_task_t task);
 
+net_trans_task_state_t net_trans_task_state(net_trans_task_t task);
+net_trans_task_result_t net_trans_task_result(net_trans_task_t task);
+
 void net_trans_task_set_debug(net_trans_task_t task, uint8_t is_debug);
 
 void net_trans_task_set_callback(

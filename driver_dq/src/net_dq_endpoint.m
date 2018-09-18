@@ -27,6 +27,8 @@ static void net_dq_endpoint_connect_log_connect_start(
 static void net_dq_endpoint_connect_log_connect_success(
     net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint);
 
+static void net_dq_endpoint_close_sock(net_dq_driver_t driver, net_dq_endpoint_t endpoint);
+
 int net_dq_endpoint_init(net_endpoint_t base_endpoint) {
     net_dq_endpoint_t endpoint = net_endpoint_data(base_endpoint);
 
@@ -55,8 +57,7 @@ void net_dq_endpoint_fini(net_endpoint_t base_endpoint) {
     }
 
     if (endpoint->m_fd != -1) {
-        cpe_sock_close(endpoint->m_fd);
-        endpoint->m_fd = -1;
+        net_dq_endpoint_close_sock(driver, endpoint);
     }
 }
 
@@ -292,6 +293,7 @@ int net_dq_endpoint_on_read(net_dq_driver_t driver, net_dq_endpoint_t endpoint, 
                 driver->m_em, "dq: %s: on read: endpoint rbuf full!",
                 net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
                 cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+            net_dq_endpoint_close_sock(driver, endpoint);
             if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) return -1;
             return 0;
         }
@@ -305,19 +307,25 @@ int net_dq_endpoint_on_read(net_dq_driver_t driver, net_dq_endpoint_t endpoint, 
                     (int)bytes);
             }
 
-            if (net_endpoint_buf_supply(base_endpoint, net_ep_buf_read, (uint32_t)bytes) != 0) {
-                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_logic_error) != 0) {
-                    if (net_endpoint_driver_debug(base_endpoint)) {
-                        CPE_INFO(
-                            driver->m_em, "dq: %s: free for process fail!",
-                            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
-                    }
-                    return -1;
-                }
-            }
-
             if (driver->m_data_monitor_fun) {
                 driver->m_data_monitor_fun(driver->m_data_monitor_ctx, base_endpoint, net_data_in, (uint32_t)bytes);
+            }
+            
+            if (net_endpoint_buf_supply(base_endpoint, net_ep_buf_read, (uint32_t)bytes) != 0) {
+                if (base_endpoint->m_fd != -1) {
+                    net_dq_endpoint_close_sock(driver, endpoint);
+                }
+                
+                if (net_endpoint_is_active(base_endpoint)) {
+                    if (net_endpoint_set_state(base_endpoint, net_endpoint_state_logic_error) != 0) {
+                        if (net_endpoint_driver_debug(base_endpoint)) {
+                            CPE_INFO(
+                                driver->m_em, "dq: %s: free for process fail!",
+                                net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
+                        }
+                        return -1;
+                    }
+                }
             }
 
             continue;
@@ -330,6 +338,7 @@ int net_dq_endpoint_on_read(net_dq_driver_t driver, net_dq_endpoint_t endpoint, 
                     net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
             }
                 
+            net_dq_endpoint_close_sock(driver, endpoint);
             if (net_endpoint_set_state(base_endpoint, net_endpoint_state_disable) != 0) return -1;
             return 0;
         }
@@ -350,6 +359,7 @@ int net_dq_endpoint_on_read(net_dq_driver_t driver, net_dq_endpoint_t endpoint, 
                     net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
                     cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
 
+                net_dq_endpoint_close_sock(driver, endpoint);
                 if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) return -1;
                 return 0;
             }
@@ -393,6 +403,7 @@ int net_dq_endpoint_on_write(net_dq_driver_t driver, net_dq_endpoint_t endpoint,
                     net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
             }
 
+            net_dq_endpoint_close_sock(driver, endpoint);
             if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) return -1;
             return 0;
         }
@@ -414,6 +425,7 @@ int net_dq_endpoint_on_write(net_dq_driver_t driver, net_dq_endpoint_t endpoint,
                         net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
                 }
 
+                net_dq_endpoint_close_sock(driver, endpoint);
                 if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) return -1;
                 return 0;
             }
@@ -423,6 +435,7 @@ int net_dq_endpoint_on_write(net_dq_driver_t driver, net_dq_endpoint_t endpoint,
                 net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
                 cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
 
+            net_dq_endpoint_close_sock(driver, endpoint);
             if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) return -1;
 
             return 0;
@@ -441,6 +454,7 @@ static void net_dq_endpoint_on_connect(net_dq_driver_t driver, net_dq_endpoint_t
             net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
 
+        net_dq_endpoint_close_sock(driver, endpoint);
         if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
             net_endpoint_free(base_endpoint);
         }
@@ -460,6 +474,7 @@ static void net_dq_endpoint_on_connect(net_dq_driver_t driver, net_dq_endpoint_t
                 driver->m_em, "dq: %s: connect error(callback), errno=%d (%s)",
                 net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
                 err, cpe_sock_errstr(err));
+            net_dq_endpoint_close_sock(driver, endpoint);
             if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
                 net_endpoint_free(base_endpoint);
             }

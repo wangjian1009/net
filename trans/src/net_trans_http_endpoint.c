@@ -44,6 +44,9 @@ int net_trans_http_endpoint_init(net_http_endpoint_t http_endpoint) {
     trans_http->m_host = NULL;
     trans_http->m_task_count = 0;
     TAILQ_INIT(&trans_http->m_tasks);
+
+    net_http_endpoint_set_reconnect_span_ms(http_endpoint, 0);
+    
     return 0;
 }
 
@@ -64,7 +67,15 @@ void net_trans_http_endpoint_fini(net_http_endpoint_t http_endpoint) {
 }
 
 int net_trans_http_endpoint_on_state_change(net_http_endpoint_t http_endpoint, net_http_state_t from_state) {
-    return 0;
+    switch(net_http_endpoint_state(http_endpoint)) {
+    case net_http_state_disable:
+        return -1;
+    case net_http_state_error:
+        return -1;
+    case net_http_state_connecting:
+    case net_http_state_established:
+        return 0;
+    }
 }
 
 uint8_t net_trans_http_endpoint_is_active(net_trans_http_endpoint_t trans_http) {

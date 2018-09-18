@@ -340,7 +340,7 @@ int net_http_endpoint_input(net_endpoint_t endpoint) {
                 net_http_req_free(processing_req);
 
                 if (http_ep->m_connection_type == net_http_connection_type_close) {
-                    if (net_endpoint_set_state(endpoint, net_endpoint_state_disable) != 0) {
+                    if (net_endpoint_set_state(endpoint, http_ep->m_reconnect_span_ms ? net_endpoint_state_disable : net_endpoint_state_deleting) != 0) {
                         return -1;
                     }
                     else {

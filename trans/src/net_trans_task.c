@@ -1,6 +1,8 @@
+#include "assert.h"
 #include "cpe/pal/pal_string.h"
 #include "cpe/utils/string_utils.h"
 #include "net_address.h"
+#include "net_endpoint.h"
 #include "net_http_req.h"
 #include "net_http_endpoint.h"
 #include "net_trans_task_i.h"
@@ -9,7 +11,7 @@
 
 static net_address_t net_trans_task_parse_address(
     net_trans_manage_t mgr, const char * url, uint8_t * is_https, const char * * relative_url);
-static net_http_res_op_result_t net_trans_task_on_body(void * ctx, net_http_req_t req, void const * data, size_t data_size);
+static net_http_res_op_result_t net_trans_task_on_body(void * ctx, net_http_req_t req, void * data, size_t data_size);
 static net_http_res_op_result_t net_trans_task_on_complete(void * ctx, net_http_req_t req, net_http_res_result_t result);
 
 net_trans_task_t
@@ -47,7 +49,6 @@ net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const c
     task->m_ep = http_ep;
     task->m_id = mgr->m_max_task_id + 1;
     task->m_result = net_trans_result_unknown;
-    task->m_errno = net_trans_errno_none;
     task->m_in_callback = 0;
     task->m_is_free = 0;
     task->m_commit_op = NULL;
@@ -64,20 +65,6 @@ net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const c
         goto CREATED_ERROR;
     }
 
-    if (net_http_req_set_reader(
-            task->m_http_req,
-            task,
-            NULL,
-            NULL,
-            net_trans_task_on_body,
-            net_trans_task_on_complete) != 0)
-    {
-    }
-    
-    if (!net_trans_http_endpoint_is_active(http_ep)) {
-        net_http_endpoint_enable(net_http_endpoint_from_data(http_ep));
-    }
-    
     cpe_hash_entry_init(&task->m_hh_for_mgr);
     if (cpe_hash_table_insert_unique(&mgr->m_tasks, task) != 0) {
         CPE_ERROR(mgr->m_em, "trans: task: id duplicate!");
@@ -175,6 +162,24 @@ net_trans_manage_t net_trans_task_manage(net_trans_task_t task) {
     return task->m_ep->m_host->m_mgr;
 }
 
+net_trans_task_state_t net_trans_task_state(net_trans_task_t task) {
+    if (task->m_http_req) {
+        switch(net_http_req_state(task->m_http_req)) {
+        case net_http_req_state_completed:
+            return net_trans_task_working;
+        default:
+            return net_trans_task_init;
+        }
+    }
+    else {
+        return net_trans_task_done;
+    }
+}
+
+net_trans_task_result_t net_trans_task_result(net_trans_task_t task) {
+    return task->m_result;
+}
+
 void net_trans_task_set_debug(net_trans_task_t task, uint8_t is_debug) {
 }
 
@@ -203,6 +208,22 @@ int net_trans_task_append_header(net_trans_task_t task, const char * header_one)
 int net_trans_task_start(net_trans_task_t task) {
     net_trans_manage_t mgr = task->m_ep->m_host->m_mgr;
 
+    if (net_http_req_set_reader(
+            task->m_http_req,
+            task,
+            NULL,
+            NULL,
+            task->m_write_op ? net_trans_task_on_body : NULL,
+            net_trans_task_on_complete) != 0)
+    {
+        CPE_ERROR(mgr->m_em, "trans: task: set reader fail!");
+        return -1;
+    }
+    
+    if (!net_trans_http_endpoint_is_active(task->m_ep)) {
+        net_http_endpoint_enable(net_http_endpoint_from_data(task->m_ep));
+    }
+    
     if (net_http_req_write_commit(task->m_http_req) != 0) {
         CPE_ERROR(mgr->m_em, "trans: task: start fail!");
         return -1;
@@ -300,10 +321,59 @@ static net_address_t net_trans_task_parse_address(
     return address;
 }
 
-static net_http_res_op_result_t net_trans_task_on_body(void * ctx, net_http_req_t req, void const * data, size_t data_size) {
+static net_http_res_op_result_t net_trans_task_on_body(void * ctx, net_http_req_t req, void * data, size_t data_size) {
+    net_trans_task_t task = ctx;
+
+    assert(task->m_write_op);
+    task->m_write_op(task, task->m_ctx, data, data_size);
+    
     return net_http_res_op_success;
 }
 
 static net_http_res_op_result_t net_trans_task_on_complete(void * ctx, net_http_req_t req, net_http_res_result_t result) {
+    net_trans_task_t task = ctx;
+    net_trans_manage_t mgr = task->m_ep->m_host->m_mgr;
+
+    switch(result) {
+    case net_http_res_complete:
+        if (net_http_req_res_code(req) == 200) {
+            task->m_result = net_trans_result_ok;
+        }
+        else {
+            task->m_result = net_trans_result_error;
+        }
+        break;
+    case net_http_res_timeout:
+        task->m_result = net_trans_result_timeout;
+        break;
+    case net_http_res_canceled:
+        task->m_result = net_trans_result_cancel;
+        break;
+    case net_http_res_disconnected:
+        task->m_result = net_trans_result_cancel;
+        break;
+    }
+
+    task->m_http_req = NULL;
+
+    if (task->m_commit_op) {
+        uint32_t buf_sz = 0;
+        void * buf = NULL;
+        
+        if (task->m_write_op == NULL) {
+            net_endpoint_t base_endpoint = net_http_endpoint_net_ep(net_http_req_ep(req));
+            buf_sz = net_endpoint_buf_size(base_endpoint, net_ep_buf_http_in);
+
+            if (net_endpoint_buf_peak_with_size(base_endpoint, net_ep_buf_http_in, buf_sz, &buf) != 0) {
+                CPE_ERROR(mgr->m_em, "trans: task %d: complete: get http data fail, size=%d!", task->m_id, buf_sz);
+                task->m_result = net_trans_result_cancel;
+                buf = NULL;
+                buf_sz = 0;
+            }
+        }
+            
+        task->m_commit_op(task, task->m_ctx, buf, buf_sz);
+    }
+    
     return net_http_res_op_success;
 }

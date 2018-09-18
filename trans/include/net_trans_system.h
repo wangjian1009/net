@@ -18,11 +18,6 @@ typedef enum net_trans_task_result {
     , net_trans_result_cancel
 } net_trans_task_result_t;
 
-typedef enum net_trans_errno {
-    net_trans_errno_none = 0    
-    , net_trans_errno_range_error = 33
-} net_trans_errno_t;
-
 typedef enum net_trans_method {
     net_trans_method_get,
     net_trans_method_post,
@@ -31,7 +26,7 @@ typedef enum net_trans_method {
 typedef struct net_trans_manage * net_trans_manage_t;
 typedef struct net_trans_task * net_trans_task_t;
 
-typedef void (*net_trans_task_commit_op_t)(net_trans_task_t task, void * ctx);
+typedef void (*net_trans_task_commit_op_t)(net_trans_task_t task, void * ctx, void * data, size_t data_size);
 typedef void (*net_trans_task_progress_op_t)(net_trans_task_t task, void * ctx, double dltotal, double dlnow);
 typedef void (*net_trans_task_write_op_t)(net_trans_task_t task, void * ctx, void * data, size_t data_size);
 

@@ -14,7 +14,6 @@ struct net_trans_task {
     uint32_t m_id;
     net_http_req_t m_http_req;
     net_trans_task_result_t m_result;
-    net_trans_errno_t m_errno;
     uint8_t m_in_callback;
     uint8_t m_is_free;
     net_trans_task_commit_op_t m_commit_op;
