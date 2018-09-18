@@ -6,11 +6,14 @@
 NET_BEGIN_DECL
 
 struct net_trans_http_endpoint {
-    net_trans_manage_t m_manage;
+    net_trans_host_t m_host;
+    TAILQ_ENTRY(net_trans_http_endpoint) m_next;
 };
 
-net_trans_http_endpoint_t net_trans_ns_cli_endpoint_create(net_trans_manage_t manage);
-void net_trans_ns_cli_endpoint_free(net_trans_http_endpoint_t trans_http);
+net_trans_http_endpoint_t net_trans_http_endpoint_create(net_trans_host_t host);
+void net_trans_http_endpoint_free(net_trans_http_endpoint_t trans_http);
+
+uint8_t net_trans_http_endpoint_is_active(net_trans_http_endpoint_t trans_http);
 
 int net_trans_http_endpoint_init(net_http_endpoint_t http_endpoint);
 void net_trans_http_endpoint_fini(net_http_endpoint_t http_endpoint);

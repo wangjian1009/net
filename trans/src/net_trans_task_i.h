@@ -6,7 +6,11 @@
 NET_BEGIN_DECL
 
 struct net_trans_task {
-    net_trans_manage_t m_manage;
+    net_trans_http_endpoint_t m_ep;
+    union {
+        struct cpe_hash_entry m_hh_for_mgr;
+        TAILQ_ENTRY(net_trans_task) m_next_for_mgr;
+    };
     uint32_t m_id;
     net_trans_task_state_t m_state;
     net_trans_task_result_t m_result;
@@ -19,7 +23,6 @@ struct net_trans_task {
     void * m_ctx;
     void (*m_ctx_free)(void *);
     
-    struct cpe_hash_entry m_hh_for_mgr;
 };
 
 NET_END_DECL
