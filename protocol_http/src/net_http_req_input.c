@@ -357,7 +357,8 @@ static int net_http_req_input_body_encoding_none(
     
     while(req->m_res_state != net_http_res_state_completed) {
         uint32_t buf_sz = net_endpoint_buf_size(endpoint, net_ep_buf_http_in);
-
+        if (buf_sz == 0) break;
+        
         if (req->m_res_content.m_length == 0) {
             if (net_endpoint_protocol_debug(endpoint) >= 2) {
                 CPE_INFO(
