@@ -227,7 +227,7 @@ void net_trans_task_set_callback(
     task->m_commit_op = commit;
     task->m_write_op = write;
     task->m_progress_op = progress;
-    task->m_ctx = commit;
+    task->m_ctx = ctx;
     task->m_ctx_free = ctx_free;
 }
 
