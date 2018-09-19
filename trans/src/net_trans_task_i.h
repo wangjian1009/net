@@ -15,6 +15,7 @@ struct net_trans_task {
     TAILQ_ENTRY(net_trans_task) m_next_for_ep;
     uint32_t m_id;
     net_http_req_t m_http_req;
+    uint8_t m_keep_alive;
 
     /*result*/
     net_trans_task_result_t m_result;

@@ -184,7 +184,7 @@ static int net_http_req_input_read_head_line(
             req->m_res_trans_encoding = net_http_trans_encoding_none;
             char * endptr = NULL;
             req->m_res_content.m_length = (uint32_t)strtol(value, &endptr, 10);
-            if (endptr == NULL || *endptr != 0) {
+            if (endptr == NULL || *cpe_str_trim_head(endptr) != 0) {
                 CPE_ERROR(
                     http_protocol->m_em, "http: %s: req %d: <== Content-Length %s format error",
                     net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),

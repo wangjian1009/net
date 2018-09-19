@@ -5,6 +5,7 @@
 #include "net_http_endpoint.h"
 #include "net_trans_host_i.h"
 #include "net_trans_http_endpoint_i.h"
+#include "net_trans_task_i.h"
 
 net_trans_host_t
 net_trans_host_create(net_trans_manage_t mgr, net_address_t address) {
@@ -98,8 +99,9 @@ net_trans_host_t net_trans_host_find(net_trans_manage_t mgr, net_address_t addre
 }
 
 net_trans_http_endpoint_t net_trans_host_alloc_endpoint(net_trans_host_t host) {
+    net_trans_manage_t mgr = host->m_mgr;
     net_trans_http_endpoint_t trans_http, trans_http_next;
-
+    
     net_trans_http_endpoint_t idle_trans_http = NULL;
     
     for(trans_http = TAILQ_FIRST(&host->m_endpoints);
@@ -110,20 +112,31 @@ net_trans_http_endpoint_t net_trans_host_alloc_endpoint(net_trans_host_t host) {
             return trans_http;
         }
 
+        net_trans_task_t last_task = TAILQ_LAST(&trans_http->m_tasks, net_trans_task_list);
+        if (last_task && !last_task->m_keep_alive) continue;
+
         if (idle_trans_http == NULL || trans_http->m_task_count < idle_trans_http->m_task_count) {
             idle_trans_http = trans_http;
         }
     }
 
-    if (idle_trans_http
-        && (host->m_mgr->m_cfg_host_endpoint_limit > 0
-            && host->m_endpoint_count >= host->m_mgr->m_cfg_host_endpoint_limit)
-        )
-    {
-        return idle_trans_http;
+    if (mgr->m_cfg_host_endpoint_limit > 0
+        && host->m_endpoint_count >= mgr->m_cfg_host_endpoint_limit)
+    {    
+        if (idle_trans_http) {
+            return idle_trans_http;
+        }
+        else {
+            CPE_ERROR(
+                mgr->m_em, "trans: host %s connection limit %d reached!",
+                net_address_dump(net_trans_manage_tmp_buffer(mgr), host->m_address),
+                mgr->m_cfg_host_endpoint_limit);
+            return NULL;
+        }
     }
-
-    return net_trans_http_endpoint_create(host);
+    else {
+        return net_trans_http_endpoint_create(host);
+    }
 }
 
 uint32_t net_trans_host_hash(net_trans_host_t o, void * user_data) {

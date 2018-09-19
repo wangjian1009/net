@@ -49,6 +49,7 @@ net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const c
     task->m_mgr = mgr;
     task->m_ep = http_ep;
     task->m_id = mgr->m_max_task_id + 1;
+    task->m_keep_alive = 1;
 
     task->m_result = net_trans_result_unknown;
     task->m_res_code = 0;
@@ -231,9 +232,20 @@ void net_trans_task_set_callback(
     task->m_ctx_free = ctx_free;
 }
 
-int net_trans_task_set_timeout(net_trans_task_t task, uint64_t timeout_ms);
+int net_trans_task_set_timeout(net_trans_task_t task, uint64_t timeout_ms) {
+    return 0;
+}
 
-int net_trans_task_append_header(net_trans_task_t task, const char * header_one);
+int net_trans_task_append_header(net_trans_task_t task, const char * name, const char * value) {
+    if (net_http_req_write_head_pair(task->m_http_req, name, value) != 0) return -1;
+
+    if (strcasecmp(name, "Connection") == 0) {
+        task->m_keep_alive =
+            net_http_endpoint_connection_type(net_http_req_ep(task->m_http_req)) == net_http_connection_type_keep_alive ? 1 : 0;
+    }
+    
+    return 0;
+}
 
 int net_trans_task_start(net_trans_task_t task) {
     net_trans_manage_t mgr = task->m_ep->m_host->m_mgr;
