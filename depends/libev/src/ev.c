@@ -654,7 +654,7 @@ ev_realloc (void *ptr, long size)
 }
 
 #define ev_malloc(size) ev_realloc (0, (size))
-#define ev_free(ptr)    ev_realloc ((ptr), 0)
+#define ev_free(ptr)    free ((ptr))
 
 /*****************************************************************************/
 

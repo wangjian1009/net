@@ -43,6 +43,8 @@ void net_router_schedule_free(net_router_schedule_t schedule) {
     while(!TAILQ_EMPTY(&schedule->m_routers)) {
         net_router_free(TAILQ_FIRST(&schedule->m_routers));
     }
+
+    mem_free(schedule->m_alloc, schedule);
 }
 
 mem_allocrator_t net_router_schedule_allocrator(net_router_schedule_t schedule) {

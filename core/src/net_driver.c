@@ -129,28 +129,32 @@ void net_driver_free(net_driver_t driver) {
         net_endpoint_free(TAILQ_FIRST(&driver->m_deleting_endpoints));
     }
 
-    while(!TAILQ_EMPTY(&driver->m_free_endpoints)) {
-        net_endpoint_real_free(TAILQ_FIRST(&driver->m_free_endpoints));
-    }
-    
     while(!TAILQ_EMPTY(&driver->m_dgrams)) {
         net_dgram_free(TAILQ_FIRST(&driver->m_dgrams));
     }
 
-    while(!TAILQ_EMPTY(&driver->m_free_dgrams)) {
-        net_dgram_real_free(TAILQ_FIRST(&driver->m_free_dgrams));
-    }
-    
     while(!TAILQ_EMPTY(&driver->m_timers)) {
         net_timer_free(TAILQ_FIRST(&driver->m_timers));
     }
 
-    while(!TAILQ_EMPTY(&driver->m_free_timers)) {
-        net_timer_real_free(TAILQ_FIRST(&driver->m_free_timers));
-    }
-    
     if (driver->m_driver_fini) {
         driver->m_driver_fini(driver);
+    }
+
+    while(!TAILQ_EMPTY(&driver->m_free_acceptors)) {
+        net_acceptor_real_free(TAILQ_FIRST(&driver->m_free_acceptors));
+    }
+    
+    while(!TAILQ_EMPTY(&driver->m_free_endpoints)) {
+        net_endpoint_real_free(TAILQ_FIRST(&driver->m_free_endpoints));
+    }
+    
+    while(!TAILQ_EMPTY(&driver->m_free_dgrams)) {
+        net_dgram_real_free(TAILQ_FIRST(&driver->m_free_dgrams));
+    }
+    
+    while(!TAILQ_EMPTY(&driver->m_free_timers)) {
+        net_timer_real_free(TAILQ_FIRST(&driver->m_free_timers));
     }
     
     TAILQ_REMOVE(&schedule->m_drivers, driver, m_next_for_schedule);
