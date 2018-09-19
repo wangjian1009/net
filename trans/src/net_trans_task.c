@@ -46,9 +46,15 @@ net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const c
         }
     }
 
+    task->m_mgr = mgr;
     task->m_ep = http_ep;
     task->m_id = mgr->m_max_task_id + 1;
+
     task->m_result = net_trans_result_unknown;
+    task->m_res_code = 0;
+    task->m_res_mine[0] = 0;
+    task->m_res_charset[0] = 0;
+    
     task->m_in_callback = 0;
     task->m_is_free = 0;
     task->m_commit_op = NULL;
@@ -70,6 +76,8 @@ net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const c
         CPE_ERROR(mgr->m_em, "trans: task: id duplicate!");
         goto CREATED_ERROR;
     }
+    TAILQ_INSERT_TAIL(&task->m_ep->m_tasks, task, m_next_for_ep);
+
     mgr->m_max_task_id++;
     return task;
 
@@ -114,12 +122,22 @@ void net_trans_task_free(net_trans_task_t task) {
     net_trans_http_endpoint_t http_ep = task->m_ep;
     net_trans_manage_t mgr = http_ep->m_host->m_mgr;
 
+    if (task->m_in_callback) {
+        task->m_is_free = 1;
+        return;
+    }
+
     if (task->m_ctx_free) {
         task->m_ctx_free(task->m_ctx);
         task->m_ctx = NULL;
         task->m_ctx_free = NULL;
     }
 
+    if (task->m_ep) {
+        TAILQ_REMOVE(&task->m_ep->m_tasks, task, m_next_for_ep);
+        task->m_ep = NULL;
+    }
+    
     cpe_hash_table_remove_by_ins(&mgr->m_tasks, task);
 
     task->m_ep = (net_trans_http_endpoint_t)mgr;
@@ -178,6 +196,18 @@ net_trans_task_state_t net_trans_task_state(net_trans_task_t task) {
 
 net_trans_task_result_t net_trans_task_result(net_trans_task_t task) {
     return task->m_result;
+}
+
+int16_t net_trans_task_res_code(net_trans_task_t task) {
+    return task->m_res_code;
+}
+
+const char * net_trans_task_res_mine(net_trans_task_t task) {
+    return task->m_res_mine;
+}
+
+const char * net_trans_task_res_charset(net_trans_task_t task) {
+    return task->m_res_charset;
 }
 
 void net_trans_task_set_debug(net_trans_task_t task, uint8_t is_debug) {
@@ -247,10 +277,8 @@ const char * net_trans_task_result_str(net_trans_task_result_t result) {
     switch(result) {
     case net_trans_result_unknown:
         return "trans-task-result-unknown";
-    case net_trans_result_ok:
-        return "trans-task-result-ok";
-    case net_trans_result_error:
-        return "trans-task-result-error";
+    case net_trans_result_complete:
+        return "trans-task-result-complete";
     case net_trans_result_timeout:
         return "trans-task-result-timeout";
     case net_trans_result_cancel:
@@ -324,8 +352,15 @@ static net_address_t net_trans_task_parse_address(
 static net_http_res_op_result_t net_trans_task_on_body(void * ctx, net_http_req_t req, void * data, size_t data_size) {
     net_trans_task_t task = ctx;
 
-    assert(task->m_write_op);
-    task->m_write_op(task, task->m_ctx, data, data_size);
+    if (task->m_write_op) {
+        task->m_in_callback = 1;
+        task->m_write_op(task, task->m_ctx, data, data_size);
+        task->m_in_callback = 0;
+
+        if (task->m_is_free) {
+            net_trans_task_free(task);
+        }
+    }
     
     return net_http_res_op_success;
 }
@@ -336,12 +371,8 @@ static net_http_res_op_result_t net_trans_task_on_complete(void * ctx, net_http_
 
     switch(result) {
     case net_http_res_complete:
-        if (net_http_req_res_code(req) == 200) {
-            task->m_result = net_trans_result_ok;
-        }
-        else {
-            task->m_result = net_trans_result_error;
-        }
+        task->m_result = net_trans_result_complete;
+        task->m_res_code = net_http_req_res_code(req);
         break;
     case net_http_res_timeout:
         task->m_result = net_trans_result_timeout;
@@ -354,25 +385,34 @@ static net_http_res_op_result_t net_trans_task_on_complete(void * ctx, net_http_
         break;
     }
 
+    assert(task->m_ep);
+    TAILQ_REMOVE(&task->m_ep->m_tasks, task, m_next_for_ep);
+    task->m_ep = NULL;
+    
     task->m_http_req = NULL;
-
     if (task->m_commit_op) {
         uint32_t buf_sz = 0;
         void * buf = NULL;
         
         if (task->m_write_op == NULL) {
             net_endpoint_t base_endpoint = net_http_endpoint_net_ep(net_http_req_ep(req));
-            buf_sz = net_endpoint_buf_size(base_endpoint, net_ep_buf_http_in);
+            buf_sz = net_endpoint_buf_size(base_endpoint, net_ep_buf_http_body);
 
-            if (net_endpoint_buf_peak_with_size(base_endpoint, net_ep_buf_http_in, buf_sz, &buf) != 0) {
+            if (net_endpoint_buf_peak_with_size(base_endpoint, net_ep_buf_http_body, buf_sz, &buf) != 0) {
                 CPE_ERROR(mgr->m_em, "trans: task %d: complete: get http data fail, size=%d!", task->m_id, buf_sz);
                 task->m_result = net_trans_result_cancel;
                 buf = NULL;
                 buf_sz = 0;
             }
         }
-            
+
+        task->m_in_callback = 1;
         task->m_commit_op(task, task->m_ctx, buf, buf_sz);
+        task->m_in_callback = 0;
+
+        if (task->m_is_free) {
+            net_trans_task_free(task);
+        }
     }
     
     return net_http_res_op_success;

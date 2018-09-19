@@ -13,7 +13,6 @@ struct net_trans_host {
     net_address_t m_address;
     uint16_t m_endpoint_count;
     net_trans_http_endpoint_list_t m_endpoints;
-    net_trans_task_list_t m_tasks;
 };
 
 net_trans_host_t net_trans_host_create(net_trans_manage_t mgr, net_address_t address);

@@ -6,14 +6,23 @@
 NET_BEGIN_DECL
 
 struct net_trans_task {
-    net_trans_http_endpoint_t m_ep;
+    net_trans_manage_t m_mgr;
     union {
         struct cpe_hash_entry m_hh_for_mgr;
         TAILQ_ENTRY(net_trans_task) m_next_for_mgr;
     };
+    net_trans_http_endpoint_t m_ep;
+    TAILQ_ENTRY(net_trans_task) m_next_for_ep;
     uint32_t m_id;
     net_http_req_t m_http_req;
+
+    /*result*/
     net_trans_task_result_t m_result;
+    int16_t m_res_code;
+    char m_res_mine[16];
+    char m_res_charset[16];
+
+    /*callback*/
     uint8_t m_in_callback;
     uint8_t m_is_free;
     net_trans_task_commit_op_t m_commit_op;

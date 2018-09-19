@@ -5,7 +5,6 @@
 #include "net_http_endpoint.h"
 #include "net_trans_host_i.h"
 #include "net_trans_http_endpoint_i.h"
-#include "net_trans_task_i.h"
 
 net_trans_host_t
 net_trans_host_create(net_trans_manage_t mgr, net_address_t address) {
@@ -26,7 +25,6 @@ net_trans_host_create(net_trans_manage_t mgr, net_address_t address) {
     host->m_mgr = mgr;
     host->m_endpoint_count = 0;
     TAILQ_INIT(&host->m_endpoints);
-    TAILQ_INIT(&host->m_tasks);
     
     host->m_address = net_address_copy(mgr->m_schedule, address);
     if (host->m_address == NULL) {
@@ -58,10 +56,6 @@ void net_trans_host_free(net_trans_host_t host) {
     }
     assert(host->m_endpoint_count == 0);
 
-    while(!TAILQ_EMPTY(&host->m_tasks)) {
-        net_trans_task_free(TAILQ_FIRST(&host->m_tasks));
-    }
-    
     cpe_hash_table_remove_by_ins(&mgr->m_hosts, host);
 
     TAILQ_INSERT_TAIL(&mgr->m_free_hosts, host, m_next_for_mgr);

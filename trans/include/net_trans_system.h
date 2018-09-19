@@ -12,8 +12,7 @@ typedef enum net_trans_task_state {
 
 typedef enum net_trans_task_result {
     net_trans_result_unknown
-    , net_trans_result_ok
-    , net_trans_result_error
+    , net_trans_result_complete
     , net_trans_result_timeout
     , net_trans_result_cancel
 } net_trans_task_result_t;
