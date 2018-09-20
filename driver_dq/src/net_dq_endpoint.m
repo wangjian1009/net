@@ -312,7 +312,7 @@ int net_dq_endpoint_on_read(net_dq_driver_t driver, net_dq_endpoint_t endpoint, 
             }
             
             if (net_endpoint_buf_supply(base_endpoint, net_ep_buf_read, (uint32_t)bytes) != 0) {
-                if (base_endpoint->m_fd != -1) {
+                if (endpoint->m_fd != -1) {
                     net_dq_endpoint_close_sock(driver, endpoint);
                 }
                 
