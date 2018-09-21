@@ -16,20 +16,28 @@ static net_http_res_op_result_t net_trans_task_on_complete(void * ctx, net_http_
 
 net_trans_task_t
 net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const char * uri) {
-    net_address_t address = NULL;
+    uint8_t is_https;
+    const char * relative_url;
+    net_address_t address = net_trans_task_parse_address(mgr, uri, &is_https, &relative_url);
+    if (address == NULL) return NULL;
+
+    net_trans_task_t task = net_trans_task_create_relative(mgr, method, address, is_https, relative_url);
+    
+    net_address_free(address);
+
+    return task;
+}
+
+net_trans_task_t net_trans_task_create_relative(
+    net_trans_manage_t mgr, net_trans_method_t method,
+    net_address_t address, uint8_t is_https, const char * relative_url)
+{
     net_trans_host_t host = NULL;
     net_trans_http_endpoint_t http_ep = NULL;
     net_trans_task_t task = NULL;
 
-    uint8_t is_https;
-    const char * relative_url;
-    address = net_trans_task_parse_address(mgr, uri, &is_https, &relative_url);
-    if (address == NULL) return NULL;
-
     host = net_trans_host_check_create(mgr, address);
     if (host == NULL) goto CREATED_ERROR;
-    net_address_free(address);
-    address = NULL;
 
     http_ep = net_trans_host_alloc_endpoint(host);
     if (http_ep == NULL) goto CREATED_ERROR;
@@ -111,11 +119,6 @@ CREATED_ERROR:
         host = NULL;
     }
 
-    if (address) {
-        net_address_free(address);
-        address = NULL;
-    }
-    
     return NULL;
 }
 

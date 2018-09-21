@@ -5,6 +5,11 @@
 NET_BEGIN_DECL
 
 net_trans_task_t net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const char * url);
+
+net_trans_task_t net_trans_task_create_relative(
+    net_trans_manage_t mgr, net_trans_method_t method,
+    net_address_t address, uint8_t is_https, const char * relative_url);
+
 void net_trans_task_free(net_trans_task_t task);
 
 uint32_t net_trans_task_id(net_trans_task_t task);
