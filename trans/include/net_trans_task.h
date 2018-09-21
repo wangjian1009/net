@@ -16,6 +16,7 @@ void net_trans_task_set_debug(net_trans_task_t task, uint8_t is_debug);
 /*req*/
 int net_trans_task_set_timeout(net_trans_task_t task, uint64_t timeout_ms);
 int net_trans_task_append_header(net_trans_task_t task, const char * name, const char * value);
+int net_trans_task_set_body(net_trans_task_t task, void const * data, uint32_t data_size);
 
 void net_trans_task_set_callback(
     net_trans_task_t task,

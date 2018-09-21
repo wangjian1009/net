@@ -247,6 +247,11 @@ int net_trans_task_append_header(net_trans_task_t task, const char * name, const
     return 0;
 }
 
+int net_trans_task_set_body(net_trans_task_t task, void const * data, uint32_t data_size) {
+    if (net_http_req_write_body_full(task->m_http_req, data, data_size) != 0) return -1;
+    return 0;
+}
+
 int net_trans_task_start(net_trans_task_t task) {
     net_trans_manage_t mgr = task->m_ep->m_host->m_mgr;
 
