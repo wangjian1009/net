@@ -739,3 +739,9 @@ static int net_dq_endpoint_start_connect(
 
     return cpe_connect(endpoint->m_fd, (struct sockaddr *)&remote_addr_sock, remote_addr_sock_len);
 }
+
+static void net_dq_endpoint_close_sock(net_dq_driver_t driver, net_dq_endpoint_t endpoint) {
+    assert(endpoint->m_fd != -1);
+    cpe_sock_close(endpoint->m_fd);
+    endpoint->m_fd = -1;
+}
