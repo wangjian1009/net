@@ -34,7 +34,9 @@ net_ws_endpoint_t net_ws_endpoint_from_data(void * data);
 
 net_ws_state_t net_ws_endpoint_state(net_ws_endpoint_t ws_ep);
 
+uint8_t net_ws_endpoint_is_enable(net_ws_endpoint_t ws_ep);
 void net_ws_endpoint_enable(net_ws_endpoint_t ws_ep);
+int net_ws_endpoint_disable(net_ws_endpoint_t ws_ep);
 
 net_endpoint_t net_ws_endpoint_net_ep(net_ws_endpoint_t ws_ep);
 

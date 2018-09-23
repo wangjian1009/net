@@ -35,6 +35,7 @@ net_http_connection_type_t net_http_endpoint_connection_type(net_http_endpoint_t
 int net_http_endpoint_set_remote(net_http_endpoint_t http_ep, const char * url);
 
 void net_http_endpoint_enable(net_http_endpoint_t http_ep);
+int net_http_endpoint_disable(net_http_endpoint_t http_ep);
 
 int net_http_endpoint_flush(net_http_endpoint_t http_ep);
 

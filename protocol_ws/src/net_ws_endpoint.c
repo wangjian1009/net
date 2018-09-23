@@ -136,80 +136,95 @@ net_endpoint_t net_ws_endpoint_net_ep(net_ws_endpoint_t ws_ep) {
 int net_ws_endpoint_set_remote_and_path(net_ws_endpoint_t ws_ep, const char * url) {
     net_ws_protocol_t ws_protocol = net_ws_endpoint_protocol(ws_ep);
 
-    const char * addr_begin;
-    if (cpe_str_start_with(url, "ws://")) {
-        if (net_http_endpoint_ssl_disable(ws_ep->m_http_ep) != 0) return -1;
-        addr_begin = url + 5;
-    }
-    else if (cpe_str_start_with(url, "wss://")) {
-        if (net_http_endpoint_ssl_enable(ws_ep->m_http_ep) == NULL) return -1;
-        addr_begin = url + 6;
-    }
-    else {
-        CPE_ERROR(
-            ws_protocol->m_em,
-            "ws: %s: set remote and path: url %s check protocol fail!",
-            net_endpoint_dump(
-                net_ws_protocol_tmp_buffer(ws_protocol),
-                net_ws_endpoint_net_ep(ws_ep)),
-            url);
-        return -1;
-    }
-
-    const char * addr_end = strchr(addr_begin, '/');
-    const char * str_address = NULL;
-    const char * path = NULL;
-    
-    if (addr_end) {
-        mem_buffer_t tmp_buffer = net_ws_protocol_tmp_buffer(ws_protocol);
-        mem_buffer_clear_data(tmp_buffer);
-        str_address = mem_buffer_strdup_range(tmp_buffer, addr_begin, addr_end);
-        if (str_address == NULL) {
+    if (url) {
+        const char * addr_begin;
+        if (cpe_str_start_with(url, "ws://")) {
+            if (net_http_endpoint_ssl_disable(ws_ep->m_http_ep) != 0) return -1;
+            addr_begin = url + 5;
+        }
+        else if (cpe_str_start_with(url, "wss://")) {
+            if (net_http_endpoint_ssl_enable(ws_ep->m_http_ep) == NULL) return -1;
+            addr_begin = url + 6;
+        }
+        else {
             CPE_ERROR(
                 ws_protocol->m_em,
-                "ws: %s: set remote and path: url %s address dup fail!",
+                "ws: %s: set remote and path: url %s check protocol fail!",
                 net_endpoint_dump(
                     net_ws_protocol_tmp_buffer(ws_protocol),
                     net_ws_endpoint_net_ep(ws_ep)),
                 url);
             return -1;
         }
-        path = addr_end;
+
+        const char * addr_end = strchr(addr_begin, '/');
+        const char * str_address = NULL;
+        const char * path = NULL;
+    
+        if (addr_end) {
+            mem_buffer_t tmp_buffer = net_ws_protocol_tmp_buffer(ws_protocol);
+            mem_buffer_clear_data(tmp_buffer);
+            str_address = mem_buffer_strdup_range(tmp_buffer, addr_begin, addr_end);
+            if (str_address == NULL) {
+                CPE_ERROR(
+                    ws_protocol->m_em,
+                    "ws: %s: set remote and path: url %s address dup fail!",
+                    net_endpoint_dump(
+                        net_ws_protocol_tmp_buffer(ws_protocol),
+                        net_ws_endpoint_net_ep(ws_ep)),
+                    url);
+                return -1;
+            }
+            path = addr_end;
+        }
+        else {
+            str_address = addr_begin;
+        }
+
+        net_address_t address = net_address_create_auto(net_endpoint_schedule(net_ws_endpoint_net_ep(ws_ep)), str_address);
+        if (address == NULL) {
+            CPE_ERROR(
+                ws_protocol->m_em,
+                "ws: %s: set remote and path: url %s address format error!",
+                net_endpoint_dump(
+                    net_ws_protocol_tmp_buffer(ws_protocol),
+                    net_ws_endpoint_net_ep(ws_ep)),
+                url);
+            return -1;
+        }
+
+        if (net_address_port(address) == 0) {
+            net_address_set_port(address, net_http_endpoint_use_https(ws_ep->m_http_ep) ? 443 : 80);
+        }
+        
+        if (net_endpoint_set_remote_address(
+                net_ws_endpoint_net_ep(ws_ep), address, 1) != 0) {
+            CPE_ERROR(
+                ws_protocol->m_em,
+                "ws: %s: set remote and path: url %s set remote address fail!",
+                net_endpoint_dump(
+                    net_ws_protocol_tmp_buffer(ws_protocol),
+                    net_ws_endpoint_net_ep(ws_ep)),
+                url);
+            net_address_free(address);
+            return -1;
+        }
+
+        return net_ws_endpoint_set_path(ws_ep, path);
     }
     else {
-        str_address = addr_begin;
-    }
+        if (net_endpoint_set_remote_address(net_ws_endpoint_net_ep(ws_ep), NULL, 0) != 0) {
+            CPE_ERROR(
+                ws_protocol->m_em,
+                "ws: %s: set remote and path: clear url: clear remote address fail!",
+                net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_ws_endpoint_net_ep(ws_ep)));
+            return -1;
+        }
 
-    net_address_t address = net_address_create_auto(net_endpoint_schedule(net_ws_endpoint_net_ep(ws_ep)), str_address);
-    if (address == NULL) {
-        CPE_ERROR(
-            ws_protocol->m_em,
-            "ws: %s: set remote and path: url %s address format error!",
-            net_endpoint_dump(
-                net_ws_protocol_tmp_buffer(ws_protocol),
-                net_ws_endpoint_net_ep(ws_ep)),
-            url);
-        return -1;
-    }
+        if (net_ws_endpoint_set_path(ws_ep, NULL) != 0) return -1;
 
-    if (net_address_port(address) == 0) {
-        net_address_set_port(address, net_http_endpoint_use_https(ws_ep->m_http_ep) ? 443 : 80);
+        return 0;
     }
-        
-    if (net_endpoint_set_remote_address(
-            net_ws_endpoint_net_ep(ws_ep), address, 1) != 0) {
-        CPE_ERROR(
-            ws_protocol->m_em,
-            "ws: %s: set remote and path: url %s set remote address fail!",
-            net_endpoint_dump(
-                net_ws_protocol_tmp_buffer(ws_protocol),
-                net_ws_endpoint_net_ep(ws_ep)),
-            url);
-        net_address_free(address);
-        return -1;
-    }
-
-    return net_ws_endpoint_set_path(ws_ep, path);
 }
 
 const char * net_ws_endpoint_path(net_ws_endpoint_t ws_ep) {
@@ -253,8 +268,24 @@ int net_ws_endpoint_send_msg_bin(net_ws_endpoint_t ws_ep, const void * msg, uint
     return net_ws_endpoint_send_event(ws_protocol, ws_ep, &ws_msg);
 }
 
+uint8_t net_ws_endpoint_is_enable(net_ws_endpoint_t ws_ep) {
+    switch(ws_ep->m_state) {
+    case net_ws_state_init:
+    case net_ws_state_error:
+        return 0;
+    case net_ws_state_connecting:
+    case net_ws_state_handshake:
+    case net_ws_state_established:
+        return 1;
+    }
+}
+
 void net_ws_endpoint_enable(net_ws_endpoint_t ws_ep) {
     net_http_endpoint_enable(ws_ep->m_http_ep);
+}
+
+int net_ws_endpoint_disable(net_ws_endpoint_t ws_ep) {
+    return net_http_endpoint_disable(ws_ep->m_http_ep);
 }
 
 int net_ws_endpoint_set_state(net_ws_endpoint_t ws_ep, net_ws_state_t state) {

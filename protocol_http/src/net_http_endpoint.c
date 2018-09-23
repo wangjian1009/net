@@ -209,6 +209,11 @@ void net_http_endpoint_enable(net_http_endpoint_t http_ep) {
     net_timer_active(http_ep->m_connect_timer, 0);
 }
 
+int net_http_endpoint_disable(net_http_endpoint_t http_ep) {
+    net_timer_cancel(http_ep->m_connect_timer);
+    return net_endpoint_set_state(http_ep->m_endpoint,  net_endpoint_state_disable);
+}
+
 int net_http_endpoint_set_state(net_http_endpoint_t http_ep, net_http_state_t state) {
     if (http_ep->m_state == state) return 0;
     
