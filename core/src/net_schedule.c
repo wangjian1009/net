@@ -267,6 +267,7 @@ int net_debug_remote_host(net_schedule_t schedule, const char * remote, uint8_t 
         net_address_free(remote_address);
         return -1;
     }
+    net_address_free(remote_address);
 
     if (schedule->m_debug) {
         CPE_INFO(schedule->m_em, "core: debug: remote %s -> protocol=%d, driver=%d!", remote, protocol_debug, driver_debug);
