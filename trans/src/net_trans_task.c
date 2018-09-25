@@ -80,6 +80,11 @@ net_trans_task_t net_trans_task_create_relative(
         goto CREATED_ERROR;
     }
 
+    if (net_http_req_write_head_host(task->m_http_req) != 0) {
+        CPE_ERROR(mgr->m_em, "trans: task: http req: write head host fail!");
+        goto CREATED_ERROR;
+    }
+        
     cpe_hash_entry_init(&task->m_hh_for_mgr);
     if (cpe_hash_table_insert_unique(&mgr->m_tasks, task) != 0) {
         CPE_ERROR(mgr->m_em, "trans: task: id duplicate!");
