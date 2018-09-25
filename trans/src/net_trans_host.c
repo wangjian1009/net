@@ -108,6 +108,8 @@ net_trans_http_endpoint_t net_trans_host_alloc_endpoint(net_trans_host_t host) {
         trans_http;
         trans_http = trans_http_next)
     {
+        trans_http_next = TAILQ_NEXT(trans_http, m_next);
+
         if (!net_trans_http_endpoint_is_active(trans_http)) {
             return trans_http;
         }
