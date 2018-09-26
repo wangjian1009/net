@@ -65,6 +65,10 @@ net_protocol_create(
 void net_protocol_free(net_protocol_t protocol) {
     net_schedule_t schedule = protocol->m_schedule;
 
+    if (schedule->m_direct_protocol == protocol) {
+        schedule->m_direct_protocol = NULL;
+    }
+    
     protocol->m_protocol_fini(protocol);
     
     TAILQ_REMOVE(&schedule->m_protocols, protocol, m_next_for_schedule);
