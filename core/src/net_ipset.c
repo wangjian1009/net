@@ -9,11 +9,24 @@ net_ipset_t net_ipset_create(net_schedule_t schedule) {
         CPE_ERROR(schedule->m_em, "net_ipset_create: alloc fail!");
         return NULL;
     }
+
+    ipset->m_schedule = schedule;
     
+    ipset->m_cache = net_ipset_node_cache_create(schedule->m_alloc, schedule->m_em);
+    if (ipset->m_cache == NULL) {
+        CPE_ERROR(schedule->m_em, "net_ipset_create: create cache fail!");
+        mem_free(schedule->m_alloc, ipset);
+        return NULL;
+    }
+    
+    ipset->m_set_bdd = net_ipset_terminal_node_id(0);
+
     return ipset;
 }
 
 void net_ipset_free(net_ipset_t ipset) {
+    net_ipset_node_cache_free(ipset->m_cache);
+    mem_free(ipset->m_schedule->m_alloc, ipset);
 }
 
 uint8_t net_ipset_is_empty(net_ipset_t set) {
