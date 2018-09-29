@@ -33,8 +33,6 @@ void net_endpoint_real_free(net_endpoint_t endpoint);
 
 int net_endpoint_notify_state_changed(net_endpoint_t endpoint, net_endpoint_state_t old_state);
 
-void net_endpoint_update_debug_info(net_endpoint_t endpoint);
-    
 ringbuffer_block_t net_endpoint_common_buf_alloc(net_endpoint_t endpoint, uint32_t size);
 
 uint32_t net_endpoint_hash(net_endpoint_t o, void * user_data);
