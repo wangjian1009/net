@@ -590,8 +590,13 @@ const char * net_address_dump(mem_buffer_t buffer, net_address_t address) {
     struct write_stream_buffer stream = CPE_WRITE_STREAM_BUFFER_INITIALIZER(buffer);
 
     mem_buffer_clear_data(buffer);
-    
-    net_address_print((write_stream_t)&stream, address);
+
+    if (address) {
+        net_address_print((write_stream_t)&stream, address);
+    }
+    else {
+        stream_printf((write_stream_t)&stream, "N/A");
+    }
     stream_putc((write_stream_t)&stream, 0);
     
     return mem_buffer_make_continuous(buffer, 0);
