@@ -13,6 +13,8 @@ net_address_matcher_t net_address_matcher_create(net_schedule_t schedule) {
         return NULL;
     }
 
+    matcher->m_schedule = schedule;
+
     matcher->m_ipset_ipv4 = net_ipset_create(schedule);
     if (matcher->m_ipset_ipv4 == NULL) {
         CPE_ERROR(schedule->m_em, "net_address_matcher: create ipset(ipv4) fail !");
