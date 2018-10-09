@@ -104,6 +104,7 @@ net_address_rule_t net_address_matcher_add_rule(net_address_matcher_t matcher, c
 static const char * net_address_matcher_parse_cidr(mem_buffer_t buffer, const char * str, uint8_t * cidr) {
     const char * p = strrchr(str, '/');
     if (p == NULL) {
+        *cidr = -1;
         return str;
     }
     else {
