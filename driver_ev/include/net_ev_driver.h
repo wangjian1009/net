@@ -11,6 +11,9 @@ net_ev_driver_t net_ev_driver_create(
 
 void net_ev_driver_free(net_ev_driver_t driver);
 
+net_ev_driver_t net_ev_driver_cast(net_driver_t base_driver);
+struct ev_loop * net_ev_driver_loop(net_ev_driver_t driver);
+
 typedef int (*net_ev_driver_sock_create_process_fun_t)(
     net_ev_driver_t driver, void * ctx, int fd, net_address_t remote_addr);
 

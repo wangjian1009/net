@@ -75,6 +75,14 @@ void net_ev_driver_free(net_ev_driver_t driver) {
     net_driver_free(net_driver_from_data(driver));
 }
 
+net_ev_driver_t net_ev_driver_cast(net_driver_t driver) {
+    return strcmp(net_driver_name(driver), "ev") == 0 ? net_driver_data(driver) : NULL;
+}
+
+struct ev_loop * net_ev_driver_loop(net_ev_driver_t driver) {
+    return driver->m_ev_loop;
+}
+
 void net_ev_driver_set_sock_create_processor(
     net_ev_driver_t driver,
     net_ev_driver_sock_create_process_fun_t process_fun,
