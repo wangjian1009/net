@@ -86,6 +86,10 @@ void net_dns_entry_item_free(net_dns_entry_item_t item) {
     net_address_free(item->m_address);
     item->m_address = NULL;
 
+    if (item->m_source) {
+        TAILQ_REMOVE(&item->m_source->m_items, item, m_next_for_source);
+    }
+    
     TAILQ_REMOVE(&entry->m_items, item, m_next_for_entry);
 
     item->m_entry = (net_dns_entry_t)entry->m_manage;
