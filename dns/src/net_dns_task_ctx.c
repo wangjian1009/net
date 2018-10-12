@@ -117,7 +117,7 @@ void net_dns_task_ctx_start(net_dns_task_ctx_t ctx) {
     }
     else {
         if (ctx->m_state == net_dns_task_state_runing) {
-            if (ctx->m_timeout_ms >= 0u
+            if (ctx->m_timeout_ms > 0u
                 && (ctx->m_timeout_timer == NULL || !net_timer_is_active(ctx->m_timeout_timer)))
             {
                 if (net_dns_task_ctx_update_timeout(ctx) != 0) {
@@ -199,7 +199,7 @@ static void net_dns_task_ctx_do_timeout(net_timer_t timer, void * input_ctx) {
         }
         else {
             if (ctx->m_state == net_dns_task_state_init) {
-                if (ctx->m_timeout_ms >= 0u
+                if (ctx->m_timeout_ms > 0u
                     && (ctx->m_timeout_timer == NULL || !net_timer_is_active(ctx->m_timeout_timer)))
                 {
                     if (net_dns_task_ctx_update_timeout(ctx) != 0) {
