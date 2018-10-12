@@ -1,0 +1,7 @@
+include $(CLEAR_VARS)
+
+LOCAL_MODULE := mbedtls
+LOCAL_C_INCLUDES := $(LOCAL_PATH)/../../depends/mbedtls/include
+LOCAL_SRC_FILES := $(wildcard $(LOCAL_PATH)/../../depends/mbedtls/library/*.c)
+
+include $(BUILD_STATIC_LIBRARY)

@@ -95,8 +95,6 @@ int net_ev_acceptor_init(net_acceptor_t base_acceptor) {
 void net_ev_acceptor_fini(net_acceptor_t base_acceptor) {
     net_ev_acceptor_t acceptor = net_acceptor_data(base_acceptor);
     net_ev_driver_t driver = net_driver_data(net_acceptor_driver(base_acceptor));
-    net_schedule_t schedule = net_acceptor_schedule(base_acceptor);
-    mem_allocrator_t alloc = net_schedule_allocrator(schedule);
 
     ev_io_stop(driver->m_ev_loop, &acceptor->m_watcher);
     cpe_sock_close(acceptor->m_fd);

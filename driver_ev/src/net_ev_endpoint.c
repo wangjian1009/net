@@ -536,8 +536,6 @@ static void net_ev_endpoint_connect_log_connect_success(
 static void net_ev_endpoint_connect_log_connect_error(
     net_ev_driver_t driver, net_ev_endpoint_t endpoint, net_endpoint_t base_endpoint, int err, uint8_t is_first)
 {
-    char remote_addr_buf[64];
-
     CPE_ERROR(
         driver->m_em, "ev: %s: connect error%s, errno=%d (%s)",
         net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint),
