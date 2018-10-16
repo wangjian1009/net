@@ -128,9 +128,6 @@ CREATED_ERROR:
 }
 
 void net_trans_task_free(net_trans_task_t task) {
-    net_trans_http_endpoint_t http_ep = task->m_ep;
-    net_trans_manage_t mgr = http_ep->m_host->m_mgr;
-
     if (task->m_in_callback) {
         task->m_is_free = 1;
         return;
@@ -146,7 +143,8 @@ void net_trans_task_free(net_trans_task_t task) {
         TAILQ_REMOVE(&task->m_ep->m_tasks, task, m_next_for_ep);
         task->m_ep = NULL;
     }
-    
+
+    net_trans_manage_t mgr = task->m_mgr;
     cpe_hash_table_remove_by_ins(&mgr->m_tasks, task);
 
     task->m_ep = (net_trans_http_endpoint_t)mgr;
