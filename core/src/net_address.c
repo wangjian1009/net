@@ -14,6 +14,8 @@
 #include "cpe/utils_sock/sock_utils.h"
 #include "net_address_i.h"
 
+#define NET_ADDRESS_USE_CACHE 1
+
 net_address_t net_address_create_auto(net_schedule_t schedule, const char * url) {
     size_t hostname_len;
     uint16_t port;
@@ -88,18 +90,23 @@ net_address_t net_address_create_any(net_schedule_t schedule, net_address_type_t
 
 struct net_address_ipv4v6 *
 net_address_create_ipv4v6(net_schedule_t schedule, net_address_type_t type, uint16_t port) {
-    struct net_address_ipv4v6 * address_ipv4v6
-        = (struct net_address_ipv4v6 *)TAILQ_FIRST(&schedule->m_free_addresses);
+    struct net_address_ipv4v6 * address_ipv4v6;
+
+#if NET_ADDRESS_USE_CACHE    
+    address_ipv4v6 = (struct net_address_ipv4v6 *)TAILQ_FIRST(&schedule->m_free_addresses);
     if (address_ipv4v6) {
         TAILQ_REMOVE(&schedule->m_free_addresses, (struct net_address_in_cache *)address_ipv4v6, m_next);
     }
     else {
+#endif        
         address_ipv4v6 = mem_alloc(schedule->m_alloc, sizeof(struct net_address_ipv4v6));
         if (address_ipv4v6 == NULL) {
             CPE_ERROR(schedule->m_em, "net_address_create_ipv4v6: alloc fail!");
             return NULL;
         }
+#if NET_ADDRESS_USE_CACHE    
     }
+#endif
 
     address_ipv4v6->m_schedule = schedule;
     address_ipv4v6->m_type = type;
@@ -439,14 +446,22 @@ void net_address_free(net_address_t address) {
         mem_free(address->m_schedule->m_alloc, address_domain);
     }
     else {
+#if NET_ADDRESS_USE_CACHE    
         struct net_address_in_cache * address_in_cache = (struct net_address_in_cache *)address;
         TAILQ_INSERT_TAIL(&address_in_cache->m_schedule->m_free_addresses, address_in_cache, m_next);
+#else
+        mem_free(address->m_schedule->m_alloc, address);
+#endif        
     }
 }
 
 void net_address_real_free(net_address_in_cache_t address) {
+#if NET_ADDRESS_USE_CACHE    
     TAILQ_REMOVE(&address->m_schedule->m_free_addresses, address, m_next);
     mem_free(address->m_schedule->m_alloc, address);
+#else
+    assert(0);
+#endif        
 }
 
 net_address_type_t net_address_type(net_address_t address) {
