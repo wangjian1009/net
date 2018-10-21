@@ -759,7 +759,7 @@ static void net_ws_endpoint_send_pingpong(net_timer_t timer, void * ctx) {
     }
     else {
         CPE_ERROR(
-            ws_protocol->m_em, "ws: %s: pint timeout, count=%d!",
+            ws_protocol->m_em, "ws: %s: ping timeout, count=%d!",
             net_endpoint_dump(net_ws_protocol_tmp_buffer(ws_protocol), net_ws_endpoint_net_ep(ws_ep)),
             ws_ep->m_pingpong_count);
 
