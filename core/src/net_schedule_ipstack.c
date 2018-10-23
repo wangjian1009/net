@@ -12,7 +12,7 @@ net_local_ip_stack_t net_schedule_local_ip_stack(net_schedule_t schedule) {
 }
 
 int net_schedule_local_ip_stack_detect(net_schedule_t schedule) {
-    struct in6_addr addr6_gateway = {0};
+    struct in6_addr addr6_gateway = IN6ADDR_ANY_INIT;
     if (0 != getdefaultgateway6(&addr6_gateway)
         || IN6_IS_ADDR_UNSPECIFIED(&addr6_gateway))
     {
