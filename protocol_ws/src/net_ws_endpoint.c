@@ -726,8 +726,22 @@ static net_http_res_op_result_t net_ws_endpoint_on_handshake_complete(void * ctx
     net_ws_endpoint_t ws_ep = ctx;
     net_ws_protocol_t ws_protocol = net_ws_endpoint_protocol(ws_ep);
 
-    if (result != net_http_res_complete) return net_http_res_op_success;
-
+    switch(result) {
+    case net_http_res_complete:
+        break;
+    case net_http_res_timeout:
+        if (ws_ep->m_state == net_ws_state_handshake) {
+            if (net_ws_endpoint_send_handshake(ws_ep) != 0) {
+                if (net_ws_endpoint_set_state(ws_ep, net_ws_state_error) != 0) return -1;
+            }
+        }
+        return net_http_res_op_success;
+    case net_http_res_canceled:
+        return net_http_res_op_success;
+    case net_http_res_disconnected:
+        return net_http_res_op_success;
+    }        
+        
     if (ws_ep->m_state != net_ws_state_established) {
         CPE_ERROR(
             ws_protocol->m_em, "ws: %s: handshake response: no sec-websocket-accept data!",
