@@ -327,6 +327,8 @@ int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) 
     
     if (state == net_endpoint_state_established) {
         endpoint->m_close_after_send = 0;
+        endpoint->m_error_source = net_endpoint_error_source_network;
+        endpoint->m_error_no = 0;
     }
     
     if (old_is_active && !net_endpoint_is_active(endpoint)) {
@@ -365,6 +367,13 @@ net_endpoint_error_source_t net_endpoint_error_source(net_endpoint_t endpoint) {
 
 uint32_t net_endpoint_error_no(net_endpoint_t endpoint) {
     return endpoint->m_error_no;
+}
+
+uint8_t net_endpoint_have_error(net_endpoint_t endpoint) {
+    return (endpoint->m_error_source == net_endpoint_error_source_network
+            && ((net_endpoint_network_errno_t)endpoint->m_error_no) == net_endpoint_network_errno_none)
+        ? 0
+        : 1;
 }
 
 int net_endpoint_set_address(net_endpoint_t endpoint, net_address_t address, uint8_t is_own) {
