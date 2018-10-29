@@ -55,3 +55,15 @@ void net_endpoint_monitor_real_free(net_endpoint_monitor_t monitor) {
     TAILQ_REMOVE(&schedule->m_free_endpoint_monitors, monitor, m_next);
     mem_free(schedule->m_alloc, monitor);
 }
+
+void net_endpoint_monitor_free_by_ctx(net_endpoint_t endpoint, void * ctx) {
+    net_endpoint_monitor_t monitor, next_monitor;
+
+    for(monitor = TAILQ_FIRST(&endpoint->m_monitors); monitor; monitor = next_monitor) {
+        next_monitor = TAILQ_NEXT(monitor, m_next);
+
+        if (monitor->m_ctx == ctx) {
+            net_endpoint_monitor_free(monitor);
+        }
+    }
+}

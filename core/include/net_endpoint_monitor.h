@@ -15,6 +15,8 @@ net_endpoint_monitor_create(
 
 void net_endpoint_monitor_free(net_endpoint_monitor_t endpoint);
 
+void net_endpoint_monitor_free_by_ctx(net_endpoint_t endpoint, void * ctx);
+
 NET_END_DECL
 
 #endif
