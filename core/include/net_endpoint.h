@@ -46,7 +46,12 @@ uint8_t net_endpoint_driver_debug(net_endpoint_t endpoint);
 void net_endpoint_set_driver_debug(net_endpoint_t endpoint, uint8_t debug);
 
 void net_endpoint_update_debug_info(net_endpoint_t endpoint);
-    
+
+/*error info*/
+void net_endpoint_set_error(net_endpoint_t endpoint, net_endpoint_error_source_t error_source, uint32_t error_no);
+net_endpoint_error_source_t net_endpoint_error_source(net_endpoint_t endpoint);
+uint32_t net_endpoint_error_no(net_endpoint_t endpoint);
+
 /*link*/
 int net_endpoint_link_direct(net_endpoint_t endpoint, net_address_t target_addr, uint8_t is_own);
 net_link_t net_endpoint_link(net_endpoint_t endpoint);

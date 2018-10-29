@@ -92,6 +92,21 @@ typedef enum net_local_ip_stack {
 	net_local_ip_stack_dual = 3,
 } net_local_ip_stack_t;
 
+typedef enum net_endpoint_network_errno {
+    net_endpoint_network_errno_none,
+    net_endpoint_network_errno_dns_error,
+    net_endpoint_network_errno_local_closed,
+    net_endpoint_network_errno_remote_closed,
+    net_endpoint_network_errno_network_unreachable,
+    net_endpoint_network_errno_user_closed,
+} net_endpoint_network_errno_t;
+
+typedef enum net_endpoint_error_source {
+    net_endpoint_error_source_network,
+    net_endpoint_error_source_protocol,
+    net_endpoint_error_source_user,
+} net_endpoint_error_source_t;
+    
 NET_END_DECL
 
 #endif

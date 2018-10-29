@@ -45,6 +45,8 @@ net_endpoint_create(net_driver_t driver, net_endpoint_type_t type, net_protocol_
     endpoint->m_close_after_send = 0;
     endpoint->m_protocol_debug = protocol->m_debug;
     endpoint->m_driver_debug = driver->m_debug;
+    endpoint->m_error_source = net_endpoint_error_source_network;
+    endpoint->m_error_no = 0;
     endpoint->m_link = NULL;
     endpoint->m_id = schedule->m_endpoint_max_id + 1;
     endpoint->m_state = net_endpoint_state_disable;
@@ -350,6 +352,19 @@ int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) 
 
 net_address_t net_endpoint_address(net_endpoint_t endpoint) {
     return endpoint->m_address;
+}
+
+void net_endpoint_set_error(net_endpoint_t endpoint, net_endpoint_error_source_t error_source, uint32_t error_no) {
+    endpoint->m_error_source = error_source;
+    endpoint->m_error_no = error_no;
+}
+
+net_endpoint_error_source_t net_endpoint_error_source(net_endpoint_t endpoint) {
+    return endpoint->m_error_source;
+}
+
+uint32_t net_endpoint_error_no(net_endpoint_t endpoint) {
+    return endpoint->m_error_no;
 }
 
 int net_endpoint_set_address(net_endpoint_t endpoint, net_address_t address, uint8_t is_own) {
