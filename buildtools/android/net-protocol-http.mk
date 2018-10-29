@@ -10,6 +10,6 @@ LOCAL_C_INCLUDES +=  $(LOCAL_PATH)/../../depends/mbedtls/include \
                      $(LOCAL_PATH)/../../core/include \
                      $(LOCAL_PATH)/../../protocol_http/include
 LOCAL_LDLIBS := 
-LOCAL_SRC_FILES += $(wildcard $(LOCAL_PATH)/../../protocol_http/src/*.c)
+LOCAL_SRC_FILES += $(patsubst $(LOCAL_PATH)/%,%,$(wildcard $(LOCAL_PATH)/../../protocol_http/src/*.c))
 
 include $(BUILD_STATIC_LIBRARY)
