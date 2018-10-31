@@ -1,6 +1,7 @@
 #include "net_protocol.h"
 #include "net_schedule.h"
 #include "net_dns_svr_i.h"
+#include "net_dns_svr_monitor_i.h"
 #include "net_dns_svr_itf_i.h"
 #include "net_dns_svr_query_i.h"
 #include "net_dns_svr_query_entry_i.h"
@@ -25,6 +26,7 @@ net_dns_svr_t net_dns_svr_create(mem_allocrator_t alloc, error_monitor_t em, net
         return NULL;
     }
     
+    TAILQ_INIT(&dns_svr->m_monitors);
     TAILQ_INIT(&dns_svr->m_itfs);
     TAILQ_INIT(&dns_svr->m_free_querys);
     TAILQ_INIT(&dns_svr->m_free_query_entries);
@@ -36,6 +38,10 @@ net_dns_svr_t net_dns_svr_create(mem_allocrator_t alloc, error_monitor_t em, net
 
 void net_dns_svr_free(net_dns_svr_t dns_svr) {
 
+    while(!TAILQ_EMPTY(&dns_svr->m_monitors)) {
+        net_dns_svr_monitor_free(TAILQ_FIRST(&dns_svr->m_monitors));
+    }
+    
     while(!TAILQ_EMPTY(&dns_svr->m_itfs)) {
         net_dns_svr_itf_free(TAILQ_FIRST(&dns_svr->m_itfs));
     }
