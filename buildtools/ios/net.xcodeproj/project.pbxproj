@@ -165,6 +165,7 @@
 		C9C4B158210862550045A1A3 /* net_socks5_svr.c in Sources */ = {isa = PBXBuildFile; fileRef = C9C4B153210862550045A1A3 /* net_socks5_svr.c */; };
 		C9C4B162210862630045A1A3 /* net_router_schedule.c in Sources */ = {isa = PBXBuildFile; fileRef = C9C4B15E210862630045A1A3 /* net_router_schedule.c */; };
 		C9C4B163210862630045A1A3 /* net_router.c in Sources */ = {isa = PBXBuildFile; fileRef = C9C4B161210862630045A1A3 /* net_router.c */; };
+		C9CA3C452189842400ACBEDB /* net_dns_svr_monitor.c in Sources */ = {isa = PBXBuildFile; fileRef = C9CA3C442189842400ACBEDB /* net_dns_svr_monitor.c */; };
 		C9CD6E252121252B00F6413D /* net_dns_svr_itf.c in Sources */ = {isa = PBXBuildFile; fileRef = C9CD6E242121252B00F6413D /* net_dns_svr_itf.c */; };
 		C9CD6E2B2121286800F6413D /* net_dns_svr_protocol.c in Sources */ = {isa = PBXBuildFile; fileRef = C9CD6E272121286800F6413D /* net_dns_svr_protocol.c */; };
 		C9CD6E2C2121286800F6413D /* net_dns_svr_endpoint.c in Sources */ = {isa = PBXBuildFile; fileRef = C9CD6E2A2121286800F6413D /* net_dns_svr_endpoint.c */; };
@@ -584,6 +585,9 @@
 		C9C4B15F210862630045A1A3 /* net_router_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_router_i.h; sourceTree = "<group>"; };
 		C9C4B160210862630045A1A3 /* net_router_schedule_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_router_schedule_i.h; sourceTree = "<group>"; };
 		C9C4B161210862630045A1A3 /* net_router.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_router.c; sourceTree = "<group>"; };
+		C9CA3C432189842400ACBEDB /* net_dns_svr_monitor_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_svr_monitor_i.h; sourceTree = "<group>"; };
+		C9CA3C442189842400ACBEDB /* net_dns_svr_monitor.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_dns_svr_monitor.c; sourceTree = "<group>"; };
+		C9CA3C462189842D00ACBEDB /* net_dns_svr_monitor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_svr_monitor.h; sourceTree = "<group>"; };
 		C9CD6E232121252B00F6413D /* net_dns_svr_itf_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_svr_itf_i.h; sourceTree = "<group>"; };
 		C9CD6E242121252B00F6413D /* net_dns_svr_itf.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_dns_svr_itf.c; sourceTree = "<group>"; };
 		C9CD6E262121253500F6413D /* net_dns_svr_itf.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_svr_itf.h; sourceTree = "<group>"; };
@@ -1011,6 +1015,8 @@
 		C9415A9E212105CF00400779 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				C9CA3C432189842400ACBEDB /* net_dns_svr_monitor_i.h */,
+				C9CA3C442189842400ACBEDB /* net_dns_svr_monitor.c */,
 				C99AAEBB21218819001FA074 /* net_dns_svr_query_process.c */,
 				C99AAEB92121805F001FA074 /* net_dns_svr_query_entry_i.h */,
 				C99AAEB82121805F001FA074 /* net_dns_svr_query_entry.c */,
@@ -1031,6 +1037,7 @@
 		C9415AA1212105CF00400779 /* include */ = {
 			isa = PBXGroup;
 			children = (
+				C9CA3C462189842D00ACBEDB /* net_dns_svr_monitor.h */,
 				C9CD6E262121253500F6413D /* net_dns_svr_itf.h */,
 				C9415AA2212105CF00400779 /* net_dns_svr_types.h */,
 				C9415AA3212105CF00400779 /* net_dns_svr.h */,
@@ -1812,6 +1819,7 @@
 			files = (
 				C9CD6E2C2121286800F6413D /* net_dns_svr_endpoint.c in Sources */,
 				C99AAEB521215523001FA074 /* net_dns_svr_query.c in Sources */,
+				C9CA3C452189842400ACBEDB /* net_dns_svr_monitor.c in Sources */,
 				C99AAEBA2121805F001FA074 /* net_dns_svr_query_entry.c in Sources */,
 				C99AAEBC21218819001FA074 /* net_dns_svr_query_process.c in Sources */,
 				C9CD6E2B2121286800F6413D /* net_dns_svr_protocol.c in Sources */,
