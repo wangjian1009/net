@@ -552,8 +552,8 @@ ringbuffer_block_t net_endpoint_common_buf_alloc(net_endpoint_t endpoint, uint32
         assert(free_endpoint != endpoint);
 
         uint8_t i;
-        for(i = 0; i < CPE_ARRAY_SIZE(endpoint->m_bufs); ++i) {
-            endpoint->m_bufs[i] = NULL;
+        for(i = 0; i < CPE_ARRAY_SIZE(free_endpoint->m_bufs); ++i) {
+            free_endpoint->m_bufs[i] = NULL;
         }
 
         char free_endpoint_name[128];
