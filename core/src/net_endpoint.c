@@ -536,6 +536,11 @@ ringbuffer_block_t net_endpoint_common_buf_alloc(net_endpoint_t endpoint, uint32
         }
 
         if ((uint32_t)collect_id == endpoint->m_id) {
+            uint8_t i;
+            for(i = 0; i < CPE_ARRAY_SIZE(endpoint->m_bufs); ++i) {
+                endpoint->m_bufs[i] = NULL;
+            }
+            
             CPE_ERROR(
                 schedule->m_em, "%s: buf alloc: self use block, require len %d",
                 net_endpoint_dump(&schedule->m_tmp_buffer, endpoint), size);
