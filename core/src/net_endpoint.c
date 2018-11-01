@@ -567,6 +567,8 @@ ringbuffer_block_t net_endpoint_common_buf_alloc(net_endpoint_t endpoint, uint32
             schedule->m_em, "%s: buf alloc: not enouth free buff, free endpoint %s!",
             net_endpoint_dump(&schedule->m_tmp_buffer, endpoint), free_endpoint_name);
         net_endpoint_free(free_endpoint);
+
+        if (endpoint->m_state == net_endpoint_state_deleting) return NULL;
         
         blk = ringbuffer_alloc(schedule->m_endpoint_buf , size);
     }

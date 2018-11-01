@@ -289,6 +289,7 @@ int net_dq_endpoint_on_read(net_dq_driver_t driver, net_dq_endpoint_t endpoint, 
         uint32_t capacity = 0;
         void * rbuf = net_endpoint_buf_alloc(base_endpoint, &capacity);
         if (rbuf == NULL) {
+            if (net_endpoint_state(base_endpoint) == net_endpoint_state_deleting) return -1;
             CPE_ERROR(
                 driver->m_em, "dq: %s: on read: endpoint rbuf full!",
                 net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),

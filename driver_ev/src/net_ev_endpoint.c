@@ -271,10 +271,13 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
             uint32_t capacity = 0;
             void * rbuf = net_endpoint_buf_alloc(base_endpoint, &capacity);
             if (rbuf == NULL) {
-                assert(net_endpoint_buf_is_full(base_endpoint, net_ep_buf_read));
+                assert(
+                    net_endpoint_state(base_endpoint) == net_endpoint_state_deleting
+                    || net_endpoint_buf_is_full(base_endpoint, net_ep_buf_read));
                 break;
             }
-            
+
+            assert(endpoint->m_fd != -1);
             int bytes = cpe_recv(endpoint->m_fd, rbuf, capacity, 0);
             if (bytes > 0) {
                 if (net_endpoint_driver_debug(base_endpoint)) {
@@ -362,6 +365,7 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
 
             assert(data_size > 0);
             assert(data);
+            assert(endpoint->m_fd != -1);
 
             int bytes = cpe_send(endpoint->m_fd, data, data_size, CPE_SOCKET_DEFAULT_SEND_FLAGS);
             if (bytes > 0) {
