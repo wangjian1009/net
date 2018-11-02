@@ -271,10 +271,35 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
             uint32_t capacity = 0;
             void * rbuf = net_endpoint_buf_alloc(base_endpoint, &capacity);
             if (rbuf == NULL) {
-                assert(
-                    net_endpoint_state(base_endpoint) == net_endpoint_state_deleting
-                    || net_endpoint_buf_is_full(base_endpoint, net_ep_buf_read));
-                break;
+                if (net_endpoint_state(base_endpoint) == net_endpoint_state_deleting) {
+                    CPE_INFO(driver->m_em, "xxxxx deleting");
+                    return;
+                }
+                else if (net_endpoint_buf_is_full(base_endpoint, net_ep_buf_read)) {
+                    break;
+                }
+                else {
+                    CPE_ERROR(
+                        driver->m_em, "ev: %s: alloc rbuf fail, and rbuf is not full!!!",
+                        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint));
+                    if (endpoint->m_fd != -1) {
+                        net_ev_endpoint_close_sock(driver, endpoint);
+                    }
+
+                    if (net_endpoint_is_active(base_endpoint)) {
+                        if (!net_endpoint_have_error(base_endpoint)) {
+                            net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_logic);
+                        }
+                        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_logic_error) != 0) {
+                            if (net_endpoint_driver_debug(base_endpoint) >= 2) {
+                                CPE_INFO(
+                                    driver->m_em, "ev: %s: free for process fail!",
+                                    net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint));
+                            }
+                            net_endpoint_free(base_endpoint);
+                        }
+                    }
+                }
             }
 
             assert(endpoint->m_fd != -1);
