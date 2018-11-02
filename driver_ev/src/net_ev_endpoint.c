@@ -363,13 +363,13 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
                 assert(bytes == -1);
                 net_endpoint_buf_release(base_endpoint);
                 
-                switch(errno) {
-                case EWOULDBLOCK:
-                case EINPROGRESS:
+                if (errno == EWOULDBLOCK || errno == EINPROGRESS) {
                     break;
-                case EINTR:
+                }
+                else if (errno == EINTR) {
                     continue;
-                default:
+                }
+                else {
                     CPE_ERROR(
                         driver->m_em, "ev: %s: recv error, errno=%d (%s)!",
                         net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint),
