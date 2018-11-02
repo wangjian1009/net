@@ -288,7 +288,6 @@ int net_endpoint_set_prepare_connect(net_endpoint_t endpoint, net_endpoint_prepa
 
 uint8_t net_endpoint_is_active(net_endpoint_t endpoint) {
     switch(endpoint->m_state) {
-    case net_endpoint_state_deleting:        
     case net_endpoint_state_disable:
     case net_endpoint_state_logic_error:
     case net_endpoint_state_network_error:
@@ -303,7 +302,9 @@ int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) 
     if (endpoint->m_state == state) return 0;
 
     assert(endpoint->m_state != net_endpoint_state_deleting);
-    if (endpoint->m_state == net_endpoint_state_deleting) return 0;
+    if (endpoint->m_state == net_endpoint_state_deleting) {
+        return 0;
+    }
 
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
     if (endpoint->m_protocol_debug || endpoint->m_driver_debug || schedule->m_debug >= 2) {
@@ -319,19 +320,6 @@ int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) 
     
     endpoint->m_state = state;
 
-    if (state == net_endpoint_state_deleting) {
-        TAILQ_REMOVE(&endpoint->m_driver->m_endpoints, endpoint, m_next_for_driver);
-        TAILQ_INSERT_TAIL(&endpoint->m_driver->m_deleting_endpoints, endpoint, m_next_for_driver);
-        net_schedule_start_delay_process(schedule);
-        return 0;
-    }
-    
-    if (state == net_endpoint_state_established) {
-        endpoint->m_close_after_send = 0;
-        endpoint->m_error_source = net_endpoint_error_source_network;
-        endpoint->m_error_no = 0;
-    }
-    
     if (old_is_active && !net_endpoint_is_active(endpoint)) {
         uint8_t i;
         for(i = 0; i < CPE_ARRAY_SIZE(endpoint->m_bufs); ++i) {
@@ -350,6 +338,19 @@ int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) 
         }
     }
 
+    if (state == net_endpoint_state_deleting) {
+        TAILQ_REMOVE(&endpoint->m_driver->m_endpoints, endpoint, m_next_for_driver);
+        TAILQ_INSERT_TAIL(&endpoint->m_driver->m_deleting_endpoints, endpoint, m_next_for_driver);
+        net_schedule_start_delay_process(schedule);
+        return 0;
+    }
+    
+    if (state == net_endpoint_state_established) {
+        endpoint->m_close_after_send = 0;
+        endpoint->m_error_source = net_endpoint_error_source_network;
+        endpoint->m_error_no = 0;
+    }
+    
     return net_endpoint_notify_state_changed(endpoint, old_state);
 }
 
