@@ -288,6 +288,7 @@ int net_endpoint_set_prepare_connect(net_endpoint_t endpoint, net_endpoint_prepa
 
 uint8_t net_endpoint_is_active(net_endpoint_t endpoint) {
     switch(endpoint->m_state) {
+    case net_endpoint_state_deleting:        
     case net_endpoint_state_disable:
     case net_endpoint_state_logic_error:
     case net_endpoint_state_network_error:
