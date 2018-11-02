@@ -272,6 +272,9 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
             void * rbuf = net_endpoint_buf_alloc(base_endpoint, &capacity);
             if (rbuf == NULL) {
                 if (net_endpoint_state(base_endpoint) == net_endpoint_state_deleting) {
+                    if (endpoint->m_fd != -1) {
+                        net_ev_endpoint_close_sock(driver, endpoint);
+                    }
                     CPE_INFO(driver->m_em, "xxxxx deleting");
                     return;
                 }
