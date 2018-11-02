@@ -271,6 +271,7 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
             uint32_t capacity = 0;
             void * rbuf = net_endpoint_buf_alloc(base_endpoint, &capacity);
             if (rbuf == NULL) {
+                CPE_INFO(driver->m_em, "xxxxx alloc fail");
                 if (net_endpoint_state(base_endpoint) == net_endpoint_state_deleting) {
                     if (endpoint->m_fd != -1) {
                         net_ev_endpoint_close_sock(driver, endpoint);
@@ -279,6 +280,7 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
                     return;
                 }
                 else if (net_endpoint_buf_is_full(base_endpoint, net_ep_buf_read)) {
+                    CPE_INFO(driver->m_em, "xxxxx is full");
                     break;
                 }
                 else {
