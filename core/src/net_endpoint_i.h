@@ -27,7 +27,7 @@ struct net_endpoint {
     ringbuffer_block_t m_bufs[net_ep_buf_count];
     void * m_data_watcher_ctx;
     net_endpoint_data_watch_fun_t m_data_watcher_fun;
-    void (*m_data_watcher_fini)(void*);
+    void (*m_data_watcher_fini)(void*, net_endpoint_t endpoint);
     net_endpoint_monitor_list_t m_monitors;
 };
 

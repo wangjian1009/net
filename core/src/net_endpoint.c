@@ -97,7 +97,7 @@ void net_endpoint_free(net_endpoint_t endpoint) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
 
     if (endpoint->m_data_watcher_fini) {
-        endpoint->m_data_watcher_fini(endpoint->m_data_watcher_ctx);
+        endpoint->m_data_watcher_fini(endpoint->m_data_watcher_ctx, endpoint);
     }
     endpoint->m_data_watcher_ctx = NULL;
     endpoint->m_data_watcher_fini = NULL;
@@ -634,7 +634,9 @@ int net_endpoint_forward(net_endpoint_t endpoint) {
 
 void net_endpoint_set_data_watcher(
     net_endpoint_t endpoint,
-    void * watcher_ctx, net_endpoint_data_watch_fun_t watcher_fun, void(*watcher_fini)(void*))
+    void * watcher_ctx,
+    net_endpoint_data_watch_fun_t watcher_fun,
+    void(*watcher_fini)(void*, net_endpoint_t endpoint))
 {
     endpoint->m_data_watcher_ctx = watcher_ctx;
     endpoint->m_data_watcher_fun = watcher_fun;
