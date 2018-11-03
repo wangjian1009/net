@@ -33,7 +33,11 @@ static int net_dns_source_ns_ctx_start(net_dns_source_t source, net_dns_task_ctx
 static void net_dns_source_ns_ctx_cancel(net_dns_source_t source, net_dns_task_ctx_t task_ctx);
 
 net_dns_source_ns_t
-net_dns_source_ns_create(net_dns_manage_t manage, net_driver_t driver, net_address_t addr, uint8_t is_own) {
+net_dns_source_ns_create(
+    net_dns_manage_t manage, net_driver_t driver,
+    net_address_t addr, uint8_t is_own,
+    net_dns_ns_trans_type_t trans, uint16_t timeout_ms)
+{
     net_dns_source_t source =
         net_dns_source_create(
             manage,
@@ -51,6 +55,8 @@ net_dns_source_ns_create(net_dns_manage_t manage, net_driver_t driver, net_addre
     net_dns_source_ns_t ns = net_dns_source_data(source);
 
     ns->m_driver = driver;
+    ns->m_trans_type = trans;
+    ns->m_timeout_ms = timeout_ms;
     
     if (is_own) {
         ns->m_address = addr;

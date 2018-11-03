@@ -2,7 +2,8 @@
 #include "net_dns_svr_query_i.h"
 #include "net_dns_svr_query_entry_i.h"
 
-net_dns_svr_query_t net_dns_svr_query_create(net_dns_svr_itf_t dns_itf, uint16_t trans_id) {
+net_dns_svr_query_t
+net_dns_svr_query_create(net_dns_svr_itf_t dns_itf, uint16_t trans_id) {
     net_dns_svr_t dns_svr = dns_itf->m_svr;
     
     net_dns_svr_query_t query = TAILQ_FIRST(&dns_svr->m_free_querys);

@@ -21,7 +21,9 @@ net_dns_task_builder_t net_dns_task_builder_internal(net_dns_manage_t manage);
 net_dns_task_builder_t net_dns_task_builder_default(net_dns_manage_t manage);
 void net_dns_task_builder_set_default(net_dns_manage_t manage, net_dns_task_builder_t builder);
 
-int net_dns_manage_auto_conf(net_dns_manage_t manage, net_driver_t driver, net_dns_scope_t scope);
+int net_dns_manage_auto_conf(
+    net_dns_manage_t manage, net_driver_t driver, net_dns_scope_t scope,
+    uint16_t timeout_s);
 
 NET_END_DECL
 

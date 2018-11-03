@@ -11,7 +11,7 @@
 
 static int net_dns_manage_load_ns(net_dns_manage_t manage, net_driver_t driver, net_dns_scope_t scope, net_address_t address);
 
-int net_dns_manage_auto_conf(net_dns_manage_t manage, net_driver_t driver, net_dns_scope_t scope) {
+int net_dns_manage_auto_conf(net_dns_manage_t manage, net_driver_t driver, net_dns_scope_t scope, uint16_t timeout_s) {
     struct sockaddr_storage dnssevraddrs[10];
     uint8_t addr_count = CPE_ARRAY_SIZE(dnssevraddrs);
     if (getdnssvraddrs(dnssevraddrs, &addr_count, manage->m_em) != 0) return -1;
@@ -47,7 +47,7 @@ static int net_dns_manage_load_ns(net_dns_manage_t manage, net_driver_t driver, 
         return 0;
     }
     
-    net_dns_source_ns_t ns = net_dns_source_ns_create(manage, driver, address, 1);
+    net_dns_source_ns_t ns = net_dns_source_ns_create(manage, driver, address, 1, net_dns_trans_udp, 3000);
     if (ns == NULL) {
         CPE_ERROR(manage->m_em, "dns-cli: load ns: create ns fail");
         net_address_free(address);
