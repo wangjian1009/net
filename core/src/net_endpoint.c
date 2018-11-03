@@ -14,6 +14,7 @@
 #include "net_dns_query_i.h"
 
 static void net_endpoint_dns_query_callback(void * ctx, net_address_t main_address, net_address_it_t it);
+static int net_endpoint_notify_state_changed(net_endpoint_t endpoint, net_endpoint_state_t old_state);
 
 net_endpoint_t
 net_endpoint_create(net_driver_t driver, net_endpoint_type_t type, net_protocol_t protocol) {
@@ -747,7 +748,7 @@ void net_endpoint_clear_monitor_by_ctx(net_endpoint_t endpoint, void * ctx) {
     }
 }
 
-int net_endpoint_notify_state_changed(net_endpoint_t endpoint, net_endpoint_state_t old_state) {
+static int net_endpoint_notify_state_changed(net_endpoint_t endpoint, net_endpoint_state_t old_state) {
     int rv = endpoint->m_protocol->m_endpoint_on_state_chagne
         ? endpoint->m_protocol->m_endpoint_on_state_chagne(endpoint, old_state)
         : net_endpoint_is_active(endpoint)
