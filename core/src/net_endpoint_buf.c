@@ -420,31 +420,34 @@ int net_endpoint_buf_append_from_other(
         if (tb == NULL) return -1;
 
         ringbuffer_copy(schedule->m_endpoint_buf, other->m_bufs[from], 0, tb);
-        net_endpoint_buf_consume(other, from, size);
-
         net_endpoint_buf_link(tb);
+
+        other->m_bufs[from] = ringbuffer_yield(schedule->m_endpoint_buf, other->m_bufs[from], size);
     }
     else {
         if (other->m_bufs[from]) {
+            size = ringbuffer_block_total_len(schedule->m_endpoint_buf, other->m_bufs[from]);
             net_endpoint_buf_link(other->m_bufs[from]);
             other->m_bufs[from] = NULL;
         }
     }
 
-    if (other->m_data_watcher_fun) {
-        other->m_data_watcher_fun(other->m_data_watcher_ctx, other, buf_type, net_endpoint_data_consume, size);
-    }
+    if (size > 0) {
+        if (other->m_data_watcher_fun) {
+            other->m_data_watcher_fun(other->m_data_watcher_ctx, other, buf_type, net_endpoint_data_consume, size);
+        }
 
-    if (endpoint->m_data_watcher_fun) {
-        endpoint->m_data_watcher_fun(endpoint->m_data_watcher_ctx, endpoint, buf_type, net_endpoint_data_supply, size);
-    }
+        if (endpoint->m_data_watcher_fun) {
+            endpoint->m_data_watcher_fun(endpoint->m_data_watcher_ctx, endpoint, buf_type, net_endpoint_data_supply, size);
+        }
 
-    if (buf_type == net_ep_buf_write) {
-        if (endpoint->m_driver->m_endpoint_on_output(endpoint) != 0) return -1;
-    }
+        if (buf_type == net_ep_buf_write) {
+            if (endpoint->m_driver->m_endpoint_on_output(endpoint) != 0) return -1;
+        }
 
-    if (buf_type == net_ep_buf_read) {
-        if (endpoint->m_protocol->m_endpoint_input(endpoint) != 0) return -1;
+        if (buf_type == net_ep_buf_read) {
+            if (endpoint->m_protocol->m_endpoint_input(endpoint) != 0) return -1;
+        }
     }
 
     return 0;
@@ -470,13 +473,13 @@ int net_endpoint_buf_append_from_self(net_endpoint_t endpoint, net_endpoint_buf_
         if (tb == NULL) return -1;
         
         ringbuffer_copy(schedule->m_endpoint_buf, endpoint->m_bufs[from], 0, tb);
-
         net_endpoint_buf_link(tb);
 
-        net_endpoint_buf_consume(endpoint, from, size);
+        endpoint->m_bufs[from] = ringbuffer_yield(schedule->m_endpoint_buf, endpoint->m_bufs[from], size);
     }
     else {
         if (endpoint->m_bufs[from]) {
+            size = ringbuffer_block_total_len(schedule->m_endpoint_buf, endpoint->m_bufs[from]);
             net_endpoint_buf_link(endpoint->m_bufs[from]);
             endpoint->m_bufs[from] = NULL;
         }

@@ -668,6 +668,34 @@ const char * net_endpoint_state_str(net_endpoint_state_t state) {
     }
 }
 
+const char * net_endpoint_buf_type_str(net_endpoint_buf_type_t buf_type) {
+    switch(buf_type) {
+    case net_ep_buf_read:
+        return "read";
+    case net_ep_buf_forward:
+        return "forward";
+    case net_ep_buf_write:
+        return "write";
+    case net_ep_buf_user1:
+        return "user1";
+    case net_ep_buf_user2:
+        return "user2";
+    case net_ep_buf_user3:
+        return "user3";
+    case net_ep_buf_count:
+        return "buf-count";
+    }
+}
+
+const char * net_endpoint_data_event_str(net_endpoint_data_event_t data_evt) {
+    switch(data_evt) {
+    case net_endpoint_data_supply:
+        return "supply";
+    case net_endpoint_data_consume:
+        return "consume";
+    }
+}
+
 static void net_endpoint_dns_query_callback(void * ctx, net_address_t address, net_address_it_t all_address) {
     net_endpoint_t endpoint = ctx;
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
