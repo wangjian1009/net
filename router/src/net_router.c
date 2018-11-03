@@ -131,13 +131,6 @@ int net_router_link(net_router_t router, net_endpoint_t endpoint, net_address_t 
         return -1;
     }
 
-    if (router->m_on_new_endpoint) {
-        if (router->m_on_new_endpoint(router->m_on_new_endpoint_ctx, target) != 0) {
-            net_endpoint_free(target);
-            return -1;
-        }
-    }
-
     if (net_endpoint_connect(target) != 0) {
         net_endpoint_free(target);
         return -1;
@@ -147,6 +140,13 @@ int net_router_link(net_router_t router, net_endpoint_t endpoint, net_address_t 
     if (link == NULL) {
         net_endpoint_free(target);
         return -1;
+    }
+
+    if (router->m_on_new_endpoint) {
+        if (router->m_on_new_endpoint(router->m_on_new_endpoint_ctx, target) != 0) {
+            net_link_free(link);
+            return -1;
+        }
     }
 
     if (net_endpoint_direct(target, target_addr) != 0) {

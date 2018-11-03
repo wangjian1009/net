@@ -12,6 +12,7 @@ void net_endpoint_free(net_endpoint_t endpoint);
 net_schedule_t net_endpoint_schedule(net_endpoint_t endpoint);
 net_endpoint_type_t net_endpoint_type(net_endpoint_t endpoint);
 net_protocol_t net_endpoint_protocol(net_endpoint_t endpoint);
+const char * net_endpoint_protocol_name(net_endpoint_t endpoint);
 int net_endpoint_set_protocol(net_endpoint_t endpoint, net_protocol_t protocol);
 net_driver_t net_endpoint_driver(net_endpoint_t endpoint);
 

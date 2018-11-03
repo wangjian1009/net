@@ -207,6 +207,10 @@ net_protocol_t net_endpoint_protocol(net_endpoint_t endpoint) {
     return endpoint->m_protocol;
 }
 
+const char * net_endpoint_protocol_name(net_endpoint_t endpoint) {
+    return endpoint->m_protocol->m_name;
+}
+
 net_driver_t net_endpoint_driver(net_endpoint_t endpoint) {
     return endpoint->m_driver;
 }
