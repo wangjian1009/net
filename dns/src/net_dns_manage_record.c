@@ -25,36 +25,42 @@ int net_dns_manage_add_record(
         return -1;
     }
 
-    net_dns_entry_item_t item = net_dns_entry_item_create(
-        entry, source, address, 0,
-        ttl ? ((uint32_t)(cur_time_ms() / 1000) + ttl) : 0);
-    if (item == NULL) {
-        CPE_ERROR(
-            manage->m_em, "dns-cli: add record %s ==> %s ttl=%d, create item fail",
-            hostname,
-            net_address_host(net_dns_manage_tmp_buffer(manage), address),
-            ttl);
-        return -1;
+    uint32_t expire_time_s = ttl ? ((uint32_t)(cur_time_ms() / 1000) + ttl) : 0;
+    
+    net_dns_entry_item_t item = net_dns_entry_item_find(entry, source, address);
+    if (item) {
+        item->m_expire_time_s = expire_time_s;
     }
-
-    if (net_address_type(address) == net_address_domain) {
-        const char * cname = net_address_data(address);
-        net_dns_entry_t cname_entry = net_dns_entry_find(manage, cname);
-        if (cname_entry == NULL) {
-            cname_entry = net_dns_entry_create(manage, cname);
-            if (cname_entry == NULL) {
-                CPE_ERROR(
-                    manage->m_em, "dns-cli: add record %s ==> %s ttl=%d, create cname entry fail",
-                    hostname,
-                    net_address_host(net_dns_manage_tmp_buffer(manage), address),
-                    ttl);
-                net_dns_entry_item_free(item);
-                return -1;
-            }
+    else {
+        item = net_dns_entry_item_create(entry, source, address, 0, expire_time_s);
+        if (item == NULL) {
+            CPE_ERROR(
+                manage->m_em, "dns-cli: add record %s ==> %s ttl=%d, create item fail",
+                hostname,
+                net_address_host(net_dns_manage_tmp_buffer(manage), address),
+                ttl);
+            return -1;
         }
-        net_dns_entry_set_main(cname_entry, entry);
-    }
 
+        if (net_address_type(address) == net_address_domain) {
+            const char * cname = net_address_data(address);
+            net_dns_entry_t cname_entry = net_dns_entry_find(manage, cname);
+            if (cname_entry == NULL) {
+                cname_entry = net_dns_entry_create(manage, cname);
+                if (cname_entry == NULL) {
+                    CPE_ERROR(
+                        manage->m_em, "dns-cli: add record %s ==> %s ttl=%d, create cname entry fail",
+                        hostname,
+                        net_address_host(net_dns_manage_tmp_buffer(manage), address),
+                        ttl);
+                    net_dns_entry_item_free(item);
+                    return -1;
+                }
+            }
+            net_dns_entry_set_main(cname_entry, entry);
+        }
+    }
+    
     switch(net_address_type(address)) {
     case net_address_ipv4:
     case net_address_ipv6:

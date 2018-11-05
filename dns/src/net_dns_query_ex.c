@@ -49,6 +49,11 @@ int net_dns_query_ex_init(void * ctx, net_dns_query_t query, const char * hostna
                 goto START_ERROR;
             }
         }
+        else {
+            if (manage->m_debug) {
+                CPE_INFO(manage->m_em, "dns-cli: query %s: already have task!", hostname);
+            }
+        }
     }
     
     query_ex->m_manage = manage;
@@ -79,7 +84,6 @@ START_ERROR:
 }
 
 void net_dns_query_ex_fini(void * ctx, net_dns_query_t query) {
-    net_dns_manage_t manage = ctx;
     struct net_dns_query_ex * query_ex = net_dns_query_data(query);
 
     if (query_ex->m_task) {

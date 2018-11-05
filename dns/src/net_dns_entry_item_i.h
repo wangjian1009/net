@@ -16,6 +16,9 @@ struct net_dns_entry_item {
 
 void net_dns_entry_item_real_free(net_dns_entry_item_t entry_item);
 
+net_dns_entry_item_t net_dns_entry_item_find(
+    net_dns_entry_t entry, net_dns_source_t source, net_address_t address);
+
 NET_END_DECL
 
 #endif
