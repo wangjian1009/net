@@ -17,6 +17,8 @@ struct net_dns_svr_query_entry {
 net_dns_svr_query_entry_t net_dns_svr_query_entry_create(net_dns_svr_query_t query, const char * domain_name);
 void net_dns_svr_query_entry_free(net_dns_svr_query_entry_t query_entry);
 
+uint8_t net_dns_svr_query_entry_have_address(net_dns_svr_query_entry_t query_entry, net_address_t address);
+
 void net_dns_svr_query_entry_real_free(net_dns_svr_query_entry_t query_entry);
 
 int net_dns_svr_query_entry_start(net_dns_svr_query_entry_t query_entry);

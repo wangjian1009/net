@@ -95,6 +95,9 @@ static void net_dns_svr_query_entry_callback(void * ctx, net_address_t main_addr
     query_entry->m_query->m_runing_entry_count--;
 
     while((result = net_address_it_next(all_address))) {
+        if (net_address_type(result) == net_address_domain) continue;
+        if (net_dns_svr_query_entry_have_address(query_entry, result)) continue;
+
         if (query_entry->m_result_count + 1 >= CPE_ARRAY_SIZE(query_entry->m_results)) {
             if (svr->m_debug >= 2) {
                 CPE_INFO(
@@ -103,7 +106,7 @@ static void net_dns_svr_query_entry_callback(void * ctx, net_address_t main_addr
                     net_address_dump(net_dns_svr_tmp_buffer(svr), result),
                     query_entry->m_result_count);
             }
-            continue;
+            break;
         }
 
         query_entry->m_results[query_entry->m_result_count] = net_address_copy(svr->m_schedule, result);
@@ -140,4 +143,11 @@ static void net_dns_svr_query_entry_callback(void * ctx, net_address_t main_addr
     }
 }
 
+uint8_t net_dns_svr_query_entry_have_address(net_dns_svr_query_entry_t query_entry, net_address_t address) {
+    uint8_t i;
+    for(i = 0; i < query_entry->m_result_count; ++i) {
+        if (net_address_cmp(query_entry->m_results[i], address) == 0) return 1;
+    }
 
+    return 0;
+}
