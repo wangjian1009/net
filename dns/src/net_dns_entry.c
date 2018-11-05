@@ -237,6 +237,7 @@ net_dns_entry_select_item(net_dns_entry_t entry, net_dns_item_select_policy_t po
 }
 
 struct net_dns_entry_address_it_data {
+    net_dns_entry_t m_root;
     net_dns_entry_t m_entry;
     net_dns_entry_item_t m_item;
 };
@@ -253,14 +254,23 @@ static void net_dns_entry_address_it_data_go_next(struct net_dns_entry_address_i
         if (data->m_item) break;
         
         assert(data->m_item == NULL);
-        if (!TAILQ_EMPTY(&data->m_entry->m_cnames)) {
-            data->m_entry = TAILQ_FIRST(&data->m_entry->m_cnames);
+
+        if (data->m_entry == data->m_root) {
+            data->m_entry = NULL;
+            break;
         }
-        else if (data->m_entry->m_main) {
-            data->m_entry = TAILQ_NEXT(data->m_entry, m_next_for_main);
+        
+        net_dns_entry_t next_entry = TAILQ_NEXT(data->m_entry, m_next_for_main);
+        if (next_entry) {
+            data->m_entry = next_entry;
+            if (data->m_entry) {
+                while(!TAILQ_EMPTY(&data->m_entry->m_cnames)) {
+                    data->m_entry = TAILQ_FIRST(&data->m_entry->m_cnames);
+                }
+            }
         }
         else {
-            data->m_entry = NULL;
+            data->m_entry = data->m_entry->m_main;
         }
     }
 }
@@ -290,8 +300,14 @@ static net_address_t net_dns_entry_address_it_basic_next(net_address_it_t it) {
 void net_dns_entry_addresses(net_dns_entry_t entry, net_address_it_t it, uint8_t recursive) {
     if (recursive) {
         struct net_dns_entry_address_it_data * data = (struct net_dns_entry_address_it_data *)it->data;
-        data->m_entry = entry;
+        data->m_root = entry;
         data->m_item = NULL;
+
+        data->m_entry = data->m_root;
+        while(!TAILQ_EMPTY(&data->m_entry->m_cnames)) {
+            data->m_entry = TAILQ_FIRST(&data->m_entry->m_cnames);
+        }
+        
         net_dns_entry_address_it_data_go_next(data);
         it->next = net_dns_entry_address_it_recursive_next;
     }
@@ -328,8 +344,13 @@ static net_dns_entry_item_t net_dns_entry_item_it_basic_next(net_dns_entry_item_
 void net_dns_entry_items(net_dns_entry_t entry, net_dns_entry_item_it_t it, uint8_t recursive) {
     if (recursive) {
         struct net_dns_entry_address_it_data * data = (struct net_dns_entry_address_it_data *)it->data;
-        data->m_entry = entry;
+        data->m_root = entry;
         data->m_item = NULL;
+
+        data->m_entry = data->m_root;
+        while(!TAILQ_EMPTY(&data->m_entry->m_cnames)) {
+            data->m_entry = TAILQ_FIRST(&data->m_entry->m_cnames);
+        }
 
         net_dns_entry_address_it_data_go_next(data);
         it->next = net_dns_entry_item_it_recursive_next;
