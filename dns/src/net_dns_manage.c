@@ -278,6 +278,18 @@ static void net_dns_manage_do_delay_process(net_timer_t timer, void * input_ctx)
             net_dns_entry_addresses(query_ex->m_entry, &address_it, 1);
         }
 
+        if (manage->m_debug) {
+            if (query_ex->m_entry) {
+                CPE_INFO(
+                    manage->m_em, "dns-cli: response: %s ==> %s",
+                    query_ex->m_entry->m_hostname,
+                    address ? net_address_dump(net_dns_manage_tmp_buffer(manage), address) : "N/A");
+            }
+            else {
+                CPE_INFO(manage->m_em, "dns-cli: response: no entry");
+            }
+        }
+        
         net_dns_query_notify_result_and_free(query, address, &address_it);
     }
 }

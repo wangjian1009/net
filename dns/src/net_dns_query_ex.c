@@ -19,11 +19,14 @@ int net_dns_query_ex_init(void * ctx, net_dns_query_t query, const char * hostna
         if (entry == NULL) return -1;
         is_entry_new = 1;
     }
+    assert(entry);
 
-    struct net_dns_entry_item_it item_it;
-    net_dns_entry_items(entry, &item_it, 1);
+    uint8_t need_query = 0;
+    if (net_dns_entry_select_item(entry, manage->m_default_item_select_policy) == NULL) {
+        need_query = 1;
+    }
 
-    if (net_dns_entry_item_it_next(&item_it) == NULL) {
+    if (need_query) {
         if (entry->m_task == NULL) {
             if (manage->m_builder_default == NULL) {
                 CPE_ERROR(manage->m_em, "dns-cli: query %s: no task builder!", hostname);
@@ -76,7 +79,7 @@ START_ERROR:
 }
 
 void net_dns_query_ex_fini(void * ctx, net_dns_query_t query) {
-    //net_dns_manage_t manage = ctx;
+    net_dns_manage_t manage = ctx;
     struct net_dns_query_ex * query_ex = net_dns_query_data(query);
 
     if (query_ex->m_task) {
