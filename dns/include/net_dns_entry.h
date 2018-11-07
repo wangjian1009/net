@@ -19,11 +19,7 @@ net_dns_entry_t net_dns_entry_find(net_dns_manage_t manage, const char * hostnam
 net_dns_task_t net_dns_entry_task(net_dns_entry_t entry);
 const char * net_dns_entry_hostname(net_dns_entry_t entry);
 
-net_dns_entry_t net_dns_entry_main(net_dns_entry_t entry);
-int net_dns_entry_set_main(net_dns_entry_t entry, net_dns_entry_t main);
-uint8_t net_dns_entry_is_main_of(net_dns_entry_t entry, net_dns_entry_t check_start);
-
-net_dns_entry_t net_dns_entry_effective(net_dns_entry_t entry);
+uint8_t net_dns_entry_is_origin_of(net_dns_entry_t entry, net_dns_entry_t check_start);
 
 void net_dns_entry_clear_item_by_source(net_dns_entry_t entry, net_dns_source_t source);
 

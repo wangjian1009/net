@@ -49,21 +49,11 @@ net_dns_entry_item_create(
         char source_buf[64];
         cpe_str_dup(source_buf, sizeof(source_buf), net_dns_source_dump(net_dns_manage_tmp_buffer(manage), item->m_source));
         
-        if (entry->m_main) {
-            CPE_INFO(
-                manage->m_em, "dns-cli: resolved %s[%s] ==> %s | %s",
-                entry->m_main->m_hostname,
-                entry->m_hostname,
-                net_address_host(net_dns_manage_tmp_buffer(manage), item->m_address),
-                source_buf);
-        }
-        else {
-            CPE_INFO(
-                manage->m_em, "dns-cli: resolved %s ==> %s | %s",
-                entry->m_hostname,
-                net_address_host(net_dns_manage_tmp_buffer(manage), item->m_address),
-                source_buf);
-        }
+        CPE_INFO(
+            manage->m_em, "dns-cli: resolved %s ==> %s | %s",
+            entry->m_hostname,
+            net_address_host(net_dns_manage_tmp_buffer(manage), item->m_address),
+            source_buf);
     }
 
     return item;
@@ -74,19 +64,10 @@ void net_dns_entry_item_free(net_dns_entry_item_t item) {
     net_dns_manage_t manage = entry->m_manage;
 
     if (manage->m_debug) {
-        if (entry->m_main) {
-            CPE_INFO(
-                manage->m_em, "dns-cli: removed %s[%s] ==> %s",
-                entry->m_main->m_hostname,
-                entry->m_hostname,
-                net_address_host(net_dns_manage_tmp_buffer(manage), item->m_address));
-        }
-        else {
-            CPE_INFO(
-                manage->m_em, "dns-cli: removed %s ==> %s",
-                entry->m_hostname,
-                net_address_host(net_dns_manage_tmp_buffer(manage), item->m_address));
-        }
+        CPE_INFO(
+            manage->m_em, "dns-cli: removed %s ==> %s",
+            entry->m_hostname,
+            net_address_host(net_dns_manage_tmp_buffer(manage), item->m_address));
     }
 
     net_address_free(item->m_address);

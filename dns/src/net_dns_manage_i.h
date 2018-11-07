@@ -10,6 +10,7 @@
 NET_BEGIN_DECL
 
 typedef struct net_dns_query_ex * net_dns_query_ex_t;
+typedef struct net_dns_entry_alias * net_dns_entry_alias_t;
 typedef struct net_dns_ns_cli_protocol * net_dns_ns_cli_protocol_t;
 typedef struct net_dns_ns_cli_endpoint * net_dns_ns_cli_endpoint_t;
 typedef struct net_dns_ns_parser * net_dns_ns_parser_t;
@@ -17,6 +18,7 @@ typedef struct net_dns_scope_source * net_dns_scope_source_t;
 
 typedef TAILQ_HEAD(net_dns_entry_list, net_dns_entry) net_dns_entry_list_t;
 typedef TAILQ_HEAD(net_dns_entry_item_list, net_dns_entry_item) net_dns_entry_item_list_t;
+typedef TAILQ_HEAD(net_dns_entry_alias_list, net_dns_entry_alias) net_dns_entry_alias_list_t;
 typedef TAILQ_HEAD(net_dns_source_list, net_dns_source) net_dns_source_list_t;
 typedef TAILQ_HEAD(net_dns_task_list, net_dns_task) net_dns_task_list_t;
 typedef TAILQ_HEAD(net_dns_task_step_list, net_dns_task_step) net_dns_task_step_list_t;
@@ -59,6 +61,7 @@ struct net_dns_manage {
     net_dns_task_step_list_t m_free_task_steps;
     net_dns_task_ctx_list_t m_free_task_ctxs;
     net_dns_entry_item_list_t m_free_entry_items;
+    net_dns_entry_alias_list_t m_free_entry_aliass;
     net_dns_scope_source_list_t m_free_scope_sources;
 };
 

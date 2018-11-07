@@ -11,6 +11,7 @@
 #include "net_dns_source_i.h"
 #include "net_dns_entry_i.h"
 #include "net_dns_entry_item_i.h"
+#include "net_dns_entry_alias_i.h"
 #include "net_dns_task_i.h"
 #include "net_dns_task_step_i.h"
 #include "net_dns_task_ctx_i.h"
@@ -52,6 +53,7 @@ net_dns_manage_t net_dns_manage_create(
     TAILQ_INIT(&manage->m_free_task_steps);
     TAILQ_INIT(&manage->m_free_task_ctxs);
     TAILQ_INIT(&manage->m_free_entry_items);
+    TAILQ_INIT(&manage->m_free_entry_aliass);
     TAILQ_INIT(&manage->m_free_scope_sources);
     TAILQ_INIT(&manage->m_builders);
 
@@ -169,6 +171,10 @@ void net_dns_manage_free(net_dns_manage_t manage) {
 
     while(!TAILQ_EMPTY(&manage->m_free_entry_items)) {
         net_dns_entry_item_real_free(TAILQ_FIRST(&manage->m_free_entry_items));
+    }
+
+    while(!TAILQ_EMPTY(&manage->m_free_entry_aliass)) {
+        net_dns_entry_alias_real_free(TAILQ_FIRST(&manage->m_free_entry_aliass));
     }
 
     while(!TAILQ_EMPTY(&manage->m_free_scope_sources)) {
