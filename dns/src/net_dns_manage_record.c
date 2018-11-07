@@ -28,9 +28,9 @@ int net_dns_manage_add_record(
     
     net_dns_entry_item_t item = net_dns_entry_item_find(entry, source, address);
     if (item) {
-        CPE_ERROR(
-            manage->m_em, "xxxxx: dns-cli: %s update %s", entry->m_hostname,
-            net_address_dump(net_dns_manage_tmp_buffer(manage), address));
+        /* CPE_ERROR( */
+        /*     manage->m_em, "xxxxx: dns-cli: %s update %s", entry->m_hostname, */
+        /*     net_address_dump(net_dns_manage_tmp_buffer(manage), address)); */
         
         item->m_expire_time_s = expire_time_s;
     }
@@ -45,9 +45,9 @@ int net_dns_manage_add_record(
             return -1;
         }
 
-        CPE_ERROR(
-            manage->m_em, "xxxxx: dns-cli: %s add %s", entry->m_hostname,
-            net_address_dump(net_dns_manage_tmp_buffer(manage), address));
+        /* CPE_ERROR( */
+        /*     manage->m_em, "xxxxx: dns-cli: %s add %s", entry->m_hostname, */
+        /*     net_address_dump(net_dns_manage_tmp_buffer(manage), address)); */
         
         if (net_address_type(address) == net_address_domain) {
             const char * cname = net_address_data(address);
