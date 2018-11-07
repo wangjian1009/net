@@ -31,7 +31,7 @@ net_dns_task_ctx_create(net_dns_task_step_t step, net_dns_source_t source) {
     ctx->m_timeout_timer = NULL;
     ctx->m_timeout_ms = (uint16_t)-1;
     ctx->m_retry_count = 0;
-
+    
     if (source->m_task_ctx_init(source, ctx) != 0) {
         ctx->m_step = (net_dns_task_step_t)manage;
         TAILQ_INSERT_TAIL(&manage->m_free_task_ctxs, ctx, m_next_for_step);

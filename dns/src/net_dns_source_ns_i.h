@@ -12,7 +12,6 @@ struct net_dns_source_ns {
     net_endpoint_prepare_connect_fun_t m_tcp_connect;
     void * m_tcp_connect_ctx;
     net_dgram_t m_dgram;
-    net_dns_ns_cli_endpoint_t m_tcp_cli;
     uint16_t m_timeout_ms;
     uint16_t m_retry_count;
     uint16_t m_max_transaction;
@@ -20,6 +19,9 @@ struct net_dns_source_ns {
 
 struct net_dns_source_ns_ctx {
     uint16_t m_transaction;
+    union {
+        net_dns_ns_cli_endpoint_t m_tcp_cli;
+    };
 };
 
 NET_END_DECL

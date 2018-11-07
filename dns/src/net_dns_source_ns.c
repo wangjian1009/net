@@ -24,9 +24,6 @@ static void net_dns_source_ns_dgram_input(
 static int net_dns_source_ns_dgram_output(
     net_dns_manage_t manage, net_dns_source_ns_t ns, void const * data, uint16_t buf_size);
 
-static int net_dns_source_ns_tcp_output(
-    net_dns_manage_t manage, net_dns_source_ns_t ns, void const * data, uint16_t buf_size);
-
 static int net_dns_source_ns_ctx_init(net_dns_source_t source, net_dns_task_ctx_t task_ctx);
 static void net_dns_source_ns_ctx_fini(net_dns_source_t source, net_dns_task_ctx_t task_ctx);
 static int net_dns_source_ns_ctx_start(net_dns_source_t source, net_dns_task_ctx_t task_ctx);
@@ -141,7 +138,6 @@ static int net_dns_source_ns_init(net_dns_source_t source) {
     ns->m_tcp_connect = NULL;
     ns->m_tcp_connect_ctx = NULL;
     ns->m_dgram = NULL;
-    ns->m_tcp_cli = NULL;
     ns->m_retry_count = 0;
     ns->m_timeout_ms = 2000;
     ns->m_max_transaction = 0;
@@ -168,11 +164,6 @@ static void net_dns_source_ns_fini(net_dns_source_t source) {
         net_dgram_free(ns->m_dgram);
         ns->m_dgram = NULL;
     }
-    
-    if (ns->m_tcp_cli) {
-        net_dns_ns_cli_endpoint_free(ns->m_tcp_cli);
-        ns->m_tcp_cli = NULL;
-    }
 }
 
 void net_dns_source_ns_dump(write_stream_t ws, net_dns_source_t source) {
@@ -188,16 +179,43 @@ void net_dns_source_ns_dump(write_stream_t ws, net_dns_source_t source) {
 int net_dns_source_ns_ctx_init(net_dns_source_t source, net_dns_task_ctx_t task_ctx) {
     struct net_dns_source_ns_ctx * ns_ctx = net_dns_task_ctx_data(task_ctx);
     net_dns_source_ns_t ns = net_dns_source_data(source);
-    
+    net_dns_manage_t manage = net_dns_task_ctx_manage(task_ctx);
+
     net_dns_task_ctx_set_retry_count(task_ctx, ns->m_retry_count);
     net_dns_task_ctx_set_timeout(task_ctx, ns->m_timeout_ms);
 
     ns_ctx->m_transaction = ++ns->m_max_transaction;
+
+    switch(ns->m_trans_type) {
+    case net_dns_trans_udp:
+        break;
+    case net_dns_trans_tcp:
+        ns_ctx->m_tcp_cli = net_dns_ns_cli_endpoint_create(net_dns_source_from_data(ns), ns->m_driver);
+        if (ns_ctx->m_tcp_cli == NULL) {
+            CPE_ERROR(
+                manage->m_em, "dns-cli: ns[%s]: create endpoint fail",
+                net_address_dump(net_dns_manage_tmp_buffer(manage), ns->m_address));
+            return -1;
+        }
+        net_endpoint_set_prepare_connect(ns_ctx->m_tcp_cli->m_endpoint, ns->m_tcp_connect, ns->m_tcp_connect_ctx);
+        break;
+    }
     
     return 0;
 }
 
 void net_dns_source_ns_ctx_fini(net_dns_source_t source, net_dns_task_ctx_t task_ctx) {
+    struct net_dns_source_ns_ctx * ns_ctx = net_dns_task_ctx_data(task_ctx);
+    net_dns_source_ns_t ns = net_dns_source_data(source);
+    
+    switch(ns->m_trans_type) {
+    case net_dns_trans_udp:
+        break;
+    case net_dns_trans_tcp:
+        net_dns_ns_cli_endpoint_free(ns_ctx->m_tcp_cli);
+        ns_ctx->m_tcp_cli = NULL;
+        break;
+    }
 }
 
 int net_dns_source_ns_ctx_start(net_dns_source_t source, net_dns_task_ctx_t task_ctx) {
@@ -270,7 +288,7 @@ int net_dns_source_ns_ctx_start(net_dns_source_t source, net_dns_task_ctx_t task
     case net_dns_trans_tcp: {
         uint16_t buf_size = (uint16_t)(p - buf);
         CPE_COPY_HTON16(buf, &msg_size);
-        return net_dns_source_ns_tcp_output(manage, ns, buf, buf_size);
+        return net_dns_ns_cli_endpoint_send(ns_ctx->m_tcp_cli, ns->m_address, buf, buf_size);
     }
     }
 }
@@ -352,21 +370,3 @@ static int net_dns_source_ns_dgram_output(
 
     return 0;
 }
-
-static int net_dns_source_ns_tcp_output(
-    net_dns_manage_t manage, net_dns_source_ns_t ns, void const * data, uint16_t buf_size)
-{
-    if (ns->m_tcp_cli == NULL) {
-        ns->m_tcp_cli = net_dns_ns_cli_endpoint_create(net_dns_source_from_data(ns), ns->m_driver);
-        if (ns->m_tcp_cli == NULL) {
-            CPE_ERROR(
-                manage->m_em, "dns-cli: ns[%s]: create endpoint fail",
-                net_address_dump(net_dns_manage_tmp_buffer(manage), ns->m_address));
-            return -1;
-        }
-        net_endpoint_set_prepare_connect(ns->m_tcp_cli->m_endpoint, ns->m_tcp_connect, ns->m_tcp_connect_ctx);
-    }
-
-    return net_dns_ns_cli_endpoint_send(ns->m_tcp_cli, ns->m_address, data, buf_size);
-}
-
