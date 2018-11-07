@@ -122,22 +122,22 @@ net_trans_http_endpoint_t net_trans_host_alloc_endpoint(net_trans_host_t host) {
         }
     }
 
-    if (mgr->m_cfg_host_endpoint_limit > 0
-        && host->m_endpoint_count >= mgr->m_cfg_host_endpoint_limit)
-    {    
-        if (idle_trans_http) {
-            return idle_trans_http;
-        }
-        else {
+    if (idle_trans_http) {
+        return idle_trans_http;
+    }
+    else {
+        if (mgr->m_cfg_host_endpoint_limit > 0
+            && host->m_endpoint_count >= mgr->m_cfg_host_endpoint_limit)
+        {    
             CPE_ERROR(
                 mgr->m_em, "trans: host %s connection limit %d reached!",
                 net_address_dump(net_trans_manage_tmp_buffer(mgr), host->m_address),
                 mgr->m_cfg_host_endpoint_limit);
             return NULL;
         }
-    }
-    else {
-        return net_trans_http_endpoint_create(host);
+        else {
+            return net_trans_http_endpoint_create(host);
+        }
     }
 }
 
