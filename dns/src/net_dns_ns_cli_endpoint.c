@@ -133,7 +133,16 @@ int net_dns_ns_cli_endpoint_input(net_endpoint_t base_endpoint) {
     return net_dns_ns_cli_process_data(base_endpoint, base_endpoint, net_ep_buf_read);
 }
 
-int net_dns_ns_cli_endpoint_on_state_change(net_endpoint_t endpoint, net_endpoint_state_t from_state) {
+int net_dns_ns_cli_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoint_state_t from_state) {
+    if (!net_endpoint_is_active(base_endpoint)) {
+        net_dns_ns_cli_endpoint_t dns_cli = net_endpoint_protocol_data(base_endpoint);
+        
+        if (dns_cli->m_task_ctx) {
+            net_dns_task_ctx_set_error(dns_cli->m_task_ctx);
+            dns_cli->m_task_ctx = NULL;
+        }
+    }
+    
     return 0;
 }
 

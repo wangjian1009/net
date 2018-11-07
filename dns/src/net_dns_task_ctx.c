@@ -238,7 +238,7 @@ static void net_dns_task_ctx_set_state_i(
     net_dns_manage_t manage, net_dns_task_t task, net_dns_task_ctx_t ctx, net_dns_task_state_t to_state)
 {
     if (manage->m_debug) {
-        CPE_ERROR(
+        CPE_INFO(
             manage->m_em, "dns-cli: query %s --> %s: state %s ==> %s",
             task->m_entry->m_hostname,
             net_dns_source_dump(net_dns_manage_tmp_buffer(manage), ctx->m_source),
