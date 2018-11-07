@@ -485,7 +485,18 @@ int net_endpoint_connect(net_endpoint_t endpoint) {
             return -1;
         }
 
-        if (!do_connect) return 0;
+        if (!do_connect) {
+            if (!net_endpoint_is_active(endpoint)) {
+                if (net_endpoint_set_state(endpoint, net_endpoint_state_established) != 0) {
+                    CPE_ERROR(
+                        schedule->m_em, "%s: connect: external prepare success, set state to established fail!",
+                        net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
+                    return -1;
+                }
+            }
+            
+            return 0;
+        }
     }
     
     if (net_address_resolved(endpoint->m_remote_address) == NULL) {

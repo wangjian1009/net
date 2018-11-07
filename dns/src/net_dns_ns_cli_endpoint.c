@@ -140,9 +140,7 @@ int net_dns_ns_cli_endpoint_send(
         }
     }
 
-    if (net_endpoint_other(dns_cli->m_endpoint) == NULL
-        && !net_endpoint_is_active(dns_cli->m_endpoint))
-    {
+    if (!net_endpoint_is_active(dns_cli->m_endpoint)) {
         if (net_endpoint_connect(dns_cli->m_endpoint) != 0) {
             CPE_ERROR(
                 manage->m_em, "dns-cli: %s: --> connect fail",
