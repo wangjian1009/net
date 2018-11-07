@@ -241,7 +241,9 @@ void net_endpoint_set_close_after_send(net_endpoint_t endpoint, uint8_t is_close
                 net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
         }
 
-        net_endpoint_set_state(endpoint, net_endpoint_state_deleting);
+        if (net_endpoint_set_state(endpoint, net_endpoint_state_disable) != 0) {
+            net_endpoint_set_state(endpoint, net_endpoint_state_deleting);
+        }
     }
 }
 

@@ -164,7 +164,10 @@ void net_endpoint_buf_consume(net_endpoint_t endpoint, net_endpoint_buf_type_t b
                 schedule->m_em, "core: %s: auto close on consume(close-after-send)!",
                 net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
         }
-        net_endpoint_set_state(endpoint, net_endpoint_state_deleting);
+
+        if (net_endpoint_set_state(endpoint, net_endpoint_state_disable) != 0) {
+            net_endpoint_set_state(endpoint, net_endpoint_state_deleting);
+        }
     }
 }
 
@@ -254,7 +257,10 @@ int net_endpoint_buf_recv(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_t
                     schedule->m_em, "core: %s: auto close on recv(close-after-send)!",
                     net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
             }
-            net_endpoint_set_state(endpoint, net_endpoint_state_deleting);
+
+            if (net_endpoint_set_state(endpoint, net_endpoint_state_disable) != 0) {
+                net_endpoint_set_state(endpoint, net_endpoint_state_deleting);
+            }
         }
     }
     
@@ -470,7 +476,10 @@ int net_endpoint_buf_append_from_other(
                     schedule->m_em, "core: %s: auto close on append_from_other(close-after-send)!",
                     net_endpoint_dump(&schedule->m_tmp_buffer, other));
             }
-            net_endpoint_set_state(other, net_endpoint_state_deleting);
+
+            if (net_endpoint_set_state(other, net_endpoint_state_disable) != 0) {
+                net_endpoint_set_state(other, net_endpoint_state_deleting);
+            }
         }
         
         if (endpoint->m_data_watcher_fun) {
@@ -542,7 +551,10 @@ int net_endpoint_buf_append_from_self(net_endpoint_t endpoint, net_endpoint_buf_
                 schedule->m_em, "core: %s: auto close on append_from_self(close-after-send)!",
                 net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
         }
-        net_endpoint_set_state(endpoint, net_endpoint_state_deleting);
+
+        if (net_endpoint_set_state(endpoint, net_endpoint_state_disable) != 0) {
+            net_endpoint_set_state(endpoint, net_endpoint_state_deleting);
+        }
     }
     
     return 0;
