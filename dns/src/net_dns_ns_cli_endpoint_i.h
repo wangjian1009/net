@@ -8,9 +8,10 @@ NET_BEGIN_DECL
 struct net_dns_ns_cli_endpoint {
     net_endpoint_t m_endpoint;
     struct net_dns_ns_parser m_parser;
+    net_dns_task_ctx_t m_task_ctx;
 };
 
-net_dns_ns_cli_endpoint_t net_dns_ns_cli_endpoint_create(net_dns_source_t source, net_driver_t driver);
+net_dns_ns_cli_endpoint_t net_dns_ns_cli_endpoint_create(net_dns_source_t source, net_driver_t driver, net_dns_task_ctx_t task_ctx);
 void net_dns_ns_cli_endpoint_free(net_dns_ns_cli_endpoint_t dns_cli);
 
 net_dns_ns_cli_endpoint_t net_dns_ns_cli_endpoint_get(net_endpoint_t base_endpoint);

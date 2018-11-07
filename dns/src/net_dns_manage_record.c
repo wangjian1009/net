@@ -7,8 +7,6 @@
 #include "net_dns_task_ctx_i.h"
 #include "net_dns_source_ns_i.h"
 
-static void net_dns_manage_notify_result(net_dns_manage_t manage, net_dns_source_t source, uint16_t task_ident, net_dns_entry_t entry);
-
 int net_dns_manage_add_record(
     net_dns_manage_t manage, net_dns_source_t source, uint16_t task_ident, 
     const char * hostname, net_address_t address, uint32_t ttl)
@@ -61,36 +59,6 @@ int net_dns_manage_add_record(
         }
     }
     
-    switch(net_address_type(address)) {
-    case net_address_ipv4:
-    case net_address_ipv6:
-        net_dns_manage_notify_result(manage, source, task_ident, entry);
-        break;
-    default:
-        break;
-    }
-    
     return 0;
 }
 
-static void net_dns_manage_notify_result(net_dns_manage_t manage, net_dns_source_t source, uint16_t task_ident, net_dns_entry_t entry) {
-    net_dns_task_t task = net_dns_entry_task(net_dns_entry_effective(entry));
-    if (task == NULL) return;
-    
-    net_dns_task_step_t curent_step = net_dns_task_step_current(task);
-    if (curent_step == NULL) return;
-    
-    struct net_dns_task_ctx_it task_ctx_it;
-    net_dns_task_ctx_t task_ctx;
-    net_dns_task_step_ctxes(curent_step, &task_ctx_it);
-
-    while((task_ctx = net_dns_task_ctx_it_next(&task_ctx_it))) {
-        if (net_dns_task_ctx_source(task_ctx) != source) continue;
-
-        struct net_dns_source_ns_ctx * ns_ctx = net_dns_task_ctx_data(task_ctx);
-        if (ns_ctx->m_transaction == task_ident) {
-            net_dns_task_ctx_set_success(task_ctx);
-            break;
-        }
-    }
-}

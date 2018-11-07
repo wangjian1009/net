@@ -7,9 +7,10 @@
 #include "net_dns_ns_cli_protocol_i.h"
 #include "net_dns_source_i.h"
 #include "net_dns_ns_pro.h"
+#include "net_dns_task_ctx_i.h"
 
 net_dns_ns_cli_endpoint_t
-net_dns_ns_cli_endpoint_create(net_dns_source_t source, net_driver_t driver) {
+net_dns_ns_cli_endpoint_create(net_dns_source_t source, net_driver_t driver, net_dns_task_ctx_t task_ctx) {
     net_dns_manage_t manage = source->m_manage;
     
     net_endpoint_t base_endpoint =
@@ -32,6 +33,8 @@ net_dns_ns_cli_endpoint_create(net_dns_source_t source, net_driver_t driver) {
         return NULL;
     }
 
+    dns_cli->m_task_ctx = task_ctx;
+    
     return dns_cli;
 }
 
@@ -47,6 +50,7 @@ int net_dns_ns_cli_endpoint_init(net_endpoint_t base_endpoint) {
     net_dns_ns_cli_endpoint_t dns_cli = net_endpoint_protocol_data(base_endpoint);
     dns_cli->m_endpoint = base_endpoint;
     bzero(&dns_cli->m_parser, sizeof(dns_cli->m_parser));
+    dns_cli->m_task_ctx = NULL;
     return 0;
 }
 
@@ -109,6 +113,13 @@ static int net_dns_ns_cli_process_data(
         }
 
         net_endpoint_buf_consume(from_ep, from_buf, all_req_sz);
+
+        if (dns_cli->m_task_ctx) {
+            net_dns_task_ctx_set_success(dns_cli->m_task_ctx);
+            dns_cli->m_task_ctx = NULL;
+        }
+
+        return 0;
     }
 
     return 0;

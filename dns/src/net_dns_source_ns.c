@@ -21,9 +21,6 @@ static void net_dns_source_ns_dump(write_stream_t ws, net_dns_source_t source);
 static void net_dns_source_ns_dgram_input(
     net_dgram_t dgram, void * ctx, void * data, size_t data_size, net_address_t from);
 
-static int net_dns_source_ns_dgram_output(
-    net_dns_manage_t manage, net_dns_source_ns_t ns, void const * data, uint16_t buf_size);
-
 static int net_dns_source_ns_ctx_init(net_dns_source_t source, net_dns_task_ctx_t task_ctx);
 static void net_dns_source_ns_ctx_fini(net_dns_source_t source, net_dns_task_ctx_t task_ctx);
 static int net_dns_source_ns_ctx_start(net_dns_source_t source, net_dns_task_ctx_t task_ctx);
@@ -137,7 +134,6 @@ static int net_dns_source_ns_init(net_dns_source_t source) {
     ns->m_trans_type = net_dns_trans_udp;
     ns->m_tcp_connect = NULL;
     ns->m_tcp_connect_ctx = NULL;
-    ns->m_dgram = NULL;
     ns->m_retry_count = 0;
     ns->m_timeout_ms = 2000;
     ns->m_max_transaction = 0;
@@ -158,11 +154,6 @@ static void net_dns_source_ns_fini(net_dns_source_t source) {
     if (ns->m_address) {
         net_address_free(ns->m_address);
         ns->m_address = NULL;
-    }
-
-    if (ns->m_dgram) {
-        net_dgram_free(ns->m_dgram);
-        ns->m_dgram = NULL;
     }
 }
 
@@ -188,9 +179,16 @@ int net_dns_source_ns_ctx_init(net_dns_source_t source, net_dns_task_ctx_t task_
 
     switch(ns->m_trans_type) {
     case net_dns_trans_udp:
+        ns_ctx->m_dgram = net_dgram_create(ns->m_driver, NULL, net_dns_source_ns_dgram_input, task_ctx);
+        if (ns_ctx->m_dgram == NULL) {
+            CPE_ERROR(
+                manage->m_em, "dns-cli: ns[%s]: create dgram fail",
+                net_address_dump(net_dns_manage_tmp_buffer(manage), ns->m_address));
+            return -1;
+        }
         break;
     case net_dns_trans_tcp:
-        ns_ctx->m_tcp_cli = net_dns_ns_cli_endpoint_create(net_dns_source_from_data(ns), ns->m_driver);
+        ns_ctx->m_tcp_cli = net_dns_ns_cli_endpoint_create(net_dns_source_from_data(ns), ns->m_driver, task_ctx);
         if (ns_ctx->m_tcp_cli == NULL) {
             CPE_ERROR(
                 manage->m_em, "dns-cli: ns[%s]: create endpoint fail",
@@ -210,6 +208,8 @@ void net_dns_source_ns_ctx_fini(net_dns_source_t source, net_dns_task_ctx_t task
     
     switch(ns->m_trans_type) {
     case net_dns_trans_udp:
+        net_dgram_free(ns_ctx->m_dgram);
+        ns_ctx->m_dgram = NULL;
         break;
     case net_dns_trans_tcp:
         net_dns_ns_cli_endpoint_free(ns_ctx->m_tcp_cli);
@@ -284,7 +284,24 @@ int net_dns_source_ns_ctx_start(net_dns_source_t source, net_dns_task_ctx_t task
 
     switch(ns->m_trans_type) {
     case net_dns_trans_udp:
-        return net_dns_source_ns_dgram_output(manage, ns, buf + 2, msg_size);
+        if (net_dgram_send(ns_ctx->m_dgram, ns->m_address, buf + 2, msg_size) < 0) {
+            CPE_ERROR(
+                manage->m_em, "dns-cli: ns[%s]: send data fail",
+                net_address_dump(net_dns_manage_tmp_buffer(manage), ns->m_address));
+            return -1;
+        }
+
+        if (net_dgram_protocol_debug(ns_ctx->m_dgram, ns->m_address) >= 2) {
+            char address_buf[128];
+            snprintf(address_buf, sizeof(address_buf), "%s", net_address_dump(net_dns_manage_tmp_buffer(manage), ns->m_address));
+        
+            CPE_INFO(
+                manage->m_em, "dns-cli: ns[%s]: udp --> %s",
+                address_buf,
+                net_dns_ns_req_dump(manage, net_dns_manage_tmp_buffer(manage), (uint8_t*)(buf + 2), msg_size));
+        }
+
+        return 0;
     case net_dns_trans_tcp: {
         uint16_t buf_size = (uint16_t)(p - buf);
         CPE_COPY_HTON16(buf, &msg_size);
@@ -299,9 +316,11 @@ void net_dns_source_ns_ctx_cancel(net_dns_source_t source, net_dns_task_ctx_t ta
 static void net_dns_source_ns_dgram_input(
     net_dgram_t dgram, void * ctx, void * data, size_t data_size, net_address_t from)
 {
-    net_dns_source_ns_t ns = ctx;
-    net_dns_source_t source = net_dns_source_from_data(ns);
-    net_dns_manage_t manage = net_dns_source_manager(source);
+    net_dns_task_ctx_t task_ctx = ctx;
+    net_dns_manage_t manage = net_dns_task_ctx_manage(task_ctx);
+    struct net_dns_source_ns_ctx * ns_ctx = net_dns_task_ctx_data(task_ctx);
+    net_dns_source_t source = net_dns_task_ctx_source(task_ctx);
+    net_dns_source_ns_t ns = net_dns_source_data(source);
 
     struct net_dns_ns_parser parser;
 
@@ -310,7 +329,7 @@ static void net_dns_source_ns_dgram_input(
         return;
     }
     
-    if (net_dgram_protocol_debug(ns->m_dgram, ns->m_address) >= 2) {
+    if (net_dgram_protocol_debug(ns_ctx->m_dgram, ns->m_address) >= 2) {
         CPE_INFO(
             manage->m_em, "dns-cli: udp <-- %s",
             net_dns_ns_req_dump(manage, net_dns_manage_tmp_buffer(manage), data, (uint32_t)data_size));
@@ -319,54 +338,17 @@ static void net_dns_source_ns_dgram_input(
     int rv = net_dns_ns_parser_input(&parser, data, (uint32_t)data_size);
     if (rv < 0) {
         CPE_ERROR(manage->m_em, "dns-cli: udp <-- parse data fail");
+        net_dns_task_ctx_set_error(task_ctx);
     }
     else if (rv == 0) {
         CPE_ERROR(manage->m_em, "dns-cli: udp <-- not enough data, input=%d", (int)data_size);
+        net_dns_task_ctx_set_error(task_ctx);
     }
     else if (rv < data_size) {
         CPE_ERROR(manage->m_em, "dns-cli: udp <-- read part data, used=%d, input=%d", rv, (int)data_size);
+        net_dns_task_ctx_set_error(task_ctx);
     }
-}
-
-static int net_dns_source_ns_dgram_output(
-    net_dns_manage_t manage, net_dns_source_ns_t ns, void const * buf, uint16_t buf_size)
-{
-    if (ns->m_dgram == NULL) {
-        net_address_t local_address = net_address_create_any(manage->m_schedule, net_address_type(ns->m_address), 0);
-        if (local_address == NULL) {
-            CPE_ERROR(
-                manage->m_em, "dns-cli: ns[%s]: create local address fail",
-                net_address_dump(net_dns_manage_tmp_buffer(manage), ns->m_address));
-            return -1;
-        }
-    
-        ns->m_dgram = net_dgram_create(ns->m_driver, local_address, net_dns_source_ns_dgram_input, ns);
-        if (ns->m_dgram == NULL) {
-            net_address_free(local_address);
-            CPE_ERROR(
-                manage->m_em, "dns-cli: ns[%s]: create dgram fail",
-                net_address_dump(net_dns_manage_tmp_buffer(manage), ns->m_address));
-            return -1;
-        }
-        net_address_free(local_address);
+    else {
+        net_dns_task_ctx_set_success(task_ctx);
     }
-    
-    if (net_dgram_send(ns->m_dgram, ns->m_address, buf, buf_size) < 0) {
-        CPE_ERROR(
-            manage->m_em, "dns-cli: ns[%s]: send data fail",
-            net_address_dump(net_dns_manage_tmp_buffer(manage), ns->m_address));
-        return -1;
-    }
-
-    if (net_dgram_protocol_debug(ns->m_dgram, ns->m_address) >= 2) {
-        char address_buf[128];
-        snprintf(address_buf, sizeof(address_buf), "%s", net_address_dump(net_dns_manage_tmp_buffer(manage), ns->m_address));
-        
-        CPE_INFO(
-            manage->m_em, "dns-cli: ns[%s]: udp --> %s",
-            address_buf,
-            net_dns_ns_req_dump(manage, net_dns_manage_tmp_buffer(manage), buf, buf_size));
-    }
-
-    return 0;
 }
