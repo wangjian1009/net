@@ -233,7 +233,7 @@ uint8_t net_endpoint_close_after_send(net_endpoint_t endpoint) {
 void net_endpoint_set_close_after_send(net_endpoint_t endpoint, uint8_t is_close_after_send) {
     endpoint->m_close_after_send = is_close_after_send;
 
-    if (net_endpoint_buf_is_empty(endpoint, net_ep_buf_write)) {
+    if (!net_endpoint_have_any_data(endpoint)) {
         if (endpoint->m_protocol_debug || endpoint->m_driver_debug) {
             net_schedule_t schedule = endpoint->m_driver->m_schedule;
             CPE_INFO(
@@ -773,3 +773,5 @@ static int net_endpoint_notify_state_changed(net_endpoint_t endpoint, net_endpoi
 
     return rv;
 }
+
+uint8_t net_endpoint_have_any_data(net_endpoint_t endpoint);

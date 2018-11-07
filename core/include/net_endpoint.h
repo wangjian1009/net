@@ -66,6 +66,8 @@ uint8_t net_endpoint_buf_is_empty(net_endpoint_t endpoint, net_endpoint_buf_type
 uint8_t net_endpoint_buf_is_full(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type);
 void net_endpoint_buf_clear(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type);
 
+uint8_t net_endpoint_have_any_data(net_endpoint_t endpoint);
+
 /*    write*/
 void * net_endpoint_buf_alloc(net_endpoint_t endpoint, uint32_t * inout_size);
 void net_endpoint_buf_release(net_endpoint_t endpoint);
