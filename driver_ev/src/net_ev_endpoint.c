@@ -62,24 +62,24 @@ int net_ev_endpoint_connect(net_endpoint_t base_endpoint) {
 
     if (endpoint->m_fd != -1) {
         CPE_ERROR(
-            driver->m_em, "ev: %s: already connected!",
-            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint));
+            driver->m_em, "ev: %s: fd=%d: already connected!",
+            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
         return -1;
     }
 
     net_address_t remote_addr = net_endpoint_remote_address(base_endpoint);
     if (remote_addr == NULL) {
         CPE_ERROR(
-            driver->m_em, "ev: %s: connect with no remote address!",
-            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint));
+            driver->m_em, "ev: %s: fd=%d: connect with no remote address!",
+            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
         return -1;
     }
     remote_addr = net_address_resolved(remote_addr);
 
     if (net_address_type(remote_addr) != net_address_ipv4 && net_address_type(remote_addr) != net_address_ipv6) {
         CPE_ERROR(
-            driver->m_em, "ev: %s: connect not support domain address!",
-            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint));
+            driver->m_em, "ev: %s: fd=%d: connect not support domain address!",
+            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
         return -1;
     }
     
@@ -89,8 +89,8 @@ int net_ev_endpoint_connect(net_endpoint_t base_endpoint) {
     switch(ip_stack) {
     case net_local_ip_stack_none:
         CPE_ERROR(
-            driver->m_em, "ev: %s: can`t connect in %s!",
-            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint),
+            driver->m_em, "ev: %s: fd=%d: can`t connect in %s!",
+            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
             net_local_ip_stack_str(ip_stack));
         return -1;
     case net_local_ip_stack_ipv4:
@@ -99,8 +99,8 @@ int net_ev_endpoint_connect(net_endpoint_t base_endpoint) {
                 net_address_t remote_addr_ipv4 = net_address_create_ipv4_from_ipv6_map(net_endpoint_schedule(base_endpoint), remote_addr);
                 if (remote_addr_ipv4 == NULL) {
                     CPE_ERROR(
-                        driver->m_em, "ev: %s: convert ipv6 address to ipv4(map) fail",
-                        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint));
+                        driver->m_em, "ev: %s: fd=%d: convert ipv6 address to ipv4(map) fail",
+                        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
                     return -1;
                 }
 
@@ -110,8 +110,8 @@ int net_ev_endpoint_connect(net_endpoint_t base_endpoint) {
             }
             else {
                 CPE_ERROR(
-                    driver->m_em, "ev: %s: can`t connect to ipv6 network in ipv4 network env!",
-                    net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint));
+                    driver->m_em, "ev: %s: fd=%d: can`t connect to ipv6 network in ipv4 network env!",
+                    net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
                 return -1;
             }
         }
@@ -124,8 +124,8 @@ int net_ev_endpoint_connect(net_endpoint_t base_endpoint) {
             net_address_t remote_addr_ipv6 = net_address_create_ipv6_from_ipv4_nat(net_endpoint_schedule(base_endpoint), remote_addr);
             if (remote_addr_ipv6 == NULL) {
                 CPE_ERROR(
-                    driver->m_em, "ev: %s: convert ipv4 address to ipv6(nat) fail",
-                    net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint));
+                    driver->m_em, "ev: %s: fd=%d: convert ipv4 address to ipv6(nat) fail",
+                    net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
                 return -1;
             }
 
@@ -210,9 +210,9 @@ int net_ev_endpoint_update_local_address(net_ev_endpoint_t endpoint) {
     memset(&addr, 0, addr_len);
     if (cpe_getsockname(endpoint->m_fd, (struct sockaddr *)&addr, &addr_len) != 0) {
         CPE_ERROR(
-            driver->m_em, "ev: %s: sockaddr error, errno=%d (%s)",
+            driver->m_em, "ev: %s: fd=%d: sockaddr error, errno=%d (%s)",
             net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint),
-            cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+            endpoint->m_fd, cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
         return -1;
     }
 
@@ -220,8 +220,8 @@ int net_ev_endpoint_update_local_address(net_ev_endpoint_t endpoint) {
         net_address_create_from_sockaddr(net_ev_driver_schedule(driver), (struct sockaddr *)&addr, addr_len);
     if (address == NULL) {
         CPE_ERROR(
-            driver->m_em, "ev: %s: create address fail",
-            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint));
+            driver->m_em, "ev: %s: fd=%d: create address fail",
+            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
         return -1;
     }
 
@@ -239,8 +239,8 @@ int net_ev_endpoint_update_remote_address(net_ev_endpoint_t endpoint) {
     memset(&addr, 0, addr_len);
     if (cpe_getpeername(endpoint->m_fd, (struct sockaddr *)&addr, &addr_len) != 0) {
         CPE_ERROR(
-            driver->m_em, "ev: %s: getpeername error, errno=%d (%s)",
-            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint),
+            driver->m_em, "ev: %s: fd=%d: getpeername error, errno=%d (%s)",
+            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
         return -1;
     }
@@ -249,8 +249,8 @@ int net_ev_endpoint_update_remote_address(net_ev_endpoint_t endpoint) {
         net_address_create_from_sockaddr(net_ev_driver_schedule(driver), (struct sockaddr *)&addr, addr_len);
     if (address == NULL) {
         CPE_ERROR(
-            driver->m_em, "ev: %s: create address fail",
-            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint));
+            driver->m_em, "ev: %s: fd=%d: create address fail",
+            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
         return -1;
     }
 
@@ -282,8 +282,8 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
                 }
                 else {
                     CPE_ERROR(
-                        driver->m_em, "ev: %s: alloc rbuf fail, and rbuf is not full!!!",
-                        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint));
+                        driver->m_em, "ev: %s: fd=%d: alloc rbuf fail, and rbuf is not full!!!",
+                        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
                     if (endpoint->m_fd != -1) {
                         net_ev_endpoint_close_sock(driver, endpoint);
                     }
@@ -295,8 +295,8 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
                         if (net_endpoint_set_state(base_endpoint, net_endpoint_state_logic_error) != 0) {
                             if (net_endpoint_driver_debug(base_endpoint) >= 2) {
                                 CPE_INFO(
-                                    driver->m_em, "ev: %s: free for process fail!",
-                                    net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint));
+                                    driver->m_em, "ev: %s: fd=%d: free for process fail!",
+                                    net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
                             }
                             net_endpoint_free(base_endpoint);
                         }
@@ -309,8 +309,8 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
             if (bytes > 0) {
                 if (net_endpoint_driver_debug(base_endpoint)) {
                     CPE_INFO(
-                        driver->m_em, "ev: %s: recv %d bytes data!",
-                        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint),
+                        driver->m_em, "ev: %s: fd=%d: recv %d bytes data!",
+                        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
                         bytes);
                 }
 
@@ -330,8 +330,8 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
                         if (net_endpoint_set_state(base_endpoint, net_endpoint_state_logic_error) != 0) {
                             if (net_endpoint_driver_debug(base_endpoint) >= 2) {
                                 CPE_INFO(
-                                    driver->m_em, "ev: %s: free for process fail!",
-                                    net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint));
+                                    driver->m_em, "ev: %s: fd=%d: free for process fail!",
+                                    net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
                             }
                             net_endpoint_free(base_endpoint);
                         }
@@ -344,8 +344,8 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
                 
                 if (net_endpoint_driver_debug(base_endpoint) >= 2) {
                     CPE_INFO(
-                        driver->m_em, "ev: %s: remote disconnected(recv 0)!",
-                        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint));
+                        driver->m_em, "ev: %s: fd=%d: remote disconnected(recv 0)!",
+                        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
                 }
 
                 net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_remote_closed);
@@ -366,8 +366,8 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
                 }
                 else {
                     CPE_ERROR(
-                        driver->m_em, "ev: %s: recv error, errno=%d (%s)!",
-                        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint),
+                        driver->m_em, "ev: %s: fd=%d: recv error, errno=%d (%s)!",
+                        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
                         cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
 
                     net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_network_error);
@@ -396,8 +396,8 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
             if (bytes > 0) {
                 if (net_endpoint_driver_debug(base_endpoint)) {
                     CPE_INFO(
-                        driver->m_em, "ev: %s: send %d bytes data!",
-                        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint),
+                        driver->m_em, "ev: %s: fd=%d: send %d bytes data!",
+                        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
                         bytes);
                 }
 
@@ -410,8 +410,8 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
             else if (bytes == 0) {
                 if (net_endpoint_driver_debug(base_endpoint) >= 2) {
                     CPE_INFO(
-                        driver->m_em, "ev: %s: free for send return 0!",
-                        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint));
+                        driver->m_em, "ev: %s: fd=%d: free for send return 0!",
+                        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
                 }
 
                 net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_remote_closed);
@@ -431,8 +431,8 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
                 if (err == EPIPE) {
                     if (net_endpoint_driver_debug(base_endpoint) >= 2) {
                         CPE_INFO(
-                            driver->m_em, "ev: %s: free for send recv EPIPE!",
-                            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint));
+                            driver->m_em, "ev: %s: fd=%d: free for send recv EPIPE!",
+                            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
                     }
 
                     net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_network_error);
@@ -444,8 +444,8 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
                 }
 
                 CPE_ERROR(
-                    driver->m_em, "ev: %s: free for send error, errno=%d (%s)!",
-                    net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint),
+                    driver->m_em, "ev: %s: fd=%d: free for send error, errno=%d (%s)!",
+                    net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
                     cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
 
                 net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_network_error);
@@ -474,8 +474,8 @@ static void net_ev_endpoint_connect_cb(EV_P_ ev_io *w, int revents) {
     socklen_t err_len = sizeof(err);
     if (cpe_getsockopt(endpoint->m_fd, SOL_SOCKET, SO_ERROR, (void*)&err, &err_len) == -1) {
         CPE_ERROR(
-            driver->m_em, "ev: %s: connect_cb get socket error fail, errno=%d (%s)!",
-            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint),
+            driver->m_em, "ev: %s: fd=%d: connect_cb get socket error fail, errno=%d (%s)!",
+            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
 
         net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_network_error);
@@ -537,15 +537,15 @@ static void net_ev_endpoint_connect_log_connect_start(
             net_address_dump(net_ev_driver_tmp_buffer(driver), local_address));
 
         CPE_INFO(
-            driver->m_em, "ev: %s: connect %s (local-address=%s)",
-            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint),
+            driver->m_em, "ev: %s: fd=%d: connect %s (local-address=%s)",
+            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
             local_addr_buf,
             is_first ? "start" : "restart");
     }
     else {
         CPE_INFO(
-            driver->m_em, "ev: %s: connect %s",
-            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint),
+            driver->m_em, "ev: %s: fd=%d: connect %s",
+            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
             is_first ? "start" : "restart");
     }
 }
@@ -561,14 +561,14 @@ static void net_ev_endpoint_connect_log_connect_success(
             net_address_dump(net_ev_driver_tmp_buffer(driver), local_address));
 
         CPE_INFO(
-            driver->m_em, "ev: %s: connect success (local-address=%s)",
-            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint),
+            driver->m_em, "ev: %s: fd=%d: connect success (local-address=%s)",
+            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
             local_addr_buf);
     }
     else {
         CPE_INFO(
-            driver->m_em, "ev: %s: connect success",
-            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint));
+            driver->m_em, "ev: %s: fd=%d: connect success",
+            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
     }
 }
 
@@ -576,8 +576,8 @@ static void net_ev_endpoint_connect_log_connect_error(
     net_ev_driver_t driver, net_ev_endpoint_t endpoint, net_endpoint_t base_endpoint, int err, uint8_t is_first)
 {
     CPE_ERROR(
-        driver->m_em, "ev: %s: connect error%s, errno=%d (%s)",
-        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint),
+        driver->m_em, "ev: %s: fd=%d: connect error%s, errno=%d (%s)",
+        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
         is_first ? "" : "(callback)",
         err, cpe_sock_errstr(err));
 }
@@ -596,8 +596,8 @@ static int net_ev_endpoint_start_connect(
     endpoint->m_fd = cpe_sock_open(domain, SOCK_STREAM, IPPROTO_TCP);
     if (endpoint->m_fd == -1) {
         CPE_ERROR(
-            driver->m_em, "ev: %s: create socket fail, errno=%d (%s)",
-            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint),
+            driver->m_em, "ev: %s: fd=%d: create socket fail, errno=%d (%s)",
+            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
         return -1;
     }
@@ -611,15 +611,15 @@ static int net_ev_endpoint_start_connect(
 
         if (net_address_to_sockaddr(local_address, (struct sockaddr *)&local_addr_sock, &local_addr_sock_len) != 0) {
             CPE_ERROR(
-                driver->m_em, "ev: %s: connect not support connect to domain address!",
-                net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint));
+                driver->m_em, "ev: %s: fd=%d: connect not support connect to domain address!",
+                net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
             return -1;
         }
 
         if (cpe_sock_set_reuseaddr(endpoint->m_fd, 1) != 0) {
             CPE_ERROR(
-                driver->m_em, "ev: %s: set sock reuse address fail, errno=%d (%s)",
-                net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint),
+                driver->m_em, "ev: %s: fd=%d: set sock reuse address fail, errno=%d (%s)",
+                net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
                 cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
             net_ev_endpoint_close_sock(driver, endpoint);
             return -1;
@@ -632,8 +632,8 @@ static int net_ev_endpoint_start_connect(
                 net_address_dump(net_ev_driver_tmp_buffer(driver), local_address));
 
             CPE_ERROR(
-                driver->m_em, "ev: %s: bind local address %s fail, errno=%d (%s)",
-                net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), local_addr_buf,
+                driver->m_em, "ev: %s: fd=%d: bind local address %s fail, errno=%d (%s)",
+                net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd, local_addr_buf,
                 cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
             return -1;
         }
@@ -641,8 +641,8 @@ static int net_ev_endpoint_start_connect(
 
     if (cpe_sock_set_none_block(endpoint->m_fd, 1) != 0) {
         CPE_ERROR(
-            driver->m_em, "ev: %s: set non-block fail, errno=%d (%s)",
-            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint),
+            driver->m_em, "ev: %s: fd=%d: set non-block fail, errno=%d (%s)",
+            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
         net_ev_endpoint_close_sock(driver, endpoint);
         return -1;
@@ -650,8 +650,8 @@ static int net_ev_endpoint_start_connect(
 
     if (cpe_sock_set_no_sigpipe(endpoint->m_fd, 1) != 0) {
         CPE_ERROR(
-            driver->m_em, "ev: %s: set no-sig-pipe fail, errno=%d (%s)",
-            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint),
+            driver->m_em, "ev: %s: fd=%d: set no-sig-pipe fail, errno=%d (%s)",
+            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
         net_ev_endpoint_close_sock(driver, endpoint);
         return -1;
@@ -661,8 +661,8 @@ static int net_ev_endpoint_start_connect(
     /* cpe_str_dup(buf, sizeof(buf), net_address_dump(net_ev_driver_tmp_buffer(driver), remote_addr)); */
     
     /* CPE_ERROR( */
-    /*     driver->m_em, "ev: %s: connect to %s", */
-    /*     net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), */
+    /*     driver->m_em, "ev: %s: fd=%d: connect to %s", */
+    /*     net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,*/
     /*     buf); */
     
     return cpe_connect(endpoint->m_fd, (struct sockaddr *)&remote_addr_sock, remote_addr_sock_len);
