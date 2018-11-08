@@ -81,10 +81,11 @@ int net_ws_endpoint_set_pingpong_span_ms(net_ws_endpoint_t ws_ep, uint32_t span_
 
     ws_ep->m_cfg_pingpong_span_ms = span_ms;
 
-    if (ws_ep->m_cfg_pingpong_span_ms != 0
-        && ws_ep->m_state == net_ws_state_established)
-    {
-        net_timer_active(ws_ep->m_pingpong_timer, ws_ep->m_cfg_pingpong_span_ms);
+    if (ws_ep->m_cfg_pingpong_span_ms) {
+        assert(ws_ep->m_pingpong_timer);
+        if (ws_ep->m_state == net_ws_state_established) {
+            net_timer_active(ws_ep->m_pingpong_timer, ws_ep->m_cfg_pingpong_span_ms);
+        }
     }
     
     return 0;
@@ -306,9 +307,13 @@ int net_ws_endpoint_set_state(net_ws_endpoint_t ws_ep, net_ws_state_t state) {
     
     ws_ep->m_state = state;
 
-    if (ws_ep->m_state == net_ws_state_established) {
-        if (ws_ep->m_pingpong_timer) {
+    if (ws_ep->m_cfg_pingpong_span_ms) {
+        assert(ws_ep->m_pingpong_timer);
+        if (ws_ep->m_state == net_ws_state_established) {
             net_timer_active(ws_ep->m_pingpong_timer, ws_ep->m_cfg_pingpong_span_ms);
+        }
+        else {
+            net_timer_cancel(ws_ep->m_pingpong_timer);
         }
     }
     
