@@ -972,6 +972,23 @@ ev_feed_fd_event (EV_P_ int fd, int revents)
     fd_event_nocheck (EV_A_ fd, revents);
 }
 
+#if EV_SELECT_IS_WINSOCKET
+void ev_changes_remove(EV_P_ int fd) {
+	int i;
+    for(i = 0; i < fdchangecnt; ++i) {
+        if (fdchanges [i] != fd) continue;
+        
+        ANFD *anfd = anfds + fd;
+        anfd->reify = 0;
+        
+        backend_modify (EV_A_ fd, anfd->events, 0);
+        anfd->events = 0;
+        anfd->handle = (SOCKET)0;
+        break;
+    }
+}
+#endif
+
 /* make sure the external fd watch events are in-sync */
 /* with the kernel/libev internal state */
 inline_size void

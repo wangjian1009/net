@@ -358,10 +358,10 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
                 assert(bytes == -1);
                 net_endpoint_buf_release(base_endpoint);
                 
-                if (errno == EWOULDBLOCK || errno == EINPROGRESS) {
+                if (cpe_sock_errno() == EWOULDBLOCK || cpe_sock_errno() == EINPROGRESS) {
                     break;
                 }
-                else if (errno == EINTR) {
+                else if (cpe_sock_errno() == EINTR) {
                     continue;
                 }
                 else {
@@ -668,8 +668,19 @@ static int net_ev_endpoint_start_connect(
     return cpe_connect(endpoint->m_fd, (struct sockaddr *)&remote_addr_sock, remote_addr_sock_len);
 }
 
+#if WIN32
+extern void ev_changes_remove(EV_P_ int fd);
+#endif
+
 static void net_ev_endpoint_close_sock(net_ev_driver_t driver, net_ev_endpoint_t endpoint) {
+    net_endpoint_t base_endpoint = net_endpoint_from_data(endpoint);
+
     assert(endpoint->m_fd != -1);
+
+#if WIN32
+    ev_changes_remove(driver->m_ev_loop, endpoint->m_fd);
+#endif
+
     cpe_sock_close(endpoint->m_fd);
     endpoint->m_fd = -1;
 }
