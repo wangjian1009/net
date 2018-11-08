@@ -412,11 +412,23 @@ int net_http_endpoint_on_state_change(net_endpoint_t endpoint, net_endpoint_stat
         if (net_http_endpoint_set_state(http_ep, net_http_state_error) != 0) return -1;
         net_http_endpoint_reset_data(http_protocol, http_ep, net_http_res_canceled);
         if (http_ep->m_reconnect_span_ms) {
-            net_timer_active(http_ep->m_connect_timer, 0);
+            int64_t ct = cur_time_ms;
+            if (http_ep->m_connecting_time_ms
+                && ct > http_ep->m_connecting_time_ms
+                && ((ct - http_ep->m_connecting_time_ms) < http_ep->m_reconnect_span_ms))
+            {
+                net_timer_active(http_ep->m_connect_timer, http_ep->m_reconnect_span_ms);
+            }
+            else {
+                net_timer_active(http_ep->m_connect_timer, 0);
+            }
         }
         break;
     case net_endpoint_state_resolving:
+        if (net_http_endpoint_set_state(http_ep, net_http_state_connecting) != 0) return -1;
+        break;
     case net_endpoint_state_connecting:
+        http_ep->m_connecting_time_ms = cur_time_ms();
         if (net_http_endpoint_set_state(http_ep, net_http_state_connecting) != 0) return -1;
         break;
     case net_endpoint_state_established:

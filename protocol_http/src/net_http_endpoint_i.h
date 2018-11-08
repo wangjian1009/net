@@ -12,6 +12,7 @@ struct net_http_endpoint {
     uint32_t m_reconnect_span_ms;
 
     /*runtime*/
+    int64_t m_connecting_time_ms;
     net_http_state_t m_state;
     net_timer_t m_connect_timer;
     net_timer_t m_process_timer;
