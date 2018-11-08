@@ -755,9 +755,15 @@ static net_http_res_op_result_t net_ws_endpoint_on_handshake_complete(void * ctx
 }
 
 void net_ws_endpoint_url_print(write_stream_t s, net_ws_endpoint_t ws_ep) {
-    stream_printf(s, net_http_endpoint_use_https(ws_ep->m_http_ep) ? "wss://" : "ws://");
-    net_address_print(s, net_endpoint_remote_address(net_ws_endpoint_net_ep(ws_ep)));
-    stream_printf(s, "%s", net_ws_endpoint_path(ws_ep));
+    net_address_t address = net_endpoint_remote_address(net_ws_endpoint_net_ep(ws_ep));
+    if (address) {
+        stream_printf(s, net_http_endpoint_use_https(ws_ep->m_http_ep) ? "wss://" : "ws://");
+        net_address_print(s, address);
+        stream_printf(s, "%s", net_ws_endpoint_path(ws_ep));
+    }
+    else {
+        stream_printf(s, "");
+    }
 }
 
 static void net_ws_endpoint_send_pingpong(net_timer_t timer, void * ctx) {
