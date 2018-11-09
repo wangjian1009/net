@@ -17,6 +17,9 @@ int net_ws_endpoint_set_remote_and_path(net_ws_endpoint_t ws_ep, const char * ur
 void net_ws_endpoint_url_print(write_stream_t s, net_ws_endpoint_t ws_ep);
 const char * net_ws_endpoint_url_dump(mem_buffer_t buffer, net_ws_endpoint_t ws_ep);
 
+net_address_t net_ws_endpoint_remote_address(net_ws_endpoint_t ws_ep);
+int net_ws_endpoint_set_remote_address(net_ws_endpoint_t ws_ep, net_address_t address);
+
 const char * net_ws_endpoint_path(net_ws_endpoint_t ws_ep);
 int net_ws_endpoint_set_path(net_ws_endpoint_t ws_ep, const char * path);
 

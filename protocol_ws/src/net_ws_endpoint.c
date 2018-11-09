@@ -228,6 +228,14 @@ int net_ws_endpoint_set_remote_and_path(net_ws_endpoint_t ws_ep, const char * ur
     }
 }
 
+net_address_t net_ws_endpoint_remote_address(net_ws_endpoint_t ws_ep) {
+    return net_endpoint_remote_address(net_ws_endpoint_net_ep(ws_ep));
+}
+
+int net_ws_endpoint_set_remote_address(net_ws_endpoint_t ws_ep, net_address_t address) {
+    return net_endpoint_set_remote_address(net_ws_endpoint_net_ep(ws_ep), address, 0);
+}
+
 const char * net_ws_endpoint_path(net_ws_endpoint_t ws_ep) {
     return ws_ep->m_cfg_path ? ws_ep->m_cfg_path : "/";
 }
