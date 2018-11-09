@@ -39,7 +39,7 @@ int net_dns_query_ex_init(void * ctx, net_dns_query_t query, const char * hostna
             assert(entry->m_task != NULL);
             is_task_new = 1;
 
-            if (net_dns_task_builder_build(manage->m_builder_default, entry->m_task) != 0) {
+            if (net_dns_task_builder_build(manage->m_builder_default, entry->m_task, policy) != 0) {
                 CPE_ERROR(manage->m_em, "dns-cli: query %s: build task fail!", hostname);
                 goto START_ERROR;
             }
