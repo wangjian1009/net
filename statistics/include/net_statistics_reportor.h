@@ -1,0 +1,12 @@
+#ifndef NET_STATISTICS_REPORTOR_H_INCLEDED
+#define NET_STATISTICS_REPORTOR_H_INCLEDED
+#include "net_statistics_system.h"
+
+NET_BEGIN_DECL
+
+net_statistics_reportor_t net_statistics_reportor_create(net_statistics_t statistics, net_statistics_reportor_type_t type);
+void net_statistics_reportor_free(net_statistics_reportor_t reportor);
+
+NET_END_DECL
+
+#endif
