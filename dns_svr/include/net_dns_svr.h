@@ -11,6 +11,9 @@ void net_dns_svr_free(net_dns_svr_t dns_svr);
 uint8_t net_dns_svr_debug(net_dns_svr_t dns_svr);
 void net_dns_svr_set_debug(net_dns_svr_t dns_svr, uint8_t debug);
 
+const char * net_dns_svr_query_policy(net_dns_svr_t dns_svr);
+int net_dns_svr_set_query_policy(net_dns_svr_t dns_svr, const char * policy);
+
 net_schedule_t net_dns_svr_schedule(net_dns_svr_t dns_svr);
 
 NET_END_DECL

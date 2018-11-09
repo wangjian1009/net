@@ -71,7 +71,7 @@ int net_dns_svr_query_entry_start(net_dns_svr_query_entry_t query_entry) {
         net_dns_query_create(
             svr->m_schedule,
             query_entry->m_domain_name,
-            NULL,
+            svr->m_query_policy,
             net_dns_svr_query_entry_callback, NULL, query_entry);
     if (query_entry->m_local_query == NULL) {
         CPE_ERROR(svr->m_em, "dns-svr: start local query fail!");
