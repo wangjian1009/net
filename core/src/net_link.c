@@ -43,7 +43,7 @@ void net_link_free(net_link_t link) {
 
     if (link->m_local_is_tie) {
         if (net_endpoint_set_state(link->m_local, net_endpoint_state_disable) != 0) {
-            net_endpoint_set_state(link->m_remote, net_endpoint_state_deleting);
+            net_endpoint_set_state(link->m_local, net_endpoint_state_deleting);
         }
         link->m_local = NULL;
     }
