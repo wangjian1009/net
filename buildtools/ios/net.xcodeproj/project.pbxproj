@@ -151,6 +151,7 @@
 		C99C3FF021250FDF00E985D2 /* net_proxy_http_svr_endpoint_tunnel.c in Sources */ = {isa = PBXBuildFile; fileRef = C99C3FEE21250FDF00E985D2 /* net_proxy_http_svr_endpoint_tunnel.c */; };
 		C9B0C46F2123F35F008DB367 /* net_proxy_http_svr_endpoint.c in Sources */ = {isa = PBXBuildFile; fileRef = C9B0C46B2123F35F008DB367 /* net_proxy_http_svr_endpoint.c */; };
 		C9B0C4882124099F008DB367 /* net_proxy_http_svr_protocol.c in Sources */ = {isa = PBXBuildFile; fileRef = C9B0C4872124099F008DB367 /* net_proxy_http_svr_protocol.c */; };
+		C9BAA6962195143400C46526 /* net_statistics.c in Sources */ = {isa = PBXBuildFile; fileRef = C9BAA6902195143400C46526 /* net_statistics.c */; };
 		C9C4313E219308AF00705EA9 /* net_dns_entry_alias.c in Sources */ = {isa = PBXBuildFile; fileRef = C9C4313C219308AF00705EA9 /* net_dns_entry_alias.c */; };
 		C9C4B143210862470045A1A3 /* net_dns_task_builder.c in Sources */ = {isa = PBXBuildFile; fileRef = C9C4B131210862460045A1A3 /* net_dns_task_builder.c */; };
 		C9C4B144210862470045A1A3 /* net_dns_source.c in Sources */ = {isa = PBXBuildFile; fileRef = C9C4B132210862460045A1A3 /* net_dns_source.c */; };
@@ -242,6 +243,15 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C9B0C44D2123F30F008DB367 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "include/$(PRODUCT_NAME)";
+			dstSubfolderSpec = 16;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C9BAA681219513D300C46526 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "include/$(PRODUCT_NAME)";
@@ -541,6 +551,15 @@
 		C9B0C4852124098E008DB367 /* net_proxy_http_svr_protocol.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_proxy_http_svr_protocol.h; sourceTree = "<group>"; };
 		C9B0C4862124099F008DB367 /* net_proxy_http_svr_protocol_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_proxy_http_svr_protocol_i.h; sourceTree = "<group>"; };
 		C9B0C4872124099F008DB367 /* net_proxy_http_svr_protocol.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_proxy_http_svr_protocol.c; sourceTree = "<group>"; };
+		C9BAA683219513D300C46526 /* libnet_statistics.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_statistics.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		C9BAA68D2195143400C46526 /* net_statistics_reportor_type_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_statistics_reportor_type_i.h; sourceTree = "<group>"; };
+		C9BAA68E2195143400C46526 /* net_statistics_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_statistics_i.h; sourceTree = "<group>"; };
+		C9BAA68F2195143400C46526 /* net_statistics_reportor_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_statistics_reportor_i.h; sourceTree = "<group>"; };
+		C9BAA6902195143400C46526 /* net_statistics.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_statistics.c; sourceTree = "<group>"; };
+		C9BAA6922195143400C46526 /* net_statistics_reportor_type.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_statistics_reportor_type.h; sourceTree = "<group>"; };
+		C9BAA6932195143400C46526 /* net_statistics_reportor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_statistics_reportor.h; sourceTree = "<group>"; };
+		C9BAA6942195143400C46526 /* net_statistics.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_statistics.h; sourceTree = "<group>"; };
+		C9BAA6952195143400C46526 /* net_statistics_system.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_statistics_system.h; sourceTree = "<group>"; };
 		C9C4313C219308AF00705EA9 /* net_dns_entry_alias.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_dns_entry_alias.c; sourceTree = "<group>"; };
 		C9C4313D219308AF00705EA9 /* net_dns_entry_alias_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_entry_alias_i.h; sourceTree = "<group>"; };
 		C9C4B0FB210861940045A1A3 /* libnet_dns.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_dns.a; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -666,6 +685,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C9B0C44C2123F30F008DB367 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C9BAA680219513D300C46526 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -971,6 +997,7 @@
 				C99B01672134538C00352CCB /* protocol_http */,
 				C90461F621369D6700330168 /* mbedtls */,
 				C92198352148AC43000F276A /* trans */,
+				C9BAA684219513D300C46526 /* statistics */,
 				C9323A422105E2CD005DD3C0 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -991,6 +1018,7 @@
 				C99B01662134538C00352CCB /* libnet_protocol_http.a */,
 				C90461F521369D6700330168 /* libmbedtls.a */,
 				C92198342148AC43000F276A /* libnet_trans.a */,
+				C9BAA683219513D300C46526 /* libnet_statistics.a */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1154,6 +1182,38 @@
 				C9B0C46B2123F35F008DB367 /* net_proxy_http_svr_endpoint.c */,
 			);
 			path = src;
+			sourceTree = "<group>";
+		};
+		C9BAA684219513D300C46526 /* statistics */ = {
+			isa = PBXGroup;
+			children = (
+				C9BAA6912195143400C46526 /* include */,
+				C9BAA68C2195143400C46526 /* src */,
+			);
+			name = statistics;
+			path = ../../statistics;
+			sourceTree = "<group>";
+		};
+		C9BAA68C2195143400C46526 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				C9BAA68D2195143400C46526 /* net_statistics_reportor_type_i.h */,
+				C9BAA68E2195143400C46526 /* net_statistics_i.h */,
+				C9BAA68F2195143400C46526 /* net_statistics_reportor_i.h */,
+				C9BAA6902195143400C46526 /* net_statistics.c */,
+			);
+			path = src;
+			sourceTree = "<group>";
+		};
+		C9BAA6912195143400C46526 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				C9BAA6922195143400C46526 /* net_statistics_reportor_type.h */,
+				C9BAA6932195143400C46526 /* net_statistics_reportor.h */,
+				C9BAA6942195143400C46526 /* net_statistics.h */,
+				C9BAA6952195143400C46526 /* net_statistics_system.h */,
+			);
+			path = include;
 			sourceTree = "<group>";
 		};
 		C9C4B0FC210861940045A1A3 /* dns */ = {
@@ -1511,6 +1571,23 @@
 			productReference = C9B0C44F2123F30F008DB367 /* libnet_protocol_proxy_http.a */;
 			productType = "com.apple.product-type.library.static";
 		};
+		C9BAA682219513D300C46526 /* net_statistics */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C9BAA68B219513D300C46526 /* Build configuration list for PBXNativeTarget "net_statistics" */;
+			buildPhases = (
+				C9BAA67F219513D300C46526 /* Sources */,
+				C9BAA680219513D300C46526 /* Frameworks */,
+				C9BAA681219513D300C46526 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = net_statistics;
+			productName = net_statistics;
+			productReference = C9BAA683219513D300C46526 /* libnet_statistics.a */;
+			productType = "com.apple.product-type.library.static";
+		};
 		C9C4B0FA210861940045A1A3 /* net_dns */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = C9C4B101210861940045A1A3 /* Build configuration list for PBXNativeTarget "net_dns" */;
@@ -1629,6 +1706,9 @@
 					C9B0C44E2123F30F008DB367 = {
 						CreatedOnToolsVersion = 9.4.1;
 					};
+					C9BAA682219513D300C46526 = {
+						CreatedOnToolsVersion = 10.1;
+					};
 					C9C4B0FA210861940045A1A3 = {
 						CreatedOnToolsVersion = 9.4.1;
 					};
@@ -1671,6 +1751,7 @@
 				C99B01652134538C00352CCB /* net_protocol_http */,
 				C90461F421369D6700330168 /* mbedtls */,
 				C92198332148AC43000F276A /* net_trans */,
+				C9BAA682219513D300C46526 /* net_statistics */,
 			);
 		};
 /* End PBXProject section */
@@ -1867,6 +1948,14 @@
 				C9506CE0212819520015DDBC /* net_proxy_http_svr_endpoint_basic_rsp.c in Sources */,
 				C99C3FF021250FDF00E985D2 /* net_proxy_http_svr_endpoint_tunnel.c in Sources */,
 				C9506CE1212819520015DDBC /* net_proxy_http_svr_endpoint_basic_req.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C9BAA67F219513D300C46526 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C9BAA6962195143400C46526 /* net_statistics.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2288,6 +2377,28 @@
 			};
 			name = Release;
 		};
+		C9BAA689219513D300C46526 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				HEADER_SEARCH_PATHS = ../../../cpe/include;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C9BAA68A219513D300C46526 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				HEADER_SEARCH_PATHS = ../../../cpe/include;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		C9C4B102210861940045A1A3 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -2512,6 +2623,15 @@
 			buildConfigurations = (
 				C9B0C4552123F30F008DB367 /* Debug */,
 				C9B0C4562123F30F008DB367 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C9BAA68B219513D300C46526 /* Build configuration list for PBXNativeTarget "net_statistics" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C9BAA689219513D300C46526 /* Debug */,
+				C9BAA68A219513D300C46526 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
