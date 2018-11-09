@@ -211,7 +211,6 @@ void net_http_endpoint_enable(net_http_endpoint_t http_ep) {
 }
 
 int net_http_endpoint_disable(net_http_endpoint_t http_ep) {
-    net_timer_cancel(http_ep->m_connect_timer);
     return net_endpoint_set_state(http_ep->m_endpoint,  net_endpoint_state_disable);
 }
 
@@ -394,9 +393,7 @@ int net_http_endpoint_on_state_change(net_endpoint_t endpoint, net_endpoint_stat
     case net_endpoint_state_disable:
         if (net_http_endpoint_set_state(http_ep, net_http_state_disable) != 0) return -1;
         net_http_endpoint_reset_data(http_protocol, http_ep, net_http_res_canceled);
-        if (http_ep->m_reconnect_span_ms) {
-            net_timer_active(http_ep->m_connect_timer, (int32_t)http_ep->m_reconnect_span_ms);
-        }
+        net_timer_cancel(http_ep->m_connect_timer);
         break;
     case net_endpoint_state_network_error:
         if (net_http_endpoint_set_state(http_ep, net_http_state_error) != 0) return -1;
