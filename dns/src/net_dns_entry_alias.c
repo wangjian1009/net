@@ -30,6 +30,9 @@ net_dns_entry_alias_create(net_dns_entry_t origin, net_dns_entry_t as) {
         
 void net_dns_entry_alias_free(net_dns_entry_alias_t alias) {
     net_dns_manage_t manage = alias->m_origin->m_manage;
+
+    TAILQ_REMOVE(&alias->m_origin->m_cnames, alias, m_next_for_origin);
+    TAILQ_REMOVE(&alias->m_as->m_origins, alias, m_next_for_as);
     
     alias->m_origin = (net_dns_entry_t)manage;
     TAILQ_INSERT_TAIL(&manage->m_free_entry_aliass, alias, m_next_for_origin);
