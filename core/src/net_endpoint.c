@@ -346,6 +346,17 @@ int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) 
     }
 
     if (state == net_endpoint_state_deleting) {
+        if (endpoint->m_link) {
+            if (endpoint->m_link->m_local == endpoint) {
+                endpoint->m_link->m_local_is_tie = 0;
+            }
+            else if (endpoint->m_link->m_remote == endpoint) {
+                endpoint->m_link->m_remote_is_tie = 0;
+            }
+            net_link_free(endpoint->m_link);
+            assert(endpoint->m_link == NULL);
+        }
+        
         TAILQ_REMOVE(&endpoint->m_driver->m_endpoints, endpoint, m_next_for_driver);
         TAILQ_INSERT_TAIL(&endpoint->m_driver->m_deleting_endpoints, endpoint, m_next_for_driver);
         net_schedule_start_delay_process(schedule);
