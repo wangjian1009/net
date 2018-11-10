@@ -52,7 +52,7 @@ void net_dns_task_builder_free(net_dns_task_builder_t builder) {
     mem_free(manage->m_alloc, builder);
 }
 
-static int net_dns_task_build_internal(net_dns_task_builder_t builder, net_dns_task_t task) {
+static int net_dns_task_build_internal(net_dns_task_builder_t builder, net_dns_task_t task, const char * policy) {
     net_dns_manage_t manage = builder->m_manage;
 
     if (TAILQ_EMPTY(&manage->m_sources)) {
