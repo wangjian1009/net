@@ -95,7 +95,7 @@ uint32_t net_ws_endpoint_reconnect_span_ms(net_ws_endpoint_t ws_ep) {
     return net_http_endpoint_reconnect_span_ms(ws_ep->m_http_ep);
 }
 
-void net_http_ws_set_reconnect_span_ms(net_ws_endpoint_t ws_ep, uint32_t span_ms) {
+void net_ws_endpoint_set_reconnect_span_ms(net_ws_endpoint_t ws_ep, uint32_t span_ms) {
     net_http_endpoint_set_reconnect_span_ms(ws_ep->m_http_ep, span_ms);
 }
 

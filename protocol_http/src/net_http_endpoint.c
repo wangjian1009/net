@@ -261,7 +261,7 @@ int net_http_endpoint_init(net_endpoint_t endpoint) {
     http_ep->m_state = net_http_state_disable;
     http_ep->m_connection_type = net_http_connection_type_keep_alive;
     http_ep->m_ssl_ctx = NULL;
-    http_ep->m_reconnect_span_ms = 3u * 1000u;
+    http_ep->m_reconnect_span_ms = 0;
     http_ep->m_max_req_id = 0;
     TAILQ_INIT(&http_ep->m_reqs);
     
@@ -402,7 +402,13 @@ int net_http_endpoint_on_state_change(net_endpoint_t endpoint, net_endpoint_stat
     case net_endpoint_state_disable:
         if (net_http_endpoint_set_state(http_ep, net_http_state_disable) != 0) return -1;
         net_http_endpoint_reset_data(http_protocol, http_ep, net_http_res_canceled);
-        net_timer_cancel(http_ep->m_connect_timer);
+        if (http_ep->m_reconnect_span_ms) {
+            net_timer_active(
+                http_ep->m_connect_timer,
+                old_state == net_endpoint_state_established
+                ? 0
+                : (int32_t)http_ep->m_reconnect_span_ms);
+        }
         break;
     case net_endpoint_state_network_error:
         if (net_http_endpoint_set_state(http_ep, net_http_state_error) != 0) return -1;
