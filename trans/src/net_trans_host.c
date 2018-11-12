@@ -51,12 +51,17 @@ net_trans_host_create(net_trans_manage_t mgr, net_address_t address) {
 
 void net_trans_host_free(net_trans_host_t host) {
     net_trans_manage_t mgr = host->m_mgr;
-
+    
     while(!TAILQ_EMPTY(&host->m_endpoints)) {
         net_trans_http_endpoint_free(TAILQ_FIRST(&host->m_endpoints));
     }
     assert(host->m_endpoint_count == 0);
 
+    if (host->m_address) {
+        net_address_free(host->m_address);
+        host->m_address = NULL;
+    }
+    
     cpe_hash_table_remove_by_ins(&mgr->m_hosts, host);
 
     TAILQ_INSERT_TAIL(&mgr->m_free_hosts, host, m_next_for_mgr);
