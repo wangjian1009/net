@@ -787,13 +787,22 @@ static int net_endpoint_notify_state_changed(net_endpoint_t endpoint, net_endpoi
             continue;
         }
         
-        assert(!monitor->m_is_processing);
+        if(monitor->m_is_processing) {
+            monitor = next_monitor;
+            continue;
+        }
 
         if (monitor->m_on_state_change) {
-            monitor->m_is_processing = 1;
+            uint8_t tag_local = 0;
+            if (!monitor->m_is_processing) {
+                tag_local = 1;
+                monitor->m_is_processing = 1;
+            }
             monitor->m_on_state_change(monitor->m_ctx, endpoint, old_state);
-            monitor->m_is_processing = 0;
-            if (monitor->m_is_free) net_endpoint_monitor_free(monitor);
+            if (tag_local) {
+                monitor->m_is_processing = 0;
+                if (monitor->m_is_free) net_endpoint_monitor_free(monitor);
+            }
         }
         
         monitor = next_monitor;
