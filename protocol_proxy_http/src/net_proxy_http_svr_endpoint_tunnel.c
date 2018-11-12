@@ -232,9 +232,9 @@ static void net_proxy_http_svr_endpoint_tunnel_state_monitor_free(void * ctx) {
 }
 
 static void net_proxy_http_svr_endpoint_tunnel_state_monitor_process(void * ctx, net_endpoint_t other, net_endpoint_state_t from_state) {
-    net_endpoint_t endpoint = net_endpoint_other(other);
-    net_proxy_http_svr_protocol_t http_protocol = net_protocol_data(net_endpoint_protocol(endpoint));
     net_proxy_http_svr_endpoint_t http_ep = ctx;
+    net_endpoint_t endpoint = http_ep->m_endpoint;
+    net_proxy_http_svr_protocol_t http_protocol = net_protocol_data(net_endpoint_protocol(endpoint));
 
     net_proxy_http_svr_endpoint_tunnel_check_send_response(http_protocol, http_ep, endpoint, other);
 }
