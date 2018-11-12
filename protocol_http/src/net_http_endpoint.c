@@ -230,6 +230,15 @@ int net_http_endpoint_set_state(net_http_endpoint_t http_ep, net_http_state_t st
     
     http_ep->m_state = state;
 
+    switch (http_ep->m_state) {
+    case net_http_state_disable:
+    case net_http_state_error:
+        http_ep->m_connection_type = net_http_connection_type_keep_alive;
+        break;
+    default:
+        break;
+    }
+    
     return net_http_endpoint_notify_state_changed(http_ep, old_state);
 }
 
