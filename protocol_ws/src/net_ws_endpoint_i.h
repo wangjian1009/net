@@ -10,6 +10,7 @@ struct net_ws_endpoint {
     char * m_cfg_path;
     uint32_t m_cfg_pingpong_span_ms;
     net_ws_state_t m_state;
+    uint8_t m_ctx_need_reset;
     wslay_event_context_ptr m_ctx;
     char * m_handshake_token;
     uint8_t m_pingpong_count;

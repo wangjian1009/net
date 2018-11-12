@@ -334,22 +334,6 @@ static int net_ws_endpoint_notify_state_changed(net_ws_endpoint_t ws_ep, net_ws_
     int rv = ws_protocol->m_endpoint_on_state_change
         ? ws_protocol->m_endpoint_on_state_change(ws_ep, old_state)
         : 0;
-    
-    /* net_http_endpoint_monitor_t monitor = TAILQ_FIRST(&endpoint->m_monitors); */
-    /* while(monitor) { */
-    /*     net_http_endpoint_monitor_t next_monitor = TAILQ_NEXT(monitor, m_next); */
-    /*     assert(!monitor->m_is_free); */
-    /*     assert(!monitor->m_is_processing); */
-
-    /*     if (monitor->m_on_state_change) { */
-    /*         monitor->m_is_processing = 1; */
-    /*         monitor->m_on_state_change(monitor->m_ctx, endpoint, old_state); */
-    /*         monitor->m_is_processing = 0; */
-    /*         if (monitor->m_is_free) net_http_endpoint_monitor_free(monitor); */
-    /*     } */
-        
-    /*     monitor = next_monitor; */
-    /* } */
 
     return rv;
 }
@@ -520,6 +504,7 @@ int net_ws_endpoint_init(net_http_endpoint_t http_ep) {
     ws_ep->m_handshake_token = NULL;
     ws_ep->m_pingpong_count = 0;
     ws_ep->m_pingpong_timer = NULL;
+    ws_ep->m_ctx_need_reset = 0;
 
     wslay_event_context_client_init(&ws_ep->m_ctx, &s_net_ws_endpoint_callbacks, ws_ep);
 
@@ -566,8 +551,16 @@ int net_ws_endpoint_input(net_http_endpoint_t http_ep) {
     net_ws_endpoint_t ws_ep = net_http_endpoint_data(http_ep);
     net_ws_protocol_t ws_protocol = net_ws_endpoint_protocol(ws_ep);
 
+    if (ws_ep->m_ctx_need_reset) {
+        net_ws_endpoint_reset_data(ws_ep);
+        ws_ep->m_ctx_need_reset = 0;
+    }
+
     net_endpoint_t endpoint = net_ws_endpoint_net_ep(ws_ep);
-    if (wslay_event_want_read(ws_ep->m_ctx) && !net_endpoint_buf_is_empty(endpoint, net_ep_buf_http_in)) {
+    if (ws_ep->m_state == net_ws_state_established
+        && wslay_event_want_read(ws_ep->m_ctx)
+        && !net_endpoint_buf_is_empty(endpoint, net_ep_buf_http_in))
+    {
         int rv = wslay_event_recv(ws_ep->m_ctx);
         if (rv != 0) {
             CPE_ERROR(
@@ -578,7 +571,10 @@ int net_ws_endpoint_input(net_http_endpoint_t http_ep) {
         }
     }
 
-    if (wslay_event_want_write(ws_ep->m_ctx) && !net_endpoint_buf_is_full(net_ws_endpoint_net_ep(ws_ep), net_ep_buf_http_out)) {
+    if (ws_ep->m_state == net_ws_state_established
+        && wslay_event_want_write(ws_ep->m_ctx)
+        && !net_endpoint_buf_is_full(net_ws_endpoint_net_ep(ws_ep), net_ep_buf_http_out))
+    {
         int rv = wslay_event_send(ws_ep->m_ctx);
         if (rv != 0) {
             CPE_ERROR(
@@ -588,7 +584,12 @@ int net_ws_endpoint_input(net_http_endpoint_t http_ep) {
             return -1;
         }
     }
-        
+
+    if (ws_ep->m_ctx_need_reset) {
+        net_ws_endpoint_reset_data(ws_ep);
+        ws_ep->m_ctx_need_reset = 0;
+    }
+
     return ws_ep->m_state == net_ws_state_established ? 0 : -1;
 }
 
@@ -598,11 +599,11 @@ int net_ws_endpoint_on_state_change(net_http_endpoint_t http_ep, net_http_state_
     switch(net_http_endpoint_state(http_ep)) {
     case net_http_state_disable:
         if (net_ws_endpoint_set_state(ws_ep, net_ws_state_init) != 0) return -1;
-        net_ws_endpoint_reset_data(ws_ep);
+        ws_ep->m_ctx_need_reset = 1;
         break;
     case net_http_state_error:
         if (net_ws_endpoint_set_state(ws_ep, net_ws_state_error) != 0) return -1;
-        net_ws_endpoint_reset_data(ws_ep);
+        ws_ep->m_ctx_need_reset = 1;
         break;
     case net_http_state_connecting:
         if (net_ws_endpoint_set_state(ws_ep, net_ws_state_connecting) != 0) return -1;
