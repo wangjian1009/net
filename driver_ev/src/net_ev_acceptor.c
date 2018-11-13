@@ -125,7 +125,7 @@ static void net_ev_acceptor_cb(EV_P_ ev_io *w, int revents) {
     }
 
     net_endpoint_t base_endpoint =
-        net_endpoint_create(net_driver_from_data(driver), net_endpoint_inbound, net_acceptor_protocol(base_acceptor));
+        net_endpoint_create(net_driver_from_data(driver), net_acceptor_protocol(base_acceptor));
     if (base_endpoint == NULL) {
         CPE_ERROR(em, "ev: acceptor: create endpoint fail");
         cpe_sock_close(new_fd);

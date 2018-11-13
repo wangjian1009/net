@@ -673,7 +673,7 @@ extern void ev_changes_remove(EV_P_ int fd);
 #endif
 
 static void net_ev_endpoint_close_sock(net_ev_driver_t driver, net_ev_endpoint_t endpoint) {
-    net_endpoint_t base_endpoint = net_endpoint_from_data(endpoint);
+    //net_endpoint_t base_endpoint = net_endpoint_from_data(endpoint);
 
     assert(endpoint->m_fd != -1);
 
