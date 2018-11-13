@@ -121,7 +121,7 @@ net_driver_t net_router_driver(net_router_t router) {
 }
 
 int net_router_link(net_router_t router, net_endpoint_t endpoint, net_address_t target_addr, uint8_t is_own) {
-    net_endpoint_t target = net_endpoint_create(router->m_driver, net_endpoint_outbound, router->m_protocol);
+    net_endpoint_t target = net_endpoint_create(router->m_driver, router->m_protocol);
     if (target == NULL) {
         return -1;
     }

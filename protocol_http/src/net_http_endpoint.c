@@ -23,8 +23,8 @@ static int net_http_endpoint_do_ssl_encode(net_http_protocol_t http_protocol, ne
 static int net_http_endpoint_do_ssl_decode(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep);
 
 net_http_endpoint_t
-net_http_endpoint_create(net_driver_t driver, net_endpoint_type_t type, net_http_protocol_t http_protocol) {
-    net_endpoint_t endpoint = net_endpoint_create(driver, type, net_protocol_from_data(http_protocol));
+net_http_endpoint_create(net_driver_t driver, net_http_protocol_t http_protocol) {
+    net_endpoint_t endpoint = net_endpoint_create(driver, net_protocol_from_data(http_protocol));
     if (endpoint == NULL) return NULL;
     
     net_http_endpoint_t http_ep = net_endpoint_protocol_data(endpoint);

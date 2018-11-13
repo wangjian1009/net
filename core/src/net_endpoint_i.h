@@ -8,7 +8,6 @@ NET_BEGIN_DECL
 struct net_endpoint {
     net_driver_t m_driver;
     TAILQ_ENTRY(net_endpoint) m_next_for_driver;
-    net_endpoint_type_t m_type;
     net_address_t m_address;
     net_address_t m_remote_address;
     net_protocol_t m_protocol;

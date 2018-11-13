@@ -144,3 +144,23 @@ static int net_proxy_http_svr_endpoint_input_first_header(
     return rv;
 }
 
+int net_proxy_http_svr_endpoint_on_state_change(net_endpoint_t endpoint, net_endpoint_state_t from_state) {
+    if (net_endpoint_is_active(endpoint)) return 0;
+
+    net_proxy_http_svr_endpoint_t http_ep = net_endpoint_protocol_data(endpoint);
+    
+    switch(http_ep->m_way) {
+    case net_proxy_http_way_unknown:
+        break;
+    case net_proxy_http_way_tunnel:
+        if (http_ep->m_tunnel.m_other_state_monitor) {
+            net_endpoint_monitor_free(http_ep->m_tunnel.m_other_state_monitor);
+            http_ep->m_tunnel.m_other_state_monitor = NULL;
+        }
+        break;
+    case net_proxy_http_way_basic:
+        break;
+    }
+    
+    return -1;
+}

@@ -14,7 +14,7 @@ net_trans_http_endpoint_create(net_trans_host_t host) {
     
     net_http_endpoint_t http_endpoint =
         net_http_endpoint_create(
-            mgr->m_driver, net_endpoint_outbound, net_http_protocol_from_data(mgr->m_http_protocol));
+            mgr->m_driver, net_http_protocol_from_data(mgr->m_http_protocol));
     if (http_endpoint == NULL) {
         CPE_ERROR(mgr->m_em, "trans: create http-endpoint fail!");
         return NULL;

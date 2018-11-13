@@ -32,8 +32,8 @@ static net_http_res_op_result_t net_ws_endpoint_on_handshake_complete(void * ctx
 static int net_ws_endpoint_notify_state_changed(net_ws_endpoint_t ws_ep, net_ws_state_t old_state);
 
 net_ws_endpoint_t
-net_ws_endpoint_create(net_driver_t driver, net_endpoint_type_t type, net_ws_protocol_t ws_protocol) {
-    net_http_endpoint_t http_ep = net_http_endpoint_create(driver, type, net_http_protocol_from_data(ws_protocol));
+net_ws_endpoint_create(net_driver_t driver, net_ws_protocol_t ws_protocol) {
+    net_http_endpoint_t http_ep = net_http_endpoint_create(driver, net_http_protocol_from_data(ws_protocol));
     if (http_ep == NULL) return NULL;
     
     net_ws_endpoint_t ws_ep = net_http_endpoint_data(http_ep);

@@ -82,6 +82,7 @@ int net_proxy_http_svr_endpoint_init(net_endpoint_t endpoint);
 void net_proxy_http_svr_endpoint_fini(net_endpoint_t endpoint);
 int net_proxy_http_svr_endpoint_input(net_endpoint_t endpoint);
 int net_proxy_http_svr_endpoint_forward(net_endpoint_t endpoint, net_endpoint_t from);
+int net_proxy_http_svr_endpoint_on_state_change(net_endpoint_t endpoint, net_endpoint_state_t from_state);
 
 /*basic*/
 int net_proxy_http_svr_endpoint_basic_req_read_head(

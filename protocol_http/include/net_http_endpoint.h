@@ -9,7 +9,7 @@ NET_BEGIN_DECL
 #define net_ep_buf_http_body net_ep_buf_user3
 
 net_http_endpoint_t net_http_endpoint_create(
-    net_driver_t driver, net_endpoint_type_t type, net_http_protocol_t http_protocol);
+    net_driver_t driver, net_http_protocol_t http_protocol);
 void net_http_endpoint_free(net_http_endpoint_t http_ep);
 
 net_http_endpoint_t net_http_endpoint_get(net_endpoint_t endpoint);

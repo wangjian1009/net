@@ -52,11 +52,6 @@ typedef enum net_endpoint_state {
     net_endpoint_state_deleting,
 } net_endpoint_state_t;
 
-typedef enum net_endpoint_type {
-    net_endpoint_inbound,
-    net_endpoint_outbound,
-} net_endpoint_type_t;
-
 typedef enum net_data_direct {
     net_data_in,
     net_data_out,
