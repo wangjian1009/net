@@ -11,6 +11,8 @@ net_dns_entry_item_create(
 {
     net_dns_manage_t manage = entry->m_manage;
 
+    assert(address);
+
     net_dns_entry_item_t item = TAILQ_FIRST(&manage->m_free_entry_items);
     if (item) {
         TAILQ_REMOVE(&manage->m_free_entry_items, item, m_next_for_entry);
@@ -27,18 +29,16 @@ net_dns_entry_item_create(
     item->m_source = source;
     item->m_expire_time_s = expire_time_s;
 
-    if (address) {
-        if (is_own) {
-            item->m_address = address;
-        }
-        else {
-            item->m_address = net_address_copy(manage->m_schedule, address);
-            if (item->m_address == NULL) {
-                CPE_ERROR(manage->m_em, "dns-cli: entry item dup address fail!");
-                item->m_entry = (net_dns_entry_t)manage;
-                TAILQ_INSERT_TAIL(&manage->m_free_entry_items, item, m_next_for_entry);
-                return NULL;
-            }
+    if (is_own) {
+        item->m_address = address;
+    }
+    else {
+        item->m_address = net_address_copy(manage->m_schedule, address);
+        if (item->m_address == NULL) {
+            CPE_ERROR(manage->m_em, "dns-cli: entry item dup address fail!");
+            item->m_entry = (net_dns_entry_t)manage;
+            TAILQ_INSERT_TAIL(&manage->m_free_entry_items, item, m_next_for_entry);
+            return NULL;
         }
     }
 
@@ -52,7 +52,7 @@ net_dns_entry_item_create(
         CPE_INFO(
             manage->m_em, "dns-cli: resolved %s ==> %s | %s",
             entry->m_hostname,
-            net_address_host(net_dns_manage_tmp_buffer(manage), item->m_address),
+            item->m_address ? net_address_host(net_dns_manage_tmp_buffer(manage), item->m_address) : "N/A",
             source_buf);
     }
 
