@@ -1,3 +1,4 @@
+#include "assert.h"
 #include "cpe/utils/string_utils.h"
 #include "net_address.h"
 #include "net_dns_entry_item_i.h"
