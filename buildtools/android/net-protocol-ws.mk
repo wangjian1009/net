@@ -11,6 +11,6 @@ LOCAL_C_INCLUDES +=  $(LOCAL_PATH)/../../depends/wslay/include \
                      $(LOCAL_PATH)/../../protocol_http/include \
                      $(LOCAL_PATH)/../../protocol_ws/include
 LOCAL_LDLIBS := 
-LOCAL_SRC_FILES += $(wildcard $(LOCAL_PATH)/../../protocol_ws/src/*.c)
+LOCAL_SRC_FILES += $(patsubst $(LOCAL_PATH)/%,%,$(wildcard $(LOCAL_PATH)/../../protocol_ws/src/*.c))
 
 include $(BUILD_STATIC_LIBRARY)

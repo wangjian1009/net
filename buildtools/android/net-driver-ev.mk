@@ -10,6 +10,6 @@ LOCAL_C_INCLUDES +=  $(LOCAL_PATH)/../../../cpe/include \
                      $(LOCAL_PATH)/../../core/include \
                      $(LOCAL_PATH)/../../driver_ev/include
 LOCAL_LDLIBS := 
-LOCAL_SRC_FILES += $(wildcard $(LOCAL_PATH)/../../driver_ev/src/*.c)
+LOCAL_SRC_FILES += $(patsubst $(LOCAL_PATH)/%,%,$(wildcard $(LOCAL_PATH)/../../driver_ev/src/*.c))
 
 include $(BUILD_STATIC_LIBRARY)
