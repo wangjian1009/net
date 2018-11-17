@@ -11,6 +11,14 @@ net_local_ip_stack_t net_schedule_local_ip_stack(net_schedule_t schedule) {
     return schedule->m_local_ip_stack;
 }
 
+void net_schedule_local_ip_stack_set_to_none(net_schedule_t schedule) {
+    schedule->m_local_ip_stack = net_local_ip_stack_none;
+    
+    if (schedule->m_debug) {
+        CPE_INFO(schedule->m_em, "core: set to none, network ==> %s", net_local_ip_stack_str(schedule->m_local_ip_stack));
+    }
+}
+    
 int net_schedule_local_ip_stack_detect(net_schedule_t schedule) {
     struct in6_addr addr6_gateway = IN6ADDR_ANY_INIT;
     if (0 != getdefaultgateway6(&addr6_gateway)
