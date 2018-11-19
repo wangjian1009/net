@@ -60,15 +60,15 @@ uint8_t net_address_matcher_match(net_address_matcher_t matcher, net_address_t a
 int net_address_matcher_add(net_address_matcher_t matcher, net_address_t address) {
     switch(net_address_type(address)) {
     case net_address_ipv4:
-        return net_ipset_ipv4_add(
+        net_ipset_ipv4_add(
             matcher->m_ipset_ipv4,
-            (net_address_data_ipv4_t)net_address_data(address))
-            == 0 ? 0 : -1;
+            (net_address_data_ipv4_t)net_address_data(address));
+        return 0;
     case net_address_ipv6:
-        return net_ipset_ipv6_add(
+        net_ipset_ipv6_add(
             matcher->m_ipset_ipv6,
-            (net_address_data_ipv6_t)net_address_data(address))
-            == 0 ? 0 : -1;
+            (net_address_data_ipv6_t)net_address_data(address));
+        return 0;
     case net_address_domain: {
         if (net_address_rule_create(matcher, net_address_data(address)) == NULL) {
             CPE_ERROR(
