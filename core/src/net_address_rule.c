@@ -10,7 +10,7 @@ net_address_rule_create(net_address_matcher_t matcher, const char * str_rule) {
 
     int reerr;
     PCRE2_SIZE reerroffset;
-    rule->m_pattern_re = pcre2_compile((PCRE2_SPTR)str_rule, PCRE2_ZERO_TERMINATED, 0, &reerr, &reerroffset, NULL);
+    rule->m_pattern_re = pcre2_compile_8((PCRE2_SPTR8)str_rule, PCRE2_ZERO_TERMINATED, 0, &reerr, &reerroffset, NULL);
     if (rule->m_pattern_re == NULL) {
         CPE_ERROR(
             matcher->m_schedule->m_em, "Regex compilation of \"%s\" failed: %d, offset %d",
@@ -36,8 +36,21 @@ net_address_rule_lookup(net_address_matcher_t matcher, const char * address) {
     net_address_rule_t rule;
 
     TAILQ_FOREACH(rule, &matcher->m_rules, m_next) {
-        int rc = pcre2_match(rule->m_pattern_re, (PCRE2_SPTR)address, PCRE2_ZERO_TERMINATED, 0, 0, NULL, NULL);
-        if (rc >= 0) return NULL;
+        pcre2_match_data * match_data = pcre2_match_data_create_from_pattern(rule->m_pattern_re, NULL);
+        int rc = pcre2_match_8(rule->m_pattern_re, (PCRE2_SPTR8)address, PCRE2_ZERO_TERMINATED, 0, 0, match_data, NULL);
+        pcre2_match_data_free(match_data);
+
+        if (rc < 0) {
+            if (rc == PCRE2_ERROR_NOMATCH) { /*not match*/
+                continue;
+            }
+            else {
+                CPE_ERROR(matcher->m_schedule->m_em, "net_address_rule_lookup: check %s fail, rv=%d", address, rc);
+                continue;
+            }
+        }
+
+        if (rc >= 0) return rule;
     }
 
     return NULL;
