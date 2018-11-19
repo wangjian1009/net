@@ -73,7 +73,7 @@ int net_address_matcher_add(net_address_matcher_t matcher, net_address_t address
         if (net_address_rule_create(matcher, net_address_data(address)) == NULL) {
             CPE_ERROR(
                 matcher->m_schedule->m_em,
-                "net_address_matcher_add: create rule %s fail!", net_address_data(address));
+                "net_address_matcher_add: create rule %s fail!", (const char *)net_address_data(address));
             return -1;
         }
         return 0;
