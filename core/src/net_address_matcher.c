@@ -69,15 +69,15 @@ int net_address_matcher_add(net_address_matcher_t matcher, net_address_t address
             matcher->m_ipset_ipv6,
             (net_address_data_ipv6_t)net_address_data(address))
             == 0 ? 0 : -1;
-    case net_address_domain:
-        net_address_rule_t rule = net_address_rule_create(matcher, net_address_data(address));
-        if (rule == NULL) {
+    case net_address_domain: {
+        if (net_address_rule_create(matcher, net_address_data(address)) == NULL) {
             CPE_ERROR(
                 matcher->m_schedule->m_em,
-                "net_address_matcher_add: create rule %s fail!", def);
+                "net_address_matcher_add: create rule %s fail!", net_address_data(address));
             return -1;
         }
         return 0;
+    }
     }
 }
 
