@@ -173,7 +173,10 @@ int net_ev_endpoint_connect(net_endpoint_t base_endpoint) {
             net_ev_endpoint_update_local_address(endpoint);
         }
 
-        return net_endpoint_set_state(base_endpoint, net_endpoint_state_established);
+        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_established) != 0) return -1;
+
+        net_ev_endpoint_start_rw_watcher(driver, base_endpoint, endpoint);
+        return 0;
     }
 }
 
