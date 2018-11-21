@@ -775,7 +775,7 @@ static int net_endpoint_notify_state_changed(net_endpoint_t endpoint, net_endpoi
         : -1;
     
     net_endpoint_monitor_t monitor = TAILQ_FIRST(&endpoint->m_monitors);
-    while(monitor) {
+    while(monitor && endpoint->m_state != net_endpoint_state_deleting) {
         net_endpoint_monitor_t next_monitor = TAILQ_NEXT(monitor, m_next);
         if (monitor->m_is_free) {
             monitor = next_monitor;
