@@ -103,7 +103,7 @@ net_trans_host_t net_trans_host_find(net_trans_manage_t mgr, net_address_t addre
     return cpe_hash_table_find(&mgr->m_hosts, &key);
 }
 
-net_trans_http_endpoint_t net_trans_host_alloc_endpoint(net_trans_host_t host) {
+net_trans_http_endpoint_t net_trans_host_alloc_endpoint(net_trans_host_t host, uint8_t is_https) {
     net_trans_manage_t mgr = host->m_mgr;
     net_trans_http_endpoint_t trans_http, trans_http_next;
     
@@ -119,6 +119,8 @@ net_trans_http_endpoint_t net_trans_host_alloc_endpoint(net_trans_host_t host) {
             return trans_http;
         }
 
+        if (net_trans_http_endpoint_is_https(trans_http) != is_https) continue;
+        
         net_trans_task_t last_task = TAILQ_LAST(&trans_http->m_tasks, net_trans_task_list);
         if (last_task && !last_task->m_keep_alive) continue;
 
@@ -141,7 +143,15 @@ net_trans_http_endpoint_t net_trans_host_alloc_endpoint(net_trans_host_t host) {
             return NULL;
         }
         else {
-            return net_trans_http_endpoint_create(host);
+            net_trans_http_endpoint_t new_http_ep = net_trans_http_endpoint_create(host, is_https);
+            if (new_http_ep == NULL) {
+                CPE_ERROR(
+                    mgr->m_em, "trans: host %s create http endpoint fail!",
+                    net_address_dump(net_trans_manage_tmp_buffer(mgr), host->m_address));
+                return NULL;
+            }
+            
+            return new_http_ep;
         }
     }
 }

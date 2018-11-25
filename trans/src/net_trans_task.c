@@ -39,7 +39,7 @@ net_trans_task_t net_trans_task_create_relative(
     host = net_trans_host_check_create(mgr, address);
     if (host == NULL) goto CREATED_ERROR;
 
-    http_ep = net_trans_host_alloc_endpoint(host);
+    http_ep = net_trans_host_alloc_endpoint(host, is_https);
     if (http_ep == NULL) goto CREATED_ERROR;
 
     task = TAILQ_FIRST(&mgr->m_free_tasks);

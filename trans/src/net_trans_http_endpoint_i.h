@@ -12,9 +12,10 @@ struct net_trans_http_endpoint {
     net_trans_task_list_t m_tasks;
 };
 
-net_trans_http_endpoint_t net_trans_http_endpoint_create(net_trans_host_t host);
+net_trans_http_endpoint_t net_trans_http_endpoint_create(net_trans_host_t host, uint8_t is_https);
 void net_trans_http_endpoint_free(net_trans_http_endpoint_t trans_http);
 
+uint8_t net_trans_http_endpoint_is_https(net_trans_http_endpoint_t trans_http);
 uint8_t net_trans_http_endpoint_is_active(net_trans_http_endpoint_t trans_http);
 
 int net_trans_http_endpoint_init(net_http_endpoint_t http_endpoint);

@@ -241,7 +241,13 @@ int net_http_endpoint_set_state(net_http_endpoint_t http_ep, net_http_state_t st
         break;
     }
     
-    return net_http_endpoint_notify_state_changed(http_ep, old_state);
+    if (net_http_endpoint_notify_state_changed(http_ep, old_state) != 0) return -1;
+
+    if (http_ep->m_state == net_http_state_established) {
+        if (net_http_endpoint_flush(http_ep) != 0) return -1;
+    }
+
+    return 0;
 }
 
 static int net_http_endpoint_notify_state_changed(net_http_endpoint_t http_ep, net_http_state_t old_state) {
@@ -503,6 +509,8 @@ int net_http_endpoint_write(
 
 int net_http_endpoint_flush(net_http_endpoint_t http_ep) {
     net_http_protocol_t http_protocol = net_http_endpoint_protocol(http_ep);
+
+    if (http_ep->m_state != net_http_state_established) return 0;
 
     uint32_t sz = net_endpoint_buf_size(http_ep->m_endpoint, net_ep_buf_http_out);
     if (sz > 0) {

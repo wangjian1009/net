@@ -9,7 +9,7 @@
 #include "net_trans_task_i.h"
 
 net_trans_http_endpoint_t
-net_trans_http_endpoint_create(net_trans_host_t host) {
+net_trans_http_endpoint_create(net_trans_host_t host, uint8_t is_https) {
     net_trans_manage_t mgr = host->m_mgr;
     
     net_http_endpoint_t http_endpoint =
@@ -20,6 +20,14 @@ net_trans_http_endpoint_create(net_trans_host_t host) {
         return NULL;
     }
 
+    if (is_https) {
+        if (net_http_endpoint_ssl_enable(http_endpoint) == NULL) {
+            CPE_ERROR(mgr->m_em, "trans: enable http endpoint https fail!");
+            net_http_endpoint_free(http_endpoint);
+            return NULL;
+        }
+    }
+    
     net_trans_http_endpoint_t trans_http = net_http_endpoint_data(http_endpoint);
 
     if (net_endpoint_set_remote_address(net_http_endpoint_net_ep(http_endpoint), host->m_address, 0) != 0) {
@@ -76,6 +84,10 @@ int net_trans_http_endpoint_on_state_change(net_http_endpoint_t http_endpoint, n
     case net_http_state_established:
         return 0;
     }
+}
+
+uint8_t net_trans_http_endpoint_is_https(net_trans_http_endpoint_t trans_http) {
+    return net_http_endpoint_use_https(net_http_endpoint_from_data(trans_http)) ? 1 : 0;
 }
 
 uint8_t net_trans_http_endpoint_is_active(net_trans_http_endpoint_t trans_http) {
