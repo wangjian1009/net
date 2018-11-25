@@ -702,13 +702,21 @@ static int net_http_endpoint_do_ssl_decode(net_http_protocol_t http_protocol, ne
             return 0;
         }
         else {
-            CPE_ERROR(
-                http_protocol->m_em,
-                "http: %s: >>> ssl read data fail, input-sz=%d, buf-capacity=%d, rv=%d (%s)!",
-                net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint),
-                net_endpoint_buf_size(http_ep->m_endpoint, net_ep_buf_http_in),
-                buf_capacity,
-                rv, net_http_ssl_error_str(rv));
+            if (rv == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
+                CPE_INFO(
+                    http_protocol->m_em,
+                    "http: %s: >>> ssl read data, peer close notify!",
+                    net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint));
+            }
+            else {
+                CPE_ERROR(
+                    http_protocol->m_em,
+                    "http: %s: >>> ssl read data fail, input-sz=%d, buf-capacity=%d, rv=%d (%s)!",
+                    net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint),
+                    net_endpoint_buf_size(http_ep->m_endpoint, net_ep_buf_http_in),
+                    buf_capacity,
+                    rv, net_http_ssl_error_str(rv));
+            }
             return -1;
         }
     }
