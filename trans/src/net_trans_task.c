@@ -366,7 +366,7 @@ static net_address_t net_trans_task_parse_address(
     }
 
     if (net_address_port(address) == 0) {
-        net_address_set_port(address, *is_https ? 433 : 80);
+        net_address_set_port(address, *is_https ? 443 : 80);
     }
     
     return address;

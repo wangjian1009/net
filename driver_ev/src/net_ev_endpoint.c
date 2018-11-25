@@ -148,6 +148,10 @@ int net_ev_endpoint_connect(net_endpoint_t base_endpoint) {
                 net_ev_endpoint_connect_log_connect_start(driver, endpoint, base_endpoint, 1);
             }
 
+            if (net_endpoint_address(base_endpoint) == NULL) {
+                net_ev_endpoint_update_local_address(endpoint);
+            }
+            
             assert(!ev_is_active(&endpoint->m_watcher));
             ev_io_init(
                 &endpoint->m_watcher,
@@ -518,10 +522,6 @@ static void net_ev_endpoint_connect_cb(EV_P_ ev_io *w, int revents) {
         net_ev_endpoint_connect_log_connect_success(driver, endpoint, base_endpoint);
     }
 
-    if (net_endpoint_address(base_endpoint) == NULL) {
-        net_ev_endpoint_update_local_address(endpoint);
-    }
-
     net_ev_endpoint_start_rw_watcher(driver, base_endpoint, endpoint);
     if (net_endpoint_set_state(base_endpoint, net_endpoint_state_established) != 0) {
         net_endpoint_free(base_endpoint);
@@ -590,9 +590,20 @@ static int net_ev_endpoint_start_connect(
 {
     struct sockaddr_storage remote_addr_sock;
     socklen_t remote_addr_sock_len = sizeof(remote_addr_sock);
-    net_address_to_sockaddr(remote_addr, (struct sockaddr *)&remote_addr_sock, &remote_addr_sock_len);
+    if (net_address_to_sockaddr(remote_addr, (struct sockaddr *)&remote_addr_sock, &remote_addr_sock_len) != 0) {
+        char buf[128];
+        cpe_str_dup(buf, sizeof(buf), net_address_dump(net_ev_driver_tmp_buffer(driver), remote_addr));
+        
+        CPE_ERROR(
+            driver->m_em, "ev: %s: fd=%d: start connect: %s to sock addr fail",
+            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
+            buf);
+        
+        return -1;
+    }
 
     assert(net_address_type(remote_addr) == net_address_ipv4 || net_address_type(remote_addr) == net_address_ipv6);
+    assert(endpoint->m_fd == -1);
     
     int domain = net_address_type(remote_addr) == net_address_ipv4 ? AF_INET : AF_INET6; 
 
@@ -660,14 +671,16 @@ static int net_ev_endpoint_start_connect(
         return -1;
     }
 
+    /* net_address_t oa = net_address_create_from_sockaddr(net_endpoint_schedule(base_endpoint), (struct sockaddr *)&remote_addr_sock, remote_addr_sock_len); */
     /* char buf[128]; */
-    /* cpe_str_dup(buf, sizeof(buf), net_address_dump(net_ev_driver_tmp_buffer(driver), remote_addr)); */
-    
+    /* cpe_str_dup(buf, sizeof(buf), net_address_dump(net_ev_driver_tmp_buffer(driver), oa)); */
+    /* net_address_free(oa); */
+
     /* CPE_ERROR( */
     /*     driver->m_em, "ev: %s: fd=%d: connect to %s", */
-    /*     net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,*/
+    /*     net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd, */
     /*     buf); */
-    
+
     return cpe_connect(endpoint->m_fd, (struct sockaddr *)&remote_addr_sock, remote_addr_sock_len);
 }
 
