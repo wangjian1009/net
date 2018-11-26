@@ -317,6 +317,7 @@ int net_ws_endpoint_set_state(net_ws_endpoint_t ws_ep, net_ws_state_t state) {
 
     if (ws_ep->m_cfg_pingpong_span_ms) {
         assert(ws_ep->m_pingpong_timer);
+        ws_ep->m_pingpong_count = 0;
         if (ws_ep->m_state == net_ws_state_established) {
             net_timer_active(ws_ep->m_pingpong_timer, ws_ep->m_cfg_pingpong_span_ms);
         }
