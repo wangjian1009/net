@@ -148,14 +148,11 @@ net_dns_entry_select_item(net_dns_entry_t entry, net_dns_item_select_policy_t po
     struct net_dns_entry_item_it item_it;
     net_dns_entry_items(entry, &item_it, 1);
 
-    //CPE_ERROR(entry->m_manage->m_em, "xxxxx dns-cli: begin select %s", entry->m_hostname);
-    
     uint32_t cur_time_s = (uint32_t)(cur_time_ms() / 1000);
     for(check = net_dns_entry_item_it_next(&item_it); check; check = next) {
         next = net_dns_entry_item_it_next(&item_it);
+        assert(next != check);
 
-        //CPE_ERROR(entry->m_manage->m_em, "xxxxx dns-cli:      item %s", net_address_dump(net_dns_manage_tmp_buffer(entry->m_manage), check->m_address));
-        
         if (check->m_expire_time_s != 0 && check->m_expire_time_s < cur_time_s) { /*超期 */
             net_dns_entry_item_free(check);
             continue;
@@ -222,11 +219,9 @@ struct net_dns_entry_address_it_data {
 static void net_dns_entry_address_it_data_go_next(struct net_dns_entry_address_it_data * data) {
     while(data->m_entry) {
         if (data->m_item) {
-            //CPE_ERROR(data->m_root->m_manage->m_em, "xxxxx:         dns-cli: %s next item", data->m_entry->m_hostname);
             data->m_item = TAILQ_NEXT(data->m_item, m_next_for_entry);
         }
         else {
-            //CPE_ERROR(data->m_root->m_manage->m_em, "xxxxx:         dns-cli: %s first item", data->m_entry->m_hostname);
             data->m_item = TAILQ_FIRST(&data->m_entry->m_items);
         }
 
@@ -235,36 +230,35 @@ static void net_dns_entry_address_it_data_go_next(struct net_dns_entry_address_i
         assert(data->m_item == NULL);
 
         if (data->m_entry == data->m_root) {
-            //CPE_ERROR(data->m_root->m_manage->m_em, "xxxxx:         dns-cli: %s is root, done", data->m_entry->m_hostname);
             data->m_entry = NULL;
             break;
         }
 
         if (data->m_entry_alias == NULL) {
-            //CPE_ERROR(data->m_root->m_manage->m_em, "xxxxx:         dns-cli: no next entry, and no parent");
             data->m_entry = NULL;
             break;
         }
         
         net_dns_entry_alias_t next_alias = TAILQ_NEXT(data->m_entry_alias, m_next_for_origin);
         if (next_alias) {
-            //CPE_ERROR(data->m_root->m_manage->m_em, "xxxxx:         dns-cli: found next entry %s", next_alias->m_as->m_hostname);
             data->m_entry_alias = next_alias;
             data->m_entry = next_alias->m_as;
             while(!TAILQ_EMPTY(&data->m_entry->m_cnames)) {
                 data->m_entry_alias = TAILQ_FIRST(&data->m_entry->m_cnames);
                 data->m_entry = data->m_entry_alias->m_as;
             }
-            //CPE_ERROR(data->m_root->m_manage->m_em, "xxxxx:         dns-cli: go last entry entry %s", data->m_entry->m_hostname);
         }
         else {
             data->m_entry = data->m_entry_alias->m_origin;
 
-            TAILQ_FOREACH(data->m_entry_alias, &data->m_entry->m_origins, m_next_for_as) {
-                if (data->m_entry_alias->m_as == data->m_entry) break;
+            if (data->m_entry == data->m_root) {
+                data->m_entry_alias = NULL;
             }
-            
-            //CPE_ERROR(data->m_root->m_manage->m_em, "xxxxx:         dns-cli: no next entry, go parent %s", data->m_entry->m_hostname);
+            else {
+                TAILQ_FOREACH(data->m_entry_alias, &data->m_entry->m_origins, m_next_for_as) {
+                    if (data->m_entry_alias->m_as == data->m_entry) break;
+                }
+            }
         }
     }
 }
@@ -343,6 +337,9 @@ static net_dns_entry_item_t net_dns_entry_item_it_basic_next(net_dns_entry_item_
 void net_dns_entry_items(net_dns_entry_t entry, net_dns_entry_item_it_t it, uint8_t recursive) {
     if (recursive) {
         struct net_dns_entry_address_it_data * data = (struct net_dns_entry_address_it_data *)it->data;
+
+        assert(sizeof(struct net_dns_entry_address_it_data) <= sizeof(it->data));
+        
         data->m_root = entry;
         data->m_item = NULL;
 
