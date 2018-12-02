@@ -1,4 +1,5 @@
 #include "cpe/utils/time_utils.h"
+#include "cpe/utils/string_utils.h"
 #include "net_address.h"
 #include "net_dns_manage_i.h"
 #include "net_dns_entry_i.h"
@@ -28,11 +29,18 @@ int net_dns_manage_add_record(
     
     net_dns_entry_item_t item = net_dns_entry_item_find(entry, source, address);
     if (item) {
-        /* CPE_ERROR( */
-        /*     manage->m_em, "xxxxx: dns-cli: %s update %s", entry->m_hostname, */
-        /*     net_address_dump(net_dns_manage_tmp_buffer(manage), address)); */
-        
         item->m_expire_time_s = expire_time_s;
+
+        if (manage->m_debug) {
+            char source_buf[64];
+            cpe_str_dup(source_buf, sizeof(source_buf), net_dns_source_dump(net_dns_manage_tmp_buffer(manage), item->m_source));
+        
+            CPE_INFO(
+                manage->m_em, "dns-cli: updated %s ==> %s | %s",
+                entry->m_hostname,
+                item->m_address ? net_address_host(net_dns_manage_tmp_buffer(manage), item->m_address) : "N/A",
+                source_buf);
+        }
     }
     else {
         item = net_dns_entry_item_create(entry, source, address, 0, expire_time_s);
@@ -45,9 +53,16 @@ int net_dns_manage_add_record(
             return -1;
         }
 
-        /* CPE_ERROR( */
-        /*     manage->m_em, "xxxxx: dns-cli: %s add %s", entry->m_hostname, */
-        /*     net_address_dump(net_dns_manage_tmp_buffer(manage), address)); */
+        if (manage->m_debug) {
+            char source_buf[64];
+            cpe_str_dup(source_buf, sizeof(source_buf), net_dns_source_dump(net_dns_manage_tmp_buffer(manage), item->m_source));
+        
+            CPE_INFO(
+                manage->m_em, "dns-cli: resolved %s ==> %s | %s",
+                entry->m_hostname,
+                item->m_address ? net_address_host(net_dns_manage_tmp_buffer(manage), item->m_address) : "N/A",
+                source_buf);
+        }
         
         if (net_address_type(address) == net_address_domain) {
             const char * cname = net_address_data(address);

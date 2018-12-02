@@ -45,17 +45,6 @@ net_dns_entry_item_create(
 
     TAILQ_INSERT_TAIL(&entry->m_items, item, m_next_for_entry);
     TAILQ_INSERT_TAIL(&source->m_items, item, m_next_for_source);
-    
-    if (manage->m_debug) {
-        char source_buf[64];
-        cpe_str_dup(source_buf, sizeof(source_buf), net_dns_source_dump(net_dns_manage_tmp_buffer(manage), item->m_source));
-        
-        CPE_INFO(
-            manage->m_em, "dns-cli: resolved %s ==> %s | %s",
-            entry->m_hostname,
-            item->m_address ? net_address_host(net_dns_manage_tmp_buffer(manage), item->m_address) : "N/A",
-            source_buf);
-    }
 
     return item;
 }
@@ -89,7 +78,7 @@ net_dns_entry_item_find(net_dns_entry_t entry, net_dns_source_t source, net_addr
     net_dns_entry_item_t item;
 
     TAILQ_FOREACH(item, &entry->m_items, m_next_for_entry) {
-        if (item->m_source == source && net_address_cmp(item->m_address, address) == 0) return item;
+        if (item->m_source == source && net_address_cmp_without_port(item->m_address, address) == 0) return item;
     }
     
     return NULL;
