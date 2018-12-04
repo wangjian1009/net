@@ -643,9 +643,15 @@ int net_address_cmp(net_address_t l, net_address_t r) {
     case net_address_domain:
         return strcmp(((struct net_address_domain *)l)->m_url, ((struct net_address_domain *)r)->m_url);
     case net_address_ipv4:
-        return memcmp(&((struct net_address_ipv4v6 *)l)->m_ipv4, &((struct net_address_ipv4v6 *)r)->m_ipv4, sizeof(struct in_addr));
+        return memcmp(
+            &((struct net_address_ipv4v6 *)l)->m_ipv4,
+            &((struct net_address_ipv4v6 *)r)->m_ipv4,
+            sizeof(((struct net_address_ipv4v6 *)r)->m_ipv4));
     case net_address_ipv6:
-        return memcmp(&((struct net_address_ipv4v6 *)l)->m_ipv6, &((struct net_address_ipv4v6 *)r)->m_ipv6, sizeof(struct in6_addr));
+        return memcmp(
+            &((struct net_address_ipv4v6 *)l)->m_ipv6,
+            &((struct net_address_ipv4v6 *)r)->m_ipv6,
+            sizeof(((struct net_address_ipv4v6 *)r)->m_ipv6));
     }
 }
 
@@ -658,9 +664,15 @@ int net_address_cmp_without_port(net_address_t l, net_address_t r) {
     case net_address_domain:
         return strcmp(((struct net_address_domain *)l)->m_url, ((struct net_address_domain *)r)->m_url);
     case net_address_ipv4:
-        return memcmp(&((struct net_address_ipv4v6 *)l)->m_ipv4, &((struct net_address_ipv4v6 *)r)->m_ipv4, sizeof(struct in_addr));
+        return memcmp(
+            &((struct net_address_ipv4v6 *)l)->m_ipv4,
+            &((struct net_address_ipv4v6 *)r)->m_ipv4,
+            sizeof(((struct net_address_ipv4v6 *)r)->m_ipv4));
     case net_address_ipv6:
-        return memcmp(&((struct net_address_ipv4v6 *)l)->m_ipv6, &((struct net_address_ipv4v6 *)r)->m_ipv6, sizeof(struct in6_addr));
+        return memcmp(
+            &((struct net_address_ipv4v6 *)l)->m_ipv6,
+            &((struct net_address_ipv4v6 *)r)->m_ipv6,
+            sizeof(((struct net_address_ipv4v6 *)r)->m_ipv6));
     }
 }
 

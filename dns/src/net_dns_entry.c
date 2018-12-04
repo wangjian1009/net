@@ -122,12 +122,15 @@ const char * net_dns_entry_hostname(net_dns_entry_t entry) {
     return entry->m_hostname;
 }
 
-uint8_t net_dns_entry_is_origin_of(net_dns_entry_t entry, net_dns_entry_t check_start) {
+uint8_t net_dns_entry_is_origin_of(net_dns_entry_t entry, net_dns_entry_t as) {
     net_dns_entry_alias_t check;
 
-    TAILQ_FOREACH(check, &check_start->m_origins, m_next_for_origin) {
-        if (check->m_origin == entry) return 1;
-        if (net_dns_entry_is_origin_of(entry, check->m_origin)) return 1;
+    TAILQ_FOREACH(check, &entry->m_cnames, m_next_for_origin) {
+        if (check->m_as == as) return 1;
+    }
+
+    TAILQ_FOREACH(check, &entry->m_cnames, m_next_for_origin) {
+        if (net_dns_entry_is_origin_of(check->m_as, as)) return 1;
     }
     
     return 0;
