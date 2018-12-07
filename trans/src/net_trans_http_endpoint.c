@@ -8,6 +8,9 @@
 #include "net_trans_host_i.h"
 #include "net_trans_task_i.h"
 
+static void net_trans_http_endpoint_on_data_evt(
+    void * ctx, net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, net_endpoint_data_event_t evt, uint32_t size);
+
 net_trans_http_endpoint_t
 net_trans_http_endpoint_create(net_trans_host_t host, uint8_t is_https) {
     net_trans_manage_t mgr = host->m_mgr;
@@ -39,6 +42,8 @@ net_trans_http_endpoint_create(net_trans_host_t host, uint8_t is_https) {
     trans_http->m_host = host;
     host->m_endpoint_count++;
     TAILQ_INSERT_TAIL(&host->m_endpoints, trans_http, m_next);
+
+    net_endpoint_set_data_watcher(net_http_endpoint_net_ep(http_endpoint), trans_http, net_trans_http_endpoint_on_data_evt, NULL);
     
     return trans_http;
 }
@@ -97,5 +102,15 @@ uint8_t net_trans_http_endpoint_is_active(net_trans_http_endpoint_t trans_http) 
         return 0;
     default:
         return 1;
+    }
+}
+
+static void net_trans_http_endpoint_on_data_evt(
+    void * ctx, net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, net_endpoint_data_event_t evt, uint32_t size)
+{
+    net_trans_http_endpoint_t trans_http = ctx;
+
+    if (trans_http->m_host->m_mgr->m_watcher_fun) {
+        trans_http->m_host->m_mgr->m_watcher_fun(trans_http->m_host->m_mgr->m_watcher_ctx, endpoint, buf_type, evt, size);
     }
 }

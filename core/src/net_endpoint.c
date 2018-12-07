@@ -665,11 +665,11 @@ void net_endpoint_set_data_watcher(
     net_endpoint_t endpoint,
     void * watcher_ctx,
     net_endpoint_data_watch_fun_t watcher_fun,
-    void(*watcher_fini)(void*, net_endpoint_t endpoint))
+    net_endpoint_data_watch_ctx_fini_fun_t watcher_ctx_fini)
 {
     endpoint->m_data_watcher_ctx = watcher_ctx;
     endpoint->m_data_watcher_fun = watcher_fun;
-    endpoint->m_data_watcher_fini = watcher_fini;
+    endpoint->m_data_watcher_fini = watcher_ctx_fini;
 }
 
 const char * net_endpoint_state_str(net_endpoint_state_t state) {

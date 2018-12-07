@@ -24,6 +24,9 @@ struct net_trans_manage {
     uint8_t m_debug;
     net_schedule_t m_schedule;
     net_driver_t m_driver;
+    void * m_watcher_ctx;
+    net_endpoint_data_watch_fun_t m_watcher_fun;
+    
     uint16_t m_cfg_host_endpoint_limit;
     net_trans_http_protocol_t m_http_protocol;
     

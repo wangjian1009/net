@@ -3,8 +3,13 @@
 #include "net_schedule.h"
 #include "net_address.h"
 #include "net_timer.h"
+#include "net_protocol.h"
+#include "net_endpoint.h"
+#include "net_http_protocol.h"
+#include "net_http_endpoint.h"
 #include "net_trans_manage_i.h"
 #include "net_trans_http_protocol_i.h"
+#include "net_trans_http_endpoint_i.h"
 #include "net_trans_task_i.h"
 #include "net_trans_host_i.h"
 
@@ -24,6 +29,8 @@ net_trans_manage_t net_trans_manage_create(
     manage->m_debug = 0;
     manage->m_schedule = schedule;
     manage->m_driver = driver;
+    manage->m_watcher_ctx = NULL;
+    manage->m_watcher_fun = NULL;
     manage->m_cfg_host_endpoint_limit = 0;
 
     TAILQ_INIT(&manage->m_free_tasks);
@@ -71,6 +78,9 @@ void net_trans_manage_free(net_trans_manage_t mgr) {
     cpe_hash_table_fini(&mgr->m_hosts);
     cpe_hash_table_fini(&mgr->m_tasks);
     
+    mgr->m_watcher_ctx = NULL;
+    mgr->m_watcher_fun = NULL;
+    
     if (mgr->m_http_protocol) {
         net_trans_http_protocol_free(mgr->m_http_protocol);
         mgr->m_http_protocol = NULL;
@@ -93,6 +103,15 @@ uint8_t net_trans_manage_debug(net_trans_manage_t manage) {
 
 void net_trans_manage_set_debug(net_trans_manage_t manage, uint8_t debug) {
     manage->m_debug = debug;
+}
+
+void net_trans_manage_set_data_watcher(
+    net_trans_manage_t mgr,
+    void * watcher_ctx,
+    net_endpoint_data_watch_fun_t watcher_fun)
+{
+    mgr->m_watcher_ctx = watcher_ctx;
+    mgr->m_watcher_fun = watcher_fun;
 }
 
 mem_buffer_t net_trans_manage_tmp_buffer(net_trans_manage_t manage) {

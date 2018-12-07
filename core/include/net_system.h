@@ -10,6 +10,7 @@ typedef struct net_protocol * net_protocol_t;
 typedef struct net_link * net_link_t;
 typedef struct net_timer * net_timer_t;
 typedef struct net_endpoint * net_endpoint_t;
+typedef struct net_endpoint_it * net_endpoint_it_t;
 typedef struct net_endpoint_monitor * net_endpoint_monitor_t;
 typedef struct net_acceptor * net_acceptor_t;
 typedef struct net_dgram * net_dgram_t;
@@ -67,6 +68,8 @@ typedef int (*net_endpoint_prepare_connect_fun_t)(void * ctx, net_endpoint_t end
 typedef void (*net_endpoint_data_watch_fun_t)(
     void * ctx, net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type,
     net_endpoint_data_event_t evt, uint32_t size);
+
+typedef void (*net_endpoint_data_watch_ctx_fini_fun_t)(void*, net_endpoint_t endpoint);
 
 /*acceptor*/
 typedef int (*net_acceptor_on_new_endpoint_fun_t)(void * ctx, net_endpoint_t endpoint);

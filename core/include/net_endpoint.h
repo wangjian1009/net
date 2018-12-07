@@ -5,6 +5,11 @@
 
 NET_BEGIN_DECL
 
+struct net_endpoint_it {
+    net_endpoint_t (*next)(net_endpoint_it_t it);
+    char data[64];
+};
+
 net_endpoint_t net_endpoint_create(net_driver_t driver, net_protocol_t protocol);
 void net_endpoint_free(net_endpoint_t endpoint);
 
@@ -101,7 +106,7 @@ void net_endpoint_set_data_watcher(
     net_endpoint_t endpoint,
     void * watcher_ctx,
     net_endpoint_data_watch_fun_t watcher_fun,
-    void(*watcher_ctx_fini)(void*, net_endpoint_t endpoint));
+    net_endpoint_data_watch_ctx_fini_fun_t watcher_ctx_fini);
 
 /**/
 void net_endpoint_clear_monitor_by_ctx(net_endpoint_t endpoint, void * ctx);
@@ -113,6 +118,9 @@ void * net_endpoint_protocol_data(net_endpoint_t endpoint);
 const char * net_endpoint_state_str(net_endpoint_state_t state);
 const char * net_endpoint_buf_type_str(net_endpoint_buf_type_t buf_type);
 const char * net_endpoint_data_event_str(net_endpoint_data_event_t data_evt);
+
+/*net_endpoint_it*/
+#define net_endpoint_it_next(__it) ((__it)->next(__it))
 
 NET_END_DECL
 
