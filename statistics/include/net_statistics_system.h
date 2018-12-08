@@ -5,8 +5,8 @@
 CPE_BEGIN_DECL
 
 typedef struct net_statistics * net_statistics_t;
-typedef struct net_statistics_reportor * net_statistics_reportor_t;
-typedef struct net_statistics_reportor_type * net_statistics_reportor_type_t;
+typedef struct net_statistics_backend * net_statistics_backend_t;
+typedef struct net_statistics_transaction * net_statistics_transaction_t;
 
 CPE_END_DECL
 

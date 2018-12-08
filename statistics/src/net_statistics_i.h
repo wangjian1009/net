@@ -9,16 +9,16 @@
 
 CPE_BEGIN_DECL
 
-typedef TAILQ_HEAD(net_statistics_reportor_type_list, net_statistics_reportor_type) net_statistics_reportor_type_list_t;
-typedef TAILQ_HEAD(net_statistics_reportor_list, net_statistics_reportor) net_statistics_reportor_list_t;
+typedef TAILQ_HEAD(net_statistics_backend_list, net_statistics_backend) net_statistics_backend_list_t;
+typedef TAILQ_HEAD(net_statistics_transaction_list, net_statistics_transaction) net_statistics_transaction_list_t;
 
 struct net_statistics {
     mem_allocrator_t m_alloc;
     error_monitor_t m_em;
     uint8_t m_debug;
 
-    net_statistics_reportor_type_list_t m_reportor_types;
-    net_statistics_reportor_list_t m_reportors;    
+    net_statistics_backend_list_t m_backends;
+    net_statistics_transaction_list_t m_transactions;    
 };
 
 CPE_END_DECL

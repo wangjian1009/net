@@ -1,6 +1,6 @@
 #include "net_statistics_i.h"
-#include "net_statistics_reportor_i.h"
-#include "net_statistics_reportor_type_i.h"
+#include "net_statistics_backend_i.h"
+#include "net_statistics_transaction_i.h"
 
 net_statistics_t net_statistics_create(mem_allocrator_t alloc, error_monitor_t em) {
     net_statistics_t statistics = mem_alloc(alloc, sizeof(struct net_statistics));
@@ -13,21 +13,21 @@ net_statistics_t net_statistics_create(mem_allocrator_t alloc, error_monitor_t e
     statistics->m_em = em;
     statistics->m_debug = 0;
 
-    TAILQ_INIT(&statistics->m_reportor_types);
-    TAILQ_INIT(&statistics->m_reportors);
+    TAILQ_INIT(&statistics->m_backends);
+    TAILQ_INIT(&statistics->m_transactions);
     
     return statistics;
 }
 
 void net_statistics_free(net_statistics_t statistics) {
-    while(!TAILQ_EMPTY(&statistics->m_reportors)) {
-        net_statistics_reportor_free(TAILQ_FIRST(&statistics->m_reportors));
+    while(!TAILQ_EMPTY(&statistics->m_transactions)) {
+        net_statistics_transaction_free(TAILQ_FIRST(&statistics->m_transactions));
     }
 
-    while(!TAILQ_EMPTY(&statistics->m_reportor_types)) {
-        net_statistics_reportor_type_free(TAILQ_FIRST(&statistics->m_reportor_types));
+    while(!TAILQ_EMPTY(&statistics->m_backends)) {
+        net_statistics_backend_free(TAILQ_FIRST(&statistics->m_backends));
     }
-    
+
     mem_free(statistics->m_alloc, statistics);
 }
 
@@ -37,4 +37,28 @@ uint8_t net_statistics_debug(net_statistics_t statistics) {
 
 void net_statistics_set_debug(net_statistics_t statistics, uint8_t debug) {
     statistics->m_debug = debug;
+}
+
+void net_statistics_log_metric_for_count(net_statistics_t statistics, const char *name, int quantity) {
+    net_statistics_backend_t backend;
+
+    TAILQ_FOREACH(backend, &statistics->m_backends, m_next_for_statistics) {
+        backend->m_log_metric_for_count(backend->m_ctx, name, quantity);
+    }
+}
+
+void net_statistics_log_metric_for_duration(net_statistics_t statistics, const char *name, uint64_t duration_ms) {
+    net_statistics_backend_t backend;
+
+    TAILQ_FOREACH(backend, &statistics->m_backends, m_next_for_statistics) {
+        backend->m_log_metric_for_duration(backend->m_ctx, name, duration_ms);
+    }
+}
+
+void net_statistics_log_event(net_statistics_t statistics, const char *type, const char *name, const char *status, const char *data) {
+    net_statistics_backend_t backend;
+
+    TAILQ_FOREACH(backend, &statistics->m_backends, m_next_for_statistics) {
+        backend->m_log_event(backend->m_ctx, type, name, status, data);
+    }
 }
