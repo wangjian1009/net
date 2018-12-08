@@ -43,7 +43,7 @@ void net_statistics_log_metric_for_count(net_statistics_t statistics, const char
     net_statistics_backend_t backend;
 
     TAILQ_FOREACH(backend, &statistics->m_backends, m_next_for_statistics) {
-        backend->m_log_metric_for_count(backend->m_ctx, name, quantity);
+        backend->m_log_metric_for_count(backend, name, quantity);
     }
 }
 
@@ -51,7 +51,7 @@ void net_statistics_log_metric_for_duration(net_statistics_t statistics, const c
     net_statistics_backend_t backend;
 
     TAILQ_FOREACH(backend, &statistics->m_backends, m_next_for_statistics) {
-        backend->m_log_metric_for_duration(backend->m_ctx, name, duration_ms);
+        backend->m_log_metric_for_duration(backend, name, duration_ms);
     }
 }
 
@@ -59,6 +59,6 @@ void net_statistics_log_event(net_statistics_t statistics, const char *type, con
     net_statistics_backend_t backend;
 
     TAILQ_FOREACH(backend, &statistics->m_backends, m_next_for_statistics) {
-        backend->m_log_event(backend->m_ctx, type, name, status, data);
+        backend->m_log_event(backend, type, name, status, data);
     }
 }
