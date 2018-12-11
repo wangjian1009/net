@@ -190,7 +190,6 @@ void net_ev_endpoint_close(net_endpoint_t base_endpoint) {
 
     if (endpoint->m_fd == -1) return;
 
-    ev_io_stop(driver->m_ev_loop, &endpoint->m_watcher);
     net_ev_endpoint_close_sock(driver, endpoint);
 }
 
@@ -693,6 +692,8 @@ static void net_ev_endpoint_close_sock(net_ev_driver_t driver, net_ev_endpoint_t
 
     assert(endpoint->m_fd != -1);
 
+    ev_io_stop(driver->m_ev_loop, &endpoint->m_watcher);
+    
 #if WIN32
     ev_changes_remove(driver->m_ev_loop, endpoint->m_fd);
 #endif
