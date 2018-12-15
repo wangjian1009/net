@@ -143,6 +143,10 @@ int net_ev_endpoint_connect(net_endpoint_t base_endpoint) {
     }
     
     if (connect_rv != 0) {
+        if (endpoint->m_fd == -1) {
+            return -1;
+        }
+        
         if (cpe_sock_errno() == EINPROGRESS || cpe_sock_errno() == EWOULDBLOCK) {
             if (net_endpoint_driver_debug(base_endpoint)) {
                 net_ev_endpoint_connect_log_connect_start(driver, endpoint, base_endpoint, 1);
@@ -626,6 +630,7 @@ static int net_ev_endpoint_start_connect(
             CPE_ERROR(
                 driver->m_em, "ev: %s: fd=%d: connect not support connect to domain address!",
                 net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
+            net_ev_endpoint_close_sock(driver, endpoint);
             return -1;
         }
 
@@ -648,6 +653,7 @@ static int net_ev_endpoint_start_connect(
                 driver->m_em, "ev: %s: fd=%d: bind local address %s fail, errno=%d (%s)",
                 net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd, local_addr_buf,
                 cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+            net_ev_endpoint_close_sock(driver, endpoint);
             return -1;
         }
     }
