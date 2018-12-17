@@ -311,6 +311,7 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
                             net_endpoint_free(base_endpoint);
                         }
                     }
+                    break;
                 }
             }
 
