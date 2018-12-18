@@ -21,6 +21,7 @@ typedef struct net_dns_task_step * net_dns_task_step_t;
 typedef struct net_dns_task_ctx * net_dns_task_ctx_t;
 typedef struct net_dns_task_ctx_it * net_dns_task_ctx_it_t;
 typedef struct net_dns_task_builder * net_dns_task_builder_t;
+typedef struct net_dns_task_monitor * net_dns_task_monitor_t;
 typedef struct net_dns_source * net_dns_source_t;
 typedef struct net_dns_source_it * net_dns_source_it_t;
 

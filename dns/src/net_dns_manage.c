@@ -16,6 +16,7 @@
 #include "net_dns_task_step_i.h"
 #include "net_dns_task_ctx_i.h"
 #include "net_dns_task_builder_i.h"
+#include "net_dns_task_monitor_i.h"
 #include "net_dns_ns_cli_protocol_i.h"
 
 static void net_dns_manage_fini(void * ctx);
@@ -48,6 +49,7 @@ net_dns_manage_t net_dns_manage_create(
     TAILQ_INIT(&manage->m_to_notify_querys);
     TAILQ_INIT(&manage->m_runing_tasks);
     TAILQ_INIT(&manage->m_complete_tasks);
+    TAILQ_INIT(&manage->m_monitors);
     TAILQ_INIT(&manage->m_free_entries);
     TAILQ_INIT(&manage->m_free_tasks);
     TAILQ_INIT(&manage->m_free_task_steps);
@@ -125,6 +127,10 @@ void net_dns_manage_free(net_dns_manage_t manage) {
     
     while(!TAILQ_EMPTY(&manage->m_complete_tasks)) {
         net_dns_task_free(TAILQ_FIRST(&manage->m_complete_tasks));
+    }
+
+    while(!TAILQ_EMPTY(&manage->m_monitors)) {
+        net_dns_task_monitor_free(TAILQ_FIRST(&manage->m_monitors));
     }
     
     net_dns_entry_free_all(manage);
@@ -261,6 +267,11 @@ static void net_dns_manage_do_delay_process(net_timer_t timer, void * input_ctx)
             net_dns_query_ex_set_task(query_ex, NULL);
         }
 
+        net_dns_task_monitor_t monitor;
+        TAILQ_FOREACH(monitor, &manage->m_monitors, m_next) {
+            monitor->m_on_complete(monitor->m_ctx, task);
+        }
+        
         net_dns_task_free(task);
     }
 

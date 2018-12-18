@@ -24,6 +24,7 @@ typedef TAILQ_HEAD(net_dns_task_list, net_dns_task) net_dns_task_list_t;
 typedef TAILQ_HEAD(net_dns_task_step_list, net_dns_task_step) net_dns_task_step_list_t;
 typedef TAILQ_HEAD(net_dns_task_ctx_list, net_dns_task_ctx) net_dns_task_ctx_list_t;
 typedef TAILQ_HEAD(net_dns_task_builder_list, net_dns_task_builder) net_dns_task_builder_list_t;
+typedef TAILQ_HEAD(net_dns_task_monitor_list, net_dns_task_monitor) net_dns_task_monitor_list_t;
 typedef TAILQ_HEAD(net_dns_query_ex_list, net_dns_query_ex) net_dns_query_ex_list_t;
 typedef TAILQ_HEAD(net_dns_scope_source_list, net_dns_scope_source) net_dns_scope_source_list_t;
 
@@ -35,6 +36,7 @@ struct net_dns_manage {
     net_dns_ns_cli_protocol_t m_protocol_dns_ns_cli;
     net_dns_mode_t m_mode;
     net_dns_source_list_t m_sources;
+    net_dns_task_monitor_list_t m_monitors;
 
     net_dns_item_select_policy_t m_default_item_select_policy;
     
