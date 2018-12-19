@@ -68,11 +68,11 @@ void net_statistics_log_metric_for_duration(net_statistics_t statistics, const c
     }
 }
 
-void net_statistics_log_event(net_statistics_t statistics, const char *type, const char *name, const char *status, const char *data) {
+void net_statistics_log_event(net_statistics_t statistics, const char *name, const char *data) {
     net_statistics_backend_t backend;
 
     TAILQ_FOREACH(backend, &statistics->m_backends, m_next_for_statistics) {
-        backend->m_log_event(backend, type, name, status, data);
+        backend->m_log_event(backend, name, data);
     }
 }
 
