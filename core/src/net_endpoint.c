@@ -120,7 +120,13 @@ void net_endpoint_free(net_endpoint_t endpoint) {
     }
     
     endpoint->m_driver->m_endpoint_fini(endpoint);
-    endpoint->m_protocol->m_endpoint_fini(endpoint);
+	if (strlen(endpoint->m_protocol->m_name) >= 32) {
+		// TODO:
+		assert(0);
+	}
+	else {
+		endpoint->m_protocol->m_endpoint_fini(endpoint);
+	}
 
     uint8_t i;
     for(i = 0; i < CPE_ARRAY_SIZE(endpoint->m_bufs); ++i) {
