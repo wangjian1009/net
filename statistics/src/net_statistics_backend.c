@@ -16,7 +16,8 @@ net_statistics_backend_create(
     net_statistics_log_metric_for_duration_fun_t log_metric_for_duration,
     uint16_t transaction_capacity,
     net_statistics_transaction_init_fun_t transaction_init,
-    net_statistics_transaction_fini_fun_t transaction_fini)
+    net_statistics_transaction_fini_fun_t transaction_fini,
+    net_statistics_transaction_set_state_fun_t transaction_set_state)
 {
     if (transaction_capacity > 0 && !TAILQ_EMPTY(&statistics->m_transactions)) {
         CPE_ERROR(statistics->m_em, "statistics: backend: already have transactions");
@@ -41,6 +42,7 @@ net_statistics_backend_create(
     backend->m_transaction_capacity = transaction_capacity;
     backend->m_transaction_init = transaction_init;
     backend->m_transaction_fini = transaction_fini;
+    backend->m_transaction_set_state = transaction_set_state;
     TAILQ_INIT(&backend->m_transactions);
 
     statistics->m_transaction_capacity += transaction_capacity;

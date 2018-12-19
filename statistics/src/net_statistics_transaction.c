@@ -64,3 +64,15 @@ void net_statistics_transaction_real_free(net_statistics_transaction_t transacti
     
     mem_free(statistics->m_alloc, transaction);
 }
+
+void net_statistics_transaction_set_state(net_statistics_transaction_t transaction, const char * state) {
+    net_statistics_transaction_backend_t tb;
+    TAILQ_FOREACH(tb, &transaction->m_backends, m_next_for_transaction) { 
+        if (tb->m_backend->m_transaction_set_state) {
+            tb->m_backend->m_transaction_set_state(
+                tb->m_backend, tb->m_transaction,
+                ((uint8_t *)(transaction + 1)) + tb->m_start_pos,
+                state);
+        }
+    }
+}

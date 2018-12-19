@@ -16,6 +16,8 @@ typedef int (*net_statistics_transaction_init_fun_t)(
     net_statistics_backend_t backend, net_statistics_transaction_t transaction, void * data, const char * type);
 typedef void (*net_statistics_transaction_fini_fun_t)(
     net_statistics_backend_t backend, net_statistics_transaction_t transaction, void * data);
+typedef void (*net_statistics_transaction_set_state_fun_t)(
+    net_statistics_backend_t backend, net_statistics_transaction_t transaction, void * data, const char * state);
 
 net_statistics_backend_t
 net_statistics_backend_create(
@@ -30,7 +32,8 @@ net_statistics_backend_create(
     net_statistics_log_metric_for_duration_fun_t log_metric_for_duration,
     uint16_t transaction_capacity,
     net_statistics_transaction_init_fun_t transaction_init,
-    net_statistics_transaction_fini_fun_t transaction_fini);
+    net_statistics_transaction_fini_fun_t transaction_fini,
+    net_statistics_transaction_set_state_fun_t transaction_set_state);
 
 void net_statistics_backend_free(net_statistics_backend_t backend);
 

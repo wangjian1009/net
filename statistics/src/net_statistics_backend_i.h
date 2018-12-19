@@ -19,6 +19,7 @@ struct net_statistics_backend {
     uint16_t m_transaction_capacity;
     net_statistics_transaction_init_fun_t m_transaction_init;
     net_statistics_transaction_fini_fun_t m_transaction_fini;
+    net_statistics_transaction_set_state_fun_t m_transaction_set_state;
     net_statistics_transaction_backend_list_t m_transactions;    
 };
 
