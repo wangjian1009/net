@@ -18,6 +18,7 @@ typedef struct net_dns_entry_item * net_dns_entry_item_t;
 typedef struct net_dns_entry_item_it * net_dns_entry_item_it_t;
 typedef struct net_dns_task * net_dns_task_t;
 typedef struct net_dns_task_step * net_dns_task_step_t;
+typedef struct net_dns_task_step_it * net_dns_task_step_it_t;
 typedef struct net_dns_task_ctx * net_dns_task_ctx_t;
 typedef struct net_dns_task_ctx_it * net_dns_task_ctx_it_t;
 typedef struct net_dns_task_builder * net_dns_task_builder_t;

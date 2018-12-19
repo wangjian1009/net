@@ -13,6 +13,7 @@ net_dns_task_state_t net_dns_task_state(net_dns_task_t task);
 int net_dns_task_start(net_dns_task_t task);
 
 net_dns_task_step_t net_dns_task_step_current(net_dns_task_t task);
+void net_dns_task_steps(net_dns_task_t task, net_dns_task_step_it_t it);
 uint8_t net_dns_task_is_complete(net_dns_task_t task);
 
 const char * net_dns_task_state_str(net_dns_task_state_t state);

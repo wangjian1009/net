@@ -132,6 +132,20 @@ net_dns_task_step_t net_dns_task_step_current(net_dns_task_t task) {
     return task->m_step_current;
 }
 
+static net_dns_task_step_t net_dns_task_step_next(struct net_dns_task_step_it * it) {
+    net_dns_task_step_t * data = (net_dns_task_step_t *)(it->m_data);
+    net_dns_task_step_t r;
+    if (*data == NULL) return NULL;
+    r = *data;
+    *data = TAILQ_NEXT(r, m_next);
+    return r;
+}
+
+void net_dns_task_steps(net_dns_task_t task, net_dns_task_step_it_t it) {
+    *(net_dns_task_step_t *)(it->m_data) = TAILQ_FIRST(&task->m_steps);
+    it->next = net_dns_task_step_next;
+}
+
 net_dns_task_state_t net_dns_task_state(net_dns_task_t task) {
     return task->m_state;
 }
