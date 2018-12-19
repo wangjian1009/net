@@ -54,7 +54,7 @@ net_statistics_backend_create(
 void net_statistics_backend_free(net_statistics_backend_t backend) {
     net_statistics_t statistics = backend->m_statistics;
 
-    while(TAILQ_EMPTY(&backend->m_transactions)) {
+    while(!TAILQ_EMPTY(&backend->m_transactions)) {
         net_statistics_transaction_backend_free(TAILQ_FIRST(&backend->m_transactions));
     }
     

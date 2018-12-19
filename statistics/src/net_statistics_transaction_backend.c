@@ -33,17 +33,20 @@ net_statistics_transaction_backend_create(
     return tb;
 }
 
-void net_statistics_transaction_backend_free(net_statistics_transaction_backend_t transaction_backend) {
-    net_statistics_transaction_t transaction = transaction_backend->m_transaction;
-    net_statistics_backend_t backend = transaction_backend->m_backend;
+void net_statistics_transaction_backend_free(net_statistics_transaction_backend_t tb) {
+    net_statistics_transaction_t transaction = tb->m_transaction;
+    net_statistics_backend_t backend = tb->m_backend;
     net_statistics_t statistics = backend->m_statistics;
 
     if (backend->m_transaction_fini) {
-        backend->m_transaction_fini(backend, transaction, ((uint8_t *)(transaction + 1)) + transaction_backend->m_start_pos);
+        backend->m_transaction_fini(backend, transaction, ((uint8_t *)(transaction + 1)) + tb->m_start_pos);
     }
 
-    transaction_backend->m_transaction = (net_statistics_transaction_t)statistics;
-    TAILQ_INSERT_TAIL(&statistics->m_free_transaction_backends, transaction_backend, m_next_for_transaction);
+    TAILQ_REMOVE(&tb->m_transaction->m_backends, tb, m_next_for_transaction);
+    TAILQ_REMOVE(&tb->m_backend->m_transactions, tb, m_next_for_backend);
+    
+    tb->m_transaction = (net_statistics_transaction_t)statistics;
+    TAILQ_INSERT_TAIL(&statistics->m_free_transaction_backends, tb, m_next_for_transaction);
 }
 
 void net_statistics_transaction_backend_real_free(net_statistics_transaction_backend_t transaction_backend) {

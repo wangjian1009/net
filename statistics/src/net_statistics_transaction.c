@@ -29,7 +29,7 @@ net_statistics_transaction_create(net_statistics_t statistics, const char * type
         if (tb == NULL) {
             CPE_ERROR(statistics->m_em, "statistics: transaction: %s init fail", backend->m_name);
             
-            while(TAILQ_EMPTY(&transaction->m_backends)) {
+            while(!TAILQ_EMPTY(&transaction->m_backends)) {
                 net_statistics_transaction_backend_free(TAILQ_FIRST(&transaction->m_backends));
             }
 
@@ -48,7 +48,7 @@ net_statistics_transaction_create(net_statistics_t statistics, const char * type
 void net_statistics_transaction_free(net_statistics_transaction_t transaction) {
     net_statistics_t statistics = transaction->m_statistics;
 
-    while(TAILQ_EMPTY(&transaction->m_backends)) {
+    while(!TAILQ_EMPTY(&transaction->m_backends)) {
         net_statistics_transaction_backend_free(TAILQ_FIRST(&transaction->m_backends));
     }
     
