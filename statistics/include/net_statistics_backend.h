@@ -8,8 +8,14 @@ typedef int (*net_statistics_backend_init_fun_t)(net_statistics_backend_t backen
 typedef void (*net_statistics_backend_fini_fun_t)(net_statistics_backend_t backend);
 
 typedef void (*net_statistics_log_event_fun_t)(net_statistics_backend_t backend, const char *type, const char *name, const char *status, const char *data);
+typedef void (*net_statistics_log_error_fun_t)(net_statistics_backend_t backend, const char *name, const char *data);
 typedef void (*net_statistics_log_metric_for_count_fun_t)(net_statistics_backend_t backend, const char *name, int quantity);
 typedef void (*net_statistics_log_metric_for_duration_fun_t)(net_statistics_backend_t backend, const char *name, uint64_t duration_ms);
+
+typedef int (*net_statistics_transaction_init_fun_t)(
+    net_statistics_backend_t backend, net_statistics_transaction_t transaction, void * data, const char * type);
+typedef void (*net_statistics_transaction_fini_fun_t)(
+    net_statistics_backend_t backend, net_statistics_transaction_t transaction, void * data);
 
 net_statistics_backend_t
 net_statistics_backend_create(
@@ -19,8 +25,12 @@ net_statistics_backend_create(
     net_statistics_backend_init_fun_t backend_init,
     net_statistics_backend_fini_fun_t backend_fini,
     net_statistics_log_event_fun_t log_event,
+    net_statistics_log_error_fun_t log_error,
     net_statistics_log_metric_for_count_fun_t log_metric_for_count,
-    net_statistics_log_metric_for_duration_fun_t log_metric_for_duration);
+    net_statistics_log_metric_for_duration_fun_t log_metric_for_duration,
+    uint16_t transaction_capacity,
+    net_statistics_transaction_init_fun_t transaction_init,
+    net_statistics_transaction_fini_fun_t transaction_fini);
 
 void net_statistics_backend_free(net_statistics_backend_t backend);
 

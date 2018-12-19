@@ -13,8 +13,13 @@ struct net_statistics_backend {
     net_statistics_backend_init_fun_t m_backend_init;
     net_statistics_backend_fini_fun_t m_backend_fini;
     net_statistics_log_event_fun_t m_log_event;
+    net_statistics_log_error_fun_t m_log_error;
     net_statistics_log_metric_for_count_fun_t m_log_metric_for_count;
     net_statistics_log_metric_for_duration_fun_t m_log_metric_for_duration;
+    uint16_t m_transaction_capacity;
+    net_statistics_transaction_init_fun_t m_transaction_init;
+    net_statistics_transaction_fini_fun_t m_transaction_fini;
+    net_statistics_transaction_backend_list_t m_transactions;    
 };
 
 CPE_END_DECL
