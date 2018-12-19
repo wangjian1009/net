@@ -7,13 +7,13 @@ CPE_BEGIN_DECL
 typedef int (*net_statistics_backend_init_fun_t)(net_statistics_backend_t backend);
 typedef void (*net_statistics_backend_fini_fun_t)(net_statistics_backend_t backend);
 
-typedef void (*net_statistics_log_event_fun_t)(net_statistics_backend_t backend, const char *name, const char *data);
+typedef void (*net_statistics_log_event_fun_t)(net_statistics_backend_t backend, const char * type, const char *name, const char *data);
 typedef void (*net_statistics_log_error_fun_t)(net_statistics_backend_t backend, const char *name, const char *data);
 typedef void (*net_statistics_log_metric_for_count_fun_t)(net_statistics_backend_t backend, const char *name, int quantity);
 typedef void (*net_statistics_log_metric_for_duration_fun_t)(net_statistics_backend_t backend, const char *name, uint64_t duration_ms);
 
 typedef int (*net_statistics_transaction_init_fun_t)(
-    net_statistics_backend_t backend, net_statistics_transaction_t transaction, void * data, const char * type);
+    net_statistics_backend_t backend, net_statistics_transaction_t transaction, void * data, const char * type, const char * name);
 typedef void (*net_statistics_transaction_fini_fun_t)(
     net_statistics_backend_t backend, net_statistics_transaction_t transaction, void * data);
 typedef void (*net_statistics_transaction_set_state_fun_t)(

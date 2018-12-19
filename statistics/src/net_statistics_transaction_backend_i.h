@@ -15,7 +15,7 @@ struct net_statistics_transaction_backend {
 
 net_statistics_transaction_backend_t
 net_statistics_transaction_backend_create(
-    net_statistics_transaction_t transaction, net_statistics_backend_t backend, uint16_t start_pos, const char * type);
+    net_statistics_transaction_t transaction, net_statistics_backend_t backend, uint16_t start_pos, const char * type, const char * name);
 void net_statistics_transaction_backend_free(net_statistics_transaction_backend_t transaction_backend);
 
 void net_statistics_transaction_backend_real_free(net_statistics_transaction_backend_t transaction_backend);

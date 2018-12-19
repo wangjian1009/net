@@ -3,7 +3,7 @@
 #include "net_statistics_transaction_backend_i.h"
 
 net_statistics_transaction_t
-net_statistics_transaction_create(net_statistics_t statistics, const char * type) {
+net_statistics_transaction_create(net_statistics_t statistics, const char * type, const char * name) {
     net_statistics_transaction_t transaction = TAILQ_FIRST(&statistics->m_free_transactions);
 
     if (transaction) {
@@ -25,7 +25,7 @@ net_statistics_transaction_create(net_statistics_t statistics, const char * type
     TAILQ_FOREACH(backend, &statistics->m_backends, m_next_for_statistics) {
         if (backend->m_transaction_init == NULL) continue;
 
-        net_statistics_transaction_backend_t tb = net_statistics_transaction_backend_create(transaction, backend, start_pos, type);
+        net_statistics_transaction_backend_t tb = net_statistics_transaction_backend_create(transaction, backend, start_pos, type, name);
         if (tb == NULL) {
             CPE_ERROR(statistics->m_em, "statistics: transaction: %s init fail", backend->m_name);
             
