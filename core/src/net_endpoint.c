@@ -603,7 +603,7 @@ ringbuffer_block_t net_endpoint_common_buf_alloc(net_endpoint_t endpoint, uint32
             net_endpoint_set_state(free_endpoint, net_endpoint_state_deleting);
         }
 
-        if (endpoint->m_state == net_endpoint_state_deleting) return NULL;
+        if (endpoint->m_state == net_endpoint_state_deleting || endpoint->m_state == net_endpoint_state_disable) return NULL;
         
         blk = ringbuffer_alloc(schedule->m_endpoint_buf , size);
     }
