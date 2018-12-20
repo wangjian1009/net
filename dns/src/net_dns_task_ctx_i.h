@@ -11,6 +11,8 @@ struct net_dns_task_ctx {
     TAILQ_ENTRY(net_dns_task_ctx) m_next_for_step;
     net_dns_source_t m_source;
     TAILQ_ENTRY(net_dns_task_ctx) m_next_for_source;
+    int64_t m_begin_time_ms;
+    int64_t m_complete_time_ms;
     net_dns_task_state_t m_state;
     net_timer_t m_timeout_timer;
     uint16_t m_timeout_ms;

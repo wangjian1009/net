@@ -1,4 +1,5 @@
 #include "assert.h"
+#include "cpe/utils/time_utils.h"
 #include "net_timer.h"
 #include "net_dns_task_ctx_i.h"
 #include "net_dns_entry_i.h"
@@ -27,6 +28,8 @@ net_dns_task_ctx_create(net_dns_task_step_t step, net_dns_source_t source) {
 
     ctx->m_step = step;
     ctx->m_source = source;
+    ctx->m_begin_time_ms = 0;
+    ctx->m_complete_time_ms = 0;
     ctx->m_state = net_dns_task_state_init;
     ctx->m_timeout_timer = NULL;
     ctx->m_timeout_ms = (uint16_t)-1;
@@ -260,11 +263,15 @@ static void net_dns_task_ctx_set_state_i(
             net_dns_task_update_state(task, net_dns_task_state_error);
             return;
         case net_dns_task_state_runing:
+            ctx->m_begin_time_ms = cur_time_ms();
             break;
         case net_dns_task_state_success:
+            ctx->m_complete_time_ms = cur_time_ms();
             net_dns_task_update_state(task, net_dns_task_calc_state(task));
             break;
+        case net_dns_task_state_empty:
         case net_dns_task_state_error:
+            ctx->m_complete_time_ms = cur_time_ms();
             if (TAILQ_NEXT(task->m_step_current, m_next)) {
                 task->m_step_current = TAILQ_NEXT(task->m_step_current, m_next);
                 net_dns_task_step_start(task->m_step_current);
@@ -296,6 +303,18 @@ void net_dns_task_ctx_set_success(net_dns_task_ctx_t ctx) {
     net_dns_task_ctx_set_complete_state(ctx, net_dns_task_state_success);
 }
 
+void net_dns_task_ctx_set_empty(net_dns_task_ctx_t ctx) {
+    net_dns_task_ctx_set_complete_state(ctx, net_dns_task_state_empty);
+}
+
 void net_dns_task_ctx_set_error(net_dns_task_ctx_t ctx) {
     net_dns_task_ctx_set_complete_state(ctx, net_dns_task_state_error);
+}
+
+int64_t net_dns_task_ctx_begin_time_ms(net_dns_task_ctx_t ctx) {
+    return ctx->m_begin_time_ms;
+}
+
+int64_t net_dns_task_ctx_complete_time_ms(net_dns_task_ctx_t ctx) {
+    return ctx->m_complete_time_ms;
 }

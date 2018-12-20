@@ -59,6 +59,7 @@ void net_dns_task_step_start(net_dns_task_step_t step) {
 net_dns_task_state_t net_dns_task_step_state(net_dns_task_step_t step) {
     uint8_t init_count = 0;
     uint8_t error_count = 0;
+    uint8_t empty_count = 0;
     uint8_t runing_count = 0;
     net_dns_task_ctx_t ctx;
     TAILQ_FOREACH(ctx, &step->m_ctxs, m_next_for_step) {
@@ -71,6 +72,9 @@ net_dns_task_state_t net_dns_task_step_state(net_dns_task_step_t step) {
             break;
         case net_dns_task_state_success:
             return net_dns_task_state_success;
+        case net_dns_task_state_empty:
+            empty_count++;
+            break;
         case net_dns_task_state_error:
             error_count++;
             break; 
@@ -80,9 +84,13 @@ net_dns_task_state_t net_dns_task_step_state(net_dns_task_step_t step) {
     if (runing_count) {
         return net_dns_task_state_runing;
     }
-    
-    if (error_count) {
-        return init_count > 0 ? net_dns_task_state_runing : net_dns_task_state_error;
+
+    if (error_count || empty_count) {
+        return init_count > 0
+            ? net_dns_task_state_runing
+            : (error_count
+               ? net_dns_task_state_error
+               : net_dns_task_state_empty);
     }
 
     return init_count ? net_dns_task_state_init : net_dns_task_state_success;

@@ -9,6 +9,8 @@ struct net_dns_task {
     net_dns_manage_t m_manage;
     net_dns_entry_t m_entry;
     TAILQ_ENTRY(net_dns_task) m_next;
+    int64_t m_begin_time_ms;
+    int64_t m_complete_time_ms;
     net_dns_task_state_t m_state;
     net_dns_task_step_t m_step_current;
     net_dns_task_step_list_t m_steps;

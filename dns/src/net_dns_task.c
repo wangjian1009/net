@@ -25,6 +25,8 @@ net_dns_task_t net_dns_task_create(net_dns_manage_t manage, net_dns_entry_t entr
     task->m_entry = entry;
     task->m_state = net_dns_task_state_init;
     task->m_step_current = NULL;
+    task->m_begin_time_ms = 0;
+    task->m_complete_time_ms = 0;
     TAILQ_INIT(&task->m_steps);
     TAILQ_INIT(&task->m_querys);
     
@@ -113,6 +115,8 @@ int net_dns_task_start(net_dns_task_t task) {
             return 0;
         case net_dns_task_state_success:
             break;
+        case net_dns_task_state_empty:
+            break;
         case net_dns_task_state_error:
             break;
         }
@@ -170,9 +174,14 @@ void net_dns_task_update_state(net_dns_task_t task, net_dns_task_state_t new_sta
     task->m_state = new_state;
     uint8_t new_is_complete = net_dns_task_is_complete(task);
 
+    if (new_state == net_dns_task_state_runing) {
+        task->m_begin_time_ms = cur_time_ms();
+    }
+    
     if (old_is_complete == new_is_complete) return;
     
     if (new_is_complete) {
+        task->m_complete_time_ms = cur_time_ms();
         TAILQ_REMOVE(&manage->m_runing_tasks, task, m_next);
         TAILQ_INSERT_TAIL(&manage->m_complete_tasks, task, m_next);
         net_dns_manage_active_delay_process(manage);
@@ -191,12 +200,14 @@ net_dns_task_state_t net_dns_task_calc_state(net_dns_task_t task) {
             return net_dns_task_state_runing;
         case net_dns_task_state_success:
             return net_dns_task_state_success;
+        case net_dns_task_state_empty:
+            return TAILQ_NEXT(task->m_step_current, m_next) ? net_dns_task_state_runing : net_dns_task_state_empty;
         case net_dns_task_state_error:
             return TAILQ_NEXT(task->m_step_current, m_next) ? net_dns_task_state_runing : net_dns_task_state_error;
         }
     }
     else {
-        return TAILQ_EMPTY(&task->m_steps) ? net_dns_task_state_error : net_dns_task_state_error;
+        return TAILQ_EMPTY(&task->m_steps) ? net_dns_task_state_error : net_dns_task_state_empty;
     }
 }
 
@@ -208,11 +219,29 @@ const char * net_dns_task_state_str(net_dns_task_state_t state) {
         return "runing";
     case net_dns_task_state_success:
         return "success";
+    case net_dns_task_state_empty:
+        return "empty";
     case net_dns_task_state_error:
         return "error";
     }
 }
 
 uint8_t net_dns_task_state_is_complete(net_dns_task_state_t state) {
-    return (state == net_dns_task_state_success || state == net_dns_task_state_error) ? 1 : 0;
+    switch(state) {
+    case net_dns_task_state_success:
+    case net_dns_task_state_error:
+    case net_dns_task_state_empty:
+        return 1;
+    default:
+        return 0;
+    }
 }
+
+int64_t net_dns_task_begin_time_ms(net_dns_task_t task) {
+    return task->m_begin_time_ms;
+}
+
+int64_t net_dns_task_complete_time_ms(net_dns_task_t task) {
+    return task->m_complete_time_ms;
+}
+

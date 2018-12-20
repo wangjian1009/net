@@ -27,7 +27,11 @@ void net_dns_task_ctx_set_retry_count(net_dns_task_ctx_t ctx, uint16_t count);
 uint16_t net_dns_task_ctx_timeout(net_dns_task_ctx_t ctx);
 int net_dns_task_ctx_set_timeout(net_dns_task_ctx_t ctx, uint16_t timeout_ms);
 
+int64_t net_dns_task_ctx_begin_time_ms(net_dns_task_ctx_t ctx);
+int64_t net_dns_task_ctx_complete_time_ms(net_dns_task_ctx_t ctx);
+
 void net_dns_task_ctx_set_success(net_dns_task_ctx_t ctx);
+void net_dns_task_ctx_set_empty(net_dns_task_ctx_t ctx);
 void net_dns_task_ctx_set_error(net_dns_task_ctx_t ctx);
 
 #define net_dns_task_ctx_it_next(it) ((it)->next ? (it)->next(it) : NULL)

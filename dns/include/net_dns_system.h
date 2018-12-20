@@ -37,6 +37,7 @@ typedef enum net_dns_task_state {
     net_dns_task_state_init,
     net_dns_task_state_runing,
     net_dns_task_state_success,
+    net_dns_task_state_empty,
     net_dns_task_state_error,
 } net_dns_task_state_t;
 
