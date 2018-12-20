@@ -315,6 +315,8 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
                 }
             }
 
+            if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) break;
+            
             assert(endpoint->m_fd != -1);
             int bytes = cpe_recv(endpoint->m_fd, rbuf, capacity, 0);
             if (bytes > 0) {
