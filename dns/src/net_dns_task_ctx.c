@@ -1,4 +1,5 @@
 #include "assert.h"
+#include "cpe/pal/pal_stdio.h"
 #include "cpe/utils/time_utils.h"
 #include "net_timer.h"
 #include "net_dns_task_ctx_i.h"
@@ -124,6 +125,7 @@ void net_dns_task_ctx_start(net_dns_task_ctx_t ctx) {
                 && (ctx->m_timeout_timer == NULL || !net_timer_is_active(ctx->m_timeout_timer)))
             {
                 if (net_dns_task_ctx_update_timeout(ctx) != 0) {
+                    CPE_ERROR(manage->m_em, "xxxx 1");
                     net_dns_task_ctx_set_error(ctx);
                     return;
                 }
@@ -206,6 +208,7 @@ static void net_dns_task_ctx_do_timeout(net_timer_t timer, void * input_ctx) {
                     && (ctx->m_timeout_timer == NULL || !net_timer_is_active(ctx->m_timeout_timer)))
                 {
                     if (net_dns_task_ctx_update_timeout(ctx) != 0) {
+                        CPE_ERROR(manage->m_em, "xxxx 2");
                         net_dns_task_ctx_set_error(ctx);
                         return;
                     }
@@ -251,6 +254,27 @@ static void net_dns_task_ctx_set_state_i(
 
     ctx->m_state = to_state;
 
+    switch(to_state) {
+    case net_dns_task_state_runing:
+        ctx->m_begin_time_ms = cur_time_ms();
+        break;
+    case net_dns_task_state_success:
+    case net_dns_task_state_empty:
+    case net_dns_task_state_error:
+        ctx->m_complete_time_ms = cur_time_ms();
+        CPE_INFO(
+            manage->m_em, "dns-cli: query %s --> %s: state %s ==> %s, begin_time_ms=" FMT_UINT64_T ", end_time_ms=" FMT_UINT64_T,
+            task->m_entry->m_hostname,
+            net_dns_source_dump(net_dns_manage_tmp_buffer(manage), ctx->m_source),
+            net_dns_task_state_str(ctx->m_state),
+            net_dns_task_state_str(to_state),
+            ctx->m_begin_time_ms,
+            ctx->m_complete_time_ms);
+        break;
+    default:
+        break;
+    }
+    
     if (task->m_step_current == ctx->m_step) {
         net_dns_task_state_t step_state;
     CHECK_STEP_STATE:
@@ -263,15 +287,12 @@ static void net_dns_task_ctx_set_state_i(
             net_dns_task_update_state(task, net_dns_task_state_error);
             return;
         case net_dns_task_state_runing:
-            ctx->m_begin_time_ms = cur_time_ms();
             break;
         case net_dns_task_state_success:
-            ctx->m_complete_time_ms = cur_time_ms();
             net_dns_task_update_state(task, net_dns_task_calc_state(task));
             break;
         case net_dns_task_state_empty:
         case net_dns_task_state_error:
-            ctx->m_complete_time_ms = cur_time_ms();
             if (TAILQ_NEXT(task->m_step_current, m_next)) {
                 task->m_step_current = TAILQ_NEXT(task->m_step_current, m_next);
                 net_dns_task_step_start(task->m_step_current);
