@@ -167,7 +167,12 @@ int net_ev_endpoint_connect(net_endpoint_t base_endpoint) {
         }
         else {
             net_ev_endpoint_connect_log_connect_error(driver, endpoint, base_endpoint, cpe_sock_errno(), 1);
+
+            net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_network_error);
             net_ev_endpoint_close_sock(driver, endpoint);
+
+            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) return -1;
+
             return -1;
         }
     }
