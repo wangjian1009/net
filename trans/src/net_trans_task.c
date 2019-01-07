@@ -13,7 +13,8 @@ static net_address_t net_trans_task_parse_address(
     net_trans_manage_t mgr, const char * url, uint8_t * is_https, const char * * relative_url);
 static net_http_res_op_result_t net_trans_task_on_body(void * ctx, net_http_req_t req, void * data, size_t data_size);
 static net_http_res_op_result_t net_trans_task_on_complete(void * ctx, net_http_req_t req, net_http_res_result_t result);
-
+static net_http_res_op_result_t net_trans_task_on_head(void * ctx, net_http_req_t req, const char * name, const char * value);
+        
 net_trans_task_t
 net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const char * uri) {
     uint8_t is_https;
@@ -61,6 +62,7 @@ net_trans_task_t net_trans_task_create_relative(
 
     task->m_result = net_trans_result_unknown;
     task->m_res_code = 0;
+    task->m_res_message[0] = 0;
     task->m_res_mine[0] = 0;
     task->m_res_charset[0] = 0;
     
@@ -265,7 +267,7 @@ int net_trans_task_start(net_trans_task_t task) {
             task->m_http_req,
             task,
             NULL,
-            NULL,
+            net_trans_task_on_head,
             task->m_write_op ? net_trans_task_on_body : NULL,
             net_trans_task_on_complete) != 0)
     {
@@ -370,6 +372,20 @@ static net_address_t net_trans_task_parse_address(
     }
     
     return address;
+}
+
+static net_http_res_op_result_t net_trans_task_on_head(void * ctx, net_http_req_t req, const char * name, const char * value) {
+    net_trans_task_t task = ctx;
+
+    if (task->m_res_code == 0) {
+        task->m_res_code = net_http_req_res_code(req);
+        cpe_str_dup(task->m_res_message, sizeof(task->m_res_message), net_http_req_res_message(req));
+    }
+
+    /* if (strncmp(name, "") == 0) { */
+    /* } */
+    
+    return net_http_res_op_success;
 }
 
 static net_http_res_op_result_t net_trans_task_on_body(void * ctx, net_http_req_t req, void * data, size_t data_size) {

@@ -54,6 +54,7 @@ net_http_req_create(net_http_endpoint_t http_ep, net_http_req_method_t method, c
     req->m_res_on_body = NULL;
     req->m_res_on_complete = NULL;
     req->m_res_code = 0;
+    req->m_res_message[0] = 0;
 
     TAILQ_INSERT_TAIL(&http_ep->m_reqs, req, m_next);
     

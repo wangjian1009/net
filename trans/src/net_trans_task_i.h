@@ -20,6 +20,7 @@ struct net_trans_task {
     /*result*/
     net_trans_task_result_t m_result;
     int16_t m_res_code;
+    char m_res_message[16];
     char m_res_mine[16];
     char m_res_charset[16];
 

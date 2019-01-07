@@ -53,6 +53,10 @@ uint16_t net_http_req_res_code(net_http_req_t req) {
     return req->m_res_code;
 }
 
+const char * net_http_req_res_message(net_http_req_t req) {
+    return req->m_res_message;
+}
+
 uint32_t net_http_req_res_length(net_http_req_t req) {
     return req->m_res_trans_encoding == net_http_trans_encoding_none ? req->m_res_content.m_length : 0;
 }
@@ -141,7 +145,8 @@ static int net_http_req_input_read_head_line(
         char * msg = sep2 + 1;
 
         req->m_res_code = (uint16_t)atoi(code);
-        
+        cpe_str_dup(req->m_res_message, sizeof(req->m_res_message), msg);
+
         if (!req->m_res_ignore && req->m_res_on_begin) {
             switch(req->m_res_on_begin(req->m_res_ctx, req, req->m_res_code, msg)) {
             case net_http_res_op_success:

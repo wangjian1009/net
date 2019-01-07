@@ -49,6 +49,7 @@ int net_http_req_set_reader(
     net_http_req_on_res_complete_fun_t on_complete);
 
 uint16_t net_http_req_res_code(net_http_req_t req);
+const char * net_http_req_res_message(net_http_req_t req);
 uint32_t net_http_req_res_length(net_http_req_t req);
 
 const char * net_http_res_state_str(net_http_res_state_t res_state);
