@@ -382,6 +382,7 @@ static net_http_res_op_result_t net_trans_task_on_body(void * ctx, net_http_req_
 
         if (task->m_is_free) {
             net_trans_task_free(task);
+            return net_http_res_op_ignore;
         }
     }
     
@@ -435,6 +436,7 @@ static net_http_res_op_result_t net_trans_task_on_complete(void * ctx, net_http_
 
         if (task->m_is_free) {
             net_trans_task_free(task);
+            return net_http_res_op_ignore;
         }
     }
     
