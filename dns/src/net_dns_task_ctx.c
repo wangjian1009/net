@@ -243,38 +243,38 @@ int net_dns_task_ctx_set_timeout(net_dns_task_ctx_t ctx, uint16_t timeout_ms) {
 static void net_dns_task_ctx_set_state_i(
     net_dns_manage_t manage, net_dns_task_t task, net_dns_task_ctx_t ctx, net_dns_task_state_t to_state)
 {
-    if (manage->m_debug) {
-        CPE_INFO(
-            manage->m_em, "dns-cli: query %s --> %s: state %s ==> %s",
-            task->m_entry->m_hostname,
-            net_dns_source_dump(net_dns_manage_tmp_buffer(manage), ctx->m_source),
-            net_dns_task_state_str(ctx->m_state),
-            net_dns_task_state_str(to_state));
-    }
-
-    ctx->m_state = to_state;
-
     switch(to_state) {
+    case net_dns_task_state_init:
+        break;
     case net_dns_task_state_runing:
         ctx->m_begin_time_ms = cur_time_ms();
+        if (manage->m_debug) {
+            CPE_INFO(
+                manage->m_em, "dns-cli: query %s --> %s: state %s ==> %s",
+                task->m_entry->m_hostname,
+                net_dns_source_dump(net_dns_manage_tmp_buffer(manage), ctx->m_source),
+                net_dns_task_state_str(ctx->m_state),
+                net_dns_task_state_str(to_state));
+        }
         break;
     case net_dns_task_state_success:
     case net_dns_task_state_empty:
     case net_dns_task_state_error:
         ctx->m_complete_time_ms = cur_time_ms();
         CPE_INFO(
-            manage->m_em, "dns-cli: query %s --> %s: state %s ==> %s, begin_time_ms=" FMT_UINT64_T ", end_time_ms=" FMT_UINT64_T,
+            manage->m_em, "dns-cli: query %s --> %s: state %s ==> %s, %.2fs, (" FMT_UINT64_T " -- " FMT_UINT64_T ")",
             task->m_entry->m_hostname,
             net_dns_source_dump(net_dns_manage_tmp_buffer(manage), ctx->m_source),
             net_dns_task_state_str(ctx->m_state),
             net_dns_task_state_str(to_state),
+            ((float)(ctx->m_complete_time_ms - ctx->m_begin_time_ms) / 1000.0f),
             ctx->m_begin_time_ms,
             ctx->m_complete_time_ms);
         break;
-    default:
-        break;
     }
     
+    ctx->m_state = to_state;
+
     if (task->m_step_current == ctx->m_step) {
         net_dns_task_state_t step_state;
     CHECK_STEP_STATE:
