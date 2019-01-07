@@ -16,6 +16,8 @@ int net_dns_svr_set_query_policy(net_dns_svr_t dns_svr, const char * policy);
 
 net_schedule_t net_dns_svr_schedule(net_dns_svr_t dns_svr);
 
+net_protocol_t net_dns_svr_protocol(net_dns_svr_t dns_svr);
+
 NET_END_DECL
 
 #endif

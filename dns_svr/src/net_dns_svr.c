@@ -107,6 +107,10 @@ net_schedule_t net_dns_svr_schedule(net_dns_svr_t dns_svr) {
     return dns_svr->m_schedule;
 }
 
+net_protocol_t net_dns_svr_protocol(net_dns_svr_t dns_svr) {
+    return dns_svr->m_dns_protocol;
+}
+
 mem_buffer_t net_dns_svr_tmp_buffer(net_dns_svr_t dns_svr) {
     return net_schedule_tmp_buffer(dns_svr->m_schedule);
 }
