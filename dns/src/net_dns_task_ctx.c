@@ -125,7 +125,6 @@ void net_dns_task_ctx_start(net_dns_task_ctx_t ctx) {
                 && (ctx->m_timeout_timer == NULL || !net_timer_is_active(ctx->m_timeout_timer)))
             {
                 if (net_dns_task_ctx_update_timeout(ctx) != 0) {
-                    CPE_ERROR(manage->m_em, "xxxx 1");
                     net_dns_task_ctx_set_error(ctx);
                     return;
                 }
@@ -208,7 +207,6 @@ static void net_dns_task_ctx_do_timeout(net_timer_t timer, void * input_ctx) {
                     && (ctx->m_timeout_timer == NULL || !net_timer_is_active(ctx->m_timeout_timer)))
                 {
                     if (net_dns_task_ctx_update_timeout(ctx) != 0) {
-                        CPE_ERROR(manage->m_em, "xxxx 2");
                         net_dns_task_ctx_set_error(ctx);
                         return;
                     }

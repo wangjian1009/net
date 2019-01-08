@@ -147,7 +147,6 @@ int net_dns_ns_cli_endpoint_on_state_change(net_endpoint_t base_endpoint, net_en
             net_dns_ns_cli_protocol_t dns_protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
             net_dns_manage_t manage = dns_protocol->m_manage;
             
-            CPE_ERROR(manage->m_em, "xxxx 3");
             net_dns_task_ctx_set_error(dns_cli->m_task_ctx);
             dns_cli->m_task_ctx = NULL;
         }
