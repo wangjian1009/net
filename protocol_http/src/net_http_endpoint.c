@@ -604,9 +604,11 @@ static void net_http_endpoint_reset_data(net_http_protocol_t http_protocol, net_
 
     while(!TAILQ_EMPTY(&http_ep->m_reqs)) {
         net_http_req_t req = TAILQ_FIRST(&http_ep->m_reqs);
-        
-        if (!req->m_res_ignore && req->m_res_on_complete) {
-            req->m_res_on_complete(req->m_res_ctx, req, result);
+
+        if (req->m_res_state != net_http_res_state_completed) {
+            if (!req->m_res_ignore && req->m_res_on_complete) {
+                req->m_res_on_complete(req->m_res_ctx, req, result);
+            }
         }
 
         net_http_req_free(req);

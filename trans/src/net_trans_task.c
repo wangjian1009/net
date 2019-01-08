@@ -107,7 +107,6 @@ CREATED_ERROR:
             http_ep = NULL;
         }
         
-        task->m_ep = (net_trans_http_endpoint_t)mgr;
         TAILQ_INSERT_TAIL(&mgr->m_free_tasks, task, m_next_for_mgr);
         task = NULL;
     }
@@ -149,7 +148,6 @@ void net_trans_task_free(net_trans_task_t task) {
     net_trans_manage_t mgr = task->m_mgr;
     cpe_hash_table_remove_by_ins(&mgr->m_tasks, task);
 
-    task->m_ep = (net_trans_http_endpoint_t)mgr;
     TAILQ_INSERT_TAIL(&mgr->m_free_tasks, task, m_next_for_mgr);
 }
 
@@ -168,7 +166,7 @@ void net_trans_task_free_all(net_trans_manage_t mgr) {
 }
 
 void net_trans_task_real_free(net_trans_task_t task) {
-    net_trans_manage_t mgr = (net_trans_manage_t)task->m_ep;
+    net_trans_manage_t mgr = task->m_mgr;
 
     TAILQ_REMOVE(&mgr->m_free_tasks, task, m_next_for_mgr);
 
@@ -261,7 +259,7 @@ int net_trans_task_set_body(net_trans_task_t task, void const * data, uint32_t d
 }
 
 int net_trans_task_start(net_trans_task_t task) {
-    net_trans_manage_t mgr = task->m_ep->m_host->m_mgr;
+    net_trans_manage_t mgr = task->m_mgr;
 
     if (net_http_req_set_reader(
             task->m_http_req,
@@ -407,7 +405,7 @@ static net_http_res_op_result_t net_trans_task_on_body(void * ctx, net_http_req_
 
 static net_http_res_op_result_t net_trans_task_on_complete(void * ctx, net_http_req_t req, net_http_res_result_t result) {
     net_trans_task_t task = ctx;
-    net_trans_manage_t mgr = task->m_ep->m_host->m_mgr;
+    net_trans_manage_t mgr = task->m_mgr;
 
     switch(result) {
     case net_http_res_complete:
