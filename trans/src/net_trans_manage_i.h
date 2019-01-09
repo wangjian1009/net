@@ -32,7 +32,8 @@ struct net_trans_manage {
     
     struct cpe_hash_table m_hosts;
     struct cpe_hash_table m_tasks;
-    
+
+    char * m_request_id_tag;
     uint32_t m_max_task_id;
 
     net_trans_host_list_t m_free_hosts;

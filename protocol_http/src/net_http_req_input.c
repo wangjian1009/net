@@ -223,7 +223,9 @@ static int net_http_req_input_read_head_line(
                     req->m_id, value);
             }
         }
-
+        else if (strcasecmp(name, "X-Request-Id") == 0) {
+        }
+        
         if (!req->m_res_ignore && req->m_res_on_head) {
             switch(req->m_res_on_head(req->m_res_ctx, req, name, value)) {
             case net_http_res_op_success:

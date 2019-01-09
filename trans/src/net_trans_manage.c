@@ -1,5 +1,6 @@
 #include "assert.h"
 #include "cpe/pal/pal_strings.h"
+#include "cpe/utils/string_utils.h"
 #include "net_schedule.h"
 #include "net_address.h"
 #include "net_timer.h"
@@ -22,8 +23,6 @@ net_trans_manage_t net_trans_manage_create(
         return NULL;
     }
     
-    bzero(manage, sizeof(*manage));
-
     manage->m_alloc = alloc;
     manage->m_em = em;
     manage->m_debug = 0;
@@ -32,6 +31,9 @@ net_trans_manage_t net_trans_manage_create(
     manage->m_watcher_ctx = NULL;
     manage->m_watcher_fun = NULL;
     manage->m_cfg_host_endpoint_limit = 0;
+
+    manage->m_request_id_tag = NULL;
+    manage->m_max_task_id = 0;
 
     TAILQ_INIT(&manage->m_free_tasks);
     TAILQ_INIT(&manage->m_free_hosts);
@@ -86,6 +88,11 @@ void net_trans_manage_free(net_trans_manage_t mgr) {
         mgr->m_http_protocol = NULL;
     }
 
+    if (mgr->m_request_id_tag) {
+        mem_free(mgr->m_alloc, mgr->m_request_id_tag);
+        mgr->m_request_id_tag = NULL;
+    }
+    
     while(!TAILQ_EMPTY(&mgr->m_free_tasks)) {
         net_trans_task_real_free(TAILQ_FIRST(&mgr->m_free_tasks));
     }
@@ -103,6 +110,30 @@ uint8_t net_trans_manage_debug(net_trans_manage_t manage) {
 
 void net_trans_manage_set_debug(net_trans_manage_t manage, uint8_t debug) {
     manage->m_debug = debug;
+}
+
+const char * net_trans_manage_request_id_tag(net_trans_manage_t manage) {
+    return manage->m_request_id_tag ? manage->m_request_id_tag : "";
+}
+
+int net_trans_manage_set_request_id_tag(net_trans_manage_t manage, const char * tag) {
+    char * new_tag = NULL;
+
+    if (tag) {
+        new_tag = cpe_str_mem_dup(manage->m_alloc, tag);
+        if (new_tag == NULL) {
+            CPE_ERROR(manage->m_em, "trans-cli: dup tag %s fail", tag);
+            return -1;
+        }
+    }
+
+    if (manage->m_request_id_tag) {
+        mem_free(manage->m_alloc, manage->m_request_id_tag);
+    }
+
+    manage->m_request_id_tag = new_tag;
+    
+    return 0;
 }
 
 void net_trans_manage_set_data_watcher(

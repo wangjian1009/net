@@ -146,6 +146,12 @@ static int net_http_req_complete_head(net_http_protocol_t http_protocol, net_htt
                 ? "Close"
                 : "Upgrade") != 0) return -1;
     }
+
+    if (http_ep->m_request_id_tag) {
+        char request_id[32];
+        snprintf(request_id, sizeof(request_id), "%d", http_req->m_id);
+        if (net_http_req_write_head_pair(http_req, http_ep->m_request_id_tag, request_id) != 0) return -1;
+    }
     
     if (net_http_endpoint_write(http_protocol, http_ep, http_req, "\r\n", 2) != 0) return -1;
     http_req->m_head_size += 2;

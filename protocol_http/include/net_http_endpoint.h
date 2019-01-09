@@ -37,6 +37,9 @@ int net_http_endpoint_set_remote(net_http_endpoint_t http_ep, const char * url);
 void net_http_endpoint_enable(net_http_endpoint_t http_ep);
 int net_http_endpoint_disable(net_http_endpoint_t http_ep);
 
+const char * net_http_endpoint_request_id_tag(net_http_endpoint_t http_ep);
+int net_http_endpoint_set_request_id_tag(net_http_endpoint_t http_ep, const char * tag);
+
 int net_http_endpoint_flush(net_http_endpoint_t http_ep);
 
 void * net_http_endpoint_data(net_http_endpoint_t http_ep);

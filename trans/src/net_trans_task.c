@@ -86,7 +86,7 @@ net_trans_task_t net_trans_task_create_relative(
         CPE_ERROR(mgr->m_em, "trans: task: http req: write head host fail!");
         goto CREATED_ERROR;
     }
-        
+
     cpe_hash_entry_init(&task->m_hh_for_mgr);
     if (cpe_hash_table_insert_unique(&mgr->m_tasks, task) != 0) {
         CPE_ERROR(mgr->m_em, "trans: task: id duplicate!");
@@ -380,9 +380,6 @@ static net_http_res_op_result_t net_trans_task_on_head(void * ctx, net_http_req_
         cpe_str_dup(task->m_res_message, sizeof(task->m_res_message), net_http_req_res_message(req));
     }
 
-    /* if (strncmp(name, "") == 0) { */
-    /* } */
-    
     return net_http_res_op_success;
 }
 
