@@ -5,18 +5,6 @@
 
 NET_BEGIN_DECL
 
-typedef enum net_http_trans_encoding {
-    net_http_trans_encoding_none
-    , net_http_trans_encoding_trunked
-} net_http_trans_encoding_t;
-
-typedef enum net_http_trunked_state {
-    net_http_trunked_length
-    , net_http_trunked_content
-    , net_http_trunked_content_complete
-    , net_http_trunked_complete
-} net_http_trunked_state_t;
-
 struct net_http_req {
     net_http_endpoint_t m_http_ep;
     TAILQ_ENTRY(net_http_req) m_next;
@@ -30,16 +18,6 @@ struct net_http_req {
     uint32_t m_flushed_size;
     
     /*res*/
-    net_http_res_state_t m_res_state;
-    net_http_trans_encoding_t m_res_trans_encoding;
-    struct {
-        uint32_t m_length;
-    } m_res_content;
-    struct {
-        net_http_trunked_state_t m_state;
-        uint16_t m_count;
-        uint32_t m_length;
-    } m_res_trunked;
     void * m_res_ctx;
     uint8_t m_res_ignore;
     net_http_req_on_res_begin_fun_t m_res_on_begin;
@@ -52,18 +30,6 @@ struct net_http_req {
 
 int net_http_req_do_send_first_line(
     net_http_protocol_t http_protocol, net_http_req_t http_req, net_http_req_method_t method, const char * url);
-
-int net_http_req_process_response_head_line(
-    net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t req,
-    net_endpoint_t endpoint, char * line, uint32_t line_num);
-
-int net_http_req_input_body_encoding_none(
-    net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t req,
-    net_endpoint_t endpoint);
-
-int net_http_req_input_body_encoding_trunked(
-    net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t req,
-    net_endpoint_t endpoint);
 
 void net_http_req_debug_dump_head(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t http_req, char * buf);
 

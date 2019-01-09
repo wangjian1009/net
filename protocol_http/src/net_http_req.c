@@ -44,10 +44,7 @@ net_http_req_create(net_http_endpoint_t http_ep, net_http_req_method_t method, c
     req->m_body_size = 0;
     req->m_flushed_size = 0;
 
-    req->m_res_state = net_http_res_state_reading_head;
     req->m_res_ignore = 0;
-    req->m_res_trans_encoding = net_http_trans_encoding_none;
-    req->m_res_content.m_length = 0;
     req->m_res_ctx = NULL;
     req->m_res_on_begin = NULL;
     req->m_res_on_head = NULL;
@@ -71,6 +68,10 @@ void net_http_req_free(net_http_req_t req) {
     net_http_endpoint_t http_ep = req->m_http_ep;
     net_http_protocol_t http_protocol = net_http_endpoint_protocol(http_ep);
 
+    if (http_ep->m_current_res.m_req == req) {
+        http_ep->m_current_res.m_req = NULL;
+    }
+    
     TAILQ_REMOVE(&http_ep->m_reqs, req, m_next);
     
     req->m_http_ep = (net_http_endpoint_t)http_protocol;
@@ -85,6 +86,70 @@ void net_http_req_real_free(net_http_req_t req) {
     mem_free(http_protocol->m_alloc, req);
 }
 
+uint16_t net_http_req_id(net_http_req_t req) {
+    return req->m_id;
+}
+
+net_http_endpoint_t net_http_req_ep(net_http_req_t req) {
+    return req->m_http_ep;
+}
+
+int net_http_req_set_reader(
+    net_http_req_t req,
+    void * ctx,
+    net_http_req_on_res_begin_fun_t on_begin,
+    net_http_req_on_res_head_fun_t on_head,
+    net_http_req_on_res_body_fun_t on_body,
+    net_http_req_on_res_complete_fun_t on_complete)
+{
+    net_http_protocol_t http_protocol = net_http_endpoint_protocol(req->m_http_ep);
+    
+    if (req->m_http_ep->m_current_res.m_req == req) {
+        CPE_ERROR(
+            http_protocol->m_em, "http: %s: req %d: req is in process, can`t set reader!",
+            net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), req->m_http_ep->m_endpoint),
+            req->m_id);
+        return -1;
+    }
+
+    req->m_res_ctx = ctx;
+    req->m_res_on_begin = on_begin;
+    req->m_res_on_head = on_head;
+    req->m_res_on_body = on_body;
+    req->m_res_on_complete = on_complete;
+    
+    return 0;
+}
+
+uint16_t net_http_req_res_code(net_http_req_t req) {
+    return req->m_res_code;
+}
+
+const char * net_http_req_res_message(net_http_req_t req) {
+    return req->m_res_message;
+}
+
+uint32_t net_http_req_res_length(net_http_req_t req) {
+    if (req->m_http_ep->m_current_res.m_req != req) {
+        return 0;
+    }
+
+    return req->m_http_ep->m_current_res.m_trans_encoding == net_http_trans_encoding_none
+        ? req->m_http_ep->m_current_res.m_res_content.m_length
+        : 0;
+}
+
+const char * net_http_res_state_str(net_http_res_state_t res_state) {
+    switch(res_state) {
+    case net_http_res_state_reading_head:
+        return "http-res-reading-head";
+    case net_http_res_state_reading_body:
+        return "http-res-reading-body";
+    case net_http_res_state_completed:
+        return "http-res-completed";
+    }
+}
+
 const char * net_http_res_result_str(net_http_res_result_t res_result) {
     switch(res_result) {
     case net_http_res_complete:
@@ -96,12 +161,4 @@ const char * net_http_res_result_str(net_http_res_result_t res_result) {
     case net_http_res_disconnected:
         return "http-res-disconnected";
     }
-}
-
-uint16_t net_http_req_id(net_http_req_t req) {
-    return req->m_id;
-}
-
-net_http_endpoint_t net_http_req_ep(net_http_req_t req) {
-    return req->m_http_ep;
 }

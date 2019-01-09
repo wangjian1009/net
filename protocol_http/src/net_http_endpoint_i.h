@@ -20,6 +20,21 @@ struct net_http_endpoint {
     char * m_request_id_tag;
     uint16_t m_max_req_id;
     net_http_req_list_t m_reqs;
+
+    struct net_http_res_ctx {
+        net_http_req_t m_req;
+        net_http_res_state_t m_state;
+        net_http_connection_type_t m_connection_type;
+        net_http_trans_encoding_t m_trans_encoding;
+        struct {
+            uint32_t m_length;
+        } m_res_content;
+        struct {
+            net_http_trunked_state_t m_state;
+            uint16_t m_count;
+            uint32_t m_length;
+        } m_res_trunked;
+    }  m_current_res;
 };
 
 int net_http_endpoint_init(net_endpoint_t endpoint);
@@ -32,6 +47,9 @@ int net_http_endpoint_set_state(net_http_endpoint_t http_ep, net_http_state_t st
 int net_http_endpoint_write(
     net_http_protocol_t http_protocol,
     net_http_endpoint_t http_ep, net_http_req_t http_req, void const * data, uint32_t size);
+
+int net_http_endpoint_do_process(
+    net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_endpoint_t endpoint);
 
 NET_END_DECL
 

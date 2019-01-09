@@ -9,6 +9,18 @@ NET_BEGIN_DECL
 typedef TAILQ_HEAD(net_http_req_list, net_http_req) net_http_req_list_t;
 typedef TAILQ_HEAD(net_http_ssl_ctx_list, net_http_ssl_ctx) net_http_ssl_ctx_list_t;
 
+typedef enum net_http_trans_encoding {
+    net_http_trans_encoding_none
+    , net_http_trans_encoding_trunked
+} net_http_trans_encoding_t;
+
+typedef enum net_http_trunked_state {
+    net_http_trunked_length
+    , net_http_trunked_content
+    , net_http_trunked_content_complete
+    , net_http_trunked_complete
+} net_http_trunked_state_t;
+
 struct net_http_protocol {
     mem_allocrator_t m_alloc;
     error_monitor_t m_em;
