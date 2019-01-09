@@ -21,6 +21,11 @@ static int net_http_endpoint_notify_state_changed(net_http_endpoint_t http_ep, n
 static int net_http_endpoint_do_ssl_handshake(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep);
 static int net_http_endpoint_do_ssl_encode(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep);
 static int net_http_endpoint_do_ssl_decode(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep);
+static int net_http_endpoint_do_process(
+    net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_endpoint_t endpoint,
+    net_http_req_t * processing_req);
+static void net_http_endpoint_do_parse_head_lines(char * data, char * lines[], uint8_t *line_count);
+static int net_http_endpoint_do_parse_request_id(const char * tag, uint32_t * request_id, char * lines[], uint8_t line_count);
 
 net_http_endpoint_t
 net_http_endpoint_create(net_driver_t driver, net_http_protocol_t http_protocol) {
@@ -355,19 +360,11 @@ int net_http_endpoint_input(net_endpoint_t endpoint) {
     
     while(http_ep->m_state == net_http_state_established && !net_endpoint_buf_is_empty(endpoint, net_ep_buf_http_in)) {
         if (http_ep->m_connection_type != net_http_connection_type_upgrade) {
-            net_http_req_t processing_req = TAILQ_FIRST(&http_ep->m_reqs);
-            if (processing_req == NULL) {
-                CPE_ERROR(
-                    http_protocol->m_em,
-                    "http: %s: input without req or upgraded-processor!",
-                    net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint));
-                return -1;
-            }
-            
-            int rv = net_http_endpoint_req_input(http_protocol, http_ep, processing_req);
-            if (rv < 0) return -1;
+            net_http_req_t processing_req = NULL;
 
-            if (processing_req->m_res_state == net_http_res_state_completed) {
+            if (net_http_endpoint_do_process(http_protocol, http_ep, endpoint, &processing_req) != 0) return -1;
+            
+            if (processing_req != NULL && processing_req->m_res_state == net_http_res_state_completed) {
                 net_http_req_free(processing_req);
 
                 if (http_ep->m_connection_type == net_http_connection_type_close) {
@@ -771,6 +768,152 @@ static int net_http_endpoint_do_ssl_decode(net_http_protocol_t http_protocol, ne
 
         return 0;
     }
+}
+
+static int net_http_endpoint_do_process(
+    net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_endpoint_t endpoint,
+    net_http_req_t * processing_req)
+{
+    void * buf;
+    uint32_t buf_size;
+
+    *processing_req = TAILQ_FIRST(&http_ep->m_reqs);
+    if (*processing_req == NULL) {
+        CPE_ERROR(
+            http_protocol->m_em,
+            "http: %s: input without req or upgraded-processor!",
+            net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint));
+        return -1;
+    }
+
+    if ((*processing_req)->m_res_state == net_http_res_state_reading_head) {
+        if (net_endpoint_buf_by_str(endpoint, net_ep_buf_http_in, "\r\n\r\n", &buf, &buf_size)) {
+            CPE_ERROR(
+                http_protocol->m_em, "http: %s: req %d: response: search sep fail",
+                net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
+                (*processing_req)->m_id);
+            return -1;
+        }
+
+        if (buf == NULL) {
+            if(net_endpoint_buf_size(endpoint, net_ep_buf_http_in) > 8192) {
+                CPE_ERROR(
+                    http_protocol->m_em, "http: %s: handshake response: Too big response head!, size=%d",
+                    net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
+                    net_endpoint_buf_size(endpoint, net_ep_buf_http_in));
+                return -1;
+            }
+            else {
+                return 0;
+            }
+        }
+
+        if (net_endpoint_protocol_debug(endpoint) >= 2) {
+            CPE_INFO(
+                http_protocol->m_em, "http: %s: req %d: <== head\n%s",
+                net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
+                (*processing_req)->m_id, buf);
+        }
+
+        char * head_lines[100];
+        uint8_t head_line_count = CPE_ARRAY_SIZE(head_lines);
+        net_http_endpoint_do_parse_head_lines(buf, head_lines, &head_line_count);
+
+        if (http_ep->m_request_id_tag) {
+            uint32_t request_id;
+            if (net_http_endpoint_do_parse_request_id(http_ep->m_request_id_tag, &request_id, head_lines, head_line_count) != 0) {
+                CPE_ERROR(
+                    http_protocol->m_em, "http: %s: req %d: <== no request-id tag %s",
+                    net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
+                    (*processing_req)->m_id, http_ep->m_request_id_tag);
+                return -1;
+            }
+
+            while( (*processing_req)->m_id != request_id) {
+                CPE_ERROR(
+                    http_protocol->m_em, "http: %s: req %d: <== request id mismatch, current id is %d",
+                    net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
+                    (*processing_req)->m_id, request_id);
+
+                if (!(*processing_req)->m_res_ignore && (*processing_req)->m_res_on_complete) {
+                    (*processing_req)->m_res_on_complete((*processing_req)->m_res_ctx, *processing_req, net_http_res_canceled);
+                }
+                net_http_req_free(*processing_req);
+                *processing_req = TAILQ_FIRST(&http_ep->m_reqs);
+                if (*processing_req == NULL) return -1;
+            }
+        }
+        
+        uint8_t head_line_num = 0;
+        for(; head_line_num < head_line_count; head_line_num++) {
+            if (net_http_req_process_response_head_line(
+                    http_protocol, http_ep, *processing_req, endpoint, head_lines[head_line_num], head_line_num) != 0)
+            {
+                return -1;
+            }
+        }
+        
+        net_endpoint_buf_consume(endpoint, net_ep_buf_http_in, buf_size);
+        
+        (*processing_req)->m_res_state = net_http_res_state_reading_body;
+    }
+
+    if ((*processing_req)->m_res_state == net_http_res_state_reading_body) {
+        switch((*processing_req)->m_res_trans_encoding) {
+        case net_http_trans_encoding_none:
+            if (net_http_req_input_body_encoding_none(http_protocol, http_ep, *processing_req, endpoint) != 0) return -1;
+            break;
+        case net_http_trans_encoding_trunked:
+            if (net_http_req_input_body_encoding_trunked(http_protocol, http_ep, *processing_req, endpoint) != 0) return -1;
+            break;
+        }
+    }
+
+    return 0;
+}
+
+static void net_http_endpoint_do_parse_head_lines(char * data, char * lines[], uint8_t *line_count) {
+    uint8_t line_capacity = *line_count;
+
+    *line_count = 0;
+    char * line = data;
+    char * sep = strstr(line, "\r\n");
+    for(; *line_count < line_capacity && sep ; line = sep + 2, sep = strstr(line, "\r\n")) {
+        *sep = 0;
+        lines[(*line_count)++] = line;
+    }
+
+    if (*line_count < line_capacity && line[0]) {
+        lines[(*line_count)++] = line;
+    }
+}
+
+static int net_http_endpoint_do_parse_request_id(const char * tag, uint32_t * request_id, char * lines[], uint8_t line_count) {
+    uint8_t i;
+
+    for(i = 0; i < line_count; ++i) {
+        char * line = lines[i];
+
+        char * sep = strchr(line, ':');
+        if (sep == NULL) continue;
+
+        char * name = line;
+        char * value = cpe_str_trim_head(sep + 1);
+
+        sep = cpe_str_trim_tail(sep, line);
+
+        char save = *sep;
+        *sep = 0;
+
+        if (strcasecmp(name, tag) == 0) {
+            *request_id = atoi(value);
+            return 0;
+        }
+        
+        *sep = save;
+    }
+    
+    return -1;
 }
 
 const char * net_http_state_str(net_http_state_t state) {

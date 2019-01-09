@@ -53,7 +53,17 @@ struct net_http_req {
 int net_http_req_do_send_first_line(
     net_http_protocol_t http_protocol, net_http_req_t http_req, net_http_req_method_t method, const char * url);
 
-int net_http_endpoint_req_input(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t req);
+int net_http_req_process_response_head_line(
+    net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t req,
+    net_endpoint_t endpoint, char * line, uint32_t line_num);
+
+int net_http_req_input_body_encoding_none(
+    net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t req,
+    net_endpoint_t endpoint);
+
+int net_http_req_input_body_encoding_trunked(
+    net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t req,
+    net_endpoint_t endpoint);
 
 void net_http_req_debug_dump_head(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t http_req, char * buf);
 

@@ -72,7 +72,7 @@ void net_http_req_free(net_http_req_t req) {
     net_http_protocol_t http_protocol = net_http_endpoint_protocol(http_ep);
 
     TAILQ_REMOVE(&http_ep->m_reqs, req, m_next);
-
+    
     req->m_http_ep = (net_http_endpoint_t)http_protocol;
     TAILQ_INSERT_TAIL(&http_protocol->m_free_reqs, req, m_next);
 }

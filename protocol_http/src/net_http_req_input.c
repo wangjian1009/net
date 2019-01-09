@@ -6,20 +6,9 @@
 #include "net_endpoint.h"
 #include "net_http_req_i.h"
 
-static int net_http_req_input_read_head(
-    net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t req, net_endpoint_t endpoint, char * data);
-
 static int net_http_req_input_body_consume_body_part(
     net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t req,
     net_endpoint_t endpoint, uint16_t buf_sz);
-
-static int net_http_req_input_body_encoding_none(
-    net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t req,
-    net_endpoint_t endpoint);
-
-static int net_http_req_input_body_encoding_trunked(
-    net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t req,
-    net_endpoint_t endpoint);
 
 int net_http_req_set_reader(
     net_http_req_t req,
@@ -61,54 +50,6 @@ uint32_t net_http_req_res_length(net_http_req_t req) {
     return req->m_res_trans_encoding == net_http_trans_encoding_none ? req->m_res_content.m_length : 0;
 }
 
-int net_http_endpoint_req_input(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t req) {
-    net_endpoint_t endpoint = http_ep->m_endpoint;
-    void * buf;
-    uint32_t buf_size;
-
-    if (req->m_res_state == net_http_res_state_reading_head) {
-        if (net_endpoint_buf_by_str(endpoint, net_ep_buf_http_in, "\r\n\r\n", &buf, &buf_size)) {
-            CPE_ERROR(
-                http_protocol->m_em, "http: %s: req %d: response: search sep fail",
-                net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
-                req->m_id);
-            return -1;
-        }
-
-        if (buf == NULL) {
-            if(net_endpoint_buf_size(endpoint, net_ep_buf_http_in) > 8192) {
-                CPE_ERROR(
-                    http_protocol->m_em, "http: %s: handshake response: Too big response head!, size=%d",
-                    net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
-                    net_endpoint_buf_size(endpoint, net_ep_buf_http_in));
-                return -1;
-            }
-            else {
-                return 0;
-            }
-        }
-
-        if (net_http_req_input_read_head(http_protocol, http_ep, req, endpoint, buf) != 0) return -1;
-
-        net_endpoint_buf_consume(endpoint, net_ep_buf_http_in, buf_size);
-        
-        req->m_res_state = net_http_res_state_reading_body;
-    }
-
-    if (req->m_res_state == net_http_res_state_reading_body) {
-        switch(req->m_res_trans_encoding) {
-        case net_http_trans_encoding_none:
-            if (net_http_req_input_body_encoding_none(http_protocol, http_ep, req, endpoint) != 0) return -1;
-            break;
-        case net_http_trans_encoding_trunked:
-            if (net_http_req_input_body_encoding_trunked(http_protocol, http_ep, req, endpoint) != 0) return -1;
-            break;
-        }
-    }
-    
-    return 0;
-}
-
 const char * net_http_res_state_str(net_http_res_state_t res_state) {
     switch(res_state) {
     case net_http_res_state_reading_head:
@@ -120,7 +61,7 @@ const char * net_http_res_state_str(net_http_res_state_t res_state) {
     }
 }
 
-static int net_http_req_input_read_head_line(
+int net_http_req_process_response_head_line(
     net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t req,
     net_endpoint_t endpoint, char * line, uint32_t line_num)
 {
@@ -249,35 +190,6 @@ static int net_http_req_input_read_head_line(
     return 0;
 }
 
-static int net_http_req_input_read_head(
-    net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t req,
-    net_endpoint_t endpoint, char * data)
-{
-    if (net_endpoint_protocol_debug(endpoint) >= 2) {
-        CPE_INFO(
-            http_protocol->m_em, "http: %s: req %d: <== head\n%s",
-            net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
-            req->m_id,
-            data);
-    }
-
-    char * line = data;
-    char * sep = strstr(line, "\r\n");
-    uint32_t line_num = 0;
-    for(; sep; line = sep + 2, sep = strstr(line, "\r\n")) {
-        *sep = 0;
-        if (net_http_req_input_read_head_line(http_protocol, http_ep, req, endpoint, line, line_num) != 0) return -1;
-        *sep = '\r';
-        line_num++;
-    }
-
-    if (line[0]) {
-        if (net_http_req_input_read_head_line(http_protocol, http_ep, req, endpoint, line, line_num) != 0) return -1;
-    }
-    
-    return 0;
-}
-
 static int net_http_req_input_body_set_complete(
     net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t req, net_endpoint_t endpoint, net_http_res_result_t result)
 {
@@ -351,7 +263,7 @@ static int net_http_req_input_body_consume_body_part(
     return 0;
 }
 
-static int net_http_req_input_body_encoding_none(
+int net_http_req_input_body_encoding_none(
     net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t req,
     net_endpoint_t endpoint)
 {
@@ -400,7 +312,7 @@ static int net_http_req_input_body_encoding_none(
     return 0;
 }
 
-static int net_http_req_input_body_encoding_trunked(
+int net_http_req_input_body_encoding_trunked(
     net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t req,
     net_endpoint_t endpoint)
 {
