@@ -23,6 +23,14 @@ net_trans_http_endpoint_create(net_trans_host_t host, uint8_t is_https) {
         return NULL;
     }
 
+    if (mgr->m_request_id_tag) {
+        if (net_http_endpoint_set_request_id_tag(http_endpoint, mgr->m_request_id_tag) != 0) {
+            CPE_ERROR(mgr->m_em, "trans: create http-endpoint set request id %s fail!", mgr->m_request_id_tag);
+            net_http_endpoint_free(http_endpoint);
+            return NULL;
+        }
+    }
+
     if (is_https) {
         if (net_http_endpoint_ssl_enable(http_endpoint) == NULL) {
             CPE_ERROR(mgr->m_em, "trans: enable http endpoint https fail!");

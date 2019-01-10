@@ -567,6 +567,9 @@ int net_http_endpoint_flush(net_http_endpoint_t http_ep) {
                             req->m_body_size,
                             req->m_head_size + req->m_body_size);
                     }
+
+                    left_sz -= req_used_sz;
+                    buf += req_used_sz;
                 }
             }
         }
