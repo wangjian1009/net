@@ -161,33 +161,6 @@ static int net_http_req_complete_head(net_http_protocol_t http_protocol, net_htt
     return 0;
 }
 
-void net_http_req_debug_dump_head(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t http_req, char * buf) {
-    if (http_req->m_head_size >= http_req->m_flushed_size + 4) {
-        char * p = buf + (http_req->m_head_size - http_req->m_flushed_size - 4);
-        *p = 0;
-        
-        CPE_INFO(
-            http_protocol->m_em, "http: %s: req %d: >>> head=%d (flushed=%d)\n%s",
-            net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_req->m_http_ep->m_endpoint),
-            http_req->m_id,
-            http_req->m_head_size,
-            http_req->m_flushed_size,
-            buf);
-
-        *p = '\r';
-    }
-    else {
-        CPE_INFO(
-            http_protocol->m_em, "http: %s: req %d: >>> head=%d, body=%d, total=%d (flushed=%d)",
-            net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_req->m_http_ep->m_endpoint),
-            http_req->m_id,
-            http_req->m_head_size,
-            http_req->m_body_size,
-            http_req->m_head_size + http_req->m_body_size,
-            http_req->m_flushed_size);
-    }
-}
-
 const char * net_http_req_state_str(net_http_req_state_t req_state) {
     switch(req_state) {
     case net_http_req_state_prepare_head:

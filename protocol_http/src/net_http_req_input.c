@@ -16,7 +16,9 @@ static int net_http_endpoint_input_body_encoding_trunked(
 
 static void net_http_endpoint_do_parse_head_lines(char * data, char * lines[], uint8_t *line_count);
 static int net_http_endpoint_do_parse_request_id(const char * tag, uint32_t * request_id, char * lines[], uint8_t line_count);
-
+static int net_http_req_process_response_head_line(
+    net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t req,
+    net_endpoint_t endpoint, char * line, uint32_t line_num);
 
 int net_http_endpoint_do_process(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_endpoint_t endpoint) {
     void * buf;
@@ -76,7 +78,7 @@ int net_http_endpoint_do_process(net_http_protocol_t http_protocol, net_http_end
             if (req == NULL) {
                 CPE_INFO(
                     http_protocol->m_em,
-                    "http: %s: req %d not exist, ignore!",
+                    "http: %s: req not exist, ignore!",
                     net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint));
             }
         }
@@ -165,7 +167,7 @@ static int net_http_endpoint_do_parse_request_id(const char * tag, uint32_t * re
     return -1;
 }
 
-int net_http_req_process_response_head_line(
+static int net_http_req_process_response_head_line(
     net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t req,
     net_endpoint_t endpoint, char * line, uint32_t line_num)
 {

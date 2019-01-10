@@ -31,8 +31,6 @@ struct net_http_req {
 int net_http_req_do_send_first_line(
     net_http_protocol_t http_protocol, net_http_req_t http_req, net_http_req_method_t method, const char * url);
 
-void net_http_req_debug_dump_head(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t http_req, char * buf);
-
 void net_http_req_real_free(net_http_req_t req);
     
 NET_END_DECL
