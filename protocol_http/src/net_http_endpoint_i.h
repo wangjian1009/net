@@ -24,7 +24,6 @@ struct net_http_endpoint {
     struct net_http_res_ctx {
         net_http_req_t m_req;
         net_http_res_state_t m_state;
-        net_http_connection_type_t m_connection_type;
         net_http_trans_encoding_t m_trans_encoding;
         struct {
             uint32_t m_length;

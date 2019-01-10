@@ -19,7 +19,7 @@ static void net_http_endpoint_reset_data(net_http_protocol_t http_protocol, net_
 static void net_http_endpoint_do_connect(net_timer_t timer, void * ctx);
 static int net_http_endpoint_notify_state_changed(net_http_endpoint_t http_ep, net_http_state_t old_state);
 static int net_http_endpoint_do_ssl_handshake(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep);
-static int net_http_endpoint_do_ssl_encode(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep);
+static int net_http_endpoint_do_ssl_encode(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, void const * data, uint32_t data_size);
 static int net_http_endpoint_do_ssl_decode(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep);
 
 net_http_endpoint_t
@@ -517,65 +517,33 @@ int net_http_endpoint_flush(net_http_endpoint_t http_ep) {
 
     if (http_ep->m_state != net_http_state_established) return 0;
 
-    uint32_t sz = net_endpoint_buf_size(http_ep->m_endpoint, net_ep_buf_http_out);
-    if (sz > 0) {
-        /*dump 提交数据的信息 */
-        if (net_endpoint_protocol_debug(http_ep->m_endpoint) >= 2) {
+    if (http_ep->m_connection_type == net_http_connection_type_upgrade) {
+        if (http_ep->m_ssl_ctx) {
+            uint32_t buf_sz = net_endpoint_buf_size(http_ep->m_endpoint, net_ep_buf_http_out);
+            if (buf_sz == 0) return 0;
+    
             char * buf;
-            if (net_endpoint_buf_peak_with_size(http_ep->m_endpoint, net_ep_buf_http_out, sz, (void**)&buf) == 0
-                && buf != NULL)
-            {
-                uint32_t left_sz = sz;
-                
-                net_http_req_t req;
-                TAILQ_FOREACH(req, &http_ep->m_reqs, m_next) {
-                    uint32_t req_used_sz = req->m_head_size + req->m_body_size - req->m_flushed_size;
-                    if (req_used_sz > left_sz) req_used_sz = left_sz;
-                    if (req_used_sz == 0) continue;
-
-                    if (req->m_flushed_size == 0 && req->m_head_size > 4 && req_used_sz >= req->m_head_size) { /*包含完整头部 */
-                        char * p = buf + req->m_head_size - 4;
-                        *p = 0;
-                        
-                        CPE_INFO(
-                            http_protocol->m_em, "http: %s: req %d: >>> head=%d/%d, body=%d/%d\n%s",
-                            net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), req->m_http_ep->m_endpoint),
-                            req->m_id,
-                            req->m_head_size,
-                            req->m_head_size,
-                            req_used_sz - req->m_head_size,
-                            req->m_body_size,
-                            buf);
-
-                        *p = '\r';
-                    }
-                    else {
-                        uint32_t total_flushed_sz = req_used_sz + req->m_flushed_size;
-                        uint32_t head_used_sz = req->m_head_size;
-                        if (head_used_sz > total_flushed_sz) {
-                            head_used_sz = total_flushed_sz;
-                        }
-                        head_used_sz -= req->m_flushed_size;
-
-                        CPE_INFO(
-                            http_protocol->m_em, "http: %s: req %d: >>> head=%d/%d, body=%d, total=%d/%d",
-                            net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), req->m_http_ep->m_endpoint),
-                            req->m_id,
-                            head_used_sz,
-                            req->m_head_size,
-                            req_used_sz - head_used_sz,
-                            req->m_body_size,
-                            req->m_head_size + req->m_body_size);
-                    }
-
-                    left_sz -= req_used_sz;
-                    buf += req_used_sz;
+            if (net_endpoint_buf_peak_with_size(http_ep->m_endpoint, net_ep_buf_http_out, buf_sz, (void**)&buf) != 0 || buf == NULL) {
+                CPE_ERROR(
+                    http_protocol->m_em, "http: %s: peek size %d fail",
+                    net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint), buf_sz);
+                return -1;
+            }
+            
+            int rv = mbedtls_ssl_write(&http_ep->m_ssl_ctx->m_ssl, buf, buf_sz);
+            if (rv < 0) {
+                if (rv != MBEDTLS_ERR_SSL_WANT_READ && rv != MBEDTLS_ERR_SSL_WANT_WRITE) {
+                    CPE_ERROR(
+                        http_protocol->m_em,
+                        "http: %s: >>> ssl write data fail, size=%d, rv=%d (%s)!",
+                        net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint),
+                        buf_sz,
+                        rv, net_http_ssl_error_str(rv));
+                    return -1;
                 }
             }
-        }
-        
-        if (http_ep->m_ssl_ctx) {
-            if (net_http_endpoint_do_ssl_encode(http_protocol, http_ep) != 0) return -1;
+
+            net_endpoint_buf_consume(http_ep->m_endpoint, net_ep_buf_http_out, buf_sz);
         }
         else {
             if (net_endpoint_buf_append_from_self(http_ep->m_endpoint, net_ep_buf_write, net_ep_buf_http_out, 0) != 0) {
@@ -587,20 +555,80 @@ int net_http_endpoint_flush(net_http_endpoint_t http_ep) {
             }
         }
     }
+    else {
+        net_http_req_t req;
+        TAILQ_FOREACH(req, &http_ep->m_reqs, m_next) {
+            uint32_t req_total_sz = req->m_head_size + req->m_body_size;
+            uint32_t req_sz = req_total_sz - req->m_flushed_size;
 
-    uint32_t left_sz = sz;
-    net_http_req_t req;
-    TAILQ_FOREACH(req, &http_ep->m_reqs, m_next) {
-        uint32_t req_total_sz = req->m_head_size + req->m_body_size;
-        uint32_t req_use_sz = req_total_sz - req->m_flushed_size;
-        if (req_use_sz > left_sz) req_use_sz = left_sz;
+            if (req_sz == 0) continue;
 
-        req->m_flushed_size += req_use_sz;
-        sz -= req_use_sz;
-
-        if (sz == 0) break;
-    }
+            uint32_t buf_sz = net_endpoint_buf_size(http_ep->m_endpoint, net_ep_buf_http_out);
+            if (buf_sz == 0) return 0;
     
+            char * buf;
+            if (net_endpoint_buf_peak_with_size(http_ep->m_endpoint, net_ep_buf_http_out, buf_sz, (void**)&buf) != 0 || buf == NULL) {
+                CPE_ERROR(
+                    http_protocol->m_em, "http: %s: peek size %d fail",
+                    net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint), buf_sz);
+                return -1;
+            }
+
+            if (req_sz > buf_sz) req_sz = buf_sz;
+        
+            if (req->m_flushed_size == 0) {
+                if (req_sz < req->m_head_size) { /*头部确保单次发送 */
+                    break;
+                }
+
+                if (req->m_head_size > 4 && req_sz >= req->m_head_size) {
+                    char * p = buf + req->m_head_size - 4;
+                    *p = 0;
+                        
+                    CPE_INFO(
+                        http_protocol->m_em, "http: %s: req %d: >>> head=%d/%d, body=%d/%d\n%s",
+                        net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), req->m_http_ep->m_endpoint),
+                        req->m_id,
+                        req->m_head_size,
+                        req->m_head_size,
+                        req_sz - req->m_head_size,
+                        req->m_body_size,
+                        buf);
+
+                    *p = '\r';
+                }
+            }
+
+            if (http_ep->m_ssl_ctx) {
+                int rv = mbedtls_ssl_write(&http_ep->m_ssl_ctx->m_ssl, buf, req_sz);
+                if (rv < 0) {
+                    if (rv != MBEDTLS_ERR_SSL_WANT_READ && rv != MBEDTLS_ERR_SSL_WANT_WRITE) {
+                        CPE_ERROR(
+                            http_protocol->m_em,
+                            "http: %s: >>> ssl write data fail, size=%d, rv=%d (%s)!",
+                            net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint),
+                            req_sz,
+                            rv, net_http_ssl_error_str(rv));
+                        return -1;
+                    }
+                }
+
+                net_endpoint_buf_consume(http_ep->m_endpoint, net_ep_buf_http_out, req_sz);
+            }
+            else {
+                if (net_endpoint_buf_append_from_self(http_ep->m_endpoint, net_ep_buf_write, net_ep_buf_http_out, req_sz) != 0) {
+                    CPE_ERROR(
+                        http_protocol->m_em,
+                        "http: %s: <<< move http-out buf to write buf fail!",
+                        net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint));
+                    return -1;
+                }
+            }
+        
+            req->m_flushed_size += req_sz;
+        }
+    }
+
     return 0;
 }
 
@@ -690,18 +718,7 @@ static int net_http_endpoint_do_ssl_handshake(net_http_protocol_t http_protocol,
     return 0;
 }
 
-static int net_http_endpoint_do_ssl_encode(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep) {
-    uint32_t data_size = net_endpoint_buf_size(http_ep->m_endpoint, net_ep_buf_http_out);
-    void * data;
-    if (net_endpoint_buf_peak_with_size(http_ep->m_endpoint, net_ep_buf_http_out, data_size, &data) != 0) {
-        CPE_ERROR(
-            http_protocol->m_em,
-            "http: %s: >>> ssl encode peak data fail, size=%d!",
-            net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint),
-            data_size);
-        return -1;
-    }
-
+static int net_http_endpoint_do_ssl_encode(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, void const * data, uint32_t data_size) {
     int rv = mbedtls_ssl_write(&http_ep->m_ssl_ctx->m_ssl, data, data_size);
     if (rv < 0) {
         if (rv != MBEDTLS_ERR_SSL_WANT_READ && rv != MBEDTLS_ERR_SSL_WANT_WRITE) {

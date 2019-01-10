@@ -241,13 +241,13 @@ int net_http_req_process_response_head_line(
         }
         else if (strcasecmp(name, "Connection") == 0) {
             if (strcasecmp(value, "keep-alive") == 0) {
-                http_ep->m_current_res.m_connection_type = net_http_connection_type_keep_alive;
+                http_ep->m_connection_type = net_http_connection_type_keep_alive;
             }
             else if (strcasecmp(value, "close") == 0) {
-                http_ep->m_current_res.m_connection_type = net_http_connection_type_close;
+                http_ep->m_connection_type = net_http_connection_type_close;
             }
             else if (strcasecmp(value, "upgrade") == 0) {
-                http_ep->m_current_res.m_connection_type = net_http_connection_type_upgrade;
+                http_ep->m_connection_type = net_http_connection_type_upgrade;
             }
         }
         else if (strcasecmp(name, "Transfer-Encoding") == 0) {
