@@ -19,6 +19,9 @@ void net_trans_manage_set_data_watcher(
     void * watcher_ctx,
     net_endpoint_data_watch_fun_t watcher_fun);
 
+const char * net_trans_manage_request_id_tag(net_trans_manage_t manage);
+int net_trans_manage_set_request_id_tag(net_trans_manage_t manage, const char * tag);
+
 NET_END_DECL
 
 #endif
