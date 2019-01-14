@@ -565,8 +565,19 @@ int net_http_endpoint_flush(net_http_endpoint_t http_ep) {
             uint32_t req_sz = req_total_sz - req->m_flushed_size;
             if (req_sz == 0) {
                 if (req->m_free_after_processed) {
-                    if (http_ep->m_request_id_tag != NULL) {
-                        net_http_req_free(req);
+                    if (!req->m_data_sended) {
+                        CPE_INFO(
+                            http_protocol->m_em, "http: %s: req %d skip(no data send)",
+                            net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint),
+                            req->m_id);
+                        net_http_req_free_i(req, 1);
+                    }
+                    else if (http_ep->m_request_id_tag != NULL) {
+                        CPE_INFO(
+                            http_protocol->m_em, "http: %s: req %d skip(send complete, ep support id match)",
+                            net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint),
+                            req->m_id);
+                        net_http_req_free_i(req, 1);
                     }
                 }
                 continue;
@@ -605,32 +616,35 @@ int net_http_endpoint_flush(net_http_endpoint_t http_ep) {
                 }
             }
 
-            if (http_ep->m_ssl_ctx) {
-                int rv = mbedtls_ssl_write(&http_ep->m_ssl_ctx->m_ssl, (const unsigned char *)buf, req_sz);
-                if (rv < 0) {
-                    if (rv != MBEDTLS_ERR_SSL_WANT_READ && rv != MBEDTLS_ERR_SSL_WANT_WRITE) {
+            if (req->m_data_sended || !req->m_free_after_processed) {
+                if (http_ep->m_ssl_ctx) {
+                    int rv = mbedtls_ssl_write(&http_ep->m_ssl_ctx->m_ssl, (const unsigned char *)buf, req_sz);
+                    if (rv < 0) {
+                        if (rv != MBEDTLS_ERR_SSL_WANT_READ && rv != MBEDTLS_ERR_SSL_WANT_WRITE) {
+                            CPE_ERROR(
+                                http_protocol->m_em,
+                                "http: %s: >>> ssl write data fail, size=%d, rv=%d (%s)!",
+                                net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint),
+                                req_sz,
+                                rv, net_http_ssl_error_str(rv));
+                            return -1;
+                        }
+                    }
+
+                    net_endpoint_buf_consume(http_ep->m_endpoint, net_ep_buf_http_out, req_sz);
+                }
+                else {
+                    if (net_endpoint_buf_append_from_self(http_ep->m_endpoint, net_ep_buf_write, net_ep_buf_http_out, req_sz) != 0) {
                         CPE_ERROR(
                             http_protocol->m_em,
-                            "http: %s: >>> ssl write data fail, size=%d, rv=%d (%s)!",
-                            net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint),
-                            req_sz,
-                            rv, net_http_ssl_error_str(rv));
+                            "http: %s: <<< move http-out buf to write buf fail!",
+                            net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint));
                         return -1;
                     }
                 }
-
-                net_endpoint_buf_consume(http_ep->m_endpoint, net_ep_buf_http_out, req_sz);
+                req->m_data_sended = 1;
             }
-            else {
-                if (net_endpoint_buf_append_from_self(http_ep->m_endpoint, net_ep_buf_write, net_ep_buf_http_out, req_sz) != 0) {
-                    CPE_ERROR(
-                        http_protocol->m_em,
-                        "http: %s: <<< move http-out buf to write buf fail!",
-                        net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint));
-                    return -1;
-                }
-            }
-        
+            
             req->m_flushed_size += req_sz;
             buf_sz -= req_sz;
         }

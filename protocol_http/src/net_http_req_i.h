@@ -9,6 +9,7 @@ struct net_http_req {
     net_http_endpoint_t m_http_ep;
     TAILQ_ENTRY(net_http_req) m_next;
     uint16_t m_id;
+    uint8_t m_data_sended;
     uint8_t m_free_after_processed;
 
     /*req*/
