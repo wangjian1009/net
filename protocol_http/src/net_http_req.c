@@ -163,7 +163,7 @@ int net_http_req_set_reader(
     return 0;
 }
 
-int net_http_req_start_timer(net_http_req_t req, uint32_t timeout_ms) {
+int net_http_req_start_timeout(net_http_req_t req, uint32_t timeout_ms) {
     net_http_protocol_t http_protocol = net_http_endpoint_protocol(req->m_http_ep);
 
     if (req->m_timeout_timer == NULL) {

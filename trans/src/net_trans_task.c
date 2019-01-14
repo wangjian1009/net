@@ -239,7 +239,12 @@ void net_trans_task_set_callback(
 }
 
 int net_trans_task_set_timeout(net_trans_task_t task, uint64_t timeout_ms) {
-    return 0;
+    if (task->m_http_req) {
+        return net_http_req_start_timeout(task->m_http_req, timeout_ms);
+    }
+    else {
+        return -1;
+    }
 }
 
 int net_trans_task_append_header(net_trans_task_t task, const char * name, const char * value) {
