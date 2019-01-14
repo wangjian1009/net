@@ -64,14 +64,14 @@ net_http_req_create(net_http_endpoint_t http_ep, net_http_req_method_t method, c
     
     if (net_http_req_do_send_first_line(http_protocol, req, method, url) != 0) {
         CPE_ERROR(http_protocol->m_em, "http: req: create: write req first line fail!");
-        net_http_req_free(req);
+        net_http_req_free_i(req, 1);
         return NULL;
     }
     
     return req;
 }
 
-void net_http_req_free(net_http_req_t req) {
+void net_http_req_free_i(net_http_req_t req, uint8_t force) {
     net_http_endpoint_t http_ep = req->m_http_ep;
     net_http_protocol_t http_protocol = net_http_endpoint_protocol(http_ep);
 
@@ -85,14 +85,28 @@ void net_http_req_free(net_http_req_t req) {
         net_timer_free(req->m_timeout_timer);
         req->m_timeout_timer = NULL;
     }
+
+    if (!force) {
+        if ((http_ep->m_state == net_http_state_connecting || http_ep->m_state == net_http_state_established) /*在正常连接的过程中 */
+            && req->m_req_state != net_http_req_state_completed /*请求未完成 */
+            )
+        {
+            if (req->m_flushed_size < (req->m_head_size + req->m_body_size)) {
+                /*数据还没有发送，则标记后返回，等待后续清理 */
+                req->m_free_after_processed = 1;
+                return;
+            }
+
+            if (http_ep->m_request_id_tag == NULL) {
+                /*没有根据ID匹配的规则，则必须等待响应接收完成以后才能释放 */
+                req->m_free_after_processed = 1;
+                return;
+            }
+        }
+    }
     
     if (http_ep->m_current_res.m_req == req) {
         http_ep->m_current_res.m_req = NULL;
-    }
-    
-    if (req->m_flushed_size <= (req->m_head_size + req->m_body_size)) {
-        req->m_free_after_processed = 1;
-        return;
     }
 
     assert(http_ep->m_req_count > 0);
@@ -101,6 +115,10 @@ void net_http_req_free(net_http_req_t req) {
     
     req->m_http_ep = (net_http_endpoint_t)http_protocol;
     TAILQ_INSERT_TAIL(&http_protocol->m_free_reqs, req, m_next);
+}
+
+void net_http_req_free(net_http_req_t req) {
+    net_http_req_free_i(req, 0);
 }
 
 void net_http_req_real_free(net_http_req_t req) {
@@ -197,11 +215,15 @@ uint32_t net_http_req_res_length(net_http_req_t req) {
         : 0;
 }
 
-void net_http_req_cancel_and_free(net_http_req_t req) {
+void net_http_req_cancel_and_free_i(net_http_req_t req, uint8_t force) {
     if (!req->m_res_ignore && req->m_res_on_complete) {
-        req->m_res_on_complete(req->m_res_ctx, req, net_http_res_timeout);
+        req->m_res_on_complete(req->m_res_ctx, req, net_http_res_canceled);
     }
-    net_http_req_free(req);
+    net_http_req_free_i(req, force);
+}
+
+void net_http_req_cancel_and_free(net_http_req_t req) {
+    net_http_req_cancel_and_free_i(req, 0);
 }
 
 void net_http_req_cancel_and_free_by_id(net_http_endpoint_t http_ep, uint16_t req_id) {
@@ -237,5 +259,9 @@ const char * net_http_res_result_str(net_http_res_result_t res_result) {
 
 static void net_http_req_on_timeout(net_timer_t timer, void * ctx) {
     net_http_req_t req = ctx;
-    net_http_req_cancel_and_free(req);
+
+    if (!req->m_res_ignore && req->m_res_on_complete) {
+        req->m_res_on_complete(req->m_res_ctx, req, net_http_res_timeout);
+    }
+    net_http_req_free(req);
 }

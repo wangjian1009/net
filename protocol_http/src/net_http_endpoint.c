@@ -298,13 +298,7 @@ void net_http_endpoint_fini(net_endpoint_t endpoint) {
     net_http_protocol_t http_protocol = net_protocol_data(net_endpoint_protocol(endpoint));
 
     while(!TAILQ_EMPTY(&http_ep->m_reqs)) {
-        net_http_req_t req = TAILQ_FIRST(&http_ep->m_reqs);
-        
-        if (!req->m_res_ignore && req->m_res_on_complete) {
-            req->m_res_on_complete(req->m_res_ctx, req, net_http_res_canceled);
-        }
-
-        net_http_req_free(req);
+        net_http_req_cancel_and_free_i(TAILQ_FIRST(&http_ep->m_reqs), 1);
     }
 
     if (http_ep->m_request_id_tag) {
@@ -360,7 +354,7 @@ int net_http_endpoint_input(net_endpoint_t endpoint) {
             
             if (http_ep->m_current_res.m_state == net_http_res_state_completed) {
                 if (http_ep->m_current_res.m_req) {
-                    net_http_req_free(http_ep->m_current_res.m_req);
+                    net_http_req_free_i(http_ep->m_current_res.m_req, 1);
                     assert(http_ep->m_current_res.m_req == NULL);
                 }
 
@@ -570,8 +564,10 @@ int net_http_endpoint_flush(net_http_endpoint_t http_ep) {
             uint32_t req_total_sz = req->m_head_size + req->m_body_size;
             uint32_t req_sz = req_total_sz - req->m_flushed_size;
             if (req_sz == 0) {
-                if (http_ep->m_request_id_tag != NULL) {
-                    net_http_req_free(req);
+                if (req->m_free_after_processed) {
+                    if (http_ep->m_request_id_tag != NULL) {
+                        net_http_req_free(req);
+                    }
                 }
                 continue;
             }

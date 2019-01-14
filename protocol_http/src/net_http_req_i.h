@@ -33,8 +33,11 @@ struct net_http_req {
 int net_http_req_do_send_first_line(
     net_http_protocol_t http_protocol, net_http_req_t http_req, net_http_req_method_t method, const char * url);
 
+void net_http_req_free_i(net_http_req_t req, uint8_t force);
 void net_http_req_real_free(net_http_req_t req);
-    
+
+void net_http_req_cancel_and_free_i(net_http_req_t req, uint8_t force);
+
 NET_END_DECL
 
 #endif
