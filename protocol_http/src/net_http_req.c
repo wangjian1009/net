@@ -197,6 +197,20 @@ uint32_t net_http_req_res_length(net_http_req_t req) {
         : 0;
 }
 
+void net_http_req_cancel(net_http_req_t req) {
+    if (!req->m_res_ignore && req->m_res_on_complete) {
+        req->m_res_on_complete(req->m_res_ctx, req, net_http_res_timeout);
+    }
+    net_http_req_free(req);
+}
+
+void net_http_req_cancel_by_id(net_http_endpoint_t http_ep, uint16_t req_id) {
+    net_http_req_t req = net_http_req_find(http_ep, req_id);
+    if (req) {
+        net_http_req_cancel(req);
+    }
+}
+
 const char * net_http_res_state_str(net_http_res_state_t res_state) {
     switch(res_state) {
     case net_http_res_state_reading_head:
@@ -223,10 +237,5 @@ const char * net_http_res_result_str(net_http_res_result_t res_result) {
 
 static void net_http_req_on_timeout(net_timer_t timer, void * ctx) {
     net_http_req_t req = ctx;
-
-    if (!req->m_res_ignore && req->m_res_on_complete) {
-        req->m_res_on_complete(req->m_res_ctx, req, net_http_res_timeout);
-    }
-
-    net_http_req_free(req);
+    net_http_req_cancel(req);
 }
