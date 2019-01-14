@@ -9,6 +9,7 @@ struct net_http_req {
     net_http_endpoint_t m_http_ep;
     TAILQ_ENTRY(net_http_req) m_next;
     uint16_t m_id;
+    uint8_t m_free_after_processed;
 
     /*req*/
     net_http_req_state_t m_req_state;
@@ -16,6 +17,7 @@ struct net_http_req {
     uint32_t m_head_size;
     uint32_t m_body_size;
     uint32_t m_flushed_size;
+    net_timer_t m_timeout_timer;
     
     /*res*/
     void * m_res_ctx;

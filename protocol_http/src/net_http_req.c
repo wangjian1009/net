@@ -1,6 +1,10 @@
+#include <assert.h>
 #include "cpe/utils/stream_buffer.h"
 #include "net_endpoint.h"
+#include "net_timer.h"
 #include "net_http_req_i.h"
+
+static void net_http_req_on_timeout(net_timer_t timer, void * ctx);
 
 net_http_req_t
 net_http_req_create(net_http_endpoint_t http_ep, net_http_req_method_t method, const char * url) {
@@ -37,12 +41,14 @@ net_http_req_create(net_http_endpoint_t http_ep, net_http_req_method_t method, c
 
     req->m_http_ep = http_ep;
     req->m_id = ++http_ep->m_max_req_id;
-    
+    req->m_free_after_processed = 0;
+
     req->m_req_state = net_http_req_state_prepare_head;
     req->m_req_have_keep_alive = 0;
     req->m_head_size = 0;
     req->m_body_size = 0;
     req->m_flushed_size = 0;
+    req->m_timeout_timer = NULL;
 
     req->m_res_ignore = 0;
     req->m_res_ctx = NULL;
@@ -53,6 +59,7 @@ net_http_req_create(net_http_endpoint_t http_ep, net_http_req_method_t method, c
     req->m_res_code = 0;
     req->m_res_message[0] = 0;
 
+    http_ep->m_req_count++;
     TAILQ_INSERT_TAIL(&http_ep->m_reqs, req, m_next);
     
     if (net_http_req_do_send_first_line(http_protocol, req, method, url) != 0) {
@@ -68,10 +75,28 @@ void net_http_req_free(net_http_req_t req) {
     net_http_endpoint_t http_ep = req->m_http_ep;
     net_http_protocol_t http_protocol = net_http_endpoint_protocol(http_ep);
 
+    req->m_res_ctx = NULL;
+    req->m_res_on_begin = NULL;
+    req->m_res_on_head = NULL;
+    req->m_res_on_body = NULL;
+    req->m_res_on_complete = NULL;
+
+    if (req->m_timeout_timer) {
+        net_timer_free(req->m_timeout_timer);
+        req->m_timeout_timer = NULL;
+    }
+    
     if (http_ep->m_current_res.m_req == req) {
         http_ep->m_current_res.m_req = NULL;
     }
     
+    if (req->m_flushed_size <= (req->m_head_size + req->m_body_size)) {
+        req->m_free_after_processed = 1;
+        return;
+    }
+
+    assert(http_ep->m_req_count > 0);
+    http_ep->m_req_count--;
     TAILQ_REMOVE(&http_ep->m_reqs, req, m_next);
     
     req->m_http_ep = (net_http_endpoint_t)http_protocol;
@@ -84,6 +109,23 @@ void net_http_req_real_free(net_http_req_t req) {
     TAILQ_REMOVE(&http_protocol->m_free_reqs, req, m_next);
 
     mem_free(http_protocol->m_alloc, req);
+}
+
+net_http_req_t net_http_req_find(net_http_endpoint_t http_ep, uint16_t req_id) {
+    net_http_req_t req;
+
+    TAILQ_FOREACH(req, &http_ep->m_reqs, m_next) {
+        if (req->m_id == req_id) {
+            if (req->m_free_after_processed) {
+                return NULL;
+            }
+            else {
+                return req;
+            }
+        }
+    }
+
+    return NULL;
 }
 
 uint16_t net_http_req_id(net_http_req_t req) {
@@ -117,6 +159,22 @@ int net_http_req_set_reader(
     req->m_res_on_head = on_head;
     req->m_res_on_body = on_body;
     req->m_res_on_complete = on_complete;
+    
+    return 0;
+}
+
+int net_http_req_start_timer(net_http_req_t req, uint32_t timeout_ms) {
+    net_http_protocol_t http_protocol = net_http_endpoint_protocol(req->m_http_ep);
+
+    if (req->m_timeout_timer == NULL) {
+        req->m_timeout_timer = net_timer_auto_create(net_http_endpoint_schedule(req->m_http_ep), net_http_req_on_timeout, req);
+        if (req->m_timeout_timer == NULL) {
+            CPE_ERROR(http_protocol->m_em, "http: req: create: create timer fail!");
+            return -1;
+        }
+    }
+    
+    net_timer_active(req->m_timeout_timer, timeout_ms);
     
     return 0;
 }
@@ -161,4 +219,14 @@ const char * net_http_res_result_str(net_http_res_result_t res_result) {
     case net_http_res_disconnected:
         return "http-res-disconnected";
     }
+}
+
+static void net_http_req_on_timeout(net_timer_t timer, void * ctx) {
+    net_http_req_t req = ctx;
+
+    if (!req->m_res_ignore && req->m_res_on_complete) {
+        req->m_res_on_complete(req->m_res_ctx, req, net_http_res_timeout);
+    }
+
+    net_http_req_free(req);
 }

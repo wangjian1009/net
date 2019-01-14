@@ -275,6 +275,7 @@ int net_http_endpoint_init(net_endpoint_t endpoint) {
     http_ep->m_reconnect_span_ms = 0;
     http_ep->m_request_id_tag = NULL;
     http_ep->m_max_req_id = 0;
+    http_ep->m_req_count = 0;
     TAILQ_INIT(&http_ep->m_reqs);
     
     http_ep->m_connect_timer = net_timer_auto_create(schedule, net_http_endpoint_do_connect, http_ep);
@@ -516,6 +517,8 @@ int net_http_endpoint_write(
 int net_http_endpoint_flush(net_http_endpoint_t http_ep) {
     net_http_protocol_t http_protocol = net_http_endpoint_protocol(http_ep);
 
+    CPE_ERROR(http_protocol->m_em, "XXXXX: flush, count=%d", http_ep->m_req_count);
+    
     if (http_ep->m_state != net_http_state_established) return 0;
 
     if (http_ep->m_connection_type == net_http_connection_type_upgrade) {
@@ -559,79 +562,89 @@ int net_http_endpoint_flush(net_http_endpoint_t http_ep) {
     else {
         uint32_t buf_sz = net_endpoint_buf_size(http_ep->m_endpoint, net_ep_buf_http_out);
         if (buf_sz == 0) return 0;
+
+        net_http_req_t req, next_req;
+        for(req = TAILQ_FIRST(&http_ep->m_reqs); buf_sz > 0 && req != NULL; req = next_req) {
+            next_req = TAILQ_NEXT(req, m_next);
+
+            uint32_t req_total_sz = req->m_head_size + req->m_body_size;
+            uint32_t req_sz = req_total_sz - req->m_flushed_size;
+            if (req_sz == 0) {
+                if (http_ep->m_request_id_tag != NULL) {
+                    net_http_req_free(req);
+                }
+                continue;
+            }
+
+            char * buf;
+            if (net_endpoint_buf_peak_with_size(http_ep->m_endpoint, net_ep_buf_http_out, buf_sz, (void**)&buf) != 0 || buf == NULL) {
+                CPE_ERROR(
+                    http_protocol->m_em, "http: %s: peek size %d fail",
+                    net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint), buf_sz);
+                return -1;
+            }
+
+            if (req_sz > buf_sz) req_sz = buf_sz;
         
-        net_http_req_t req = TAILQ_FIRST(&http_ep->m_reqs);
-        if (req == NULL) {
+            if (req->m_flushed_size == 0) {
+                if (req_sz < req->m_head_size) { /*头部确保单次发送 */
+                    return 0;
+                }
+
+                if (req->m_head_size > 4 && req_sz >= req->m_head_size) {
+                    char * p = buf + req->m_head_size - 4;
+                    *p = 0;
+                        
+                    CPE_INFO(
+                        http_protocol->m_em, "http: %s: req %d: >>> head=%d/%d, body=%d/%d\n%s",
+                        net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), req->m_http_ep->m_endpoint),
+                        req->m_id,
+                        req->m_head_size,
+                        req->m_head_size,
+                        req_sz - req->m_head_size,
+                        req->m_body_size,
+                        buf);
+
+                    *p = '\r';
+                }
+            }
+
+            if (http_ep->m_ssl_ctx) {
+                int rv = mbedtls_ssl_write(&http_ep->m_ssl_ctx->m_ssl, (const unsigned char *)buf, req_sz);
+                if (rv < 0) {
+                    if (rv != MBEDTLS_ERR_SSL_WANT_READ && rv != MBEDTLS_ERR_SSL_WANT_WRITE) {
+                        CPE_ERROR(
+                            http_protocol->m_em,
+                            "http: %s: >>> ssl write data fail, size=%d, rv=%d (%s)!",
+                            net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint),
+                            req_sz,
+                            rv, net_http_ssl_error_str(rv));
+                        return -1;
+                    }
+                }
+
+                net_endpoint_buf_consume(http_ep->m_endpoint, net_ep_buf_http_out, req_sz);
+            }
+            else {
+                if (net_endpoint_buf_append_from_self(http_ep->m_endpoint, net_ep_buf_write, net_ep_buf_http_out, req_sz) != 0) {
+                    CPE_ERROR(
+                        http_protocol->m_em,
+                        "http: %s: <<< move http-out buf to write buf fail!",
+                        net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint));
+                    return -1;
+                }
+            }
+        
+            req->m_flushed_size += req_sz;
+            buf_sz -= req_sz;
+        }
+        
+        if (buf_sz > 0) {
             CPE_ERROR(
                 http_protocol->m_em, "http: %s: have data, but no req",
                 net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint));
             return -1;
         }
-        
-        uint32_t req_total_sz = req->m_head_size + req->m_body_size;
-        uint32_t req_sz = req_total_sz - req->m_flushed_size;
-        if (req_sz == 0) return 0;
-
-        char * buf;
-        if (net_endpoint_buf_peak_with_size(http_ep->m_endpoint, net_ep_buf_http_out, buf_sz, (void**)&buf) != 0 || buf == NULL) {
-            CPE_ERROR(
-                http_protocol->m_em, "http: %s: peek size %d fail",
-                net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint), buf_sz);
-            return -1;
-        }
-
-        if (req_sz > buf_sz) req_sz = buf_sz;
-        
-        if (req->m_flushed_size == 0) {
-            if (req_sz < req->m_head_size) { /*头部确保单次发送 */
-                return 0;
-            }
-
-            if (req->m_head_size > 4 && req_sz >= req->m_head_size) {
-                char * p = buf + req->m_head_size - 4;
-                *p = 0;
-                        
-                CPE_INFO(
-                    http_protocol->m_em, "http: %s: req %d: >>> head=%d/%d, body=%d/%d\n%s",
-                    net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), req->m_http_ep->m_endpoint),
-                    req->m_id,
-                    req->m_head_size,
-                    req->m_head_size,
-                    req_sz - req->m_head_size,
-                    req->m_body_size,
-                    buf);
-
-                *p = '\r';
-            }
-        }
-
-        if (http_ep->m_ssl_ctx) {
-            int rv = mbedtls_ssl_write(&http_ep->m_ssl_ctx->m_ssl, (const unsigned char *)buf, req_sz);
-            if (rv < 0) {
-                if (rv != MBEDTLS_ERR_SSL_WANT_READ && rv != MBEDTLS_ERR_SSL_WANT_WRITE) {
-                    CPE_ERROR(
-                        http_protocol->m_em,
-                        "http: %s: >>> ssl write data fail, size=%d, rv=%d (%s)!",
-                        net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint),
-                        req_sz,
-                        rv, net_http_ssl_error_str(rv));
-                    return -1;
-                }
-            }
-
-            net_endpoint_buf_consume(http_ep->m_endpoint, net_ep_buf_http_out, req_sz);
-        }
-        else {
-            if (net_endpoint_buf_append_from_self(http_ep->m_endpoint, net_ep_buf_write, net_ep_buf_http_out, req_sz) != 0) {
-                CPE_ERROR(
-                    http_protocol->m_em,
-                    "http: %s: <<< move http-out buf to write buf fail!",
-                    net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint));
-                return -1;
-            }
-        }
-        
-        req->m_flushed_size += req_sz;
     }
 
     return 0;

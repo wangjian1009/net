@@ -10,6 +10,10 @@ void net_http_req_free(net_http_req_t req);
 uint16_t net_http_req_id(net_http_req_t req);
 net_http_endpoint_t net_http_req_ep(net_http_req_t req);
 
+net_http_req_t net_http_req_find(net_http_endpoint_t http_ep, uint16_t req_id);
+
+int net_http_req_start_timer(net_http_req_t req, uint32_t timeout_ms);
+
 /*write*/
 net_http_req_state_t net_http_req_state(net_http_req_t req);
 int net_http_req_write_head_host(net_http_req_t http_req);
