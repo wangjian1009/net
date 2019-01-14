@@ -62,24 +62,25 @@ int net_http_endpoint_do_process(net_http_protocol_t http_protocol, net_http_end
         if (http_ep->m_request_id_tag) {
             uint32_t request_id;
             if (net_http_endpoint_do_parse_request_id(http_ep->m_request_id_tag, &request_id, head_lines, head_line_count) != 0) {
-                CPE_ERROR(
-                    http_protocol->m_em, "http: %s: <== no request-id tag %s",
-                    net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
-                    http_ep->m_request_id_tag);
-                return -1;
-            }
-
-            TAILQ_FOREACH(req, &http_ep->m_reqs, m_next) {
-                if (req->m_id == request_id) {
-                    break;
+                if (net_endpoint_protocol_debug(endpoint)) {
+                    CPE_INFO(
+                        http_protocol->m_em, "http: %s: <== no request-id tag %s",
+                        net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
+                        http_ep->m_request_id_tag);
                 }
+                req = NULL;
             }
+            else { 
+                TAILQ_FOREACH(req, &http_ep->m_reqs, m_next) {
+                    if (req->m_id == request_id) break;
+                }
 
-            if (req == NULL) {
-                CPE_INFO(
-                    http_protocol->m_em,
-                    "http: %s: req not exist, ignore!",
-                    net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint));
+                if (req == NULL) {
+                    CPE_INFO(
+                        http_protocol->m_em,
+                        "http: %s: req not exist, ignore!",
+                        net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint));
+                }
             }
         }
         else {
