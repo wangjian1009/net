@@ -699,7 +699,7 @@ static void net_http_endpoint_reset_data(net_http_protocol_t http_protocol, net_
             req->m_res_on_complete(req->m_res_ctx, req, result);
         }
 
-        net_http_req_free(req);
+        net_http_req_free_i(req, 1);
     }
     
     if (http_ep->m_ssl_ctx) {
