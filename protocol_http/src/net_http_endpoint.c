@@ -564,6 +564,11 @@ int net_http_endpoint_flush(net_http_endpoint_t http_ep) {
             uint32_t req_total_sz = req->m_head_size + req->m_body_size;
             uint32_t req_sz = req_total_sz - req->m_flushed_size;
             if (req_sz == 0) {
+                CPE_INFO(
+                    http_protocol->m_em, "http: %s: req %d free after processed = %d",
+                    net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint),
+                    req->m_id, req->m_free_after_processed);
+                
                 if (req->m_free_after_processed) {
                     if (!req->m_data_sended) {
                         CPE_INFO(

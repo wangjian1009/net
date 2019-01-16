@@ -88,16 +88,13 @@ void net_http_req_free_i(net_http_req_t req, uint8_t force) {
     }
 
     if (!force) {
-        if ((http_ep->m_state == net_http_state_connecting || http_ep->m_state == net_http_state_established) /*在正常连接的过程中 */
-            && req->m_req_state != net_http_req_state_completed /*请求未完成 */
-            )
-        {
+        if (http_ep->m_state == net_http_state_connecting || http_ep->m_state == net_http_state_established) { /*在正常连接的过程中 */
             if (req->m_flushed_size < (req->m_head_size + req->m_body_size)) {
                 /*数据还没有发送，则标记后返回，等待后续清理 */
                 req->m_free_after_processed = 1;
                 return;
             }
-
+            
             if (http_ep->m_request_id_tag == NULL) {
                 /*没有根据ID匹配的规则，则必须等待响应接收完成以后才能释放 */
                 req->m_free_after_processed = 1;
@@ -264,5 +261,6 @@ static void net_http_req_on_timeout(net_timer_t timer, void * ctx) {
     if (!req->m_res_ignore && req->m_res_on_complete) {
         req->m_res_on_complete(req->m_res_ctx, req, net_http_res_timeout);
     }
+
     net_http_req_free(req);
 }

@@ -134,6 +134,11 @@ void net_trans_task_free(net_trans_task_t task) {
         return;
     }
 
+    if (task->m_http_req) {
+        net_http_req_free(task->m_http_req);
+        task->m_http_req = NULL;
+    }
+    
     if (task->m_ctx_free) {
         task->m_ctx_free(task->m_ctx);
         task->m_ctx = NULL;
@@ -428,8 +433,10 @@ static net_http_res_op_result_t net_trans_task_on_complete(void * ctx, net_http_
     assert(task->m_ep);
     TAILQ_REMOVE(&task->m_ep->m_tasks, task, m_next_for_ep);
     task->m_ep = NULL;
-    
+
+    assert(task->m_http_req == req);
     task->m_http_req = NULL;
+    
     if (task->m_commit_op) {
         uint32_t buf_sz = 0;
         void * buf = NULL;
@@ -455,6 +462,6 @@ static net_http_res_op_result_t net_trans_task_on_complete(void * ctx, net_http_
             return net_http_res_op_ignore;
         }
     }
-    
+
     return net_http_res_op_success;
 }

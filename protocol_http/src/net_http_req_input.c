@@ -76,8 +76,8 @@ int net_http_endpoint_do_process(net_http_protocol_t http_protocol, net_http_end
                 if (req == NULL) {
                     CPE_INFO(
                         http_protocol->m_em,
-                        "http: %s: req not exist, ignore!",
-                        net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint));
+                        "http: %s: req %d not exist, ignore!",
+                        net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint), request_id);
                 }
             }
         }
