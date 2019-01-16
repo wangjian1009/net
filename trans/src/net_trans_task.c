@@ -245,7 +245,7 @@ void net_trans_task_set_callback(
 
 int net_trans_task_set_timeout(net_trans_task_t task, uint64_t timeout_ms) {
     if (task->m_http_req) {
-        return net_http_req_start_timeout(task->m_http_req, timeout_ms);
+        return net_http_req_start_timeout(task->m_http_req, (uint32_t)timeout_ms);
     }
     else {
         return -1;
