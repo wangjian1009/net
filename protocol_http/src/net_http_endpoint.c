@@ -370,7 +370,7 @@ int net_http_endpoint_input(net_endpoint_t endpoint) {
                     }
                 }
                 else {
-                    if (net_http_endpoint_flush(http_ep) != 0) return -1;
+                    //if (net_http_endpoint_flush(http_ep) != 0) return -1;
                     continue;
                 }
             }
@@ -511,8 +511,6 @@ int net_http_endpoint_write(
 int net_http_endpoint_flush(net_http_endpoint_t http_ep) {
     net_http_protocol_t http_protocol = net_http_endpoint_protocol(http_ep);
 
-    CPE_ERROR(http_protocol->m_em, "XXXXX: flush, count=%d", http_ep->m_req_count);
-    
     if (http_ep->m_state != net_http_state_established) return 0;
 
     if (http_ep->m_connection_type == net_http_connection_type_upgrade) {
@@ -647,7 +645,6 @@ int net_http_endpoint_flush(net_http_endpoint_t http_ep) {
             
             req->m_flushed_size += req_sz;
             buf_sz -= req_sz;
-            return 0;
         }
         
         if (buf_sz > 0) {
