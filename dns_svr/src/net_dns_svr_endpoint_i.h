@@ -11,6 +11,7 @@ struct net_dns_svr_endpoint {
 int net_dns_svr_endpoint_init(net_endpoint_t base_endpoint);
 void net_dns_svr_endpoint_fini(net_endpoint_t base_endpoint);
 int net_dns_svr_endpoint_input(net_endpoint_t base_endpoint);
+int net_dns_svr_endpoint_forward(net_endpoint_t endpoint, net_endpoint_t from);
 
 net_dns_svr_endpoint_t net_dns_svr_endpoint_get(net_endpoint_t base_endpoint);
 void net_dns_svr_endpoint_set_itf(net_dns_svr_endpoint_t endpoint, net_dns_svr_itf_t dns_itf);

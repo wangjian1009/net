@@ -3,6 +3,7 @@
 #include "net_address.h"
 #include "net_dgram.h"
 #include "net_acceptor.h"
+#include "net_endpoint.h"
 #include "net_dns_svr_itf_i.h"
 #include "net_dns_svr_endpoint_i.h"
 #include "net_dns_svr_query_i.h"
@@ -139,6 +140,38 @@ int net_dns_svr_itf_send_response(net_dns_svr_itf_t dns_itf, net_dns_svr_query_t
         return 0;
     }
     case net_dns_svr_itf_tcp: {
+        assert(query->m_endpoint);
+        
+        uint32_t capacity = net_dns_svr_query_calc_response_size(query);
+        void * output_buf = net_endpoint_buf_alloc(query->m_endpoint, &capacity);
+        if (output_buf == NULL) {
+            CPE_ERROR(svr->m_em, "dns-svr: tcp >>> alloc buf fail, capacity=%d!", capacity);
+            return -1;
+        }
+
+        int rv = net_dns_svr_query_build_response(query, output_buf, capacity);
+        if (rv < 0) {
+            CPE_ERROR(svr->m_em, "dns-svr: tcp >>> build response fail!");
+            return -1;
+        }
+        assert((uint32_t)rv <= capacity);
+
+        if (net_endpoint_protocol_debug(query->m_endpoint) >= 2) {
+            char address_buf[128];
+            cpe_str_dup(
+                address_buf, sizeof(address_buf),
+                net_address_dump(net_dns_svr_tmp_buffer(svr), net_endpoint_address(query->m_endpoint)));
+            CPE_INFO(
+                svr->m_em, "dns-svr: [%s]: udp >>> %s",
+                address_buf,
+                net_dns_svr_req_dump(svr, net_dns_svr_tmp_buffer(svr), output_buf, (uint32_t)rv));
+        }
+
+        if (net_endpoint_buf_supply(query->m_endpoint, net_ep_buf_write, (uint32_t)rv) != 0) {
+            CPE_ERROR(svr->m_em, "dns-svr: tcp >>> supply fail, sz=%d!", (uint32_t)rv);
+            return -1;
+        }
+        
         return 0;
     }
     }
