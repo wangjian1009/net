@@ -61,7 +61,7 @@ static int net_dns_svr_endpoint_process_data(
 
         if (net_endpoint_protocol_debug(base_endpoint) >= 2) {
             CPE_INFO(
-                svr->m_em, "dns-svr: [%s]: tcp <<< (%d) %s",
+                svr->m_em, "dns-svr: %s: tcp <<< (%d) %s",
                 net_endpoint_dump(&svr->m_data_buffer, base_endpoint),
                 req_sz,
                 net_dns_svr_req_dump(svr, net_dns_svr_tmp_buffer(svr), input, (uint32_t)req_sz));
@@ -70,7 +70,7 @@ static int net_dns_svr_endpoint_process_data(
         net_dns_svr_query_t query = net_dns_svr_query_parse_request(dns_itf, input, (uint32_t)req_sz);
         if (query == NULL) {
             CPE_ERROR(
-                svr->m_em, "dns-svr: [%s]: <<< parse data fail, req-sz=%d",
+                svr->m_em, "dns-svr: %s: <<< parse data fail, req-sz=%d",
                 net_endpoint_dump(net_dns_svr_tmp_buffer(svr), base_endpoint), req_sz);
             return -1;
         }
@@ -82,7 +82,7 @@ static int net_dns_svr_endpoint_process_data(
         
         if (net_dns_svr_query_start(query) != 0) {
             CPE_ERROR(
-                svr->m_em, "dns-svr: [%s]: <<< start query fail",
+                svr->m_em, "dns-svr: %s: <<< start query fail",
                 net_endpoint_dump(net_dns_svr_tmp_buffer(svr), base_endpoint));
             net_dns_svr_query_free(query);
             continue;
