@@ -181,7 +181,6 @@ int net_dns_ns_cli_endpoint_send(
     net_endpoint_t other = net_endpoint_other(dns_cli->m_endpoint);
     if (other) {
         if (!net_endpoint_is_active(other)) {
-            //net_endpoint_is_active
             if (net_endpoint_connect(other) != 0) {
                 CPE_ERROR(
                     manage->m_em, "dns-cli: %s: --> chanel connect fail",
