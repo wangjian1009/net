@@ -148,14 +148,18 @@ int net_dns_svr_itf_send_response(net_dns_svr_itf_t dns_itf, net_dns_svr_query_t
         
         void * output_buf = net_endpoint_buf_alloc(query->m_endpoint, &capacity);
         if (output_buf == NULL) {
-            CPE_ERROR(svr->m_em, "dns-svr: tcp >>> alloc buf fail, capacity=%d!", capacity);
+            CPE_ERROR(
+                svr->m_em, "dns-svr: %s: tcp >>> alloc buf fail, capacity=%d!",
+                net_endpoint_dump(net_dns_svr_tmp_buffer(svr), query->m_endpoint), capacity);
             return -1;
         }
 
         void * content_buf = ((uint8_t*)output_buf) + sizeof(uint16_t);
         int rv = net_dns_svr_query_build_response(query, content_buf, capacity - sizeof(uint16_t));
         if (rv < 0) {
-            CPE_ERROR(svr->m_em, "dns-svr: tcp >>> build response fail!");
+            CPE_ERROR(
+                svr->m_em, "dns-svr: %s: tcp >>> build response fail!",
+                net_endpoint_dump(net_dns_svr_tmp_buffer(svr), query->m_endpoint));
             return -1;
         }
         assert((uint32_t)rv <= capacity - sizeof(uint16_t));
@@ -167,9 +171,9 @@ int net_dns_svr_itf_send_response(net_dns_svr_itf_t dns_itf, net_dns_svr_query_t
             char address_buf[128];
             cpe_str_dup(
                 address_buf, sizeof(address_buf),
-                net_address_dump(net_dns_svr_tmp_buffer(svr), net_endpoint_address(query->m_endpoint)));
+                net_endpoint_dump(net_dns_svr_tmp_buffer(svr), query->m_endpoint));
             CPE_INFO(
-                svr->m_em, "dns-svr: [%s]: tcp >>> (%d) %s",
+                svr->m_em, "dns-svr: %s: tcp >>> (%d) %s",
                 address_buf,
                 req_sz,
                 net_dns_svr_req_dump(svr, net_dns_svr_tmp_buffer(svr), content_buf, req_sz));
@@ -177,7 +181,9 @@ int net_dns_svr_itf_send_response(net_dns_svr_itf_t dns_itf, net_dns_svr_query_t
 
         uint32_t total_sz = sizeof(uint16_t) + req_sz;
         if (net_endpoint_buf_supply(query->m_endpoint, net_ep_buf_write, total_sz) != 0) {
-            CPE_ERROR(svr->m_em, "dns-svr: tcp >>> supply fail, sz=%d!", total_sz);
+            CPE_ERROR(
+                svr->m_em, "dns-svr: %s: tcp >>> supply fail, sz=%d!",
+                net_endpoint_dump(net_dns_svr_tmp_buffer(svr), query->m_endpoint), total_sz);
             return -1;
         }
         
