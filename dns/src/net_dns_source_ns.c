@@ -2,6 +2,7 @@
 #include "cpe/pal/pal_stdio.h"
 #include "cpe/utils/stream_buffer.h"
 #include "cpe/utils/time_utils.h"
+#include "net_schedule.h"
 #include "net_address.h"
 #include "net_endpoint.h"
 #include "net_dgram.h"
@@ -224,6 +225,26 @@ int net_dns_source_ns_ctx_start(net_dns_source_t source, net_dns_task_ctx_t task
     net_dns_source_ns_t ns = net_dns_source_data(source);
     struct net_dns_source_ns_ctx * ns_ctx = net_dns_task_ctx_data(task_ctx);
 
+    uint8_t ignore = 0;
+    switch(net_schedule_local_ip_stack(manage->m_schedule)) {
+    case net_local_ip_stack_none:
+        ignore = 1;
+        break;
+    case net_local_ip_stack_ipv4:
+        if (net_address_type(ns->m_address) == net_address_ipv6) ignore = 1;
+        break;
+    case net_local_ip_stack_ipv6:
+        if (net_address_type(ns->m_address) == net_address_ipv4) ignore = 1;
+        break;
+    case net_local_ip_stack_dual:
+        break;
+    }
+
+    if (ignore) {
+        net_dns_task_ctx_set_empty(task_ctx);
+        return 0;
+    }
+    
     mem_buffer_t buffer = &manage->m_data_buffer;
     mem_buffer_clear_data(buffer);
 
