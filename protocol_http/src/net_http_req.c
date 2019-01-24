@@ -40,7 +40,7 @@ net_http_req_create(net_http_endpoint_t http_ep, net_http_req_method_t method, c
     }
 
     req->m_http_ep = http_ep;
-    req->m_id = ++http_ep->m_max_req_id;
+    req->m_id = ++http_protocol->m_max_req_id;
     req->m_data_sended = 0;
     req->m_free_after_processed = 0;
 

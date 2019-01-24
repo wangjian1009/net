@@ -120,9 +120,10 @@ net_trans_http_endpoint_t net_trans_host_alloc_endpoint(net_trans_host_t host, u
         }
 
         if (net_trans_http_endpoint_is_https(trans_http) != is_https) continue;
-        
-        net_trans_task_t last_task = TAILQ_LAST(&trans_http->m_tasks, net_trans_task_list);
-        if (last_task && !last_task->m_keep_alive) continue;
+
+        if (!TAILQ_EMPTY(&trans_http->m_tasks)) continue; /*暂时单个连接只支持单个请求 */
+        /* net_trans_task_t last_task = TAILQ_LAST(&trans_http->m_tasks, net_trans_task_list); */
+        /* if (last_task && !last_task->m_keep_alive) continue; */
 
         if (idle_trans_http == NULL || trans_http->m_task_count < idle_trans_http->m_task_count) {
             idle_trans_http = trans_http;

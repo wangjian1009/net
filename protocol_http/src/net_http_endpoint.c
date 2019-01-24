@@ -274,7 +274,6 @@ int net_http_endpoint_init(net_endpoint_t endpoint) {
     http_ep->m_ssl_ctx = NULL;
     http_ep->m_reconnect_span_ms = 0;
     http_ep->m_request_id_tag = NULL;
-    http_ep->m_max_req_id = 0;
     http_ep->m_req_count = 0;
     TAILQ_INIT(&http_ep->m_reqs);
     

@@ -82,6 +82,8 @@ static int net_http_protocol_init(net_protocol_t protocol) {
     http_protocol->m_endpoint_fini = NULL;
     http_protocol->m_endpoint_on_state_change = NULL;
 
+    http_protocol->m_max_req_id = 0;
+    
     TAILQ_INIT(&http_protocol->m_free_reqs);
     TAILQ_INIT(&http_protocol->m_free_ssl_ctxes);
     

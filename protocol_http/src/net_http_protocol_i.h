@@ -29,6 +29,7 @@ struct net_http_protocol {
     uint16_t m_protocol_capacity;
     net_http_protocol_init_fun_t m_protocol_init;
     net_http_protocol_fini_fun_t m_protocol_fini;
+
     /*endpoint*/
     uint16_t m_endpoint_capacity;
     net_http_endpoint_init_fun_t m_endpoint_init;
@@ -37,6 +38,7 @@ struct net_http_protocol {
     net_http_endpoint_on_state_change_fun_t m_endpoint_on_state_change;
 
     /*runtime*/
+    uint16_t m_max_req_id;
     net_http_req_list_t m_free_reqs;
     net_http_ssl_ctx_list_t m_free_ssl_ctxes;
 };
