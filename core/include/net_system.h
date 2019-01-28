@@ -93,6 +93,7 @@ typedef enum net_local_ip_stack {
 typedef enum net_endpoint_network_errno {
     net_endpoint_network_errno_none,
     net_endpoint_network_errno_remote_closed,
+    net_endpoint_network_errno_connect_error,
     net_endpoint_network_errno_network_error,
     net_endpoint_network_errno_user_closed,
     net_endpoint_network_errno_logic,
