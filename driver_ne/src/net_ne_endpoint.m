@@ -70,15 +70,23 @@ int net_ne_endpoint_connect(net_endpoint_t base_endpoint) {
         return -1;
     }
 
-    @autoreleasepool {
-        net_address_t remote_addr = net_endpoint_remote_address(base_endpoint);
-        if (remote_addr == NULL) {
-            CPE_ERROR(
-                driver->m_em, "ne: %s: connect with no remote address!",
-                net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint));
-            return -1;
-        }
+    net_address_t remote_addr = net_endpoint_remote_address(base_endpoint);
+    if (remote_addr == NULL) {
+        CPE_ERROR(
+            driver->m_em, "ne: %s: connect with no remote address!",
+            net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint));
+        return -1;
+    }
+    remote_addr = net_address_resolved(remote_addr);
 
+    if (net_address_type(remote_addr) != net_address_ipv4 && net_address_type(remote_addr) != net_address_ipv6) {
+        CPE_ERROR(
+            driver->m_em, "ne: %s: connect not support domain address!",
+            net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint));
+        return -1;
+    }
+
+    @autoreleasepool {
         NWHostEndpoint * remote_endpoint = net_ne_address_to_endoint(driver, remote_addr);
         if (remote_endpoint == NULL) {
             CPE_ERROR(
@@ -309,6 +317,10 @@ static void net_ne_endpoint_do_read(net_ne_driver_t driver, net_ne_endpoint_t en
                     }
 
                     if (net_endpoint_buf_supply(base_endpoint, net_ep_buf_read, bytes) != 0) {
+                        if (!net_endpoint_have_error(base_endpoint)) {
+                            net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_logic);
+                        }
+
                         if (net_endpoint_set_state(base_endpoint, net_endpoint_state_logic_error) != 0) {
                             if (driver->m_debug) {
                                 CPE_INFO(
@@ -442,7 +454,6 @@ static void net_ne_endpoint_close_sock(net_ne_driver_t driver, net_ne_endpoint_t
                                 driver->m_em, "ne: %s: disconnected in connecting, connect error!, %s",
                                 net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint),
                                 error ? [[error localizedDescription] UTF8String] : "unknown error");
-
                             net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_connect_error);
                             if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
                                 net_endpoint_free(base_endpoint);
@@ -458,6 +469,10 @@ static void net_ne_endpoint_close_sock(net_ne_driver_t driver, net_ne_endpoint_t
                                     error ? [[error localizedDescription] UTF8String] : "unknown error");
                             }
 
+                            if (!net_endpoint_have_error(base_endpoint)) {
+                                net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_network_error);
+                            }
+
                             if (net_endpoint_set_state(base_endpoint, net_endpoint_state_disable) != 0) {
                                 net_endpoint_free(base_endpoint);
                                 return;
@@ -471,7 +486,10 @@ static void net_ne_endpoint_close_sock(net_ne_driver_t driver, net_ne_endpoint_t
                                 net_endpoint_state_str(net_endpoint_state(base_endpoint)),
                                 error ? [[error localizedDescription] UTF8String] : "unknown error");
 
-                            net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_network_error);
+                            if (!net_endpoint_have_error(base_endpoint)) {
+                                net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_network_error);
+                            }
+
                             if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
                                 net_endpoint_free(base_endpoint);
                                 return;
@@ -491,6 +509,10 @@ static void net_ne_endpoint_close_sock(net_ne_driver_t driver, net_ne_endpoint_t
                             }
 
                             if (net_ne_endpoint_do_write(driver, endpoint, base_endpoint) != 0) {
+                                if (!net_endpoint_have_error(base_endpoint)) {
+                                    net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_logic);
+                                }
+
                                 if (net_endpoint_set_state(base_endpoint, net_endpoint_state_logic_error) != 0) {
                                     net_endpoint_free(base_endpoint);
                                     return;
