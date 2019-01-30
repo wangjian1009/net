@@ -367,6 +367,7 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
                 }
 
                 net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_remote_closed);
+                net_ev_endpoint_close_sock(driver, endpoint);
                 if (net_endpoint_set_state(base_endpoint, net_endpoint_state_disable) != 0) {
                     net_endpoint_free(base_endpoint);
                 }

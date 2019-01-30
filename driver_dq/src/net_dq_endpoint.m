@@ -157,11 +157,19 @@ int net_dq_endpoint_connect(net_endpoint_t base_endpoint) {
     }
     
     if (connect_rv != 0) {
+        if (endpoint->m_fd == -1) {
+            return -1;
+        }
+        
         if (cpe_sock_errno() == EINPROGRESS || cpe_sock_errno() == EWOULDBLOCK) {
             if (net_endpoint_driver_debug(base_endpoint)) {
                 net_dq_endpoint_connect_log_connect_start(driver, endpoint, base_endpoint, 1);
             }
 
+            if (net_endpoint_address(base_endpoint) == NULL) {
+                net_dq_endpoint_update_local_address(endpoint);
+            }
+            
             net_dq_endpoint_start_w_connect(driver, endpoint, base_endpoint);
             
             return net_endpoint_set_state(base_endpoint, net_endpoint_state_connecting);
@@ -171,8 +179,11 @@ int net_dq_endpoint_connect(net_endpoint_t base_endpoint) {
                 driver->m_em, "dq: %s: connect error, errno=%d (%s)",
                 net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
                 cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-            cpe_sock_close(endpoint->m_fd);
-            endpoint->m_fd = -1;
+
+            net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_connect_error);
+
+            net_dq_endpoint_close_sock(driver, endpoint);
+
             return -1;
         }
     }
@@ -289,16 +300,38 @@ int net_dq_endpoint_on_read(net_dq_driver_t driver, net_dq_endpoint_t endpoint, 
         uint32_t capacity = 0;
         void * rbuf = net_endpoint_buf_alloc(base_endpoint, &capacity);
         if (rbuf == NULL) {
-            if (net_endpoint_state(base_endpoint) == net_endpoint_state_deleting) return -1;
-            CPE_ERROR(
-                driver->m_em, "dq: %s: on read: endpoint rbuf full!",
-                net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
-                cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-            net_dq_endpoint_close_sock(driver, endpoint);
-            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) return -1;
-            return 0;
+            if (net_endpoint_state(base_endpoint) == net_endpoint_state_deleting) {
+                if (endpoint->m_fd != -1) {
+                    net_dq_endpoint_close_sock(driver, endpoint);
+                }
+                return -1;
+            }
+            else if (net_endpoint_buf_is_full(base_endpoint, net_ep_buf_read)) {
+                break;
+            }
+            else {
+                CPE_ERROR(
+                    driver->m_em, "dq: %s: on read: endpoint rbuf full!",
+                    net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
+                    cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+                if (endpoint->m_fd != -1) {
+                    net_dq_endpoint_close_sock(driver, endpoint);
+                }
+
+                if (net_endpoint_is_active(base_endpoint)) {
+                    if (!net_endpoint_have_error(base_endpoint)) {
+                        net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_logic);
+                    }
+                
+                    if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) return -1;
+                }
+                return 0;
+            }
         }
 
+        if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) break;
+        
+        assert(endpoint->m_fd != -1);
         ssize_t bytes = cpe_recv(endpoint->m_fd, rbuf, capacity, 0);
         if (bytes > 0) {
             if (net_endpoint_driver_debug(base_endpoint)) {
@@ -318,6 +351,9 @@ int net_dq_endpoint_on_read(net_dq_driver_t driver, net_dq_endpoint_t endpoint, 
                 }
                 
                 if (net_endpoint_is_active(base_endpoint)) {
+                    if (!net_endpoint_have_error(base_endpoint)) {
+                        net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_logic);
+                    }
                     if (net_endpoint_set_state(base_endpoint, net_endpoint_state_logic_error) != 0) {
                         if (net_endpoint_driver_debug(base_endpoint)) {
                             CPE_INFO(
@@ -339,27 +375,29 @@ int net_dq_endpoint_on_read(net_dq_driver_t driver, net_dq_endpoint_t endpoint, 
                     net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
             }
                 
+            net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_remote_closed);
             net_dq_endpoint_close_sock(driver, endpoint);
             if (net_endpoint_set_state(base_endpoint, net_endpoint_state_disable) != 0) return -1;
             return 0;
         }
         else {
-            net_endpoint_buf_release(base_endpoint);
             assert(bytes == -1);
+            net_endpoint_buf_release(base_endpoint);
 
-            switch(errno) {
-            case EWOULDBLOCK:
-            case EINPROGRESS:
+            if (cpe_sock_errno() == EWOULDBLOCK || cpe_sock_errno() == EINPROGRESS) {
                 net_dq_endpoint_start_r(driver, endpoint, base_endpoint);
-                return 0;
-            case EINTR:
+                break;
+            }
+            else if (cpe_sock_errno() == EINTR) {
                 continue;
-            default:
+            }
+            else {
                 CPE_ERROR(
                     driver->m_em, "dq: %s: recv error, errno=%d (%s)!",
                     net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
                     cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
 
+                net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_network_error);
                 net_dq_endpoint_close_sock(driver, endpoint);
                 if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) return -1;
                 return 0;
@@ -404,6 +442,7 @@ int net_dq_endpoint_on_write(net_dq_driver_t driver, net_dq_endpoint_t endpoint,
                     net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
             }
 
+            net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_remote_closed);
             net_dq_endpoint_close_sock(driver, endpoint);
             if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) return -1;
             return 0;
@@ -426,6 +465,7 @@ int net_dq_endpoint_on_write(net_dq_driver_t driver, net_dq_endpoint_t endpoint,
                         net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
                 }
 
+                net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_network_error);
                 net_dq_endpoint_close_sock(driver, endpoint);
                 if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) return -1;
                 return 0;
@@ -436,6 +476,7 @@ int net_dq_endpoint_on_write(net_dq_driver_t driver, net_dq_endpoint_t endpoint,
                 net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
                 cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
 
+            net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_network_error);
             net_dq_endpoint_close_sock(driver, endpoint);
             if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) return -1;
 
@@ -455,6 +496,7 @@ static void net_dq_endpoint_on_connect(net_dq_driver_t driver, net_dq_endpoint_t
             net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
 
+        net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_network_error);
         net_dq_endpoint_close_sock(driver, endpoint);
         if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
             net_endpoint_free(base_endpoint);
@@ -475,6 +517,8 @@ static void net_dq_endpoint_on_connect(net_dq_driver_t driver, net_dq_endpoint_t
                 driver->m_em, "dq: %s: connect error(callback), errno=%d (%s)",
                 net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
                 err, cpe_sock_errstr(err));
+
+            net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_connect_error);
             net_dq_endpoint_close_sock(driver, endpoint);
             if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
                 net_endpoint_free(base_endpoint);
@@ -587,7 +631,9 @@ static void net_dq_endpoint_start_do_write(net_dq_driver_t driver, net_dq_endpoi
         endpoint->m_source_do_write,
         ^{
             net_dq_endpoint_stop_do_write(driver, endpoint, base_endpoint);
-            net_dq_endpoint_on_write(driver, endpoint, base_endpoint);
+            if (net_dq_endpoint_on_write(driver, endpoint, base_endpoint) != 0) {
+                net_endpoint_free(base_endpoint);
+            }
         });
 
     dispatch_source_set_timer(endpoint->m_source_do_write, DISPATCH_TIME_NOW, 0, 0);
@@ -691,6 +737,7 @@ static int net_dq_endpoint_start_connect(
             CPE_ERROR(
                 driver->m_em, "dq: %s: connect not support connect to domain address!",
                 net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
+            net_dq_endpoint_close_sock(driver, endpoint);
             return -1;
         }
 
@@ -699,8 +746,7 @@ static int net_dq_endpoint_start_connect(
                 driver->m_em, "dq: %s: set sock reuse address fail, errno=%d (%s)",
                 net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
                 cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-            cpe_sock_close(endpoint->m_fd);
-            endpoint->m_fd = -1;
+            net_dq_endpoint_close_sock(driver, endpoint);
             return -1;
         }
 
@@ -714,6 +760,7 @@ static int net_dq_endpoint_start_connect(
                 driver->m_em, "dq: %s: bind local address %s fail, errno=%d (%s)",
                 net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint), local_addr_buf,
                 cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+            net_dq_endpoint_close_sock(driver, endpoint);
             return -1;
         }
     }
@@ -723,8 +770,7 @@ static int net_dq_endpoint_start_connect(
             driver->m_em, "dq: %s: set non-block fail, errno=%d (%s)",
             net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-        cpe_sock_close(endpoint->m_fd);
-        endpoint->m_fd = -1;
+        net_dq_endpoint_close_sock(driver, endpoint);
         return -1;
     }
 
@@ -733,8 +779,7 @@ static int net_dq_endpoint_start_connect(
             driver->m_em, "dq: %s: set no-sig-pipe fail, errno=%d (%s)",
             net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-        cpe_sock_close(endpoint->m_fd);
-        endpoint->m_fd = -1;
+        net_dq_endpoint_close_sock(driver, endpoint);
         return -1;
     }
 
@@ -746,3 +791,4 @@ static void net_dq_endpoint_close_sock(net_dq_driver_t driver, net_dq_endpoint_t
     cpe_sock_close(endpoint->m_fd);
     endpoint->m_fd = -1;
 }
+
