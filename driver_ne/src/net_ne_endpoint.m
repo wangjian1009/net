@@ -12,6 +12,7 @@
 static const char * net_ne_endpoint_state_str(NWTCPConnectionState state);
 static int net_ne_endpoint_do_write(net_ne_driver_t driver, net_ne_endpoint_t endpoint, net_endpoint_t base_endpoint);
 static void net_ne_endpoint_do_read(net_ne_driver_t driver, net_ne_endpoint_t endpoint, net_endpoint_t base_endpoint);
+static void net_ne_endpoint_close_sock(net_ne_driver_t driver, net_ne_endpoint_t endpoint);
 
 int net_ne_endpoint_init(net_endpoint_t base_endpoint) {
     net_ne_endpoint_t endpoint = net_endpoint_data(base_endpoint);
@@ -131,8 +132,14 @@ int net_ne_endpoint_connect(net_endpoint_t base_endpoint) {
                 driver->m_em, "ne: %s: connect complete, state=%s, error",
                 net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint),
                 net_ne_endpoint_state_str(endpoint->m_connection.state));
+
+            net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_connect_error);
+
             [endpoint->m_connection release];
             endpoint->m_connection = nil;
+
+            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) return -1;
+
             return -1;
         }
     }
@@ -142,13 +149,7 @@ void net_ne_endpoint_close(net_endpoint_t base_endpoint) {
     net_ne_endpoint_t endpoint = net_endpoint_data(base_endpoint);
 
     if (endpoint->m_connection) {
-
-        [endpoint->m_connection removeObserver: endpoint->m_observer
-                                    forKeyPath: @"state"];
-
-        [endpoint->m_connection cancel];
-        [endpoint->m_connection release];
-        endpoint->m_connection = nil;
+        net_ne_endpoint_close_sock(endpoint);
     }
 }
 
@@ -263,15 +264,40 @@ static void net_ne_endpoint_do_read(net_ne_driver_t driver, net_ne_endpoint_t en
                     uint32_t bytes = (uint32_t)data.length;
                     void * buf = net_endpoint_buf_alloc(base_endpoint, net_ep_buf_read, &bytes);
                     if (buf == NULL || bytes != (uint32_t)data.length) {
-                        CPE_ERROR(
-                            driver->m_em, "ne: %s: recv %d bytes data, alloc endpoint rbuf fail, r-size=%d!",
-                            net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint),
-                            (uint32_t)data.length, bytes);
-                
-                        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
-                            net_endpoint_free(base_endpoint);
+                        if (net_endpoint_state(base_endpoint) == net_endpoint_state_deleting) {
+                            if (endpoint->m_connection) {
+                                net_ne_endpoint_close_sock(endpoint);
+                            }
+                            return;
                         }
-                        return;
+                        else if (net_endpoint_buf_is_full(base_endpoint, net_ep_buf_read)) {
+                            return;
+                        }
+                        else {
+                            CPE_ERROR(
+                                driver->m_em, "ev: %s: fd=%d: alloc rbuf fail, and rbuf is not full!!!",
+                                net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
+                            if (endpoint->m_connection) {
+                                net_ne_endpoint_close_sock(endpoint);
+                            }
+
+                            if (net_endpoint_is_active(base_endpoint)) {
+                                if (!net_endpoint_have_error(base_endpoint)) {
+                                    net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_logic);
+                                }
+                                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_logic_error) != 0) {
+                                    CPE_INFO(
+                                        driver->m_em, "ne: %s: recv %d bytes data, alloc endpoint rbuf fail, r-size=%d!",
+                                        net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint),
+                                        (uint32_t)data.length, bytes);
+                
+                                    if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
+                                        net_endpoint_free(base_endpoint);
+                                    }
+                                }
+                            }
+                            return;
+                        }
                     }
 
                     [data getBytes: buf length: bytes];
@@ -369,6 +395,18 @@ static int net_ne_endpoint_do_write(net_ne_driver_t driver, net_ne_endpoint_t en
     return 0;
 }
 
+
+static void net_ne_endpoint_close_sock(net_ne_driver_t driver, net_ne_endpoint_t endpoint) {
+    assert(endpoint->m_connection != nil);
+
+    [endpoint->m_connection removeObserver: endpoint->m_observer
+                                forKeyPath: @"state"];
+
+    [endpoint->m_connection cancel];
+    [endpoint->m_connection release];
+    endpoint->m_connection = nil;
+}
+
 @implementation NetNeEndpointObserver
 
 -(void)observeValueForKeyPath:(NSString *)keyPath 
@@ -404,7 +442,8 @@ static int net_ne_endpoint_do_write(net_ne_driver_t driver, net_ne_endpoint_t en
                                 driver->m_em, "ne: %s: disconnected in connecting, connect error!, %s",
                                 net_endpoint_dump(net_ne_driver_tmp_buffer(driver), base_endpoint),
                                 error ? [[error localizedDescription] UTF8String] : "unknown error");
-                
+
+                            net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_connect_error);
                             if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
                                 net_endpoint_free(base_endpoint);
                                 return;
@@ -432,6 +471,7 @@ static int net_ne_endpoint_do_write(net_ne_driver_t driver, net_ne_endpoint_t en
                                 net_endpoint_state_str(net_endpoint_state(base_endpoint)),
                                 error ? [[error localizedDescription] UTF8String] : "unknown error");
 
+                            net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_network_error);
                             if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
                                 net_endpoint_free(base_endpoint);
                                 return;
