@@ -504,8 +504,14 @@ static void net_dq_endpoint_on_connect(net_dq_driver_t driver, net_dq_endpoint_t
         return;
     }
 
+    CPE_ERROR(
+        driver->m_em, "dq: %s: connect: get socket error: %d (%s), env error: %d (%s)!",
+        net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
+        err, cpe_sock_errstr(err),
+        cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+    
     if (err != 0) {
-        if (cpe_sock_errno() == EINPROGRESS || cpe_sock_errno() == EWOULDBLOCK) {
+        if (err == EINPROGRESS || err == EWOULDBLOCK) {
             if (net_endpoint_driver_debug(base_endpoint) >= 2) {
                 net_dq_endpoint_connect_log_connect_start(driver, endpoint, base_endpoint, 1);
             }
