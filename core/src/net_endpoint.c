@@ -97,6 +97,10 @@ net_endpoint_create(net_driver_t driver, net_protocol_t protocol) {
 void net_endpoint_free(net_endpoint_t endpoint) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
 
+    if (endpoint->m_state == net_endpoint_state_established) {
+        endpoint->m_state = net_endpoint_state_deleting;
+    }
+    
     if (endpoint->m_data_watcher_fini) {
         endpoint->m_data_watcher_fini(endpoint->m_data_watcher_ctx, endpoint);
     }
@@ -810,5 +814,3 @@ static int net_endpoint_notify_state_changed(net_endpoint_t endpoint, net_endpoi
 
     return rv;
 }
-
-uint8_t net_endpoint_have_any_data(net_endpoint_t endpoint);

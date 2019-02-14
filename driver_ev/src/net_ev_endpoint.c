@@ -299,9 +299,6 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
                     CPE_ERROR(
                         driver->m_em, "ev: %s: fd=%d: alloc rbuf fail, and rbuf is not full!!!",
                         net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
-                    if (endpoint->m_fd != -1) {
-                        net_ev_endpoint_close_sock(driver, endpoint);
-                    }
 
                     if (net_endpoint_is_active(base_endpoint)) {
                         if (!net_endpoint_have_error(base_endpoint)) {
@@ -314,7 +311,12 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
                                     net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
                             }
                             net_endpoint_free(base_endpoint);
+                            return;
                         }
+                    }
+
+                    if (endpoint->m_fd != -1) {
+                        net_ev_endpoint_close_sock(driver, endpoint);
                     }
                     break;
                 }
@@ -337,10 +339,6 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
                 }
                 
                 if (net_endpoint_buf_supply(base_endpoint, net_ep_buf_read, (uint32_t)bytes) != 0) {
-                    if (endpoint->m_fd != -1) {
-                        net_ev_endpoint_close_sock(driver, endpoint);
-                    }
-
                     if (net_endpoint_is_active(base_endpoint)) {
                         if (!net_endpoint_have_error(base_endpoint)) {
                             net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_logic);
@@ -352,8 +350,14 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
                                     net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
                             }
                             net_endpoint_free(base_endpoint);
+                            return;
                         }
                     }
+                    
+                    if (endpoint->m_fd != -1) {
+                        net_ev_endpoint_close_sock(driver, endpoint);
+                    }
+
                     return;
                 }
             }
@@ -367,10 +371,15 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
                 }
 
                 net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_remote_closed);
-                net_ev_endpoint_close_sock(driver, endpoint);
                 if (net_endpoint_set_state(base_endpoint, net_endpoint_state_disable) != 0) {
                     net_endpoint_free(base_endpoint);
+                    return;
                 }
+
+                if (endpoint->m_fd != -1) {
+                    net_ev_endpoint_close_sock(driver, endpoint);
+                }
+
                 return;
             }
             else {
@@ -390,10 +399,15 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
                         cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
 
                     net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_network_error);
-					net_ev_endpoint_close_sock(driver, endpoint);
                     if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
                         net_endpoint_free(base_endpoint);
+                        return;
                     }
+
+                    if (endpoint->m_fd != -1) {
+                        net_ev_endpoint_close_sock(driver, endpoint);
+                    }
+
                     return;
                 }
             }
@@ -434,10 +448,15 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
                 }
 
                 net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_remote_closed);
-				net_ev_endpoint_close_sock(driver, endpoint);
                 if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
                     net_endpoint_free(base_endpoint);
+                    return;
                 }
+
+                if (endpoint->m_fd != -1) {
+                    net_ev_endpoint_close_sock(driver, endpoint);
+                }
+
                 return;
             }
             else {
@@ -455,10 +474,15 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
                     }
 
                     net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_network_error);
-					net_ev_endpoint_close_sock(driver, endpoint);
                     if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
                         net_endpoint_free(base_endpoint);
+                        return;
                     }
+
+                    if (endpoint->m_fd != -1) {
+                        net_ev_endpoint_close_sock(driver, endpoint);
+                    }
+                    
                     return;
                 }
 
@@ -468,10 +492,15 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
                     cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
 
                 net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_network_error);
-                net_ev_endpoint_close_sock(driver, endpoint);
                 if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
                     net_endpoint_free(base_endpoint);
+                    return;
                 }
+
+                if (endpoint->m_fd != -1) {
+                    net_ev_endpoint_close_sock(driver, endpoint);
+                }
+                
                 return;
             }
         }
@@ -498,10 +527,15 @@ static void net_ev_endpoint_connect_cb(EV_P_ ev_io *w, int revents) {
             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
 
         net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_network_error);
-        net_ev_endpoint_close_sock(driver, endpoint);
         if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
             net_endpoint_free(base_endpoint);
+            return;
         }
+
+        if (endpoint->m_fd != -1) {
+            net_ev_endpoint_close_sock(driver, endpoint);
+        }
+        
         return;
     }
 
@@ -522,9 +556,13 @@ static void net_ev_endpoint_connect_cb(EV_P_ ev_io *w, int revents) {
             net_ev_endpoint_connect_log_connect_error(driver, endpoint, base_endpoint, err, 0);
 
             net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_connect_error);
-            net_ev_endpoint_close_sock(driver, endpoint);
             if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
                 net_endpoint_free(base_endpoint);
+                return;
+            }
+
+            if (endpoint->m_fd != -1) {
+                net_ev_endpoint_close_sock(driver, endpoint);
             }
         }
         return;
@@ -703,8 +741,9 @@ extern void ev_changes_remove(EV_P_ int fd);
 #endif
 
 static void net_ev_endpoint_close_sock(net_ev_driver_t driver, net_ev_endpoint_t endpoint) {
-    //net_endpoint_t base_endpoint = net_endpoint_from_data(endpoint);
+    net_endpoint_t base_endpoint = net_endpoint_from_data(endpoint);
 
+    assert(net_endpoint_state(base_endpoint) != net_endpoint_state_established);
     assert(endpoint->m_fd != -1);
 
     ev_io_stop(driver->m_ev_loop, &endpoint->m_watcher);
