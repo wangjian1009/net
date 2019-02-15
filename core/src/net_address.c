@@ -49,8 +49,11 @@ net_address_t net_address_create_auto(net_schedule_t schedule, const char * url)
             hostname_len = strlen(url);
         }
     }
-    
-    if (sock_validate_hostname(url, (int)hostname_len)) {
+
+    if (hostname_len == 0) {
+        return net_address_create_ipv4_any(schedule, port);
+    }
+    else if (sock_validate_hostname(url, (int)hostname_len)) {
         char buf[256];
         assert(hostname_len + 1 < sizeof(buf));
         if (url[hostname_len] != 0 && hostname_len<256) {
