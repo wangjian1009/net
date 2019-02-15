@@ -7,5 +7,8 @@ curl_cpp_flags:=-I$(curl_base)/include \
                 -DBUILDING_LIBCURL
 
 curl_c_flags:=-Wno-deprecated-declarations
-curl_src:=$(wildcard $(curl_base)/lib/*.c)
+curl_src:=$(wildcard $(curl_base)/lib/*.c) \
+          $(wildcard $(curl_base)/lib/vauth/*.c) \
+          $(wildcard $(curl_base)/lib/vtls/*.c)
+
 $(eval $(call def_library,curl))

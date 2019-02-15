@@ -1,20 +1,20 @@
 #ifndef NET_TRANS_MANAGE_I_H_INCLEDED
 #define NET_TRANS_MANAGE_I_H_INCLEDED
+#include "curl/curl.h"
 #include "cpe/pal/pal_queue.h"
 #include "cpe/utils/hash.h"
 #include "cpe/utils/memory.h"
 #include "cpe/utils/error.h"
 #include "cpe/utils/buffer.h"
-#include "net_http_types.h"
 #include "net_trans_manage.h"
 
 NET_BEGIN_DECL
 
 typedef struct net_trans_host * net_trans_host_t;
-typedef struct net_trans_http_protocol * net_trans_http_protocol_t;
-typedef struct net_trans_http_endpoint * net_trans_http_endpoint_t;
+typedef struct net_trans_protocol * net_trans_protocol_t;
+typedef struct net_trans_endpoint * net_trans_endpoint_t;
 
-typedef TAILQ_HEAD(net_trans_http_endpoint_list, net_trans_http_endpoint) net_trans_http_endpoint_list_t;
+typedef TAILQ_HEAD(net_trans_endpoint_list, net_trans_endpoint) net_trans_endpoint_list_t;
 typedef TAILQ_HEAD(net_trans_task_list, net_trans_task) net_trans_task_list_t;
 typedef TAILQ_HEAD(net_trans_host_list, net_trans_host) net_trans_host_list_t;
 
@@ -28,15 +28,15 @@ struct net_trans_manage {
     net_endpoint_data_watch_fun_t m_watcher_fun;
     
     uint16_t m_cfg_host_endpoint_limit;
-    net_trans_http_protocol_t m_http_protocol;
-    
-    struct cpe_hash_table m_hosts;
+    net_trans_protocol_t m_protocol;
+
+    uint16_t m_endpoint_count;
+    net_trans_endpoint_list_t m_endpoints;
     struct cpe_hash_table m_tasks;
 
     char * m_request_id_tag;
     uint32_t m_max_task_id;
 
-    net_trans_host_list_t m_free_hosts;
     net_trans_task_list_t m_free_tasks;
 };
 

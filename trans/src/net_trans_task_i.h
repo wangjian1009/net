@@ -11,18 +11,11 @@ struct net_trans_task {
         struct cpe_hash_entry m_hh_for_mgr;
         TAILQ_ENTRY(net_trans_task) m_next_for_mgr;
     };
-    net_trans_http_endpoint_t m_ep;
+    CURL * m_handler;
+    net_trans_endpoint_t m_ep;
     TAILQ_ENTRY(net_trans_task) m_next_for_ep;
     uint32_t m_id;
-    net_http_req_t m_http_req;
-    uint8_t m_keep_alive;
-
-    /*result*/
-    net_trans_task_result_t m_result;
-    int16_t m_res_code;
-    char m_res_message[16];
-    char m_res_mine[16];
-    char m_res_charset[16];
+    net_trans_task_state_t m_state;
 
     /*callback*/
     uint8_t m_in_callback;

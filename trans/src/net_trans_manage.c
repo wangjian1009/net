@@ -6,13 +6,10 @@
 #include "net_timer.h"
 #include "net_protocol.h"
 #include "net_endpoint.h"
-#include "net_http_protocol.h"
-#include "net_http_endpoint.h"
 #include "net_trans_manage_i.h"
-#include "net_trans_http_protocol_i.h"
-#include "net_trans_http_endpoint_i.h"
+#include "net_trans_protocol_i.h"
+#include "net_trans_endpoint_i.h"
 #include "net_trans_task_i.h"
-#include "net_trans_host_i.h"
 
 net_trans_manage_t net_trans_manage_create(
     mem_allocrator_t alloc, error_monitor_t em, net_schedule_t schedule, net_driver_t driver)
@@ -36,27 +33,13 @@ net_trans_manage_t net_trans_manage_create(
     manage->m_max_task_id = 0;
 
     TAILQ_INIT(&manage->m_free_tasks);
-    TAILQ_INIT(&manage->m_free_hosts);
     
-    manage->m_http_protocol = net_trans_http_protocol_create(manage);
-    if (manage->m_http_protocol == NULL) {
+    manage->m_protocol = net_trans_protocol_create(manage);
+    if (manage->m_protocol == NULL) {
         mem_free(alloc, manage);
         return NULL;
     }
 
-    if (cpe_hash_table_init(
-            &manage->m_hosts,
-            alloc,
-            (cpe_hash_fun_t) net_trans_host_hash,
-            (cpe_hash_eq_t) net_trans_host_eq,
-            CPE_HASH_OBJ2ENTRY(net_trans_host, m_hh_for_mgr),
-            -1) != 0)
-    {
-        net_trans_http_protocol_free(manage->m_http_protocol);
-        mem_free(alloc, manage);
-        return NULL;
-    }
-    
     if (cpe_hash_table_init(
             &manage->m_tasks,
             alloc,
@@ -65,8 +48,7 @@ net_trans_manage_t net_trans_manage_create(
             CPE_HASH_OBJ2ENTRY(net_trans_task, m_hh_for_mgr),
             -1) != 0)
     {
-        cpe_hash_table_fini(&manage->m_hosts);
-        net_trans_http_protocol_free(manage->m_http_protocol);
+        net_trans_protocol_free(manage->m_protocol);
         mem_free(alloc, manage);
         return NULL;
     }
@@ -75,17 +57,15 @@ net_trans_manage_t net_trans_manage_create(
 }
 
 void net_trans_manage_free(net_trans_manage_t mgr) {
-    net_trans_host_free_all(mgr);
     net_trans_task_free_all(mgr);
-    cpe_hash_table_fini(&mgr->m_hosts);
     cpe_hash_table_fini(&mgr->m_tasks);
     
     mgr->m_watcher_ctx = NULL;
     mgr->m_watcher_fun = NULL;
     
-    if (mgr->m_http_protocol) {
-        net_trans_http_protocol_free(mgr->m_http_protocol);
-        mgr->m_http_protocol = NULL;
+    if (mgr->m_protocol) {
+        net_trans_protocol_free(mgr->m_protocol);
+        mgr->m_protocol = NULL;
     }
 
     if (mgr->m_request_id_tag) {
@@ -97,10 +77,6 @@ void net_trans_manage_free(net_trans_manage_t mgr) {
         net_trans_task_real_free(TAILQ_FIRST(&mgr->m_free_tasks));
     }
 
-    while(!TAILQ_EMPTY(&mgr->m_free_hosts)) {
-        net_trans_host_real_free(TAILQ_FIRST(&mgr->m_free_hosts));
-    }
-    
     mem_free(mgr->m_alloc, mgr);
 }
 

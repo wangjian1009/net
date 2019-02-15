@@ -3,17 +3,14 @@
 #include "cpe/utils/string_utils.h"
 #include "net_address.h"
 #include "net_endpoint.h"
-#include "net_http_req.h"
-#include "net_http_endpoint.h"
 #include "net_trans_task_i.h"
-#include "net_trans_host_i.h"
-#include "net_trans_http_endpoint_i.h"
+#include "net_trans_endpoint_i.h"
 
 static net_address_t net_trans_task_parse_address(
     net_trans_manage_t mgr, const char * url, uint8_t * is_https, const char * * relative_url);
-static net_http_res_op_result_t net_trans_task_on_body(void * ctx, net_http_req_t req, void * data, size_t data_size);
-static net_http_res_op_result_t net_trans_task_on_complete(void * ctx, net_http_req_t req, net_http_res_result_t result);
-static net_http_res_op_result_t net_trans_task_on_head(void * ctx, net_http_req_t req, const char * name, const char * value);
+/* static net_http_res_op_result_t net_trans_task_on_body(void * ctx, net_http_req_t req, void * data, size_t data_size); */
+/* static net_http_res_op_result_t net_trans_task_on_complete(void * ctx, net_http_req_t req, net_http_res_result_t result); */
+/* static net_http_res_op_result_t net_trans_task_on_head(void * ctx, net_http_req_t req, const char * name, const char * value); */
         
 net_trans_task_t
 net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const char * uri) {
@@ -33,15 +30,7 @@ net_trans_task_t net_trans_task_create_relative(
     net_trans_manage_t mgr, net_trans_method_t method,
     net_address_t address, uint8_t is_https, const char * relative_url)
 {
-    net_trans_host_t host = NULL;
-    net_trans_http_endpoint_t http_ep = NULL;
     net_trans_task_t task = NULL;
-
-    host = net_trans_host_check_create(mgr, address);
-    if (host == NULL) goto CREATED_ERROR;
-
-    http_ep = net_trans_host_alloc_endpoint(host, is_https);
-    if (http_ep == NULL) goto CREATED_ERROR;
 
     task = TAILQ_FIRST(&mgr->m_free_tasks);
     if (task) {
@@ -56,15 +45,18 @@ net_trans_task_t net_trans_task_create_relative(
     }
 
     task->m_mgr = mgr;
-    task->m_ep = http_ep;
+    task->m_ep = NULL;
     task->m_id = mgr->m_max_task_id + 1;
-    task->m_keep_alive = 1;
+    task->m_state = net_trans_task_init;
 
-    task->m_result = net_trans_result_unknown;
-    task->m_res_code = 0;
-    task->m_res_message[0] = 0;
-    task->m_res_mine[0] = 0;
-    task->m_res_charset[0] = 0;
+    task->m_handler = curl_easy_init();
+    if (task->m_handler == NULL) {
+        CPE_ERROR(mgr->m_em, "trans: task: curl_easy_init fail!");
+        goto CREATED_ERROR;
+    }
+    curl_easy_setopt(task->m_handler, CURLOPT_PRIVATE, task);
+
+    curl_easy_setopt(task->m_handler, CURLOPT_NOSIGNAL, 1);
     
     task->m_in_callback = 0;
     task->m_is_free = 0;
@@ -73,19 +65,6 @@ net_trans_task_t net_trans_task_create_relative(
     task->m_progress_op = NULL;
     task->m_ctx = NULL;
     task->m_ctx_free = NULL;
-
-    task->m_http_req = net_http_req_create(
-        net_http_endpoint_from_data(http_ep),
-        method == net_trans_method_get ? net_http_req_method_get : net_http_req_method_post, relative_url);
-    if (task->m_http_req == NULL) {
-        CPE_ERROR(mgr->m_em, "trans: task: create http req fail!");
-        goto CREATED_ERROR;
-    }
-
-    if (net_http_req_write_head_host(task->m_http_req) != 0) {
-        CPE_ERROR(mgr->m_em, "trans: task: http req: write head host fail!");
-        goto CREATED_ERROR;
-    }
 
     cpe_hash_entry_init(&task->m_hh_for_mgr);
     if (cpe_hash_table_insert_unique(&mgr->m_tasks, task) != 0) {
@@ -99,32 +78,10 @@ net_trans_task_t net_trans_task_create_relative(
 
 CREATED_ERROR:
     if (task) {
-        if (task->m_http_req) {
-            net_http_req_free(task->m_http_req);
-            task->m_http_req = NULL;
-
-            net_trans_http_endpoint_free(http_ep);
-            http_ep = NULL;
-        }
-        
         TAILQ_INSERT_TAIL(&mgr->m_free_tasks, task, m_next_for_mgr);
         task = NULL;
     }
     
-    if (http_ep) {
-        if (!net_trans_http_endpoint_is_active(http_ep)) {
-            net_trans_http_endpoint_free(http_ep);
-        }
-        http_ep = NULL;
-    }
-    
-    if (host) {
-        if (TAILQ_EMPTY(&host->m_endpoints)) {
-            net_trans_host_free(host);
-        }
-        host = NULL;
-    }
-
     return NULL;
 }
 
@@ -134,10 +91,10 @@ void net_trans_task_free(net_trans_task_t task) {
         return;
     }
 
-    if (task->m_http_req) {
-        net_http_req_free(task->m_http_req);
-        task->m_http_req = NULL;
-    }
+    /* if (task->m_http_req) { */
+    /*     net_http_req_free(task->m_http_req); */
+    /*     task->m_http_req = NULL; */
+    /* } */
     
     if (task->m_ctx_free) {
         task->m_ctx_free(task->m_ctx);
@@ -189,40 +146,11 @@ net_trans_task_t net_trans_task_find(net_trans_manage_t mgr, uint32_t task_id) {
 }
 
 net_trans_manage_t net_trans_task_manage(net_trans_task_t task) {
-    return task->m_ep->m_host->m_mgr;
+    return task->m_mgr;
 }
 
 net_trans_task_state_t net_trans_task_state(net_trans_task_t task) {
-    if (task->m_http_req) {
-        switch(net_http_req_state(task->m_http_req)) {
-        case net_http_req_state_completed:
-            return net_trans_task_working;
-        default:
-            return net_trans_task_init;
-        }
-    }
-    else {
-        return net_trans_task_done;
-    }
-}
-
-net_trans_task_result_t net_trans_task_result(net_trans_task_t task) {
-    return task->m_result;
-}
-
-int16_t net_trans_task_res_code(net_trans_task_t task) {
-    return task->m_res_code;
-}
-
-const char * net_trans_task_res_mine(net_trans_task_t task) {
-    return task->m_res_mine;
-}
-
-const char * net_trans_task_res_charset(net_trans_task_t task) {
-    return task->m_res_charset;
-}
-
-void net_trans_task_set_debug(net_trans_task_t task, uint8_t is_debug) {
+    return task->m_state;
 }
 
 void net_trans_task_set_callback(
@@ -244,53 +172,54 @@ void net_trans_task_set_callback(
 }
 
 int net_trans_task_set_timeout(net_trans_task_t task, uint64_t timeout_ms) {
-    if (task->m_http_req) {
-        return net_http_req_start_timeout(task->m_http_req, (uint32_t)timeout_ms);
-    }
-    else {
-        return -1;
-    }
+    /* if (task->m_http_req) { */
+    /*     return net_http_req_start_timeout(task->m_http_req, (uint32_t)timeout_ms); */
+    /* } */
+    /* else { */
+    /*     return -1; */
+    /* } */
+    return 0;
 }
 
 int net_trans_task_append_header(net_trans_task_t task, const char * name, const char * value) {
-    if (net_http_req_write_head_pair(task->m_http_req, name, value) != 0) return -1;
+    /* if (net_http_req_write_head_pair(task->m_http_req, name, value) != 0) return -1; */
 
-    if (strcasecmp(name, "Connection") == 0) {
-        task->m_keep_alive =
-            net_http_endpoint_connection_type(net_http_req_ep(task->m_http_req)) == net_http_connection_type_keep_alive ? 1 : 0;
-    }
+    /* if (strcasecmp(name, "Connection") == 0) { */
+    /*     task->m_keep_alive = */
+    /*         net_endpoint_connection_type(net_http_req_ep(task->m_http_req)) == net_http_connection_type_keep_alive ? 1 : 0; */
+    /* } */
     
     return 0;
 }
 
 int net_trans_task_set_body(net_trans_task_t task, void const * data, uint32_t data_size) {
-    if (net_http_req_write_body_full(task->m_http_req, data, data_size) != 0) return -1;
+    //if (net_http_req_write_body_full(task->m_http_req, data, data_size) != 0) return -1;
     return 0;
 }
 
 int net_trans_task_start(net_trans_task_t task) {
-    net_trans_manage_t mgr = task->m_mgr;
+    /* net_trans_manage_t mgr = task->m_mgr; */
 
-    if (net_http_req_set_reader(
-            task->m_http_req,
-            task,
-            NULL,
-            net_trans_task_on_head,
-            task->m_write_op ? net_trans_task_on_body : NULL,
-            net_trans_task_on_complete) != 0)
-    {
-        CPE_ERROR(mgr->m_em, "trans: task: set reader fail!");
-        return -1;
-    }
+    /* if (net_http_req_set_reader( */
+    /*         task->m_http_req, */
+    /*         task, */
+    /*         NULL, */
+    /*         net_trans_task_on_head, */
+    /*         task->m_write_op ? net_trans_task_on_body : NULL, */
+    /*         net_trans_task_on_complete) != 0) */
+    /* { */
+    /*     CPE_ERROR(mgr->m_em, "trans: task: set reader fail!"); */
+    /*     return -1; */
+    /* } */
     
-    if (!net_trans_http_endpoint_is_active(task->m_ep)) {
-        net_http_endpoint_enable(net_http_endpoint_from_data(task->m_ep));
-    }
+    /* if (!net_trans_endpoint_is_active(task->m_ep)) { */
+    /*     net_endpoint_enable(net_endpoint_from_data(task->m_ep)); */
+    /* } */
     
-    if (net_http_req_write_commit(task->m_http_req) != 0) {
-        CPE_ERROR(mgr->m_em, "trans: task: start fail!");
-        return -1;
-    }
+    /* if (net_http_req_write_commit(task->m_http_req) != 0) { */
+    /*     CPE_ERROR(mgr->m_em, "trans: task: start fail!"); */
+    /*     return -1; */
+    /* } */
 
     return 0;
 }
@@ -382,86 +311,86 @@ static net_address_t net_trans_task_parse_address(
     return address;
 }
 
-static net_http_res_op_result_t net_trans_task_on_head(void * ctx, net_http_req_t req, const char * name, const char * value) {
-    net_trans_task_t task = ctx;
+/* static net_http_res_op_result_t net_trans_task_on_head(void * ctx, net_http_req_t req, const char * name, const char * value) { */
+/*     net_trans_task_t task = ctx; */
 
-    if (task->m_res_code == 0) {
-        task->m_res_code = net_http_req_res_code(req);
-        cpe_str_dup(task->m_res_message, sizeof(task->m_res_message), net_http_req_res_message(req));
-    }
+/*     if (task->m_res_code == 0) { */
+/*         task->m_res_code = net_http_req_res_code(req); */
+/*         cpe_str_dup(task->m_res_message, sizeof(task->m_res_message), net_http_req_res_message(req)); */
+/*     } */
 
-    return net_http_res_op_success;
-}
+/*     return net_http_res_op_success; */
+/* } */
 
-static net_http_res_op_result_t net_trans_task_on_body(void * ctx, net_http_req_t req, void * data, size_t data_size) {
-    net_trans_task_t task = ctx;
+/* static net_http_res_op_result_t net_trans_task_on_body(void * ctx, net_http_req_t req, void * data, size_t data_size) { */
+/*     net_trans_task_t task = ctx; */
 
-    if (task->m_write_op) {
-        task->m_in_callback = 1;
-        task->m_write_op(task, task->m_ctx, data, data_size);
-        task->m_in_callback = 0;
+/*     if (task->m_write_op) { */
+/*         task->m_in_callback = 1; */
+/*         task->m_write_op(task, task->m_ctx, data, data_size); */
+/*         task->m_in_callback = 0; */
 
-        if (task->m_is_free) {
-            net_trans_task_free(task);
-            return net_http_res_op_ignore;
-        }
-    }
+/*         if (task->m_is_free) { */
+/*             net_trans_task_free(task); */
+/*             return net_http_res_op_ignore; */
+/*         } */
+/*     } */
     
-    return net_http_res_op_success;
-}
+/*     return net_http_res_op_success; */
+/* } */
 
-static net_http_res_op_result_t net_trans_task_on_complete(void * ctx, net_http_req_t req, net_http_res_result_t result) {
-    net_trans_task_t task = ctx;
-    net_trans_manage_t mgr = task->m_mgr;
+/* static net_http_res_op_result_t net_trans_task_on_complete(void * ctx, net_http_req_t req, net_http_res_result_t result) { */
+/*     net_trans_task_t task = ctx; */
+/*     net_trans_manage_t mgr = task->m_mgr; */
 
-    switch(result) {
-    case net_http_res_complete:
-        task->m_result = net_trans_result_complete;
-        task->m_res_code = net_http_req_res_code(req);
-        break;
-    case net_http_res_timeout:
-        task->m_result = net_trans_result_timeout;
-        break;
-    case net_http_res_canceled:
-        task->m_result = net_trans_result_cancel;
-        break;
-    case net_http_res_disconnected:
-        task->m_result = net_trans_result_cancel;
-        break;
-    }
+/*     switch(result) { */
+/*     case net_http_res_complete: */
+/*         task->m_result = net_trans_result_complete; */
+/*         task->m_res_code = net_http_req_res_code(req); */
+/*         break; */
+/*     case net_http_res_timeout: */
+/*         task->m_result = net_trans_result_timeout; */
+/*         break; */
+/*     case net_http_res_canceled: */
+/*         task->m_result = net_trans_result_cancel; */
+/*         break; */
+/*     case net_http_res_disconnected: */
+/*         task->m_result = net_trans_result_cancel; */
+/*         break; */
+/*     } */
 
-    assert(task->m_ep);
-    TAILQ_REMOVE(&task->m_ep->m_tasks, task, m_next_for_ep);
-    task->m_ep = NULL;
+/*     assert(task->m_ep); */
+/*     TAILQ_REMOVE(&task->m_ep->m_tasks, task, m_next_for_ep); */
+/*     task->m_ep = NULL; */
 
-    assert(task->m_http_req == req);
-    task->m_http_req = NULL;
+/*     assert(task->m_http_req == req); */
+/*     task->m_http_req = NULL; */
     
-    if (task->m_commit_op) {
-        uint32_t buf_sz = 0;
-        void * buf = NULL;
+/*     if (task->m_commit_op) { */
+/*         uint32_t buf_sz = 0; */
+/*         void * buf = NULL; */
         
-        if (task->m_write_op == NULL) {
-            net_endpoint_t base_endpoint = net_http_endpoint_net_ep(net_http_req_ep(req));
-            buf_sz = net_endpoint_buf_size(base_endpoint, net_ep_buf_http_body);
+/*         if (task->m_write_op == NULL) { */
+/*             net_endpoint_t base_endpoint = net_endpoint_net_ep(net_http_req_ep(req)); */
+/*             buf_sz = net_endpoint_buf_size(base_endpoint, net_ep_buf_http_body); */
 
-            if (net_endpoint_buf_peak_with_size(base_endpoint, net_ep_buf_http_body, buf_sz, &buf) != 0) {
-                CPE_ERROR(mgr->m_em, "trans: task %d: complete: get http data fail, size=%d!", task->m_id, buf_sz);
-                task->m_result = net_trans_result_cancel;
-                buf = NULL;
-                buf_sz = 0;
-            }
-        }
+/*             if (net_endpoint_buf_peak_with_size(base_endpoint, net_ep_buf_http_body, buf_sz, &buf) != 0) { */
+/*                 CPE_ERROR(mgr->m_em, "trans: task %d: complete: get http data fail, size=%d!", task->m_id, buf_sz); */
+/*                 task->m_result = net_trans_result_cancel; */
+/*                 buf = NULL; */
+/*                 buf_sz = 0; */
+/*             } */
+/*         } */
 
-        task->m_in_callback = 1;
-        task->m_commit_op(task, task->m_ctx, buf, buf_sz);
-        task->m_in_callback = 0;
+/*         task->m_in_callback = 1; */
+/*         task->m_commit_op(task, task->m_ctx, buf, buf_sz); */
+/*         task->m_in_callback = 0; */
 
-        if (task->m_is_free) {
-            net_trans_task_free(task);
-            return net_http_res_op_ignore;
-        }
-    }
+/*         if (task->m_is_free) { */
+/*             net_trans_task_free(task); */
+/*             return net_http_res_op_ignore; */
+/*         } */
+/*     } */
 
-    return net_http_res_op_success;
-}
+/*     return net_http_res_op_success; */
+/* } */

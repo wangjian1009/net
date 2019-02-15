@@ -41,10 +41,10 @@
 /* #undef CURL_DISABLE_IMAP */
 
 /* to disable LDAP */
-/* #undef CURL_DISABLE_LDAP */
+#define CURL_DISABLE_LDAP 1
 
 /* to disable LDAPS */
-/* #undef CURL_DISABLE_LDAPS */
+#define CURL_DISABLE_LDAPS 1
 
 /* to disable --libcurl C code generation option */
 /* #undef CURL_DISABLE_LIBCURL_OPTION */
@@ -957,7 +957,7 @@
 #define USE_MANUAL 1
 
 /* if mbedTLS is enabled */
-/* #undef USE_MBEDTLS */
+#define USE_MBEDTLS 1
 
 /* if MesaLink is enabled */
 /* #undef USE_MESALINK */
