@@ -47,7 +47,7 @@ int net_ev_acceptor_init(net_acceptor_t base_acceptor) {
         return -1;
     }
 
-    uint32_t accept_queue_size = 0;
+    uint32_t accept_queue_size = net_acceptor_queue_size(base_acceptor);
     if (accept_queue_size == 0) accept_queue_size = 512;
 
     if (driver->m_sock_process_fun) {
