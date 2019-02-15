@@ -325,7 +325,7 @@
 /* #undef HAVE_GSSMIT */
 
 /* Define to 1 if you have the <idn2.h> header file. */
-#define HAVE_IDN2_H 1
+/* #undef HAVE_IDN2_H */
 
 /* Define to 1 if you have the <ifaddrs.h> header file. */
 #define HAVE_IFADDRS_H 1
@@ -383,19 +383,19 @@
 /* #undef HAVE_LDAPSSL_H */
 
 /* Define to 1 if you have the ldap.h header file. */
-#define HAVE_LDAP_H 1
+/* #undef HAVE_LDAP_H */
 
 /* Define to 1 if you have the `ldap_init_fd' function. */
 /* #undef HAVE_LDAP_INIT_FD */
 
 /* Use LDAPS implementation */
-#define HAVE_LDAP_SSL 1
+/* #undef HAVE_LDAP_SSL */
 
 /* Define to 1 if you have the ldap_ssl.h header file. */
 /* #undef HAVE_LDAP_SSL_H */
 
 /* Define to 1 if you have the `ldap_url_parse' function. */
-#define HAVE_LDAP_URL_PARSE 1
+/* #undef HAVE_LDAP_URL_PARSE */
 
 /* Define to 1 if you have the `brotlidec' library (-lbrotlidec). */
 /* #undef HAVE_LIBBROTLIDEC */
@@ -404,7 +404,7 @@
 #define HAVE_LIBGEN_H 1
 
 /* Define to 1 if you have the `idn2' library (-lidn2). */
-#define HAVE_LIBIDN2 1
+/* #undef HAVE_LIBIDN */
 
 /* Define to 1 if using libressl. */
 /* #undef HAVE_LIBRESSL */
