@@ -23,13 +23,13 @@ int net_trans_sock_cb(CURL *e, curl_socket_t s, int what, void *cbp, void *sockp
     }
 
     if (what == CURL_POLL_REMOVE) {
-        net_watcher_t watcher = net_watcher_find(mgr->m_driver, s);
+        net_watcher_t watcher = net_watcher_find(mgr->m_schedule, s);
         if (watcher) {
             net_watcher_free(watcher);
         }
     }
     else {
-        net_watcher_t watcher = net_watcher_find(mgr->m_driver, s);
+        net_watcher_t watcher = net_watcher_find(mgr->m_schedule, s);
         if (watcher == NULL) {
             watcher = net_watcher_create(mgr->m_driver, s, task, net_watcher_event_cb);
             if (watcher == NULL) {

@@ -28,7 +28,7 @@ typedef int (*net_dgram_send_fun_t)(net_dgram_t dgram, net_address_t target, voi
 
 typedef int (*net_watcher_init_fun_t)(net_watcher_t watcher);
 typedef void (*net_watcher_fini_fun_t)(net_watcher_t watcher);
-typedef void (*net_watcher_update_fun_t)(net_watcher_t watcher, uint8_t expect_read, uint8_t expect_write);
+typedef void (*net_watcher_update_fun_t)(net_watcher_t watcher, int fd, uint8_t expect_read, uint8_t expect_write);
 
 net_driver_t
 net_driver_create(

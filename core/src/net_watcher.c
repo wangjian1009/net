@@ -25,6 +25,8 @@ net_watcher_t net_watcher_create(net_driver_t driver, int fd, void * ctx, net_wa
 
     watcher->m_driver = driver;
     watcher->m_fd = fd;
+    watcher->m_ctx = ctx;
+    watcher->m_action = action;
     watcher->m_in_processing = 0;
     watcher->m_deleting = 0;
 
@@ -69,6 +71,10 @@ void net_watcher_real_free(net_watcher_t watcher) {
     mem_free(driver->m_schedule->m_alloc, watcher);
 }
 
+void * net_watcher_data(net_watcher_t watcher) {
+    return watcher + 1;
+}
+
 net_driver_t net_watcher_driver(net_watcher_t watcher) {
     return watcher->m_driver;
 }
@@ -93,13 +99,20 @@ void net_watcher_update(net_watcher_t watcher, uint8_t expect_read, uint8_t expe
     watcher->m_expect_read = expect_read;
     watcher->m_expect_write = expect_write;
 
-    assert(watcher->m_in_processing == 0);
-    watcher->m_in_processing = 1;
+    uint8_t tag_local = 0;
+    if (watcher->m_in_processing == 0) {
+        watcher->m_in_processing = 1;
+        tag_local = 1;
+    }
+    
     watcher->m_action(watcher->m_ctx, watcher->m_fd, expect_read, expect_write);
-    watcher->m_in_processing = 1;
 
-    if (watcher->m_deleting) {
-        net_watcher_free(watcher);
+    if (tag_local) {
+        watcher->m_in_processing = 1;
+
+        if (watcher->m_deleting) {
+            net_watcher_free(watcher);
+        }
     }
 }
 
