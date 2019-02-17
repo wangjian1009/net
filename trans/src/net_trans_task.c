@@ -5,29 +5,11 @@
 #include "net_endpoint.h"
 #include "net_trans_task_i.h"
 
-static net_address_t net_trans_task_parse_address(
-    net_trans_manage_t mgr, const char * url, uint8_t * is_https, const char * * relative_url);
-static size_t net_trans_task_write_cb(char *ptr, size_t size, size_t nmemb, void *userdata);
+static size_t net_trans_task_write_cb(char *ptr, size_t size, size_t nmemb, void * userdata);
 static int net_tranks_task_prog_cb(void *p, double dltotal, double dlnow, double ult, double uln);
-        
+
 net_trans_task_t
 net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const char * uri) {
-    uint8_t is_https;
-    const char * relative_url;
-    net_address_t address = net_trans_task_parse_address(mgr, uri, &is_https, &relative_url);
-    if (address == NULL) return NULL;
-
-    net_trans_task_t task = net_trans_task_create_relative(mgr, method, address, is_https, relative_url);
-    
-    net_address_free(address);
-
-    return task;
-}
-
-net_trans_task_t net_trans_task_create_relative(
-    net_trans_manage_t mgr, net_trans_method_t method,
-    net_address_t address, uint8_t is_https, const char * relative_url)
-{
     net_trans_task_t task = NULL;
 
     task = TAILQ_FIRST(&mgr->m_free_tasks);
@@ -71,6 +53,8 @@ net_trans_task_t net_trans_task_create_relative(
     curl_easy_setopt(task->m_handler, CURLOPT_PROGRESSFUNCTION, net_tranks_task_prog_cb);
     curl_easy_setopt(task->m_handler, CURLOPT_PROGRESSDATA, task);
 
+    curl_easy_setopt(task->m_handler, CURLOPT_URL, uri);
+    
     switch(method) {
     case net_trans_method_get:
         break;
@@ -78,9 +62,7 @@ net_trans_task_t net_trans_task_create_relative(
         curl_easy_setopt(task->m_handler, CURLOPT_POST, 1L);
         break;
     }
-    curl_easy_setopt(task->m_handler, CURLOPT_URL, relative_url);
 
-    /*     if (curl_easy_setopt(task->m_handler, CURLOPT_POST, 1L) != (int)CURLM_OK */
     /*     || curl_easy_setopt(task->m_handler, CURLOPT_POSTFIELDSIZE, (int)data_len) != (int)CURLM_OK */
     /*     || curl_easy_setopt(task->m_handler, CURLOPT_COPYPOSTFIELDS, data) != (int)CURLM_OK */
     /* { */
@@ -90,7 +72,7 @@ net_trans_task_t net_trans_task_create_relative(
     /*     return -1; */
     /* } */
 
-    if (is_https) {
+    if (cpe_str_start_with(uri, "https")) {
         curl_easy_setopt(task->m_handler, CURLOPT_SSL_VERIFYPEER, 0);
         curl_easy_setopt(task->m_handler, CURLOPT_SSL_VERIFYHOST, 0);
     }
@@ -379,18 +361,31 @@ static size_t net_trans_task_write_cb(char *ptr, size_t size, size_t nmemb, void
 	size_t total_length = size * nmemb;
     ssize_t write_size;
 
-    /* if (task->m_write_op) { */
-    /*     task->m_in_callback = 1; */
-    /*     task->m_write_op(task, task->m_write_ctx, ptr, total_length); */
-    /*     task->m_in_callback = 0; */
+    if (task->m_write_op) {
+        task->m_in_callback = 1;
+        task->m_write_op(task, task->m_ctx, ptr, total_length);
+        task->m_in_callback = 0;
 
-    /*     if (task->m_is_free) { */
-    /*         task->m_is_free = 0; */
-    /*         net_trans_task_free(task); */
-    /*     } */
+        if (task->m_is_free) {
+            task->m_is_free = 0;
+            net_trans_task_free(task);
+        }
 
-    /*     return total_length; */
-    /* } */
+        return total_length;
+    }
+    else {
+        write_size = mem_buffer_append(&task->m_buffer, ptr, total_length);
+        if (write_size != (ssize_t)total_length) {
+            CPE_ERROR(
+                mgr->m_em, "trans: task %d): append %d data fail, return %d!",
+                task->m_id, (int)total_length, (int)write_size);
+        }
+        else {
+            if (mgr->m_debug) {
+                CPE_INFO(mgr->m_em, "trans: task %d: receive %d data!", task->m_id, (int)total_length);
+            }
+        }
+    }
     
     return total_length;
 }
@@ -400,16 +395,16 @@ static int net_tranks_task_prog_cb(void *p, double dltotal, double dlnow, double
     (void)ult;
     (void)uln;
 
-    /* if (task->m_progress_op) { */
-    /*     task->m_in_callback = 1; */
-    /*     task->m_progress_op(task, task->m_progress_ctx, dltotal, dlnow); */
-    /*     task->m_in_callback = 0; */
+    if (task->m_progress_op) {
+        task->m_in_callback = 1;
+        task->m_progress_op(task, task->m_ctx, dltotal, dlnow);
+        task->m_in_callback = 0;
 
-    /*     if (task->m_is_free) { */
-    /*         task->m_is_free = 0; */
-    /*         net_trans_task_free(task); */
-    /*     } */
-    /* } */
+        if (task->m_is_free) {
+            task->m_is_free = 0;
+            net_trans_task_free(task);
+        }
+    }
     
     return 0;
 }
@@ -428,7 +423,6 @@ int net_trans_task_set_done(net_trans_task_t task, net_trans_task_result_t resul
     curl_multi_remove_handle(mgr->m_multi_handle, task->m_handler);
 
     task->m_result = result;
-    //task->m_errno = (net_trans_errno_t)err;
     task->m_state = net_trans_task_done;
 
     if (mgr->m_debug) {

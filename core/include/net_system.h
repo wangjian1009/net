@@ -106,7 +106,7 @@ typedef enum net_endpoint_error_source {
     net_endpoint_error_source_protocol,
     net_endpoint_error_source_user,
 } net_endpoint_error_source_t;
-    
+
 NET_END_DECL
 
 #endif

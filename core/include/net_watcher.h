@@ -5,14 +5,21 @@
 
 NET_BEGIN_DECL
 
+typedef void (*net_watcher_action_fun_t)(void * ctx, int fd, uint8_t do_read, uint8_t do_write);
+                                         
 struct net_watcher_it {
     net_watcher_t (*next)(net_watcher_it_t it);
     char data[64];
 };
 
-net_watcher_t net_watcher_create(net_driver_t driver, int fd);
+net_watcher_t net_watcher_create(net_driver_t driver, int fd, void * ctx, net_watcher_action_fun_t action);
 void net_watcher_free(net_watcher_t watcher);
 
+net_watcher_t net_watcher_find(net_driver_t driver, int fd);
+
+uint8_t net_watcher_expect_read(net_watcher_t watcher);
+uint8_t net_watcher_expect_write(net_watcher_t watcher);
+void net_watcher_update(net_watcher_t watcher, uint8_t expect_read, uint8_t expect_write);
 
 /*net_watcher_it*/
 #define net_watcher_it_next(__it) ((__it)->next(__it))
