@@ -25,6 +25,8 @@ net_watcher_t net_watcher_create(net_driver_t driver, int fd, void * ctx, net_wa
 
     watcher->m_driver = driver;
     watcher->m_fd = fd;
+    watcher->m_in_processing = 0;
+    watcher->m_deleting = 0;
 
     if (driver->m_watcher_init(watcher) != 0) {
         TAILQ_INSERT_TAIL(&driver->m_free_watchers, watcher, m_next_for_driver);
@@ -47,6 +49,11 @@ net_watcher_t net_watcher_create(net_driver_t driver, int fd, void * ctx, net_wa
 void net_watcher_free(net_watcher_t watcher) {
     net_schedule_t schedule = watcher->m_driver->m_schedule;
 
+    if (watcher->m_in_processing) {
+        watcher->m_deleting = 1;
+        return;
+    }
+    
     watcher->m_driver->m_watcher_fini(watcher);
 
     cpe_hash_table_remove_by_ins(&watcher->m_driver->m_schedule->m_watchers, watcher);
@@ -72,19 +79,34 @@ net_watcher_t net_watcher_find(net_schedule_t schedule, int fd) {
     return cpe_hash_table_find(&schedule->m_watchers, &key);
 }
 
-/* void net_watcher_update_debug_info(net_watcher_t watcher) { */
-/*     net_schedule_t schedule = watcher->m_driver->m_schedule; */
-/*     net_debug_setup_t debug_setup; */
+uint8_t net_watcher_expect_read(net_watcher_t watcher) {
+    return watcher->m_expect_read;
+}
 
-/*     TAILQ_FOREACH(debug_setup, &schedule->m_debug_setups, m_next_for_schedule) { */
-/*         if (!net_debug_setup_check_watcher(debug_setup, watcher)) continue; */
+uint8_t net_watcher_expect_write(net_watcher_t watcher) {
+    return watcher->m_expect_write;
+}
 
-/*         if (debug_setup->m_protocol_debug > watcher->m_protocol_debug) { */
-/*             watcher->m_protocol_debug = debug_setup->m_protocol_debug; */
-/*         } */
+void net_watcher_update(net_watcher_t watcher, uint8_t expect_read, uint8_t expect_write) {
+    if (watcher->m_expect_read == expect_read && watcher->m_expect_write == expect_write) return;
 
-/*         if (debug_setup->m_driver_debug > watcher->m_driver_debug) { */
-/*             watcher->m_driver_debug = debug_setup->m_driver_debug; */
-/*         } */
-/*     } */
-/* } */
+    watcher->m_expect_read = expect_read;
+    watcher->m_expect_write = expect_write;
+
+    assert(watcher->m_in_processing == 0);
+    watcher->m_in_processing = 1;
+    watcher->m_action(watcher->m_ctx, watcher->m_fd, expect_read, expect_write);
+    watcher->m_in_processing = 1;
+
+    if (watcher->m_deleting) {
+        net_watcher_free(watcher);
+    }
+}
+
+uint32_t net_watcher_hash(net_watcher_t o, void * user_data) {
+    return (uint32_t)o->m_fd;
+}
+
+int net_watcher_eq(net_watcher_t l, net_watcher_t r, void * user_data) {
+    return l->m_fd == r->m_fd ? 1 : 0;
+}

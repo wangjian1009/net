@@ -11,6 +11,10 @@ struct net_watcher {
     struct cpe_hash_entry m_hh;
     int m_fd;
     void * m_ctx;
+    uint8_t m_in_processing;
+    uint8_t m_deleting;
+    uint8_t m_expect_read;
+    uint8_t m_expect_write;
     net_watcher_action_fun_t m_action;
 };
 
