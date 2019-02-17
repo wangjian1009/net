@@ -4,7 +4,6 @@
 #include "net_address.h"
 #include "net_endpoint.h"
 #include "net_trans_task_i.h"
-#include "net_trans_endpoint_i.h"
 
 static net_address_t net_trans_task_parse_address(
     net_trans_manage_t mgr, const char * url, uint8_t * is_https, const char * * relative_url);
@@ -44,7 +43,7 @@ net_trans_task_t net_trans_task_create_relative(
     }
 
     task->m_mgr = mgr;
-    task->m_ep = NULL;
+    task->m_watcher = NULL;
     task->m_id = mgr->m_max_task_id + 1;
     task->m_state = net_trans_task_init;
 
@@ -55,12 +54,6 @@ net_trans_task_t net_trans_task_create_relative(
     }
     curl_easy_setopt(task->m_handler, CURLOPT_PRIVATE, task);
 
-    curl_easy_setopt(task->m_handler, CURLOPT_OPENSOCKETFUNCTION, net_trans_curl_opensocket_cb);
-    curl_easy_setopt(task->m_handler, CURLOPT_OPENSOCKETDATA, task);
-
-    curl_easy_setopt(task->m_handler, CURLOPT_CLOSESOCKETFUNCTION, net_trans_curl_closesocket_cb);
-    curl_easy_setopt(task->m_handler, CURLOPT_CLOSESOCKETDATA, task);
-    
     curl_easy_setopt(task->m_handler, CURLOPT_NOSIGNAL, 1);
     
     task->m_in_callback = 0;
@@ -77,13 +70,38 @@ net_trans_task_t net_trans_task_create_relative(
     curl_easy_setopt(task->m_handler, CURLOPT_NOPROGRESS, 0L);
     curl_easy_setopt(task->m_handler, CURLOPT_PROGRESSFUNCTION, net_tranks_task_prog_cb);
     curl_easy_setopt(task->m_handler, CURLOPT_PROGRESSDATA, task);
+
+    switch(method) {
+    case net_trans_method_get:
+        break;
+    case net_trans_method_post:
+        curl_easy_setopt(task->m_handler, CURLOPT_POST, 1L);
+        break;
+    }
+    curl_easy_setopt(task->m_handler, CURLOPT_URL, relative_url);
+
+    /*     if (curl_easy_setopt(task->m_handler, CURLOPT_POST, 1L) != (int)CURLM_OK */
+    /*     || curl_easy_setopt(task->m_handler, CURLOPT_POSTFIELDSIZE, (int)data_len) != (int)CURLM_OK */
+    /*     || curl_easy_setopt(task->m_handler, CURLOPT_COPYPOSTFIELDS, data) != (int)CURLM_OK */
+    /* { */
+    /*     CPE_ERROR( */
+    /*         mgr->m_em, "%s: task %d (%s): set post %d data to %s fail!", */
+    /*         net_trans_manage_name(mgr), task->m_id, task->m_group->m_name, (int)data_len, uri); */
+    /*     return -1; */
+    /* } */
+
+    if (is_https) {
+        curl_easy_setopt(task->m_handler, CURLOPT_SSL_VERIFYPEER, 0);
+        curl_easy_setopt(task->m_handler, CURLOPT_SSL_VERIFYHOST, 0);
+    }
+
+    mem_buffer_init(&task->m_buffer, mgr->m_alloc);
     
     cpe_hash_entry_init(&task->m_hh_for_mgr);
     if (cpe_hash_table_insert_unique(&mgr->m_tasks, task) != 0) {
         CPE_ERROR(mgr->m_em, "trans: task: id duplicate!");
         goto CREATED_ERROR;
     }
-    TAILQ_INSERT_TAIL(&task->m_ep->m_tasks, task, m_next_for_ep);
 
     mgr->m_max_task_id++;
     return task;
@@ -114,11 +132,8 @@ void net_trans_task_free(net_trans_task_t task) {
         task->m_ctx_free = NULL;
     }
 
-    if (task->m_ep) {
-        TAILQ_REMOVE(&task->m_ep->m_tasks, task, m_next_for_ep);
-        task->m_ep = NULL;
-    }
-
+    mem_buffer_clear(&task->m_buffer);
+    
     net_trans_manage_t mgr = task->m_mgr;
     cpe_hash_table_remove_by_ins(&mgr->m_tasks, task);
 
@@ -230,28 +245,43 @@ int net_trans_task_set_body(net_trans_task_t task, void const * data, uint32_t d
 }
 
 int net_trans_task_start(net_trans_task_t task) {
-    /* net_trans_manage_t mgr = task->m_mgr; */
+    net_trans_manage_t mgr = task->m_mgr;
+    int rc;
 
-    /* if (net_http_req_set_reader( */
-    /*         task->m_http_req, */
-    /*         task, */
-    /*         NULL, */
-    /*         net_trans_task_on_head, */
-    /*         task->m_write_op ? net_trans_task_on_body : NULL, */
-    /*         net_trans_task_on_complete) != 0) */
-    /* { */
-    /*     CPE_ERROR(mgr->m_em, "trans: task: set reader fail!"); */
-    /*     return -1; */
-    /* } */
-    
-    /* if (!net_trans_endpoint_is_active(task->m_ep)) { */
-    /*     net_endpoint_enable(net_endpoint_from_data(task->m_ep)); */
-    /* } */
-    
-    /* if (net_http_req_write_commit(task->m_http_req) != 0) { */
-    /*     CPE_ERROR(mgr->m_em, "trans: task: start fail!"); */
-    /*     return -1; */
-    /* } */
+    assert(!task->m_is_free);
+
+    if (task->m_state == net_trans_task_working) {
+        CPE_ERROR(mgr->m_em, "trans: task %d: can`t start in state %s!", task->m_id, net_trans_task_state_str(task->m_state));
+        return -1;
+    }
+
+    if (task->m_state == net_trans_task_done) {
+        CURL * new_handler = curl_easy_duphandle(task->m_handler);
+        if (new_handler == NULL) {
+            CPE_ERROR(mgr->m_em, "trans: task %d: duphandler fail!", task->m_id);
+            return -1;
+        }
+
+        if (mgr->m_debug) {
+            CPE_INFO(mgr->m_em, "trans: task %d: duphandler!", task->m_id);
+        }
+
+        curl_easy_cleanup(task->m_handler);
+        task->m_handler = new_handler;
+    }
+
+    rc = curl_multi_add_handle(mgr->m_multi_handle, task->m_handler);
+    if (rc != 0) {
+        CPE_ERROR(mgr->m_em, "trans: task %d: curl_multi_add_handle error, rc=%d", task->m_id, rc);
+        return -1;
+    }
+    task->m_state = net_trans_task_working;
+
+    mgr->m_still_running = 1;
+
+    if (mgr->m_debug) {
+        CPE_INFO(mgr->m_em, "trans: task %d: start!", task->m_id);
+    }
 
     return 0;
 }
@@ -381,6 +411,46 @@ static int net_tranks_task_prog_cb(void *p, double dltotal, double dlnow, double
     /*     } */
     /* } */
     
+    return 0;
+}
+
+int net_trans_task_set_done(net_trans_task_t task, net_trans_task_result_t result, int err) {
+    net_trans_manage_t mgr = task->m_mgr;
+
+    if (task->m_state != net_trans_task_working) {
+        CPE_ERROR(
+            mgr->m_em, "trans: task %d: can`t done in state %s!",
+            task->m_id, net_trans_task_state_str(task->m_state));
+        return -1;
+    }
+
+    assert(task->m_state == net_trans_task_working);
+    curl_multi_remove_handle(mgr->m_multi_handle, task->m_handler);
+
+    task->m_result = result;
+    //task->m_errno = (net_trans_errno_t)err;
+    task->m_state = net_trans_task_done;
+
+    if (mgr->m_debug) {
+        CPE_INFO(
+            mgr->m_em, "trans: task %d: done, result is %s!",
+            task->m_id, net_trans_task_result_str(task->m_result));
+    }
+
+    if (task->m_commit_op) {
+        task->m_in_callback = 1;
+        task->m_commit_op(task, task->m_ctx, mem_buffer_make_continuous(&task->m_buffer, 0), mem_buffer_size(&task->m_buffer));
+        task->m_in_callback = 0;
+
+        if (task->m_is_free || task->m_state == net_trans_task_done) {
+            task->m_is_free = 0;
+            net_trans_task_free(task);
+        }
+    }
+    else {
+        net_trans_task_free(task);
+    }
+
     return 0;
 }
 

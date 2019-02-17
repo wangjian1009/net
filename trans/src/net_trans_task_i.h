@@ -12,11 +12,14 @@ struct net_trans_task {
         TAILQ_ENTRY(net_trans_task) m_next_for_mgr;
     };
     CURL * m_handler;
-    net_trans_endpoint_t m_ep;
+    net_watcher_t m_watcher;
     TAILQ_ENTRY(net_trans_task) m_next_for_ep;
     uint32_t m_id;
     net_trans_task_state_t m_state;
+    net_trans_task_result_t m_result;
 
+    struct mem_buffer m_buffer;
+    
     /*callback*/
     uint8_t m_in_callback;
     uint8_t m_is_free;
@@ -26,6 +29,13 @@ struct net_trans_task {
     void * m_ctx;
     void (*m_ctx_free)(void *);
 };
+
+void net_trans_do_timeout(net_timer_t timer, void * ctx);
+int net_trans_sock_cb(CURL *e, curl_socket_t s, int what, void *cbp, void *sockp);
+int net_trans_timer_cb(CURLM *multi, long timeout_ms, net_trans_manage_t mgr);
+
+/*task ops*/
+int net_trans_task_set_done(net_trans_task_t task, net_trans_task_result_t result, int err);
 
 void net_trans_task_free_all(net_trans_manage_t mgr);
 void net_trans_task_real_free(net_trans_task_t task);

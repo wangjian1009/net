@@ -9,6 +9,8 @@ typedef struct net_driver * net_driver_t;
 typedef struct net_protocol * net_protocol_t;
 typedef struct net_link * net_link_t;
 typedef struct net_timer * net_timer_t;
+typedef struct net_watcher * net_watcher_t;
+typedef struct net_watcher_it * net_watcher_it_t;
 typedef struct net_endpoint * net_endpoint_t;
 typedef struct net_endpoint_it * net_endpoint_it_t;
 typedef struct net_endpoint_monitor * net_endpoint_monitor_t;

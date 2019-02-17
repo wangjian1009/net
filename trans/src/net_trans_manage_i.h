@@ -27,16 +27,13 @@ struct net_trans_manage {
     void * m_watcher_ctx;
     net_endpoint_data_watch_fun_t m_watcher_fun;
     
-    uint16_t m_cfg_host_endpoint_limit;
-    net_trans_protocol_t m_protocol;
+    net_timer_t m_timer_event;
+	CURLM * m_multi_handle;
+    int m_still_running;
 
-    uint16_t m_endpoint_count;
-    net_trans_endpoint_list_t m_endpoints;
     struct cpe_hash_table m_tasks;
 
-    char * m_request_id_tag;
     uint32_t m_max_task_id;
-
     net_trans_task_list_t m_free_tasks;
 };
 

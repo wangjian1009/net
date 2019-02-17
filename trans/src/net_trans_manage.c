@@ -4,11 +4,7 @@
 #include "net_schedule.h"
 #include "net_address.h"
 #include "net_timer.h"
-#include "net_protocol.h"
-#include "net_endpoint.h"
 #include "net_trans_manage_i.h"
-#include "net_trans_protocol_i.h"
-#include "net_trans_endpoint_i.h"
 #include "net_trans_task_i.h"
 
 net_trans_manage_t net_trans_manage_create(
@@ -27,19 +23,20 @@ net_trans_manage_t net_trans_manage_create(
     manage->m_driver = driver;
     manage->m_watcher_ctx = NULL;
     manage->m_watcher_fun = NULL;
-    manage->m_cfg_host_endpoint_limit = 0;
 
-    manage->m_request_id_tag = NULL;
+	manage->m_multi_handle = curl_multi_init();
+    manage->m_timer_event = net_timer_create(driver, net_trans_do_timeout, manage);
+    manage->m_still_running = 0;
+    
     manage->m_max_task_id = 0;
 
     TAILQ_INIT(&manage->m_free_tasks);
-    
-    manage->m_protocol = net_trans_protocol_create(manage);
-    if (manage->m_protocol == NULL) {
-        mem_free(alloc, manage);
-        return NULL;
-    }
 
+    curl_multi_setopt(manage->m_multi_handle, CURLMOPT_SOCKETFUNCTION, net_trans_sock_cb);
+    curl_multi_setopt(manage->m_multi_handle, CURLMOPT_SOCKETDATA, manage);
+    curl_multi_setopt(manage->m_multi_handle, CURLMOPT_TIMERFUNCTION, net_trans_timer_cb);
+    curl_multi_setopt(manage->m_multi_handle, CURLMOPT_TIMERDATA, manage);
+    
     if (cpe_hash_table_init(
             &manage->m_tasks,
             alloc,
@@ -48,10 +45,10 @@ net_trans_manage_t net_trans_manage_create(
             CPE_HASH_OBJ2ENTRY(net_trans_task, m_hh_for_mgr),
             -1) != 0)
     {
-        net_trans_protocol_free(manage->m_protocol);
         mem_free(alloc, manage);
         return NULL;
     }
+
     
     return manage;
 }
@@ -59,19 +56,19 @@ net_trans_manage_t net_trans_manage_create(
 void net_trans_manage_free(net_trans_manage_t mgr) {
     net_trans_task_free_all(mgr);
     cpe_hash_table_fini(&mgr->m_tasks);
+
+    if (mgr->m_multi_handle) {
+        curl_multi_cleanup(mgr->m_multi_handle);
+        mgr->m_multi_handle = NULL;
+    }
+
+    if (mgr->m_timer_event) {
+        net_timer_free(mgr->m_timer_event);
+        mgr->m_timer_event = NULL;
+    }
     
     mgr->m_watcher_ctx = NULL;
     mgr->m_watcher_fun = NULL;
-    
-    if (mgr->m_protocol) {
-        net_trans_protocol_free(mgr->m_protocol);
-        mgr->m_protocol = NULL;
-    }
-
-    if (mgr->m_request_id_tag) {
-        mem_free(mgr->m_alloc, mgr->m_request_id_tag);
-        mgr->m_request_id_tag = NULL;
-    }
     
     while(!TAILQ_EMPTY(&mgr->m_free_tasks)) {
         net_trans_task_real_free(TAILQ_FIRST(&mgr->m_free_tasks));
@@ -88,27 +85,8 @@ void net_trans_manage_set_debug(net_trans_manage_t manage, uint8_t debug) {
     manage->m_debug = debug;
 }
 
-const char * net_trans_manage_request_id_tag(net_trans_manage_t manage) {
-    return manage->m_request_id_tag ? manage->m_request_id_tag : "";
-}
-
 int net_trans_manage_set_request_id_tag(net_trans_manage_t manage, const char * tag) {
-    char * new_tag = NULL;
-
-    if (tag) {
-        new_tag = cpe_str_mem_dup(manage->m_alloc, tag);
-        if (new_tag == NULL) {
-            CPE_ERROR(manage->m_em, "trans-cli: dup tag %s fail", tag);
-            return -1;
-        }
-    }
-
-    if (manage->m_request_id_tag) {
-        mem_free(manage->m_alloc, manage->m_request_id_tag);
-    }
-
-    manage->m_request_id_tag = new_tag;
-    
+    //TODO
     return 0;
 }
 
@@ -123,4 +101,7 @@ void net_trans_manage_set_data_watcher(
 
 mem_buffer_t net_trans_manage_tmp_buffer(net_trans_manage_t manage) {
     return net_schedule_tmp_buffer(manage->m_schedule);
+}
+
+static void net_trans_manage_timer_cb(net_timer_t timer, void * ctx) {
 }
