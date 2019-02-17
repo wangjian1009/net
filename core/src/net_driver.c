@@ -37,7 +37,12 @@ net_driver_create(
     uint16_t dgram_capacity,
     net_dgram_init_fun_t dgram_init,
     net_dgram_fini_fun_t dgram_fini,
-    net_dgram_send_fun_t dgram_send)
+    net_dgram_send_fun_t dgram_send,
+    /*watcher*/
+    uint16_t watcher_capacity,
+    net_watcher_init_fun_t watcher_init,
+    net_watcher_fini_fun_t watcher_fini,
+    net_watcher_update_fun_t watcher_update)
 {
     net_driver_t driver;
     
@@ -81,6 +86,12 @@ net_driver_create(
     driver->m_dgram_init = dgram_init;
     driver->m_dgram_fini = dgram_fini;
     driver->m_dgram_send = dgram_send;
+
+    /*watcher*/
+    driver->m_watcher_capacity = watcher_capacity;
+    driver->m_watcher_init = watcher_init;
+    driver->m_watcher_fini = watcher_fini;
+    driver->m_watcher_update = watcher_update;
     
     /*runtime*/
     TAILQ_INIT(&driver->m_free_acceptors);

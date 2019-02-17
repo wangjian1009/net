@@ -7,6 +7,7 @@
 #include "net_ev_acceptor_i.h"
 #include "net_ev_endpoint.h"
 #include "net_ev_dgram.h"
+#include "net_ev_watcher.h"
 #include "net_ev_timer.h"
 
 static int net_ev_driver_init(net_driver_t driver);
@@ -45,7 +46,12 @@ net_ev_driver_create(net_schedule_t schedule, struct ev_loop * ev_loop) {
         sizeof(struct net_ev_dgram),
         net_ev_dgram_init,
         net_ev_dgram_fini,
-        net_ev_dgram_send);
+        net_ev_dgram_send,
+        /*watcher*/
+        sizeof(struct net_ev_watcher),
+        net_ev_watcher_init,
+        net_ev_watcher_fini,
+        net_ev_watcher_update);
 
     if (base_driver == NULL) return NULL;
 

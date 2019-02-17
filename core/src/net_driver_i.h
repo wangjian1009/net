@@ -37,6 +37,12 @@ struct net_driver {
     net_dgram_fini_fun_t m_dgram_fini;
     net_dgram_send_fun_t m_dgram_send;
 
+    /*watcher*/
+    uint16_t m_watcher_capacity;
+    net_watcher_init_fun_t m_watcher_init;
+    net_watcher_fini_fun_t m_watcher_fini;
+    net_watcher_update_fun_t m_watcher_update;
+    
     /*runtime*/
     net_acceptor_list_t m_acceptors;
     net_acceptor_list_t m_free_acceptors;
@@ -50,6 +56,9 @@ struct net_driver {
 
     net_timer_list_t m_timers;
     net_timer_list_t m_free_timers;
+
+    net_watcher_list_t m_watchers;
+    net_watcher_list_t m_free_watchers;
 };
 
 NET_END_DECL

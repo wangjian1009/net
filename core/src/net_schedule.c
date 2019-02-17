@@ -5,6 +5,7 @@
 #include "net_driver_i.h"
 #include "net_protocol_i.h"
 #include "net_endpoint_i.h"
+#include "net_watcher_i.h"
 #include "net_endpoint_monitor_i.h"
 #include "net_address_i.h"
 #include "net_address_matcher_i.h"
@@ -73,6 +74,20 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em, uint32_t common_
     }
 
     if (cpe_hash_table_init(
+            &schedule->m_watchers,
+            alloc,
+            (cpe_hash_fun_t) net_watcher_hash,
+            (cpe_hash_eq_t) net_watcher_eq,
+            CPE_HASH_OBJ2ENTRY(net_watcher, m_hh),
+            -1) != 0)
+    {
+        cpe_hash_table_fini(&schedule->m_endpoints);
+        ringbuffer_delete(schedule->m_endpoint_buf);
+        mem_free(alloc, schedule);
+        return NULL;
+    }
+    
+    if (cpe_hash_table_init(
             &schedule->m_dns_querys,
             schedule->m_alloc,
             (cpe_hash_fun_t) net_dns_query_hash,
@@ -81,6 +96,7 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em, uint32_t common_
             -1) != 0)
     {
         cpe_hash_table_fini(&schedule->m_endpoints);
+        cpe_hash_table_fini(&schedule->m_watchers);
         ringbuffer_delete(schedule->m_endpoint_buf);
         mem_free(alloc, schedule);
         return NULL;

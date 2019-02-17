@@ -17,6 +17,7 @@ typedef TAILQ_HEAD(net_protocol_list, net_protocol) net_protocol_list_t;
 typedef TAILQ_HEAD(net_endpoint_list, net_endpoint) net_endpoint_list_t;
 typedef TAILQ_HEAD(net_endpoint_monitor_list, net_endpoint_monitor) net_endpoint_monitor_list_t;
 typedef TAILQ_HEAD(net_dgram_list, net_dgram) net_dgram_list_t;
+typedef TAILQ_HEAD(net_watcher_list, net_watcher) net_watcher_list_t;
 typedef TAILQ_HEAD(net_timer_list, net_timer) net_timer_list_t;
 typedef TAILQ_HEAD(net_address_rule_list, net_address_rule) net_address_rule_list_t;
 typedef TAILQ_HEAD(net_address_list, net_address_in_cache) net_address_list_t;
@@ -61,6 +62,8 @@ struct net_schedule {
     ringbuffer_t m_endpoint_buf;
     ringbuffer_block_t m_endpoint_tb;
 
+    struct cpe_hash_table m_watchers;
+    
     net_address_list_t m_free_addresses;
     net_link_list_t m_free_links;
     net_dns_query_list_t m_free_dns_querys;

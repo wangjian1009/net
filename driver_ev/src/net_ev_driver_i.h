@@ -9,6 +9,7 @@
 typedef struct net_ev_acceptor * net_ev_acceptor_t;
 typedef struct net_ev_endpoint * net_ev_endpoint_t;
 typedef struct net_ev_dgram * net_ev_dgram_t;
+typedef struct net_ev_watcher * net_ev_watcher_t;
 typedef struct net_ev_timer * net_ev_timer_t;
 
 struct net_ev_driver {

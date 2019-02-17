@@ -26,6 +26,10 @@ typedef int (*net_dgram_init_fun_t)(net_dgram_t dgram);
 typedef void (*net_dgram_fini_fun_t)(net_dgram_t dgram);
 typedef int (*net_dgram_send_fun_t)(net_dgram_t dgram, net_address_t target, void const * data, size_t data_len);
 
+typedef int (*net_watcher_init_fun_t)(net_watcher_t watcher);
+typedef void (*net_watcher_fini_fun_t)(net_watcher_t watcher);
+typedef void (*net_watcher_update_fun_t)(net_watcher_t watcher, uint8_t expect_read, uint8_t expect_write);
+
 net_driver_t
 net_driver_create(
     net_schedule_t schedule,
@@ -56,7 +60,12 @@ net_driver_create(
     uint16_t dgram_capacity,
     net_dgram_init_fun_t dgram_init,
     net_dgram_fini_fun_t dgram_fini,
-    net_dgram_send_fun_t dgram_send);
+    net_dgram_send_fun_t dgram_send,
+    /*watcher*/
+    uint16_t watcher_capacity,
+    net_watcher_init_fun_t watcher_init,
+    net_watcher_fini_fun_t watcher_fini,
+    net_watcher_update_fun_t watcher_update);
 
 void net_driver_free(net_driver_t driver);
 
