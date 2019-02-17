@@ -9,48 +9,6 @@
 static void net_trans_endpoint_on_data_evt(
     void * ctx, net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, net_endpoint_data_event_t evt, uint32_t size);
 
-net_trans_endpoint_t
-net_trans_endpoint_create(net_trans_manage_t mgr) {
-    net_endpoint_t endpoint =
-        net_endpoint_create(
-            mgr->m_driver, net_protocol_from_data(mgr->m_protocol));
-    if (endpoint == NULL) {
-        CPE_ERROR(mgr->m_em, "trans: create http-endpoint fail!");
-        return NULL;
-    }
-
-    /* if (mgr->m_request_id_tag) { */
-    /*     if (net_endpoint_set_request_id_tag(endpoint, mgr->m_request_id_tag) != 0) { */
-    /*         CPE_ERROR(mgr->m_em, "trans: create http-endpoint set request id %s fail!", mgr->m_request_id_tag); */
-    /*         net_endpoint_free(endpoint); */
-    /*         return NULL; */
-    /*     } */
-    /* } */
-
-    /* if (is_https) { */
-    /*     if (net_endpoint_ssl_enable(endpoint) == NULL) { */
-    /*         CPE_ERROR(mgr->m_em, "trans: enable http endpoint https fail!"); */
-    /*         net_endpoint_free(endpoint); */
-    /*         return NULL; */
-    /*     } */
-    /* } */
-    
-    net_trans_endpoint_t trans = net_endpoint_data(endpoint);
-
-    /* if (net_endpoint_set_remote_address(endpoint, host->m_address, 0) != 0) { */
-    /*     CPE_ERROR(mgr->m_em, "trans: create http-endpoint: set remote address fail!"); */
-    /*     net_endpoint_free(endpoint); */
-    /*     return NULL; */
-    /* } */
-    
-    trans->m_mgr = mgr;
-    TAILQ_INSERT_TAIL(&mgr->m_endpoints, trans, m_next);
-
-    net_endpoint_set_data_watcher(endpoint, trans, net_trans_endpoint_on_data_evt, NULL);
-    
-    return trans;
-}
-
 void net_trans_endpoint_free(net_trans_endpoint_t trans) {
     net_endpoint_free(net_endpoint_from_data(trans));
 }
@@ -76,6 +34,10 @@ void net_trans_endpoint_fini(net_endpoint_t endpoint) {
     trans->m_mgr->m_endpoint_count--;
     TAILQ_REMOVE(&trans->m_mgr->m_endpoints, trans, m_next);
     trans->m_mgr = NULL;
+}
+
+int net_trans_endpoint_input(net_endpoint_t endpoint) {
+    return 0;
 }
 
 int net_trans_endpoint_on_state_change(net_endpoint_t endpoint, net_endpoint_state_t from_state) {
@@ -114,4 +76,45 @@ static void net_trans_endpoint_on_data_evt(
     if (trans->m_mgr->m_watcher_fun) {
         trans->m_mgr->m_watcher_fun(trans->m_mgr->m_watcher_ctx, endpoint, buf_type, evt, size);
     }
+}
+
+curl_socket_t net_trans_curl_opensocket_cb(void *clientp, curlsocktype purpose, struct curl_sockaddr *address) {
+    net_trans_task_t task = clientp;
+    net_trans_manage_t mgr = task->m_mgr;
+
+    assert(task->m_ep == NULL);
+    
+    net_endpoint_t base_endpoint =
+        net_endpoint_create(mgr->m_driver, net_protocol_from_data(mgr->m_protocol));
+    if (base_endpoint == NULL) {
+        CPE_ERROR(mgr->m_em, "trans: create http-endpoint fail!");
+        return CURL_SOCKET_BAD;
+    }
+
+    net_trans_endpoint_t ep = net_endpoint_data(base_endpoint);
+    ep->m_mgr = mgr;
+    TAILQ_INSERT_TAIL(&mgr->m_endpoints, ep, m_next);
+
+    net_endpoint_set_data_watcher(base_endpoint, ep, net_trans_endpoint_on_data_evt, NULL);
+
+    task->m_ep = ep;
+    TAILQ_INSERT_TAIL(&ep->m_tasks, task, m_next_for_ep);
+    
+    return (curl_socket_t)net_endpoint_id(base_endpoint);
+}
+
+int net_trans_curl_closesocket_cb(void *clientp, curl_socket_t item) {
+    net_trans_task_t task = clientp;
+    net_trans_manage_t mgr = task->m_mgr;
+
+    net_endpoint_t base_endpoint = net_endpoint_find(mgr->m_schedule, (uint32_t)item);
+    if (base_endpoint) {
+        net_endpoint_free(base_endpoint);
+    }
+
+    return 0;
+}
+
+int net_trans_curl_sock_cb(CURL *e, curl_socket_t s, int what, void *cbp, void *sockp) {
+    return 0;
 }
