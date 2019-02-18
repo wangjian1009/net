@@ -1,6 +1,7 @@
 #include "assert.h"
 #include "cpe/pal/pal_strings.h"
 #include "cpe/utils/string_utils.h"
+#include "cpe/utils/stream_buffer.h"
 #include "net_watcher_i.h"
 #include "net_driver_i.h"
 
@@ -134,6 +135,20 @@ void net_watcher_update(net_watcher_t watcher, uint8_t expect_read, uint8_t expe
             net_watcher_free(watcher);
         }
     }
+}
+
+void net_watcher_print(write_stream_t ws, net_watcher_t watcher) {
+    stream_printf(ws, "[watcher %d]", watcher->m_fd);
+}
+
+const char * net_watcher_dump(mem_buffer_t buff, net_watcher_t watcher) {
+    struct write_stream_buffer stream = CPE_WRITE_STREAM_BUFFER_INITIALIZER(buff);
+
+    mem_buffer_clear_data(buff);
+    net_watcher_print((write_stream_t)&stream, watcher);
+    stream_putc((write_stream_t)&stream, 0);
+    
+    return mem_buffer_make_continuous(buff, 0);
 }
 
 uint32_t net_watcher_hash(net_watcher_t o, void * user_data) {

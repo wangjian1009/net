@@ -26,6 +26,10 @@ void * net_watcher_data(net_watcher_t watcher);
 net_watcher_t net_watcher_from_data(void * data);
 net_driver_t net_watcher_driver(net_watcher_t watcher);
 
+/*dump*/
+void net_watcher_print(write_stream_t ws, net_watcher_t watcher);
+const char * net_watcher_dump(mem_buffer_t buff, net_watcher_t watcher);
+
 /*net_watcher_it*/
 #define net_watcher_it_next(__it) ((__it)->next(__it))
 

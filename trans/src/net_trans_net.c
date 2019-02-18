@@ -82,13 +82,16 @@ void net_trans_check_multi_info(net_trans_manage_t mgr) {
     net_trans_task_t task;
 
     while ((msg = curl_multi_info_read(mgr->m_multi_handle, &msgs_left))) {
+        handler = msg->easy_handle;
+        res = msg->data.result;
+        
+        task = NULL;
+        curl_easy_getinfo(handler, CURLINFO_PRIVATE, &task);
+        assert(task);
+        if (task == NULL) continue;
+
         switch(msg->msg) {
         case CURLMSG_DONE: {
-            handler = msg->easy_handle;
-            res = msg->data.result;
-
-            curl_easy_getinfo(handler, CURLINFO_PRIVATE, &task);
-
             switch(res) {
             case CURLE_OK:
                 net_trans_task_set_done(task, net_trans_result_complete, 0);
