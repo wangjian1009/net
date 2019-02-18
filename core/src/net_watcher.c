@@ -49,8 +49,6 @@ net_watcher_t net_watcher_create(net_driver_t driver, int fd, void * ctx, net_wa
 }
 
 void net_watcher_free(net_watcher_t watcher) {
-    net_schedule_t schedule = watcher->m_driver->m_schedule;
-
     if (watcher->m_in_processing) {
         watcher->m_deleting = 1;
         return;

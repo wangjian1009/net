@@ -4,6 +4,7 @@
 #include "cpe/utils/string_utils.h"
 #include "net_address.h"
 #include "net_endpoint.h"
+#include "net_watcher.h"
 #include "net_trans_task_i.h"
 
 static size_t net_trans_task_write_cb(char *ptr, size_t size, size_t nmemb, void * userdata);

@@ -4,6 +4,7 @@
 #include "net_dq_acceptor_i.h"
 #include "net_dq_endpoint.h"
 #include "net_dq_dgram.h"
+#include "net_dq_watcher.h"
 #include "net_dq_timer.h"
 
 static int net_dq_driver_init(net_driver_t driver);
@@ -42,7 +43,13 @@ net_dq_driver_create(net_schedule_t schedule) {
         sizeof(struct net_dq_dgram),
         net_dq_dgram_init,
         net_dq_dgram_fini,
-        net_dq_dgram_send);
+        net_dq_dgram_send,
+        /*watcher*/
+        sizeof(struct net_dq_watcher),
+        net_dq_watcher_init,
+        net_dq_watcher_fini,
+        net_dq_watcher_update);
+
 
     if (base_driver == NULL) return NULL;
 

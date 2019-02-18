@@ -11,6 +11,7 @@
 typedef struct net_dq_acceptor * net_dq_acceptor_t;
 typedef struct net_dq_endpoint * net_dq_endpoint_t;
 typedef struct net_dq_dgram * net_dq_dgram_t;
+typedef struct net_dq_watcher * net_dq_watcher_t;
 typedef struct net_dq_timer * net_dq_timer_t;
 
 struct net_dq_driver {
