@@ -102,6 +102,3 @@ void net_trans_manage_set_data_watcher(
 mem_buffer_t net_trans_manage_tmp_buffer(net_trans_manage_t manage) {
     return net_schedule_tmp_buffer(manage->m_schedule);
 }
-
-static void net_trans_manage_timer_cb(net_timer_t timer, void * ctx) {
-}

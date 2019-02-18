@@ -261,7 +261,10 @@
 #define HAVE_GETHOSTNAME 1
 
 /* Define to 1 if you have a working getifaddrs function. */
+#if defined ANDROID
+#else
 #define HAVE_GETIFADDRS 1
+#endif
 
 /* Define to 1 if you have the `getpass_r' function. */
 /* #undef HAVE_GETPASS_R */
@@ -446,7 +449,10 @@
 #define HAVE_LONGLONG 1
 
 /* Define to 1 if you have the `mach_absolute_time' function. */
+#if defined ANDROID
+#else
 #define HAVE_MACH_ABSOLUTE_TIME 1
+#endif
 
 /* Define to 1 if you have the malloc.h header file. */
 /* #undef HAVE_MALLOC_H */
@@ -693,7 +699,10 @@
 #define HAVE_SYS_SOCKET_H 1
 
 /* Define to 1 if you have the <sys/sockio.h> header file. */
+#if defined ANDROID
+#else
 #define HAVE_SYS_SOCKIO_H 1
+#endif
 
 /* Define to 1 if you have the <sys/stat.h> header file. */
 #define HAVE_SYS_STAT_H 1
@@ -915,7 +924,11 @@
 #define SIZEOF_SIZE_T 8
 
 /* The number of bytes in type time_t */
+#if defined ANDROID
+#define SIZEOF_TIME_T 4
+#else
 #define SIZEOF_TIME_T 8
+#endif
 
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1

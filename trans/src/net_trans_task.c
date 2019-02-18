@@ -384,61 +384,6 @@ int net_trans_task_eq(net_trans_task_t l, net_trans_task_t r, void * user_data) 
     return l->m_id == r->m_id;
 }
 
-static net_address_t net_trans_task_parse_address(
-    net_trans_manage_t mgr, const char * url, uint8_t * is_https, const char * * relative_url)
-{
-    const char * host_begin;
-    if (cpe_str_start_with(url, "http://")) {
-        *is_https = 0;
-        host_begin = url + 7;
-    }
-    else if (cpe_str_start_with(url, "https://")) {
-        *is_https = 1;
-        host_begin = url + 8;
-    }
-    else {
-        CPE_ERROR(mgr->m_em, "trans: url %s not support, no http or https protocol!", url);
-        return NULL;
-    }
-
-    net_address_t address = NULL;
-
-    const char * host_end = strchr(host_begin, '/');
-    if (host_end) {
-        char address_buf[128];
-        size_t len = host_end - host_begin;
-        if (len >= CPE_ARRAY_SIZE(address_buf)) {
-            CPE_ERROR(mgr->m_em, "trans: url %s format error, length %d overflow!", url, (int)len);
-            return NULL;
-        }
-
-        memcpy(address_buf, host_begin, len);
-        address_buf[len] = 0;
-        address = net_address_create_auto(mgr->m_schedule, address_buf);
-        if (address == NULL) {
-            CPE_ERROR(mgr->m_em, "trans: url %s format error, address=%s!", url, address_buf);
-            return NULL;
-        }
-
-        *relative_url = host_end;
-    }
-    else {
-        address = net_address_create_auto(mgr->m_schedule, host_begin);
-        if (address == NULL) {
-            CPE_ERROR(mgr->m_em, "trans: url %s format error, address=%s!", url, host_begin);
-            return NULL;
-        }
-        
-        *relative_url = "/";
-    }
-
-    if (net_address_port(address) == 0) {
-        net_address_set_port(address, *is_https ? 443 : 80);
-    }
-    
-    return address;
-}
-
 static size_t net_trans_task_write_cb(char *ptr, size_t size, size_t nmemb, void * userdata) {
 	net_trans_task_t task = userdata;
     net_trans_manage_t mgr = task->m_mgr;
