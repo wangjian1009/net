@@ -449,7 +449,7 @@
 #define HAVE_LONGLONG 1
 
 /* Define to 1 if you have the `mach_absolute_time' function. */
-#if defined ANDROID
+#if defined ANDROID || defined CPE_OS_LINUX
 #else
 #define HAVE_MACH_ABSOLUTE_TIME 1
 #endif
@@ -699,7 +699,7 @@
 #define HAVE_SYS_SOCKET_H 1
 
 /* Define to 1 if you have the <sys/sockio.h> header file. */
-#if defined ANDROID
+#if defined ANDROID || defined CPE_OS_LINUX
 #else
 #define HAVE_SYS_SOCKIO_H 1
 #endif

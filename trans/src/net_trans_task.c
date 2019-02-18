@@ -220,14 +220,9 @@ int net_trans_task_set_useragent(net_trans_task_t task, const char * agent) {
 }
 
 int net_trans_task_append_header(net_trans_task_t task, const char * name, const char * value) {
-    mem_buffer_t buffer = net_trans_manage_tmp_buffer(task->m_mgr);
-
-    mem_buffer_clear_data(buffer);
-
-    mem_buffer_printf(buffer, "%s=%s", name, value);
-    mem_buffer_append_char(buffer, 0);
-
-    return net_trans_task_append_header_line(task, mem_buffer_make_continuous(buffer, 0));
+    char buf[256];
+    snprintf(buf, sizeof(buf), "%s: %s", name, value);
+    return net_trans_task_append_header_line(task, buf);
 }
 
 int net_trans_task_append_header_line(net_trans_task_t task, const char * header_one) {
