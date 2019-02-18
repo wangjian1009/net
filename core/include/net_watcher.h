@@ -20,8 +20,10 @@ net_watcher_t net_watcher_find(net_schedule_t schedule, int fd);
 uint8_t net_watcher_expect_read(net_watcher_t watcher);
 uint8_t net_watcher_expect_write(net_watcher_t watcher);
 void net_watcher_update(net_watcher_t watcher, uint8_t expect_read, uint8_t expect_write);
+void net_watcher_notify(net_watcher_t watcher, uint8_t do_read, uint8_t do_write);
 
 void * net_watcher_data(net_watcher_t watcher);
+net_watcher_t net_watcher_from_data(void * data);
 net_driver_t net_watcher_driver(net_watcher_t watcher);
 
 /*net_watcher_it*/

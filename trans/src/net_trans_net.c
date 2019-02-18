@@ -19,26 +19,25 @@ int net_trans_sock_cb(CURL *e, curl_socket_t s, int what, void *cbp, void *sockp
 
     if (mgr->m_debug >= 2) {
         static char * what_msgs[] = { "NONE", "IN", "OUT", "INOUT", "REMOVE" };
-        CPE_INFO(mgr->m_em, "trans: sock_cb: task %d %s!", task->m_id, what_msgs[what]);
+        CPE_INFO(mgr->m_em, "trans: task %d: expect %s!", task->m_id, what_msgs[what]);
     }
 
     if (what == CURL_POLL_REMOVE) {
-        net_watcher_t watcher = net_watcher_find(mgr->m_schedule, s);
-        if (watcher) {
-            net_watcher_free(watcher);
+        if (task->m_watcher) {
+            net_watcher_free(task->m_watcher);
+            task->m_watcher = NULL;
         }
     }
     else {
-        net_watcher_t watcher = net_watcher_find(mgr->m_schedule, s);
-        if (watcher == NULL) {
-            watcher = net_watcher_create(mgr->m_driver, s, task, net_watcher_event_cb);
-            if (watcher == NULL) {
+        if (task->m_watcher == NULL) {
+            task->m_watcher = net_watcher_create(mgr->m_driver, s, task, net_watcher_event_cb);
+            if (task->m_watcher == NULL) {
                 CPE_ERROR(mgr->m_em, "trans: sock_cb: task %d update watcher fail!", task->m_id);
                 return -1;
             }
         }
         
-        net_watcher_update(watcher, (what & CURL_POLL_IN ? 1 : 0), (what & CURL_POLL_OUT ? 1 : 0));
+        net_watcher_update(task->m_watcher, (what & CURL_POLL_IN ? 1 : 0), (what & CURL_POLL_OUT ? 1 : 0));
     }
 
     return 0;
@@ -51,10 +50,7 @@ void net_watcher_event_cb(void * ctx, int fd, uint8_t do_read, uint8_t do_write)
     int rc;
 
     if (mgr->m_debug >= 2) {
-        CPE_INFO(
-            mgr->m_em, "trans: event_cb: socket event%s%s",
-            (do_read ? " read" : ""),
-            (do_write ? " write" : ""));
+        CPE_INFO(mgr->m_em, "trans: task %d: action%s%s", task->m_id, (do_read ? " read" : ""), (do_write ? " write" : ""));
     }
 
     action = (do_read ? CURL_POLL_IN : 0) | (do_write ? CURL_POLL_OUT : 0);
@@ -135,6 +131,6 @@ int net_trans_timer_cb(CURLM *multi, long timeout_ms, net_trans_manage_t mgr) {
         CPE_INFO(mgr->m_em, "trans: timer_cb: timeout_ms=%d", (int)timeout_ms);
     }
 
-    net_timer_active(mgr->m_timer_event, 0);
+    net_timer_active(mgr->m_timer_event, (int32_t)timeout_ms);
     return 0;
 }

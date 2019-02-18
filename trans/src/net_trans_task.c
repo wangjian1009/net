@@ -95,6 +95,11 @@ void net_trans_task_free(net_trans_task_t task) {
         task->m_is_free = 1;
         return;
     }
+
+    if (task->m_watcher) {
+        net_watcher_free(task->m_watcher);
+        task->m_watcher = NULL;
+    }
     
     if (task->m_ctx_free) {
         task->m_ctx_free(task->m_ctx);
@@ -160,8 +165,10 @@ net_trans_task_result_t net_trans_task_result(net_trans_task_t task) {
 }
 
 int16_t net_trans_task_res_code(net_trans_task_t task) {
-    //TODO:
-    return 200;
+    long http_code = 0;
+    return curl_easy_getinfo(task->m_handler, CURLINFO_RESPONSE_CODE, &http_code) ==  CURLE_OK
+        ? (int16_t)http_code
+        : 0;
 }
 
 int net_trans_task_set_skip_data(net_trans_task_t task, ssize_t skip_length) {
