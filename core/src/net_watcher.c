@@ -36,14 +36,6 @@ net_watcher_t net_watcher_create(net_driver_t driver, int fd, void * ctx, net_wa
         return NULL;
     }
 
-    cpe_hash_entry_init(&watcher->m_hh);
-    if (cpe_hash_table_insert_unique(&schedule->m_watchers, watcher) != 0) {
-        CPE_ERROR(schedule->m_em, "watcher: id duplicate!");
-        driver->m_watcher_fini(watcher);
-        TAILQ_INSERT_TAIL(&driver->m_free_watchers, watcher, m_next_for_driver);
-        return NULL;
-    }
-
     TAILQ_INSERT_TAIL(&driver->m_watchers, watcher, m_next_for_driver);
 
     return watcher;
@@ -54,13 +46,13 @@ void net_watcher_free(net_watcher_t watcher) {
         watcher->m_deleting = 1;
         return;
     }
+
+    net_driver_t driver = watcher->m_driver;
     
-    watcher->m_driver->m_watcher_fini(watcher);
+    driver->m_watcher_fini(watcher);
 
-    cpe_hash_table_remove_by_ins(&watcher->m_driver->m_schedule->m_watchers, watcher);
-
-    TAILQ_REMOVE(&watcher->m_driver->m_watchers, watcher, m_next_for_driver);
-    TAILQ_INSERT_TAIL(&watcher->m_driver->m_free_watchers, watcher, m_next_for_driver);
+    TAILQ_REMOVE(&driver->m_watchers, watcher, m_next_for_driver);
+    TAILQ_INSERT_TAIL(&driver->m_free_watchers, watcher, m_next_for_driver);
 }
 
 void net_watcher_real_free(net_watcher_t watcher) {
@@ -82,20 +74,6 @@ net_driver_t net_watcher_driver(net_watcher_t watcher) {
     return watcher->m_driver;
 }
 
-net_watcher_t net_watcher_find(net_schedule_t schedule, int fd) {
-    struct net_watcher key;
-    key.m_fd = fd;
-    return cpe_hash_table_find(&schedule->m_watchers, &key);
-}
-
-uint8_t net_watcher_expect_read(net_watcher_t watcher) {
-    return watcher->m_expect_read;
-}
-
-uint8_t net_watcher_expect_write(net_watcher_t watcher) {
-    return watcher->m_expect_write;
-}
-
 void net_watcher_notify(net_watcher_t watcher, uint8_t do_read, uint8_t do_write) {
     uint8_t tag_local = 0;
     if (watcher->m_in_processing == 0) {
@@ -115,11 +93,6 @@ void net_watcher_notify(net_watcher_t watcher, uint8_t do_read, uint8_t do_write
 }
 
 void net_watcher_update(net_watcher_t watcher, uint8_t expect_read, uint8_t expect_write) {
-    if (watcher->m_expect_read == expect_read && watcher->m_expect_write == expect_write) return;
-
-    watcher->m_expect_read = expect_read;
-    watcher->m_expect_write = expect_write;
-
     uint8_t tag_local = 0;
     if (watcher->m_in_processing == 0) {
         watcher->m_in_processing = 1;

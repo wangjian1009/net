@@ -39,5 +39,9 @@ void net_ev_watcher_update(net_watcher_t base_watcher, int fd, uint8_t expect_re
 static void net_ev_watcher_cb(EV_P_ ev_io * iow, int revents) {
     net_ev_watcher_t watcher = iow->data;
     net_watcher_t base_watcher = net_watcher_from_data(watcher);
+
+    net_ev_driver_t driver = net_driver_data(net_watcher_driver(base_watcher));
+    ev_io_stop(driver->m_ev_loop, &watcher->m_watcher);
+
     net_watcher_notify(base_watcher, (revents | EV_READ) ? 1 : 0, (revents | EV_WRITE) ? 1 : 0);
 }

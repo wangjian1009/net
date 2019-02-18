@@ -62,8 +62,6 @@ struct net_schedule {
     ringbuffer_t m_endpoint_buf;
     ringbuffer_block_t m_endpoint_tb;
 
-    struct cpe_hash_table m_watchers;
-    
     net_address_list_t m_free_addresses;
     net_link_list_t m_free_links;
     net_dns_query_list_t m_free_dns_querys;
