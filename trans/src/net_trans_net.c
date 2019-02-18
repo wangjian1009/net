@@ -19,7 +19,7 @@ int net_trans_sock_cb(CURL *e, curl_socket_t s, int what, void *cbp, void *sockp
 
     if (mgr->m_debug >= 2) {
         static char * what_msgs[] = { "NONE", "IN", "OUT", "INOUT", "REMOVE" };
-        CPE_INFO(mgr->m_em, "trans: task %d: expect %s!", task->m_id, what_msgs[what]);
+        CPE_INFO(mgr->m_em, "trans: task %d: expect %s, fd=%d!", task->m_id, what_msgs[what], s);
     }
 
     if (what == CURL_POLL_REMOVE) {

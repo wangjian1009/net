@@ -107,7 +107,7 @@ void net_watcher_notify(net_watcher_t watcher, uint8_t do_read, uint8_t do_write
     watcher->m_action(watcher->m_ctx, watcher->m_fd, do_read, do_write);
 
     if (tag_local) {
-        watcher->m_in_processing = 1;
+        watcher->m_in_processing = 0;
 
         if (watcher->m_deleting) {
             net_watcher_free(watcher);
@@ -130,7 +130,7 @@ void net_watcher_update(net_watcher_t watcher, uint8_t expect_read, uint8_t expe
     watcher->m_driver->m_watcher_update(watcher, watcher->m_fd, expect_read, expect_write);
 
     if (tag_local) {
-        watcher->m_in_processing = 1;
+        watcher->m_in_processing = 0;
 
         if (watcher->m_deleting) {
             net_watcher_free(watcher);
