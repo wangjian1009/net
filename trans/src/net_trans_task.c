@@ -65,15 +65,6 @@ net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const c
         break;
     }
 
-    /*     || curl_easy_setopt(task->m_handler, CURLOPT_POSTFIELDSIZE, (int)data_len) != (int)CURLM_OK */
-    /*     || curl_easy_setopt(task->m_handler, CURLOPT_COPYPOSTFIELDS, data) != (int)CURLM_OK */
-    /* { */
-    /*     CPE_ERROR( */
-    /*         mgr->m_em, "trans: task %d: set post %d data to %s fail!", */
-    /*         task->m_id, (int)data_len, uri); */
-    /*     return -1; */
-    /* } */
-
     if (cpe_str_start_with(uri, "https")) {
         curl_easy_setopt(task->m_handler, CURLOPT_SSL_VERIFYPEER, 0);
         curl_easy_setopt(task->m_handler, CURLOPT_SSL_VERIFYHOST, 0);
@@ -104,11 +95,6 @@ void net_trans_task_free(net_trans_task_t task) {
         task->m_is_free = 1;
         return;
     }
-
-    /* if (task->m_http_req) { */
-    /*     net_http_req_free(task->m_http_req); */
-    /*     task->m_http_req = NULL; */
-    /* } */
     
     if (task->m_ctx_free) {
         task->m_ctx_free(task->m_ctx);
@@ -306,7 +292,17 @@ void net_trans_task_set_callback(
 }
 
 int net_trans_task_set_body(net_trans_task_t task, void const * data, uint32_t data_size) {
-    //if (net_http_req_write_body_full(task->m_http_req, data, data_size) != 0) return -1;
+    net_trans_manage_t mgr = task->m_mgr;
+
+    if (curl_easy_setopt(task->m_handler, CURLOPT_POSTFIELDSIZE, (int)data_size) != (int)CURLM_OK
+        || curl_easy_setopt(task->m_handler, CURLOPT_COPYPOSTFIELDS, data) != (int)CURLM_OK)
+    {
+        CPE_ERROR(
+            mgr->m_em, "trans: task %d: set post %d data fail!",
+            task->m_id, (int)data_size);
+        return -1;
+    }
+
     return 0;
 }
 
