@@ -92,9 +92,22 @@ CREATED_ERROR:
 }
 
 void net_trans_task_free(net_trans_task_t task) {
+    net_trans_manage_t mgr = task->m_mgr;
+
     if (task->m_in_callback) {
+        task->m_state = net_trans_task_done;
         task->m_is_free = 1;
         return;
+    }
+
+    if (task->m_state != net_trans_task_done) {
+        task->m_is_free = 1;
+        net_trans_task_set_done(task, net_trans_result_cancel, -1);
+        return;
+    }
+
+    if (mgr->m_debug) {
+        CPE_INFO(mgr->m_em, "trans: task %d: free!", task->m_id);
     }
 
     if (task->m_watcher) {
@@ -115,7 +128,6 @@ void net_trans_task_free(net_trans_task_t task) {
         task->m_header = NULL;
     }
     
-    net_trans_manage_t mgr = task->m_mgr;
     cpe_hash_table_remove_by_ins(&mgr->m_tasks, task);
 
     TAILQ_INSERT_TAIL(&mgr->m_free_tasks, task, m_next_for_mgr);
@@ -390,16 +402,22 @@ static size_t net_trans_task_write_cb(char *ptr, size_t size, size_t nmemb, void
     ssize_t write_size;
 
     if (task->m_write_op) {
-        task->m_in_callback = 1;
-        task->m_write_op(task, task->m_ctx, ptr, total_length);
-        task->m_in_callback = 0;
-
-        if (task->m_is_free) {
-            task->m_is_free = 0;
-            net_trans_task_free(task);
+        uint8_t tag_local = 0;
+        if (task->m_in_callback == 0) {
+            task->m_in_callback = 1;
+            tag_local = 1;
         }
+        
+        task->m_write_op(task, task->m_ctx, ptr, total_length);
 
-        return total_length;
+        if (tag_local) {
+            task->m_in_callback = 0;
+
+            if (task->m_is_free) {
+                task->m_is_free = 0;
+                net_trans_task_free(task);
+            }
+        }
     }
     else {
         write_size = mem_buffer_append(&task->m_buffer, ptr, total_length);
@@ -424,13 +442,21 @@ static int net_tranks_task_prog_cb(void *p, double dltotal, double dlnow, double
     (void)uln;
 
     if (task->m_progress_op) {
-        task->m_in_callback = 1;
+        uint8_t tag_local = 0;
+        if (task->m_in_callback == 0) {
+            task->m_in_callback = 1;
+            tag_local = 1;
+        }
+        
         task->m_progress_op(task, task->m_ctx, dltotal, dlnow);
-        task->m_in_callback = 0;
 
-        if (task->m_is_free) {
-            task->m_is_free = 0;
-            net_trans_task_free(task);
+        if (tag_local) {
+            task->m_in_callback = 0;
+
+            if (task->m_is_free) {
+                task->m_is_free = 0;
+                net_trans_task_free(task);
+            }
         }
     }
     
@@ -460,13 +486,21 @@ int net_trans_task_set_done(net_trans_task_t task, net_trans_task_result_t resul
     }
 
     if (task->m_commit_op) {
-        task->m_in_callback = 1;
-        task->m_commit_op(task, task->m_ctx, mem_buffer_make_continuous(&task->m_buffer, 0), mem_buffer_size(&task->m_buffer));
-        task->m_in_callback = 0;
+        uint8_t tag_local = 0;
+        if (task->m_in_callback == 0) {
+            task->m_in_callback = 1;
+            tag_local = 1;
+        }
 
-        if (task->m_is_free || task->m_state == net_trans_task_done) {
-            task->m_is_free = 0;
-            net_trans_task_free(task);
+        task->m_commit_op(task, task->m_ctx, mem_buffer_make_continuous(&task->m_buffer, 0), mem_buffer_size(&task->m_buffer));
+
+        if (tag_local) {
+            task->m_in_callback = 0;
+
+            if (task->m_is_free || task->m_state == net_trans_task_done) {
+                task->m_is_free = 0;
+                net_trans_task_free(task);
+            }
         }
     }
     else {
