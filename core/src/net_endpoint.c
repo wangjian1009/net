@@ -97,6 +97,13 @@ net_endpoint_create(net_driver_t driver, net_protocol_t protocol) {
 void net_endpoint_free(net_endpoint_t endpoint) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
 
+    if (endpoint->m_state == net_endpoint_state_deleting) {
+        TAILQ_REMOVE(&endpoint->m_driver->m_deleting_endpoints, endpoint, m_next_for_driver);
+    }
+    else {
+        TAILQ_REMOVE(&endpoint->m_driver->m_endpoints, endpoint, m_next_for_driver);
+    }
+
     if (endpoint->m_state == net_endpoint_state_established) {
         endpoint->m_state = net_endpoint_state_deleting;
     }
@@ -164,13 +171,6 @@ void net_endpoint_free(net_endpoint_t endpoint) {
     }
 
     cpe_hash_table_remove_by_ins(&endpoint->m_driver->m_schedule->m_endpoints, endpoint);
-
-    if (endpoint->m_state == net_endpoint_state_deleting) {
-        TAILQ_REMOVE(&endpoint->m_driver->m_deleting_endpoints, endpoint, m_next_for_driver);
-    }
-    else {
-        TAILQ_REMOVE(&endpoint->m_driver->m_endpoints, endpoint, m_next_for_driver);
-    }
 
     TAILQ_INSERT_TAIL(&endpoint->m_driver->m_free_endpoints, endpoint, m_next_for_driver);
 }
