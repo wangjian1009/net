@@ -70,9 +70,45 @@ int net_address_matcher_add(net_address_matcher_t matcher, net_address_t address
             (net_address_data_ipv6_t)net_address_data(address));
         return 0;
     case net_address_domain: {
-        if (net_address_rule_create(matcher, net_address_data(address)) == NULL) {
+        net_schedule_t schedule = matcher->m_schedule;
+
+        char buf[256];
+        char * p = buf;
+        char * e = p + sizeof(buf) - 1;
+
+        *p++ = '^';
+
+        const char * input = (const char *)net_address_data(address);
+        while(*input && p < e) {
+            char c = *input++;
+            if (c == '.') {
+                if (e - p < 2) {
+                    CPE_ERROR(
+                        schedule->m_em,
+                        "net_address_matcher_add: create rule %s: overflow!", (const char *)net_address_data(address));
+                    return -1;
+                }
+                *p++ = '\\';
+                *p++ = c;
+            }
+            else {
+                *p++ = c;
+            }
+        }
+
+        if (e - p < 2) {
             CPE_ERROR(
-                matcher->m_schedule->m_em,
+                schedule->m_em,
+                "net_address_matcher_add: create rule %s: overflow!", (const char *)net_address_data(address));
+            return -1;
+        }
+
+        *p++ = '$';
+        *p++ = 0;
+
+        if (net_address_rule_create(matcher, buf) == NULL) {
+            CPE_ERROR(
+                schedule->m_em,
                 "net_address_matcher_add: create rule %s fail!", (const char *)net_address_data(address));
             return -1;
         }
