@@ -62,6 +62,22 @@ void net_dns_query_free(net_dns_query_t query) {
     TAILQ_INSERT_TAIL(&schedule->m_free_dns_querys, query, m_next);
 }
 
+void net_dns_query_free_by_ctx(net_schedule_t schedule, void * ctx) {
+    struct cpe_hash_it query_it;
+    net_dns_query_t query;
+
+    cpe_hash_it_init(&query_it, &schedule->m_dns_querys);
+
+    query = cpe_hash_it_next(&query_it);
+    while(query) {
+        net_dns_query_t next = cpe_hash_it_next(&query_it);
+        if (query->m_ctx == ctx) {
+            net_dns_query_free(query);
+        }
+        query = next;
+    }
+}
+
 void net_dns_query_free_all(net_schedule_t schedule) {
     struct cpe_hash_it query_it;
     net_dns_query_t query;

@@ -10,6 +10,8 @@ net_dns_query_t net_dns_query_create(
 
 void net_dns_query_free(net_dns_query_t query);
 
+void net_dns_query_free_by_ctx(net_schedule_t schedule, void * ctx);
+
 void * net_dns_query_data(net_dns_query_t query);
 net_dns_query_t net_dns_query_from_data(void * data);
 
