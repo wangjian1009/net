@@ -110,6 +110,9 @@ void net_trans_task_free(net_trans_task_t task) {
         CPE_INFO(mgr->m_em, "trans: task %d: free!", task->m_id);
     }
 
+    curl_easy_cleanup(task->m_handler);
+    task->m_handler = NULL;
+
     if (task->m_watcher) {
         net_watcher_free(task->m_watcher);
         task->m_watcher = NULL;
