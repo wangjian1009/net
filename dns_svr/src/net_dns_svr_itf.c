@@ -22,6 +22,7 @@ net_dns_svr_itf_create(net_dns_svr_t dns_svr, net_dns_svr_itf_type_t type, net_a
 
     dns_itf->m_svr = dns_svr;
     dns_itf->m_type = type;
+    dns_itf->m_query_policy = NULL;
 
     switch(type) {
     case net_dns_svr_itf_udp:
@@ -64,6 +65,11 @@ void net_dns_svr_itf_free(net_dns_svr_itf_t dns_itf) {
         net_dns_svr_query_free(TAILQ_FIRST(&dns_itf->m_querys));
     }
 
+    if (dns_itf->m_query_policy) {
+        mem_free(dns_svr->m_alloc, dns_svr->m_query_policy);
+        dns_itf->m_query_policy = NULL;
+    }
+
     switch(dns_itf->m_type) {
     case net_dns_svr_itf_udp:
         net_dgram_free(dns_itf->m_dgram);
@@ -104,6 +110,35 @@ net_driver_t net_dns_itf_driver(net_dns_svr_itf_t dns_itf) {
         return net_acceptor_driver(dns_itf->m_acceptor);
     }
 }
+
+const char * net_dns_itf_query_policy(net_dns_svr_itf_t dns_itf) {
+    return dns_itf->m_query_policy;
+}
+
+int net_dns_itf_set_query_policy(net_dns_svr_itf_t dns_itf, const char * policy) {
+    net_dns_svr_t dns_svr = dns_itf->m_svr;
+    char * new_query_policy = NULL;
+
+    if (policy) {
+        new_query_policy = cpe_str_mem_dup(dns_svr->m_alloc, policy);
+        if (new_query_policy == NULL) {
+            CPE_ERROR(dns_svr->m_em, "dns-svr: dup policy %s fail", policy);
+            return -1;
+        }
+    }
+
+    if (dns_svr->m_query_policy) {
+        mem_free(dns_svr->m_alloc, dns_svr->m_query_policy);
+    }
+    dns_svr->m_query_policy = new_query_policy;
+
+    if (dns_svr->m_debug) {
+        CPE_INFO(dns_svr->m_em, "dns-svr: policy ==> %s", dns_svr->m_query_policy ? dns_svr->m_query_policy : "N/A");
+    }
+    
+    return 0;
+}
+
 
 int net_dns_svr_itf_send_response(net_dns_svr_itf_t dns_itf, net_dns_svr_query_t query) {
     net_dns_svr_t svr = dns_itf->m_svr;

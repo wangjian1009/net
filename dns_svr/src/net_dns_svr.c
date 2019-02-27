@@ -19,7 +19,6 @@ net_dns_svr_t net_dns_svr_create(mem_allocrator_t alloc, error_monitor_t em, net
     dns_svr->m_em = em;
     dns_svr->m_debug = 0;
     dns_svr->m_schedule = schedule;
-    dns_svr->m_query_policy = NULL;
 
     dns_svr->m_dns_protocol =  net_dns_svr_protocol_create(dns_svr);
     if (dns_svr->m_dns_protocol == NULL) {
@@ -50,11 +49,6 @@ void net_dns_svr_free(net_dns_svr_t dns_svr) {
 
     net_protocol_free(dns_svr->m_dns_protocol);
 
-    if (dns_svr->m_query_policy) {
-        mem_free(dns_svr->m_alloc, dns_svr->m_query_policy);
-        dns_svr->m_query_policy = NULL;
-    }
-
     mem_buffer_clear(&dns_svr->m_data_buffer);
 
     while(!TAILQ_EMPTY(&dns_svr->m_free_querys)) {
@@ -74,33 +68,6 @@ uint8_t net_dns_svr_debug(net_dns_svr_t dns_svr) {
 
 void net_dns_svr_set_debug(net_dns_svr_t dns_svr, uint8_t debug) {
     dns_svr->m_debug = debug;
-}
-
-const char * net_dns_svr_query_policy(net_dns_svr_t dns_svr) {
-    return dns_svr->m_query_policy;
-}
-
-int net_dns_svr_set_query_policy(net_dns_svr_t dns_svr, const char * policy) {
-    char * new_query_policy = NULL;
-
-    if (policy) {
-        new_query_policy = cpe_str_mem_dup(dns_svr->m_alloc, policy);
-        if (new_query_policy == NULL) {
-            CPE_ERROR(dns_svr->m_em, "dns-svr: dup policy %s fail", policy);
-            return -1;
-        }
-    }
-
-    if (dns_svr->m_query_policy) {
-        mem_free(dns_svr->m_alloc, dns_svr->m_query_policy);
-    }
-    dns_svr->m_query_policy = new_query_policy;
-
-    if (dns_svr->m_debug) {
-        CPE_INFO(dns_svr->m_em, "dns-svr: policy ==> %s", dns_svr->m_query_policy ? dns_svr->m_query_policy : "N/A");
-    }
-    
-    return 0;
 }
 
 net_schedule_t net_dns_svr_schedule(net_dns_svr_t dns_svr) {

@@ -14,6 +14,9 @@ net_driver_t net_dns_itf_driver(net_dns_svr_itf_t dns_itf);
 
 const char * net_dns_svr_itf_type_str(net_dns_svr_itf_type_t type);
 
+const char * net_dns_itf_query_policy(net_dns_svr_itf_t dns_itf);
+int net_dns_itf_set_query_policy(net_dns_svr_itf_t dns_itf, const char * policy);
+
 NET_END_DECL
 
 #endif
