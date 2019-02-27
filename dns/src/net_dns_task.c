@@ -82,9 +82,11 @@ const char * net_dns_task_hostname(net_dns_task_t task) {
 }
 
 int net_dns_task_start(net_dns_task_t task) {
+    net_dns_manage_t manage = task->m_manage;
+
     if (task->m_state != net_dns_task_state_init) {
         CPE_ERROR(
-            task->m_manage->m_em,
+            manage->m_em,
             "dns-cli: query %s: can`t start in state %s",
             task->m_entry->m_hostname,
             net_dns_task_state_str(task->m_state));
@@ -96,7 +98,7 @@ int net_dns_task_start(net_dns_task_t task) {
     task->m_step_current = TAILQ_FIRST(&task->m_steps);
     if (task->m_step_current == NULL) {
         CPE_ERROR(
-            task->m_manage->m_em, "dns-cli: query %s: no step", task->m_entry->m_hostname);
+            manage->m_em, "dns-cli: query %s: no step", task->m_entry->m_hostname);
         net_dns_task_update_state(task, net_dns_task_state_error);
         return -1;
     }
@@ -107,7 +109,7 @@ int net_dns_task_start(net_dns_task_t task) {
         switch(net_dns_task_step_state(task->m_step_current)) {
         case net_dns_task_state_init:
             CPE_ERROR(
-                task->m_manage->m_em, "dns-cli: query %s: step start but still init",
+                manage->m_em, "dns-cli: query %s: step start but still init",
                 task->m_entry->m_hostname);
             net_dns_task_update_state(task, net_dns_task_state_error);
             return -1;
@@ -115,7 +117,7 @@ int net_dns_task_start(net_dns_task_t task) {
             net_dns_task_update_state(task, net_dns_task_state_runing);
             return 0;
         case net_dns_task_state_success:
-            break;
+            return 0;
         case net_dns_task_state_empty:
             break;
         case net_dns_task_state_error:

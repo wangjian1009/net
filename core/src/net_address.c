@@ -699,6 +699,25 @@ uint32_t net_address_hash(net_address_t address) {
     return r;
 }
 
+uint32_t net_address_hash_without_port(net_address_t address) {
+    uint32_t r;
+
+    switch(address->m_type) {
+    case net_address_ipv4:
+        r = ((struct net_address_ipv4v6 *)address)->m_ipv4.u32;
+        CPE_HASH_UINT32(r);
+        break;
+    case net_address_ipv6:
+        r = 0;
+        break;
+    case net_address_domain:
+        r = cpe_hash_str((const char *)net_address_data(address), strlen((const char *)net_address_data(address)));
+        break;
+    }
+        
+    return r;
+}
+
 static net_address_t net_address_it_next_empty(net_address_it_t it) {
     return NULL;
 }

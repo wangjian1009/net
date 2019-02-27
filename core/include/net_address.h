@@ -90,6 +90,7 @@ uint8_t net_address_ipv6_is_ipv4_map(net_address_t address);
 
 /**/
 uint32_t net_address_hash(net_address_t address);
+uint32_t net_address_hash_without_port(net_address_t address);
 
 /**/
 void net_address_it_init(net_address_it_t it);
