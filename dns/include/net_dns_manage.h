@@ -25,6 +25,10 @@ int net_dns_manage_auto_conf(
     net_dns_manage_t manage, net_driver_t driver, net_dns_scope_t scope,
     uint16_t timeout_s);
 
+int net_dns_manage_add_record(
+    net_dns_manage_t manage, net_dns_source_t source,
+    const char * hostname, net_address_t address, uint32_t ttl);
+
 NET_END_DECL
 
 #endif

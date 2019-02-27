@@ -10,7 +10,7 @@
 #include "net_dns_source_ns_i.h"
 
 int net_dns_manage_add_record(
-    net_dns_manage_t manage, net_dns_source_t source, uint16_t task_ident, 
+    net_dns_manage_t manage, net_dns_source_t source, 
     const char * hostname, net_address_t address, uint32_t ttl)
 {
     net_dns_entry_t entry = net_dns_entry_find(manage, hostname);
