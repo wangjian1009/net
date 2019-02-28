@@ -54,6 +54,8 @@ int net_ev_endpoint_on_output(net_endpoint_t base_endpoint) {
     net_ev_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     net_ev_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
 
+    if (!net_ev_endpoint_do_write(driver, endpoint, base_endpoint)) return -1;
+
     net_ev_endpoint_start_rw_watcher(driver, base_endpoint, endpoint);
     return 0;
 }
