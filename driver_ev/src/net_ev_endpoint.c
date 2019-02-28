@@ -12,6 +12,9 @@
 static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents);
 static void net_ev_endpoint_connect_cb(EV_P_ ev_io *w, int revents);
 
+static uint8_t net_ev_endpoint_do_read(net_ev_driver_t driver, net_ev_endpoint_t endpoint, net_endpoint_t base_endpoint);
+static uint8_t net_ev_endpoint_do_write(net_ev_driver_t driver, net_ev_endpoint_t endpoint, net_endpoint_t base_endpoint);
+
 static int net_ev_endpoint_start_connect(
     net_ev_driver_t driver, net_ev_endpoint_t endpoint, net_endpoint_t base_endpoint, net_address_t remote_address);
 
@@ -274,6 +277,235 @@ int net_ev_endpoint_update_remote_address(net_ev_endpoint_t endpoint) {
     return 0;
 }
 
+static uint8_t net_ev_endpoint_do_read(net_ev_driver_t driver, net_ev_endpoint_t endpoint, net_endpoint_t base_endpoint) {
+    for(;net_endpoint_state(base_endpoint) == net_endpoint_state_established;) {
+        uint32_t capacity = 0;
+        void * rbuf = net_endpoint_buf_alloc(base_endpoint, &capacity);
+        if (rbuf == NULL) {
+            if (net_endpoint_state(base_endpoint) == net_endpoint_state_deleting) {
+                if (endpoint->m_fd != -1) {
+                    net_ev_endpoint_close_sock(driver, endpoint);
+                }
+                return 0;
+            }
+            else if (net_endpoint_buf_is_full(base_endpoint, net_ep_buf_read)) {
+                break;
+            }
+            else {
+                CPE_ERROR(
+                    driver->m_em, "ev: %s: fd=%d: alloc rbuf fail, and rbuf is not full!!!",
+                    net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
+
+                if (net_endpoint_is_active(base_endpoint)) {
+                    if (!net_endpoint_have_error(base_endpoint)) {
+                        net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_logic);
+                    }
+                    if (net_endpoint_set_state(base_endpoint, net_endpoint_state_logic_error) != 0) {
+                        if (net_endpoint_driver_debug(base_endpoint) >= 2) {
+                            CPE_INFO(
+                                driver->m_em, "ev: %s: fd=%d: free for process fail!",
+                                net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
+                        }
+                        net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+                        return 0;
+                    }
+                }
+
+                if (endpoint->m_fd != -1) {
+                    net_ev_endpoint_close_sock(driver, endpoint);
+                }
+                break;
+            }
+        }
+
+        if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) break;
+            
+        assert(endpoint->m_fd != -1);
+        int bytes = cpe_recv(endpoint->m_fd, rbuf, capacity, 0);
+        if (bytes > 0) {
+            if (net_endpoint_driver_debug(base_endpoint)) {
+                CPE_INFO(
+                    driver->m_em, "ev: %s: fd=%d: recv %d bytes data!",
+                    net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
+                    bytes);
+            }
+
+            if (driver->m_data_monitor_fun) {
+                driver->m_data_monitor_fun(driver->m_data_monitor_ctx, base_endpoint, net_data_in, (uint32_t)bytes);
+            }
+                
+            if (net_endpoint_buf_supply(base_endpoint, net_ep_buf_read, (uint32_t)bytes) != 0) {
+                if (net_endpoint_is_active(base_endpoint)) {
+                    if (!net_endpoint_have_error(base_endpoint)) {
+                        net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_logic);
+                    }
+                    if (net_endpoint_set_state(base_endpoint, net_endpoint_state_logic_error) != 0) {
+                        if (net_endpoint_driver_debug(base_endpoint) >= 2) {
+                            CPE_INFO(
+                                driver->m_em, "ev: %s: fd=%d: free for process fail!",
+                                net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
+                        }
+                        net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+                        return 0;
+                    }
+                }
+                    
+                if (endpoint->m_fd != -1) {
+                    net_ev_endpoint_close_sock(driver, endpoint);
+                }
+
+                return 0;
+            }
+        }
+        else if (bytes == 0) {
+            net_endpoint_buf_release(base_endpoint);
+                
+            if (net_endpoint_driver_debug(base_endpoint) >= 2) {
+                CPE_INFO(
+                    driver->m_em, "ev: %s: fd=%d: remote disconnected(recv 0)!",
+                    net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
+            }
+
+            net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_remote_closed);
+            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_disable) != 0) {
+                net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+                return 0;
+            }
+
+            if (endpoint->m_fd != -1) {
+                net_ev_endpoint_close_sock(driver, endpoint);
+            }
+
+            return 0;
+        }
+        else {
+            assert(bytes == -1);
+            net_endpoint_buf_release(base_endpoint);
+                
+            if (cpe_sock_errno() == EWOULDBLOCK || cpe_sock_errno() == EINPROGRESS) {
+                break;
+            }
+            else if (cpe_sock_errno() == EINTR) {
+                continue;
+            }
+            else {
+                CPE_ERROR(
+                    driver->m_em, "ev: %s: fd=%d: recv error, errno=%d (%s)!",
+                    net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
+                    cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+
+                net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_network_error);
+                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
+                    net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+                    return 0;
+                }
+
+                if (endpoint->m_fd != -1) {
+                    net_ev_endpoint_close_sock(driver, endpoint);
+                }
+
+                return 0;
+            }
+        }
+    }
+
+    return 1;
+}
+
+static uint8_t net_ev_endpoint_do_write(net_ev_driver_t driver, net_ev_endpoint_t endpoint, net_endpoint_t base_endpoint) {
+    while(net_endpoint_state(base_endpoint) == net_endpoint_state_established
+          && !net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write))
+    {
+        uint32_t data_size;
+        void * data = net_endpoint_buf_peak(base_endpoint, net_ep_buf_write, &data_size);
+
+        assert(data_size > 0);
+        assert(data);
+        assert(endpoint->m_fd != -1);
+
+        int bytes = cpe_send(endpoint->m_fd, data, data_size, CPE_SOCKET_DEFAULT_SEND_FLAGS);
+        if (bytes > 0) {
+            if (net_endpoint_driver_debug(base_endpoint)) {
+                CPE_INFO(
+                    driver->m_em, "ev: %s: fd=%d: send %d bytes data!",
+                    net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
+                    bytes);
+            }
+
+            net_endpoint_buf_consume(base_endpoint, net_ep_buf_write,  (uint32_t)bytes);
+
+            if (driver->m_data_monitor_fun) {
+                driver->m_data_monitor_fun(driver->m_data_monitor_ctx, base_endpoint, net_data_out, (uint32_t)bytes);
+            }
+        }
+        else if (bytes == 0) {
+            if (net_endpoint_driver_debug(base_endpoint) >= 2) {
+                CPE_INFO(
+                    driver->m_em, "ev: %s: fd=%d: free for send return 0!",
+                    net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
+            }
+
+            net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_remote_closed);
+            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
+                net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+                return 0;
+            }
+
+            if (endpoint->m_fd != -1) {
+                net_ev_endpoint_close_sock(driver, endpoint);
+            }
+
+            return 0;
+        }
+        else {
+            int err = cpe_sock_errno();
+            assert(bytes == -1);
+
+            if (err == EWOULDBLOCK || err == EINPROGRESS) break;
+            if (err == EINTR) continue;
+
+            if (err == EPIPE) {
+                if (net_endpoint_driver_debug(base_endpoint) >= 2) {
+                    CPE_INFO(
+                        driver->m_em, "ev: %s: fd=%d: free for send recv EPIPE!",
+                        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
+                }
+
+                net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_network_error);
+                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
+                    net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+                    return 0;
+                }
+
+                if (endpoint->m_fd != -1) {
+                    net_ev_endpoint_close_sock(driver, endpoint);
+                }
+                    
+                return 0;
+            }
+
+            CPE_ERROR(
+                driver->m_em, "ev: %s: fd=%d: free for send error, errno=%d (%s)!",
+                net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
+                cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+
+            net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_network_error);
+            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
+                net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+                return 0;
+            }
+
+            if (endpoint->m_fd != -1) {
+                net_ev_endpoint_close_sock(driver, endpoint);
+            }
+                
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
 static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
     net_ev_endpoint_t endpoint = w->data;
     net_endpoint_t base_endpoint = net_endpoint_from_data(endpoint);
@@ -282,228 +514,11 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
     ev_io_stop(driver->m_ev_loop, &endpoint->m_watcher);
 
     if (revents & EV_READ) {
-        for(;net_endpoint_state(base_endpoint) == net_endpoint_state_established;) {
-            uint32_t capacity = 0;
-            void * rbuf = net_endpoint_buf_alloc(base_endpoint, &capacity);
-            if (rbuf == NULL) {
-                if (net_endpoint_state(base_endpoint) == net_endpoint_state_deleting) {
-                    if (endpoint->m_fd != -1) {
-                        net_ev_endpoint_close_sock(driver, endpoint);
-                    }
-                    return;
-                }
-                else if (net_endpoint_buf_is_full(base_endpoint, net_ep_buf_read)) {
-                    break;
-                }
-                else {
-                    CPE_ERROR(
-                        driver->m_em, "ev: %s: fd=%d: alloc rbuf fail, and rbuf is not full!!!",
-                        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
-
-                    if (net_endpoint_is_active(base_endpoint)) {
-                        if (!net_endpoint_have_error(base_endpoint)) {
-                            net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_logic);
-                        }
-                        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_logic_error) != 0) {
-                            if (net_endpoint_driver_debug(base_endpoint) >= 2) {
-                                CPE_INFO(
-                                    driver->m_em, "ev: %s: fd=%d: free for process fail!",
-                                    net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
-                            }
-                            net_endpoint_free(base_endpoint);
-                            return;
-                        }
-                    }
-
-                    if (endpoint->m_fd != -1) {
-                        net_ev_endpoint_close_sock(driver, endpoint);
-                    }
-                    break;
-                }
-            }
-
-            if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) break;
-            
-            assert(endpoint->m_fd != -1);
-            int bytes = cpe_recv(endpoint->m_fd, rbuf, capacity, 0);
-            if (bytes > 0) {
-                if (net_endpoint_driver_debug(base_endpoint)) {
-                    CPE_INFO(
-                        driver->m_em, "ev: %s: fd=%d: recv %d bytes data!",
-                        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
-                        bytes);
-                }
-
-                if (driver->m_data_monitor_fun) {
-                    driver->m_data_monitor_fun(driver->m_data_monitor_ctx, base_endpoint, net_data_in, (uint32_t)bytes);
-                }
-                
-                if (net_endpoint_buf_supply(base_endpoint, net_ep_buf_read, (uint32_t)bytes) != 0) {
-                    if (net_endpoint_is_active(base_endpoint)) {
-                        if (!net_endpoint_have_error(base_endpoint)) {
-                            net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_logic);
-                        }
-                        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_logic_error) != 0) {
-                            if (net_endpoint_driver_debug(base_endpoint) >= 2) {
-                                CPE_INFO(
-                                    driver->m_em, "ev: %s: fd=%d: free for process fail!",
-                                    net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
-                            }
-                            net_endpoint_free(base_endpoint);
-                            return;
-                        }
-                    }
-                    
-                    if (endpoint->m_fd != -1) {
-                        net_ev_endpoint_close_sock(driver, endpoint);
-                    }
-
-                    return;
-                }
-            }
-            else if (bytes == 0) {
-                net_endpoint_buf_release(base_endpoint);
-                
-                if (net_endpoint_driver_debug(base_endpoint) >= 2) {
-                    CPE_INFO(
-                        driver->m_em, "ev: %s: fd=%d: remote disconnected(recv 0)!",
-                        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
-                }
-
-                net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_remote_closed);
-                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_disable) != 0) {
-                    net_endpoint_free(base_endpoint);
-                    return;
-                }
-
-                if (endpoint->m_fd != -1) {
-                    net_ev_endpoint_close_sock(driver, endpoint);
-                }
-
-                return;
-            }
-            else {
-                assert(bytes == -1);
-                net_endpoint_buf_release(base_endpoint);
-                
-                if (cpe_sock_errno() == EWOULDBLOCK || cpe_sock_errno() == EINPROGRESS) {
-                    break;
-                }
-                else if (cpe_sock_errno() == EINTR) {
-                    continue;
-                }
-                else {
-                    CPE_ERROR(
-                        driver->m_em, "ev: %s: fd=%d: recv error, errno=%d (%s)!",
-                        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
-                        cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-
-                    net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_network_error);
-                    if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
-                        net_endpoint_free(base_endpoint);
-                        return;
-                    }
-
-                    if (endpoint->m_fd != -1) {
-                        net_ev_endpoint_close_sock(driver, endpoint);
-                    }
-
-                    return;
-                }
-            }
-        }
+        if (!net_ev_endpoint_do_read(driver, endpoint, base_endpoint)) return;
     }
 
     if (revents & EV_WRITE) {
-        while(net_endpoint_state(base_endpoint) == net_endpoint_state_established
-              && !net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write))
-        {
-            uint32_t data_size;
-            void * data = net_endpoint_buf_peak(base_endpoint, net_ep_buf_write, &data_size);
-
-            assert(data_size > 0);
-            assert(data);
-            assert(endpoint->m_fd != -1);
-
-            int bytes = cpe_send(endpoint->m_fd, data, data_size, CPE_SOCKET_DEFAULT_SEND_FLAGS);
-            if (bytes > 0) {
-                if (net_endpoint_driver_debug(base_endpoint)) {
-                    CPE_INFO(
-                        driver->m_em, "ev: %s: fd=%d: send %d bytes data!",
-                        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
-                        bytes);
-                }
-
-                net_endpoint_buf_consume(base_endpoint, net_ep_buf_write,  (uint32_t)bytes);
-
-                if (driver->m_data_monitor_fun) {
-                    driver->m_data_monitor_fun(driver->m_data_monitor_ctx, base_endpoint, net_data_out, (uint32_t)bytes);
-                }
-            }
-            else if (bytes == 0) {
-                if (net_endpoint_driver_debug(base_endpoint) >= 2) {
-                    CPE_INFO(
-                        driver->m_em, "ev: %s: fd=%d: free for send return 0!",
-                        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
-                }
-
-                net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_remote_closed);
-                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
-                    net_endpoint_free(base_endpoint);
-                    return;
-                }
-
-                if (endpoint->m_fd != -1) {
-                    net_ev_endpoint_close_sock(driver, endpoint);
-                }
-
-                return;
-            }
-            else {
-                int err = cpe_sock_errno();
-                assert(bytes == -1);
-
-                if (err == EWOULDBLOCK || err == EINPROGRESS) break;
-                if (err == EINTR) continue;
-
-                if (err == EPIPE) {
-                    if (net_endpoint_driver_debug(base_endpoint) >= 2) {
-                        CPE_INFO(
-                            driver->m_em, "ev: %s: fd=%d: free for send recv EPIPE!",
-                            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
-                    }
-
-                    net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_network_error);
-                    if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
-                        net_endpoint_free(base_endpoint);
-                        return;
-                    }
-
-                    if (endpoint->m_fd != -1) {
-                        net_ev_endpoint_close_sock(driver, endpoint);
-                    }
-                    
-                    return;
-                }
-
-                CPE_ERROR(
-                    driver->m_em, "ev: %s: fd=%d: free for send error, errno=%d (%s)!",
-                    net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
-                    cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-
-                net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_network_error);
-                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
-                    net_endpoint_free(base_endpoint);
-                    return;
-                }
-
-                if (endpoint->m_fd != -1) {
-                    net_ev_endpoint_close_sock(driver, endpoint);
-                }
-                
-                return;
-            }
-        }
+        if (!net_ev_endpoint_do_write(driver, endpoint, base_endpoint)) return;
     }
 
     if (net_endpoint_state(base_endpoint) == net_endpoint_state_established) {
@@ -528,7 +543,7 @@ static void net_ev_endpoint_connect_cb(EV_P_ ev_io *w, int revents) {
 
         net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_network_error);
         if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
-            net_endpoint_free(base_endpoint);
+            net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
             return;
         }
 
@@ -557,7 +572,7 @@ static void net_ev_endpoint_connect_cb(EV_P_ ev_io *w, int revents) {
 
             net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_connect_error);
             if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
-                net_endpoint_free(base_endpoint);
+                net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
                 return;
             }
 
@@ -574,7 +589,7 @@ static void net_ev_endpoint_connect_cb(EV_P_ ev_io *w, int revents) {
 
     net_ev_endpoint_start_rw_watcher(driver, base_endpoint, endpoint);
     if (net_endpoint_set_state(base_endpoint, net_endpoint_state_established) != 0) {
-        net_endpoint_free(base_endpoint);
+        net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
         return;
     }
 }
