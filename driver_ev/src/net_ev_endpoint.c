@@ -49,13 +49,25 @@ void net_ev_endpoint_fini(net_endpoint_t base_endpoint) {
 }
 
 int net_ev_endpoint_on_output(net_endpoint_t base_endpoint) {
-    if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return 0;
-
     net_ev_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     net_ev_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
 
+    CPE_ERROR(
+        driver->m_em, "ev: %s: fd=%d: on output 1!",
+        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
+    
+    if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return 0;
+
+    CPE_ERROR(
+        driver->m_em, "ev: %s: fd=%d: on output 2!",
+        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
+    
     if (!net_ev_endpoint_do_write(driver, endpoint, base_endpoint)) return -1;
 
+    CPE_ERROR(
+        driver->m_em, "ev: %s: fd=%d: on output 3!",
+        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
+    
     net_ev_endpoint_start_rw_watcher(driver, base_endpoint, endpoint);
     return 0;
 }
