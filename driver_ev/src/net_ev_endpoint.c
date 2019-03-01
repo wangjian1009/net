@@ -52,22 +52,10 @@ int net_ev_endpoint_on_output(net_endpoint_t base_endpoint) {
     net_ev_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     net_ev_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
 
-    CPE_ERROR(
-        driver->m_em, "ev: %s: fd=%d: on output 1!",
-        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
-    
     if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return 0;
 
-    CPE_ERROR(
-        driver->m_em, "ev: %s: fd=%d: on output 2!",
-        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
-    
     if (!net_ev_endpoint_do_write(driver, endpoint, base_endpoint)) return -1;
 
-    CPE_ERROR(
-        driver->m_em, "ev: %s: fd=%d: on output 3!",
-        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
-    
     net_ev_endpoint_start_rw_watcher(driver, base_endpoint, endpoint);
     return 0;
 }
@@ -427,6 +415,12 @@ static uint8_t net_ev_endpoint_do_read(net_ev_driver_t driver, net_ev_endpoint_t
 }
 
 static uint8_t net_ev_endpoint_do_write(net_ev_driver_t driver, net_ev_endpoint_t endpoint, net_endpoint_t base_endpoint) {
+    CPE_ERROR(
+        driver->m_em, "ev: %s: fd=%d: do_write: state = %s, buf is empty = %d",
+        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
+        net_endpoint_state_str(net_endpoint_state(base_endpoint)),
+        net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write));
+
     while(net_endpoint_state(base_endpoint) == net_endpoint_state_established
           && !net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write))
     {
