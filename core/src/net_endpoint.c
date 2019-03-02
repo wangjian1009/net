@@ -55,7 +55,8 @@ net_endpoint_create(net_driver_t driver, net_protocol_t protocol) {
 
     uint8_t i;
     for(i = 0; i < CPE_ARRAY_SIZE(endpoint->m_bufs); ++i) {
-        endpoint->m_bufs[i] = NULL;
+        endpoint->m_bufs[i].m_buf = NULL;
+        endpoint->m_bufs[i].m_size = 0;
     }
     
     endpoint->m_data_watcher_ctx = NULL;
@@ -142,10 +143,11 @@ void net_endpoint_free(net_endpoint_t endpoint) {
 
     uint8_t i;
     for(i = 0; i < CPE_ARRAY_SIZE(endpoint->m_bufs); ++i) {
-        if (endpoint->m_bufs[i]) {
-            assert(endpoint->m_bufs[i]->id == endpoint->m_id);
-            ringbuffer_free(schedule->m_endpoint_buf, endpoint->m_bufs[i]);
-            endpoint->m_bufs[i] = NULL;
+        if (endpoint->m_bufs[i].m_buf) {
+            assert(endpoint->m_bufs[i].m_buf->id == endpoint->m_id);
+            ringbuffer_free(schedule->m_endpoint_buf, endpoint->m_bufs[i].m_buf);
+            endpoint->m_bufs[i].m_buf = NULL;
+            endpoint->m_bufs[i].m_size = 0;
         }
     }
 
@@ -336,10 +338,11 @@ int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) 
     if (old_is_active && !net_endpoint_is_active(endpoint)) {
         uint8_t i;
         for(i = 0; i < CPE_ARRAY_SIZE(endpoint->m_bufs); ++i) {
-            if (endpoint->m_bufs[i]) {
-                assert(endpoint->m_bufs[i]->id == endpoint->m_id);
-                ringbuffer_free(schedule->m_endpoint_buf, endpoint->m_bufs[i]);
-                endpoint->m_bufs[i] = NULL;
+            if (endpoint->m_bufs[i].m_buf) {
+                assert(endpoint->m_bufs[i].m_buf->id == endpoint->m_id);
+                ringbuffer_free(schedule->m_endpoint_buf, endpoint->m_bufs[i].m_buf);
+                endpoint->m_bufs[i].m_buf = NULL;
+                endpoint->m_bufs[i].m_size = 0;
             }
         }
 
@@ -575,7 +578,8 @@ ringbuffer_block_t net_endpoint_common_buf_alloc(net_endpoint_t endpoint, uint32
         if ((uint32_t)collect_id == endpoint->m_id) {
             uint8_t i;
             for(i = 0; i < CPE_ARRAY_SIZE(endpoint->m_bufs); ++i) {
-                endpoint->m_bufs[i] = NULL;
+                endpoint->m_bufs[i].m_buf = NULL;
+                endpoint->m_bufs[i].m_size = 0;
             }
             
             CPE_ERROR(
@@ -595,7 +599,8 @@ ringbuffer_block_t net_endpoint_common_buf_alloc(net_endpoint_t endpoint, uint32
 
         uint8_t i;
         for(i = 0; i < CPE_ARRAY_SIZE(free_endpoint->m_bufs); ++i) {
-            free_endpoint->m_bufs[i] = NULL;
+            free_endpoint->m_bufs[i].m_buf = NULL;
+            free_endpoint->m_bufs[i].m_size = 0;
         }
 
         char free_endpoint_name[128];
