@@ -53,7 +53,7 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em, uint32_t common_
     TAILQ_INIT(&schedule->m_free_dns_querys);
     TAILQ_INIT(&schedule->m_free_endpoint_monitors);
 
-    schedule->m_endpoint_buf = ringbuffer_new(common_buff_capacity);
+    schedule->m_endpoint_buf = ringbuffer_new(common_buff_capacity, em);
     if (schedule->m_endpoint_buf == NULL) {
         CPE_ERROR(em, "schedule: alloc common buff fail, capacity=%d!", common_buff_capacity);
         return NULL;

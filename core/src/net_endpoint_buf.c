@@ -169,7 +169,7 @@ void * net_endpoint_buf_peak(net_endpoint_t endpoint, net_endpoint_buf_type_t bu
 
     assert(block_size >= 0);
     assert(data);
-    assert(block_size == endpoint->m_bufs[buf_type].m_size);
+    assert(block_size <= endpoint->m_bufs[buf_type].m_size);
 
     *size = (uint32_t)block_size;
     return data;
