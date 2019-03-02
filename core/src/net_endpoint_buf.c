@@ -509,7 +509,7 @@ int net_endpoint_buf_append_from_self(net_endpoint_t endpoint, net_endpoint_buf_
     assert(buf_type != from);
 
     assert((endpoint->m_bufs[from].m_buf == NULL && endpoint->m_bufs[from].m_size == 0)
-           && (endpoint->m_bufs[from].m_buf != NULL
+           || (endpoint->m_bufs[from].m_buf != NULL
                && endpoint->m_bufs[from].m_size == ringbuffer_block_total_len(schedule->m_endpoint_buf, endpoint->m_bufs[from].m_buf)));
 
     if (size > 0) {
