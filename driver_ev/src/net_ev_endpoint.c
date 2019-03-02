@@ -438,12 +438,12 @@ static uint8_t net_ev_endpoint_do_write(net_ev_driver_t driver, net_ev_endpoint_
         
         int bytes = cpe_send(endpoint->m_fd, data, data_size, CPE_SOCKET_DEFAULT_SEND_FLAGS);
         if (bytes > 0) {
-            /* if (net_endpoint_driver_debug(base_endpoint)) { */
+            if (net_endpoint_driver_debug(base_endpoint)) {
                 CPE_INFO(
                     driver->m_em, "ev: %s: fd=%d: send %d bytes data!",
                     net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
                     bytes);
-            /* } */
+            }
 
             net_endpoint_buf_consume(base_endpoint, net_ep_buf_write,  (uint32_t)bytes);
 
