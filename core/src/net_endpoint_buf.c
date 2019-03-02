@@ -66,10 +66,10 @@ void * net_endpoint_buf_alloc(net_endpoint_t endpoint, uint32_t * inout_size) {
 void net_endpoint_buf_release(net_endpoint_t endpoint) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
 
-    if (schedule->m_endpoint_tb) {
-        ringbuffer_free(schedule->m_endpoint_buf, schedule->m_endpoint_tb);
-        schedule->m_endpoint_tb = NULL;
-    }
+    assert(schedule->m_endpoint_tb);
+    
+    ringbuffer_free(schedule->m_endpoint_buf, schedule->m_endpoint_tb);
+    schedule->m_endpoint_tb = NULL;
 }
 
 int net_endpoint_buf_supply(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, uint32_t size) {

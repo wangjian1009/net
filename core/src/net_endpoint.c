@@ -563,6 +563,8 @@ ringbuffer_block_t net_endpoint_common_buf_alloc(net_endpoint_t endpoint, uint32
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
     ringbuffer_block_t blk;
 
+    assert(schedule->m_endpoint_tb == NULL);
+    
     blk = ringbuffer_alloc(schedule->m_endpoint_buf, size);
     while (blk == NULL) {
         int collect_id = ringbuffer_collect(schedule->m_endpoint_buf);
