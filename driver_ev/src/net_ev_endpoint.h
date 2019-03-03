@@ -4,6 +4,7 @@
 
 struct net_ev_endpoint {
     int m_fd;
+    uint8_t m_expects;
     struct ev_io m_watcher;
 };
 
@@ -13,7 +14,7 @@ int net_ev_endpoint_connect(net_endpoint_t base_endpoint);
 void net_ev_endpoint_close(net_endpoint_t base_endpoint);
 int net_ev_endpoint_on_output(net_endpoint_t base_endpoint);
 
-void net_ev_endpoint_start_rw_watcher(
+void net_ev_endpoint_update_rw_watcher(
     net_ev_driver_t driver, net_endpoint_t base_endpoint, net_ev_endpoint_t endpoint);
 int net_ev_endpoint_update_local_address(net_ev_endpoint_t endpoint);
 int net_ev_endpoint_update_remote_address(net_ev_endpoint_t endpoint);
