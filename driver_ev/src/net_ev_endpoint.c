@@ -415,12 +415,6 @@ static uint8_t net_ev_endpoint_do_read(net_ev_driver_t driver, net_ev_endpoint_t
 }
 
 static uint8_t net_ev_endpoint_do_write(net_ev_driver_t driver, net_ev_endpoint_t endpoint, net_endpoint_t base_endpoint) {
-    CPE_ERROR(
-        driver->m_em, "ev: %s: fd=%d: do_write: state = %s, buf is empty = %d",
-        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
-        net_endpoint_state_str(net_endpoint_state(base_endpoint)),
-        net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write));
-
     while(net_endpoint_state(base_endpoint) == net_endpoint_state_established
           && !net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write))
     {
@@ -430,11 +424,6 @@ static uint8_t net_ev_endpoint_do_write(net_ev_driver_t driver, net_ev_endpoint_
         assert(data_size > 0);
         assert(data);
         assert(endpoint->m_fd != -1);
-
-        CPE_ERROR(
-            driver->m_em, "ev: %s: fd=%d: do_write: 111: sz=%d",
-            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
-            data_size);
         
         int bytes = cpe_send(endpoint->m_fd, data, data_size, CPE_SOCKET_DEFAULT_SEND_FLAGS);
         if (bytes > 0) {
