@@ -119,16 +119,20 @@ int net_link_set_buf_limit(net_link_t link, uint32_t limit) {
     
     link->m_buf_limit = limit;
 
-    if (net_endpoint_is_active(link->m_local)) {
+    if (link->m_local->m_state == net_endpoint_state_established) {
         if (link->m_local->m_driver->m_endpoint_update(link->m_local) != 0) {
-            CPE_ERROR(schedule->m_em, "core: %s: update fail!", net_endpoint_dump(&schedule->m_tmp_buffer, link->m_local));
+            CPE_ERROR(
+                schedule->m_em, "core: %s: update fail!",
+                net_endpoint_dump(&schedule->m_tmp_buffer, link->m_local));
             return -1;
         }
     }
     
-    if (net_endpoint_is_active(link->m_remote)) {
+    if (link->m_remote->m_state == net_endpoint_state_established) {
         if (link->m_remote->m_driver->m_endpoint_update(link->m_remote) != 0) {
-            CPE_ERROR(schedule->m_em, "core: %s: update fail!", net_endpoint_dump(&schedule->m_tmp_buffer, link->m_remote));
+            CPE_ERROR(
+                schedule->m_em, "core: %s: update fail!",
+                net_endpoint_dump(&schedule->m_tmp_buffer, link->m_remote));
             return -1;
         }
     }

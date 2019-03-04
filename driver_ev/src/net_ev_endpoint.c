@@ -52,6 +52,10 @@ int net_ev_endpoint_update(net_endpoint_t base_endpoint) {
     net_ev_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     net_ev_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
 
+    CPE_ERROR(
+        driver->m_em, "ev: %s: fd=%d: update begin",
+        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
+    
     if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return 0;
 
     if (net_endpoint_buf_size(base_endpoint, net_ep_buf_write) > 0) {
@@ -61,11 +65,10 @@ int net_ev_endpoint_update(net_endpoint_t base_endpoint) {
                     driver->m_em, "ev: %s: fd=%d: is waiting for write, skip cur write!",
                     net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
             }
-
-            return 0;
         }
-    
-        if (!net_ev_endpoint_do_write(driver, endpoint, base_endpoint)) return -1;
+        else {
+            if (!net_ev_endpoint_do_write(driver, endpoint, base_endpoint)) return -1;
+        }
     }
 
     if (!net_endpoint_buf_is_full(base_endpoint, net_ep_buf_read)) {
@@ -77,6 +80,11 @@ int net_ev_endpoint_update(net_endpoint_t base_endpoint) {
     }
     
     net_ev_endpoint_update_rw_watcher(driver, base_endpoint, endpoint);
+
+    CPE_ERROR(
+        driver->m_em, "ev: %s: fd=%d: update end",
+        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
+
     return 0;
 }
 
@@ -594,6 +602,10 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
     net_endpoint_t base_endpoint = net_endpoint_from_data(endpoint);
     net_ev_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
 
+    CPE_ERROR(
+        driver->m_em, "ev: %s: fd=%d: rw_cb begin",
+        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
+    
     if (revents & EV_READ) {
         if (!net_ev_endpoint_do_read(driver, endpoint, base_endpoint)) return;
     }
@@ -605,6 +617,10 @@ static void net_ev_endpoint_rw_cb(EV_P_ ev_io *w, int revents) {
     if (net_endpoint_state(base_endpoint) == net_endpoint_state_established) {
         net_ev_endpoint_update_rw_watcher(driver, base_endpoint, endpoint);
     }
+
+    CPE_ERROR(
+        driver->m_em, "ev: %s: fd=%d: rw_cb end",
+        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
 }
 
 static void net_ev_endpoint_connect_cb(EV_P_ ev_io *w, int revents) {
