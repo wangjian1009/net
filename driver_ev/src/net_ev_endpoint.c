@@ -402,10 +402,6 @@ static uint8_t net_ev_endpoint_do_read(net_ev_driver_t driver, net_ev_endpoint_t
                     bytes);
             }
 
-            if (driver->m_data_monitor_fun) {
-                driver->m_data_monitor_fun(driver->m_data_monitor_ctx, base_endpoint, net_data_in, (uint32_t)bytes);
-            }
-                
             if (net_endpoint_buf_supply(base_endpoint, net_ep_buf_read, (uint32_t)bytes) != 0) {
                 if (net_endpoint_is_active(base_endpoint)) {
                     if (!net_endpoint_have_error(base_endpoint)) {
@@ -505,10 +501,6 @@ static uint8_t net_ev_endpoint_do_write(net_ev_driver_t driver, net_ev_endpoint_
             }
 
             net_endpoint_buf_consume(base_endpoint, net_ep_buf_write,  (uint32_t)bytes);
-
-            if (driver->m_data_monitor_fun) {
-                driver->m_data_monitor_fun(driver->m_data_monitor_ctx, base_endpoint, net_data_out, (uint32_t)bytes);
-            }
         }
         else if (bytes == 0) {
             if (net_endpoint_driver_debug(base_endpoint) >= 2) {

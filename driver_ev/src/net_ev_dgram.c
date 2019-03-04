@@ -214,10 +214,6 @@ int net_ev_dgram_send(net_dgram_t base_dgram, net_address_t target, void const *
                 (int)data_len,
                 net_address_dump(net_schedule_tmp_buffer(schedule), target));
         }
-
-        if (driver->m_data_monitor_fun) {
-            driver->m_data_monitor_fun(driver->m_data_monitor_ctx, NULL, net_data_out, (uint32_t)nret);
-        }
     }
 
     return nret;
@@ -227,7 +223,7 @@ static void net_ev_dgram_receive_cb(EV_P_ ev_io *w, int revents) {
     net_ev_dgram_t dgram = w->data;
     net_dgram_t base_dgram = net_dgram_from_data(dgram);
     net_schedule_t schedule = net_dgram_schedule(base_dgram);
-    net_ev_driver_t driver = net_driver_data(net_dgram_driver(base_dgram));
+    //net_ev_driver_t driver = net_driver_data(net_dgram_driver(base_dgram));
 
     struct sockaddr_storage addr;
     socklen_t addr_len = sizeof(addr);
@@ -245,10 +241,6 @@ static void net_ev_dgram_receive_cb(EV_P_ ev_io *w, int revents) {
     net_address_t from = net_address_create_from_sockaddr(schedule, (struct sockaddr *) &addr, addr_len);
 
     net_dgram_recv(base_dgram, from, buf, (size_t)nrecv);
-
-    if (driver->m_data_monitor_fun) {
-        driver->m_data_monitor_fun(driver->m_data_monitor_ctx, NULL, net_data_in, (uint32_t)nrecv);
-    }
 
     net_address_free(from);
 }

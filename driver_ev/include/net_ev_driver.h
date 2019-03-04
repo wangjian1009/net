@@ -21,10 +21,6 @@ void net_ev_driver_set_sock_create_processor(
     net_ev_driver_t driver,
     net_ev_driver_sock_create_process_fun_t process_fun, void * process_ctx);
 
-void net_ev_driver_set_data_monitor(
-    net_ev_driver_t driver,
-    net_data_monitor_fun_t monitor_fun, void * monitor_ctx);
-
 NET_END_DECL
 
 #endif

@@ -70,8 +70,6 @@ static int net_ev_driver_init(net_driver_t base_driver) {
     driver->m_ev_loop = NULL;
     driver->m_sock_process_fun = NULL;
     driver->m_sock_process_ctx = NULL;
-    driver->m_data_monitor_fun = NULL;
-    driver->m_data_monitor_ctx = NULL;
 
     return 0;
 }
@@ -100,14 +98,6 @@ void net_ev_driver_set_sock_create_processor(
     driver->m_sock_process_ctx = process_ctx;
 }
     
-void net_ev_driver_set_data_monitor(
-    net_ev_driver_t driver,
-    net_data_monitor_fun_t monitor_fun, void * monitor_ctx)
-{
-    driver->m_data_monitor_fun = monitor_fun;
-    driver->m_data_monitor_ctx = monitor_ctx;
-}
-
 net_schedule_t net_ev_driver_schedule(net_ev_driver_t driver) {
     return net_driver_schedule(net_driver_from_data(driver));
 }

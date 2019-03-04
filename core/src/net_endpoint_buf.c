@@ -173,12 +173,12 @@ int net_endpoint_buf_supply(net_endpoint_t endpoint, net_endpoint_buf_type_t buf
         endpoint->m_data_watcher_fun(endpoint->m_data_watcher_ctx, endpoint, buf_type, net_endpoint_data_supply, size);
     }
 
-    if (buf_type == net_ep_buf_write && endpoint->m_state == net_endpoint_state_established) {
-        if (net_endpoint_driver_update(endpoint) != 0) return -1;
-    }
-
     if (buf_type == net_ep_buf_read) {
         if (endpoint->m_protocol->m_endpoint_input(endpoint) != 0) return -1;
+    }
+
+    if (buf_type == net_ep_buf_write && endpoint->m_state == net_endpoint_state_established) {
+        if (net_endpoint_driver_update(endpoint) != 0) return -1;
     }
 
     if (net_endpoint_update_rbuf_is_full(endpoint) != 0) return -1;

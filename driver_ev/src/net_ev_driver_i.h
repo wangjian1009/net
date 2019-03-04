@@ -18,8 +18,6 @@ struct net_ev_driver {
     struct ev_loop * m_ev_loop;
     net_ev_driver_sock_create_process_fun_t m_sock_process_fun;
     void * m_sock_process_ctx;
-    net_data_monitor_fun_t m_data_monitor_fun;
-    void * m_data_monitor_ctx;
 };
 
 net_schedule_t net_ev_driver_schedule(net_ev_driver_t driver);
