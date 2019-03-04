@@ -53,12 +53,12 @@ net_endpoint_create(net_driver_t driver, net_protocol_t protocol) {
     endpoint->m_state = net_endpoint_state_disable;
     endpoint->m_dns_query = NULL;
 
-    endpoint->m_all_buf_limit = 0;
+    endpoint->m_all_buf_limit = NET_ENDPOINT_NO_LIMIT;
     uint8_t i;
     for(i = 0; i < CPE_ARRAY_SIZE(endpoint->m_bufs); ++i) {
         endpoint->m_bufs[i].m_buf = NULL;
         endpoint->m_bufs[i].m_size = 0;
-        endpoint->m_bufs[i].m_limit = 0;
+        endpoint->m_bufs[i].m_limit = NET_ENDPOINT_NO_LIMIT;
     }
     
     endpoint->m_data_watcher_ctx = NULL;

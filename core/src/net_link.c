@@ -27,7 +27,7 @@ net_link_create(
     local->m_link = link;
     link->m_local = local;
     link->m_local_is_tie = local_is_tie;
-    link->m_buf_limit = 0;
+    link->m_buf_limit = NET_ENDPOINT_NO_LIMIT;
 
     remote->m_link = link;
     link->m_remote = remote;

@@ -68,6 +68,7 @@ net_endpoint_t net_endpoint_other(net_endpoint_t endpoint);
 
 /*buf*/
 /*    check */
+uint32_t net_endpoint_buf_capacity(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type);
 uint32_t net_endpoint_buf_size(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type);
 uint32_t net_endpoint_buf_limit(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type);
 int net_endpoint_buf_set_limit(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, uint32_t limit);
