@@ -97,16 +97,41 @@ int net_link_set_buf_limit(net_link_t link, uint32_t limit) {
 
     if (link->m_buf_limit == limit) return 0;
     
-    /* net_schedule_t schedule = link->m_local->m_driver->m_schedule; */
+    net_schedule_t schedule = link->m_local->m_driver->m_schedule;
 
-    /* uint8_t limit_grow_bigger = */
-    /*     limit == 0 */
-    /*     || (link->m_buf_limit > 0 && limit > link->m_buf_limit); */
+    uint8_t limit_grow_bigger =
+        limit == 0
+        || (link->m_buf_limit > 0 && limit > link->m_buf_limit);
 
+    if (link->m_local->m_driver_debug) {
+        CPE_INFO(
+            schedule->m_em, "core: %s: link limit %u ==> %u(%s)",
+            net_endpoint_dump(&schedule->m_tmp_buffer, link->m_local),
+            link->m_buf_limit, limit, limit_grow_bigger ? "+" : "-");
+    }
+
+    if (link->m_remote->m_driver_debug) {
+        CPE_INFO(
+            schedule->m_em, "core: %s: link limit %u ==> %u(%s)",
+            net_endpoint_dump(&schedule->m_tmp_buffer, link->m_remote),
+            link->m_buf_limit, limit, limit_grow_bigger ? "+" : "-");
+    }
+    
     link->m_buf_limit = limit;
 
-    if (link->m_local->m_driver->m_endpoint_update(link->m_local) != 0) return -1;
-    if (link->m_remote->m_driver->m_endpoint_update(link->m_remote) != 0) return -1;
+    if (net_endpoint_is_active(link->m_local)) {
+        if (link->m_local->m_driver->m_endpoint_update(link->m_local) != 0) {
+            CPE_ERROR(schedule->m_em, "core: %s: update fail!", net_endpoint_dump(&schedule->m_tmp_buffer, link->m_local));
+            return -1;
+        }
+    }
+    
+    if (net_endpoint_is_active(link->m_remote)) {
+        if (link->m_remote->m_driver->m_endpoint_update(link->m_remote) != 0) {
+            CPE_ERROR(schedule->m_em, "core: %s: update fail!", net_endpoint_dump(&schedule->m_tmp_buffer, link->m_remote));
+            return -1;
+        }
+    }
 
     return 0;
 }
