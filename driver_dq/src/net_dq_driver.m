@@ -38,7 +38,7 @@ net_dq_driver_create(net_schedule_t schedule) {
         net_dq_endpoint_fini,
         net_dq_endpoint_connect,
         net_dq_endpoint_close,
-        net_dq_endpoint_on_output,
+        net_dq_endpoint_update,
         /*dgram*/
         sizeof(struct net_dq_dgram),
         net_dq_dgram_init,

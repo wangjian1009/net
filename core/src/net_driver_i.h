@@ -30,7 +30,7 @@ struct net_driver {
     net_endpoint_fini_fun_t m_endpoint_fini;
     net_endpoint_connect_fun_t m_endpoint_connect;
     net_endpoint_close_fun_t m_endpoint_close;
-    net_endpoint_on_output_fun_t m_endpoint_on_output;
+    net_endpoint_update_fun_t m_endpoint_update;
     /*dgram*/
     uint16_t m_dgram_capacity;
     net_dgram_init_fun_t m_dgram_init;

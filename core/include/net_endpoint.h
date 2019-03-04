@@ -49,6 +49,9 @@ void net_endpoint_set_protocol_debug(net_endpoint_t endpoint, uint8_t debug);
 uint8_t net_endpoint_driver_debug(net_endpoint_t endpoint);
 void net_endpoint_set_driver_debug(net_endpoint_t endpoint, uint8_t debug);
 
+uint32_t net_endpoint_all_buf_limit(net_endpoint_t endpoint);
+int net_endpoint_set_all_buf_limit(net_endpoint_t endpoint, uint32_t limit);
+
 void net_endpoint_update_debug_info(net_endpoint_t endpoint);
 
 /*error info*/
@@ -65,6 +68,8 @@ net_endpoint_t net_endpoint_other(net_endpoint_t endpoint);
 /*buf*/
 /*    check */
 uint32_t net_endpoint_buf_size(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type);
+uint32_t net_endpoint_buf_limit(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type);
+int net_endpoint_buf_set_limit(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, uint32_t limit);
 uint8_t net_endpoint_buf_is_empty(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type);
 uint8_t net_endpoint_buf_is_full(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type);
 void net_endpoint_buf_clear(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type);

@@ -14,7 +14,7 @@ int net_dq_endpoint_init(net_endpoint_t base_endpoint);
 void net_dq_endpoint_fini(net_endpoint_t base_endpoint);
 int net_dq_endpoint_connect(net_endpoint_t base_endpoint);
 void net_dq_endpoint_close(net_endpoint_t base_endpoint);
-int net_dq_endpoint_on_output(net_endpoint_t base_endpoint);
+int net_dq_endpoint_update(net_endpoint_t base_endpoint);
 
 int net_dq_endpoint_update_local_address(net_dq_endpoint_t endpoint);
 int net_dq_endpoint_update_remote_address(net_dq_endpoint_t endpoint);
