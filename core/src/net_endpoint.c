@@ -46,6 +46,7 @@ net_endpoint_create(net_driver_t driver, net_protocol_t protocol) {
     endpoint->m_close_after_send = 0;
     endpoint->m_protocol_debug = protocol->m_debug;
     endpoint->m_driver_debug = driver->m_debug;
+    endpoint->m_rb_is_full = 0;
     endpoint->m_error_source = net_endpoint_error_source_network;
     endpoint->m_error_no = 0;
     endpoint->m_link = NULL;

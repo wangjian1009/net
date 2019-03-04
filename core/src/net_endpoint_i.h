@@ -18,6 +18,7 @@ struct net_endpoint {
     uint8_t m_close_after_send;
     uint8_t m_protocol_debug;
     uint8_t m_driver_debug;
+    uint8_t m_rb_is_full;
     net_endpoint_error_source_t m_error_source;
     uint32_t m_error_no;
     struct cpe_hash_entry m_hh;
@@ -39,6 +40,8 @@ void net_endpoint_real_free(net_endpoint_t endpoint);
 
 ringbuffer_block_t net_endpoint_common_buf_alloc(net_endpoint_t endpoint, uint32_t size);
 
+int net_endpoint_update_rbuf_is_full(net_endpoint_t endpoint);
+    
 uint32_t net_endpoint_hash(net_endpoint_t o, void * user_data);
 int net_endpoint_eq(net_endpoint_t l, net_endpoint_t r, void * user_data);
 

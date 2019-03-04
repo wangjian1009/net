@@ -51,6 +51,10 @@ void net_ev_endpoint_fini(net_endpoint_t base_endpoint) {
 int net_ev_endpoint_update(net_endpoint_t base_endpoint) {
     net_ev_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     net_ev_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
+
+    CPE_ERROR(
+        driver->m_em, "ev: %s: fd=%d: update begin",
+        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
     
     if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return 0;
 
@@ -67,16 +71,12 @@ int net_ev_endpoint_update(net_endpoint_t base_endpoint) {
         }
     }
 
-    if (!net_endpoint_buf_is_full(base_endpoint, net_ep_buf_read)) {
-        if (endpoint->m_expects & EV_READ) {
-        }
-        else {
-            if (!net_ev_endpoint_do_read(driver, endpoint, base_endpoint)) return -1;
-        }
-    }
-    
     net_ev_endpoint_update_rw_watcher(driver, base_endpoint, endpoint);
 
+    CPE_ERROR(
+        driver->m_em, "ev: %s: fd=%d: update end",
+        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
+    
     return 0;
 }
 
@@ -234,7 +234,7 @@ void net_ev_endpoint_update_rw_watcher(
     assert(endpoint->m_fd != -1);
 
     uint8_t expects =
-        (net_endpoint_buf_is_full(base_endpoint, net_ep_buf_read) ? 0 : EV_READ)
+        (net_endpoint_rbuf_is_full(base_endpoint) ? 0 : EV_READ)
         | (net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write) ? 0 : EV_WRITE);
 
     if (expects != endpoint->m_expects) {
@@ -360,7 +360,7 @@ static uint8_t net_ev_endpoint_do_read(net_ev_driver_t driver, net_ev_endpoint_t
             capacity = 0;
         }
         else if (capacity == 0) {
-            return 0;
+            break;
         }
         
         void * rbuf = net_endpoint_buf_alloc(base_endpoint, &capacity);
@@ -370,9 +370,6 @@ static uint8_t net_ev_endpoint_do_read(net_ev_driver_t driver, net_ev_endpoint_t
                     net_ev_endpoint_close_sock(driver, endpoint);
                 }
                 return 0;
-            }
-            else if (net_endpoint_buf_is_full(base_endpoint, net_ep_buf_read)) {
-                break;
             }
             else {
                 CPE_ERROR(
