@@ -41,6 +41,8 @@ static int net_dns_svr_endpoint_process_data(
 
     while(1) {
         uint32_t input_sz = net_endpoint_buf_size(from_ep, from_buf);
+        if (input_sz < 2) return 0;
+
         void * input;
         if (net_endpoint_buf_peak_with_size(from_ep, from_buf, input_sz, &input) != 0) {
             CPE_ERROR(
@@ -48,8 +50,6 @@ static int net_dns_svr_endpoint_process_data(
                 net_endpoint_dump(net_dns_svr_tmp_buffer(svr), base_endpoint), input_sz);
             return -1;
         }
-    
-        if (input_sz < 2) return 0;
 
         uint16_t req_sz;
         CPE_COPY_NTOH16(&req_sz, input);
