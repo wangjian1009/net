@@ -354,7 +354,15 @@ int net_ev_endpoint_update_remote_address(net_ev_endpoint_t endpoint) {
 
 static uint8_t net_ev_endpoint_do_read(net_ev_driver_t driver, net_ev_endpoint_t endpoint, net_endpoint_t base_endpoint) {
     for(;net_endpoint_state(base_endpoint) == net_endpoint_state_established;) {
-        uint32_t capacity = 0;
+        uint32_t capacity = net_endpoint_buf_capacity(base_endpoint, net_ep_buf_read);
+
+        if (capacity == NET_ENDPOINT_NO_LIMIT) {
+            capacity = 0;
+        }
+        else if (capacity == 0) {
+            return 0;
+        }
+        
         void * rbuf = net_endpoint_buf_alloc(base_endpoint, &capacity);
         if (rbuf == NULL) {
             if (net_endpoint_state(base_endpoint) == net_endpoint_state_deleting) {
