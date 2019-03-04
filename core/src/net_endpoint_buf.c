@@ -68,8 +68,8 @@ void net_endpoint_buf_release(net_endpoint_t endpoint) {
 
     assert(schedule->m_endpoint_tb);
 
-    schedule->m_endpoint_tb = ringbuffer_shrink(schedule->m_endpoint_buf, schedule->m_endpoint_tb, 0);
-    assert(schedule->m_endpoint_tb == NULL);
+    ringbuffer_shrink(schedule->m_endpoint_buf, schedule->m_endpoint_tb, 0);
+    schedule->m_endpoint_tb = NULL;
 }
 
 int net_endpoint_buf_supply(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, uint32_t size) {
@@ -83,8 +83,8 @@ int net_endpoint_buf_supply(net_endpoint_t endpoint, net_endpoint_buf_type_t buf
         net_endpoint_buf_link(schedule->m_endpoint_tb, size);
     }
     else {
-        schedule->m_endpoint_tb = ringbuffer_shrink(schedule->m_endpoint_buf, schedule->m_endpoint_tb, 0);
-        assert(schedule->m_endpoint_tb == NULL);
+        ringbuffer_shrink(schedule->m_endpoint_buf, schedule->m_endpoint_tb, 0);
+        schedule->m_endpoint_tb = NULL;
         return 0;
     }
     
