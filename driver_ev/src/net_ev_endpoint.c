@@ -52,11 +52,7 @@ int net_ev_endpoint_update(net_endpoint_t base_endpoint) {
     net_ev_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     net_ev_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
 
-    CPE_ERROR(
-        driver->m_em, "ev: %s: fd=%d: update begin",
-        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
-    
-    if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return 0;
+    assert(net_endpoint_state(base_endpoint) == net_endpoint_state_established);
 
     if (net_endpoint_buf_size(base_endpoint, net_ep_buf_write) > 0) {
         if (endpoint->m_expects & EV_WRITE) {
@@ -72,10 +68,6 @@ int net_ev_endpoint_update(net_endpoint_t base_endpoint) {
     }
 
     net_ev_endpoint_update_rw_watcher(driver, base_endpoint, endpoint);
-
-    CPE_ERROR(
-        driver->m_em, "ev: %s: fd=%d: update end",
-        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
     
     return 0;
 }
