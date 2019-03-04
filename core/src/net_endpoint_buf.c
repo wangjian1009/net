@@ -14,21 +14,21 @@
      || ((__ep)->m_all_buf_limit != NET_ENDPOINT_NO_LIMIT)              \
      || ((__ep)->m_link && (__ep)->m_link->m_buf_limit != NET_ENDPOINT_NO_LIMIT))
 
-#define net_endpoint_buf_link(__buf, __sz)                          \
+#define net_endpoint_buf_link(__buf, __buf_type, __sz)              \
     do {                                                            \
-        if (endpoint->m_bufs[buf_type].m_buf) {                     \
+        if (endpoint->m_bufs[(__buf_type)].m_buf) {                 \
             ringbuffer_link(                                        \
                 schedule->m_endpoint_buf,                           \
-                endpoint->m_bufs[buf_type].m_buf, (__buf));         \
-            assert(endpoint->m_bufs[buf_type].m_buf->id             \
+                endpoint->m_bufs[(__buf_type)].m_buf, (__buf));     \
+            assert(endpoint->m_bufs[(__buf_type)].m_buf->id         \
                    == endpoint->m_id);                              \
         }                                                           \
         else {                                                      \
             ringbuffer_block_set_id(                                \
                 schedule->m_endpoint_buf, (__buf), endpoint->m_id); \
-            endpoint->m_bufs[buf_type].m_buf = (__buf);             \
+            endpoint->m_bufs[(__buf_type)].m_buf = (__buf);         \
         }                                                           \
-        endpoint->m_bufs[buf_type].m_size += (__sz);                \
+        endpoint->m_bufs[(__buf_type)].m_size += (__sz);            \
     } while(0)
 
 uint8_t net_endpoint_have_any_data(net_endpoint_t endpoint) {
@@ -159,7 +159,7 @@ int net_endpoint_buf_supply(net_endpoint_t endpoint, net_endpoint_buf_type_t buf
 
     if (size > 0) {
         ringbuffer_shrink(schedule->m_endpoint_buf, schedule->m_endpoint_tb, (int)size);
-        net_endpoint_buf_link(schedule->m_endpoint_tb, size);
+        net_endpoint_buf_link(schedule->m_endpoint_tb, buf_type, size);
     }
     else {
         ringbuffer_shrink(schedule->m_endpoint_buf, schedule->m_endpoint_tb, 0);
@@ -576,7 +576,7 @@ int net_endpoint_buf_append(net_endpoint_t endpoint, net_endpoint_buf_type_t buf
     memcpy(data, i_data, size);
 
     ringbuffer_shrink(schedule->m_endpoint_buf, tb, (int)size);
-    net_endpoint_buf_link(tb, size);
+    net_endpoint_buf_link(tb, buf_type, size);
 
     if (endpoint->m_data_watcher_fun) {
         endpoint->m_data_watcher_fun(endpoint->m_data_watcher_ctx, endpoint, buf_type, net_endpoint_data_supply, size);
@@ -625,7 +625,7 @@ int net_endpoint_buf_append_from_other(
         if (tb == NULL) return -1;
 
         ringbuffer_copy(schedule->m_endpoint_buf, other->m_bufs[from].m_buf, 0, tb);
-        net_endpoint_buf_link(tb, size);
+        net_endpoint_buf_link(tb, buf_type, size);
 
         other->m_bufs[from].m_buf = ringbuffer_yield(schedule->m_endpoint_buf, other->m_bufs[from].m_buf, size);
         other->m_bufs[from].m_size -= size;
@@ -633,7 +633,7 @@ int net_endpoint_buf_append_from_other(
     else {
         if (other->m_bufs[from].m_buf) {
             size = other->m_bufs[from].m_size;
-            net_endpoint_buf_link(other->m_bufs[from].m_buf, size);
+            net_endpoint_buf_link(other->m_bufs[from].m_buf, buf_type, size);
             other->m_bufs[from].m_buf = NULL;
             other->m_bufs[from].m_size = 0;
         }
@@ -708,7 +708,7 @@ int net_endpoint_buf_append_from_self(net_endpoint_t endpoint, net_endpoint_buf_
         if (tb == NULL) return -1;
         
         ringbuffer_copy(schedule->m_endpoint_buf, endpoint->m_bufs[from].m_buf, 0, tb);
-        net_endpoint_buf_link(tb, size);
+        net_endpoint_buf_link(tb, buf_type, size);
 
         endpoint->m_bufs[from].m_buf = ringbuffer_yield(schedule->m_endpoint_buf, endpoint->m_bufs[from].m_buf, size);
         endpoint->m_bufs[from].m_size -= size;
@@ -716,7 +716,7 @@ int net_endpoint_buf_append_from_self(net_endpoint_t endpoint, net_endpoint_buf_
     else {
         if (endpoint->m_bufs[from].m_buf) {
             size = endpoint->m_bufs[from].m_size;
-            net_endpoint_buf_link(endpoint->m_bufs[from].m_buf, size);
+            net_endpoint_buf_link(endpoint->m_bufs[from].m_buf, buf_type, size);
             endpoint->m_bufs[from].m_buf = NULL;
             endpoint->m_bufs[from].m_size = 0;
         }
