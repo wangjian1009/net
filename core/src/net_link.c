@@ -27,6 +27,7 @@ net_link_create(
     local->m_link = link;
     link->m_local = local;
     link->m_local_is_tie = local_is_tie;
+    link->m_buf_limit = 0;
 
     remote->m_link = link;
     link->m_remote = remote;
@@ -86,4 +87,26 @@ void net_link_set_tie(net_link_t link, net_endpoint_t endpoint, uint8_t is_tie) 
         assert(link->m_remote == endpoint);
         link->m_remote_is_tie = is_tie;
     }
+}
+
+uint32_t net_link_buf_limit(net_link_t link) {
+    return link->m_buf_limit;
+}
+
+int net_link_set_buf_limit(net_link_t link, uint32_t limit) {
+
+    if (link->m_buf_limit == limit) return 0;
+    
+    /* net_schedule_t schedule = link->m_local->m_driver->m_schedule; */
+
+    /* uint8_t limit_grow_bigger = */
+    /*     limit == 0 */
+    /*     || (link->m_buf_limit > 0 && limit > link->m_buf_limit); */
+
+    link->m_buf_limit = limit;
+
+    if (link->m_local->m_driver->m_endpoint_update(link->m_local) != 0) return -1;
+    if (link->m_remote->m_driver->m_endpoint_update(link->m_remote) != 0) return -1;
+
+    return 0;
 }

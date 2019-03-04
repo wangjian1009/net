@@ -49,6 +49,7 @@ void net_endpoint_set_protocol_debug(net_endpoint_t endpoint, uint8_t debug);
 uint8_t net_endpoint_driver_debug(net_endpoint_t endpoint);
 void net_endpoint_set_driver_debug(net_endpoint_t endpoint, uint8_t debug);
 
+uint32_t net_endpoint_all_buf_size(net_endpoint_t endpoint);
 uint32_t net_endpoint_all_buf_limit(net_endpoint_t endpoint);
 int net_endpoint_set_all_buf_limit(net_endpoint_t endpoint, uint32_t limit);
 
