@@ -7,6 +7,13 @@
 #include "net_protocol_i.h"
 #include "net_link_i.h"
 
+#define net_endpoint_driver_update(__ep) ((__ep)->m_driver->m_endpoint_update((__ep)))
+
+#define net_endpoint_have_limit(__ep, __buf_type)                   \
+    (((__ep)->m_bufs[(__buf_type)].m_limit != 0)                    \
+     || ((__ep)->m_all_buf_limit != 0)                              \
+     || ((__ep)->m_link && (__ep)->m_link->m_buf_limit != 0))
+
 #define net_endpoint_buf_link(__buf, __sz)                          \
     do {                                                            \
         if (endpoint->m_bufs[buf_type].m_buf) {                     \
@@ -64,7 +71,7 @@ int net_endpoint_set_all_buf_limit(net_endpoint_t endpoint, uint32_t limit) {
             limit_grow_bigger ? "+" : "-");
     }
 
-    if (endpoint->m_driver->m_endpoint_update(endpoint) != 0) return -1;
+    if (net_endpoint_driver_update(endpoint) != 0) return -1;
 
     return 0;
 }
@@ -148,7 +155,7 @@ int net_endpoint_buf_supply(net_endpoint_t endpoint, net_endpoint_buf_type_t buf
     }
 
     if (buf_type == net_ep_buf_write) {
-        if (endpoint->m_driver->m_endpoint_update(endpoint) != 0) return -1;
+        if (net_endpoint_driver_update(endpoint) != 0) return -1;
     }
 
     if (buf_type == net_ep_buf_read) {
@@ -195,7 +202,7 @@ int net_endpoint_buf_set_limit(net_endpoint_t endpoint, net_endpoint_buf_type_t 
     
     endpoint->m_bufs[buf_type].m_limit = limit;
 
-    if (endpoint->m_driver->m_endpoint_update(endpoint) != 0) return -1;
+    if (net_endpoint_driver_update(endpoint) != 0) return -1;
 
     return 0;
 }
@@ -228,7 +235,14 @@ void net_endpoint_buf_consume(net_endpoint_t endpoint, net_endpoint_buf_type_t b
         endpoint->m_data_watcher_fun(endpoint->m_data_watcher_ctx, endpoint, buf_type, net_endpoint_data_consume, size);
     }
 
-    if (endpoint->m_close_after_send && net_endpoint_is_active(endpoint) && !net_endpoint_have_any_data(endpoint)) {
+    net_endpoint_t other = net_endpoint_other(endpoint);
+    if (other && net_endpoint_is_active(other) && other->m_link->m_buf_limit) {
+        net_endpoint_driver_update(other);
+    }
+    
+    if (!net_endpoint_is_active(endpoint)) return;
+
+    if (endpoint->m_close_after_send && !net_endpoint_have_any_data(endpoint)) {
         if (endpoint->m_protocol_debug || endpoint->m_driver_debug) {
             CPE_INFO(
                 schedule->m_em, "core: %s: auto close on consume(close-after-send)!",
@@ -238,7 +252,14 @@ void net_endpoint_buf_consume(net_endpoint_t endpoint, net_endpoint_buf_type_t b
         if (net_endpoint_set_state(endpoint, net_endpoint_state_disable) != 0) {
             net_endpoint_set_state(endpoint, net_endpoint_state_deleting);
         }
+        return;
     }
+
+    if (net_endpoint_have_limit(endpoint, buf_type)) {
+        if (net_endpoint_driver_update(endpoint) != 0) return;
+    }
+
+    return;
 }
 
 void * net_endpoint_buf_peak(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, uint32_t * size) {
@@ -500,7 +521,7 @@ int net_endpoint_buf_append(net_endpoint_t endpoint, net_endpoint_buf_type_t buf
     }
 
     if (buf_type == net_ep_buf_write) {
-        if (endpoint->m_driver->m_endpoint_update(endpoint) != 0) return -1;
+        if (net_endpoint_driver_update(endpoint) != 0) return -1;
     }
 
     
@@ -550,36 +571,42 @@ int net_endpoint_buf_append_from_other(
         }
     }
 
-    if (size > 0) {
-        if (other->m_data_watcher_fun) {
-            other->m_data_watcher_fun(other->m_data_watcher_ctx, other, from, net_endpoint_data_consume, size);
+    if (size == 0) return 0;
+    
+    if (other->m_data_watcher_fun) {
+        other->m_data_watcher_fun(other->m_data_watcher_ctx, other, from, net_endpoint_data_consume, size);
+    }
+
+    if (net_endpoint_is_active(other) && net_endpoint_have_limit(other, from)) {
+        if (net_endpoint_driver_update(other) != 0) return -1;
+    }
+    
+    if (net_endpoint_is_active(other) && other->m_close_after_send && !net_endpoint_have_any_data(other)) {
+        if (other->m_protocol_debug || other->m_driver_debug) {
+            CPE_INFO(
+                schedule->m_em, "core: %s: auto close on append_from_other(close-after-send)!",
+                net_endpoint_dump(&schedule->m_tmp_buffer, other));
         }
 
-        if (other->m_close_after_send && net_endpoint_is_active(endpoint) && !net_endpoint_have_any_data(other)) {
-            if (other->m_protocol_debug || other->m_driver_debug) {
-                CPE_INFO(
-                    schedule->m_em, "core: %s: auto close on append_from_other(close-after-send)!",
-                    net_endpoint_dump(&schedule->m_tmp_buffer, other));
-            }
-
-            if (net_endpoint_set_state(other, net_endpoint_state_disable) != 0) {
-                net_endpoint_set_state(other, net_endpoint_state_deleting);
-            }
+        if (net_endpoint_set_state(other, net_endpoint_state_disable) != 0) {
+            net_endpoint_set_state(other, net_endpoint_state_deleting);
         }
+    }
         
-        if (endpoint->m_data_watcher_fun) {
-            endpoint->m_data_watcher_fun(endpoint->m_data_watcher_ctx, endpoint, buf_type, net_endpoint_data_supply, size);
-        }
+    if (endpoint->m_data_watcher_fun) {
+        endpoint->m_data_watcher_fun(endpoint->m_data_watcher_ctx, endpoint, buf_type, net_endpoint_data_supply, size);
+    }
 
-        if (buf_type == net_ep_buf_write) {
-            if (endpoint->m_driver->m_endpoint_update(endpoint) != 0) return -1;
-        }
+    if (!net_endpoint_is_active(endpoint)) return 0;
+    
+    if (buf_type == net_ep_buf_read) {
+        if (endpoint->m_protocol->m_endpoint_input(endpoint) != 0) return -1;
+        if (!net_endpoint_is_active(endpoint)) return 0;
+    }
 
-        if (buf_type == net_ep_buf_read) {
-            if (endpoint->m_protocol->m_endpoint_input(endpoint) != 0) return -1;
-        }
-
-        
+    if (buf_type == net_ep_buf_write || net_endpoint_have_limit(endpoint, buf_type)) {
+        if (net_endpoint_driver_update(endpoint) != 0) return -1;
+        if (!net_endpoint_is_active(endpoint)) return 0;
     }
 
     return 0;
@@ -627,16 +654,20 @@ int net_endpoint_buf_append_from_self(net_endpoint_t endpoint, net_endpoint_buf_
         endpoint->m_data_watcher_fun(endpoint->m_data_watcher_ctx, endpoint, from, net_endpoint_data_consume, size);
         endpoint->m_data_watcher_fun(endpoint->m_data_watcher_ctx, endpoint, buf_type, net_endpoint_data_supply, size);
     }
-    
-    if (buf_type == net_ep_buf_write) {
-        if (endpoint->m_driver->m_endpoint_update(endpoint) != 0) return -1;
-    }
 
+    if (!net_endpoint_is_active(endpoint)) return 0;
+    
     if (buf_type == net_ep_buf_read) {
         if (endpoint->m_protocol->m_endpoint_input(endpoint) != 0) return -1;
+        if (!net_endpoint_is_active(endpoint)) return 0;
     }
 
-    if (endpoint->m_close_after_send && net_endpoint_is_active(endpoint) && !net_endpoint_have_any_data(endpoint)) {
+    if (buf_type == net_ep_buf_write || net_endpoint_have_limit(endpoint, buf_type)) {
+        if (net_endpoint_driver_update(endpoint) != 0) return -1;
+        if (!net_endpoint_is_active(endpoint)) return 0;
+    }
+    
+    if (endpoint->m_close_after_send && !net_endpoint_have_any_data(endpoint)) {
         if (endpoint->m_protocol_debug || endpoint->m_driver_debug) {
             CPE_INFO(
                 schedule->m_em, "core: %s: auto close on append_from_self(close-after-send)!",
@@ -646,6 +677,7 @@ int net_endpoint_buf_append_from_self(net_endpoint_t endpoint, net_endpoint_buf_
         if (net_endpoint_set_state(endpoint, net_endpoint_state_disable) != 0) {
             net_endpoint_set_state(endpoint, net_endpoint_state_deleting);
         }
+        return 0;
     }
     
     return 0;
