@@ -92,6 +92,13 @@ uint8_t net_endpoint_buf_is_full(net_endpoint_t endpoint, net_endpoint_buf_type_
     if (endpoint->m_link && endpoint->m_link->m_buf_limit != NET_ENDPOINT_NO_LIMIT) {
         net_endpoint_t other = net_endpoint_other(endpoint);
         uint32_t sz = net_endpoint_all_buf_size(endpoint) + (other ? net_endpoint_all_buf_size(other) : 0);
+
+        net_schedule_t schedule = endpoint->m_driver->m_schedule;        
+        CPE_INFO(
+            schedule->m_em, "core: %s: sz=%d, limit=%d",
+            net_endpoint_dump(&schedule->m_tmp_buffer, endpoint),
+            sz, endpoint->m_link->m_buf_limit);
+
         if (sz >= endpoint->m_link->m_buf_limit) return 1;
     }
     
