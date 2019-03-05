@@ -41,10 +41,6 @@ static int net_dns_svr_endpoint_process_data(
 
     while(1) {
         uint32_t input_sz = net_endpoint_buf_size(from_ep, from_buf);
-        CPE_ERROR(
-            svr->m_em, "dns-svr: %s: <-- xxxxx buf=%s, sz=%d!",
-            net_endpoint_dump(net_dns_svr_tmp_buffer(svr), from_ep), net_endpoint_buf_type_str(from_buf), input_sz);
-
         if (input_sz < 2) return 0;
 
         void * input;

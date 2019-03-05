@@ -708,11 +708,6 @@ static int net_endpoint_buf_on_supply(net_schedule_t schedule, net_endpoint_t en
     }
 
     if (buf_type == net_ep_buf_write) {
-        CPE_ERROR(
-            schedule->m_em, "core: %s: xxxxxx supply write, state=%s!",
-            net_endpoint_dump(&schedule->m_tmp_buffer, endpoint),
-            net_endpoint_state_str(endpoint->m_state));
-        
         if (endpoint->m_state == net_endpoint_state_established) {
             if (net_endpoint_driver_update(endpoint) != 0) return -1;
         }
