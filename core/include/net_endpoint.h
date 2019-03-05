@@ -56,9 +56,10 @@ int net_endpoint_set_all_buf_limit(net_endpoint_t endpoint, uint32_t limit);
 void net_endpoint_update_debug_info(net_endpoint_t endpoint);
 
 /*error info*/
-void net_endpoint_set_error(net_endpoint_t endpoint, net_endpoint_error_source_t error_source, uint32_t error_no);
+void net_endpoint_set_error(net_endpoint_t endpoint, net_endpoint_error_source_t error_source, uint32_t error_no, const char * msg);
 net_endpoint_error_source_t net_endpoint_error_source(net_endpoint_t endpoint);
 uint32_t net_endpoint_error_no(net_endpoint_t endpoint);
+const char * net_endpoint_error_msg(net_endpoint_t endpoint);
 uint8_t net_endpoint_have_error(net_endpoint_t endpoint);
 
 /*link*/

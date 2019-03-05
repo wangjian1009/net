@@ -49,6 +49,7 @@ net_endpoint_create(net_driver_t driver, net_protocol_t protocol) {
     endpoint->m_rb_is_full = 0;
     endpoint->m_error_source = net_endpoint_error_source_network;
     endpoint->m_error_no = 0;
+    endpoint->m_error_msg = NULL;
     endpoint->m_link = NULL;
     endpoint->m_id = schedule->m_endpoint_max_id + 1;
     endpoint->m_state = net_endpoint_state_disable;
@@ -175,7 +176,12 @@ void net_endpoint_free(net_endpoint_t endpoint) {
         endpoint->m_remote_address = NULL;
     }
 
-    cpe_hash_table_remove_by_ins(&endpoint->m_driver->m_schedule->m_endpoints, endpoint);
+    if (endpoint->m_error_msg) {
+        mem_free(schedule->m_alloc, endpoint->m_error_msg);
+        endpoint->m_error_msg = NULL;
+    }
+    
+    cpe_hash_table_remove_by_ins(&schedule->m_endpoints, endpoint);
 
     TAILQ_INSERT_TAIL(&endpoint->m_driver->m_free_endpoints, endpoint, m_next_for_driver);
 }
@@ -379,6 +385,10 @@ int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) 
         endpoint->m_close_after_send = 0;
         endpoint->m_error_source = net_endpoint_error_source_network;
         endpoint->m_error_no = 0;
+        if (endpoint->m_error_msg) {
+            mem_free(schedule->m_alloc, endpoint->m_error_msg);
+            endpoint->m_error_msg = NULL;
+        }
     }
     
     return net_endpoint_notify_state_changed(endpoint, old_state);
@@ -388,9 +398,18 @@ net_address_t net_endpoint_address(net_endpoint_t endpoint) {
     return endpoint->m_address;
 }
 
-void net_endpoint_set_error(net_endpoint_t endpoint, net_endpoint_error_source_t error_source, uint32_t error_no) {
+void net_endpoint_set_error(net_endpoint_t endpoint, net_endpoint_error_source_t error_source, uint32_t error_no, const char * msg) {
+    net_schedule_t schedule = endpoint->m_driver->m_schedule;
+
     endpoint->m_error_source = error_source;
     endpoint->m_error_no = error_no;
+
+    if (endpoint->m_error_msg) {
+        mem_free(schedule->m_alloc, endpoint->m_error_msg);
+        endpoint->m_error_msg = NULL;
+    }
+    
+    endpoint->m_error_msg = msg ? cpe_str_mem_dup(schedule->m_alloc, msg) : NULL;
 }
 
 net_endpoint_error_source_t net_endpoint_error_source(net_endpoint_t endpoint) {
@@ -399,6 +418,10 @@ net_endpoint_error_source_t net_endpoint_error_source(net_endpoint_t endpoint) {
 
 uint32_t net_endpoint_error_no(net_endpoint_t endpoint) {
     return endpoint->m_error_no;
+}
+
+const char * net_endpoint_error_msg(net_endpoint_t endpoint) {
+    return endpoint->m_error_msg ? endpoint->m_error_msg : "";
 }
 
 uint8_t net_endpoint_have_error(net_endpoint_t endpoint) {

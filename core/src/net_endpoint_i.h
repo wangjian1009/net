@@ -21,6 +21,7 @@ struct net_endpoint {
     uint8_t m_rb_is_full;
     net_endpoint_error_source_t m_error_source;
     uint32_t m_error_no;
+    char * m_error_msg;
     struct cpe_hash_entry m_hh;
     net_endpoint_state_t m_state;
     net_dns_query_t m_dns_query;
