@@ -22,8 +22,6 @@ static void net_ev_endpoint_connect_log_connect_start(
     net_ev_driver_t driver, net_ev_endpoint_t endpoint, net_endpoint_t base_endpoint, uint8_t is_first);
 static void net_ev_endpoint_connect_log_connect_success(
     net_ev_driver_t driver, net_ev_endpoint_t endpoint, net_endpoint_t base_endpoint);
-static void net_ev_endpoint_connect_log_connect_error(
-    net_ev_driver_t driver, net_ev_endpoint_t endpoint, net_endpoint_t base_endpoint, int err, uint8_t is_first);
 
 static void net_ev_endpoint_close_sock(net_ev_driver_t driver, net_ev_endpoint_t endpoint);
 
@@ -184,7 +182,10 @@ int net_ev_endpoint_connect(net_endpoint_t base_endpoint) {
             return net_endpoint_set_state(base_endpoint, net_endpoint_state_connecting);
         }
         else {
-            net_ev_endpoint_connect_log_connect_error(driver, endpoint, base_endpoint, cpe_sock_errno(), 1);
+            CPE_ERROR(
+                driver->m_em, "ev: %s: fd=%d: connect error(first), errno=%d (%s)",
+                net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
+                cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
 
             net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_connect_error);
             net_ev_endpoint_close_sock(driver, endpoint);
@@ -620,7 +621,10 @@ static void net_ev_endpoint_connect_cb(EV_P_ ev_io *w, int revents) {
             assert(endpoint->m_expects == (EV_READ | EV_WRITE));
         }
         else {
-            net_ev_endpoint_connect_log_connect_error(driver, endpoint, base_endpoint, err, 0);
+            CPE_ERROR(
+                driver->m_em, "ev: %s: fd=%d: connect error(callback), errno=%d (%s)",
+                net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
+                err, cpe_sock_errstr(err));
 
             net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_connect_error);
             if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
@@ -696,16 +700,6 @@ static void net_ev_endpoint_connect_log_connect_success(
             driver->m_em, "ev: %s: fd=%d: connect success",
             net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
     }
-}
-
-static void net_ev_endpoint_connect_log_connect_error(
-    net_ev_driver_t driver, net_ev_endpoint_t endpoint, net_endpoint_t base_endpoint, int err, uint8_t is_first)
-{
-    CPE_ERROR(
-        driver->m_em, "ev: %s: fd=%d: connect error%s, errno=%d (%s)",
-        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
-        is_first ? "" : "(callback)",
-        err, cpe_sock_errstr(err));
 }
 
 static int net_ev_endpoint_start_connect(
