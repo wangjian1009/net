@@ -21,6 +21,8 @@ static void net_dq_endpoint_start_r(net_dq_driver_t driver, net_dq_endpoint_t en
 static void net_dq_endpoint_stop_r(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint);
 static void net_dq_endpoint_start_do_write(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint);
 static void net_dq_endpoint_stop_do_write(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint);
+static void net_dq_endpoint_start_do_read(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint);
+static void net_dq_endpoint_stop_do_read(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint);
 
 static void net_dq_endpoint_connect_log_connect_start(
     net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint, uint8_t is_first);
@@ -36,6 +38,7 @@ int net_dq_endpoint_init(net_endpoint_t base_endpoint) {
     endpoint->m_source_r = nil;
     endpoint->m_source_w = nil;
     endpoint->m_source_do_write = nil;
+    endpoint->m_source_do_read = nil;
 
     return 0;
 }
@@ -56,6 +59,10 @@ void net_dq_endpoint_fini(net_endpoint_t base_endpoint) {
         net_dq_endpoint_stop_do_write(driver, endpoint, base_endpoint);
     }
 
+    if (endpoint->m_source_do_read) {
+        net_dq_endpoint_stop_do_read(driver, endpoint, base_endpoint);
+    }
+
     if (endpoint->m_fd != -1) {
         net_dq_endpoint_close_sock(driver, endpoint);
     }
@@ -65,10 +72,18 @@ int net_dq_endpoint_update(net_endpoint_t base_endpoint) {
     net_dq_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     net_dq_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
 
-    if (endpoint->m_source_do_write == nil) {
-        net_dq_endpoint_start_do_write(driver, endpoint, base_endpoint);
+    if (!net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write)) {
+        if (endpoint->m_source_do_write == nil) {
+            net_dq_endpoint_start_do_write(driver, endpoint, base_endpoint);
+        }
     }
 
+    if (!net_endpoint_rbuf_is_full(base_endpoint)) {
+        if (endpoint->m_source_do_read == nil) {
+            net_dq_endpoint_start_do_read(driver, endpoint, base_endpoint);
+        }
+    }
+    
     return 0;
 }
 
@@ -295,6 +310,7 @@ int net_dq_endpoint_on_read(net_dq_driver_t driver, net_dq_endpoint_t endpoint, 
     while(
         endpoint->m_source_r == NULL /*can read*/
         && net_endpoint_state(base_endpoint) == net_endpoint_state_established
+        && !net_endpoint_rbuf_is_full(base_endpoint)
         )
     {
         uint32_t capacity = 0;
@@ -305,9 +321,6 @@ int net_dq_endpoint_on_read(net_dq_driver_t driver, net_dq_endpoint_t endpoint, 
                     net_dq_endpoint_close_sock(driver, endpoint);
                 }
                 return -1;
-            }
-            else if (net_endpoint_buf_is_full(base_endpoint, net_ep_buf_read)) {
-                break;
             }
             else {
                 CPE_ERROR(
@@ -604,7 +617,6 @@ static void net_dq_endpoint_start_r(net_dq_driver_t driver, net_dq_endpoint_t en
             }
         });
     dispatch_resume(endpoint->m_source_r);
-    
 }
 
 static void net_dq_endpoint_stop_r(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint) {
@@ -647,6 +659,33 @@ static void net_dq_endpoint_stop_do_write(net_dq_driver_t driver, net_dq_endpoin
     dispatch_source_cancel(endpoint->m_source_do_write);
     dispatch_release(endpoint->m_source_do_write);
     endpoint->m_source_do_write = nil;
+}
+
+static void net_dq_endpoint_start_do_read(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint) {
+    assert(endpoint->m_source_do_read == NULL);
+    
+    endpoint->m_source_do_read = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_main_queue());
+		
+    dispatch_source_set_event_handler(
+        endpoint->m_source_do_read,
+        ^{
+            net_dq_endpoint_stop_do_read(driver, endpoint, base_endpoint);
+            if (net_dq_endpoint_on_read(driver, endpoint, base_endpoint) != 0) {
+                net_endpoint_free(base_endpoint);
+            }
+        });
+
+    dispatch_source_set_timer(endpoint->m_source_do_read, DISPATCH_TIME_NOW, 0, 0);
+    dispatch_resume(endpoint->m_source_do_read);
+}
+
+static void net_dq_endpoint_stop_do_read(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint) {
+    assert(endpoint->m_source_do_read != NULL);
+    
+    dispatch_source_set_event_handler(endpoint->m_source_do_read, nil);
+    dispatch_source_cancel(endpoint->m_source_do_read);
+    dispatch_release(endpoint->m_source_do_read);
+    endpoint->m_source_do_read = nil;
 }
 
 static void net_dq_endpoint_connect_log_connect_start(

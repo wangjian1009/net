@@ -8,6 +8,7 @@ struct net_dq_endpoint {
     __unsafe_unretained dispatch_source_t m_source_r;
     __unsafe_unretained dispatch_source_t m_source_w;
     __unsafe_unretained dispatch_source_t m_source_do_write;
+    __unsafe_unretained dispatch_source_t m_source_do_read;
 };
 
 int net_dq_endpoint_init(net_endpoint_t base_endpoint);
