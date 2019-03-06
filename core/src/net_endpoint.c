@@ -54,6 +54,7 @@ net_endpoint_create(net_driver_t driver, net_protocol_t protocol) {
     endpoint->m_id = schedule->m_endpoint_max_id + 1;
     endpoint->m_state = net_endpoint_state_disable;
     endpoint->m_dns_query = NULL;
+    endpoint->m_tb = NULL;
 
     endpoint->m_all_buf_limit = NET_ENDPOINT_NO_LIMIT;
     uint8_t i;
@@ -590,6 +591,7 @@ ringbuffer_block_t net_endpoint_common_buf_alloc(net_endpoint_t endpoint, uint32
     ringbuffer_block_t blk;
 
     assert(schedule->m_endpoint_tb == NULL);
+    assert(endpoint->m_tb == NULL);
     
     blk = ringbuffer_alloc(schedule->m_endpoint_buf, size);
     while (blk == NULL) {
@@ -602,15 +604,22 @@ ringbuffer_block_t net_endpoint_common_buf_alloc(net_endpoint_t endpoint, uint32
         }
 
         if ((uint32_t)collect_id == endpoint->m_id) {
-            uint8_t i;
-            for(i = 0; i < CPE_ARRAY_SIZE(endpoint->m_bufs); ++i) {
-                endpoint->m_bufs[i].m_buf = NULL;
-                endpoint->m_bufs[i].m_size = 0;
-            }
-            
             CPE_ERROR(
                 schedule->m_em, "%s: buf alloc: self use block, require len %d",
                 net_endpoint_dump(&schedule->m_tmp_buffer, endpoint), size);
+
+            uint8_t i;
+            for(i = 0; i < CPE_ARRAY_SIZE(endpoint->m_bufs); ++i) {
+                if (endpoint->m_bufs[i].m_buf == NULL) continue;
+
+                CPE_ERROR(
+                    schedule->m_em, "%s: buf alloc: self use block, clear %s buf, size=%d",
+                    net_endpoint_dump(&schedule->m_tmp_buffer, endpoint),
+                    net_endpoint_buf_type_str(i), endpoint->m_bufs[i].m_size);
+                
+                endpoint->m_bufs[i].m_buf = NULL;
+                endpoint->m_bufs[i].m_size = 0;
+            }
 
             CPE_ERROR(
                 schedule->m_em, "dump buf:\n%s",
@@ -623,8 +632,15 @@ ringbuffer_block_t net_endpoint_common_buf_alloc(net_endpoint_t endpoint, uint32
         assert(free_endpoint);
         assert(free_endpoint != endpoint);
 
+        if (free_endpoint->m_tb) {
+            assert(free_endpoint->m_tb == schedule->m_endpoint_tb);
+            net_endpoint_buf_release(free_endpoint);
+        }
+        
         uint8_t i;
         for(i = 0; i < CPE_ARRAY_SIZE(free_endpoint->m_bufs); ++i) {
+            if (free_endpoint->m_bufs[i].m_buf == NULL) continue;
+            ringbuffer_free(schedule->m_endpoint_buf, endpoint->m_bufs[i].m_buf);
             free_endpoint->m_bufs[i].m_buf = NULL;
             free_endpoint->m_bufs[i].m_size = 0;
         }

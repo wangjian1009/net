@@ -26,6 +26,7 @@ struct net_endpoint {
     net_endpoint_state_t m_state;
     net_dns_query_t m_dns_query;
     uint32_t m_all_buf_limit;
+    ringbuffer_block_t m_tb;    
     struct {
         ringbuffer_block_t m_buf;
         uint32_t m_size;
