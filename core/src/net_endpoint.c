@@ -146,6 +146,12 @@ void net_endpoint_free(net_endpoint_t endpoint) {
 		endpoint->m_protocol->m_endpoint_fini(endpoint);
 	}
 
+    if (endpoint->m_tb) {
+        assert(endpoint->m_tb == schedule->m_endpoint_tb);
+        ringbuffer_shrink(schedule->m_endpoint_buf, schedule->m_endpoint_tb, 0);
+        endpoint->m_tb = schedule->m_endpoint_tb = NULL;
+    }
+
     uint8_t i;
     for(i = 0; i < CPE_ARRAY_SIZE(endpoint->m_bufs); ++i) {
         if (endpoint->m_bufs[i].m_buf) {
