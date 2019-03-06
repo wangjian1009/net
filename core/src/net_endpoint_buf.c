@@ -146,38 +146,53 @@ void * net_endpoint_buf_alloc(net_endpoint_t endpoint, uint32_t * inout_size) {
     return data;
 }
 
+uint8_t net_endpoint_buf_validate(net_endpoint_t endpoint, void const * buf, uint32_t capacity) {
+    net_schedule_t schedule = endpoint->m_driver->m_schedule;
+
+    if (endpoint->m_tb == NULL) return 0;
+
+    assert(endpoint->m_tb == schedule->m_endpoint_tb);
+
+    void * data = NULL;
+    int size = ringbuffer_block_data(schedule->m_endpoint_buf, schedule->m_endpoint_tb, 0, &data);
+    assert(data);
+
+    if (buf < data || ((const char *)buf) + capacity > ((const char *)data) + size) return 0;
+
+    return 1;
+}
+
 void net_endpoint_buf_release(net_endpoint_t endpoint) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
 
-    assert(schedule->m_endpoint_tb);
-    assert(endpoint->m_tb);
-    assert(endpoint->m_tb == schedule->m_endpoint_tb);
+    if (endpoint->m_tb) {
+        assert(endpoint->m_tb == schedule->m_endpoint_tb);
     
-    ringbuffer_shrink(schedule->m_endpoint_buf, schedule->m_endpoint_tb, 0);
-    endpoint->m_tb = schedule->m_endpoint_tb = NULL;
+        ringbuffer_shrink(schedule->m_endpoint_buf, schedule->m_endpoint_tb, 0);
+        endpoint->m_tb = schedule->m_endpoint_tb = NULL;
+    }
 }
 
 int net_endpoint_buf_supply(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, uint32_t size) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
 
     assert(buf_type < net_ep_buf_count);
-    assert(schedule->m_endpoint_tb);
-    assert(endpoint->m_tb);
+
+    if (endpoint->m_tb == NULL) return 0;
+    
     assert(endpoint->m_tb == schedule->m_endpoint_tb);
 
     if (size > 0) {
         ringbuffer_shrink(schedule->m_endpoint_buf, schedule->m_endpoint_tb, (int)size);
         net_endpoint_buf_link(schedule->m_endpoint_tb, buf_type, size);
+        endpoint->m_tb = schedule->m_endpoint_tb = NULL;
+        return net_endpoint_buf_on_supply(schedule, endpoint, buf_type, size);
     }
     else {
         ringbuffer_shrink(schedule->m_endpoint_buf, schedule->m_endpoint_tb, 0);
         endpoint->m_tb = schedule->m_endpoint_tb = NULL;
         return 0;
     }
-    
-    endpoint->m_tb = schedule->m_endpoint_tb = NULL;
-
-    return net_endpoint_buf_on_supply(schedule, endpoint, buf_type, size);
 }
 
 uint32_t net_endpoint_buf_size(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type) {
