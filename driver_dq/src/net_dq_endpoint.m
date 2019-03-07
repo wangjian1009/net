@@ -72,16 +72,20 @@ int net_dq_endpoint_update(net_endpoint_t base_endpoint) {
     net_dq_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     net_dq_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
 
-    if (!net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write)) {
-        if (endpoint->m_source_do_write == nil) {
-            net_dq_endpoint_start_do_write(driver, endpoint, base_endpoint);
-        }
+    if (!net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write) /*有数据等待写入 */
+        && endpoint->m_source_do_write == nil /*没有等待执行的写入操作 */
+        && endpoint->m_source_w == nil) /*socket没有等待可以写入的操作（当前可以写入数据到socket) */
+    {
+        /*启动写入操作 */
+        net_dq_endpoint_start_do_write(driver, endpoint, base_endpoint);
     }
 
-    if (!net_endpoint_rbuf_is_full(base_endpoint)) {
-        if (endpoint->m_source_do_read == nil) {
-            net_dq_endpoint_start_do_read(driver, endpoint, base_endpoint);
-        }
+    if (!net_endpoint_rbuf_is_full(base_endpoint) /*读取缓存不为空，可以读取数据 */
+        && endpoint->m_source_do_read == nil /*没有等待执行的读取操作 */
+        && endpoint->m_source_r == nil) /*socket上没有等待读取的操作（当前有数据可以读取) */
+    {
+        /*启动读取操作 */
+        net_dq_endpoint_start_do_read(driver, endpoint, base_endpoint);
     }
     
     return 0;
@@ -195,7 +199,9 @@ int net_dq_endpoint_connect(net_endpoint_t base_endpoint) {
                 net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
                 cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
 
-            net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_connect_error, cpe_sock_errstr(cpe_sock_errno()));
+            net_endpoint_set_error(
+                base_endpoint, net_endpoint_error_source_network,
+                net_endpoint_network_errno_connect_error, cpe_sock_errstr(cpe_sock_errno()));
 
             net_dq_endpoint_close_sock(driver, endpoint);
 
@@ -308,9 +314,9 @@ int net_dq_endpoint_set_established(net_dq_driver_t driver, net_dq_endpoint_t en
 
 int net_dq_endpoint_on_read(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint) {
     while(
-        endpoint->m_source_r == NULL /*can read*/
-        && net_endpoint_state(base_endpoint) == net_endpoint_state_established
-        && !net_endpoint_rbuf_is_full(base_endpoint)
+        endpoint->m_source_r == NULL /*socket上没有等待可以读取的处理（当前可以读取) */
+        && net_endpoint_state(base_endpoint) == net_endpoint_state_established /*当前状态正确 */
+        && !net_endpoint_rbuf_is_full(base_endpoint) /*读取缓存没有满 */
         )
     {
         uint32_t capacity = 0;
@@ -410,7 +416,10 @@ int net_dq_endpoint_on_read(net_dq_driver_t driver, net_dq_endpoint_t endpoint, 
                     net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
                     cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
 
-                net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_network_error, cpe_sock_errstr(cpe_sock_errno()));
+                net_endpoint_set_error(
+                    base_endpoint, net_endpoint_error_source_network,
+                    net_endpoint_network_errno_network_error, cpe_sock_errstr(cpe_sock_errno()));
+
                 net_dq_endpoint_close_sock(driver, endpoint);
                 if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) return -1;
                 return 0;
@@ -423,9 +432,9 @@ int net_dq_endpoint_on_read(net_dq_driver_t driver, net_dq_endpoint_t endpoint, 
 }
 
 int net_dq_endpoint_on_write(net_dq_driver_t driver, net_dq_endpoint_t endpoint, net_endpoint_t base_endpoint) {
-    while(endpoint->m_source_w == NULL /*can write*/
-          && net_endpoint_state(base_endpoint) == net_endpoint_state_established
-          && !net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write)
+    while(endpoint->m_source_w == NULL /*socket没有等待（当前可以写入数据) */
+          && net_endpoint_state(base_endpoint) == net_endpoint_state_established /*ep状态正确 */
+          && !net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write) /*还有数据等待写入 */
         )
     {
         uint32_t data_size = net_endpoint_buf_size(base_endpoint, net_ep_buf_write);
@@ -509,11 +518,15 @@ static void net_dq_endpoint_on_connect(net_dq_driver_t driver, net_dq_endpoint_t
             net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
 
-        net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_network_error, cpe_sock_errstr(cpe_sock_errno()));
+        net_endpoint_set_error(
+            base_endpoint, net_endpoint_error_source_network,
+            net_endpoint_network_errno_network_error, cpe_sock_errstr(cpe_sock_errno()));
+
         net_dq_endpoint_close_sock(driver, endpoint);
         if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
             net_endpoint_free(base_endpoint);
         }
+
         return;
     }
 
@@ -531,12 +544,16 @@ static void net_dq_endpoint_on_connect(net_dq_driver_t driver, net_dq_endpoint_t
                 net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint),
                 err, cpe_sock_errstr(err));
 
-            net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_connect_error, cpe_sock_errstr(err));
+            net_endpoint_set_error(
+                base_endpoint, net_endpoint_error_source_network,
+                net_endpoint_network_errno_connect_error, cpe_sock_errstr(err));
+
             net_dq_endpoint_close_sock(driver, endpoint);
             if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
                 net_endpoint_free(base_endpoint);
             }
         }
+
         return;
     }
 
@@ -665,7 +682,7 @@ static void net_dq_endpoint_start_do_read(net_dq_driver_t driver, net_dq_endpoin
     assert(endpoint->m_source_do_read == NULL);
     
     endpoint->m_source_do_read = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_main_queue());
-		
+
     dispatch_source_set_event_handler(
         endpoint->m_source_do_read,
         ^{

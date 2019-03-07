@@ -746,5 +746,3 @@ static int net_endpoint_buf_on_supply(net_schedule_t schedule, net_endpoint_t en
     
     return is_updated ? 0 : net_endpoint_update_rbuf_is_full(endpoint);
 }
-
-
