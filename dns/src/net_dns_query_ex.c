@@ -1,4 +1,5 @@
 #include "assert.h"
+#include "cpe/utils/time_utils.h"
 #include "net_dns_query.h"
 #include "net_dns_query_ex_i.h"
 #include "net_dns_entry_i.h"
