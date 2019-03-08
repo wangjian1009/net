@@ -41,7 +41,6 @@ net_dns_source_create(
 
     TAILQ_INIT(&source->m_scopes);
     TAILQ_INIT(&source->m_ctxs);
-    TAILQ_INIT(&source->m_items);
 
     if (source->m_init(source) != 0) {
         mem_free(manage->m_alloc, source);
@@ -68,11 +67,6 @@ void net_dns_source_free(net_dns_source_t source) {
         net_dns_task_ctx_free(ctx);
     }
 
-    while(!TAILQ_EMPTY(&source->m_items)) {
-        net_dns_entry_item_t item = TAILQ_FIRST(&source->m_items);
-        net_dns_entry_item_free(item);
-    }
-    
     source->m_fini(source);
     
     TAILQ_REMOVE(&manage->m_sources, source, m_next);

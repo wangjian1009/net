@@ -12,6 +12,7 @@ struct net_dns_entry {
         struct cpe_hash_entry m_hh;
         TAILQ_ENTRY(net_dns_entry) m_next;
     };
+    uint32_t m_expire_time_s;
     net_dns_task_t m_task;
     net_dns_entry_alias_list_t m_origins;
     net_dns_entry_alias_list_t m_cnames;
@@ -21,6 +22,8 @@ struct net_dns_entry {
 
 void net_dns_entry_real_free(net_dns_entry_t entry);
 void net_dns_entry_free_all(net_dns_manage_t manage);
+
+void net_dns_entry_clear(net_dns_entry_t entry);
 
 uint32_t net_dns_entry_hash(net_dns_entry_t o, void * user_data);
 int net_dns_entry_eq(net_dns_entry_t l, net_dns_entry_t r, void * user_data);

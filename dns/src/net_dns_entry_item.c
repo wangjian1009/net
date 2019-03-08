@@ -5,11 +5,7 @@
 #include "net_dns_source_i.h"
 
 net_dns_entry_item_t
-net_dns_entry_item_create(
-    net_dns_entry_t entry, net_dns_source_t source,
-    net_address_t address, uint8_t is_own,
-    uint32_t expire_time_s)
-{
+net_dns_entry_item_create(net_dns_entry_t entry, net_address_t address, uint8_t is_own) {
     net_dns_manage_t manage = entry->m_manage;
 
     assert(address);
@@ -27,8 +23,6 @@ net_dns_entry_item_create(
     }
 
     item->m_entry = entry;
-    item->m_source = source;
-    item->m_expire_time_s = expire_time_s;
 
     if (is_own) {
         item->m_address = address;
@@ -44,7 +38,6 @@ net_dns_entry_item_create(
     }
 
     TAILQ_INSERT_TAIL(&entry->m_items, item, m_next_for_entry);
-    TAILQ_INSERT_TAIL(&source->m_items, item, m_next_for_source);
 
     return item;
 }
@@ -63,10 +56,6 @@ void net_dns_entry_item_free(net_dns_entry_item_t item) {
     net_address_free(item->m_address);
     item->m_address = NULL;
 
-    if (item->m_source) {
-        TAILQ_REMOVE(&item->m_source->m_items, item, m_next_for_source);
-    }
-    
     TAILQ_REMOVE(&entry->m_items, item, m_next_for_entry);
 
     item->m_entry = (net_dns_entry_t)entry->m_manage;
@@ -74,11 +63,11 @@ void net_dns_entry_item_free(net_dns_entry_item_t item) {
 }
 
 net_dns_entry_item_t
-net_dns_entry_item_find(net_dns_entry_t entry, net_dns_source_t source, net_address_t address) {
+net_dns_entry_item_find(net_dns_entry_t entry, net_address_t address) {
     net_dns_entry_item_t item;
 
     TAILQ_FOREACH(item, &entry->m_items, m_next_for_entry) {
-        if (item->m_source == source && net_address_cmp_without_port(item->m_address, address) == 0) return item;
+        if (net_address_cmp_without_port(item->m_address, address) == 0) return item;
     }
     
     return NULL;
@@ -92,10 +81,6 @@ void net_dns_entry_item_real_free(net_dns_entry_item_t item) {
 
 net_dns_entry_t net_dns_entry_item_entry(net_dns_entry_item_t item) {
     return item->m_entry;
-}
-
-net_dns_source_t net_dns_entry_item_source(net_dns_entry_item_t item) {
-    return item->m_source;
 }
 
 net_address_t net_dns_entry_item_address(net_dns_entry_item_t item) {

@@ -37,6 +37,7 @@ net_dns_manage_t net_dns_manage_create(
     manage->m_alloc = alloc;
     manage->m_em = em;
     manage->m_debug = 0;
+    manage->m_cfg_ttl_s = 3 * 60;
     manage->m_schedule = schedule;
     manage->m_mode = net_dns_ipv4_first;
     manage->m_task_ctx_capacity = 0;

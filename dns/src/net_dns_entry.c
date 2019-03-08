@@ -41,6 +41,7 @@ net_dns_entry_create(net_dns_manage_t manage, const char * hostname) {
 
     entry->m_manage = manage;
     entry->m_hostname = entry->m_hostname_buf;
+    entry->m_expire_time_s = 0;
     memcpy(entry->m_hostname_buf, hostname, hostname_len);
     entry->m_task = NULL;
     TAILQ_INIT(&entry->m_origins);
@@ -151,15 +152,9 @@ net_dns_entry_select_item(net_dns_entry_t entry, net_dns_item_select_policy_t po
     struct net_dns_entry_item_it item_it;
     net_dns_entry_items(entry, &item_it, 1);
 
-    uint32_t cur_time_s = (uint32_t)(cur_time_ms() / 1000);
     for(check = net_dns_entry_item_it_next(&item_it); check; check = next) {
         next = net_dns_entry_item_it_next(&item_it);
         assert(next != check);
-
-        if (check->m_expire_time_s != 0 && check->m_expire_time_s < cur_time_s) { /*超期 */
-            net_dns_entry_item_free(check);
-            continue;
-        }
 
         if (net_address_type(check->m_address) == net_address_domain) continue;
 
@@ -195,14 +190,6 @@ net_dns_entry_select_item(net_dns_entry_t entry, net_dns_item_select_policy_t po
         switch(policy) {
         case net_dns_item_select_policy_first:
             if (item == NULL) {
-                item = check;
-            }
-            break;
-        case net_dns_item_select_policy_max_ttl:
-            if (item == NULL) {
-                item = check;
-            }
-            else if (check->m_expire_time_s > item->m_expire_time_s) {
                 item = check;
             }
             break;
@@ -378,6 +365,18 @@ void net_dns_entrys(net_dns_entry_t entry, net_dns_entry_it_t it) {
     net_dns_entry_alias_t * data = (net_dns_entry_alias_t *)it->data;
     *data = TAILQ_FIRST(&entry->m_cnames);
     it->next = net_dns_entry_cname_it_next;
+}
+
+void net_dns_entry_clear(net_dns_entry_t entry) {
+    while(!TAILQ_EMPTY(&entry->m_items)) {
+        net_dns_entry_item_free(TAILQ_FIRST(&entry->m_items));
+    }
+
+    while(!TAILQ_EMPTY(&entry->m_cnames)) {
+        net_dns_entry_alias_t alias = TAILQ_FIRST(&entry->m_cnames);
+        assert(alias->m_origin == entry);
+        net_dns_entry_free(alias->m_as);
+    }
 }
 
 uint32_t net_dns_entry_hash(net_dns_entry_t o, void * user_data) {

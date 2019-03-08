@@ -9,59 +9,51 @@
 #include "net_dns_task_ctx_i.h"
 #include "net_dns_source_ns_i.h"
 
-int net_dns_manage_add_record(
-    net_dns_manage_t manage, net_dns_source_t source, 
-    const char * hostname, net_address_t address, uint32_t ttl)
-{
+int net_dns_manage_add_record(net_dns_manage_t manage, const char * hostname, net_address_t address) {
     net_dns_entry_t entry = net_dns_entry_find(manage, hostname);
     if (entry == NULL) {
         if (manage->m_debug) {
             CPE_INFO(
-                manage->m_em, "dns-cli: add record %s ==> %s ttl=%d, entry not exist",
+                manage->m_em, "dns-cli: add record %s ==> %s entry not exist",
                 hostname,
-                net_address_host(net_dns_manage_tmp_buffer(manage), address),
-                ttl);
+                net_address_host(net_dns_manage_tmp_buffer(manage), address));
         }
         return -1;
     }
 
-    uint32_t expire_time_s = ttl ? ((uint32_t)(cur_time_ms() / 1000) + ttl) : 0;
-    
-    net_dns_entry_item_t item = net_dns_entry_item_find(entry, source, address);
-    if (item) {
-        item->m_expire_time_s = expire_time_s;
-
+    uint32_t cur_time_s = (uint32_t)(cur_time_ms() / 1000);
+    if (entry->m_expire_time_s && entry->m_expire_time_s < cur_time_s) {
         if (manage->m_debug) {
-            char source_buf[64];
-            cpe_str_dup(source_buf, sizeof(source_buf), net_dns_source_dump(net_dns_manage_tmp_buffer(manage), item->m_source));
-        
+            CPE_INFO(manage->m_em, "dns-cli: entry %s expired, clear old", hostname);
+        }
+        net_dns_entry_clear(entry);
+        entry->m_expire_time_s = cur_time_s + manage->m_cfg_ttl_s;
+    }
+    
+    net_dns_entry_item_t item = net_dns_entry_item_find(entry, address);
+    if (item) {
+        if (manage->m_debug) {
             CPE_INFO(
-                manage->m_em, "dns-cli: updated %s ==> %s | %s",
+                manage->m_em, "dns-cli: updated %s ==> %s",
                 entry->m_hostname,
-                item->m_address ? net_address_host(net_dns_manage_tmp_buffer(manage), item->m_address) : "N/A",
-                source_buf);
+                item->m_address ? net_address_host(net_dns_manage_tmp_buffer(manage), item->m_address) : "N/A");
         }
     }
     else {
-        item = net_dns_entry_item_create(entry, source, address, 0, expire_time_s);
+        item = net_dns_entry_item_create(entry, address, 0);
         if (item == NULL) {
             CPE_ERROR(
-                manage->m_em, "dns-cli: add record %s ==> %s ttl=%d, create item fail",
+                manage->m_em, "dns-cli: add record %s ==> %s create item fail",
                 hostname,
-                net_address_host(net_dns_manage_tmp_buffer(manage), address),
-                ttl);
+                net_address_host(net_dns_manage_tmp_buffer(manage), address));
             return -1;
         }
 
         if (manage->m_debug) {
-            char source_buf[64];
-            cpe_str_dup(source_buf, sizeof(source_buf), net_dns_source_dump(net_dns_manage_tmp_buffer(manage), item->m_source));
-        
             CPE_INFO(
-                manage->m_em, "dns-cli: resolved %s ==> %s | %s",
+                manage->m_em, "dns-cli: resolved %s ==> %s",
                 entry->m_hostname,
-                item->m_address ? net_address_host(net_dns_manage_tmp_buffer(manage), item->m_address) : "N/A",
-                source_buf);
+                item->m_address ? net_address_host(net_dns_manage_tmp_buffer(manage), item->m_address) : "N/A");
         }
         
         if (net_address_type(address) == net_address_domain) {
@@ -71,10 +63,9 @@ int net_dns_manage_add_record(
                 cname_entry = net_dns_entry_create(manage, cname);
                 if (cname_entry == NULL) {
                     CPE_ERROR(
-                        manage->m_em, "dns-cli: add record %s ==> %s ttl=%d, create cname entry fail",
+                        manage->m_em, "dns-cli: add record %s ==> %s create cname entry fail",
                         hostname,
-                        net_address_host(net_dns_manage_tmp_buffer(manage), address),
-                        ttl);
+                        net_address_host(net_dns_manage_tmp_buffer(manage), address));
                     net_dns_entry_item_free(item);
                     return -1;
                 }

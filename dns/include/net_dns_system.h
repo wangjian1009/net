@@ -43,7 +43,6 @@ typedef enum net_dns_task_state {
 
 typedef enum net_dns_item_select_policy {
     net_dns_item_select_policy_first,
-    net_dns_item_select_policy_max_ttl,
 } net_dns_item_select_policy_t;
 
 typedef enum net_dns_ns_trans_type {

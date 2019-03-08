@@ -8,16 +8,18 @@ NET_BEGIN_DECL
 struct net_dns_entry_item {
     net_dns_entry_t m_entry;
     TAILQ_ENTRY(net_dns_entry_item) m_next_for_entry;
-    net_dns_source_t m_source;
-    TAILQ_ENTRY(net_dns_entry_item) m_next_for_source;
     net_address_t m_address;
-    uint32_t m_expire_time_s;
 };
+
+net_dns_entry_item_t
+net_dns_entry_item_create(
+    net_dns_entry_t entry, net_address_t address, uint8_t is_own);
+
+void net_dns_entry_item_free(net_dns_entry_item_t item);
 
 void net_dns_entry_item_real_free(net_dns_entry_item_t entry_item);
 
-net_dns_entry_item_t net_dns_entry_item_find(
-    net_dns_entry_t entry, net_dns_source_t source, net_address_t address);
+net_dns_entry_item_t net_dns_entry_item_find(net_dns_entry_t entry, net_address_t address);
 
 NET_END_DECL
 

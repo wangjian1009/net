@@ -26,8 +26,7 @@ int net_dns_manage_auto_conf(
     uint16_t timeout_s);
 
 int net_dns_manage_add_record(
-    net_dns_manage_t manage, net_dns_source_t source,
-    const char * hostname, net_address_t address, uint32_t ttl);
+    net_dns_manage_t manage, const char * hostname, net_address_t address);
 
 NET_END_DECL
 

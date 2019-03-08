@@ -9,16 +9,7 @@ struct net_dns_entry_item_it {
     char data[64];
 };
 
-net_dns_entry_item_t
-net_dns_entry_item_create(
-    net_dns_entry_t entry, net_dns_source_t source,
-    net_address_t address, uint8_t is_own,
-    uint32_t expire_time_s);
-
-void net_dns_entry_item_free(net_dns_entry_item_t item);
-
 net_dns_entry_t net_dns_entry_item_entry(net_dns_entry_item_t item);
-net_dns_source_t net_dns_entry_item_source(net_dns_entry_item_t item);
 net_address_t net_dns_entry_item_address(net_dns_entry_item_t item);
 
 #define net_dns_entry_item_it_next(__it) ((__it)->next(__it))

@@ -231,7 +231,7 @@ static int net_dns_ns_parser_read_an_record(
 
     assert(address);
 
-    net_dns_manage_add_record( manage, parser->m_source, hostname, address, ttl);
+    net_dns_manage_add_record(manage, hostname, address);
     net_address_free(address);
     
     return 0;

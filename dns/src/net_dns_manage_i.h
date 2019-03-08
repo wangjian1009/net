@@ -32,6 +32,7 @@ struct net_dns_manage {
     mem_allocrator_t m_alloc;
     error_monitor_t m_em;
     uint8_t m_debug;
+    uint32_t m_cfg_ttl_s;
     net_schedule_t m_schedule;
     net_dns_ns_cli_protocol_t m_protocol_dns_ns_cli;
     net_dns_mode_t m_mode;
