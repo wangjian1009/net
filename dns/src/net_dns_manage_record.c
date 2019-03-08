@@ -22,11 +22,19 @@ int net_dns_manage_add_record(net_dns_manage_t manage, const char * hostname, ne
     }
 
     uint32_t cur_time_s = (uint32_t)(cur_time_ms() / 1000);
-    if (entry->m_expire_time_s && entry->m_expire_time_s < cur_time_s) {
-        if (manage->m_debug) {
-            CPE_INFO(manage->m_em, "dns-cli: entry %s expired, clear old", hostname);
+    if (entry->m_expire_time_s) {
+        if (entry->m_expire_time_s < cur_time_s) {
+            if (manage->m_debug) {
+                CPE_INFO(manage->m_em, "dns-cli: entry %s expired, clear old, ttl=%d(s)", hostname, manage->m_cfg_ttl_s);
+            }
+            net_dns_entry_clear(entry);
+            entry->m_expire_time_s = cur_time_s + manage->m_cfg_ttl_s;
         }
-        net_dns_entry_clear(entry);
+    }
+    else {
+        if (manage->m_debug) {
+            CPE_INFO(manage->m_em, "dns-cli: entry %s received, ttl=%d(s)", hostname, manage->m_cfg_ttl_s);
+        }
         entry->m_expire_time_s = cur_time_s + manage->m_cfg_ttl_s;
     }
     
