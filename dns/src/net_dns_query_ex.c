@@ -21,12 +21,17 @@ int net_dns_query_ex_init(void * ctx, net_dns_query_t query, const char * hostna
     }
     assert(entry);
 
-    uint8_t need_query = 0;
-    if (net_dns_entry_select_item(entry, manage->m_default_item_select_policy) == NULL) {
-        need_query = 1;
+    uint8_t have_response = 0;
+    if (net_dns_entry_select_item(entry, manage->m_default_item_select_policy) != NULL) {
+        have_response = 1;
     }
 
-    if (need_query) {
+    uint8_t expired =
+        (entry->m_expire_time_s == 0
+         || entry->m_expire_time_s < (uint32_t)(cur_time_ms() / 1000))
+        ? 1 : 0;
+    
+    if (!have_response || expired) {
         if (entry->m_task == NULL) {
             if (manage->m_builder_default == NULL) {
                 CPE_ERROR(manage->m_em, "dns-cli: query %s: no task builder!", hostname);
@@ -59,7 +64,8 @@ int net_dns_query_ex_init(void * ctx, net_dns_query_t query, const char * hostna
     query_ex->m_manage = manage;
     query_ex->m_task = entry->m_task;
 
-    if (query_ex->m_task) {
+    if (!have_response) {
+        assert(query_ex->m_task != NULL);
         query_ex->m_entry = NULL;
         TAILQ_INSERT_TAIL(&query_ex->m_task->m_querys, query_ex, m_next);
     }
