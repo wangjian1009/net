@@ -69,11 +69,13 @@ int net_dns_query_ex_init(void * ctx, net_dns_query_t query, const char * hostna
         assert(query_ex->m_task != NULL);
         query_ex->m_entry = NULL;
         TAILQ_INSERT_TAIL(&query_ex->m_task->m_querys, query_ex, m_next);
+        CPE_INFO(manage->m_em, "dns-cli: query %s: wait query!", hostname);
     }
     else {
         query_ex->m_entry = entry;
         TAILQ_INSERT_TAIL(&query_ex->m_manage->m_to_notify_querys, query_ex, m_next);
         net_dns_manage_active_delay_process(manage);
+        CPE_INFO(manage->m_em, "dns-cli: query %s: !", hostname);
     }
     
     return 0;
