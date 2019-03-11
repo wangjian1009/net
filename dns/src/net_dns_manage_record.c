@@ -40,12 +40,12 @@ int net_dns_manage_add_record(net_dns_manage_t manage, const char * hostname, ne
     
     net_dns_entry_item_t item = net_dns_entry_item_find(entry, address);
     if (item) {
-        if (manage->m_debug) {
-            CPE_INFO(
-                manage->m_em, "dns-cli: updated %s ==> %s",
-                entry->m_hostname,
-                item->m_address ? net_address_host(net_dns_manage_tmp_buffer(manage), item->m_address) : "N/A");
-        }
+        /* if (manage->m_debug) { */
+        /*     CPE_INFO( */
+        /*         manage->m_em, "dns-cli: updated %s ==> %s", */
+        /*         entry->m_hostname, */
+        /*         item->m_address ? net_address_host(net_dns_manage_tmp_buffer(manage), item->m_address) : "N/A"); */
+        /* } */
     }
     else {
         item = net_dns_entry_item_create(entry, address, 0);
