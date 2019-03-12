@@ -283,6 +283,10 @@ static void net_dns_manage_do_delay_process(net_timer_t timer, void * input_ctx)
         struct net_address_it address_it;
         net_address_it_init(&address_it);
 
+        CPE_ERROR(
+            manage->m_em, "dns-cli: delay process: xxxxx: query %s!",
+            query_ex->m_entry->m_hostname ? query_ex->m_entry->m_hostname : "N/A");
+        
         if (query_ex->m_entry) {
             net_dns_entry_item_t item = 
                 net_dns_entry_select_item(query_ex->m_entry, manage->m_default_item_select_policy);
