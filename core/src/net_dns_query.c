@@ -100,6 +100,7 @@ void net_dns_query_real_free(net_dns_query_t query) {
 }
 
 void net_dns_query_notify_result_and_free(net_dns_query_t query, net_address_t main_address, net_address_it_t all_address) {
+    CPE_ERROR(query->m_schedule->m_em, "xxxxxxx: notify result");
     query->m_callback(query->m_ctx, main_address, all_address);
     net_dns_query_free(query);
 }
