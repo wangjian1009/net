@@ -115,7 +115,7 @@ static int net_dns_ns_cli_process_data(
         net_endpoint_buf_consume(from_ep, from_buf, all_req_sz);
 
         if (dns_cli->m_task_ctx) {
-            if (dns_cli->m_parser.m_record_count > 0) {
+            if (dns_cli->m_parser.m_ancount > 0) {
                 net_dns_task_ctx_set_success(dns_cli->m_task_ctx);
             }
             else {

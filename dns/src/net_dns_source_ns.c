@@ -370,7 +370,7 @@ static void net_dns_source_ns_dgram_input(
         net_dns_task_ctx_set_error(task_ctx);
     }
     else {
-        if (parser.m_record_count > 0) {
+        if (parser.m_ancount > 0) {
             net_dns_task_ctx_set_success(task_ctx);
         }
         else {
