@@ -201,7 +201,7 @@ uint32_t net_endpoint_buf_size(net_endpoint_t endpoint, net_endpoint_buf_type_t 
     assert(buf_type < net_ep_buf_count);
 
     assert((endpoint->m_bufs[buf_type].m_buf == NULL && endpoint->m_bufs[buf_type].m_size == 0)
-           || (schedule->m_endpoint_buf != NULL
+           || (endpoint->m_bufs[buf_type].m_buf != NULL
                && (ringbuffer_block_total_len(schedule->m_endpoint_buf, endpoint->m_bufs[buf_type].m_buf)
                    == endpoint->m_bufs[buf_type].m_size)));
 
