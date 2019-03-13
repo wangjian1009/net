@@ -839,6 +839,24 @@ static int net_dq_endpoint_start_connect(
         return -1;
     }
 
+    if (cpe_sock_set_send_timeout(endpoint->m_fd, 30 * 1000) != 0) {
+        CPE_ERROR(
+            driver->m_em, "dq: %s: fd=%d: set send timeout fail, errno=%d (%s)",
+            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
+            cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+        net_dq_endpoint_close_sock(driver, endpoint);
+        return -1;
+    }
+
+    if (cpe_sock_set_recv_timeout(endpoint->m_fd, 30 * 1000) != 0) {
+        CPE_ERROR(
+            driver->m_em, "dq: %s: fd=%d: set recv timeout fail, errno=%d (%s)",
+            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
+            cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+        net_dq_endpoint_close_sock(driver, endpoint);
+        return -1;
+    }
+    
     return cpe_connect(endpoint->m_fd, (struct sockaddr *)&remote_addr_sock, remote_addr_sock_len);
 }
 

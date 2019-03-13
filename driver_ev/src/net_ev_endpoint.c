@@ -804,6 +804,24 @@ static int net_ev_endpoint_start_connect(
         return -1;
     }
 
+    if (cpe_sock_set_send_timeout(endpoint->m_fd, 30 * 1000) != 0) {
+        CPE_ERROR(
+            driver->m_em, "ev: %s: fd=%d: set send timeout fail, errno=%d (%s)",
+            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
+            cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+        net_ev_endpoint_close_sock(driver, endpoint);
+        return -1;
+    }
+
+    if (cpe_sock_set_recv_timeout(endpoint->m_fd, 30 * 1000) != 0) {
+        CPE_ERROR(
+            driver->m_em, "ev: %s: fd=%d: set recv timeout fail, errno=%d (%s)",
+            net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
+            cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+        net_ev_endpoint_close_sock(driver, endpoint);
+        return -1;
+    }
+
     /* net_address_t oa = net_address_create_from_sockaddr(net_endpoint_schedule(base_endpoint), (struct sockaddr *)&remote_addr_sock, remote_addr_sock_len); */
     /* char buf[128]; */
     /* cpe_str_dup(buf, sizeof(buf), net_address_dump(net_ev_driver_tmp_buffer(driver), oa)); */
