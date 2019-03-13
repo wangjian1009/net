@@ -647,7 +647,7 @@ ringbuffer_block_t net_endpoint_common_buf_alloc(net_endpoint_t endpoint, uint32
             int collect_id = ringbuffer_collect(schedule->m_endpoint_buf);
             if(collect_id < 0) {
                 CPE_ERROR(
-                    schedule->m_em, "%s: buf alloc: not enouth capacity, len=%d!",
+                    schedule->m_em, "%s: buf alloc: not enouth capacity(after gc), len=%d!",
                     net_endpoint_dump(&schedule->m_tmp_buffer, endpoint), size);
                 return NULL;
             }
