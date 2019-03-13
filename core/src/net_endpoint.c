@@ -632,9 +632,8 @@ ringbuffer_block_t net_endpoint_common_buf_alloc(net_endpoint_t endpoint, uint32
                 endpoint->m_bufs[i].m_size = 0;
             }
 
-            CPE_ERROR(
-                schedule->m_em, "dump buf:\n%s",
-                ringbuffer_dump(net_schedule_tmp_buffer(schedule), schedule->m_endpoint_buf));
+            CPE_ERROR(schedule->m_em, "dump buf:");
+            ringbuffer_dump(schedule->m_endpoint_buf);
         
             return NULL;
         }
@@ -662,10 +661,8 @@ ringbuffer_block_t net_endpoint_common_buf_alloc(net_endpoint_t endpoint, uint32
             schedule->m_em, "%s: buf alloc: not enouth free buff, free endpoint %s!",
             net_endpoint_dump(&schedule->m_tmp_buffer, endpoint), free_endpoint_name);
 
-        CPE_ERROR(
-            schedule->m_em, "dump buf:\n%s",
-            ringbuffer_dump(net_schedule_tmp_buffer(schedule), schedule->m_endpoint_buf));
-        
+        CPE_ERROR(schedule->m_em, "dump buf:\n");
+        ringbuffer_dump(schedule->m_endpoint_buf);
 
         if (net_endpoint_set_state(free_endpoint, net_endpoint_state_disable) != 0) {
             net_endpoint_set_state(free_endpoint, net_endpoint_state_deleting);
