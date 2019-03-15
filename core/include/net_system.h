@@ -14,6 +14,7 @@ typedef struct net_timer * net_timer_t;
 typedef struct net_watcher * net_watcher_t;
 typedef struct net_watcher_it * net_watcher_it_t;
 typedef struct net_endpoint * net_endpoint_t;
+typedef struct net_endpoint_writer * net_endpoint_writer_t;
 typedef struct net_endpoint_it * net_endpoint_it_t;
 typedef struct net_endpoint_monitor * net_endpoint_monitor_t;
 typedef struct net_acceptor * net_acceptor_t;
