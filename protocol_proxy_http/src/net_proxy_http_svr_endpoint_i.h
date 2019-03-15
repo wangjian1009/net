@@ -84,7 +84,7 @@ struct net_proxy_http_svr_endpoint {
                 };
             } m_rsp;
             proxy_http_version_t m_version;
-            proxy_http_connection_t m_keep_alive;
+            proxy_http_connection_t m_connection;
         } m_basic;
     };
     net_proxy_http_svr_connect_fun_t m_on_connect_fun;

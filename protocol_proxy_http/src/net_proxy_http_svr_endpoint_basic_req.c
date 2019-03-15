@@ -156,7 +156,7 @@ static int net_proxy_http_svr_endpoint_basic_forward_content_encoding_none(
         if (http_ep->m_basic.m_req.m_content.m_length == 0) {
             net_proxy_http_svr_endpoint_basic_req_set_state(
                 http_protocol, http_ep, endpoint,
-                http_ep->m_basic.m_keep_alive == proxy_http_connection_keep_alive
+                http_ep->m_basic.m_connection == proxy_http_connection_keep_alive
                 ? proxy_http_svr_basic_req_state_header
                 : proxy_http_svr_basic_req_state_stop);
         }
@@ -312,7 +312,7 @@ static int net_proxy_http_svr_endpoint_basic_forward_content_encoding_trunked(
 
             net_proxy_http_svr_endpoint_basic_req_set_state(
                 http_protocol, http_ep, endpoint,
-                http_ep->m_basic.m_keep_alive == proxy_http_connection_keep_alive
+                http_ep->m_basic.m_connection == proxy_http_connection_keep_alive
                 ? proxy_http_svr_basic_req_state_header
                 : proxy_http_svr_basic_req_state_stop);
             return 0;
@@ -364,8 +364,8 @@ int net_proxy_http_svr_endpoint_basic_req_read_head(
         return -1;
     }
 
-    if (http_ep->m_basic.m_keep_alive == proxy_http_connection_unknown) {
-        http_ep->m_basic.m_keep_alive =
+    if (http_ep->m_basic.m_connection == proxy_http_connection_unknown) {
+        http_ep->m_basic.m_connection =
             http_ep->m_basic.m_version == proxy_http_version_1_0
             ? proxy_http_connection_close
             : proxy_http_connection_keep_alive;
@@ -378,7 +378,7 @@ int net_proxy_http_svr_endpoint_basic_req_read_head(
             (uint32_t)snprintf(
                 ctx.m_output + ctx.m_output_size, ctx.m_output_capacity - ctx.m_output_size,
                 "Connection: %s\r\n",
-                http_ep->m_basic.m_keep_alive == proxy_http_connection_close ? "Close" : "Keep-Alive");
+                http_ep->m_basic.m_connection == proxy_http_connection_close ? "Close" : "Keep-Alive");
     }
     
     ctx.m_output_size +=
@@ -513,10 +513,10 @@ static int net_proxy_http_svr_endpoint_basic_req_parse_header_line(
     }
     else if (strcasecmp(name, "Proxy-Connection") == 0) {
         if (strcasecmp(value, "Keep-Alive") == 0) {
-            http_ep->m_basic.m_keep_alive = proxy_http_connection_keep_alive;
+            http_ep->m_basic.m_connection = proxy_http_connection_keep_alive;
         }
         else if (strcasecmp(value, "Close") == 0) {
-            http_ep->m_basic.m_keep_alive = proxy_http_connection_close;
+            http_ep->m_basic.m_connection = proxy_http_connection_close;
         }
         keep_line = 0;
     }

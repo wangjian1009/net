@@ -173,7 +173,7 @@ static int net_proxy_http_svr_endpoint_tunnel_parse_header_line(
     else if (strcasecmp(name, "Proxy-Authorization") == 0) {
     }
     else if (strcasecmp(name, "Proxy-Connection") == 0) {
-        http_ep->m_keep_alive = 1;
+        //http_ep->m_keep_alive = 1;
     }
     else if (strcasecmp(name, "HOST") == 0) {
         if (net_endpoint_other(endpoint) == NULL) {

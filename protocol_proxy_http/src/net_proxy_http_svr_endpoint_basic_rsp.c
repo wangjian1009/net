@@ -139,7 +139,7 @@ static int net_proxy_http_svr_endpoint_basic_backword_content_encoding_none(
 
         http_ep->m_basic.m_rsp.m_content.m_length -= forward_sz;
         if (http_ep->m_basic.m_rsp.m_content.m_length == 0) {
-            if (http_ep->m_basic.m_keep_alive == proxy_http_connection_keep_alive) {
+            if (http_ep->m_basic.m_connection == proxy_http_connection_keep_alive) {
                 net_proxy_http_svr_endpoint_basic_set_rsp_state(
                     http_protocol, http_ep, endpoint, proxy_http_svr_basic_rsp_state_header);
             }
@@ -304,7 +304,7 @@ static int net_proxy_http_svr_endpoint_basic_backword_content_encoding_trunked(
                 return -1;
             }
 
-            if (http_ep->m_basic.m_keep_alive == proxy_http_connection_keep_alive) {
+            if (http_ep->m_basic.m_connection == proxy_http_connection_keep_alive) {
                 net_proxy_http_svr_endpoint_basic_set_rsp_state(
                     http_protocol, http_ep, endpoint, proxy_http_svr_basic_rsp_state_header);
             }
@@ -396,10 +396,10 @@ static int net_proxy_http_svr_endpoint_basic_rsp_parse_header_line(
     }
     else if (strcasecmp(name, "Proxy-Connection") == 0) {
         if (strcasecmp(value, "keep-alive") == 0) {
-            http_ep->m_basic.m_keep_alive = proxy_http_connection_keep_alive;
+            http_ep->m_basic.m_connection = proxy_http_connection_keep_alive;
         }
         else if (strcasecmp(value, "close") == 0) {
-            http_ep->m_basic.m_keep_alive = proxy_http_connection_close;
+            http_ep->m_basic.m_connection = proxy_http_connection_close;
         }
     }
     else if (strcasecmp(name, "Connection") == 0) {

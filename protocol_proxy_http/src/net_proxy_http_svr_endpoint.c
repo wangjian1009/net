@@ -129,7 +129,7 @@ static int net_proxy_http_svr_endpoint_input_first_header(
     else {
         http_ep->m_way = net_proxy_http_way_basic;
         http_ep->m_basic.m_version = proxy_http_version_unknown;
-        http_ep->m_basic.m_keep_alive = proxy_http_keep_alive_unknown;
+        http_ep->m_basic.m_connection = proxy_http_connection_unknown;
         http_ep->m_basic.m_req.m_state = proxy_http_svr_basic_req_state_header;
         http_ep->m_basic.m_req.m_trans_encoding = proxy_http_svr_basic_trans_encoding_none;
         http_ep->m_basic.m_req.m_content.m_length = 0;
