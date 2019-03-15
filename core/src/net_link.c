@@ -43,8 +43,10 @@ void net_link_free(net_link_t link) {
     link->m_local->m_link = NULL;
 
     if (link->m_local_is_tie) {
-        if (net_endpoint_set_state(link->m_local, net_endpoint_state_disable) != 0) {
-            net_endpoint_set_state(link->m_local, net_endpoint_state_deleting);
+        if (net_endpoint_is_active(link->m_local)) {
+            if (net_endpoint_set_state(link->m_local, net_endpoint_state_disable) != 0) {
+                net_endpoint_set_state(link->m_local, net_endpoint_state_deleting);
+            }
         }
         link->m_local = NULL;
     }
@@ -53,8 +55,10 @@ void net_link_free(net_link_t link) {
     link->m_remote->m_link = NULL;
 
     if (link->m_remote_is_tie) {
-        if (net_endpoint_set_state(link->m_remote, net_endpoint_state_disable) != 0) {
-            net_endpoint_set_state(link->m_remote, net_endpoint_state_deleting);
+        if (net_endpoint_is_active(link->m_remote)) {
+            if (net_endpoint_set_state(link->m_remote, net_endpoint_state_disable) != 0) {
+                net_endpoint_set_state(link->m_remote, net_endpoint_state_deleting);
+            }
         }
         link->m_remote = NULL;
     }
