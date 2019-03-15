@@ -4,6 +4,7 @@
 #include "cpe/utils/time_utils.h"
 #include "net_schedule.h"
 #include "net_address.h"
+#include "net_protocol.h"
 #include "net_endpoint.h"
 #include "net_dgram.h"
 #include "net_timer.h"
@@ -312,7 +313,9 @@ int net_dns_source_ns_ctx_start(net_dns_source_t source, net_dns_task_ctx_t task
             return -1;
         }
 
-        if (net_dgram_protocol_debug(ns_ctx->m_dgram, ns->m_address) >= 2) {
+        if (net_protocol_debug(net_protocol_from_data(manage->m_protocol_dns_ns_cli)) >= 2
+            || net_dgram_protocol_debug(ns_ctx->m_dgram, ns->m_address) >= 2)
+        {
             char address_buf[128];
             snprintf(address_buf, sizeof(address_buf), "%s", net_address_dump(net_dns_manage_tmp_buffer(manage), ns->m_address));
         
@@ -350,7 +353,9 @@ static void net_dns_source_ns_dgram_input(
         return;
     }
     
-    if (net_dgram_protocol_debug(ns_ctx->m_dgram, ns->m_address) >= 2) {
+    if (net_protocol_debug(net_protocol_from_data(manage->m_protocol_dns_ns_cli)) >= 2
+        || net_dgram_protocol_debug(ns_ctx->m_dgram, ns->m_address) >= 2)
+    {
         CPE_INFO(
             manage->m_em, "dns-cli: udp <-- %s",
             net_dns_ns_req_dump(manage, net_dns_manage_tmp_buffer(manage), data, (uint32_t)data_size));
