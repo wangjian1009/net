@@ -14,8 +14,6 @@ int net_proxy_http_svr_endpoint_init(net_endpoint_t endpoint) {
     http_ep->m_endpoint = endpoint;
     http_ep->m_max_head_len = 8192;
     http_ep->m_way = net_proxy_http_way_unknown;
-    http_ep->m_keep_alive = 0;
-
     http_ep->m_on_connect_fun = NULL;
     http_ep->m_on_connect_ctx = NULL;
     
@@ -130,6 +128,8 @@ static int net_proxy_http_svr_endpoint_input_first_header(
     }
     else {
         http_ep->m_way = net_proxy_http_way_basic;
+        http_ep->m_basic.m_version = proxy_http_version_unknown;
+        http_ep->m_basic.m_keep_alive = proxy_http_keep_alive_unknown;
         http_ep->m_basic.m_req.m_state = proxy_http_svr_basic_req_state_header;
         http_ep->m_basic.m_req.m_trans_encoding = proxy_http_svr_basic_trans_encoding_none;
         http_ep->m_basic.m_req.m_content.m_length = 0;

@@ -156,7 +156,7 @@ static int net_proxy_http_svr_endpoint_basic_forward_content_encoding_none(
         if (http_ep->m_basic.m_req.m_content.m_length == 0) {
             net_proxy_http_svr_endpoint_basic_req_set_state(
                 http_protocol, http_ep, endpoint,
-                http_ep->m_keep_alive
+                http_ep->m_basic.m_keep_alive == proxy_http_connection_keep_alive
                 ? proxy_http_svr_basic_req_state_header
                 : proxy_http_svr_basic_req_state_stop);
         }
@@ -312,7 +312,7 @@ static int net_proxy_http_svr_endpoint_basic_forward_content_encoding_trunked(
 
             net_proxy_http_svr_endpoint_basic_req_set_state(
                 http_protocol, http_ep, endpoint,
-                http_ep->m_keep_alive
+                http_ep->m_basic.m_keep_alive == proxy_http_connection_keep_alive
                 ? proxy_http_svr_basic_req_state_header
                 : proxy_http_svr_basic_req_state_stop);
             return 0;
@@ -349,7 +349,12 @@ int net_proxy_http_svr_endpoint_basic_req_read_head(
     }
 
     if (line[0]) {
-        if (net_proxy_http_svr_endpoint_basic_req_parse_header_line(http_protocol, http_ep, endpoint, &ctx, line) != 0) return -1;
+        if (line_num == 0) {
+            if (net_proxy_http_svr_endpoint_basic_req_parse_header_method(http_protocol, http_ep, endpoint, &ctx, line) != 0) return -1;
+        }
+        else {
+            if (net_proxy_http_svr_endpoint_basic_req_parse_header_line(http_protocol, http_ep, endpoint, &ctx, line) != 0) return -1;
+        }
     }
 
     if (ctx.m_other == NULL) {
@@ -359,6 +364,23 @@ int net_proxy_http_svr_endpoint_basic_req_read_head(
         return -1;
     }
 
+    if (http_ep->m_basic.m_keep_alive == proxy_http_connection_unknown) {
+        http_ep->m_basic.m_keep_alive =
+            http_ep->m_basic.m_version == proxy_http_version_1_0
+            ? proxy_http_connection_close
+            : proxy_http_connection_keep_alive;
+    }
+
+    if (http_ep->m_basic.m_version == proxy_http_version_1_1
+        && !ctx.m_header_has_connection)
+    {
+        ctx.m_output_size +=
+            (uint32_t)snprintf(
+                ctx.m_output + ctx.m_output_size, ctx.m_output_capacity - ctx.m_output_size,
+                "Connection: %s\r\n",
+                http_ep->m_basic.m_keep_alive == proxy_http_connection_close ? "Close" : "Keep-Alive");
+    }
+    
     ctx.m_output_size +=
         (uint32_t)snprintf(
             ctx.m_output + ctx.m_output_size, ctx.m_output_capacity - ctx.m_output_size,
@@ -419,10 +441,17 @@ static int net_proxy_http_svr_endpoint_basic_req_parse_header_method(
     const char * version = sep2 + 1;
 
     if (strcasecmp(version, "HTTP/1.0") == 0) {
-        http_ep->m_keep_alive = 0;
+        http_ep->m_basic.m_version = proxy_http_version_1_0;
+    }
+    else if (strcasecmp(version, "HTTP/1.1") == 0) {
+        http_ep->m_basic.m_version = proxy_http_version_1_1;
     }
     else {
-        http_ep->m_keep_alive = 1;
+        CPE_ERROR(
+            http_protocol->m_em, "http-proxy-svr: %s: not support mehtod %s",
+            net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
+            version);
+        return -1;
     }
     
     const char * target = origin_target;
@@ -483,22 +512,16 @@ static int net_proxy_http_svr_endpoint_basic_req_parse_header_line(
         keep_line = 0;
     }
     else if (strcasecmp(name, "Proxy-Connection") == 0) {
-        if (strcasecmp(value, "keep-alive") == 0) {
-            http_ep->m_keep_alive = 1;
+        if (strcasecmp(value, "Keep-Alive") == 0) {
+            http_ep->m_basic.m_keep_alive = proxy_http_connection_keep_alive;
         }
-        else if (strcasecmp(value, "close") == 0) {
-            http_ep->m_keep_alive = 0;
+        else if (strcasecmp(value, "Close") == 0) {
+            http_ep->m_basic.m_keep_alive = proxy_http_connection_close;
         }
         keep_line = 0;
     }
     else if (strcasecmp(name, "Connection") == 0) {
         ctx->m_header_has_connection = 1;
-        if (strcasecmp(value, "keep-alive") == 0) {
-            http_ep->m_keep_alive = 1;
-        }
-        else if (strcasecmp(value, "close") == 0) {
-            http_ep->m_keep_alive = 0;
-        }
     }
     else if (strcasecmp(name, "Host") == 0) {
         if (ctx->m_other == NULL) {

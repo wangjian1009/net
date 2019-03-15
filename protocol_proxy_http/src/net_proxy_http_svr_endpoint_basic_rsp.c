@@ -139,7 +139,7 @@ static int net_proxy_http_svr_endpoint_basic_backword_content_encoding_none(
 
         http_ep->m_basic.m_rsp.m_content.m_length -= forward_sz;
         if (http_ep->m_basic.m_rsp.m_content.m_length == 0) {
-            if (http_ep->m_keep_alive) {
+            if (http_ep->m_basic.m_keep_alive == proxy_http_connection_keep_alive) {
                 net_proxy_http_svr_endpoint_basic_set_rsp_state(
                     http_protocol, http_ep, endpoint, proxy_http_svr_basic_rsp_state_header);
             }
@@ -304,7 +304,7 @@ static int net_proxy_http_svr_endpoint_basic_backword_content_encoding_trunked(
                 return -1;
             }
 
-            if (http_ep->m_keep_alive) {
+            if (http_ep->m_basic.m_keep_alive == proxy_http_connection_keep_alive) {
                 net_proxy_http_svr_endpoint_basic_set_rsp_state(
                     http_protocol, http_ep, endpoint, proxy_http_svr_basic_rsp_state_header);
             }
@@ -351,10 +351,6 @@ static int net_proxy_http_svr_endpoint_basic_rsp_read_head(
             data);
     }
 
-    if (!ctx.m_header_has_connection) {
-        http_ep->m_keep_alive = 0;
-    }
-    
     uint32_t data_len =  (uint32_t)strlen(data);
     memcpy(data + data_len, "\r\n\r\n", 4);
     data_len += 4;
@@ -398,14 +394,16 @@ static int net_proxy_http_svr_endpoint_basic_rsp_parse_header_line(
             return -1;
         }
     }
-    else if (strcasecmp(name, "Connection") == 0) {
-        ctx->m_header_has_connection = 1;
+    else if (strcasecmp(name, "Proxy-Connection") == 0) {
         if (strcasecmp(value, "keep-alive") == 0) {
-            http_ep->m_keep_alive = 1;
+            http_ep->m_basic.m_keep_alive = proxy_http_connection_keep_alive;
         }
         else if (strcasecmp(value, "close") == 0) {
-            http_ep->m_keep_alive = 0;
+            http_ep->m_basic.m_keep_alive = proxy_http_connection_close;
         }
+    }
+    else if (strcasecmp(name, "Connection") == 0) {
+        ctx->m_header_has_connection = 1;
     }
     else if (strcasecmp(name, "Transfer-Encoding") == 0) {
         if (strcasecmp(value, "chunked") == 0) {
