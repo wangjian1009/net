@@ -4,7 +4,7 @@
 #include "net_endpoint_writer.h"
 #include "net_endpoint_i.h"
 
-int net_endpoint_writer_init(net_endpoint_writer_t writer, net_endpoint_t o_ep, net_endpoint_buf_type_t o_buf) {
+void net_endpoint_writer_init(net_endpoint_writer_t writer, net_endpoint_t o_ep, net_endpoint_buf_type_t o_buf) {
     bzero(writer, sizeof(*writer));
 
     writer->m_o_ep = o_ep;
@@ -12,8 +12,6 @@ int net_endpoint_writer_init(net_endpoint_writer_t writer, net_endpoint_t o_ep, 
     writer->m_capacity = 0;
     writer->m_totall_len = 0;
     writer->m_wp = NULL;
-
-    return 0;
 }
 
 void net_endpoint_writer_cancel(net_endpoint_writer_t writer) {
