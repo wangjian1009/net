@@ -113,9 +113,8 @@ static int net_proxy_http_svr_endpoint_basic_forward_content_encoding_none(
     if (http_ep->m_basic.m_req.m_content.m_length == 0) {
         if (net_endpoint_protocol_debug(endpoint) >= 2) {
             CPE_INFO(
-                http_protocol->m_em, "http-proxy-svr: %s: basic: ==> content %d data",
-                net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
-                net_endpoint_buf_size(endpoint, net_ep_buf_read));
+                http_protocol->m_em, "http-proxy-svr: %s: basic: ==> skip empty content",
+                net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint));
         }
     
         net_proxy_http_svr_endpoint_basic_req_set_state(
