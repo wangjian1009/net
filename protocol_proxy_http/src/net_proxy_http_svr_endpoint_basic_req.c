@@ -611,7 +611,7 @@ static void net_proxy_http_svr_endpoint_basic_req_set_state(
     if (net_endpoint_protocol_debug(endpoint)) {
         if (req_state == proxy_http_svr_basic_req_state_content) {
             CPE_INFO(
-                http_protocol->m_em, "http-proxy-svr: %s: req-state %s ==> %s, content-length=%d",
+                http_protocol->m_em, "http-proxy-svr: %s: basic: req-state %s ==> %s, content-length=%d",
                 net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
                 proxy_http_svr_basic_req_state_str(http_ep->m_basic.m_req.m_state),
                 proxy_http_svr_basic_req_state_str(req_state),
@@ -619,7 +619,7 @@ static void net_proxy_http_svr_endpoint_basic_req_set_state(
         }
         else {
             CPE_INFO(
-                http_protocol->m_em, "http-proxy-svr: %s: req-state %s ==> %s",
+                http_protocol->m_em, "http-proxy-svr: %s: basic: req-state %s ==> %s",
                 net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
                 proxy_http_svr_basic_req_state_str(http_ep->m_basic.m_req.m_state),
                 proxy_http_svr_basic_req_state_str(req_state));

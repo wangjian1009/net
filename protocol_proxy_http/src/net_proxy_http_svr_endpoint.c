@@ -53,7 +53,7 @@ CHECK_AGAIN:
     switch(http_ep->m_way) {
     case net_proxy_http_way_unknown:
         if (net_proxy_http_svr_endpoint_input_first_header(http_protocol, http_ep, endpoint) != 0) return -1;
-        if (http_ep->m_way != http_ep->m_way) goto CHECK_AGAIN;
+        if (http_ep->m_way != net_proxy_http_way_unknown) goto CHECK_AGAIN;
         break;
     case net_proxy_http_way_tunnel:
         return net_proxy_http_svr_endpoint_tunnel_forward(http_protocol, http_ep, endpoint);
