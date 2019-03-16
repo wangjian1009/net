@@ -14,7 +14,7 @@ static void net_proxy_http_svr_endpoint_basic_set_rsp_state(
     proxy_http_svr_basic_rsp_state_t rsp_state);
 
 struct net_proxy_http_svr_endpoint_basic_rsp_head_context {
-    uint8_t m_header_has_connection;
+    uint8_t dummy;
 };
 
 static int net_proxy_http_svr_endpoint_basic_rsp_read_head(
@@ -394,16 +394,13 @@ static int net_proxy_http_svr_endpoint_basic_rsp_parse_header_line(
             return -1;
         }
     }
-    else if (strcasecmp(name, "Proxy-Connection") == 0) {
+    else if (strcasecmp(name, "Connection") == 0) {
         if (strcasecmp(value, "keep-alive") == 0) {
             http_ep->m_basic.m_connection = proxy_http_connection_keep_alive;
         }
         else if (strcasecmp(value, "close") == 0) {
             http_ep->m_basic.m_connection = proxy_http_connection_close;
         }
-    }
-    else if (strcasecmp(name, "Connection") == 0) {
-        ctx->m_header_has_connection = 1;
     }
     else if (strcasecmp(name, "Transfer-Encoding") == 0) {
         if (strcasecmp(value, "chunked") == 0) {

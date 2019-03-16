@@ -118,15 +118,11 @@ static int net_proxy_http_svr_endpoint_basic_forward_content_encoding_none(
                 net_endpoint_buf_size(endpoint, net_ep_buf_read));
         }
     
-        if (net_endpoint_buf_append_from_self(endpoint, net_ep_buf_forward, net_ep_buf_read, 0) != 0
-            || net_endpoint_forward(endpoint) != 0
-            )
-        {
-            CPE_ERROR(
-                http_protocol->m_em, "http-proxy-svr: %s: basic: forward content data fail",
-                net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint));
-            return -1;
-        }
+        net_proxy_http_svr_endpoint_basic_req_set_state(
+            http_protocol, http_ep, endpoint,
+            http_ep->m_basic.m_connection == proxy_http_connection_keep_alive
+            ? proxy_http_svr_basic_req_state_header
+            : proxy_http_svr_basic_req_state_stop);
     }
     else {
         uint32_t forward_sz = net_endpoint_buf_size(endpoint, net_ep_buf_read);
@@ -340,20 +336,20 @@ int net_proxy_http_svr_endpoint_basic_req_read_head(
     for(; sep; line = sep + 2, sep = strstr(line, "\r\n")) {
         *sep = 0;
         if (line_num == 0) {
-            if (net_proxy_http_svr_endpoint_basic_req_parse_header_method(http_protocol, http_ep, endpoint, &ctx, line) != 0) return -1;
+            if (net_proxy_http_svr_endpoint_basic_req_parse_header_method(http_protocol, http_ep, endpoint, &ctx, line) != 0) goto READ_HEAD_ERROR;
         }
         else {
-            if (net_proxy_http_svr_endpoint_basic_req_parse_header_line(http_protocol, http_ep, endpoint, &ctx, line) != 0) return -1;
+            if (net_proxy_http_svr_endpoint_basic_req_parse_header_line(http_protocol, http_ep, endpoint, &ctx, line) != 0) goto READ_HEAD_ERROR;
         }
         line_num++;
     }
 
     if (line[0]) {
         if (line_num == 0) {
-            if (net_proxy_http_svr_endpoint_basic_req_parse_header_method(http_protocol, http_ep, endpoint, &ctx, line) != 0) return -1;
+            if (net_proxy_http_svr_endpoint_basic_req_parse_header_method(http_protocol, http_ep, endpoint, &ctx, line) != 0) goto READ_HEAD_ERROR;
         }
         else {
-            if (net_proxy_http_svr_endpoint_basic_req_parse_header_line(http_protocol, http_ep, endpoint, &ctx, line) != 0) return -1;
+            if (net_proxy_http_svr_endpoint_basic_req_parse_header_line(http_protocol, http_ep, endpoint, &ctx, line) != 0) goto READ_HEAD_ERROR;
         }
     }
 
@@ -361,7 +357,7 @@ int net_proxy_http_svr_endpoint_basic_req_read_head(
         CPE_ERROR(
             http_protocol->m_em, "http-proxy-svr: %s: basic: after read head, no linked other endpoint, error!",
             net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint));
-        return -1;
+        goto READ_HEAD_ERROR;
     }
 
     if (http_ep->m_basic.m_connection == proxy_http_connection_unknown) {
@@ -390,7 +386,7 @@ int net_proxy_http_svr_endpoint_basic_req_read_head(
             http_protocol->m_em, "http-proxy-svr: %s: basic: head output buf overflow, capacity=%d",
             net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
             ctx.m_output_capacity);
-        return -1;
+        goto READ_HEAD_ERROR;
     }
 
     if (net_endpoint_protocol_debug(endpoint) >= 2) {
@@ -409,12 +405,16 @@ int net_proxy_http_svr_endpoint_basic_req_read_head(
             http_protocol->m_em, "http-proxy-svr: %s: basic: forward head to other fail!\n%s",
             net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
             ctx.m_output);
-        return -1;
+        goto READ_HEAD_ERROR;
     }
 
     net_proxy_http_svr_endpoint_basic_req_set_state(http_protocol, http_ep, endpoint, proxy_http_svr_basic_req_state_content);
     
     return 0;
+
+READ_HEAD_ERROR:
+
+    return -1;
 }
 
 static int net_proxy_http_svr_endpoint_basic_req_parse_header_method(
