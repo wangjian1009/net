@@ -125,6 +125,8 @@ static int net_proxy_http_svr_endpoint_basic_forward_content_encoding_none(
     }
     else {
         uint32_t forward_sz = net_endpoint_buf_size(endpoint, net_ep_buf_read);
+        if (forward_sz == 0) return 0;
+        
         if (forward_sz > http_ep->m_basic.m_req.m_content.m_length) {
             forward_sz = http_ep->m_basic.m_req.m_content.m_length;
         }
