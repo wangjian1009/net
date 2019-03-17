@@ -95,29 +95,17 @@ static int net_proxy_http_svr_endpoint_basic_backword_head(
 static int net_proxy_http_svr_endpoint_basic_backword_content_encoding_none(
     net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep, net_endpoint_t endpoint, net_endpoint_t from)
 {
-    uint32_t forward_sz = net_endpoint_buf_size(from, net_ep_buf_forward);
-    if (forward_sz == 0) return 0;
-    
     if (http_ep->m_basic.m_rsp.m_content.m_length == 0) {
         if (net_endpoint_protocol_debug(endpoint) >= 2) {
             CPE_INFO(
-                http_protocol->m_em, "http-proxy-svr: %s: basic: <== body %d data",
-                net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
-                forward_sz);
-        }
-    
-        if (net_endpoint_buf_append_from_other(endpoint, net_ep_buf_write, from, net_ep_buf_forward, 0) != 0
-            //TODO: Loki
-            || net_endpoint_forward(endpoint) != 0
-            )
-        {
-            CPE_ERROR(
-                http_protocol->m_em, "http-proxy-svr: %s: basic: backward rsp content data fail",
+                http_protocol->m_em, "http-proxy-svr: %s: basic: <== ignore body no data",
                 net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint));
-            return -1;
         }
     }
     else {
+        uint32_t forward_sz = net_endpoint_buf_size(from, net_ep_buf_forward);
+        if (forward_sz == 0) return 0;
+        
         if (forward_sz > http_ep->m_basic.m_rsp.m_content.m_length) {
             forward_sz = http_ep->m_basic.m_rsp.m_content.m_length;
         }
@@ -138,23 +126,24 @@ static int net_proxy_http_svr_endpoint_basic_backword_content_encoding_none(
         }
 
         http_ep->m_basic.m_rsp.m_content.m_length -= forward_sz;
-        if (http_ep->m_basic.m_rsp.m_content.m_length == 0) {
-            if (http_ep->m_basic.m_connection == proxy_http_connection_keep_alive) {
-                net_proxy_http_svr_endpoint_basic_set_rsp_state(
-                    http_protocol, http_ep, endpoint, proxy_http_svr_basic_rsp_state_header);
-            }
-            else {
-                if (net_endpoint_protocol_debug(endpoint)) {
-                    CPE_INFO(
-                        http_protocol->m_em, "http-proxy-svr: %s: basic: connection is not keep-alive, close-on-send",
-                        net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint));
-                }
-
-                net_endpoint_set_close_after_send(endpoint, 1);
-            }
-        }
     }
 
+    if (http_ep->m_basic.m_rsp.m_content.m_length == 0) {
+        if (http_ep->m_basic.m_connection == proxy_http_connection_keep_alive) {
+            net_proxy_http_svr_endpoint_basic_set_rsp_state(
+                http_protocol, http_ep, endpoint, proxy_http_svr_basic_rsp_state_header);
+        }
+        else {
+            if (net_endpoint_protocol_debug(endpoint)) {
+                CPE_INFO(
+                    http_protocol->m_em, "http-proxy-svr: %s: basic: connection is not keep-alive, close-on-send",
+                    net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint));
+            }
+
+            net_endpoint_set_close_after_send(endpoint, 1);
+        }
+    }
+    
     return 0;
 }
 
