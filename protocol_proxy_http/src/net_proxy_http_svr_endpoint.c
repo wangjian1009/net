@@ -132,8 +132,12 @@ static int net_proxy_http_svr_endpoint_input_first_header(
         http_ep->m_basic.m_connection = proxy_http_connection_unknown;
         http_ep->m_basic.m_req.m_state = proxy_http_svr_basic_req_state_header;
         http_ep->m_basic.m_req.m_trans_encoding = proxy_http_svr_basic_trans_encoding_none;
+        http_ep->m_basic.m_req.m_content_text = 0;
+        http_ep->m_basic.m_req.m_content_coded = 0;
         http_ep->m_basic.m_req.m_content.m_length = 0;
         http_ep->m_basic.m_rsp.m_state = proxy_http_svr_basic_rsp_state_header;
+        http_ep->m_basic.m_rsp.m_content_text = 0;
+        http_ep->m_basic.m_rsp.m_content_coded = 0;
         http_ep->m_basic.m_rsp.m_trans_encoding = proxy_http_svr_basic_trans_encoding_none;
         http_ep->m_basic.m_rsp.m_content.m_length = 0;
         rv = net_proxy_http_svr_endpoint_basic_req_read_head(http_protocol, http_ep, endpoint, data);
@@ -163,4 +167,41 @@ int net_proxy_http_svr_endpoint_on_state_change(net_endpoint_t endpoint, net_end
     }
     
     return -1;
+}
+
+uint8_t net_proxy_http_svr_endpoint_is_mine_text(const char * mine) {
+    if (cpe_str_start_with(mine, "text/")) {
+        return 1;
+    }
+
+    return 0;
+}
+
+void net_proxy_http_svr_endpoint_dump_content_text(
+    net_proxy_http_svr_protocol_t http_protocol,
+    net_endpoint_t endpoint, net_endpoint_buf_type_t buf, uint32_t data_sz)
+{
+    char * data;
+    if (net_endpoint_buf_peak_with_size(endpoint, buf, data_sz, (void**)&data) != 0) {
+        CPE_ERROR(http_protocol->m_em, "    read context error");
+    }
+    else {
+        char * sep;
+        while(data_sz > 0 && (sep = memchr(data, '\r', data_sz)) != NULL) {
+            uint32_t line_sz = (uint32_t)(sep - data);
+            CPE_INFO(http_protocol->m_em, "    %.*s", line_sz, data);
+
+            data_sz -= line_sz + 1;
+            data += line_sz + 1;
+
+            if (data_sz > 0 && data[0] == '\n') {
+                data++;
+                data_sz--;
+            }
+        }
+
+        if (data_sz > 0) {
+            CPE_INFO(http_protocol->m_em, "    %.*s", data_sz, data);
+        }
+    }
 }

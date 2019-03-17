@@ -58,6 +58,8 @@ struct net_proxy_http_svr_endpoint {
             struct {
                 proxy_http_svr_basic_req_state_t m_state;
                 proxy_http_svr_basic_trans_encoding_t m_trans_encoding;
+                uint8_t m_content_text;
+                uint8_t m_content_coded;
                 union {
                     struct {
                         uint32_t m_length;
@@ -72,6 +74,8 @@ struct net_proxy_http_svr_endpoint {
             struct {
                 proxy_http_svr_basic_rsp_state_t m_state;
                 proxy_http_svr_basic_trans_encoding_t m_trans_encoding;
+                uint8_t m_content_text;
+                uint8_t m_content_coded;
                 union {
                     struct {
                         uint32_t m_length;
@@ -97,6 +101,12 @@ int net_proxy_http_svr_endpoint_input(net_endpoint_t endpoint);
 int net_proxy_http_svr_endpoint_forward(net_endpoint_t endpoint, net_endpoint_t from);
 int net_proxy_http_svr_endpoint_on_state_change(net_endpoint_t endpoint, net_endpoint_state_t from_state);
 
+uint8_t net_proxy_http_svr_endpoint_is_mine_text(const char * mine);
+
+void net_proxy_http_svr_endpoint_dump_content_text(
+    net_proxy_http_svr_protocol_t http_protocol,
+    net_endpoint_t endpoint, net_endpoint_buf_type_t buf, uint32_t sz);
+                                              
 /*basic*/
 int net_proxy_http_svr_endpoint_basic_req_read_head(
     net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep, net_endpoint_t endpoint, char * data);
