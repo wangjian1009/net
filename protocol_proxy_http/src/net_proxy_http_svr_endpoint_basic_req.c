@@ -498,8 +498,6 @@ static int net_proxy_http_svr_endpoint_basic_req_parse_header_line(
     char * sep = strchr(line, ':');
     if (sep == NULL) return 0;
 
-    CPE_ERROR(http_protocol->m_em, "               %s", line);
-    
     char * name = line;
     char * value = cpe_str_trim_head(sep + 1);
 
