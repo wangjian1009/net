@@ -6,6 +6,7 @@
 #include "cpe/utils/string_utils.h"
 #include "net_endpoint.h"
 #include "net_address.h"
+#include "net_endpoint_writer.h"
 #include "net_proxy_http_svr_endpoint_i.h"
 
 const char * proxy_http_svr_basic_req_state_str(proxy_http_svr_basic_req_state_t state);
@@ -15,12 +16,9 @@ static void net_proxy_http_svr_endpoint_basic_req_set_state(
     proxy_http_svr_basic_req_state_t req_state);
 
 struct net_proxy_http_svr_endpoint_basic_req_head_context {
-    //net_endpoint_t m_other;
     uint8_t m_header_has_connection;
     const char * m_method;
-    char * m_output;
-    uint32_t m_output_size;
-    uint32_t m_output_capacity;
+    struct net_endpoint_writer m_output;
 };
 
 static int net_proxy_http_svr_endpoint_basic_req_parse_header_method(
@@ -329,12 +327,8 @@ int net_proxy_http_svr_endpoint_basic_req_read_head(
     /*初始化ctx */
     struct net_proxy_http_svr_endpoint_basic_req_head_context ctx;
     bzero(&ctx, sizeof(ctx));
-    //ctx.m_other = net_endpoint_other(endpoint);
-    ctx.m_output_capacity = (uint32_t)strlen(data);
+    net_endpoint_writer_init(&ctx.m_output, endpoint, net_ep_buf_forward);
 
-    mem_buffer_clear_data(&http_protocol->m_data_buffer);
-    ctx.m_output = mem_buffer_alloc(&http_protocol->m_data_buffer, ctx.m_output_capacity);
-    
     char * line = data;
     char * sep = strstr(line, "\r\n");
     uint32_t line_num = 0;
@@ -375,41 +369,28 @@ int net_proxy_http_svr_endpoint_basic_req_read_head(
     if (http_ep->m_basic.m_version == proxy_http_version_1_1
         && !ctx.m_header_has_connection)
     {
-        ctx.m_output_size +=
-            (uint32_t)snprintf(
-                ctx.m_output + ctx.m_output_size, ctx.m_output_capacity - ctx.m_output_size,
-                "Connection: %s\r\n",
-                http_ep->m_basic.m_connection == proxy_http_connection_close ? "Close" : "Keep-Alive");
+        if (net_endpoint_writer_append_str(&ctx.m_output, "Connection: ") != 0
+            || net_endpoint_writer_append_str(&ctx.m_output, http_ep->m_basic.m_connection == proxy_http_connection_close ? "Close" : "Keep-Alive") != 0
+            || net_endpoint_writer_append_str(&ctx.m_output, "\r\n") != 0)
+        {
+            goto READ_HEAD_ERROR;
+        }
     }
-    
-    ctx.m_output_size +=
-        (uint32_t)snprintf(
-            ctx.m_output + ctx.m_output_size, ctx.m_output_capacity - ctx.m_output_size,
-            "\r\n");
-    if (ctx.m_output_size >= ctx.m_output_capacity) {
-        CPE_ERROR(
-            http_protocol->m_em, "http-proxy-svr: %s: basic: head output buf overflow, capacity=%d",
-            net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
-            ctx.m_output_capacity);
-        goto READ_HEAD_ERROR;
-    }
+
+    if (net_endpoint_writer_append_str(&ctx.m_output, "\r\n") != 0) goto READ_HEAD_ERROR;
+    if (net_endpoint_writer_commit(&ctx.m_output) != 0) goto READ_HEAD_ERROR;
 
     if (net_endpoint_protocol_debug(endpoint) >= 2) {
-        ctx.m_output[ctx.m_output_size - 4] = 0;
         CPE_INFO(
-            http_protocol->m_em, "http-proxy-svr: %s: basic: ==> head\n%s",
-            net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
-            ctx.m_output);
-        ctx.m_output[ctx.m_output_size - 4] = '\r';
+            http_protocol->m_em, "http-proxy-svr: %s: basic: ==> head",
+            net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint));
+        net_proxy_http_svr_endpoint_dump_content_text(http_protocol, endpoint, net_ep_buf_forward, ctx.m_output.m_totall_len);
     }
 
-    if (net_endpoint_buf_append(endpoint, net_ep_buf_forward, ctx.m_output, ctx.m_output_size) != 0
-        || net_endpoint_forward(endpoint) != 0)
-    {
+    if (net_endpoint_forward(endpoint) != 0) {
         CPE_ERROR(
-            http_protocol->m_em, "http-proxy-svr: %s: basic: forward head to other fail!\n%s",
-            net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
-            ctx.m_output);
+            http_protocol->m_em, "http-proxy-svr: %s: basic: forward head to other fail!",
+            net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint));
         goto READ_HEAD_ERROR;
     }
 
@@ -418,7 +399,7 @@ int net_proxy_http_svr_endpoint_basic_req_read_head(
     return 0;
 
 READ_HEAD_ERROR:
-
+    net_endpoint_writer_cancel(&ctx.m_output);
     return -1;
 }
 
@@ -479,14 +460,15 @@ static int net_proxy_http_svr_endpoint_basic_req_parse_header_method(
             target = "/";
         }
     }
-    
-    assert(ctx->m_output_size + 1u < ctx->m_output_capacity);
 
-    ctx->m_output_size +=
-        (uint32_t)snprintf(
-            ctx->m_output + ctx->m_output_size, ctx->m_output_capacity - ctx->m_output_size,
-            "%s %s %s\r\n", method, target, version);
-    
+    if (net_endpoint_writer_append_str(&ctx->m_output, method) != 0
+        || net_endpoint_writer_append_str(&ctx->m_output, " ") != 0
+        || net_endpoint_writer_append_str(&ctx->m_output, target) != 0
+        || net_endpoint_writer_append_str(&ctx->m_output, " ") != 0
+        || net_endpoint_writer_append_str(&ctx->m_output, version) != 0
+        || net_endpoint_writer_append_str(&ctx->m_output, "\r\n") != 0)
+        return -1;
+
     return 0;
 }
 
@@ -626,10 +608,11 @@ static int net_proxy_http_svr_endpoint_basic_req_parse_header_line(
     }
     
     if (keep_line) {
-        ctx->m_output_size +=
-            (uint32_t)snprintf(
-                ctx->m_output + ctx->m_output_size, ctx->m_output_capacity - ctx->m_output_size,
-                "%s: %s\r\n", name, value);
+        if (net_endpoint_writer_append_str(&ctx->m_output, name) != 0
+            || net_endpoint_writer_append_str(&ctx->m_output, ": ") != 0
+            || net_endpoint_writer_append_str(&ctx->m_output, value) != 0
+            || net_endpoint_writer_append_str(&ctx->m_output, "\r\n") != 0)
+            return -1;
     }
     
     return 0;

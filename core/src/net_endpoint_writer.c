@@ -60,7 +60,20 @@ int net_endpoint_writer_commit(net_endpoint_writer_t writer) {
             return -1;
         }
         else {
-            return net_endpoint_buf_supply(writer->m_o_ep, writer->m_o_buf, writer->m_size);
+            int supply_rv = net_endpoint_buf_supply(writer->m_o_ep, writer->m_o_buf, writer->m_size);
+            writer->m_totall_len += writer->m_size;
+            writer->m_wp = NULL;
+            writer->m_size = 0;
+            
+            if (supply_rv != 0) {
+                CPE_ERROR(
+                    schedule->m_em, "core: %s: writer commit: supply %d data fail",
+                    net_endpoint_dump(net_schedule_tmp_buffer(schedule), writer->m_o_ep),
+                    writer->m_size);
+                return -1;
+            }
+
+            return 0;
         }
     }
 }
