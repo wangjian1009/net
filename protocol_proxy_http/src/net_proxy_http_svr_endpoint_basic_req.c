@@ -482,13 +482,6 @@ static int net_proxy_http_svr_endpoint_basic_req_parse_header_method(
     
     assert(ctx->m_output_size + 1u < ctx->m_output_capacity);
 
-    if (net_endpoint_protocol_debug(endpoint) >= 2) {
-        CPE_INFO(
-            http_protocol->m_em, "http-proxy-svr: %s: basic: relative target %s => %s",
-            net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
-            origin_target, target);
-    }
-
     ctx->m_output_size +=
         (uint32_t)snprintf(
             ctx->m_output + ctx->m_output_size, ctx->m_output_capacity - ctx->m_output_size,

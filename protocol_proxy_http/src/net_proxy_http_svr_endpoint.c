@@ -113,9 +113,10 @@ static int net_proxy_http_svr_endpoint_input_first_header(
         
     if (net_endpoint_protocol_debug(endpoint)) {
         CPE_INFO(
-            http_protocol->m_em, "http-proxy-svr: %s: read first head\n%s",
-            net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
-            data);
+            http_protocol->m_em, "http-proxy-svr: %s: read first head",
+            net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint));
+        
+        net_proxy_http_svr_endpoint_dump_content_text(http_protocol, endpoint, net_ep_buf_read, size);
     }
 
     int rv;
@@ -177,6 +178,25 @@ uint8_t net_proxy_http_svr_endpoint_is_mine_text(const char * mine) {
     return 0;
 }
 
+void net_proxy_http_svr_endpoint_dump_line(net_proxy_http_svr_protocol_t http_protocol, const char * prefix, const char * data, uint32_t data_sz) {
+    uint8_t line_num = 0;
+    do {
+        uint32_t line_sz = data_sz;
+        if (line_sz > 100) line_sz = 100;
+
+        if (line_num == 0) {
+            CPE_INFO(http_protocol->m_em, "%s%.*s", prefix, line_sz, data);
+        }
+        else {
+            CPE_INFO(http_protocol->m_em, "%s+ %d: %.*s", prefix, line_num, line_sz, data);
+        }
+        line_num++;
+
+        data_sz -= line_sz;
+        data += line_sz;
+    } while(data_sz > 0);
+}
+    
 void net_proxy_http_svr_endpoint_dump_content_text(
     net_proxy_http_svr_protocol_t http_protocol,
     net_endpoint_t endpoint, net_endpoint_buf_type_t buf, uint32_t data_sz)
@@ -189,7 +209,7 @@ void net_proxy_http_svr_endpoint_dump_content_text(
         char * sep;
         while(data_sz > 0 && (sep = memchr(data, '\r', data_sz)) != NULL) {
             uint32_t line_sz = (uint32_t)(sep - data);
-            CPE_INFO(http_protocol->m_em, "    %.*s", line_sz, data);
+            net_proxy_http_svr_endpoint_dump_line(http_protocol, "    ", data, line_sz);
 
             data_sz -= line_sz + 1;
             data += line_sz + 1;
