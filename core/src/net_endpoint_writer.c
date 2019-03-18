@@ -129,3 +129,7 @@ int net_endpoint_writer_append(net_endpoint_writer_t writer, void const * data, 
 
     return 0;
 }
+
+int net_endpoint_writer_append_str(net_endpoint_writer_t writer, const char * msg) {
+    return net_endpoint_writer_append(writer, msg, (uint32_t)strlen(msg));
+}

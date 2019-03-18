@@ -18,7 +18,7 @@ void net_endpoint_writer_cancel(net_endpoint_writer_t writer);
 int net_endpoint_writer_commit(net_endpoint_writer_t writer);
 
 int net_endpoint_writer_append(net_endpoint_writer_t writer, void const * data, uint32_t sz);
-
+int net_endpoint_writer_append_str(net_endpoint_writer_t writer, const char * msg);
 
 NET_END_DECL
 
