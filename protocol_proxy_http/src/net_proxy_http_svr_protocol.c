@@ -42,14 +42,12 @@ static int net_proxy_http_svr_protocol_init(net_protocol_t protocol) {
 
     proxy_protocol->m_alloc = net_schedule_allocrator(schedule);
     proxy_protocol->m_em = net_schedule_em(schedule);
-    mem_buffer_init(&proxy_protocol->m_data_buffer, proxy_protocol->m_alloc);
 
     return 0;
 }
 
 static void net_proxy_http_svr_protocol_fini(net_protocol_t protocol) {
-    net_proxy_http_svr_protocol_t proxy_protocol = net_protocol_data(protocol);
-    mem_buffer_clear(&proxy_protocol->m_data_buffer);
+    //net_proxy_http_svr_protocol_t proxy_protocol = net_protocol_data(protocol);
 }
 
 mem_buffer_t net_proxy_http_svr_protocol_tmp_buffer(net_proxy_http_svr_protocol_t http_protocol) {
