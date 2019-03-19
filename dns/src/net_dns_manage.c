@@ -215,18 +215,8 @@ void net_dns_manage_clear_cache(net_dns_manage_t manage) {
 
     cpe_hash_it_init(&entry_it, &manage->m_entries);
 
-    entry = cpe_hash_it_next(&entry_it);
-    while(entry) {
-        net_dns_entry_t next = cpe_hash_it_next(&entry_it);
-
-        if (entry->m_task) {
-            net_dns_entry_clear(entry);
-        }
-        else {
-            net_dns_entry_free(entry);
-        }
-        
-        entry = next;
+    while((entry = cpe_hash_it_next(&entry_it))) {
+        net_dns_entry_clear(entry);
     }
 }
 
