@@ -357,8 +357,6 @@ int net_proxy_http_svr_endpoint_basic_req_read_head(
         }
     }
 
-    if (net_endpoint_writer_append_str(&ctx.m_output, "\r\n") != 0) goto READ_HEAD_ERROR;
-
     if (http_ep->m_basic.m_connection == proxy_http_connection_unknown) {
         http_ep->m_basic.m_connection =
             http_ep->m_basic.m_version == proxy_http_version_1_0
@@ -377,13 +375,14 @@ int net_proxy_http_svr_endpoint_basic_req_read_head(
         }
     }
 
+    if (net_endpoint_writer_append_str(&ctx.m_output, "\r\n") != 0) goto READ_HEAD_ERROR;
     if (net_endpoint_writer_commit(&ctx.m_output) != 0) goto READ_HEAD_ERROR;
 
     if (net_endpoint_protocol_debug(endpoint) >= 2) {
         CPE_INFO(
             http_protocol->m_em, "http-proxy-svr: %s: basic: ==> head",
             net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint));
-        net_proxy_http_svr_endpoint_dump_content_text(http_protocol, endpoint, net_ep_buf_forward, ctx.m_output.m_totall_len);
+        net_proxy_http_svr_endpoint_dump_content_text(http_protocol, endpoint, net_ep_buf_forward, ctx.m_output.m_totall_len - 4);
     }
 
     if (net_proxy_http_svr_endpoint_basic_forward_direct_remote(http_protocol, http_ep, endpoint, ctx.m_host) != 0) goto READ_HEAD_ERROR;
@@ -586,6 +585,22 @@ static int net_proxy_http_svr_endpoint_basic_req_parse_header_line(
             return -1;
         }
         if (net_address_port(address) == 0) net_address_set_port(address, 80);
+
+        if (ctx->m_host) {
+            if (net_address_cmp(ctx->m_host, address) != 0) {
+                CPE_ERROR(
+                    http_protocol->m_em, "http-proxy-svr: %s: Host mismatch",
+                    net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint));
+                net_address_free(address);
+                return -1;
+            }
+            else {
+                net_address_free(address);
+            }
+        }
+        else {
+            ctx->m_host = address;
+        }
     }
     else if (strcasecmp(name, "Content-Length") == 0) {
         http_ep->m_basic.m_req.m_trans_encoding = proxy_http_svr_basic_trans_encoding_none;
