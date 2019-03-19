@@ -18,6 +18,7 @@ static void net_proxy_http_svr_endpoint_basic_req_set_state(
 struct net_proxy_http_svr_endpoint_basic_req_head_context {
     uint8_t m_header_has_connection;
     const char * m_method;
+    net_address_t m_host;
     struct net_endpoint_writer m_output;
 };
 
@@ -31,6 +32,10 @@ static int net_proxy_http_svr_endpoint_basic_req_parse_header_line(
 
 static int net_proxy_http_svr_endpoint_basic_forward_head(
     net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep, net_endpoint_t endpoint);
+
+static int net_proxy_http_svr_endpoint_basic_forward_direct_remote(
+    net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep, net_endpoint_t endpoint,
+    net_address_t host);
 
 static int net_proxy_http_svr_endpoint_basic_forward_content_encoding_none(
     net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep, net_endpoint_t endpoint);
@@ -352,12 +357,7 @@ int net_proxy_http_svr_endpoint_basic_req_read_head(
         }
     }
 
-    if (net_endpoint_other(endpoint) == NULL) {
-        CPE_ERROR(
-            http_protocol->m_em, "http-proxy-svr: %s: basic: after read head, no linked other endpoint, error!",
-            net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint));
-        goto READ_HEAD_ERROR;
-    }
+    if (net_endpoint_writer_append_str(&ctx.m_output, "\r\n") != 0) goto READ_HEAD_ERROR;
 
     if (http_ep->m_basic.m_connection == proxy_http_connection_unknown) {
         http_ep->m_basic.m_connection =
@@ -377,7 +377,6 @@ int net_proxy_http_svr_endpoint_basic_req_read_head(
         }
     }
 
-    if (net_endpoint_writer_append_str(&ctx.m_output, "\r\n") != 0) goto READ_HEAD_ERROR;
     if (net_endpoint_writer_commit(&ctx.m_output) != 0) goto READ_HEAD_ERROR;
 
     if (net_endpoint_protocol_debug(endpoint) >= 2) {
@@ -387,6 +386,8 @@ int net_proxy_http_svr_endpoint_basic_req_read_head(
         net_proxy_http_svr_endpoint_dump_content_text(http_protocol, endpoint, net_ep_buf_forward, ctx.m_output.m_totall_len);
     }
 
+    if (net_proxy_http_svr_endpoint_basic_forward_direct_remote(http_protocol, http_ep, endpoint, ctx.m_host) != 0) goto READ_HEAD_ERROR;
+    
     if (net_endpoint_forward(endpoint) != 0) {
         CPE_ERROR(
             http_protocol->m_em, "http-proxy-svr: %s: basic: forward head to other fail!",
@@ -394,12 +395,14 @@ int net_proxy_http_svr_endpoint_basic_req_read_head(
         goto READ_HEAD_ERROR;
     }
 
+    if (ctx.m_host) net_address_free(ctx.m_host);
     net_proxy_http_svr_endpoint_basic_req_set_state(http_protocol, http_ep, endpoint, proxy_http_svr_basic_req_state_content);
     
     return 0;
 
 READ_HEAD_ERROR:
     net_endpoint_writer_cancel(&ctx.m_output);
+    if (ctx.m_host) net_address_free(ctx.m_host);
     return -1;
 }
 
@@ -487,6 +490,60 @@ static void process_context_type(void * ctx, const char * value) {
     http_ep->m_basic.m_req.m_content_text = net_proxy_http_svr_endpoint_is_mine_text(value);
 }
 
+static int net_proxy_http_svr_endpoint_basic_forward_direct_remote(
+    net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep, net_endpoint_t endpoint, net_address_t host)
+{
+    /*设定remote */
+    if (host == NULL) {
+        CPE_ERROR(
+            http_protocol->m_em, "http-proxy-svr: %s: basic: no host in header!",
+            net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint));
+        return -1;
+    }
+    
+    char str_address[128];
+    cpe_str_dup(
+        str_address, sizeof(str_address),
+        net_address_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), host));
+
+    uint8_t need_connect = 0;
+    net_endpoint_t other = net_endpoint_other(endpoint);
+    if (other == NULL) {
+        need_connect = 1;
+        net_endpoint_set_remote_address(endpoint, host, 0);
+
+        if (net_endpoint_protocol_debug(endpoint)) {
+            CPE_INFO(
+                http_protocol->m_em, "http-proxy-svr: %s: request first connect to %s!",
+                net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
+                str_address);
+        }
+    }
+    else {
+        net_address_t cur_remote_address = net_endpoint_remote_address(endpoint);
+        if (net_address_cmp(cur_remote_address, host) != 0) {
+            need_connect = 1;
+            net_endpoint_set_remote_address(endpoint, host, 0);
+
+            if (net_endpoint_protocol_debug(endpoint)) {
+                CPE_INFO(
+                    http_protocol->m_em, "http-proxy-svr: %s: request re connect to %s!",
+                    net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
+                    str_address);
+            }
+        }
+    }
+
+    if (need_connect
+        && http_ep->m_on_connect_fun
+        && http_ep->m_on_connect_fun(http_ep->m_on_connect_ctx, endpoint, host, 0) != 0)
+    {
+        return -1;
+    }
+
+    return 0;
+}
+
 static int net_proxy_http_svr_endpoint_basic_req_parse_header_line(
     net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep, net_endpoint_t endpoint,
     struct net_proxy_http_svr_endpoint_basic_req_head_context * ctx, char * line)
@@ -529,54 +586,6 @@ static int net_proxy_http_svr_endpoint_basic_req_parse_header_line(
             return -1;
         }
         if (net_address_port(address) == 0) net_address_set_port(address, 80);
-
-        char str_address[128];
-        cpe_str_dup(
-            str_address, sizeof(str_address),
-            net_address_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), address));
-
-        uint8_t need_connect = 0;
-        net_endpoint_t other = net_endpoint_other(endpoint);
-        if (other == NULL) {
-            need_connect = 1;
-            net_endpoint_set_remote_address(endpoint, address, 0);
-
-            if (net_endpoint_protocol_debug(endpoint)) {
-                CPE_INFO(
-                    http_protocol->m_em, "http-proxy-svr: %s: request first connect to %s!",
-                    net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
-                    str_address);
-            }
-        }
-        else {
-            net_address_t cur_remote_address = net_endpoint_remote_address(endpoint);
-            if (net_address_cmp(cur_remote_address, address) != 0) {
-                need_connect = 1;
-                net_endpoint_set_remote_address(endpoint, address, 0);
-
-                if (net_endpoint_protocol_debug(endpoint)) {
-                    CPE_INFO(
-                        http_protocol->m_em, "http-proxy-svr: %s: request re connect to %s!",
-                        net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
-                        str_address);
-                }
-            }
-        }
-
-        if (need_connect
-            && http_ep->m_on_connect_fun
-            && http_ep->m_on_connect_fun(http_ep->m_on_connect_ctx, endpoint, address, 1) != 0)
-        {
-            net_address_free(address);
-            return -1;
-        }
-
-        if (net_endpoint_other(endpoint) == NULL) {
-            CPE_ERROR(
-                http_protocol->m_em, "http-proxy-svr: %s: request connect to %s, link fail!(no other endpoint)",
-                net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
-                str_address);
-        }
     }
     else if (strcasecmp(name, "Content-Length") == 0) {
         http_ep->m_basic.m_req.m_trans_encoding = proxy_http_svr_basic_trans_encoding_none;
