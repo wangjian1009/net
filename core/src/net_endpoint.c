@@ -796,8 +796,6 @@ const char * net_endpoint_state_str(net_endpoint_state_t state) {
         return "logic-error";
     case net_endpoint_state_network_error:
         return "network-error";
-    case net_endpoint_state_dns_error:
-        return "dns-error";
     case net_endpoint_state_deleting:
         return "deleting";
     }
@@ -841,7 +839,10 @@ static void net_endpoint_dns_query_callback(void * ctx, net_address_t address, n
         CPE_ERROR(
             schedule->m_em, "%s: resolve: dns resolve fail!!!",
             net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
-        if (net_endpoint_set_state(endpoint, net_endpoint_state_dns_error) != 0) {
+        net_endpoint_set_error(
+            endpoint, net_endpoint_error_source_network,
+            net_endpoint_network_errno_dns_error, "dns resolve error");
+        if (net_endpoint_set_state(endpoint, net_endpoint_state_network_error) != 0) {
             net_endpoint_free(endpoint);
         }
         return;

@@ -55,7 +55,6 @@ typedef enum net_endpoint_state {
     net_endpoint_state_established,
     net_endpoint_state_logic_error,
     net_endpoint_state_network_error,
-    net_endpoint_state_dns_error,
     net_endpoint_state_deleting,
 } net_endpoint_state_t;
 
@@ -99,6 +98,7 @@ typedef enum net_local_ip_stack {
 typedef enum net_endpoint_network_errno {
     net_endpoint_network_errno_none,
     net_endpoint_network_errno_remote_closed,
+    net_endpoint_network_errno_dns_error,
     net_endpoint_network_errno_connect_error,
     net_endpoint_network_errno_network_error,
     net_endpoint_network_errno_user_closed,
