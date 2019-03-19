@@ -209,6 +209,27 @@ void net_dns_manage_set_debug(net_dns_manage_t manage, uint8_t debug) {
     manage->m_debug = debug;
 }
 
+void net_dns_manage_clear_cache(net_dns_manage_t manage) {
+    struct cpe_hash_it entry_it;
+    net_dns_entry_t entry;
+
+    cpe_hash_it_init(&entry_it, &manage->m_entries);
+
+    entry = cpe_hash_it_next(&entry_it);
+    while(entry) {
+        net_dns_entry_t next = cpe_hash_it_next(&entry_it);
+
+        if (entry->m_task) {
+            net_dns_entry_clear(entry);
+        }
+        else {
+            net_dns_entry_free(entry);
+        }
+        
+        entry = next;
+    }
+}
+
 net_dns_task_builder_t net_dns_task_builder_internal(net_dns_manage_t manage) {
     return manage->m_builder_internal;
 }

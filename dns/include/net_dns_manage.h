@@ -16,6 +16,8 @@ void net_dns_manager_set_mode(net_dns_manage_t manage, net_dns_mode_t mode);
 uint8_t net_dns_manage_debug(net_dns_manage_t manage);
 void net_dns_manage_set_debug(net_dns_manage_t manage, uint8_t debug);
 
+void net_dns_manage_clear_cache(net_dns_manage_t manage);
+
 net_dns_task_builder_t net_dns_task_builder_internal(net_dns_manage_t manage);
 
 net_dns_task_builder_t net_dns_task_builder_default(net_dns_manage_t manage);
