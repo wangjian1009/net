@@ -96,7 +96,7 @@ int net_proxy_http_svr_endpoint_tunnel_forward(
         break;
     }
 
-    if (net_endpoint_protocol_debug(endpoint) >= 2) {
+    if (net_endpoint_protocol_debug(endpoint)) {
         CPE_INFO(
             http_protocol->m_em, "http-proxy-svr: %s: tunnel: ==> %d data",
             net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
@@ -113,7 +113,7 @@ int net_proxy_http_svr_endpoint_tunnel_backword(
 {
     switch(http_ep->m_tunnel.m_state) {
     case proxy_http_svr_tunnel_state_established:
-        if (net_endpoint_protocol_debug(endpoint) >= 2) {
+        if (net_endpoint_protocol_debug(endpoint)) {
             CPE_INFO(
                 http_protocol->m_em, "http-proxy-svr: %s: tunnel: <== %d data",
                 net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),

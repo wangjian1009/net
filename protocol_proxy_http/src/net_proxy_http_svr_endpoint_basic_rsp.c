@@ -110,13 +110,16 @@ static int net_proxy_http_svr_endpoint_basic_backword_content_encoding_none(
             forward_sz = http_ep->m_basic.m_rsp.m_content.m_length;
         }
 
-        if (net_endpoint_protocol_debug(endpoint) >= 2) {
+        if (net_endpoint_protocol_debug(endpoint)) {
             CPE_INFO(
                 http_protocol->m_em, "http-proxy-svr: %s: basic: <== body %d data(left=%d)",
                 net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
                 forward_sz, http_ep->m_basic.m_rsp.m_content.m_length - forward_sz);
 
-            if (http_ep->m_basic.m_rsp.m_content_text && !http_ep->m_basic.m_rsp.m_content_coded) {
+            if (net_endpoint_protocol_debug(endpoint) >= 2
+                && http_ep->m_basic.m_rsp.m_content_text
+                && !http_ep->m_basic.m_rsp.m_content_coded)
+            {
                 net_proxy_http_svr_endpoint_dump_content_text(http_protocol, from, net_ep_buf_forward, forward_sz);
             }
         }
@@ -191,7 +194,7 @@ static int net_proxy_http_svr_endpoint_basic_backword_content_encoding_trunked(
                 return -1;
             }
 
-            if (net_endpoint_protocol_debug(endpoint) >= 2) {
+            if (net_endpoint_protocol_debug(endpoint)) {
                 CPE_INFO(
                     http_protocol->m_em, "http-proxy-svr: %s: basic: <== trunk[%d].length = %s(%d)",
                     net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
@@ -222,7 +225,7 @@ static int net_proxy_http_svr_endpoint_basic_backword_content_encoding_trunked(
                 forward_sz = http_ep->m_basic.m_rsp.m_trunked.m_length;
             }
 
-            if (net_endpoint_protocol_debug(endpoint) >= 2) {
+            if (net_endpoint_protocol_debug(endpoint)) {
                 CPE_INFO(
                     http_protocol->m_em, "http-proxy-svr: %s: basic: <== trunk[%d]: %d data(left=%d)",
                     net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
@@ -287,7 +290,7 @@ static int net_proxy_http_svr_endpoint_basic_backword_content_encoding_trunked(
                 return -1;
             }
 
-            if (net_endpoint_protocol_debug(endpoint) >= 2) {
+            if (net_endpoint_protocol_debug(endpoint)) {
                 CPE_INFO(
                     http_protocol->m_em, "http-proxy-svr: %s: basic: <== trunked: completed, trunk-count=%d",
                     net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
@@ -341,7 +344,7 @@ static int net_proxy_http_svr_endpoint_basic_rsp_read_head(
         if (net_proxy_http_svr_endpoint_basic_rsp_parse_header_line(http_protocol, http_ep, endpoint, &ctx, line) != 0) return -1;
     }
 
-    if (net_endpoint_protocol_debug(endpoint) >= 2) {
+    if (net_endpoint_protocol_debug(endpoint)) {
         CPE_INFO(
             http_protocol->m_em, "http-proxy-svr: %s: basic: <== head\n%s",
             net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),

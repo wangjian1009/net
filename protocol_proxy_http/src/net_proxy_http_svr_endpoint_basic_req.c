@@ -134,13 +134,15 @@ static int net_proxy_http_svr_endpoint_basic_forward_content_encoding_none(
             forward_sz = http_ep->m_basic.m_req.m_content.m_length;
         }
 
-        if (net_endpoint_protocol_debug(endpoint) >= 2) {
+        if (net_endpoint_protocol_debug(endpoint)) {
             CPE_INFO(
                 http_protocol->m_em, "http-proxy-svr: %s: basic: ==> content %d data(left=%d)",
                 net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
                 forward_sz, http_ep->m_basic.m_req.m_content.m_length - forward_sz);
 
-            if (http_ep->m_basic.m_req.m_content_text && !http_ep->m_basic.m_req.m_content_coded) {
+            if (net_endpoint_protocol_debug(endpoint) >= 2
+                && http_ep->m_basic.m_req.m_content_text && !http_ep->m_basic.m_req.m_content_coded)
+            {
                 net_proxy_http_svr_endpoint_dump_content_text(http_protocol, endpoint, net_ep_buf_read, forward_sz);
             }
         }
@@ -208,9 +210,9 @@ static int net_proxy_http_svr_endpoint_basic_forward_content_encoding_trunked(
                 return -1;
             }
 
-            if (net_endpoint_protocol_debug(endpoint) >= 2) {
+            if (net_endpoint_protocol_debug(endpoint)) {
                 CPE_INFO(
-                    http_protocol->m_em, "http-proxy-svr: %s: basic: ==> <== trunk[%d].length = %s(%d)",
+                    http_protocol->m_em, "http-proxy-svr: %s: basic: ==> trunk[%d].length = %s(%d)",
                     net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
                     http_ep->m_basic.m_req.m_trunked.m_count,
                     data,
@@ -238,7 +240,7 @@ static int net_proxy_http_svr_endpoint_basic_forward_content_encoding_trunked(
                 forward_sz = http_ep->m_basic.m_req.m_trunked.m_length;
             }
 
-            if (net_endpoint_protocol_debug(endpoint) >= 2) {
+            if (net_endpoint_protocol_debug(endpoint)) {
                 CPE_INFO(
                     http_protocol->m_em, "http-proxy-svr: %s: basic: ==> trunk[%d]: %d data(left=%d)",
                     net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
@@ -307,7 +309,7 @@ static int net_proxy_http_svr_endpoint_basic_forward_content_encoding_trunked(
                 return -1;
             }
 
-            if (net_endpoint_protocol_debug(endpoint) >= 2) {
+            if (net_endpoint_protocol_debug(endpoint)) {
                 CPE_INFO(
                     http_protocol->m_em, "http-proxy-svr: %s: basic: ==> trunked: transfer completed, trunk-count=%d",
                     net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
@@ -378,11 +380,13 @@ int net_proxy_http_svr_endpoint_basic_req_read_head(
     if (net_endpoint_writer_append_str(&ctx.m_output, "\r\n") != 0) goto READ_HEAD_ERROR;
     if (net_endpoint_writer_commit(&ctx.m_output) != 0) goto READ_HEAD_ERROR;
 
-    if (net_endpoint_protocol_debug(endpoint) >= 2) {
+    if (net_endpoint_protocol_debug(endpoint)) {
         CPE_INFO(
             http_protocol->m_em, "http-proxy-svr: %s: basic: ==> head",
             net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint));
-        net_proxy_http_svr_endpoint_dump_content_text(http_protocol, endpoint, net_ep_buf_forward, ctx.m_output.m_totall_len - 4);
+        if (net_endpoint_protocol_debug(endpoint) >= 2) {
+            net_proxy_http_svr_endpoint_dump_content_text(http_protocol, endpoint, net_ep_buf_forward, ctx.m_output.m_totall_len - 4);
+        }
     }
 
     if (net_proxy_http_svr_endpoint_basic_forward_direct_remote(http_protocol, http_ep, endpoint, ctx.m_host) != 0) goto READ_HEAD_ERROR;
@@ -648,7 +652,7 @@ static void net_proxy_http_svr_endpoint_basic_req_set_state(
 {
     if (http_ep->m_basic.m_req.m_state == req_state) return;
 
-    if (net_endpoint_protocol_debug(endpoint)) {
+    if (net_endpoint_protocol_debug(endpoint) >= 2) {
         if (req_state == proxy_http_svr_basic_req_state_content) {
             CPE_INFO(
                 http_protocol->m_em, "http-proxy-svr: %s: basic: req-state %s ==> %s, content-length=%d",
