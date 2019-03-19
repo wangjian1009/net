@@ -382,8 +382,9 @@ int net_proxy_http_svr_endpoint_basic_req_read_head(
 
     if (net_endpoint_protocol_debug(endpoint)) {
         CPE_INFO(
-            http_protocol->m_em, "http-proxy-svr: %s: basic: ==> head",
-            net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint));
+            http_protocol->m_em, "http-proxy-svr: %s: basic: ==> head(%d)",
+            net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
+            ctx.m_output.m_totall_len);
         if (net_endpoint_protocol_debug(endpoint) >= 2) {
             net_proxy_http_svr_endpoint_dump_content_text(http_protocol, endpoint, net_ep_buf_forward, ctx.m_output.m_totall_len - 4);
         }
