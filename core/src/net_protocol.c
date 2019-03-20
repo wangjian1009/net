@@ -69,7 +69,9 @@ net_protocol_create(
 void net_protocol_free(net_protocol_t protocol) {
     net_schedule_t schedule = protocol->m_schedule;
 
-    assert(TAILQ_EMPTY(&protocol->m_endpoints));
+    while(!TAILQ_EMPTY(&protocol->m_endpoints)) {
+        net_endpoint_free(TAILQ_FIRST(&protocol->m_endpoints));
+    }
     
     if (schedule->m_direct_protocol == protocol) {
         schedule->m_direct_protocol = NULL;
