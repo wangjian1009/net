@@ -211,12 +211,14 @@ void net_dns_manage_set_debug(net_dns_manage_t manage, uint8_t debug) {
 
 void net_dns_manage_clear_cache(net_dns_manage_t manage) {
     struct cpe_hash_it entry_it;
-    net_dns_entry_t entry;
-
     cpe_hash_it_init(&entry_it, &manage->m_entries);
 
+    net_dns_entry_t entry;
     while((entry = cpe_hash_it_next(&entry_it))) {
-        net_dns_entry_clear(entry);
+        while(!TAILQ_EMPTY(&entry->m_items)) {
+            net_dns_entry_item_free(TAILQ_FIRST(&entry->m_items));
+        }
+        entry->m_expire_time_s = 0;
     }
 }
 
