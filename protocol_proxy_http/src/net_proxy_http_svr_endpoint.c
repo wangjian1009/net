@@ -45,6 +45,10 @@ void net_proxy_http_svr_endpoint_set_connect_fun(
     http_ep->m_on_connect_ctx = on_connect_ctx;
 }
 
+void * net_proxy_http_svr_endpoint_connect_ctx(net_proxy_http_svr_endpoint_t http_ep) {
+    return http_ep->m_on_connect_ctx;
+}
+
 int net_proxy_http_svr_endpoint_input(net_endpoint_t endpoint) {
     net_proxy_http_svr_protocol_t http_protocol = net_protocol_data(net_endpoint_protocol(endpoint));
     net_proxy_http_svr_endpoint_t http_ep = net_endpoint_protocol_data(endpoint);

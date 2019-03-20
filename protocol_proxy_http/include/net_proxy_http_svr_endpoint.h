@@ -10,6 +10,8 @@ void net_proxy_http_svr_endpoint_set_connect_fun(
     net_proxy_http_svr_endpoint_t http_ep,
     net_proxy_http_svr_connect_fun_t on_connect_fon, void * on_connect_ctx);
 
+void * net_proxy_http_svr_endpoint_connect_ctx(net_proxy_http_svr_endpoint_t http_ep);
+
 NET_END_DECL
 
 #endif
