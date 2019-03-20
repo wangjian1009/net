@@ -11,6 +11,7 @@ struct net_endpoint {
     net_address_t m_address;
     net_address_t m_remote_address;
     net_protocol_t m_protocol;
+    TAILQ_ENTRY(net_endpoint) m_next_for_protocol;
     net_endpoint_prepare_connect_fun_t m_prepare_connect;
     void * m_prepare_connect_ctx;
     net_link_t m_link;

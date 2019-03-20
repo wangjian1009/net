@@ -23,6 +23,8 @@ struct net_protocol {
     net_protocol_endpoint_forward_fun_t m_endpoint_forward;
     net_protocol_endpoint_direct_fun_t m_endpoint_direct;
     net_protocol_endpoint_on_state_change_fun_t m_endpoint_on_state_chagne;
+
+    net_endpoint_list_t m_endpoints;
 };
 
 NET_END_DECL

@@ -1,6 +1,8 @@
+#include <assert.h>
 #include "cpe/pal/pal_string.h"
 #include "cpe/utils/string_utils.h"
 #include "net_protocol_i.h"
+#include "net_endpoint_i.h"
 
 net_protocol_t
 net_protocol_create(
@@ -56,6 +58,8 @@ net_protocol_create(
     if (endpoint_capacity > schedule->m_endpoint_protocol_capacity) {
         schedule->m_endpoint_protocol_capacity = endpoint_capacity;
     }
+
+    TAILQ_INIT(&protocol->m_endpoints);
     
     TAILQ_INSERT_TAIL(&schedule->m_protocols, protocol, m_next_for_schedule);
     
@@ -65,6 +69,8 @@ net_protocol_create(
 void net_protocol_free(net_protocol_t protocol) {
     net_schedule_t schedule = protocol->m_schedule;
 
+    assert(TAILQ_EMPTY(&protocol->m_endpoints));
+    
     if (schedule->m_direct_protocol == protocol) {
         schedule->m_direct_protocol = NULL;
     }
@@ -118,3 +124,19 @@ net_protocol_t net_protocol_from_data(void * data) {
     return  ((net_protocol_t)data) - 1;
 }
 
+static net_endpoint_t net_protocol_endpoint_next(net_endpoint_it_t it) {
+    net_endpoint_t * data = (net_endpoint_t *)it->data;
+
+    net_endpoint_t r = *data;
+
+    if (r) {
+        *data = TAILQ_NEXT(r, m_next_for_protocol);
+    }
+
+    return r;
+}
+
+void net_protocol_endpoints(net_protocol_t protocol, net_endpoint_it_t endpoint_it) {
+    *(net_endpoint_t *)endpoint_it->data = TAILQ_FIRST(&protocol->m_endpoints);
+    endpoint_it->next = net_protocol_endpoint_next;
+}

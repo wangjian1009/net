@@ -92,6 +92,7 @@ net_endpoint_create(net_driver_t driver, net_protocol_t protocol) {
 
     schedule->m_endpoint_max_id++;
     TAILQ_INSERT_TAIL(&driver->m_endpoints, endpoint, m_next_for_driver);
+    TAILQ_INSERT_TAIL(&protocol->m_endpoints, endpoint, m_next_for_protocol);
 
     if (endpoint->m_protocol_debug || endpoint->m_driver_debug || schedule->m_debug >= 2) {
         CPE_INFO(schedule->m_em, "core: %s created!", net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
@@ -110,6 +111,8 @@ void net_endpoint_free(net_endpoint_t endpoint) {
         TAILQ_REMOVE(&endpoint->m_driver->m_endpoints, endpoint, m_next_for_driver);
     }
 
+    TAILQ_REMOVE(&endpoint->m_protocol->m_endpoints, endpoint, m_next_for_protocol);
+    
     if (endpoint->m_state == net_endpoint_state_established) {
         endpoint->m_state = net_endpoint_state_deleting;
     }
@@ -204,6 +207,9 @@ int net_endpoint_set_protocol(net_endpoint_t endpoint, net_protocol_t protocol) 
     if (protocol->m_debug > endpoint->m_protocol_debug) {
         endpoint->m_protocol_debug = protocol->m_debug;
     }
+
+    TAILQ_REMOVE(&old_protocol->m_endpoints, endpoint, m_next_for_protocol);
+    TAILQ_INSERT_TAIL(&protocol->m_endpoints, endpoint, m_next_for_protocol);
     
     return 0;
 
