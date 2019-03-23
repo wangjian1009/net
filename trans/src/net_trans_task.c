@@ -2,6 +2,7 @@
 #include "cpe/pal/pal_string.h"
 #include "cpe/pal/pal_stdio.h"
 #include "cpe/utils/string_utils.h"
+#include "cpe/utils/stream_buffer.h"
 #include "net_address.h"
 #include "net_endpoint.h"
 #include "net_watcher.h"
@@ -31,6 +32,7 @@ net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const c
     task->m_id = mgr->m_max_task_id + 1;
     task->m_state = net_trans_task_init;
     task->m_header = NULL;
+    task->m_debug = 0;
 
     task->m_handler = curl_easy_init();
     if (task->m_handler == NULL) {
@@ -281,10 +283,121 @@ int net_trans_task_append_header_line(net_trans_task_t task, const char * header
     return 0;
 }
 
+static const char * net_trans_task_dump(net_trans_manage_t mgr, char *ptr, size_t size, char nohex) {
+    size_t i;
+    size_t c;
+
+    mem_buffer_t buffer = net_trans_manage_tmp_buffer(mgr);
+    mem_buffer_clear_data(buffer);
+    struct write_stream_buffer ws = CPE_WRITE_STREAM_BUFFER_INITIALIZER(buffer);
+    
+    unsigned int width = 0x10;
+ 
+    if(nohex) {
+        /* without the hex output, we can fit more on screen */ 
+        width = 0x40;
+    }
+    
+    for(i = 0; i < size; i += width) {
+        if (i != 0) stream_printf((write_stream_t)&ws, "\n");
+
+        stream_printf((write_stream_t)&ws, "%4.4lx: ", (unsigned long)i);
+ 
+        if(!nohex) {
+            /* hex not disabled, show it */ 
+            for(c = 0; c < width; c++) {
+                if(i + c < size) {
+                    stream_printf((write_stream_t)&ws, "%02x ", ptr[i + c]);
+                }
+                else {
+                    stream_printf((write_stream_t)&ws, "   ");
+                }
+            }
+        }
+ 
+        for (c = 0; (c < width) && (i + c < size); c++) {
+            /* check for 0D0A; if found, skip past and start a new line of output */ 
+            if (nohex && (i + c + 1 < size) && ptr[i + c] == 0x0D && ptr[i + c + 1] == 0x0A) {
+                i += (c + 2 - width);
+                break;
+            }
+            stream_printf((write_stream_t)&ws, "%c", (ptr[i + c] >= 0x20) && (ptr[i + c]<0x80)?ptr[i + c]:'.');
+            /* check again for 0D0A, to avoid an extra \n if it's at width */ 
+            if (nohex && (i + c + 2 < size) && ptr[i + c + 1] == 0x0D && ptr[i + c + 2] == 0x0A) {
+                i += (c + 3 - width);
+                break;
+            }
+        }
+    }
+
+    stream_putc((write_stream_t)&ws, 0);
+
+    return (const char *)mem_buffer_make_continuous(buffer, 0);
+}
+ 
+static int net_trans_task_trace(CURL *handle, curl_infotype type, char *data, size_t size, void *userp) {
+    net_trans_task_t task = userp;
+    net_trans_manage_t mgr = task->m_mgr;
+
+    switch(type) {
+    case CURLINFO_TEXT: {
+        char * end = data + size;
+        char * p = cpe_str_trim_tail(end, data);
+        char keep;
+        if (p < end) {
+            keep = *p;
+            *p = 0;
+        }
+
+        CPE_INFO(mgr->m_em, "trans: task %d: == Info %s", task->m_id, data);
+        
+        if (p < end) {
+            *p = keep;
+        }
+
+        break;
+    }
+    case CURLINFO_HEADER_OUT:
+        CPE_INFO(mgr->m_em, "trans: task %d: => header: %s", task->m_id, net_trans_task_dump(mgr, data, size, 1));
+        break;
+    case CURLINFO_DATA_OUT:
+        CPE_INFO(
+            mgr->m_em, "trans: task %d: => data(%d): %s",
+            task->m_id, (int)size, net_trans_task_dump(mgr, data, size, 1));
+        break;
+    case CURLINFO_SSL_DATA_OUT:
+        CPE_INFO(
+            mgr->m_em, "trans: task %d: => SSL data(%d): %s",
+            task->m_id, (int)size, net_trans_task_dump(mgr, data, size, 1));
+        break;
+    case CURLINFO_HEADER_IN:
+        CPE_INFO(mgr->m_em, "trans: task %d: <= header: %s", task->m_id, net_trans_task_dump(mgr, data, size, 1));
+        break;
+    case CURLINFO_DATA_IN:
+        CPE_INFO(
+            mgr->m_em, "trans: task %d: <= data(%d): %s",
+            task->m_id, (int)size, net_trans_task_dump(mgr, data, size, 1));
+        break;
+    case CURLINFO_SSL_DATA_IN:
+        CPE_INFO(
+            mgr->m_em, "trans: task %d: <= SSL data(%d): %s",
+            task->m_id, (int)size, net_trans_task_dump(mgr, data, size, 1));
+        break;
+    default:
+        break;
+    }
+ 
+    return 0;
+}
+ 
 void net_trans_task_set_debug(net_trans_task_t task, uint8_t is_debug) {
+    task->m_debug = is_debug;
+
     if (is_debug) {
-        curl_easy_setopt(task->m_handler, CURLOPT_STDERR, stderr);
         curl_easy_setopt(task->m_handler, CURLOPT_VERBOSE, 1L);
+        curl_easy_setopt(task->m_handler, CURLOPT_DEBUGFUNCTION, net_trans_task_trace);
+        curl_easy_setopt(task->m_handler, CURLOPT_DEBUGDATA, task);
+        curl_easy_setopt(task->m_handler, CURLOPT_STDERR, stderr);
     }
     else {
         curl_easy_setopt(task->m_handler, CURLOPT_VERBOSE, 0L);
