@@ -283,7 +283,8 @@ int net_trans_task_append_header_line(net_trans_task_t task, const char * header
     return 0;
 }
 
-static const char * net_trans_task_dump(net_trans_manage_t mgr, char *ptr, size_t size, char nohex) {
+static const char * net_trans_task_dump(net_trans_manage_t mgr, char *i_ptr, size_t size, char nohex) {
+    unsigned char * ptr = (unsigned char *)i_ptr;
     size_t i;
     size_t c;
 
