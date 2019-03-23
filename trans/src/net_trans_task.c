@@ -344,7 +344,7 @@ static int net_trans_task_trace(CURL *handle, curl_infotype type, char *data, si
     case CURLINFO_TEXT: {
         char * end = data + size;
         char * p = cpe_str_trim_tail(end, data);
-        char keep;
+        char keep = 0;
         if (p < end) {
             keep = *p;
             *p = 0;
