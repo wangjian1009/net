@@ -286,8 +286,6 @@
 		C995165A224AFC3400DDEEB1 /* log_queue.c in Sources */ = {isa = PBXBuildFile; fileRef = C9951643224AFC3400DDEEB1 /* log_queue.c */; };
 		C995165B224AFC3400DDEEB1 /* log_producer_manager.c in Sources */ = {isa = PBXBuildFile; fileRef = C9951645224AFC3400DDEEB1 /* log_producer_manager.c */; };
 		C995165C224AFC3400DDEEB1 /* log_producer_config.c in Sources */ = {isa = PBXBuildFile; fileRef = C9951646224AFC3400DDEEB1 /* log_producer_config.c */; };
-		C995165D224AFC3400DDEEB1 /* inner_log.c in Sources */ = {isa = PBXBuildFile; fileRef = C9951648224AFC3400DDEEB1 /* inner_log.c */; };
-		C995165E224AFC3400DDEEB1 /* log_producer_client.c in Sources */ = {isa = PBXBuildFile; fileRef = C9951649224AFC3400DDEEB1 /* log_producer_client.c */; };
 		C995165F224AFC3400DDEEB1 /* lz4.c in Sources */ = {isa = PBXBuildFile; fileRef = C995164D224AFC3400DDEEB1 /* lz4.c */; };
 		C9951660224AFC3400DDEEB1 /* log_producer_sender.c in Sources */ = {isa = PBXBuildFile; fileRef = C995164F224AFC3400DDEEB1 /* log_producer_sender.c */; };
 		C9951661224AFC3400DDEEB1 /* hmac-sha.c in Sources */ = {isa = PBXBuildFile; fileRef = C9951650224AFC3400DDEEB1 /* hmac-sha.c */; };
@@ -981,8 +979,6 @@
 		C9951637224AFC3400DDEEB1 /* log_producer_config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = log_producer_config.h; sourceTree = "<group>"; };
 		C9951638224AFC3400DDEEB1 /* log_producer_common.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = log_producer_common.c; sourceTree = "<group>"; };
 		C9951639224AFC3400DDEEB1 /* log_api.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = log_api.c; sourceTree = "<group>"; };
-		C995163A224AFC3400DDEEB1 /* log_producer_client.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = log_producer_client.h; sourceTree = "<group>"; };
-		C995163B224AFC3400DDEEB1 /* inner_log.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = inner_log.h; sourceTree = "<group>"; };
 		C995163C224AFC3400DDEEB1 /* log_inner_include.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = log_inner_include.h; sourceTree = "<group>"; };
 		C995163D224AFC3400DDEEB1 /* hmac-sha.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "hmac-sha.h"; sourceTree = "<group>"; };
 		C995163E224AFC3400DDEEB1 /* log_producer_sender.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = log_producer_sender.h; sourceTree = "<group>"; };
@@ -995,8 +991,6 @@
 		C9951645224AFC3400DDEEB1 /* log_producer_manager.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = log_producer_manager.c; sourceTree = "<group>"; };
 		C9951646224AFC3400DDEEB1 /* log_producer_config.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = log_producer_config.c; sourceTree = "<group>"; };
 		C9951647224AFC3400DDEEB1 /* sds.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = sds.h; sourceTree = "<group>"; };
-		C9951648224AFC3400DDEEB1 /* inner_log.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = inner_log.c; sourceTree = "<group>"; };
-		C9951649224AFC3400DDEEB1 /* log_producer_client.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = log_producer_client.c; sourceTree = "<group>"; };
 		C995164A224AFC3400DDEEB1 /* log_api.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = log_api.h; sourceTree = "<group>"; };
 		C995164B224AFC3400DDEEB1 /* log_producer_common.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = log_producer_common.h; sourceTree = "<group>"; };
 		C995164C224AFC3400DDEEB1 /* sha1.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = sha1.h; sourceTree = "<group>"; };
@@ -1951,8 +1945,6 @@
 				C9951637224AFC3400DDEEB1 /* log_producer_config.h */,
 				C9951638224AFC3400DDEEB1 /* log_producer_common.c */,
 				C9951639224AFC3400DDEEB1 /* log_api.c */,
-				C995163A224AFC3400DDEEB1 /* log_producer_client.h */,
-				C995163B224AFC3400DDEEB1 /* inner_log.h */,
 				C995163C224AFC3400DDEEB1 /* log_inner_include.h */,
 				C995163D224AFC3400DDEEB1 /* hmac-sha.h */,
 				C995163E224AFC3400DDEEB1 /* log_producer_sender.h */,
@@ -1965,8 +1957,6 @@
 				C9951645224AFC3400DDEEB1 /* log_producer_manager.c */,
 				C9951646224AFC3400DDEEB1 /* log_producer_config.c */,
 				C9951647224AFC3400DDEEB1 /* sds.h */,
-				C9951648224AFC3400DDEEB1 /* inner_log.c */,
-				C9951649224AFC3400DDEEB1 /* log_producer_client.c */,
 				C995164A224AFC3400DDEEB1 /* log_api.h */,
 				C995164B224AFC3400DDEEB1 /* log_producer_common.h */,
 				C995164C224AFC3400DDEEB1 /* sha1.h */,
@@ -2968,12 +2958,10 @@
 				C9951659224AFC3400DDEEB1 /* sha1.c in Sources */,
 				C995166C224B11B100DDEEB1 /* net_log_category.c in Sources */,
 				C9951656224AFC3400DDEEB1 /* log_producer_common.c in Sources */,
-				C995165E224AFC3400DDEEB1 /* log_producer_client.c in Sources */,
 				C9951657224AFC3400DDEEB1 /* log_api.c in Sources */,
 				C995165F224AFC3400DDEEB1 /* lz4.c in Sources */,
 				C9951655224AFC3400DDEEB1 /* sds.c in Sources */,
 				C9951660224AFC3400DDEEB1 /* log_producer_sender.c in Sources */,
-				C995165D224AFC3400DDEEB1 /* inner_log.c in Sources */,
 				C9951662224AFC3400DDEEB1 /* log_util.c in Sources */,
 				C9951658224AFC3400DDEEB1 /* log_builder.c in Sources */,
 				C995165A224AFC3400DDEEB1 /* log_queue.c in Sources */,
