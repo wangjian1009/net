@@ -70,7 +70,7 @@ net_log_category_create(net_log_schedule_t schedule, const char * name, uint8_t 
 
     // create manager
     category->m_producer_config = config;
-    category->m_producer_manager = create_log_producer_manager(config);
+    category->m_producer_manager = create_log_producer_manager(category, config);
     if (category->m_producer_manager == NULL) {
         CPE_ERROR(schedule->m_em, "log: create schedule %d: create producer manager fail!", id);
         destroy_log_producer_config(config);
@@ -78,10 +78,8 @@ net_log_category_create(net_log_schedule_t schedule, const char * name, uint8_t 
         return NULL;
     }
     category->m_producer_manager->send_done_function = NULL;
-    
 
     schedule->m_categories[id] = category;
-    
     return 0;
 }
 

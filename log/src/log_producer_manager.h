@@ -1,13 +1,7 @@
-//
-// Created by ZhangCheng on 20/11/2017.
-//
-
-#ifndef LOG_C_SDK_LOG_PRODUCER_MANAGER_H
-#define LOG_C_SDK_LOG_PRODUCER_MANAGER_H
-
+#ifndef NET_LOG_MANAGER_I_H_INCLEDED
+#define NET_LOG_MANAGER_I_H_INCLEDED
+#include "net_log_category_i.h"
 #include "log_define.h"
-LOG_CPP_START
-
 #include "log_producer_config.h"
 #include "log_producer_sender.h"
 #include "log_builder.h"
@@ -16,6 +10,7 @@ LOG_CPP_START
 
 typedef struct _log_producer_manager
 {
+    net_log_category_t m_category;
     log_producer_config * producer_config;
     volatile uint32_t shutdown;
     volatile uint32_t networkRecover;
@@ -39,13 +34,11 @@ typedef struct _log_producer_manager
     ATOMICINT ref_count; // only used when global send thread works
 }log_producer_manager;
 
-extern log_producer_manager * create_log_producer_manager(log_producer_config * producer_config);
+extern log_producer_manager * create_log_producer_manager(net_log_category_t category, log_producer_config * producer_config);
 extern void destroy_log_producer_manager(log_producer_manager * manager);
 
 extern log_producer_result log_producer_manager_add_log(log_producer_manager * producer_manager, int32_t pair_count, char ** keys, size_t * key_lens, char ** values, size_t * val_lens);
 
 extern log_producer_result log_producer_manager_send_raw_buffer(log_producer_manager * producer_manager, size_t log_bytes, size_t compressed_bytes, const unsigned char * raw_buffer);
-
-LOG_CPP_END
 
 #endif //LOG_C_SDK_LOG_PRODUCER_MANAGER_H

@@ -1,9 +1,4 @@
-//
-// Created by ZhangCheng on 20/11/2017.
-//
-
 #include "log_producer_manager.h"
-#include "inner_log.h"
 #include "md5.h"
 #include "sds.h"
 
@@ -41,6 +36,8 @@ char * _get_pack_id(const char * configName, const char * ip)
 
 void _try_flush_loggroup(log_producer_manager * producer_manager)
 {
+    net_log_schedule_t schedule = producer_manager->m_category->m_schedule;
+
     int32_t now_time = time(NULL);
 
     CS_ENTER(producer_manager->lock);
@@ -52,10 +49,10 @@ void _try_flush_loggroup(log_producer_manager * producer_manager)
 
         size_t loggroup_size = builder->loggroup_size;
         int rst = log_queue_push(producer_manager->loggroup_queue, builder);
-        aos_debug_log("try push loggroup to flusher, size : %d, status : %d", (int)loggroup_size, rst);
+        CPE_INFO(schedule->m_em, "try push loggroup to flusher, size : %d, status : %d", (int)loggroup_size, rst);
         if (rst != 0)
         {
-            aos_error_log("try push loggroup to flusher failed, force drop this log group, error code : %d", rst);
+            CPE_ERROR(schedule->m_em, "try push loggroup to flusher failed, force drop this log group, error code : %d", rst);
             log_group_destroy(builder);
         }
         else
@@ -73,18 +70,20 @@ void _try_flush_loggroup(log_producer_manager * producer_manager)
 void * log_producer_flush_thread(void * param)
 {
     log_producer_manager * root_producer_manager = (log_producer_manager*)param;
-    aos_info_log("start run flusher thread, config : %s", root_producer_manager->producer_config->logstore);
-    while (root_producer_manager->shutdown == 0)
-    {
+    net_log_schedule_t schedule = root_producer_manager->m_category->m_schedule;
 
+    if (schedule->m_debug) {
+        CPE_INFO(schedule->m_em, "start run flusher thread, config : %s", root_producer_manager->producer_config->logstore);
+    }
+    
+    while (root_producer_manager->shutdown == 0) {
         CS_ENTER(root_producer_manager->lock);
         COND_WAIT_TIME(root_producer_manager->triger_cond,
                        root_producer_manager->lock,
                        LOG_PRODUCER_FLUSH_INTERVAL_MS);
         CS_LEAVE(root_producer_manager->lock);
 
-
-//        aos_debug_log("run flusher thread, config : %s, now loggroup size : %d, delta time : %d",
+//        CPE_INFO(schedule->m_em, "run flusher thread, config : %s, now loggroup size : %d, delta time : %d",
 //                      producer_manager->producer_config->configName,
 //                      producer_manager->builder != NULL ? (int)producer_manager->builder->loggroup_size : 0,
 //                      (int)(now_time - producer_manager->firstLogTime));
@@ -142,7 +141,7 @@ void * log_producer_flush_thread(void * param)
 
                 if (lz4_buf == NULL)
                 {
-                    aos_error_log("serialize loggroup to proto buf with lz4 failed");
+                    CPE_ERROR(schedule->m_em, "serialize loggroup to proto buf with lz4 failed");
                 }
                 else
                 {
@@ -150,8 +149,12 @@ void * log_producer_flush_thread(void * param)
                     producer_manager->totalBufferSize += lz4_buf->length;
                     CS_LEAVE(root_producer_manager->lock);
 
-                    aos_debug_log("push loggroup to sender, config %s, loggroup size %d, lz4 size %d, now buffer size %d",
-                                  config->logstore, (int)lz4_buf->raw_length, (int)lz4_buf->length, (int)producer_manager->totalBufferSize);
+                    if (schedule->m_debug) {
+                        CPE_INFO(
+                            schedule->m_em,
+                            "push loggroup to sender, config %s, loggroup size %d, lz4 size %d, now buffer size %d",
+                            config->logstore, (int)lz4_buf->raw_length, (int)lz4_buf->length, (int)producer_manager->totalBufferSize);
+                    }
                     // if use multi thread, should change producer_manager->send_pool to NULL
                     //apr_pool_t * pool = config->sendThreadCount == 1 ? producer_manager->send_pool : NULL;
                     log_producer_send_param * send_param = create_log_producer_send_param(config, producer_manager, lz4_buf, builder->builder_time);
@@ -200,16 +203,22 @@ void * log_producer_flush_thread(void * param)
             log_producer_send_data(send_param);
         }
     }
-    aos_info_log("exit flusher thread, config : %s", root_producer_manager->producer_config->logstore);
+
+    if (schedule->m_debug) {
+        CPE_INFO(schedule->m_em, "exit flusher thread, config : %s", root_producer_manager->producer_config->logstore);
+    }
     return NULL;
 }
 
-log_producer_manager * create_log_producer_manager(log_producer_config * producer_config)
+log_producer_manager * create_log_producer_manager(net_log_category_t category, log_producer_config * producer_config)
 {
-    aos_debug_log("create log producer manager : %s", producer_config->logstore);
+    CPE_INFO(category->m_schedule->m_em, "create log producer manager : %s", producer_config->logstore);
+    
     log_producer_manager * producer_manager = (log_producer_manager *)malloc(sizeof(log_producer_manager));
     memset(producer_manager, 0, sizeof(log_producer_manager));
 
+    producer_manager->m_category = category;
+    
     (void)ATOMICINT_INC(&producer_manager->ref_count);
 
     assert(producer_manager->ref_count == 1);
@@ -272,19 +281,23 @@ log_producer_manager * create_log_producer_manager(log_producer_config * produce
 }
 
 
-void _push_last_loggroup(log_producer_manager * manager)
-{
+void _push_last_loggroup(log_producer_manager * manager) {
+    net_log_schedule_t schedule = manager->m_category->m_schedule;
+   
     CS_ENTER(manager->lock);
     log_group_builder * builder = manager->builder;
     manager->builder = NULL;
     if (builder != NULL)
     {
         size_t loggroup_size = builder->loggroup_size;
-        aos_debug_log("try push loggroup to flusher, size : %d, log size %d", (int)builder->loggroup_size, (int)builder->grp->logs.now_buffer_len);
+        if (schedule->m_debug) {
+            CPE_INFO(
+                schedule->m_em, "try push loggroup to flusher, size : %d, log size %d",
+                (int)builder->loggroup_size, (int)builder->grp->logs.now_buffer_len);
+        }
         int32_t status = log_queue_push(manager->loggroup_queue, builder);
-        if (status != 0)
-        {
-            aos_error_log("try push loggroup to flusher failed, force drop this log group, error code : %d", status);
+        if (status != 0) {
+            CPE_ERROR(schedule->m_em, "try push loggroup to flusher failed, force drop this log group, error code : %d", status);
             log_group_destroy(builder);
         }
         else
@@ -298,7 +311,12 @@ void _push_last_loggroup(log_producer_manager * manager)
 
 void destroy_log_producer_manager_tail(log_producer_manager * manager)
 {
-    aos_info_log("delete producer manager tail");
+    net_log_schedule_t schedule = manager->m_category->m_schedule;
+
+    if (schedule->m_debug) {
+        CPE_INFO(schedule->m_em, "delete producer manager tail");
+    }
+    
     DeleteCriticalSection(manager->lock);
     if (manager->pack_prefix != NULL)
     {
@@ -313,12 +331,16 @@ void destroy_log_producer_manager_tail(log_producer_manager * manager)
     free(manager);
 }
 
-void destroy_log_producer_manager(log_producer_manager * manager)
-{
+void destroy_log_producer_manager(log_producer_manager * manager) {
+    net_log_schedule_t schedule = manager->m_category->m_schedule;
+
     // when destroy instance, flush last loggroup
     _push_last_loggroup(manager);
 
-    aos_info_log("flush out producer loggroup begin");
+    if (schedule->m_debug) {
+        CPE_INFO(schedule->m_em, "flush out producer loggroup begin");
+    }
+    
     int32_t total_wait_count = manager->producer_config->destroyFlusherWaitTimeoutSec > 0 ? manager->producer_config->destroyFlusherWaitTimeoutSec * 100 : MAX_MANAGER_FLUSH_COUNT;
     total_wait_count += manager->producer_config->destroySenderWaitTimeoutSec > 0 ? manager->producer_config->destroySenderWaitTimeoutSec * 100 : MAX_SENDER_FLUSH_COUNT;
 
@@ -336,35 +358,52 @@ void destroy_log_producer_manager(log_producer_manager * manager)
     }
     if (waitCount == total_wait_count)
     {
-        aos_error_log("try flush out producer loggroup error, force exit, now loggroup %d", (int)(log_queue_size(manager->loggroup_queue)));
+        CPE_ERROR(
+            schedule->m_em, "try flush out producer loggroup error, force exit, now loggroup %d",
+            (int)(log_queue_size(manager->loggroup_queue)));
     }
     else
     {
-        aos_info_log("flush out producer loggroup success");
+        if (schedule->m_debug) {
+            CPE_INFO(schedule->m_em, "flush out producer loggroup success");
+        }
     }
     manager->shutdown = 1;
 
     // destroy root resources
     COND_SIGNAL(manager->triger_cond);
-    aos_info_log("join flush thread begin");
+    if (schedule->m_debug) {
+        CPE_INFO(schedule->m_em, "join flush thread begin");
+    }
     THREAD_JOIN(manager->flush_thread);
-    aos_info_log("join flush thread success");
+    if (schedule->m_debug) {
+        CPE_INFO(schedule->m_em, "join flush thread success");
+    }
     if (manager->send_threads != NULL)
     {
-        aos_info_log("join sender thread pool begin");
+        if (schedule->m_debug) {
+            CPE_INFO(schedule->m_em, "join sender thread pool begin");
+        }
+        
         int32_t threadId = 0;
         for (; threadId < manager->producer_config->sendThreadCount; ++threadId)
         {
             THREAD_JOIN(manager->send_threads[threadId]);
         }
         free(manager->send_threads);
-        aos_info_log("join sender thread pool success");
+
+        if (schedule->m_debug) {
+            CPE_INFO(schedule->m_em, "join sender thread pool success");
+        }
     }
     DeleteCond(manager->triger_cond);
     log_queue_destroy(manager->loggroup_queue);
     if (manager->sender_data_queue != NULL)
     {
-        aos_info_log("flush out sender queue begin");
+        if (schedule->m_debug) {
+            CPE_INFO(schedule->m_em, "flush out sender queue begin");
+        }
+        
         while (log_queue_size(manager->sender_data_queue) > 0)
         {
             void * send_param = log_queue_trypop(manager->sender_data_queue);
@@ -374,7 +413,10 @@ void destroy_log_producer_manager(log_producer_manager * manager)
             }
         }
         log_queue_destroy(manager->sender_data_queue);
-        aos_info_log("flush out sender queue success");
+
+        if (schedule->m_debug) {
+            CPE_INFO(schedule->m_em, "flush out sender queue success");
+        }
     }
     else if (g_sender_data_queue != NULL && g_send_threads != NULL)
     {
@@ -392,12 +434,16 @@ void destroy_log_producer_manager(log_producer_manager * manager)
 
 }
 
-log_producer_result log_producer_manager_add_log(log_producer_manager * producer_manager, int32_t pair_count, char ** keys, size_t * key_lens, char ** values, size_t * val_lens)
+log_producer_result
+log_producer_manager_add_log(
+    log_producer_manager * producer_manager, int32_t pair_count, char ** keys, size_t * key_lens, char ** values, size_t * val_lens)
 {
-    if (producer_manager->totalBufferSize > producer_manager->producer_config->maxBufferBytes)
-    {
+    net_log_schedule_t schedule = producer_manager->m_category->m_schedule;
+    
+    if (producer_manager->totalBufferSize > producer_manager->producer_config->maxBufferBytes) {
         return LOG_PRODUCER_DROP_ERROR;
     }
+    
     CS_ENTER(producer_manager->lock);
     if (producer_manager->builder == NULL)
     {
@@ -430,11 +476,15 @@ log_producer_result log_producer_manager_add_log(log_producer_manager * producer
     producer_manager->builder = NULL;
 
     size_t loggroup_size = builder->loggroup_size;
-    aos_debug_log("try push loggroup to flusher, size : %d, log count %d", (int)builder->loggroup_size, (int)builder->grp->n_logs);
+
+    if (schedule->m_debug) {
+        CPE_INFO(schedule->m_em, "try push loggroup to flusher, size : %d, log count %d", (int)builder->loggroup_size, (int)builder->grp->n_logs);
+    }
+    
     int status = log_queue_push(producer_manager->loggroup_queue, builder);
     if (status != 0)
     {
-        aos_error_log("try push loggroup to flusher failed, force drop this log group, error code : %d", status);
+        CPE_ERROR(schedule->m_em, "try push loggroup to flusher failed, force drop this log group, error code : %d", status);
         log_group_destroy(builder);
     }
     else
