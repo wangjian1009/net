@@ -6,7 +6,6 @@
 #include "sds.h"
 #include <string.h>
 #include <stdlib.h>
-#include "inner_log.h"
 
 static void _set_default_producer_config(log_producer_config * pConfig)
 {
@@ -39,10 +38,11 @@ static void _copy_config_string(const char * value, sds * src_value)
 }
 
 
-log_producer_config * create_log_producer_config()
+log_producer_config * create_log_producer_config(net_log_category_t category)
 {
     log_producer_config* pConfig = (log_producer_config*)malloc(sizeof(log_producer_config));
     memset(pConfig, 0, sizeof(log_producer_config));
+    pConfig->m_category = category;
     _set_default_producer_config(pConfig);
     return pConfig;
 }
@@ -358,29 +358,4 @@ void log_producer_config_set_topic(log_producer_config * config, const char * to
 void log_producer_config_set_source(log_producer_config * config, const char * source)
 {
     _copy_config_string(source, &config->source);
-}
-
-int log_producer_config_is_valid(log_producer_config * config)
-{
-    if (config == NULL)
-    {
-        aos_error_log("invalid producer config");
-        return 0;
-    }
-    if (config->endpoint == NULL || config->project == NULL || config->logstore == NULL)
-    {
-        aos_error_log("invalid producer config destination params");
-        return 0;
-    }
-    if (config->accessKey == NULL || config->accessKeyId == NULL)
-    {
-        aos_error_log("invalid producer config authority params");
-        return 0;
-    }
-    if (config->packageTimeoutInMS < 0 || config->maxBufferBytes < 0 || config->logCountPerPackage < 0 || config->logBytesPerPackage < 0)
-    {
-        aos_error_log("invalid producer config log merge and buffer params");
-        return 0;
-    }
-    return 1;
 }

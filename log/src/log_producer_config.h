@@ -1,7 +1,3 @@
-//
-// Created by ZhangCheng on 20/11/2017.
-//
-
 #ifndef LOG_C_SDK_LOG_PRODUCER_CONFIG_H
 #define LOG_C_SDK_LOG_PRODUCER_CONFIG_H
 
@@ -11,8 +7,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "log_multi_thread.h"
-LOG_CPP_START
-
+#include "net_log_category_i.h"
 
 typedef struct _log_producer_config_tag
 {
@@ -22,6 +17,7 @@ typedef struct _log_producer_config_tag
 
 typedef struct _log_producer_config
 {
+    net_log_category_t m_category;
     char * endpoint;
     char * project;
     char * logstore;
@@ -59,7 +55,7 @@ typedef struct _log_producer_config
  * create a empty producer config, should set config params manually
  * @return empty producer config
  */
-LOG_EXPORT log_producer_config * create_log_producer_config(void);
+LOG_EXPORT log_producer_config * create_log_producer_config(net_log_category_t category);
 
 
 /**
@@ -246,15 +242,4 @@ void log_producer_config_print(log_producer_config * config, FILE * pFile);
 
 #endif
 
-/**
- * check if given config is valid
- * @param config
- * @return 1 valid, 0 invalid
- */
-LOG_EXPORT int log_producer_config_is_valid(log_producer_config * config);
-
-
-
-LOG_CPP_END
-
-#endif //LOG_C_SDK_LOG_PRODUCER_CONFIG_H
+#endif

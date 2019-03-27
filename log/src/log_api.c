@@ -3,7 +3,6 @@
 #include <curl/curl.h>
 #include <string.h>
 #include "sds.h"
-#include "inner_log.h"
 
 static size_t write_data(void *ptr, size_t size, size_t nmemb, void *stream)
 {

@@ -36,14 +36,8 @@ net_log_category_create(net_log_schedule_t schedule, const char * name, uint8_t 
     category->m_producer_config = NULL;
     category->m_producer_manager = NULL;
     
-    log_producer_config * config = create_log_producer_config();
-    log_producer_config_set_endpoint(config, schedule->m_cfg_ep);
-
-    log_producer_config_set_project(config, schedule->m_cfg_project);
+    log_producer_config * config = create_log_producer_config(category);
     log_producer_config_set_logstore(config, name);
-
-    log_producer_config_set_access_id(config, schedule->m_cfg_access_id);
-    log_producer_config_set_access_key(config, schedule->m_cfg_access_key);
 
     //log_producer_config_set_topic(config, "test_topic");
 

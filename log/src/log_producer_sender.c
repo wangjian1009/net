@@ -5,7 +5,6 @@
 #include "log_producer_sender.h"
 #include "log_api.h"
 #include "log_producer_manager.h"
-#include "inner_log.h"
 #include "lz4.h"
 #include "sds.h"
 #include <stdlib.h>
@@ -45,14 +44,14 @@ int32_t log_producer_on_send_done(log_producer_send_param * send_param, post_log
 
 #ifdef SEND_TIME_INVALID_FIX
 
-void _rebuild_time(lz4_log_buf * lz4_buf, lz4_log_buf ** new_lz4_buf)
+void _rebuild_time(net_log_schedule_t schedule, lz4_log_buf * lz4_buf, lz4_log_buf ** new_lz4_buf)
 {
-    aos_debug_log("rebuild log.");
+    CPE_INFO(schedule->m_em, "rebuild log.");
     char * buf = (char *)malloc(lz4_buf->raw_length);
     if (LZ4_decompress_safe((const char* )lz4_buf->data, buf, lz4_buf->length, lz4_buf->raw_length) <= 0)
     {
         free(buf);
-        aos_fatal_log("LZ4_decompress_safe error");
+        CPE_ERROR(schedule->m_em, "LZ4_decompress_safe error");
         return;
     }
     uint32_t nowTime = time(NULL);
@@ -63,7 +62,7 @@ void _rebuild_time(lz4_log_buf * lz4_buf, lz4_log_buf ** new_lz4_buf)
     int compressed_size = LZ4_compress_default((char *)buf, compress_data, lz4_buf->raw_length, compress_bound);
     if(compressed_size <= 0)
     {
-        aos_fatal_log("LZ4_compress_default error");
+        CPE_ERROR(schedule->m_em, "LZ4_compress_default error");
         free(buf);
         free(compress_data);
         return;
@@ -105,12 +104,16 @@ void log_producer_send_thread_global_inner(log_producer_send_param * send_param)
     if (send_param != NULL)
     {
         log_producer_manager * producer_manager = (log_producer_manager *)send_param->producer_manager;
+        net_log_schedule_t schedule = producer_manager->m_category->m_schedule;
+        
         log_producer_send_fun(send_param);
         // @note after log_producer_send_fun, send_param has been destroyed
         if (ATOMICINT_DEC(&producer_manager->ref_count) == 0)
         {
-            aos_info_log("producer's ref count is 0, destroy this producer, project : %s, logstore : %s",
+            if (schedule->m_debug) {
+                CPE_INFO(schedule->m_em, "producer's ref count is 0, destroy this producer, project : %s, logstore : %s",
                          producer_manager->producer_config->project, producer_manager->producer_config->logstore);
+            }
             destroy_log_producer_manager_tail(producer_manager);
         }
     }
@@ -132,15 +135,18 @@ void * log_producer_send_thread_global(void * param)
 void * log_producer_send_fun(void * param)
 {
     log_producer_send_param * send_param = (log_producer_send_param *)param;
+    log_producer_manager * producer_manager = (log_producer_manager *)send_param->producer_manager;
+    net_log_schedule_t schedule = producer_manager->m_category->m_schedule;
+
     if (send_param->magic_num != LOG_PRODUCER_SEND_MAGIC_NUM)
     {
-        aos_fatal_log("invalid send param, magic num not found, num 0x%x", send_param->magic_num);
+        CPE_ERROR(schedule->m_em, "invalid send param, magic num not found, num 0x%x", send_param->magic_num);
         return NULL;
     }
 
     if (send_param->log_buf == NULL)
     {
-        aos_info_log("receive producer destroy event, project : %s, logstore : %s", send_param->producer_config->project, send_param->producer_config->logstore);
+        CPE_ERROR(schedule->m_em, "receive producer destroy event, project : %s, logstore : %s", send_param->producer_config->project, send_param->producer_config->logstore);
         free(send_param);
         return NULL;
     }
@@ -150,13 +156,11 @@ void * log_producer_send_fun(void * param)
     send_error_info error_info;
     memset(&error_info, 0, sizeof(error_info));
 
-    log_producer_manager * producer_manager = (log_producer_manager *)send_param->producer_manager;
-
     do
     {
         if (producer_manager->shutdown)
         {
-            aos_info_log("send fail but shutdown signal received, force exit");
+            CPE_ERROR(schedule->m_em, "send fail but shutdown signal received, force exit");
             if (producer_manager->send_done_function != NULL)
             {
                 producer_manager->send_done_function(producer_manager->producer_config->logstore, LOG_PRODUCER_SEND_EXIT_BUFFERED, send_param->log_buf->raw_length, send_param->log_buf->length,
@@ -169,7 +173,7 @@ void * log_producer_send_fun(void * param)
         uint32_t nowTime = time(NULL);
         if (nowTime - send_param->builder_time > 600 || send_param->builder_time > nowTime || error_info.last_send_error == LOG_SEND_TIME_ERROR)
         {
-            _rebuild_time(send_param->log_buf, &send_buf);
+            _rebuild_time(schedule, send_param->log_buf, &send_buf);
             send_param->builder_time = nowTime;
         }
 #endif
@@ -238,6 +242,8 @@ int32_t log_producer_on_send_done(log_producer_send_param * send_param, post_log
 {
     log_producer_send_result send_result = AosStatusToResult(result);
     log_producer_manager * producer_manager = (log_producer_manager *)send_param->producer_manager;
+    net_log_schedule_t schedule = producer_manager->m_category->m_schedule;
+
     if (producer_manager->send_done_function != NULL)
     {
         log_producer_result callback_result = send_result == LOG_SEND_OK ?
@@ -286,13 +292,15 @@ int32_t log_producer_on_send_done(log_producer_send_param * send_param, post_log
                 }
 #endif
             }
-            aos_warn_log("send quota error, project : %s, logstore : %s, buffer len : %d, raw len : %d, code : %d, error msg : %s",
+            if (schedule->m_debug) {
+                CPE_INFO(schedule->m_em, "send quota error, project : %s, logstore : %s, buffer len : %d, raw len : %d, code : %d, error msg : %s",
                          send_param->producer_config->project,
                          send_param->producer_config->logstore,
                          (int)send_param->log_buf->length,
                          (int)send_param->log_buf->raw_length,
                          result->statusCode,
                          result->errorMessage);
+            }
             return error_info->last_sleep_ms;
         case LOG_SEND_SERVER_ERROR :
         case LOG_SEND_NETWORK_ERROR:
@@ -316,13 +324,16 @@ int32_t log_producer_on_send_done(log_producer_send_param * send_param, post_log
                 }
 #endif
             }
-            aos_warn_log("send network error, project : %s, logstore : %s, buffer len : %d, raw len : %d, code : %d, error msg : %s",
+            if (schedule->m_debug) {
+                CPE_INFO(
+                    schedule->m_em, "send network error, project : %s, logstore : %s, buffer len : %d, raw len : %d, code : %d, error msg : %s",
                          send_param->producer_config->project,
                          send_param->producer_config->logstore,
                          (int)send_param->log_buf->length,
                          (int)send_param->log_buf->raw_length,
                          result->statusCode,
                          result->errorMessage);
+            }
             return error_info->last_sleep_ms;
         default:
             // discard data
@@ -335,25 +346,29 @@ int32_t log_producer_on_send_done(log_producer_send_param * send_param, post_log
     CS_LEAVE(producer_manager->lock);
     if (send_result == LOG_SEND_OK)
     {
-        aos_debug_log("send success, project : %s, logstore : %s, buffer len : %d, raw len : %d, total buffer : %d, code : %d, error msg : %s",
-                      send_param->producer_config->project,
-                      send_param->producer_config->logstore,
-                      (int)send_param->log_buf->length,
-                      (int)send_param->log_buf->raw_length,
-                      (int)producer_manager->totalBufferSize,
-                      result->statusCode,
-                      result->errorMessage);
+        if (schedule->m_debug) {
+            CPE_INFO(
+                schedule->m_em, "send success, project : %s, logstore : %s, buffer len : %d, raw len : %d, total buffer : %d, code : %d, error msg : %s",
+                send_param->producer_config->project,
+                send_param->producer_config->logstore,
+                (int)send_param->log_buf->length,
+                (int)send_param->log_buf->raw_length,
+                (int)producer_manager->totalBufferSize,
+                result->statusCode,
+                result->errorMessage);
+        }
     }
     else
     {
-        aos_warn_log("send fail, discard data, project : %s, logstore : %s, buffer len : %d, raw len : %d, total buffer : %d, code : %d, error msg : %s",
-                      send_param->producer_config->project,
-                      send_param->producer_config->logstore,
-                      (int)send_param->log_buf->length,
-                      (int)send_param->log_buf->raw_length,
-                      (int)producer_manager->totalBufferSize,
-                      result->statusCode,
-                      result->errorMessage);
+        CPE_ERROR(
+            schedule->m_em, "send fail, discard data, project : %s, logstore : %s, buffer len : %d, raw len : %d, total buffer : %d, code : %d, error msg : %s",
+            send_param->producer_config->project,
+            send_param->producer_config->logstore,
+            (int)send_param->log_buf->length,
+            (int)send_param->log_buf->raw_length,
+            (int)producer_manager->totalBufferSize,
+            result->statusCode,
+            result->errorMessage);
     }
 
     return 0;
