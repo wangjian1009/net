@@ -179,11 +179,8 @@ void net_log_commit(net_log_schedule_t schedule) {
         return;
     }
 
-    log_producer_client * log_client = get_log_producer_client(schedule->m_current_category->m_log_producer, NULL);
-    if (log_client == NULL) {
-        CPE_ERROR(schedule->m_em, "log: commit: get client fail!");
-        return;
-    }
+    log_producer_client * log_client = schedule->m_current_category->m_root_client;
+    assert(log_client);
 
     log_producer_result r =
         log_producer_client_add_log_with_len(

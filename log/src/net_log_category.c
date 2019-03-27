@@ -32,7 +32,7 @@ net_log_category_create(net_log_schedule_t schedule, const char * name, uint8_t 
 
     category->m_schedule = schedule;
     category->m_id = id;
-    category->m_log_producer = NULL;
+    category->m_root_client = NULL;
     
     log_producer_config * config = create_log_producer_config();
     log_producer_config_set_endpoint(config, schedule->m_cfg_ep);
@@ -66,8 +66,10 @@ net_log_category_create(net_log_schedule_t schedule, const char * name, uint8_t 
     // set interface
     log_producer_config_set_net_interface(config, NULL);
 
-    category->m_log_producer = create_log_producer(config, NULL/*net_log_on_send_done*/);
-    if (category->m_log_producer == NULL) {
+    log_producer_t m_log_producer;
+    
+    category->m_root_client = create_log_client(config, NULL/*net_log_on_send_done*/);
+    if (category->m_root_client == NULL) {
         CPE_ERROR(schedule->m_em, "log: create schedule %d: create producer fail!", id);
         mem_free(schedule->m_alloc, category);
         return NULL;
@@ -87,7 +89,8 @@ void net_log_category_free(net_log_category_t category) {
         schedule->m_current_category = NULL;
     }
 
-    destroy_log_producer(category->m_log_producer);
+    destroy_log_client(category->m_root_client);
+    category->m_root_client = NULL;
 
     mem_free(schedule->m_alloc, category);
 }

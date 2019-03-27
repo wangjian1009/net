@@ -25,10 +25,6 @@ typedef struct _producer_client_private {
     log_producer_config * producer_config;
 }producer_client_private ;
 
-struct _log_producer {
-    log_producer_client * root_client;
-};
-
 void log_producer_env_destroy()
 {
     // destroy global send threads
@@ -59,13 +55,12 @@ void log_producer_env_destroy()
     }
 }
 
-log_producer * create_log_producer(log_producer_config * config, on_log_producer_send_done_function send_done_function)
+log_producer_client * create_log_client(log_producer_config * config, on_log_producer_send_done_function send_done_function)
 {
     if (!log_producer_config_is_valid(config))
     {
         return NULL;
     }
-    log_producer * producer = (log_producer *)malloc(sizeof(log_producer));
     log_producer_client * producer_client = (log_producer_client *)malloc(sizeof(log_producer_client));
     producer_client_private * client_private = (producer_client_private *)malloc(sizeof(producer_client_private));
     producer_client->private_data = client_private;
@@ -78,39 +73,22 @@ log_producer * create_log_producer(log_producer_config * config, on_log_producer
         // free
         free(producer_client);
         free(client_private);
-        free(producer);
         return NULL;
     }
     aos_debug_log("create producer client success, config : %s", config->logstore);
     producer_client->valid_flag = 1;
-    producer->root_client = producer_client;
-    return producer;
+    return producer_client;
 }
 
 
-void destroy_log_producer(log_producer * producer)
+void destroy_log_client(log_producer_client * client)
 {
-    if (producer == NULL)
-    {
-        return;
-    }
-    log_producer_client * client = producer->root_client;
     client->valid_flag = 0;
     producer_client_private * client_private = (producer_client_private *)client->private_data;
     destroy_log_producer_manager(client_private->producer_manager);
 
     free(client_private);
     free(client);
-    free(producer);
-}
-
-extern log_producer_client * get_log_producer_client(log_producer * producer, const char * config_name)
-{
-    if (producer == NULL)
-    {
-        return NULL;
-    }
-    return producer->root_client;
 }
 
 void log_producer_client_network_recover(log_producer_client * client)

@@ -21,8 +21,6 @@ typedef struct _log_producer_client
     void * private_data;
 }log_producer_client;
 
-typedef struct _log_producer log_producer;
-
 /**
  * create global send thread pool
  *
@@ -42,23 +40,14 @@ LOG_EXPORT log_producer_result log_producer_global_send_thread_init(int32_t log_
  * @param send_done_function this function will be called when send done(can be ok or fail), set to NULL if you don't care about it
  * @return producer client ptr, NULL if create fail
  */
-LOG_EXPORT log_producer * create_log_producer(log_producer_config * config, on_log_producer_send_done_function send_done_function);
+LOG_EXPORT log_producer_client * create_log_client(log_producer_config * config, on_log_producer_send_done_function send_done_function);
 
 /**
  * destroy log producer
  * @param producer
  * @note no multi thread safe
  */
-LOG_EXPORT void destroy_log_producer(log_producer * producer);
-
-/**
- * get client from producer
- * @param producer
- * @param config_name  useless now, set NULL
- * @return the specific producer client, root client if config_name is NULL or no specific config,
- */
-LOG_EXPORT log_producer_client * get_log_producer_client(log_producer * producer, const char * config_name);
-
+LOG_EXPORT void destroy_log_client(log_producer_client * client);
 
 /**
  * force send data when network recover
