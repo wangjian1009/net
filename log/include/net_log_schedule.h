@@ -5,7 +5,8 @@
 NET_BEGIN_DECL
 
 net_log_schedule_t net_log_schedule_create(
-    mem_allocrator_t alloc, error_monitor_t em, net_schedule_t schedule, net_driver_t driver);
+    mem_allocrator_t alloc, error_monitor_t em, net_schedule_t schedule, net_driver_t driver,
+    const char * cfg_project, const char * cfg_ep, const char * cfg_access_id, const char * cfg_access_key);
 
 void net_log_schedule_free(net_log_schedule_t log_schedule);
 

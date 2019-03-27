@@ -3391,7 +3391,7 @@
 					../../../cpe/include,
 					../../depends/curl/include,
 					../../depends/mbedtls/include/mbedtls,
-					../../core/log/include,
+					../../log/include,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -3407,7 +3407,7 @@
 					../../../cpe/include,
 					../../depends/curl/include,
 					../../depends/mbedtls/include/mbedtls,
-					../../core/log/include,
+					../../log/include,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;

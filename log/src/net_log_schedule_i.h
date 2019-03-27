@@ -19,7 +19,11 @@ struct net_log_schedule {
     uint8_t m_debug;
     net_schedule_t m_net_schedule;
     net_driver_t m_net_driver;
-
+    char * m_cfg_project;
+    char * m_cfg_ep;
+    char * m_cfg_access_id;
+    char * m_cfg_access_key;
+    
     /*categories*/
     uint8_t m_category_count;
     net_log_category_t * m_categories;

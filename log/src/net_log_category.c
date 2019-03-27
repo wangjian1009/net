@@ -22,16 +22,13 @@ net_log_category_create(net_log_schedule_t schedule, const char * name, uint8_t 
     category->m_log_producer = NULL;
     
     log_producer_config * config = create_log_producer_config();
-    //log_producer_config_set_endpoint(config, s_aliyun_log_ep);
+    log_producer_config_set_endpoint(config, schedule->m_cfg_ep);
 
-    //TODO:
-    /* char project[32]; */
-    /* snprintf(project, sizeof(project), "%s-%s", s_aliyun_log_project, log_env); */
-    //log_producer_config_set_project(config, project);
-    //log_producer_config_set_logstore(config, logstore);
+    log_producer_config_set_project(config, schedule->m_cfg_project);
+    log_producer_config_set_logstore(config, name);
 
-    //log_producer_config_set_access_id(config, s_aliyun_log_key_id);
-    //log_producer_config_set_access_key(config, s_aliyun_log_key_secrt);
+    log_producer_config_set_access_id(config, schedule->m_cfg_access_id);
+    log_producer_config_set_access_key(config, schedule->m_cfg_access_key);
 
     //log_producer_config_set_topic(config, "test_topic");
 

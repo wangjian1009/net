@@ -2,14 +2,17 @@
 #include "cpe/pal/pal_strings.h"
 #include "cpe/pal/pal_stdio.h"
 #include "cpe/utils/md5.h"
+#include "cpe/utils/string_utils.h"
 #include "net_schedule.h"
 #include "net_address.h"
 #include "net_timer.h"
 #include "net_log_schedule_i.h"
 #include "net_log_category_i.h"
 
-net_log_schedule_t net_log_schedule_create(
-    mem_allocrator_t alloc, error_monitor_t em, net_schedule_t net_schedule, net_driver_t net_driver)
+net_log_schedule_t
+net_log_schedule_create(
+    mem_allocrator_t alloc, error_monitor_t em, net_schedule_t net_schedule, net_driver_t net_driver,
+    const char * cfg_project, const char * cfg_ep, const char * cfg_access_id, const char * cfg_access_key)
 {
     net_log_schedule_t schedule = mem_alloc(alloc, sizeof(struct net_log_schedule));
     if (schedule == NULL) {
@@ -31,6 +34,11 @@ net_log_schedule_t net_log_schedule_create(
     schedule->m_net_schedule = net_schedule;
     schedule->m_net_driver = net_driver;
 
+    schedule->m_cfg_project = cpe_str_mem_dup(alloc, cfg_project);
+    schedule->m_cfg_ep = cpe_str_mem_dup(alloc, cfg_ep);
+    schedule->m_cfg_access_id = cpe_str_mem_dup(alloc, cfg_access_id);
+    schedule->m_cfg_access_key = cpe_str_mem_dup(alloc, cfg_access_key);
+
     mem_buffer_init(&schedule->m_kv_buffer, alloc);
 
     return schedule;
@@ -40,16 +48,10 @@ void net_log_schedule_free(net_log_schedule_t schedule) {
     uint8_t i;
     for(i = 0; i < schedule->m_category_count; ++i) {
         if (schedule->m_categories[i]) {
+            net_log_category_free(schedule->m_categories[i]);
+            assert(schedule->m_categories[i] == NULL);
         }
     }
-    
-    /* uint32_t i; */
-    /* for(i = 0; i < CPE_ARRAY_SIZE(logger->m_log_producer); ++i) { */
-    /*     if (logger->m_log_producer[i]) { */
-    /*         destroy_log_producer(logger->m_log_producer[i]); */
-    /*     } */
-    /* } */
-
     
     log_producer_env_destroy();
 
@@ -65,59 +67,6 @@ uint8_t net_log_schedule_debug(net_log_schedule_t schedule) {
 void net_log_schedule_set_debug(net_log_schedule_t schedule, uint8_t debug) {
     schedule->m_debug = debug;
 }
-
-/* static int sfox_chain_logger_add_category( */
-/*     sfox_chain_logger_t logger, const char * log_env, const char * logstore, sfox_chain_log_type_t log_type) */
-/* { */
-/*     sfox_chain_t chain = logger->m_chain; */
-/*     sfox_agent_t agent = chain->m_agent; */
-
-/*     assert((int)log_type < CPE_ARRAY_SIZE(logger->m_log_producer)); */
-/*     assert(logger->m_log_producer[log_type] == NULL); */
-
-/*     log_producer_config * config = create_log_producer_config(); */
-/*     log_producer_config_set_endpoint(config, s_aliyun_log_ep); */
-
-/*     char project[32]; */
-/*     snprintf(project, sizeof(project), "%s-%s", s_aliyun_log_project, log_env); */
-/*     log_producer_config_set_project(config, project); */
-/*     log_producer_config_set_logstore(config, logstore); */
-
-/*     log_producer_config_set_access_id(config, s_aliyun_log_key_id); */
-/*     log_producer_config_set_access_key(config, s_aliyun_log_key_secrt); */
-
-/*     //log_producer_config_set_topic(config, "test_topic"); */
-
-/*     // set resource params */
-/*     log_producer_config_set_packet_log_bytes(config, 1*1024*1024); */
-/*     log_producer_config_set_packet_log_count(config, 512); */
-/*     log_producer_config_set_packet_timeout(config, 3000); */
-/*     log_producer_config_set_max_buffer_limit(config, 4*1024*1024); */
-
-/*     // set send thread count */
-/*     log_producer_config_set_send_thread_count(config, 1); */
-
-/*     // set compress type : lz4 */
-/*     log_producer_config_set_compress_type(config, 1); */
-
-/*     // set timeout */
-/*     log_producer_config_set_connect_timeout_sec(config, 10); */
-/*     log_producer_config_set_send_timeout_sec(config, 15); */
-/*     log_producer_config_set_destroy_flusher_wait_sec(config, 1); */
-/*     log_producer_config_set_destroy_sender_wait_sec(config, 1); */
-
-/*     // set interface */
-/*     log_producer_config_set_net_interface(config, NULL); */
-
-/*     logger->m_log_producer[log_type] = create_log_producer(config, sfox_chain_log_on_send_done); */
-/*     if (logger->m_log_producer[log_type] == NULL) { */
-/*         CPE_ERROR(agent->m_em, "chain: logger: create producer fail!"); */
-/*         return -1; */
-/*     } */
-
-/*     return 0; */
-/* } */
-
 
 void net_log_begin(net_log_schedule_t schedule, uint8_t log_type) {
     schedule->m_kv_count = 0;
