@@ -10,9 +10,6 @@
 #include <string.h>
 
 
-static uint32_t s_init_flag = 0;
-static log_producer_result s_last_result = 0;
-
 extern log_queue * g_sender_data_queue;
 extern THREAD * g_send_threads;
 extern int32_t g_send_thread_count;
@@ -32,33 +29,8 @@ struct _log_producer {
     log_producer_client * root_client;
 };
 
-log_producer_result log_producer_env_init(int32_t log_global_flag)
-{
-    // if already init, just return s_last_result
-    if (s_init_flag == 1)
-    {
-        return s_last_result;
-    }
-    s_init_flag = 1;
-    if (0 != sls_log_init(log_global_flag))
-    {
-        s_last_result = LOG_PRODUCER_INVALID;
-    }
-    else
-    {
-        s_last_result = LOG_PRODUCER_OK;
-    }
-    return s_last_result;
-}
-
 void log_producer_env_destroy()
 {
-    if (s_init_flag == 0)
-    {
-        return;
-    }
-    s_init_flag = 0;
-
     // destroy global send threads
     if (g_send_threads != NULL) {
         g_send_thread_destroy = 1;
@@ -85,7 +57,6 @@ void log_producer_env_destroy()
         g_send_threads = NULL;
         aos_info_log("join global sender thread pool success");
     }
-    sls_log_destroy();
 }
 
 log_producer * create_log_producer(log_producer_config * config, on_log_producer_send_done_function send_done_function)

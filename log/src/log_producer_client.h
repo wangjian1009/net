@@ -24,15 +24,6 @@ typedef struct _log_producer_client
 typedef struct _log_producer log_producer;
 
 /**
- * init log producer environment
- * @param log_global_flag global log config flag
- * @note should been called before create any log producer client
- * @note no multi thread safe
- * @return OK if success, others the error code
- */
-LOG_EXPORT log_producer_result log_producer_env_init(int32_t log_global_flag);
-
-/**
  * create global send thread pool
  *
  * @note if producer have no send thread, use global send thread pool to send logs
@@ -44,13 +35,6 @@ LOG_EXPORT log_producer_result log_producer_env_init(int32_t log_global_flag);
  * @return
  */
 LOG_EXPORT log_producer_result log_producer_global_send_thread_init(int32_t log_global_send_thread_count, int32_t log_global_send_queue_size);
-
-/**
- * destroy log producer environment
- * @note should been called after all log producer clients destroyed
- * @note no multi thread safe
- */
-LOG_EXPORT void log_producer_env_destroy(void);
 
 /**
  * create log producer with a producer config

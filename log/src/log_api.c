@@ -5,21 +5,6 @@
 #include "sds.h"
 #include "inner_log.h"
 
-log_status_t sls_log_init(int32_t log_global_flag)
-{
-    CURLcode ecode;
-    if ((ecode = curl_global_init(log_global_flag)) != CURLE_OK)
-    {
-        aos_error_log("curl_global_init failure, code:%d %s.\n", ecode, curl_easy_strerror(ecode));
-        return -1;
-    }
-    return 0;
-}
-void sls_log_destroy()
-{
-    curl_global_cleanup();
-}
-
 static size_t write_data(void *ptr, size_t size, size_t nmemb, void *stream)
 {
     size_t totalLen = size * nmemb;

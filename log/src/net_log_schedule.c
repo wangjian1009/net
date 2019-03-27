@@ -1,3 +1,4 @@
+#include <curl/curl.h>
 #include "assert.h"
 #include "cpe/pal/pal_strings.h"
 #include "cpe/pal/pal_stdio.h"
@@ -14,18 +15,19 @@ net_log_schedule_create(
     mem_allocrator_t alloc, error_monitor_t em, net_schedule_t net_schedule, net_driver_t net_driver,
     const char * cfg_project, const char * cfg_ep, const char * cfg_access_id, const char * cfg_access_key)
 {
-    net_log_schedule_t schedule = mem_alloc(alloc, sizeof(struct net_log_schedule));
-    if (schedule == NULL) {
-        CPE_ERROR(em, "log: schedule alloc fail");
-        return NULL;
-    }
-
-    if (log_producer_env_init(LOG_GLOBAL_ALL) != LOG_PRODUCER_OK) {
-        CPE_ERROR(em, "log: env init fail!");
-        mem_free(alloc, schedule);
+    CURLcode ecode;
+    if ((ecode = curl_global_init(0)) != CURLE_OK) {
+        CPE_ERROR(em, "log: schedule: curl_global_init failure, code:%d %s.\n", ecode, curl_easy_strerror(ecode));
         return NULL;
     }
     
+    net_log_schedule_t schedule = mem_alloc(alloc, sizeof(struct net_log_schedule));
+    if (schedule == NULL) {
+        CPE_ERROR(em, "log: schedule alloc fail");
+        curl_global_cleanup();
+        return NULL;
+    }
+
     bzero(schedule, sizeof(*schedule));
 
     schedule->m_alloc = alloc;
@@ -67,10 +69,10 @@ void net_log_schedule_free(net_log_schedule_t schedule) {
         schedule->m_values_len = NULL;
     }
     
-    log_producer_env_destroy();
-
     mem_buffer_clear(&schedule->m_kv_buffer);
 
+    curl_global_cleanup();
+    
     mem_free(schedule->m_alloc, schedule);
 }
 
