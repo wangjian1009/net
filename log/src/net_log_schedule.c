@@ -58,6 +58,14 @@ void net_log_schedule_free(net_log_schedule_t schedule) {
         schedule->m_categories = NULL;
         schedule->m_category_count = 0;
     }
+
+    if (schedule->m_keys) {
+        mem_free(schedule->m_alloc, schedule->m_keys);
+        schedule->m_keys = NULL;
+        schedule->m_keys_len = NULL;
+        schedule->m_values = NULL;
+        schedule->m_values_len = NULL;
+    }
     
     log_producer_env_destroy();
 
@@ -106,8 +114,44 @@ void net_log_append_uint64(net_log_schedule_t schedule, const char * name, uint6
 
 void net_log_append_str(net_log_schedule_t schedule, const char * name, const char * value) {
     if (schedule->m_kv_count >= schedule->m_kv_capacity) {
-        CPE_ERROR(schedule->m_em, "chain: log: append value overflow!");
-        return;
+        uint32_t new_capacity = schedule->m_kv_capacity < 32 ? 32 : schedule->m_kv_capacity * 2;
+        while(schedule->m_kv_count >= new_capacity) {
+            if (new_capacity > 1024) {
+                CPE_ERROR(schedule->m_em, "chain: log: append value overflow, capacity=%d!", schedule->m_kv_capacity);
+                return;
+            }
+            new_capacity *= 2;
+        }
+
+        uint32_t p_capacity = sizeof(char *) * new_capacity;
+        uint32_t len_capacity = sizeof(size_t) * new_capacity;
+        uint32_t buf_capacity = (p_capacity + len_capacity) * 2;
+        char * new_buf = mem_alloc(schedule->m_alloc, buf_capacity);
+        if (new_buf == NULL) {
+            CPE_ERROR(
+                schedule->m_em, "chain: log: append  value: alloc array_buf fail, capacity=%d, buf-capacity=%d!",
+                new_capacity, buf_capacity);
+            return;
+        }
+        
+        char * * new_keys = (char**)new_buf + 0;
+        size_t * new_keys_len = (size_t*)(new_buf + p_capacity);
+        char * * new_values = (char**)(new_buf + p_capacity + len_capacity);
+        size_t * new_values_len = (size_t*)(new_buf + p_capacity + len_capacity + p_capacity);
+
+        if (schedule->m_keys) {
+            memcpy(new_keys, schedule->m_keys, sizeof(char *) * schedule->m_kv_count);
+            memcpy(new_keys_len, schedule->m_keys_len, sizeof(size_t) * schedule->m_kv_count);
+            memcpy(new_values, schedule->m_values, sizeof(char *) * schedule->m_kv_count);
+            memcpy(new_values_len, schedule->m_values_len, sizeof(size_t) * schedule->m_kv_count);
+
+            mem_free(schedule->m_alloc, schedule->m_keys);
+        }
+
+        schedule->m_keys = new_keys;
+        schedule->m_keys_len = new_keys_len;
+        schedule->m_values = new_values;
+        schedule->m_values_len = new_values_len;
     }
 
     int32_t pos = schedule->m_kv_count++;
