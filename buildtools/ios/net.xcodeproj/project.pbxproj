@@ -292,6 +292,7 @@
 		C9951660224AFC3400DDEEB1 /* log_producer_sender.c in Sources */ = {isa = PBXBuildFile; fileRef = C995164F224AFC3400DDEEB1 /* log_producer_sender.c */; };
 		C9951661224AFC3400DDEEB1 /* hmac-sha.c in Sources */ = {isa = PBXBuildFile; fileRef = C9951650224AFC3400DDEEB1 /* hmac-sha.c */; };
 		C9951662224AFC3400DDEEB1 /* log_util.c in Sources */ = {isa = PBXBuildFile; fileRef = C9951652224AFC3400DDEEB1 /* log_util.c */; };
+		C9951669224B071B00DDEEB1 /* net_log_schedule.c in Sources */ = {isa = PBXBuildFile; fileRef = C9951668224B071B00DDEEB1 /* net_log_schedule.c */; };
 		C99AAEB521215523001FA074 /* net_dns_svr_query.c in Sources */ = {isa = PBXBuildFile; fileRef = C99AAEB321215523001FA074 /* net_dns_svr_query.c */; };
 		C99AAEBA2121805F001FA074 /* net_dns_svr_query_entry.c in Sources */ = {isa = PBXBuildFile; fileRef = C99AAEB82121805F001FA074 /* net_dns_svr_query_entry.c */; };
 		C99AAEBC21218819001FA074 /* net_dns_svr_query_process.c in Sources */ = {isa = PBXBuildFile; fileRef = C99AAEBB21218819001FA074 /* net_dns_svr_query_process.c */; };
@@ -1006,6 +1007,10 @@
 		C9951652224AFC3400DDEEB1 /* log_util.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = log_util.c; sourceTree = "<group>"; };
 		C9951653224AFC3400DDEEB1 /* log_producer_manager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = log_producer_manager.h; sourceTree = "<group>"; };
 		C9951654224AFC3400DDEEB1 /* log_queue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = log_queue.h; sourceTree = "<group>"; };
+		C9951665224B071000DDEEB1 /* net_log_types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_log_types.h; sourceTree = "<group>"; };
+		C9951666224B071000DDEEB1 /* net_log_schedule.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_log_schedule.h; sourceTree = "<group>"; };
+		C9951667224B071B00DDEEB1 /* net_log_schedule_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_log_schedule_i.h; sourceTree = "<group>"; };
+		C9951668224B071B00DDEEB1 /* net_log_schedule.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_log_schedule.c; sourceTree = "<group>"; };
 		C99AAEB321215523001FA074 /* net_dns_svr_query.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_dns_svr_query.c; sourceTree = "<group>"; };
 		C99AAEB421215523001FA074 /* net_dns_svr_query_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_svr_query_i.h; sourceTree = "<group>"; };
 		C99AAEB82121805F001FA074 /* net_dns_svr_query_entry.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_dns_svr_query_entry.c; sourceTree = "<group>"; };
@@ -1926,6 +1931,8 @@
 		C9951634224AFC3400DDEEB1 /* include */ = {
 			isa = PBXGroup;
 			children = (
+				C9951666224B071000DDEEB1 /* net_log_schedule.h */,
+				C9951665224B071000DDEEB1 /* net_log_types.h */,
 			);
 			path = include;
 			sourceTree = "<group>";
@@ -1933,6 +1940,8 @@
 		C9951635224AFC3400DDEEB1 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				C9951667224B071B00DDEEB1 /* net_log_schedule_i.h */,
+				C9951668224B071B00DDEEB1 /* net_log_schedule.c */,
 				C9951636224AFC3400DDEEB1 /* sds.c */,
 				C9951637224AFC3400DDEEB1 /* log_producer_config.h */,
 				C9951638224AFC3400DDEEB1 /* log_producer_common.c */,
@@ -2948,6 +2957,7 @@
 				C9951661224AFC3400DDEEB1 /* hmac-sha.c in Sources */,
 				C9951628224AFADE00DDEEB1 /* net_statistics.c in Sources */,
 				C9951629224AFADE00DDEEB1 /* net_statistics_transaction_backend.c in Sources */,
+				C9951669224B071B00DDEEB1 /* net_log_schedule.c in Sources */,
 				C995165B224AFC3400DDEEB1 /* log_producer_manager.c in Sources */,
 				C9951659224AFC3400DDEEB1 /* sha1.c in Sources */,
 				C9951656224AFC3400DDEEB1 /* log_producer_common.c in Sources */,
