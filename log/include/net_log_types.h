@@ -5,6 +5,7 @@
 NET_BEGIN_DECL
 
 typedef struct net_log_schedule * net_log_schedule_t;
+typedef struct net_log_category * net_log_category_t;
 
 NET_END_DECL
 

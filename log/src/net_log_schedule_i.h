@@ -6,8 +6,12 @@
 #include "cpe/utils/error.h"
 #include "cpe/utils/buffer.h"
 #include "net_log_schedule.h"
+#include "log_api.h"
+#include "log_producer_client.h"
 
 NET_BEGIN_DECL
+
+typedef struct _log_producer * log_producer_t;
 
 struct net_log_schedule {
     mem_allocrator_t m_alloc;
@@ -15,6 +19,20 @@ struct net_log_schedule {
     uint8_t m_debug;
     net_schedule_t m_net_schedule;
     net_driver_t m_net_driver;
+
+    /*categories*/
+    uint8_t m_category_count;
+    net_log_category_t * m_categories;
+
+    /*builder helper*/
+    net_log_category_t m_current_category;
+    int32_t m_kv_count;
+    int32_t m_kv_capacity;
+    char * * m_keys;
+    size_t * m_keys_len;
+    char * * m_values;
+    size_t * m_values_len;
+    struct mem_buffer m_kv_buffer;
 };
 
 mem_buffer_t net_log_schedule_tmp_buffer(net_log_schedule_t schedule);
