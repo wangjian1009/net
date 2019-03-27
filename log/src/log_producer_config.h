@@ -59,7 +59,7 @@ typedef struct _log_producer_config
  * create a empty producer config, should set config params manually
  * @return empty producer config
  */
-LOG_EXPORT log_producer_config * create_log_producer_config();
+LOG_EXPORT log_producer_config * create_log_producer_config(void);
 
 
 /**

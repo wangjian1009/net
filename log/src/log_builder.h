@@ -56,7 +56,7 @@ extern log_buf serialize_to_proto_buf_with_malloc(log_group_builder* bder);
 extern lz4_log_buf* serialize_to_proto_buf_with_malloc_lz4(log_group_builder* bder);
 extern lz4_log_buf* serialize_to_proto_buf_with_malloc_no_lz4(log_group_builder* bder);
 extern void free_lz4_log_buf(lz4_log_buf* pBuf);
-extern log_group_builder* log_group_create();
+extern log_group_builder* log_group_create(void);
 extern void log_group_destroy(log_group_builder* bder);
 extern void add_log_full(log_group_builder* bder, uint32_t logTime, int32_t pair_count, char ** keys, size_t * key_lens, char ** values, size_t * val_lens);
 extern void add_source(log_group_builder* bder,const char* src,size_t len);

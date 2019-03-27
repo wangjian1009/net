@@ -50,7 +50,7 @@ LOG_EXPORT log_producer_result log_producer_global_send_thread_init(int32_t log_
  * @note should been called after all log producer clients destroyed
  * @note no multi thread safe
  */
-LOG_EXPORT void log_producer_env_destroy();
+LOG_EXPORT void log_producer_env_destroy(void);
 
 /**
  * create log producer with a producer config
