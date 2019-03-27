@@ -7,11 +7,11 @@
 #include "cpe/utils/buffer.h"
 #include "net_log_schedule.h"
 #include "log_api.h"
-#include "log_producer_client.h"
 
 NET_BEGIN_DECL
 
-typedef struct _log_producer * log_producer_t;
+typedef struct _log_producer_config * log_producer_config_t;
+typedef struct _log_producer_manager * log_producer_manager_t;
 
 struct net_log_schedule {
     mem_allocrator_t m_alloc;

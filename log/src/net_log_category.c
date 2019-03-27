@@ -1,4 +1,5 @@
 #include "net_log_category_i.h"
+#include "log_producer_manager.h"
 
 net_log_category_t
 net_log_category_create(net_log_schedule_t schedule, const char * name, uint8_t id) {
@@ -32,7 +33,8 @@ net_log_category_create(net_log_schedule_t schedule, const char * name, uint8_t 
 
     category->m_schedule = schedule;
     category->m_id = id;
-    category->m_root_client = NULL;
+    category->m_producer_config = NULL;
+    category->m_producer_manager = NULL;
     
     log_producer_config * config = create_log_producer_config();
     log_producer_config_set_endpoint(config, schedule->m_cfg_ep);
@@ -66,14 +68,17 @@ net_log_category_create(net_log_schedule_t schedule, const char * name, uint8_t 
     // set interface
     log_producer_config_set_net_interface(config, NULL);
 
-    log_producer_t m_log_producer;
-    
-    category->m_root_client = create_log_client(config, NULL/*net_log_on_send_done*/);
-    if (category->m_root_client == NULL) {
-        CPE_ERROR(schedule->m_em, "log: create schedule %d: create producer fail!", id);
+    // create manager
+    category->m_producer_config = config;
+    category->m_producer_manager = create_log_producer_manager(config);
+    if (category->m_producer_manager == NULL) {
+        CPE_ERROR(schedule->m_em, "log: create schedule %d: create producer manager fail!", id);
+        destroy_log_producer_config(config);
         mem_free(schedule->m_alloc, category);
         return NULL;
     }
+    category->m_producer_manager->send_done_function = NULL;
+    
 
     schedule->m_categories[id] = category;
     
@@ -89,10 +94,14 @@ void net_log_category_free(net_log_category_t category) {
         schedule->m_current_category = NULL;
     }
 
-    destroy_log_client(category->m_root_client);
-    category->m_root_client = NULL;
+    destroy_log_producer_manager(category->m_producer_manager);
+    destroy_log_producer_config(category->m_producer_config);
 
     mem_free(schedule->m_alloc, category);
+}
+
+void net_log_category_network_recover(net_log_category_t category) {
+    category->m_producer_manager->networkRecover = 1;
 }
 
 /* static void net_log_on_send_done( */

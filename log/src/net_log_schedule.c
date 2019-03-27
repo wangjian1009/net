@@ -9,6 +9,7 @@
 #include "net_timer.h"
 #include "net_log_schedule_i.h"
 #include "net_log_category_i.h"
+#include "log_producer_manager.h"
 
 net_log_schedule_t
 net_log_schedule_create(
@@ -179,12 +180,10 @@ void net_log_commit(net_log_schedule_t schedule) {
         return;
     }
 
-    log_producer_client * log_client = schedule->m_current_category->m_root_client;
-    assert(log_client);
-
     log_producer_result r =
-        log_producer_client_add_log_with_len(
-            log_client, schedule->m_kv_count, schedule->m_keys, schedule->m_keys_len, schedule->m_values, schedule->m_values_len);
+        log_producer_manager_add_log(
+            schedule->m_current_category->m_producer_manager,
+            schedule->m_kv_count, schedule->m_keys, schedule->m_keys_len, schedule->m_values, schedule->m_values_len);
     if (r != LOG_PRODUCER_OK) {
         CPE_ERROR(schedule->m_em, "log: commit fail, rv=%d", r);
     }
