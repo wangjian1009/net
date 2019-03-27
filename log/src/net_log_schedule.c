@@ -52,6 +52,12 @@ void net_log_schedule_free(net_log_schedule_t schedule) {
             assert(schedule->m_categories[i] == NULL);
         }
     }
+
+    if (schedule->m_categories) {
+        mem_free(schedule->m_alloc, schedule->m_categories);
+        schedule->m_categories = NULL;
+        schedule->m_category_count = 0;
+    }
     
     log_producer_env_destroy();
 

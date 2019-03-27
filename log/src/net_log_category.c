@@ -3,7 +3,20 @@
 net_log_category_t
 net_log_category_create(net_log_schedule_t schedule, const char * name, uint8_t id) {
     if (id >= schedule->m_category_count) {
-        
+        uint8_t new_count = id < 16 ? 16 : id;
+        net_log_category_t * new_categories = mem_calloc(schedule->m_alloc, sizeof(net_log_category_t) * new_count);
+        if (new_categories == NULL) {
+            CPE_ERROR(schedule->m_em, "log: create schedule %d: alloc categories buf fail!", id);
+            return NULL;
+        }
+
+        if (schedule->m_categories) {
+            memcpy(new_categories, schedule->m_categories, sizeof(net_log_category_t) * schedule->m_category_count);
+            mem_free(schedule->m_alloc, schedule->m_categories);
+        }
+
+        schedule->m_categories = new_categories;
+        schedule->m_category_count = new_count;
     }
 
     if (schedule->m_categories[id] == NULL) {
