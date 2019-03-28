@@ -1,5 +1,6 @@
 #ifndef NET_LOG_SCHEDULE_I_H_INCLEDED
 #define NET_LOG_SCHEDULE_I_H_INCLEDED
+#include "pthread.h"
 #include "cpe/pal/pal_queue.h"
 #include "cpe/utils/hash.h"
 #include "cpe/utils/memory.h"
@@ -10,6 +11,8 @@
 
 NET_BEGIN_DECL
 
+typedef struct net_log_flusher * net_log_flusher_t;
+typedef struct _log_queue * log_queue_t;
 typedef struct _log_producer_config * log_producer_config_t;
 typedef struct _log_producer_manager * log_producer_manager_t;
 
@@ -23,6 +26,9 @@ struct net_log_schedule {
     char * m_cfg_ep;
     char * m_cfg_access_id;
     char * m_cfg_access_key;
+
+    /*state*/
+    volatile net_log_schedule_state_t m_state;
     
     /*categories*/
     uint8_t m_category_count;

@@ -4,6 +4,12 @@
 
 NET_BEGIN_DECL
 
+typedef enum net_log_schedule_state {
+    net_log_schedule_state_init,
+    net_log_schedule_state_runing,
+    net_log_schedule_state_stoping,
+} net_log_schedule_state_t;
+
 typedef struct net_log_schedule * net_log_schedule_t;
 typedef struct net_log_category * net_log_category_t;
 

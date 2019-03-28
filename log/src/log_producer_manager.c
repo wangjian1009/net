@@ -465,9 +465,9 @@ log_producer_manager_add_log(
     log_group_builder * builder = producer_manager->builder;
 
     int32_t nowTime = time(NULL);
-    if (producer_manager->builder->loggroup_size < producer_manager->producer_config->logBytesPerPackage &&
-            nowTime - producer_manager->firstLogTime < producer_manager->producer_config->packageTimeoutInMS / 1000 &&
-            producer_manager->builder->grp->n_logs < producer_manager->producer_config->logCountPerPackage)
+    if (producer_manager->builder->loggroup_size < producer_manager->producer_config->logBytesPerPackage
+        && nowTime - producer_manager->firstLogTime < producer_manager->producer_config->packageTimeoutInMS / 1000
+        && producer_manager->builder->grp->n_logs < producer_manager->producer_config->logCountPerPackage)
     {
         CS_LEAVE(producer_manager->lock);
         return LOG_PRODUCER_OK;

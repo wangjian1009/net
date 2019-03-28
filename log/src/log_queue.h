@@ -1,15 +1,10 @@
-//
-// Created by ZhangCheng on 29/12/2017.
-//
-
 #ifndef LOG_C_SDK_LOG_QUEUE_H
 #define LOG_C_SDK_LOG_QUEUE_H
-
-#include <stdint.h>
+#include "net_log_schedule_i.h"
 
 typedef struct _log_queue log_queue;
 
-log_queue * log_queue_create(int32_t max_size);
+log_queue_t log_queue_create(int32_t max_size);
 
 void log_queue_destroy(log_queue * queue);
 

@@ -48,6 +48,10 @@ net_log_schedule_create(
 }
 
 void net_log_schedule_free(net_log_schedule_t schedule) {
+    if (schedule->m_state != net_log_schedule_state_init) {
+        net_log_schedule_stop(schedule);
+    }
+    
     uint8_t i;
     for(i = 0; i < schedule->m_category_count; ++i) {
         if (schedule->m_categories[i]) {
@@ -83,6 +87,84 @@ uint8_t net_log_schedule_debug(net_log_schedule_t schedule) {
 
 void net_log_schedule_set_debug(net_log_schedule_t schedule, uint8_t debug) {
     schedule->m_debug = debug;
+}
+
+net_log_schedule_state_t net_log_schedule_state(net_log_schedule_t log_schedule) {
+    return log_schedule->m_state;
+}
+
+static void net_log_schedule_do_stop(net_log_schedule_t schedule, uint8_t category_count);
+
+int net_log_schedule_start(net_log_schedule_t schedule) {
+    if (schedule->m_state != net_log_schedule_state_init) {
+        CPE_ERROR(schedule->m_em, "log: schedule: state is %s, can`t start", net_log_schedule_state_str(schedule->m_state));
+        return -1;
+    }
+
+    if (schedule->m_debug) {
+        CPE_INFO(
+            schedule->m_em, "log: schedule: %s ==> %s",
+            net_log_schedule_state_str(schedule->m_state), net_log_schedule_state_str(net_log_schedule_state_runing));
+    }
+    schedule->m_state = net_log_schedule_state_runing;
+    
+    uint8_t i;
+    for(i = 0; i < schedule->m_category_count; ++i) {
+        net_log_category_t category = schedule->m_categories[i];
+        if (category == NULL) continue;
+
+        if (net_log_category_start(category) != 0) {
+            net_log_schedule_do_stop(schedule, i);
+            return -1;
+        }
+    }
+    
+    return 0;
+}
+
+void net_log_schedule_stop(net_log_schedule_t schedule) {
+    if (schedule->m_state == net_log_schedule_state_init) return;
+    net_log_schedule_do_stop(schedule, schedule->m_category_count);
+}
+
+static void net_log_schedule_do_stop(net_log_schedule_t schedule, uint8_t category_count) {
+    if (schedule->m_debug) {
+        CPE_INFO(
+            schedule->m_em, "log: schedule: %s ==> %s",
+            net_log_schedule_state_str(schedule->m_state), net_log_schedule_state_str(net_log_schedule_state_stoping));
+    }
+    schedule->m_state = net_log_schedule_state_stoping;
+
+    uint8_t i;
+    for(i = 0; i < category_count; ++i) {
+        net_log_category_t category = schedule->m_categories[i];
+        if (category == NULL) continue;
+        net_log_category_notify_stop(category);
+    }
+
+    for(i = 0; i < category_count; ++i) {
+        net_log_category_t category = schedule->m_categories[i];
+        if (category == NULL) continue;
+        net_log_category_wait_stop(category);
+    }
+    
+    if (schedule->m_debug) {
+        CPE_INFO(
+            schedule->m_em, "log: schedule: %s ==> %s",
+            net_log_schedule_state_str(net_log_schedule_state_stoping), net_log_schedule_state_str(net_log_schedule_state_init));
+    }
+    schedule->m_state = net_log_schedule_state_init;
+}
+
+const char * net_log_schedule_state_str(net_log_schedule_state_t schedule_state) {
+    switch(schedule_state) {
+    case net_log_schedule_state_init:
+        return "init";
+    case net_log_schedule_state_runing:
+        return "runing";
+    case net_log_schedule_state_stoping:
+        return "stoping";
+    }
 }
 
 void net_log_begin(net_log_schedule_t schedule, uint8_t log_type) {

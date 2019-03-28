@@ -7,12 +7,18 @@ NET_BEGIN_DECL
 
 struct net_log_category {
     net_log_schedule_t m_schedule;
+    char m_name[64];
     uint8_t m_id;
     log_producer_manager_t m_producer_manager;
     log_producer_config_t m_producer_config;
+    net_log_flusher_t m_flusher;
 };
 
 void net_log_category_network_recover(net_log_category_t category);
+
+int net_log_category_start(net_log_category_t category);
+void net_log_category_notify_stop(net_log_category_t category);
+void net_log_category_wait_stop(net_log_category_t category);
 
 NET_END_DECL
 

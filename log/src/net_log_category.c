@@ -3,11 +3,18 @@
 
 net_log_category_t
 net_log_category_create(net_log_schedule_t schedule, const char * name, uint8_t id) {
+    if (schedule->m_state != net_log_schedule_state_init) {
+        CPE_ERROR(
+            schedule->m_em, "log: category [%d]%s: schedule in state %s, can`t create !", id, name,
+            net_log_schedule_state_str(schedule->m_state));
+        return NULL;
+    }
+    
     if (id >= schedule->m_category_count) {
         uint8_t new_count = id < 16 ? 16 : id;
         net_log_category_t * new_categories = mem_calloc(schedule->m_alloc, sizeof(net_log_category_t) * new_count);
         if (new_categories == NULL) {
-            CPE_ERROR(schedule->m_em, "log: create schedule %d: alloc categories buf fail!", id);
+            CPE_ERROR(schedule->m_em, "log: category [%d]%s: alloc categories buf fail!", id, name);
             return NULL;
         }
 
@@ -21,17 +28,18 @@ net_log_category_create(net_log_schedule_t schedule, const char * name, uint8_t 
     }
 
     if (schedule->m_categories[id] == NULL) {
-        CPE_ERROR(schedule->m_em, "log: create schedule %d: already created!", id);
+        CPE_ERROR(schedule->m_em, "log: category [%d]%s: already created!", id, name);
         return NULL;
     }
 
     net_log_category_t category = mem_alloc(schedule->m_alloc, sizeof(struct net_log_category));
     if (category == NULL) {
-        CPE_ERROR(schedule->m_em, "log: create schedule %d: alloc fail!", id);
+        CPE_ERROR(schedule->m_em, "log: category [%d]%s: alloc fail!", id, name);
         return NULL;
     }
 
     category->m_schedule = schedule;
+    cpe_str_dup(category->m_name, sizeof(category->m_name), name);
     category->m_id = id;
     category->m_producer_config = NULL;
     category->m_producer_manager = NULL;
@@ -66,7 +74,7 @@ net_log_category_create(net_log_schedule_t schedule, const char * name, uint8_t 
     category->m_producer_config = config;
     category->m_producer_manager = create_log_producer_manager(category, config);
     if (category->m_producer_manager == NULL) {
-        CPE_ERROR(schedule->m_em, "log: create schedule %d: create producer manager fail!", id);
+        CPE_ERROR(schedule->m_em, "log: category [%d]%s: create producer manager fail!", id, name);
         destroy_log_producer_config(config);
         mem_free(schedule->m_alloc, category);
         return NULL;
@@ -74,12 +82,18 @@ net_log_category_create(net_log_schedule_t schedule, const char * name, uint8_t 
     category->m_producer_manager->send_done_function = NULL;
 
     schedule->m_categories[id] = category;
+
+    if (schedule->m_debug) {
+        CPE_INFO(schedule->m_em, "log: category [%d]%s: create success!", id, name);
+    }
+    
     return 0;
 }
 
 void net_log_category_free(net_log_category_t category) {
     net_log_schedule_t schedule = category->m_schedule;
 
+    assert(schedule->m_state == net_log_schedule_state_init);
     assert(schedule->m_categories[category->m_id] == category);
 
     if (schedule->m_current_category == category) {
@@ -94,6 +108,16 @@ void net_log_category_free(net_log_category_t category) {
 
 void net_log_category_network_recover(net_log_category_t category) {
     category->m_producer_manager->networkRecover = 1;
+}
+
+int net_log_category_start(net_log_category_t category) {
+    return 0;
+}
+
+void net_log_category_notify_stop(net_log_category_t category) {
+}
+
+void net_log_category_wait_stop(net_log_category_t category) {
 }
 
 /* static void net_log_on_send_done( */
