@@ -7,11 +7,12 @@ NET_BEGIN_DECL
 
 struct net_log_category {
     net_log_schedule_t m_schedule;
+    net_log_flusher_t m_flusher;
+    TAILQ_ENTRY(net_log_category) m_next_for_flusher;
     char m_name[64];
     uint8_t m_id;
     log_producer_manager_t m_producer_manager;
     log_producer_config_t m_producer_config;
-    net_log_flusher_t m_flusher;
 };
 
 void net_log_category_network_recover(net_log_category_t category);

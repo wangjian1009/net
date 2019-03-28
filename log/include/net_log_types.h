@@ -12,6 +12,7 @@ typedef enum net_log_schedule_state {
 
 typedef struct net_log_schedule * net_log_schedule_t;
 typedef struct net_log_category * net_log_category_t;
+typedef struct net_log_flusher * net_log_flusher_t;
 
 NET_END_DECL
 

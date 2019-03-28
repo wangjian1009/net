@@ -9,6 +9,7 @@
 #include "net_timer.h"
 #include "net_log_schedule_i.h"
 #include "net_log_category_i.h"
+#include "net_log_flusher_i.h"
 #include "log_producer_manager.h"
 
 net_log_schedule_t
@@ -44,6 +45,8 @@ net_log_schedule_create(
 
     mem_buffer_init(&schedule->m_kv_buffer, alloc);
 
+    TAILQ_INIT(&schedule->m_flushers);
+    
     return schedule;
 }
 
@@ -66,6 +69,12 @@ void net_log_schedule_free(net_log_schedule_t schedule) {
         schedule->m_category_count = 0;
     }
 
+    /*flusher*/
+    while(!TAILQ_EMPTY(&schedule->m_flushers)) {
+        net_log_flusher_free(TAILQ_FIRST(&schedule->m_flushers));
+    }
+
+    /*cache*/
     if (schedule->m_keys) {
         mem_free(schedule->m_alloc, schedule->m_keys);
         schedule->m_keys = NULL;

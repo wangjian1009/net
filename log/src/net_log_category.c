@@ -1,8 +1,9 @@
 #include "net_log_category_i.h"
+#include "net_log_flusher_i.h"
 #include "log_producer_manager.h"
 
 net_log_category_t
-net_log_category_create(net_log_schedule_t schedule, const char * name, uint8_t id) {
+net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, const char * name, uint8_t id) {
     if (schedule->m_state != net_log_schedule_state_init) {
         CPE_ERROR(
             schedule->m_em, "log: category [%d]%s: schedule in state %s, can`t create !", id, name,
@@ -39,6 +40,7 @@ net_log_category_create(net_log_schedule_t schedule, const char * name, uint8_t 
     }
 
     category->m_schedule = schedule;
+    category->m_flusher = flusher;
     cpe_str_dup(category->m_name, sizeof(category->m_name), name);
     category->m_id = id;
     category->m_producer_config = NULL;
@@ -83,6 +85,10 @@ net_log_category_create(net_log_schedule_t schedule, const char * name, uint8_t 
 
     schedule->m_categories[id] = category;
 
+    if (flusher) {
+        TAILQ_INSERT_TAIL(&flusher->m_categories, category, m_next_for_flusher);
+    }
+    
     if (schedule->m_debug) {
         CPE_INFO(schedule->m_em, "log: category [%d]%s: create success!", id, name);
     }
@@ -100,6 +106,11 @@ void net_log_category_free(net_log_category_t category) {
         schedule->m_current_category = NULL;
     }
 
+    schedule->m_categories[category->m_id] = NULL;
+    if (category->m_flusher) {
+        TAILQ_REMOVE(&category->m_flusher->m_categories, category, m_next_for_flusher);
+    }
+        
     destroy_log_producer_manager(category->m_producer_manager);
     destroy_log_producer_config(category->m_producer_config);
 
