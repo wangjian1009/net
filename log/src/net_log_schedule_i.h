@@ -36,7 +36,8 @@ struct net_log_schedule {
     char * m_cfg_ep;
     char * m_cfg_access_id;
     char * m_cfg_access_key;
-
+    uint8_t m_cfg_using_https;
+    
     /*state*/
     volatile net_log_schedule_state_t m_state;
     

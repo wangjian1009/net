@@ -1,11 +1,7 @@
-//
-// Created by ZhangCheng on 20/11/2017.
-//
-
+#include "cpe/pal/pal_string.h"
+#include "cpe/pal/pal_stdlib.h"
 #include "log_producer_config.h"
 #include "sds.h"
-#include <string.h>
-#include <stdlib.h>
 
 static void _set_default_producer_config(log_producer_config * pConfig)
 {

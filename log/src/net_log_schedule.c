@@ -42,7 +42,22 @@ net_log_schedule_create(
     schedule->m_net_driver = net_driver;
     
     schedule->m_cfg_project = cpe_str_mem_dup(alloc, cfg_project);
-    schedule->m_cfg_ep = cpe_str_mem_dup(alloc, cfg_ep);
+
+    if (cpe_str_start_with(cfg_ep, "http://")) {
+        schedule->m_cfg_using_https = 0;
+        schedule->m_cfg_ep = cpe_str_mem_dup(alloc, cfg_ep + 7);
+    }
+    else if (cpe_str_start_with(cfg_ep, "https://")) {
+        schedule->m_cfg_using_https = 1;
+        schedule->m_cfg_ep = cpe_str_mem_dup(alloc, cfg_ep + 8);
+    }
+    else {
+        CPE_ERROR(em, "log: schedule: endpoint %s format error", cfg_ep);
+        mem_free(alloc, schedule);
+        curl_global_cleanup();
+        return NULL;
+    }
+    
     schedule->m_cfg_access_id = cpe_str_mem_dup(alloc, cfg_access_id);
     schedule->m_cfg_access_key = cpe_str_mem_dup(alloc, cfg_access_key);
 

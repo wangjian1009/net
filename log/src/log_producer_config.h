@@ -18,15 +18,8 @@ typedef struct _log_producer_config_tag
 typedef struct _log_producer_config
 {
     net_log_category_t m_category;
-    char * endpoint;
-    char * project;
-    char * logstore;
-    char * accessKeyId;
-    char * accessKey;
-    char * securityToken;
     char * topic;
     char * source;
-    CRITICALSECTION securityTokenLock;
     log_producer_config_tag * tags;
     int32_t tagAllocSize;
     int32_t tagCount;
@@ -46,9 +39,7 @@ typedef struct _log_producer_config
     int32_t destroySenderWaitTimeoutSec;
 
     int32_t compressType; // default lz4, 0 no compress, 1 lz4
-    int32_t using_https; // default http, 0 http, 1 https
-
-}log_producer_config;
+} log_producer_config;
 
 
 /**
