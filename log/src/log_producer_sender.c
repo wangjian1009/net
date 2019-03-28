@@ -80,105 +80,93 @@ void _rebuild_time(net_log_schedule_t schedule, lz4_log_buf * lz4_buf, lz4_log_b
 
 void * log_producer_send_fun(void * param)
 {
-    log_producer_send_param * send_param = (log_producer_send_param *)param;
-    log_producer_manager * producer_manager = (log_producer_manager *)send_param->producer_manager;
-    net_log_schedule_t schedule = producer_manager->m_category->m_schedule;
+/*     log_producer_send_param * send_param = (log_producer_send_param *)param; */
+/*     log_producer_manager * producer_manager = (log_producer_manager *)send_param->producer_manager; */
+/*     net_log_category_t category = producer_manager->m_category; */
+/*     net_log_schedule_t schedule = category->m_schedule; */
 
-    if (send_param->magic_num != LOG_PRODUCER_SEND_MAGIC_NUM)
-    {
-        CPE_ERROR(schedule->m_em, "invalid send param, magic num not found, num 0x%x", send_param->magic_num);
-        return NULL;
-    }
+/*     log_producer_config * config = send_param->producer_config; */
 
-    if (send_param->log_buf == NULL)
-    {
-        CPE_ERROR(schedule->m_em, "receive producer destroy event, project : %s, logstore : %s", send_param->producer_config->project, send_param->producer_config->logstore);
-        free(send_param);
-        return NULL;
-    }
+/*     send_error_info error_info; */
+/*     memset(&error_info, 0, sizeof(error_info)); */
 
-    log_producer_config * config = send_param->producer_config;
+/*     do */
+/*     { */
+/*         if (producer_manager->shutdown) */
+/*         { */
+/*             CPE_ERROR(schedule->m_em, "send fail but shutdown signal received, force exit"); */
+/*             if (producer_manager->send_done_function != NULL) */
+/*             { */
+/*                 producer_manager->send_done_function(category->m_name, LOG_PRODUCER_SEND_EXIT_BUFFERED, send_param->log_buf->raw_length, send_param->log_buf->length, */
+/*                                                      NULL, "producer is being destroyed, producer has no time to send this buffer out", send_param->log_buf->data); */
+/*             } */
+/*             break; */
+/*         } */
+/*         lz4_log_buf * send_buf = send_param->log_buf; */
+/* #ifdef SEND_TIME_INVALID_FIX */
+/*         uint32_t nowTime = time(NULL); */
+/*         if (nowTime - send_param->builder_time > 600 || send_param->builder_time > nowTime || error_info.last_send_error == LOG_SEND_TIME_ERROR) */
+/*         { */
+/*             _rebuild_time(schedule, send_param->log_buf, &send_buf); */
+/*             send_param->builder_time = nowTime; */
+/*         } */
+/* #endif */
+/*         log_post_option option; */
+/*         memset(&option, 0, sizeof(log_post_option)); */
+/*         option.connect_timeout = config->connectTimeoutSec; */
+/*         option.operation_timeout = config->sendTimeoutSec; */
+/*         option.interface = config->netInterface; */
+/*         option.compress_type = config->compressType; */
+/*         option.remote_address = config->remote_address; */
+/*         option.using_https = config->using_https; */
 
-    send_error_info error_info;
-    memset(&error_info, 0, sizeof(error_info));
+/*         sds accessKeyId = NULL; */
+/*         sds accessKey = NULL; */
+/*         sds stsToken = NULL; */
+/*         log_producer_config_get_security(config, &accessKeyId, &accessKey, &stsToken); */
 
-    do
-    {
-        if (producer_manager->shutdown)
-        {
-            CPE_ERROR(schedule->m_em, "send fail but shutdown signal received, force exit");
-            if (producer_manager->send_done_function != NULL)
-            {
-                producer_manager->send_done_function(producer_manager->producer_config->logstore, LOG_PRODUCER_SEND_EXIT_BUFFERED, send_param->log_buf->raw_length, send_param->log_buf->length,
-                                                     NULL, "producer is being destroyed, producer has no time to send this buffer out", send_param->log_buf->data);
-            }
-            break;
-        }
-        lz4_log_buf * send_buf = send_param->log_buf;
-#ifdef SEND_TIME_INVALID_FIX
-        uint32_t nowTime = time(NULL);
-        if (nowTime - send_param->builder_time > 600 || send_param->builder_time > nowTime || error_info.last_send_error == LOG_SEND_TIME_ERROR)
-        {
-            _rebuild_time(schedule, send_param->log_buf, &send_buf);
-            send_param->builder_time = nowTime;
-        }
-#endif
-        log_post_option option;
-        memset(&option, 0, sizeof(log_post_option));
-        option.connect_timeout = config->connectTimeoutSec;
-        option.operation_timeout = config->sendTimeoutSec;
-        option.interface = config->netInterface;
-        option.compress_type = config->compressType;
-        option.remote_address = config->remote_address;
-        option.using_https = config->using_https;
+/*         post_log_result * rst = post_logs_from_lz4buf(config->endpoint, accessKeyId, */
+/*                                                       accessKey, stsToken, */
+/*                                                       config->project, config->logstore, */
+/*                                                       send_buf, &option); */
+/*         sdsfree(accessKeyId); */
+/*         sdsfree(accessKey); */
+/*         sdsfree(stsToken); */
 
-        sds accessKeyId = NULL;
-        sds accessKey = NULL;
-        sds stsToken = NULL;
-        log_producer_config_get_security(config, &accessKeyId, &accessKey, &stsToken);
+/*         int32_t sleepMs = log_producer_on_send_done(send_param, rst, &error_info); */
 
-        post_log_result * rst = post_logs_from_lz4buf(config->endpoint, accessKeyId,
-                                                      accessKey, stsToken,
-                                                      config->project, config->logstore,
-                                                      send_buf, &option);
-        sdsfree(accessKeyId);
-        sdsfree(accessKey);
-        sdsfree(stsToken);
+/*         post_log_result_destroy(rst); */
 
-        int32_t sleepMs = log_producer_on_send_done(send_param, rst, &error_info);
+/*         // tmp buffer, free */
+/*         if (send_buf != send_param->log_buf) */
+/*         { */
+/*             free(send_buf); */
+/*         } */
 
-        post_log_result_destroy(rst);
+/*         if (sleepMs <= 0) */
+/*         { */
+/*             break; */
+/*         } */
+/*         int i =0; */
+/*         for (i = 0; i < sleepMs; i += SEND_SLEEP_INTERVAL_MS) */
+/*         { */
+/*             usleep(SEND_SLEEP_INTERVAL_MS * 1000); */
+/*             if (producer_manager->shutdown || producer_manager->networkRecover) */
+/*             { */
+/*                 break; */
+/*             } */
+/*         } */
 
-        // tmp buffer, free
-        if (send_buf != send_param->log_buf)
-        {
-            free(send_buf);
-        }
+/*         if (producer_manager->networkRecover) */
+/*         { */
+/*             producer_manager->networkRecover = 0; */
+/*         } */
 
-        if (sleepMs <= 0)
-        {
-            break;
-        }
-        int i =0;
-        for (i = 0; i < sleepMs; i += SEND_SLEEP_INTERVAL_MS)
-        {
-            usleep(SEND_SLEEP_INTERVAL_MS * 1000);
-            if (producer_manager->shutdown || producer_manager->networkRecover)
-            {
-                break;
-            }
-        }
+/*     }while(1); */
 
-        if (producer_manager->networkRecover)
-        {
-            producer_manager->networkRecover = 0;
-        }
-
-    }while(1);
-
-    // at last, free all buffer
-    free_lz4_log_buf(send_param->log_buf);
-    free(send_param);
+/*     // at last, free all buffer */
+/*     free_lz4_log_buf(send_param->log_buf); */
+/*     free(send_param); */
 
     return NULL;
 }
@@ -187,14 +175,15 @@ int32_t log_producer_on_send_done(log_producer_send_param * send_param, post_log
 {
     log_producer_send_result send_result = AosStatusToResult(result);
     log_producer_manager * producer_manager = (log_producer_manager *)send_param->producer_manager;
-    net_log_schedule_t schedule = producer_manager->m_category->m_schedule;
+    net_log_category_t category = producer_manager->m_category;
+    net_log_schedule_t schedule = category->m_schedule;
 
     if (producer_manager->send_done_function != NULL)
     {
         log_producer_result callback_result = send_result == LOG_SEND_OK ?
                                               LOG_PRODUCER_OK :
                                               (LOG_PRODUCER_SEND_NETWORK_ERROR + send_result - LOG_SEND_NETWORK_ERROR);
-        producer_manager->send_done_function(producer_manager->producer_config->logstore,
+        producer_manager->send_done_function(category->m_name,
                                              callback_result,
                                              send_param->log_buf->raw_length,
                                              send_param->log_buf->length,
@@ -239,8 +228,8 @@ int32_t log_producer_on_send_done(log_producer_send_param * send_param, post_log
             }
             if (schedule->m_debug) {
                 CPE_INFO(schedule->m_em, "send quota error, project : %s, logstore : %s, buffer len : %d, raw len : %d, code : %d, error msg : %s",
-                         send_param->producer_config->project,
-                         send_param->producer_config->logstore,
+                         schedule->m_cfg_project,
+                         category->m_name,
                          (int)send_param->log_buf->length,
                          (int)send_param->log_buf->raw_length,
                          result->statusCode,
@@ -272,12 +261,12 @@ int32_t log_producer_on_send_done(log_producer_send_param * send_param, post_log
             if (schedule->m_debug) {
                 CPE_INFO(
                     schedule->m_em, "send network error, project : %s, logstore : %s, buffer len : %d, raw len : %d, code : %d, error msg : %s",
-                         send_param->producer_config->project,
-                         send_param->producer_config->logstore,
-                         (int)send_param->log_buf->length,
-                         (int)send_param->log_buf->raw_length,
-                         result->statusCode,
-                         result->errorMessage);
+                    schedule->m_cfg_project,
+                    category->m_name,
+                    (int)send_param->log_buf->length,
+                    (int)send_param->log_buf->raw_length,
+                    result->statusCode,
+                    result->errorMessage);
             }
             return error_info->last_sleep_ms;
         default:
@@ -294,8 +283,8 @@ int32_t log_producer_on_send_done(log_producer_send_param * send_param, post_log
         if (schedule->m_debug) {
             CPE_INFO(
                 schedule->m_em, "send success, project : %s, logstore : %s, buffer len : %d, raw len : %d, total buffer : %d, code : %d, error msg : %s",
-                send_param->producer_config->project,
-                send_param->producer_config->logstore,
+                schedule->m_cfg_project,
+                category->m_name,
                 (int)send_param->log_buf->length,
                 (int)send_param->log_buf->raw_length,
                 (int)producer_manager->totalBufferSize,
@@ -307,8 +296,8 @@ int32_t log_producer_on_send_done(log_producer_send_param * send_param, post_log
     {
         CPE_ERROR(
             schedule->m_em, "send fail, discard data, project : %s, logstore : %s, buffer len : %d, raw len : %d, total buffer : %d, code : %d, error msg : %s",
-            send_param->producer_config->project,
-            send_param->producer_config->logstore,
+            schedule->m_cfg_project,
+            category->m_name,
             (int)send_param->log_buf->length,
             (int)send_param->log_buf->raw_length,
             (int)producer_manager->totalBufferSize,

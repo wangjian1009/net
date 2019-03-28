@@ -65,7 +65,7 @@ void _try_flush_loggroup(log_producer_manager * producer_manager)
 
 log_producer_manager * create_log_producer_manager(net_log_category_t category, log_producer_config * producer_config)
 {
-    CPE_INFO(category->m_schedule->m_em, "create log producer manager : %s", producer_config->logstore);
+    CPE_INFO(category->m_schedule->m_em, "create log producer manager : %s", category->m_name);
     
     log_producer_manager * producer_manager = (log_producer_manager *)malloc(sizeof(log_producer_manager));
     memset(producer_manager, 0, sizeof(log_producer_manager));
@@ -103,7 +103,7 @@ log_producer_manager * create_log_producer_manager(net_log_category_t category, 
     }
 
 
-    producer_manager->pack_prefix = _get_pack_id(producer_config->logstore, producer_manager->source);
+    producer_manager->pack_prefix = _get_pack_id(category->m_name, producer_manager->source);
     if (producer_manager->pack_prefix == NULL)
     {
         producer_manager->pack_prefix = (char *)malloc(32);

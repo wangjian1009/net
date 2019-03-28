@@ -3,6 +3,7 @@
 #include "net_log_request.h"
 #include "log_producer_sender.h"
 #include "log_producer_manager.h"
+#include "log_util.h"
 
 static int net_log_request_send(net_log_request_t request, log_producer_send_param_t send_param);
 
@@ -55,6 +56,30 @@ void net_log_request_real_free(net_log_request_t request) {
     mem_free(mgr->m_schedule->m_alloc, request);
 }
 
+static size_t net_log_request_on_data(void *ptr, size_t size, size_t nmemb, void *stream) {
+    size_t totalLen = size * nmemb;
+    /* //printf("body  ---->  %d  %s \n", (int) (totalLen, (const char*) ptr); */
+    /* sds * buffer = (sds *)stream; */
+    /* if (*buffer == NULL) */
+    /* { */
+    /*     *buffer = sdsnewEmpty(256); */
+    /* } */
+    /* *buffer = sdscpylen(*buffer, ptr, totalLen); */
+    return totalLen;
+}
+
+static size_t net_log_request_on_header(void *ptr, size_t size, size_t nmemb, void *stream) {
+    size_t totalLen = size * nmemb;
+    /* //printf("header  ---->  %d  %s \n", (int) (totalLen), (const char*) ptr); */
+    /* sds * buffer = (sds *)stream; */
+    /* // only copy header start with x-log- */
+    /* if (totalLen > 6 && memcmp(ptr, "x-log-", 6) == 0) */
+    /* { */
+    /*     *buffer = sdscpylen(*buffer, ptr, totalLen); */
+    /* } */
+    return totalLen;
+}
+
 static int net_log_request_prepare(
     net_log_schedule_t schedule, net_log_category_t category, net_log_request_t request,
     lz4_log_buf * buffer, log_producer_config * config)
@@ -98,11 +123,6 @@ static int net_log_request_prepare(
         headers = curl_slist_append(headers, "x-log-compresstype:lz4");
     }
 
-    /* if (stsToken != NULL) { */
-    /*     snprintf(buf, sizeof(buf), "x-acs-security-token:%s", stsToken); */
-    /*     headers = curl_slist_append(headers, buf); */
-    /* } */
-    
     headers = curl_slist_append(headers, "x-log-signaturemethod:hmac-sha1");
 
     /**/
@@ -170,14 +190,11 @@ static int net_log_request_prepare(
         curl_easy_setopt(request->m_handler, CURLOPT_CONNECTTIMEOUT, config->connectTimeoutSec);
     }
 
-    /* sds header = sdsnewEmpty(64); */
-    /* sds body = NULL; */
+    curl_easy_setopt(request->m_handler, CURLOPT_HEADERFUNCTION, net_log_request_on_header);
+    curl_easy_setopt(request->m_handler, CURLOPT_HEADERDATA, request);
 
-    /* curl_easy_setopt(request->m_handler, CURLOPT_HEADERDATA, &header); */
-    /* curl_easy_setopt(request->m_handler, CURLOPT_HEADERFUNCTION, header_callback); */
-
-    /* curl_easy_setopt(request->m_handler, CURLOPT_WRITEFUNCTION, write_data); */
-    /* curl_easy_setopt(request->m_handler, CURLOPT_WRITEDATA, &body); */
+    curl_easy_setopt(request->m_handler, CURLOPT_WRITEFUNCTION, net_log_request_on_data);
+    curl_easy_setopt(request->m_handler, CURLOPT_WRITEDATA, request);
 
     //curl_easy_setopt(request->m_handler, CURLOPT_VERBOSE, 1); //打印调试信息
     
