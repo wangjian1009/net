@@ -274,6 +274,7 @@
 		C96D849E221A7D87001002B6 /* net_dq_watcher.m in Sources */ = {isa = PBXBuildFile; fileRef = C96D849D221A7D87001002B6 /* net_dq_watcher.m */; };
 		C970B0E521509C4D003CD7C5 /* net_trans_task.c in Sources */ = {isa = PBXBuildFile; fileRef = C970B0E221509C4C003CD7C5 /* net_trans_task.c */; };
 		C9855330224C49EE0096C780 /* net_log_flusher.c in Sources */ = {isa = PBXBuildFile; fileRef = C985532F224C49EE0096C780 /* net_log_flusher.c */; };
+		C9855337224C698E0096C780 /* net_log_sender.c in Sources */ = {isa = PBXBuildFile; fileRef = C9855336224C698D0096C780 /* net_log_sender.c */; };
 		C98F307A213D3CA700C64DC6 /* net_schedule_ipstack.c in Sources */ = {isa = PBXBuildFile; fileRef = C98F3079213D3CA700C64DC6 /* net_schedule_ipstack.c */; };
 		C9951627224AFADE00DDEEB1 /* net_statistics_transaction.c in Sources */ = {isa = PBXBuildFile; fileRef = C930DEB321CE523200597387 /* net_statistics_transaction.c */; };
 		C9951628224AFADE00DDEEB1 /* net_statistics.c in Sources */ = {isa = PBXBuildFile; fileRef = C9BAA6902195143400C46526 /* net_statistics.c */; };
@@ -976,6 +977,12 @@
 		C970B0E421509C4D003CD7C5 /* net_trans_task_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_trans_task_i.h; sourceTree = "<group>"; };
 		C985532E224C49ED0096C780 /* net_log_flusher.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_log_flusher.h; sourceTree = "<group>"; };
 		C985532F224C49EE0096C780 /* net_log_flusher.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_log_flusher.c; sourceTree = "<group>"; };
+		C9855331224C697F0096C780 /* net_log_sender.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_log_sender.h; sourceTree = "<group>"; };
+		C9855332224C697F0096C780 /* net_log_flusher.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_log_flusher.h; sourceTree = "<group>"; };
+		C9855333224C69800096C780 /* net_log_category.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_log_category.h; sourceTree = "<group>"; };
+		C9855334224C698D0096C780 /* net_log_flusher_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_log_flusher_i.h; sourceTree = "<group>"; };
+		C9855335224C698D0096C780 /* net_log_sender_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_log_sender_i.h; sourceTree = "<group>"; };
+		C9855336224C698D0096C780 /* net_log_sender.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_log_sender.c; sourceTree = "<group>"; };
 		C98F3079213D3CA700C64DC6 /* net_schedule_ipstack.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_schedule_ipstack.c; sourceTree = "<group>"; };
 		C9951630224AFADE00DDEEB1 /* libnet_log.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_log.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		C9951636224AFC3400DDEEB1 /* sds.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = sds.c; sourceTree = "<group>"; };
@@ -1931,6 +1938,9 @@
 		C9951634224AFC3400DDEEB1 /* include */ = {
 			isa = PBXGroup;
 			children = (
+				C9855333224C69800096C780 /* net_log_category.h */,
+				C9855332224C697F0096C780 /* net_log_flusher.h */,
+				C9855331224C697F0096C780 /* net_log_sender.h */,
 				C9951666224B071000DDEEB1 /* net_log_schedule.h */,
 				C9951665224B071000DDEEB1 /* net_log_types.h */,
 			);
@@ -1940,6 +1950,9 @@
 		C9951635224AFC3400DDEEB1 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				C9855334224C698D0096C780 /* net_log_flusher_i.h */,
+				C9855335224C698D0096C780 /* net_log_sender_i.h */,
+				C9855336224C698D0096C780 /* net_log_sender.c */,
 				C985532F224C49EE0096C780 /* net_log_flusher.c */,
 				C985532E224C49ED0096C780 /* net_log_flusher.h */,
 				C995166A224B11B000DDEEB1 /* net_log_category_i.h */,
@@ -2962,6 +2975,7 @@
 				C995165B224AFC3400DDEEB1 /* log_producer_manager.c in Sources */,
 				C9951659224AFC3400DDEEB1 /* sha1.c in Sources */,
 				C995166C224B11B100DDEEB1 /* net_log_category.c in Sources */,
+				C9855337224C698E0096C780 /* net_log_sender.c in Sources */,
 				C9951656224AFC3400DDEEB1 /* log_producer_common.c in Sources */,
 				C9951657224AFC3400DDEEB1 /* log_api.c in Sources */,
 				C995165F224AFC3400DDEEB1 /* lz4.c in Sources */,

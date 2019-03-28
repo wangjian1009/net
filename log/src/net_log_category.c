@@ -1,9 +1,11 @@
+#include "cpe/utils/string_utils.h"
 #include "net_log_category_i.h"
 #include "net_log_flusher_i.h"
+#include "net_log_sender_i.h"
 #include "log_producer_manager.h"
 
 net_log_category_t
-net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, const char * name, uint8_t id) {
+net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, net_log_sender_t sender, const char * name, uint8_t id) {
     if (schedule->m_state != net_log_schedule_state_init) {
         CPE_ERROR(
             schedule->m_em, "log: category [%d]%s: schedule in state %s, can`t create !", id, name,
@@ -41,6 +43,7 @@ net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, 
 
     category->m_schedule = schedule;
     category->m_flusher = flusher;
+    category->m_sender = sender;
     cpe_str_dup(category->m_name, sizeof(category->m_name), name);
     category->m_id = id;
     category->m_producer_config = NULL;
@@ -88,9 +91,17 @@ net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, 
     if (flusher) {
         TAILQ_INSERT_TAIL(&flusher->m_categories, category, m_next_for_flusher);
     }
+
+    if (sender) {
+        TAILQ_INSERT_TAIL(&sender->m_categories, category, m_next_for_sender);
+    }
     
     if (schedule->m_debug) {
-        CPE_INFO(schedule->m_em, "log: category [%d]%s: create success!", id, name);
+        CPE_INFO(
+            schedule->m_em, "log: category [%d]%s: create success, flusher %s, sender %s!",
+            id, name,
+            flusher ? flusher->m_name : "N/A",
+            sender ? sender->m_name : "N/A");
     }
     
     return 0;
@@ -107,10 +118,15 @@ void net_log_category_free(net_log_category_t category) {
     }
 
     schedule->m_categories[category->m_id] = NULL;
+
     if (category->m_flusher) {
         TAILQ_REMOVE(&category->m_flusher->m_categories, category, m_next_for_flusher);
     }
-        
+
+    if (category->m_sender) {
+        TAILQ_REMOVE(&category->m_sender->m_categories, category, m_next_for_sender);
+    }
+    
     destroy_log_producer_manager(category->m_producer_manager);
     destroy_log_producer_config(category->m_producer_config);
 
@@ -129,6 +145,79 @@ void net_log_category_notify_stop(net_log_category_t category) {
 }
 
 void net_log_category_wait_stop(net_log_category_t category) {
+}
+
+void net_log_category_group_flush(net_log_category_t category, log_group_builder_t builder) {
+    net_log_schedule_t schedule = category->m_schedule;
+    log_producer_manager * producer_manager = category->m_producer_manager;
+
+    CS_ENTER(producer_manager->lock);
+    producer_manager->totalBufferSize -= builder->loggroup_size;
+    CS_LEAVE(producer_manager->lock);
+
+    log_producer_config * config = producer_manager->producer_config;
+    int i = 0;
+    for (i = 0; i < config->tagCount; ++i) {
+        add_tag(builder, config->tags[i].key, strlen(config->tags[i].key), config->tags[i].value, strlen(config->tags[i].value));
+    }
+
+    if (config->topic != NULL) {
+        add_topic(builder, config->topic, strlen(config->topic));
+    }
+    
+    if (producer_manager->source != NULL) {
+        add_source(builder, producer_manager->source, strlen(producer_manager->source));
+    }
+
+    if (producer_manager->pack_prefix != NULL) {
+        add_pack_id(builder, producer_manager->pack_prefix, strlen(producer_manager->pack_prefix), producer_manager->pack_index++);
+    }
+
+    lz4_log_buf * lz4_buf = NULL;
+    if (config->compressType == 1) {
+        lz4_buf = serialize_to_proto_buf_with_malloc_lz4(builder);
+    }
+    else {
+        lz4_buf = serialize_to_proto_buf_with_malloc_no_lz4(builder);
+    }
+
+    if (lz4_buf == NULL) {
+        CPE_ERROR(schedule->m_em, "serialize loggroup to proto buf with lz4 failed");
+    }
+    else {
+        CS_ENTER(producer_manager->lock);
+        producer_manager->totalBufferSize += lz4_buf->length;
+        CS_LEAVE(producer_manager->lock);
+
+        if (schedule->m_debug) {
+            CPE_INFO(
+                schedule->m_em,
+                "push loggroup to sender, config %s, loggroup size %d, lz4 size %d, now buffer size %d",
+                config->logstore, (int)lz4_buf->raw_length, (int)lz4_buf->length, (int)producer_manager->totalBufferSize);
+        }
+        // if use multi thread, should change producer_manager->send_pool to NULL
+        //apr_pool_t * pool = config->sendThreadCount == 1 ? producer_manager->send_pool : NULL;
+        log_producer_send_param * send_param = create_log_producer_send_param(config, producer_manager, lz4_buf, builder->builder_time);
+        net_log_category_commit_send(category, send_param);
+        //producer_manager->send_param_queue[producer_manager->send_param_queue_write++ % producer_manager->send_param_queue_size] = send_param;
+    }
+}
+
+void net_log_category_commit_send(net_log_category_t category, log_producer_send_param_t send_param) {
+    net_log_schedule_t schedule = category->m_schedule;
+
+    if (category->m_sender) {
+        if (net_log_sender_queue(category->m_sender, send_param) != 0) {
+            CPE_ERROR(
+                schedule->m_em, "log: category [%d]%s: queue parament to %s fail!",
+                category->m_id, category->m_name, category->m_sender->m_name);
+            free(send_param);
+            return;
+        }
+    }
+    else {
+        //TODO
+    }
 }
 
 /* static void net_log_on_send_done( */
@@ -156,5 +245,3 @@ void net_log_category_wait_stop(net_log_category_t category) {
 /*             (int)log_bytes, (int)compressed_bytes, req_id, message); */
 /*     } */
 /* } */
-
-

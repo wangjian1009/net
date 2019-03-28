@@ -99,39 +99,6 @@ void * log_producer_send_thread(void * param)
     return NULL;
 }
 
-void log_producer_send_thread_global_inner(log_producer_send_param * send_param)
-{
-    if (send_param != NULL)
-    {
-        log_producer_manager * producer_manager = (log_producer_manager *)send_param->producer_manager;
-        net_log_schedule_t schedule = producer_manager->m_category->m_schedule;
-        
-        log_producer_send_fun(send_param);
-        // @note after log_producer_send_fun, send_param has been destroyed
-        if (ATOMICINT_DEC(&producer_manager->ref_count) == 0)
-        {
-            if (schedule->m_debug) {
-                CPE_INFO(schedule->m_em, "producer's ref count is 0, destroy this producer, project : %s, logstore : %s",
-                         producer_manager->producer_config->project, producer_manager->producer_config->logstore);
-            }
-            destroy_log_producer_manager_tail(producer_manager);
-        }
-    }
-}
-
-void * log_producer_send_thread_global(void * param)
-{
-    log_queue * send_log_queue = (log_queue * )param;
-
-    while (!g_send_thread_destroy)
-    {
-        log_producer_send_param * send_param = (log_producer_send_param *)log_queue_pop(send_log_queue, 300);
-        log_producer_send_thread_global_inner(send_param);
-    }
-
-    return NULL;
-}
-
 void * log_producer_send_fun(void * param)
 {
     log_producer_send_param * send_param = (log_producer_send_param *)param;

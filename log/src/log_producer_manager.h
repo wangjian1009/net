@@ -18,7 +18,6 @@ typedef struct _log_producer_manager
     log_queue * loggroup_queue;
     log_queue * sender_data_queue;
     THREAD * send_threads;
-    THREAD flush_thread;
     CRITICALSECTION lock;
     COND triger_cond;
     log_group_builder * builder;
@@ -31,8 +30,7 @@ typedef struct _log_producer_manager
     uint64_t send_param_queue_size;
     volatile uint64_t send_param_queue_read;
     volatile uint64_t send_param_queue_write;
-    ATOMICINT ref_count; // only used when global send thread works
-}log_producer_manager;
+} log_producer_manager;
 
 extern log_producer_manager * create_log_producer_manager(net_log_category_t category, log_producer_config * producer_config);
 extern void destroy_log_producer_manager(log_producer_manager * manager);

@@ -49,7 +49,8 @@ int aos_base64_encode(const unsigned char *in, int inLen, char *out)
         in++;
         // last 6 bits of char 3
         *out++ = ENC[*in & 0x3F];
-        in++, inLen--;
+        in++;
+        inLen--;
     }
 
     return (int)(out - original_out);

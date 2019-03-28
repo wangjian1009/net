@@ -1,7 +1,9 @@
 #include <assert.h>
+#include "cpe/utils/string_utils.h"
 #include "net_log_flusher_i.h"
 #include "net_log_category_i.h"
 #include "log_queue.h"
+#include "log_producer_manager.h"
 
 static void * net_log_flusher_thread(void * param);
 
@@ -60,6 +62,24 @@ net_log_flusher_t net_log_flusher_find(net_log_schedule_t schedule, const char *
     return NULL;
 }
 
+int net_log_flusher_queue(net_log_flusher_t flusher, log_group_builder * builder) {
+    net_log_schedule_t schedule = flusher->m_schedule;
+
+    pthread_mutex_lock(&flusher->m_mutex);
+
+    if (log_queue_push(flusher->m_queue, builder) != 0) {
+        CPE_ERROR(schedule->m_em, "log: flusher %s: push log group fail", flusher->m_name);
+        return -1;
+    }
+    else {
+        pthread_cond_signal(&flusher->m_cond);
+    }
+    
+    pthread_mutex_unlock(&flusher->m_mutex);
+
+    return 0;
+}
+
 static void * net_log_flusher_thread(void * param) {
     net_log_flusher_t flusher = param;
     net_log_schedule_t schedule = flusher->m_schedule;
@@ -68,6 +88,32 @@ static void * net_log_flusher_thread(void * param) {
         CPE_INFO(schedule->m_em, "log: flusher %s: thread starated", flusher->m_name);
     }
 
+    pthread_mutex_lock(&flusher->m_mutex);
+
+    while(schedule->m_state == net_log_schedule_state_runing) {
+        /* if (root_producer_manager->send_param_queue_write - root_producer_manager->send_param_queue_read >= root_producer_manager->send_param_queue_size) */
+        /* { */
+        /*     break; */
+        /* } */
+        
+        log_group_builder_t builder = log_queue_trypop(flusher->m_queue);
+        if (builder == NULL) {
+            //net_log_category_commit_send(net_log_category_t category, log_producer_send_param_t send_param) {
+            pthread_cond_wait(&flusher->m_cond, &flusher->m_mutex);
+            continue;
+        }
+
+        log_producer_manager * producer_manager = (log_producer_manager *)builder->private_value;
+        
+        pthread_mutex_unlock(&flusher->m_mutex);
+        net_log_category_group_flush(producer_manager->m_category, builder);
+        pthread_mutex_lock(&flusher->m_mutex);
+
+        log_group_destroy(builder);
+    }
+    
+    pthread_mutex_unlock(&flusher->m_mutex);
+    
     if (schedule->m_debug) {
         CPE_INFO(schedule->m_em, "log: flusher %s: thread stoped", flusher->m_name);
     }

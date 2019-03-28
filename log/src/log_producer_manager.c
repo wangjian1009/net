@@ -1,4 +1,5 @@
 #include "log_producer_manager.h"
+#include "net_log_flusher_i.h"
 #include "md5.h"
 #include "sds.h"
 
@@ -10,11 +11,6 @@
 
 #define MAX_MANAGER_FLUSH_COUNT 100  // 10MS * 100
 #define MAX_SENDER_FLUSH_COUNT 100 // 10ms * 100
-
-log_queue * g_sender_data_queue = NULL;
-THREAD * g_send_threads = NULL;
-int32_t g_send_thread_count = 0;
-volatile uint8_t g_send_thread_destroy = 0;
 
 void * log_producer_send_thread(void * param);
 
@@ -67,149 +63,6 @@ void _try_flush_loggroup(log_producer_manager * producer_manager)
     }
 }
 
-void * log_producer_flush_thread(void * param)
-{
-    log_producer_manager * root_producer_manager = (log_producer_manager*)param;
-    net_log_schedule_t schedule = root_producer_manager->m_category->m_schedule;
-
-    if (schedule->m_debug) {
-        CPE_INFO(schedule->m_em, "start run flusher thread, config : %s", root_producer_manager->producer_config->logstore);
-    }
-    
-    while (root_producer_manager->shutdown == 0) {
-        CS_ENTER(root_producer_manager->lock);
-        COND_WAIT_TIME(root_producer_manager->triger_cond,
-                       root_producer_manager->lock,
-                       LOG_PRODUCER_FLUSH_INTERVAL_MS);
-        CS_LEAVE(root_producer_manager->lock);
-
-//        CPE_INFO(schedule->m_em, "run flusher thread, config : %s, now loggroup size : %d, delta time : %d",
-//                      producer_manager->producer_config->configName,
-//                      producer_manager->builder != NULL ? (int)producer_manager->builder->loggroup_size : 0,
-//                      (int)(now_time - producer_manager->firstLogTime));
-
-        // try read queue
-        do
-        {
-            // if send queue is full, skip pack and send data
-            if (root_producer_manager->send_param_queue_write - root_producer_manager->send_param_queue_read >= root_producer_manager->send_param_queue_size)
-            {
-                break;
-            }
-            void * data = log_queue_trypop(root_producer_manager->loggroup_queue);
-            if (data != NULL)
-            {
-                // process data
-                log_group_builder * builder = (log_group_builder*)data;
-
-                log_producer_manager * producer_manager = (log_producer_manager *)builder->private_value;
-                CS_ENTER(root_producer_manager->lock);
-                producer_manager->totalBufferSize -= builder->loggroup_size;
-                CS_LEAVE(root_producer_manager->lock);
-
-
-                log_producer_config * config = producer_manager->producer_config;
-                int i = 0;
-                for (i = 0; i < config->tagCount; ++i)
-                {
-                    add_tag(builder, config->tags[i].key, strlen(config->tags[i].key), config->tags[i].value, strlen(config->tags[i].value));
-                }
-                if (config->topic != NULL)
-                {
-                    add_topic(builder, config->topic, strlen(config->topic));
-                }
-                if (producer_manager->source != NULL)
-                {
-                    add_source(builder, producer_manager->source, strlen(producer_manager->source));
-                }
-                if (producer_manager->pack_prefix != NULL)
-                {
-                    add_pack_id(builder, producer_manager->pack_prefix, strlen(producer_manager->pack_prefix), producer_manager->pack_index++);
-                }
-
-                lz4_log_buf * lz4_buf = NULL;
-                // check compress type
-                if (config->compressType == 1)
-                {
-                    lz4_buf = serialize_to_proto_buf_with_malloc_lz4(builder);
-
-                }
-                else
-                {
-                    lz4_buf = serialize_to_proto_buf_with_malloc_no_lz4(builder);
-                }
-
-                if (lz4_buf == NULL)
-                {
-                    CPE_ERROR(schedule->m_em, "serialize loggroup to proto buf with lz4 failed");
-                }
-                else
-                {
-                    CS_ENTER(root_producer_manager->lock);
-                    producer_manager->totalBufferSize += lz4_buf->length;
-                    CS_LEAVE(root_producer_manager->lock);
-
-                    if (schedule->m_debug) {
-                        CPE_INFO(
-                            schedule->m_em,
-                            "push loggroup to sender, config %s, loggroup size %d, lz4 size %d, now buffer size %d",
-                            config->logstore, (int)lz4_buf->raw_length, (int)lz4_buf->length, (int)producer_manager->totalBufferSize);
-                    }
-                    // if use multi thread, should change producer_manager->send_pool to NULL
-                    //apr_pool_t * pool = config->sendThreadCount == 1 ? producer_manager->send_pool : NULL;
-                    log_producer_send_param * send_param = create_log_producer_send_param(config, producer_manager, lz4_buf, builder->builder_time);
-                    root_producer_manager->send_param_queue[root_producer_manager->send_param_queue_write++ % root_producer_manager->send_param_queue_size] = send_param;
-                }
-                log_group_destroy(builder);
-                continue;
-            }
-            break;
-        }while(1);
-
-        // if no job, check now loggroup
-        _try_flush_loggroup(root_producer_manager);
-
-        // send data
-        // [priority] : producer manager's send thread > global send thread > send directly
-        if (root_producer_manager->send_threads != NULL)
-        {
-            // if send thread count > 0, we just push send_param to sender queue
-            while (root_producer_manager->send_param_queue_write > root_producer_manager->send_param_queue_read && !log_queue_isfull(root_producer_manager->sender_data_queue))
-            {
-                log_producer_send_param * send_param = root_producer_manager->send_param_queue[root_producer_manager->send_param_queue_read++ % root_producer_manager->send_param_queue_size];
-                // push always success
-                log_queue_push(root_producer_manager->sender_data_queue, send_param);
-            }
-        }
-        else if (g_send_threads != NULL && g_sender_data_queue != NULL)
-        {
-            // if send thread count > 0, we just push send_param to sender queue
-            while (root_producer_manager->send_param_queue_write > root_producer_manager->send_param_queue_read && !log_queue_isfull(g_sender_data_queue))
-            {
-                (void)ATOMICINT_INC(&root_producer_manager->ref_count);
-                assert(root_producer_manager->ref_count > 1);
-                log_producer_send_param * send_param = root_producer_manager->send_param_queue[root_producer_manager->send_param_queue_read++ % root_producer_manager->send_param_queue_size];
-                // make sure push success
-                while(0 != log_queue_push(g_sender_data_queue, send_param))
-                {
-                    ;
-                }
-            }
-        }
-        else if (root_producer_manager->send_param_queue_write > root_producer_manager->send_param_queue_read)
-        {
-            // if no sender thread, we send this packet out in flush thread
-            log_producer_send_param * send_param = root_producer_manager->send_param_queue[root_producer_manager->send_param_queue_read++ % root_producer_manager->send_param_queue_size];
-            log_producer_send_data(send_param);
-        }
-    }
-
-    if (schedule->m_debug) {
-        CPE_INFO(schedule->m_em, "exit flusher thread, config : %s", root_producer_manager->producer_config->logstore);
-    }
-    return NULL;
-}
-
 log_producer_manager * create_log_producer_manager(net_log_category_t category, log_producer_config * producer_config)
 {
     CPE_INFO(category->m_schedule->m_em, "create log producer manager : %s", producer_config->logstore);
@@ -219,10 +72,6 @@ log_producer_manager * create_log_producer_manager(net_log_category_t category, 
 
     producer_manager->m_category = category;
     
-    (void)ATOMICINT_INC(&producer_manager->ref_count);
-
-    assert(producer_manager->ref_count == 1);
-
     producer_manager->producer_config = producer_config;
 
     int32_t base_queue_size = producer_config->maxBufferBytes / (producer_config->logBytesPerPackage + 1) + 10;
@@ -253,7 +102,7 @@ log_producer_manager * create_log_producer_manager(net_log_category_t category, 
 
     producer_manager->triger_cond = CreateCond();
     producer_manager->lock = CreateCriticalSection();
-    THREAD_INIT(producer_manager->flush_thread, log_producer_flush_thread, producer_manager);
+    //THREAD_INIT(producer_manager->flush_thread, log_producer_flush_thread, producer_manager);
 
     if (producer_config->source != NULL)
     {
@@ -375,10 +224,7 @@ void destroy_log_producer_manager(log_producer_manager * manager) {
     if (schedule->m_debug) {
         CPE_INFO(schedule->m_em, "join flush thread begin");
     }
-    THREAD_JOIN(manager->flush_thread);
-    if (schedule->m_debug) {
-        CPE_INFO(schedule->m_em, "join flush thread success");
-    }
+
     if (manager->send_threads != NULL)
     {
         if (schedule->m_debug) {
@@ -418,27 +264,16 @@ void destroy_log_producer_manager(log_producer_manager * manager) {
             CPE_INFO(schedule->m_em, "flush out sender queue success");
         }
     }
-    else if (g_sender_data_queue != NULL && g_send_threads != NULL)
-    {
-        // if use global send queue, let send thread destroy manager
-        log_producer_send_param * destroy_param = create_log_producer_destroy_param(manager->producer_config, manager);
-        // make sure push success
-        while(0 != log_queue_push(g_sender_data_queue, destroy_param))
-        {
-            ;
-        }
-        return;
-    }
 
     destroy_log_producer_manager_tail(manager);
-
 }
 
 log_producer_result
 log_producer_manager_add_log(
     log_producer_manager * producer_manager, int32_t pair_count, char ** keys, size_t * key_lens, char ** values, size_t * val_lens)
 {
-    net_log_schedule_t schedule = producer_manager->m_category->m_schedule;
+    net_log_category_t category = producer_manager->m_category;
+    net_log_schedule_t schedule = category->m_schedule;
     
     if (producer_manager->totalBufferSize > producer_manager->producer_config->maxBufferBytes) {
         return LOG_PRODUCER_DROP_ERROR;
@@ -478,21 +313,27 @@ log_producer_manager_add_log(
     size_t loggroup_size = builder->loggroup_size;
 
     if (schedule->m_debug) {
-        CPE_INFO(schedule->m_em, "try push loggroup to flusher, size : %d, log count %d", (int)builder->loggroup_size, (int)builder->grp->n_logs);
-    }
-    
-    int status = log_queue_push(producer_manager->loggroup_queue, builder);
-    if (status != 0)
-    {
-        CPE_ERROR(schedule->m_em, "try push loggroup to flusher failed, force drop this log group, error code : %d", status);
-        log_group_destroy(builder);
-    }
-    else
-    {
-        producer_manager->totalBufferSize += loggroup_size;
-        COND_SIGNAL(producer_manager->triger_cond);
+        CPE_INFO(
+            schedule->m_em, "try push loggroup to flusher, size : %d, log count %d",
+            (int)builder->loggroup_size, (int)builder->grp->n_logs);
     }
 
+    if (category->m_flusher) { /*异步flush */
+        if (net_log_flusher_queue(category->m_flusher, builder) != 0) {
+            CPE_ERROR(schedule->m_em, "try push loggroup to flusher failed, force drop this log group");
+            log_group_destroy(builder);
+        }
+        else {
+            producer_manager->totalBufferSize += loggroup_size;
+            COND_SIGNAL(producer_manager->triger_cond);
+        }
+    }
+    else { /*同步flush */
+        producer_manager->totalBufferSize += loggroup_size;
+        net_log_category_group_flush(category, builder);
+        log_group_destroy(builder);
+    }
+    
     CS_LEAVE(producer_manager->lock);
 
     return LOG_PRODUCER_OK;
@@ -509,5 +350,38 @@ log_producer_result log_producer_manager_send_raw_buffer(log_producer_manager * 
     return log_producer_send_data(send_param);
 }
 
-
-
+/* void net_log_category_commit_data(net_log_category_t category) { */
+/*     // send data */
+/*     // [priority] : producer manager's send thread > global send thread > send directly */
+/*     if (root_producer_manager->send_threads != NULL) { */
+/*         // if send thread count > 0, we just push send_param to sender queue */
+/*         while (root_producer_manager->send_param_queue_write > root_producer_manager->send_param_queue_read */
+/*                && !log_queue_isfull(root_producer_manager->sender_data_queue)) */
+/*         { */
+/*             log_producer_send_param * send_param = */
+/*                 root_producer_manager->send_param_queue[root_producer_manager->send_param_queue_read++ % root_producer_manager->send_param_queue_size]; */
+/*             // push always success */
+/*             log_queue_push(root_producer_manager->sender_data_queue, send_param); */
+/*         } */
+/*     } */
+/*     else if (g_send_threads != NULL && g_sender_data_queue != NULL) { */
+/*         // if send thread count > 0, we just push send_param to sender queue */
+/*         while (root_producer_manager->send_param_queue_write > root_producer_manager->send_param_queue_read */
+/*                && !log_queue_isfull(g_sender_data_queue)) */
+/*         { */
+/*             (void)ATOMICINT_INC(&root_producer_manager->ref_count); */
+/*             assert(root_producer_manager->ref_count > 1); */
+/*             log_producer_send_param * send_param = */
+/*                 root_producer_manager->send_param_queue[root_producer_manager->send_param_queue_read++ % root_producer_manager->send_param_queue_size]; */
+/*             // make sure push success */
+/*             while(0 != log_queue_push(g_sender_data_queue, send_param)) { */
+/*                 ; */
+/*             } */
+/*         } */
+/*     } */
+/*     else if (root_producer_manager->send_param_queue_write > root_producer_manager->send_param_queue_read) { */
+/*         // if no sender thread, we send this packet out in flush thread */
+/*         log_producer_send_param * send_param = root_producer_manager->send_param_queue[root_producer_manager->send_param_queue_read++ % root_producer_manager->send_param_queue_size]; */
+/*         log_producer_send_data(send_param); */
+/*     } */
+/* } */
