@@ -11,8 +11,7 @@ struct net_log_sender {
     net_log_category_list_t m_categories;
     char m_name[64];
     log_queue_t m_queue;
-    uint8_t m_thread_count;
-    pthread_t * m_threads;
+    pthread_t m_thread;
     pthread_mutex_t m_mutex;
     pthread_cond_t m_cond;
 };

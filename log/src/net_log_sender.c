@@ -1,14 +1,19 @@
 #include <assert.h>
+#include "ev.h"
 #include "cpe/pal/pal_string.h"
 #include "cpe/utils/string_utils.h"
+#include "net_schedule.h"
+#include "net_driver.h"
+#include "net_ev_driver.h"
 #include "net_log_sender_i.h"
 #include "net_log_category_i.h"
+#include "net_log_task_manage.h"
 #include "log_queue.h"
 
 static void * net_log_sender_thread(void * param);
 
 net_log_sender_t
-net_log_sender_create(net_log_schedule_t schedule, const char * name, uint8_t thread_count, int32_t queue_size) {
+net_log_sender_create(net_log_schedule_t schedule, const char * name, int32_t queue_size) {
     net_log_sender_t sender = mem_alloc(schedule->m_alloc, sizeof(struct net_log_sender));
     if (sender == NULL) {
         CPE_ERROR(schedule->m_em, "log: sender %s: alloc fail", name);
@@ -24,8 +29,7 @@ net_log_sender_create(net_log_schedule_t schedule, const char * name, uint8_t th
         return NULL;
     }
 
-    sender->m_thread_count = thread_count;
-    sender->m_threads = NULL;
+    //sender->m_thread = NULL;
     pthread_mutex_init(&sender->m_mutex, NULL);
     pthread_cond_init(&sender->m_cond, NULL);
 
@@ -89,25 +93,41 @@ static void * net_log_sender_thread(void * param) {
         CPE_INFO(schedule->m_em, "log: sender %s: thread starated", sender->m_name);
     }
 
-    pthread_mutex_lock(&sender->m_mutex);
+    struct ev_loop * ev_loop = ev_loop_new(EVFLAG_AUTO);
+    if (ev_loop == NULL) {
+        CPE_ERROR(schedule->m_em, "log: sender %s: create ev loop fail", sender->m_name);
+        return NULL;
+    }
 
-    /* while(schedule->m_state == net_log_schedule_state_runing) { */
-    /*     log_group_builder_t builder = log_queue_trypop(sender->m_queue); */
-    /*     if (builder == NULL) { */
-    /*         pthread_cond_wait(&sender->m_cond, &sender->m_mutex); */
-    /*         continue; */
-    /*     } */
+    net_schedule_t net_schedule = net_schedule_create(schedule->m_alloc, schedule->m_em, 128/*not use this buf*/);
+    if (net_schedule == NULL) {
+        CPE_ERROR(schedule->m_em, "log: sender %s: create local net schedule fail", sender->m_name);
+        ev_loop_destroy(ev_loop);
+        return NULL;
+    }
 
-    /*     log_producer_manager * producer_manager = (log_producer_manager *)builder->private_value; */
-        
-    /*     pthread_mutex_unlock(&sender->m_mutex); */
-    /*     net_log_category_group_flush(producer_manager->m_category, builder); */
-    /*     pthread_mutex_lock(&sender->m_mutex); */
+    net_ev_driver_t ev_driver = net_ev_driver_create(net_schedule, ev_loop);
+    if (ev_driver == NULL) {
+        CPE_ERROR(schedule->m_em, "log: sender %s: create local ev driver fail", sender->m_name);
+        net_schedule_free(net_schedule);
+        ev_loop_destroy(ev_loop);
+        return NULL;
+    }
 
-    /*     log_group_destroy(builder); */
-    /* } */
+    net_log_task_manage_t task_mgr = net_log_task_manage_create(schedule, net_schedule, net_driver_from_data(ev_driver));
+    if (task_mgr == NULL) {
+        CPE_ERROR(schedule->m_em, "log: sender %s: create task mgr fail", sender->m_name);
+        net_schedule_free(net_schedule);
+        ev_loop_destroy(ev_loop);
+        return NULL;
+    }
     
-    pthread_mutex_unlock(&sender->m_mutex);
+    ev_set_userdata(ev_loop, task_mgr);
+        
+    ev_run(ev_loop, 0);
+
+    net_schedule_free(net_schedule);
+    ev_loop_destroy(ev_loop);
     
     if (schedule->m_debug) {
         CPE_INFO(schedule->m_em, "log: sender %s: thread stoped", sender->m_name);

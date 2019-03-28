@@ -216,7 +216,7 @@ void net_log_category_commit_send(net_log_category_t category, log_producer_send
         }
     }
     else {
-        //TODO
+        log_producer_send_fun(send_param);
     }
 }
 

@@ -3400,6 +3400,9 @@
 					../../../cpe/include,
 					../../depends/curl/include,
 					../../depends/mbedtls/include/mbedtls,
+					../../depends/libev/include,
+					../../core/include,
+					../../driver_ev/include,
 					../../log/include,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -3416,6 +3419,9 @@
 					../../../cpe/include,
 					../../depends/curl/include,
 					../../depends/mbedtls/include/mbedtls,
+					../../depends/libev/include,
+					../../core/include,
+					../../driver_ev/include,
 					../../log/include,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";

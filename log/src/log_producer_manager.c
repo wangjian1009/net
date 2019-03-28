@@ -88,17 +88,6 @@ log_producer_manager * create_log_producer_manager(net_log_category_t category, 
     producer_manager->send_param_queue_size = base_queue_size * 2;
     producer_manager->send_param_queue = malloc(sizeof(log_producer_send_param*) * producer_manager->send_param_queue_size);
 
-    if (producer_config->sendThreadCount > 0)
-    {
-        producer_manager->send_threads = (THREAD *)malloc(sizeof(THREAD) * producer_config->sendThreadCount);
-        producer_manager->sender_data_queue = log_queue_create(base_queue_size * 2);
-        int32_t threadId = 0;
-        for (; threadId < producer_manager->producer_config->sendThreadCount; ++threadId)
-        {
-            THREAD_INIT(producer_manager->send_threads[threadId], log_producer_send_thread, producer_manager);
-        }
-    }
-
 
     producer_manager->triger_cond = CreateCond();
     producer_manager->lock = CreateCriticalSection();
@@ -225,23 +214,6 @@ void destroy_log_producer_manager(log_producer_manager * manager) {
         CPE_INFO(schedule->m_em, "join flush thread begin");
     }
 
-    if (manager->send_threads != NULL)
-    {
-        if (schedule->m_debug) {
-            CPE_INFO(schedule->m_em, "join sender thread pool begin");
-        }
-        
-        int32_t threadId = 0;
-        for (; threadId < manager->producer_config->sendThreadCount; ++threadId)
-        {
-            THREAD_JOIN(manager->send_threads[threadId]);
-        }
-        free(manager->send_threads);
-
-        if (schedule->m_debug) {
-            CPE_INFO(schedule->m_em, "join sender thread pool success");
-        }
-    }
     DeleteCond(manager->triger_cond);
     log_queue_destroy(manager->loggroup_queue);
     if (manager->sender_data_queue != NULL)
@@ -349,39 +321,3 @@ log_producer_result log_producer_manager_send_raw_buffer(log_producer_manager * 
     log_producer_send_param * send_param = create_log_producer_send_param(producer_manager->producer_config, producer_manager, lz4_buf, time(NULL));
     return log_producer_send_data(send_param);
 }
-
-/* void net_log_category_commit_data(net_log_category_t category) { */
-/*     // send data */
-/*     // [priority] : producer manager's send thread > global send thread > send directly */
-/*     if (root_producer_manager->send_threads != NULL) { */
-/*         // if send thread count > 0, we just push send_param to sender queue */
-/*         while (root_producer_manager->send_param_queue_write > root_producer_manager->send_param_queue_read */
-/*                && !log_queue_isfull(root_producer_manager->sender_data_queue)) */
-/*         { */
-/*             log_producer_send_param * send_param = */
-/*                 root_producer_manager->send_param_queue[root_producer_manager->send_param_queue_read++ % root_producer_manager->send_param_queue_size]; */
-/*             // push always success */
-/*             log_queue_push(root_producer_manager->sender_data_queue, send_param); */
-/*         } */
-/*     } */
-/*     else if (g_send_threads != NULL && g_sender_data_queue != NULL) { */
-/*         // if send thread count > 0, we just push send_param to sender queue */
-/*         while (root_producer_manager->send_param_queue_write > root_producer_manager->send_param_queue_read */
-/*                && !log_queue_isfull(g_sender_data_queue)) */
-/*         { */
-/*             (void)ATOMICINT_INC(&root_producer_manager->ref_count); */
-/*             assert(root_producer_manager->ref_count > 1); */
-/*             log_producer_send_param * send_param = */
-/*                 root_producer_manager->send_param_queue[root_producer_manager->send_param_queue_read++ % root_producer_manager->send_param_queue_size]; */
-/*             // make sure push success */
-/*             while(0 != log_queue_push(g_sender_data_queue, send_param)) { */
-/*                 ; */
-/*             } */
-/*         } */
-/*     } */
-/*     else if (root_producer_manager->send_param_queue_write > root_producer_manager->send_param_queue_read) { */
-/*         // if no sender thread, we send this packet out in flush thread */
-/*         log_producer_send_param * send_param = root_producer_manager->send_param_queue[root_producer_manager->send_param_queue_read++ % root_producer_manager->send_param_queue_size]; */
-/*         log_producer_send_data(send_param); */
-/*     } */
-/* } */

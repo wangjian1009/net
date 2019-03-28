@@ -78,27 +78,6 @@ void _rebuild_time(net_log_schedule_t schedule, lz4_log_buf * lz4_buf, lz4_log_b
 
 #endif
 
-void * log_producer_send_thread(void * param)
-{
-    log_producer_manager * producer_manager = (log_producer_manager *)param;
-
-    if (producer_manager->sender_data_queue == NULL)
-    {
-        return NULL;
-    }
-
-    while (!producer_manager->shutdown)
-    {
-        void * send_param = log_queue_pop(producer_manager->sender_data_queue, 30);
-        if (send_param != NULL)
-        {
-            log_producer_send_fun(send_param);
-        }
-    }
-
-    return NULL;
-}
-
 void * log_producer_send_fun(void * param)
 {
     log_producer_send_param * send_param = (log_producer_send_param *)param;
@@ -202,7 +181,6 @@ void * log_producer_send_fun(void * param)
     free(send_param);
 
     return NULL;
-
 }
 
 int32_t log_producer_on_send_done(log_producer_send_param * send_param, post_log_result * result, send_error_info * error_info)

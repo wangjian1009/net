@@ -14,6 +14,10 @@ NET_BEGIN_DECL
 typedef TAILQ_HEAD(net_log_flusher_list, net_log_flusher) net_log_flusher_list_t;
 typedef TAILQ_HEAD(net_log_sender_list, net_log_sender) net_log_sender_list_t;
 typedef TAILQ_HEAD(net_log_category_list, net_log_category) net_log_category_list_t;
+typedef TAILQ_HEAD(net_log_task_list, net_log_task) net_log_task_list_t;
+
+typedef struct net_log_task * net_log_task_t;
+typedef struct net_log_task_manage * net_log_task_manage_t;
 
 typedef struct _log_producer_send_param * log_producer_send_param_t;
 typedef struct _log_group_builder * log_group_builder_t;
