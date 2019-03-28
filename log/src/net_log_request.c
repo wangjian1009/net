@@ -25,7 +25,8 @@ net_log_request_create(net_log_request_manage_t mgr, log_producer_send_param_t s
 
     request->m_mgr = mgr;
     request->m_handler = NULL;
-        
+    request->m_watcher = NULL;
+    
     TAILQ_INSERT_TAIL(&mgr->m_requests, request, m_next);
     
     /*init success*/
@@ -40,6 +41,11 @@ net_log_request_create(net_log_request_manage_t mgr, log_producer_send_param_t s
 void net_log_request_free(net_log_request_t request) {
     net_log_request_manage_t mgr = request->m_mgr;
 
+    if (request->m_watcher) {
+        net_watcher_free(request->m_watcher);
+        request->m_watcher = NULL;
+    }
+    
     if (request->m_handler) {
         curl_easy_cleanup(request->m_handler);
         request->m_handler = NULL;
