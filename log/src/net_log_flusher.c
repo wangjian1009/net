@@ -91,25 +91,27 @@ static void * net_log_flusher_thread(void * param) {
     pthread_mutex_lock(&flusher->m_mutex);
 
     while(schedule->m_state == net_log_schedule_state_runing) {
-        /* if (root_producer_manager->send_param_queue_write - root_producer_manager->send_param_queue_read >= root_producer_manager->send_param_queue_size) */
-        /* { */
-        /*     break; */
-        /* } */
-        
         log_group_builder_t builder = log_queue_trypop(flusher->m_queue);
         if (builder == NULL) {
-            //net_log_category_commit_send(net_log_category_t category, log_producer_send_param_t send_param) {
             pthread_cond_wait(&flusher->m_cond, &flusher->m_mutex);
             continue;
         }
 
-        log_producer_manager * producer_manager = (log_producer_manager *)builder->private_value;
-        
         pthread_mutex_unlock(&flusher->m_mutex);
-        net_log_category_group_flush(producer_manager->m_category, builder);
-        pthread_mutex_lock(&flusher->m_mutex);
 
+        log_producer_manager * producer_manager = (log_producer_manager *)builder->private_value;
+        net_log_category_t category = producer_manager->m_category;
+
+        log_producer_send_param * send_param = net_log_category_build_request(category, builder);
         log_group_destroy(builder);
+        
+        if (send_param) {
+            if (net_log_category_commit_request(category, send_param, 0) != 0) {
+                free(send_param);
+            }
+        }
+        
+        pthread_mutex_lock(&flusher->m_mutex);
     }
     
     pthread_mutex_unlock(&flusher->m_mutex);

@@ -11,6 +11,8 @@
 #include "net_log_category_i.h"
 #include "net_log_flusher_i.h"
 #include "net_log_sender_i.h"
+#include "net_log_request_manage.h"
+#include "net_log_request_pipe.h"
 #include "log_producer_manager.h"
 
 net_log_schedule_t
@@ -38,7 +40,7 @@ net_log_schedule_create(
     schedule->m_debug = 0;
     schedule->m_net_schedule = net_schedule;
     schedule->m_net_driver = net_driver;
-
+    
     schedule->m_cfg_project = cpe_str_mem_dup(alloc, cfg_project);
     schedule->m_cfg_ep = cpe_str_mem_dup(alloc, cfg_ep);
     schedule->m_cfg_access_id = cpe_str_mem_dup(alloc, cfg_access_id);
@@ -55,6 +57,16 @@ net_log_schedule_create(
 void net_log_schedule_free(net_log_schedule_t schedule) {
     if (schedule->m_state != net_log_schedule_state_init) {
         net_log_schedule_stop(schedule);
+    }
+
+    if (schedule->m_main_thread_request_pipe) {
+        net_log_request_pipe_free(schedule->m_main_thread_request_pipe);
+        schedule->m_main_thread_request_pipe = NULL;
+    }
+    
+    if (schedule->m_main_thread_request_mgr) {
+        net_log_request_manage_free(schedule->m_main_thread_request_mgr);
+        schedule->m_main_thread_request_mgr = NULL;
     }
     
     uint8_t i;
@@ -107,6 +119,49 @@ void net_log_schedule_set_debug(net_log_schedule_t schedule, uint8_t debug) {
 
 net_log_schedule_state_t net_log_schedule_state(net_log_schedule_t log_schedule) {
     return log_schedule->m_state;
+}
+
+int net_log_schedule_init_main_thread_mgr(net_log_schedule_t schedule) {
+    if (schedule->m_main_thread_request_mgr == NULL) {
+        schedule->m_main_thread_request_mgr =
+            net_log_request_manage_create(schedule, schedule->m_net_schedule, schedule->m_net_driver);
+        if (schedule->m_main_thread_request_mgr == NULL) {
+            CPE_ERROR(schedule->m_em, "log: schedule: create main thread request mgr fail");
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+int net_log_schedule_init_main_thread_pipe(net_log_schedule_t schedule) {
+    assert(schedule->m_state == net_log_schedule_state_init);
+
+    if (schedule->m_main_thread_request_pipe == NULL) {
+        schedule->m_main_thread_request_pipe = net_log_request_pipe_create(schedule);
+        if (schedule->m_main_thread_request_pipe == NULL) {
+            CPE_ERROR(schedule->m_em, "log: schedule: create main thread request pipe fail");
+            return -1;
+        }
+    }
+
+    if (schedule->m_main_thread_request_mgr == NULL) {
+        schedule->m_main_thread_request_mgr =
+            net_log_request_manage_create(schedule, schedule->m_net_schedule, schedule->m_net_driver);
+        if (schedule->m_main_thread_request_mgr == NULL) {
+            CPE_ERROR(schedule->m_em, "log: schedule: create main thread request mgr fail");
+            return -1;
+        }
+    }
+
+    if (schedule->m_main_thread_request_pipe->m_bind_to == NULL) {
+        if (net_log_request_pipe_bind(schedule->m_main_thread_request_pipe, schedule->m_main_thread_request_mgr) != 0) {
+            CPE_ERROR(schedule->m_em, "log: schedule: create main thread request pipe bind fail");
+            return -1;
+        }
+    }
+    
+    return 0;
 }
 
 static void net_log_schedule_do_stop(net_log_schedule_t schedule, uint8_t category_count);

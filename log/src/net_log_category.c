@@ -2,6 +2,8 @@
 #include "net_log_category_i.h"
 #include "net_log_flusher_i.h"
 #include "net_log_sender_i.h"
+#include "net_log_request.h"
+#include "net_log_request_pipe.h"
 #include "log_producer_manager.h"
 
 net_log_category_t
@@ -11,6 +13,21 @@ net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, 
             schedule->m_em, "log: category [%d]%s: schedule in state %s, can`t create !", id, name,
             net_log_schedule_state_str(schedule->m_state));
         return NULL;
+    }
+
+    if (sender == NULL) {
+        if (flusher != NULL) { /*flushe需要通过主线程发送数据，需要创建主线程通道 */
+            if (net_log_schedule_init_main_thread_pipe(schedule) != 0) {
+                CPE_ERROR(schedule->m_em, "log: category [%d]%s: init main thread pipe fail!", id, name);
+                return NULL;
+            }
+        }
+        else { /*没有flusher，数据从主线程直接发送，只需要创建manager */
+            if (net_log_schedule_init_main_thread_mgr(schedule) != 0) {
+                CPE_ERROR(schedule->m_em, "log: category [%d]%s: init main thread mgr fail!", id, name);
+                return NULL;
+            }
+        }
     }
     
     if (id >= schedule->m_category_count) {
@@ -147,7 +164,8 @@ void net_log_category_notify_stop(net_log_category_t category) {
 void net_log_category_wait_stop(net_log_category_t category) {
 }
 
-void net_log_category_group_flush(net_log_category_t category, log_group_builder_t builder) {
+log_producer_send_param_t
+net_log_category_build_request(net_log_category_t category, log_group_builder_t builder) {
     net_log_schedule_t schedule = category->m_schedule;
     log_producer_manager * producer_manager = category->m_producer_manager;
 
@@ -183,40 +201,66 @@ void net_log_category_group_flush(net_log_category_t category, log_group_builder
 
     if (lz4_buf == NULL) {
         CPE_ERROR(schedule->m_em, "serialize loggroup to proto buf with lz4 failed");
+        return NULL;
     }
-    else {
-        CS_ENTER(producer_manager->lock);
-        producer_manager->totalBufferSize += lz4_buf->length;
-        CS_LEAVE(producer_manager->lock);
 
-        if (schedule->m_debug) {
-            CPE_INFO(
-                schedule->m_em,
-                "push loggroup to sender, config %s, loggroup size %d, lz4 size %d, now buffer size %d",
-                config->logstore, (int)lz4_buf->raw_length, (int)lz4_buf->length, (int)producer_manager->totalBufferSize);
-        }
-        // if use multi thread, should change producer_manager->send_pool to NULL
-        //apr_pool_t * pool = config->sendThreadCount == 1 ? producer_manager->send_pool : NULL;
-        log_producer_send_param * send_param = create_log_producer_send_param(config, producer_manager, lz4_buf, builder->builder_time);
-        net_log_category_commit_send(category, send_param);
-        //producer_manager->send_param_queue[producer_manager->send_param_queue_write++ % producer_manager->send_param_queue_size] = send_param;
+    CS_ENTER(producer_manager->lock);
+    producer_manager->totalBufferSize += lz4_buf->length;
+    CS_LEAVE(producer_manager->lock);
+
+    if (schedule->m_debug) {
+        CPE_INFO(
+            schedule->m_em, "log: category [%d]%s: push loggroup to sender, loggroup size %d, lz4 size %d, now buffer size %d",
+            category->m_id, category->m_name,
+            (int)lz4_buf->raw_length, (int)lz4_buf->length, (int)producer_manager->totalBufferSize);
     }
+
+    log_producer_send_param_t send_param =
+        create_log_producer_send_param(config, producer_manager, lz4_buf, builder->builder_time);
+    if (send_param == NULL) {
+        CPE_ERROR(
+            schedule->m_em, "log: category [%d]%s: build send params: create fail!",
+            category->m_id, category->m_name);
+        return NULL;
+    }
+
+    return send_param;
 }
 
-void net_log_category_commit_send(net_log_category_t category, log_producer_send_param_t send_param) {
+int net_log_category_commit_request(net_log_category_t category, log_producer_send_param_t send_param, uint8_t in_main_thread) {
     net_log_schedule_t schedule = category->m_schedule;
 
     if (category->m_sender) {
-        if (net_log_sender_queue(category->m_sender, send_param) != 0) {
+        if (net_log_request_pipe_queue(category->m_sender->m_request_pipe, send_param) != 0) {
             CPE_ERROR(
-                schedule->m_em, "log: category [%d]%s: queue parament to %s fail!",
+                schedule->m_em, "log: category [%d]%s: commit request to %s fail!",
                 category->m_id, category->m_name, category->m_sender->m_name);
-            free(send_param);
-            return;
+            return -1;
         }
+        return 0;
     }
-    else {
-        log_producer_send_fun(send_param);
+    else if (in_main_thread) { /*在主线程中，直接发送 */
+        assert(schedule->m_main_thread_request_mgr);
+
+        net_log_request_t request = net_log_request_create(schedule->m_main_thread_request_mgr, send_param);
+        if (request == NULL) {
+            CPE_ERROR(
+                schedule->m_em, "log: category [%d]%s: process request at main-thread fail!",
+                category->m_id, category->m_name);
+            return -1;
+        }
+
+        return 0;
+    }
+    else { /*提交到主线程处理 */
+        assert(schedule->m_main_thread_request_pipe);
+        if (net_log_request_pipe_queue(schedule->m_main_thread_request_pipe, send_param) != 0) {
+            CPE_ERROR(
+                schedule->m_em, "log: category [%d]%s: commit request to main-thread fail!",
+                category->m_id, category->m_name);
+            return -1;
+        }
+        return 0;
     }
 }
 

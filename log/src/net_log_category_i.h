@@ -23,8 +23,8 @@ int net_log_category_start(net_log_category_t category);
 void net_log_category_notify_stop(net_log_category_t category);
 void net_log_category_wait_stop(net_log_category_t category);
 
-void net_log_category_group_flush(net_log_category_t category, log_group_builder_t builder);
-void net_log_category_commit_send(net_log_category_t category, log_producer_send_param_t send_param);
+log_producer_send_param_t net_log_category_build_request(net_log_category_t category, log_group_builder_t builder);
+int net_log_category_commit_request(net_log_category_t category, log_producer_send_param_t send_param, uint8_t in_main_thread);
 
 NET_END_DECL
 

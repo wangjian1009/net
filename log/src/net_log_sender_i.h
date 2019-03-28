@@ -10,13 +10,9 @@ struct net_log_sender {
     TAILQ_ENTRY(net_log_sender) m_next;
     net_log_category_list_t m_categories;
     char m_name[64];
-    log_queue_t m_queue;
-    pthread_t m_thread;
-    pthread_mutex_t m_mutex;
-    pthread_cond_t m_cond;
+    net_log_request_pipe_t m_request_pipe;
+    pthread_t * m_thread;
 };
-
-int net_log_sender_queue(net_log_sender_t sender, log_producer_send_param_t send_param);
 
 NET_END_DECL
 

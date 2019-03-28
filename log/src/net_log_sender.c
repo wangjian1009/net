@@ -7,7 +7,8 @@
 #include "net_ev_driver.h"
 #include "net_log_sender_i.h"
 #include "net_log_category_i.h"
-#include "net_log_task_manage.h"
+#include "net_log_request_manage.h"
+#include "net_log_request_pipe.h"
 #include "log_queue.h"
 
 static void * net_log_sender_thread(void * param);
@@ -22,16 +23,13 @@ net_log_sender_create(net_log_schedule_t schedule, const char * name, int32_t qu
 
     sender->m_schedule = schedule;
     cpe_str_dup(sender->m_name, sizeof(sender->m_name), name);
-    sender->m_queue = log_queue_create(queue_size);
-    if (sender->m_queue == NULL) {
-        CPE_ERROR(schedule->m_em, "log: sender %s: queue create fail", name);
+    sender->m_request_pipe = net_log_request_pipe_create(schedule);
+    if (sender->m_request_pipe == NULL) {
+        CPE_ERROR(schedule->m_em, "log: sender %s: queue request pipe fail", name);
         mem_free(schedule->m_alloc, sender);
         return NULL;
     }
-
-    //sender->m_thread = NULL;
-    pthread_mutex_init(&sender->m_mutex, NULL);
-    pthread_cond_init(&sender->m_cond, NULL);
+    sender->m_thread = NULL;
 
     TAILQ_INIT(&sender->m_categories);
     TAILQ_INSERT_TAIL(&schedule->m_senders, sender, m_next);
@@ -43,15 +41,13 @@ void net_log_sender_free(net_log_sender_t sender) {
     net_log_schedule_t schedule = sender->m_schedule;
 
     assert(schedule->m_state == net_log_schedule_state_init);
+    assert(sender->m_thread == NULL);
 
     while(!TAILQ_EMPTY(&sender->m_categories)) {
         net_log_category_t category = TAILQ_FIRST(&sender->m_categories);
         category->m_sender = NULL;
         TAILQ_REMOVE(&sender->m_categories, category, m_next_for_sender);
     }
-    
-    pthread_cond_destroy(&sender->m_cond);
-    pthread_mutex_destroy(&sender->m_mutex);
     
     TAILQ_REMOVE(&schedule->m_senders, sender, m_next);
     mem_free(schedule->m_alloc, sender);
@@ -65,24 +61,6 @@ net_log_sender_t net_log_sender_find(net_log_schedule_t schedule, const char * n
     }
     
     return NULL;
-}
-
-int net_log_sender_queue(net_log_sender_t sender, log_producer_send_param_t send_param) {
-    net_log_schedule_t schedule = sender->m_schedule;
-
-    pthread_mutex_lock(&sender->m_mutex);
-
-    if (log_queue_push(sender->m_queue, send_param) != 0) {
-        CPE_ERROR(schedule->m_em, "log: sender %s: push param fail", sender->m_name);
-        return -1;
-    }
-    else {
-        pthread_cond_signal(&sender->m_cond);
-    }
-    
-    pthread_mutex_unlock(&sender->m_mutex);
-
-    return 0;
 }
 
 static void * net_log_sender_thread(void * param) {
@@ -114,15 +92,15 @@ static void * net_log_sender_thread(void * param) {
         return NULL;
     }
 
-    net_log_task_manage_t task_mgr = net_log_task_manage_create(schedule, net_schedule, net_driver_from_data(ev_driver));
-    if (task_mgr == NULL) {
-        CPE_ERROR(schedule->m_em, "log: sender %s: create task mgr fail", sender->m_name);
+    net_log_request_manage_t request_mgr = net_log_request_manage_create(schedule, net_schedule, net_driver_from_data(ev_driver));
+    if (request_mgr == NULL) {
+        CPE_ERROR(schedule->m_em, "log: sender %s: create request mgr fail", sender->m_name);
         net_schedule_free(net_schedule);
         ev_loop_destroy(ev_loop);
         return NULL;
     }
     
-    ev_set_userdata(ev_loop, task_mgr);
+    ev_set_userdata(ev_loop, request_mgr);
         
     ev_run(ev_loop, 0);
 

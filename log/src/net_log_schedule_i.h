@@ -14,10 +14,11 @@ NET_BEGIN_DECL
 typedef TAILQ_HEAD(net_log_flusher_list, net_log_flusher) net_log_flusher_list_t;
 typedef TAILQ_HEAD(net_log_sender_list, net_log_sender) net_log_sender_list_t;
 typedef TAILQ_HEAD(net_log_category_list, net_log_category) net_log_category_list_t;
-typedef TAILQ_HEAD(net_log_task_list, net_log_task) net_log_task_list_t;
+typedef TAILQ_HEAD(net_log_request_list, net_log_request) net_log_request_list_t;
 
-typedef struct net_log_task * net_log_task_t;
-typedef struct net_log_task_manage * net_log_task_manage_t;
+typedef struct net_log_request * net_log_request_t;
+typedef struct net_log_request_manage * net_log_request_manage_t;
+typedef struct net_log_request_pipe * net_log_request_pipe_t;
 
 typedef struct _log_producer_send_param * log_producer_send_param_t;
 typedef struct _log_group_builder * log_group_builder_t;
@@ -46,6 +47,10 @@ struct net_log_schedule {
     /*flusher*/
     net_log_flusher_list_t m_flushers;
     net_log_sender_list_t m_senders;
+
+    /*main thread request*/
+    net_log_request_pipe_t m_main_thread_request_pipe;
+    net_log_request_manage_t m_main_thread_request_mgr;
     
     /*builder helper*/
     net_log_category_t m_current_category;
@@ -59,6 +64,9 @@ struct net_log_schedule {
 };
 
 mem_buffer_t net_log_schedule_tmp_buffer(net_log_schedule_t schedule);
+
+int net_log_schedule_init_main_thread_pipe(net_log_schedule_t schedule);
+int net_log_schedule_init_main_thread_mgr(net_log_schedule_t schedule);
 
 NET_END_DECL
 
