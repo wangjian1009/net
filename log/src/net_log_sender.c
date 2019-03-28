@@ -1,5 +1,6 @@
 #include <assert.h>
 #include "ev.h"
+#include "cpe/pal/pal_errno.h"
 #include "cpe/pal/pal_string.h"
 #include "cpe/utils/string_utils.h"
 #include "net_schedule.h"
@@ -63,6 +64,65 @@ net_log_sender_t net_log_sender_find(net_log_schedule_t schedule, const char * n
     return NULL;
 }
 
+int net_log_sender_start(net_log_sender_t sender) {
+    net_log_schedule_t schedule = sender->m_schedule;
+
+    if (sender->m_thread) {
+        CPE_ERROR(schedule->m_em, "log: sender %s: start: thread already started", sender->m_name);
+        return -1;
+    }
+
+    sender->m_thread = mem_alloc(schedule->m_alloc, sizeof(pthread_t));
+    if (sender->m_thread == NULL) {
+        CPE_ERROR(schedule->m_em, "log: sender %s: start: alloc fail", sender->m_name);
+        return -1;
+    }
+
+    if (pthread_create(sender->m_thread, NULL, net_log_sender_thread, sender) != 0) {
+        CPE_ERROR(
+            schedule->m_em, "log: sender %s: start: create thread fail, error=%d (%s)",
+            sender->m_name, errno, strerror(errno));
+        mem_free(schedule->m_alloc, sender->m_thread);
+        sender->m_thread = NULL;
+        return -1;
+    }
+    
+    return 0;
+}
+
+void net_log_sender_notify_stop(net_log_sender_t sender) {
+    net_log_schedule_t schedule = sender->m_schedule;
+
+    if (sender->m_thread == NULL) {
+        CPE_ERROR(schedule->m_em, "log: sender %s: notify stop: thread already stoped", sender->m_name);
+        return;
+    }
+
+    if (schedule->m_debug) {
+        CPE_INFO(schedule->m_em, "log: sender %s: notify stop: notify success", sender->m_name);
+    }
+}
+
+void net_log_sender_wait_stop(net_log_sender_t sender) {
+    net_log_schedule_t schedule = sender->m_schedule;
+
+    if (sender->m_thread == NULL) {
+        CPE_ERROR(schedule->m_em, "log: sender %s: wait stop: thread already stoped", sender->m_name);
+        return;
+    }
+
+    if (pthread_join(*sender->m_thread, NULL) != 0) {
+        CPE_ERROR(schedule->m_em, "log: sender %s: wait stop: wait error, errno=%d (%s)", sender->m_name, errno, strerror(errno));
+    }
+
+    mem_free(schedule->m_alloc, sender->m_thread);
+    sender->m_thread = NULL;
+
+    if (schedule->m_debug) {
+        CPE_INFO(schedule->m_em, "log: sender %s: wait stop: wait success", sender->m_name);
+    }
+}
+
 static void * net_log_sender_thread(void * param) {
     net_log_sender_t sender = param;
     net_log_schedule_t schedule = sender->m_schedule;
@@ -113,4 +173,3 @@ static void * net_log_sender_thread(void * param) {
     
     return NULL;
 }
-

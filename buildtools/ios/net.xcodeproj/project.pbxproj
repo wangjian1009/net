@@ -278,6 +278,7 @@
 		C985533E224CBBCB0096C780 /* net_log_request.c in Sources */ = {isa = PBXBuildFile; fileRef = C985533A224CBBCB0096C780 /* net_log_request.c */; };
 		C985533F224CBBCB0096C780 /* net_log_request_pipe.c in Sources */ = {isa = PBXBuildFile; fileRef = C985533C224CBBCB0096C780 /* net_log_request_pipe.c */; };
 		C9855340224CBBCB0096C780 /* net_log_request_manage.c in Sources */ = {isa = PBXBuildFile; fileRef = C985533D224CBBCB0096C780 /* net_log_request_manage.c */; };
+		C9855342224CFAC00096C780 /* net_log_request_net.c in Sources */ = {isa = PBXBuildFile; fileRef = C9855341224CFAC00096C780 /* net_log_request_net.c */; };
 		C98F307A213D3CA700C64DC6 /* net_schedule_ipstack.c in Sources */ = {isa = PBXBuildFile; fileRef = C98F3079213D3CA700C64DC6 /* net_schedule_ipstack.c */; };
 		C9951627224AFADE00DDEEB1 /* net_statistics_transaction.c in Sources */ = {isa = PBXBuildFile; fileRef = C930DEB321CE523200597387 /* net_statistics_transaction.c */; };
 		C9951628224AFADE00DDEEB1 /* net_statistics.c in Sources */ = {isa = PBXBuildFile; fileRef = C9BAA6902195143400C46526 /* net_statistics.c */; };
@@ -992,6 +993,7 @@
 		C985533B224CBBCB0096C780 /* net_log_request.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_log_request.h; sourceTree = "<group>"; };
 		C985533C224CBBCB0096C780 /* net_log_request_pipe.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_log_request_pipe.c; sourceTree = "<group>"; };
 		C985533D224CBBCB0096C780 /* net_log_request_manage.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_log_request_manage.c; sourceTree = "<group>"; };
+		C9855341224CFAC00096C780 /* net_log_request_net.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_log_request_net.c; sourceTree = "<group>"; };
 		C98F3079213D3CA700C64DC6 /* net_schedule_ipstack.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_schedule_ipstack.c; sourceTree = "<group>"; };
 		C9951630224AFADE00DDEEB1 /* libnet_log.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_log.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		C9951636224AFC3400DDEEB1 /* sds.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = sds.c; sourceTree = "<group>"; };
@@ -1959,6 +1961,7 @@
 		C9951635224AFC3400DDEEB1 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				C9855341224CFAC00096C780 /* net_log_request_net.c */,
 				C985533D224CBBCB0096C780 /* net_log_request_manage.c */,
 				C9855338224CBBCA0096C780 /* net_log_request_manage.h */,
 				C985533C224CBBCB0096C780 /* net_log_request_pipe.c */,
@@ -2985,6 +2988,7 @@
 				C9951627224AFADE00DDEEB1 /* net_statistics_transaction.c in Sources */,
 				C985533E224CBBCB0096C780 /* net_log_request.c in Sources */,
 				C9951661224AFC3400DDEEB1 /* hmac-sha.c in Sources */,
+				C9855342224CFAC00096C780 /* net_log_request_net.c in Sources */,
 				C9951628224AFADE00DDEEB1 /* net_statistics.c in Sources */,
 				C9951629224AFADE00DDEEB1 /* net_statistics_transaction_backend.c in Sources */,
 				C9951669224B071B00DDEEB1 /* net_log_schedule.c in Sources */,

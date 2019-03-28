@@ -1,5 +1,6 @@
 #include <assert.h>
 #include "cpe/utils/md5.h"
+#include "net_watcher.h"
 #include "net_log_request.h"
 #include "log_producer_sender.h"
 #include "log_producer_manager.h"

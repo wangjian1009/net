@@ -193,16 +193,16 @@ int net_log_schedule_start(net_log_schedule_t schedule) {
             net_log_schedule_state_str(schedule->m_state), net_log_schedule_state_str(net_log_schedule_state_runing));
     }
     schedule->m_state = net_log_schedule_state_runing;
-    
-    uint8_t i;
-    for(i = 0; i < schedule->m_category_count; ++i) {
-        net_log_category_t category = schedule->m_categories[i];
-        if (category == NULL) continue;
 
-        if (net_log_category_start(category) != 0) {
-            net_log_schedule_do_stop(schedule, i);
-            return -1;
-        }
+    net_log_flusher_t flusher;
+    net_log_sender_t sender;
+
+    TAILQ_FOREACH(flusher, &schedule->m_flushers, m_next) {
+        net_log_flusher_start(flusher);
+    }
+
+    TAILQ_FOREACH(sender, &schedule->m_senders, m_next) {
+        net_log_sender_start(sender);
     }
     
     return 0;
@@ -221,17 +221,25 @@ static void net_log_schedule_do_stop(net_log_schedule_t schedule, uint8_t catego
     }
     schedule->m_state = net_log_schedule_state_stoping;
 
-    uint8_t i;
-    for(i = 0; i < category_count; ++i) {
-        net_log_category_t category = schedule->m_categories[i];
-        if (category == NULL) continue;
-        net_log_category_notify_stop(category);
+    net_log_flusher_t flusher;
+    net_log_sender_t sender;
+
+    /*首先通知所有线程停止 */
+    TAILQ_FOREACH(flusher, &schedule->m_flushers, m_next) {
+        if (flusher->m_thread) net_log_flusher_notify_stop(flusher);
     }
 
-    for(i = 0; i < category_count; ++i) {
-        net_log_category_t category = schedule->m_categories[i];
-        if (category == NULL) continue;
-        net_log_category_wait_stop(category);
+    TAILQ_FOREACH(sender, &schedule->m_senders, m_next) {
+        if (sender->m_thread) net_log_sender_notify_stop(sender);
+    }
+
+    /*然后等待所有线程停止 */
+    TAILQ_FOREACH(flusher, &schedule->m_flushers, m_next) {
+        if (flusher->m_thread) net_log_flusher_wait_stop(flusher);
+    }
+
+    TAILQ_FOREACH(sender, &schedule->m_senders, m_next) {
+        if (sender->m_thread) net_log_sender_wait_stop(sender);
     }
     
     if (schedule->m_debug) {

@@ -14,6 +14,10 @@ struct net_log_sender {
     pthread_t * m_thread;
 };
 
+int net_log_sender_start(net_log_sender_t sender);
+void net_log_sender_notify_stop(net_log_sender_t sender);
+void net_log_sender_wait_stop(net_log_sender_t sender);
+
 NET_END_DECL
 
 #endif

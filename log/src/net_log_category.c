@@ -67,7 +67,6 @@ net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, 
     category->m_producer_manager = NULL;
     
     log_producer_config * config = create_log_producer_config(category);
-    log_producer_config_set_logstore(config, name);
 
     //log_producer_config_set_topic(config, "test_topic");
 
@@ -152,16 +151,6 @@ void net_log_category_free(net_log_category_t category) {
 
 void net_log_category_network_recover(net_log_category_t category) {
     category->m_producer_manager->networkRecover = 1;
-}
-
-int net_log_category_start(net_log_category_t category) {
-    return 0;
-}
-
-void net_log_category_notify_stop(net_log_category_t category) {
-}
-
-void net_log_category_wait_stop(net_log_category_t category) {
 }
 
 log_producer_send_param_t

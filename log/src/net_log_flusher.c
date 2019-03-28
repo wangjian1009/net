@@ -24,7 +24,7 @@ net_log_flusher_create(net_log_schedule_t schedule, const char * name) {
         return NULL;
     }
 
-    //flusher->m_thread == 
+    flusher->m_thread = NULL;
     pthread_mutex_init(&flusher->m_mutex, NULL);
     pthread_cond_init(&flusher->m_cond, NULL);
 
@@ -38,6 +38,7 @@ void net_log_flusher_free(net_log_flusher_t flusher) {
     net_log_schedule_t schedule = flusher->m_schedule;
 
     assert(schedule->m_state == net_log_schedule_state_init);
+    assert(flusher->m_thread == NULL);
 
     while(!TAILQ_EMPTY(&flusher->m_categories)) {
         net_log_category_t category = TAILQ_FIRST(&flusher->m_categories);
@@ -122,3 +123,67 @@ static void * net_log_flusher_thread(void * param) {
     
     return NULL;
 }
+
+int net_log_flusher_start(net_log_flusher_t flusher) {
+    net_log_schedule_t schedule = flusher->m_schedule;
+
+    if (flusher->m_thread) {
+        CPE_ERROR(schedule->m_em, "log: flusher %s: start: thread already started", flusher->m_name);
+        return -1;
+    }
+
+    flusher->m_thread = mem_alloc(schedule->m_alloc, sizeof(pthread_t));
+    if (flusher->m_thread == NULL) {
+        CPE_ERROR(schedule->m_em, "log: flusher %s: start: alloc fail", flusher->m_name);
+        return -1;
+    }
+
+    if (pthread_create(flusher->m_thread, NULL, net_log_flusher_thread, flusher) != 0) {
+        CPE_ERROR(
+            schedule->m_em, "log: flusher %s: start: create thread fail, error=%d (%s)",
+            flusher->m_name, errno, strerror(errno));
+        mem_free(schedule->m_alloc, flusher->m_thread);
+        flusher->m_thread = NULL;
+        return -1;
+    }
+    
+    return 0;
+}
+
+void net_log_flusher_notify_stop(net_log_flusher_t flusher) {
+    net_log_schedule_t schedule = flusher->m_schedule;
+
+    if (flusher->m_thread == NULL) {
+        CPE_ERROR(schedule->m_em, "log: flusher %s: notify stop: thread already stoped", flusher->m_name);
+        return;
+    }
+
+    pthread_mutex_lock(&flusher->m_mutex);
+    pthread_cond_signal(&flusher->m_cond);
+    pthread_mutex_unlock(&flusher->m_mutex);
+
+    if (schedule->m_debug) {
+        CPE_INFO(schedule->m_em, "log: flusher %s: notify stop: notify success", flusher->m_name);
+    }
+}
+
+void net_log_flusher_wait_stop(net_log_flusher_t flusher) {
+    net_log_schedule_t schedule = flusher->m_schedule;
+
+    if (flusher->m_thread == NULL) {
+        CPE_ERROR(schedule->m_em, "log: flusher %s: wait stop: thread already stoped", flusher->m_name);
+        return;
+    }
+
+    if (pthread_join(*flusher->m_thread, NULL) != 0) {
+        CPE_ERROR(schedule->m_em, "log: flusher %s: wait stop: wait error, errno=%d (%s)", flusher->m_name, errno, strerror(errno));
+    }
+
+    mem_free(schedule->m_alloc, flusher->m_thread);
+    flusher->m_thread = NULL;
+
+    if (schedule->m_debug) {
+        CPE_INFO(schedule->m_em, "log: flusher %s: wait stop: wait success", flusher->m_name);
+    }
+}
+

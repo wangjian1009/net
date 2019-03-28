@@ -308,7 +308,7 @@ log_producer_manager_add_log(
         
         if (send_param) {
             if (net_log_category_commit_request(category, send_param, 0) != 0) {
-                free(send_param);
+                log_producer_send_param_free(send_param);
             }
         }
     }

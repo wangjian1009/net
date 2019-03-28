@@ -358,15 +358,7 @@ log_producer_send_param * create_log_producer_send_param(log_producer_config * p
     return param;
 }
 
-log_producer_send_param * create_log_producer_destroy_param(log_producer_config * producer_config, void *producer_manager)
-{
-    log_producer_send_param * param = (log_producer_send_param *)malloc(sizeof(log_producer_send_param));
-    param->producer_config = producer_config;
-    param->producer_manager = producer_manager;
-    param->log_buf = NULL;
-    param->magic_num = LOG_PRODUCER_SEND_MAGIC_NUM;
-    param->builder_time = 0;
-    return param;
+void log_producer_send_param_free(log_producer_send_param_t send_param) {
+    free_lz4_log_buf(send_param->log_buf);
+    free(send_param);
 }
-
-

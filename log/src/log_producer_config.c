@@ -15,7 +15,6 @@ static void _set_default_producer_config(log_producer_config * pConfig)
     pConfig->destroySenderWaitTimeoutSec = 1;
     pConfig->destroyFlusherWaitTimeoutSec = 1;
     pConfig->compressType = 1;
-    pConfig->using_https = 0;
 }
 
 
@@ -46,26 +45,6 @@ log_producer_config * create_log_producer_config(net_log_category_t category)
 
 void destroy_log_producer_config(log_producer_config * pConfig)
 {
-    if (pConfig->project != NULL)
-    {
-        sdsfree(pConfig->project);
-    }
-    if (pConfig->logstore != NULL)
-    {
-        sdsfree(pConfig->logstore);
-    }
-    if (pConfig->endpoint != NULL)
-    {
-        sdsfree(pConfig->endpoint);
-    }
-    if (pConfig->accessKey != NULL)
-    {
-        sdsfree(pConfig->accessKey);
-    }
-    if (pConfig->accessKeyId != NULL)
-    {
-        sdsfree(pConfig->accessKeyId);
-    }
     if (pConfig->topic != NULL)
     {
         sdsfree(pConfig->topic);
@@ -81,14 +60,6 @@ void destroy_log_producer_config(log_producer_config * pConfig)
     if (pConfig->remote_address != NULL)
     {
         sdsfree(pConfig->remote_address);
-    }
-    if (pConfig->securityToken != NULL)
-    {
-        sdsfree(pConfig->securityToken);
-    }
-    if (pConfig->securityTokenLock != NULL)
-    {
-        DeleteCriticalSection(pConfig->securityTokenLock);
     }
     if (pConfig->tagCount > 0 && pConfig->tags != NULL)
     {
@@ -238,15 +209,6 @@ void log_producer_config_set_compress_type(log_producer_config * config, int32_t
     config->compressType = compress_type;
 }
 
-void log_producer_config_set_using_http(log_producer_config * config, int32_t using_https)
-{
-    if (config == NULL || using_https < 0)
-    {
-        return;
-    }
-    config->using_https = using_https;
-}
-
 void log_producer_config_add_tag(log_producer_config * pConfig, const char * key, const char * value)
 {
     if(key == NULL || value == NULL)
@@ -276,74 +238,6 @@ void log_producer_config_add_tag(log_producer_config * pConfig, const char * key
     pConfig->tags[tagIndex].key = sdsnew(key);
     pConfig->tags[tagIndex].value = sdsnew(value);
 
-}
-
-
-void log_producer_config_set_endpoint(log_producer_config * config, const char * endpoint)
-{
-    if (strlen(endpoint) < 8) {
-        return;
-    }
-    if (strncmp(endpoint, "http://", 7) == 0)
-    {
-        endpoint += 7;
-    }
-    else if (strncmp(endpoint, "https://", 8) == 0)
-    {
-        config->using_https = 1;
-        endpoint += 8;
-    }
-    _copy_config_string(endpoint, &config->endpoint);
-}
-
-void log_producer_config_set_project(log_producer_config * config, const char * project)
-{
-    _copy_config_string(project, &config->project);
-}
-void log_producer_config_set_logstore(log_producer_config * config, const char * logstore)
-{
-    _copy_config_string(logstore, &config->logstore);
-}
-
-void log_producer_config_set_access_id(log_producer_config * config, const char * access_id)
-{
-    _copy_config_string(access_id, &config->accessKeyId);
-}
-
-void log_producer_config_set_access_key(log_producer_config * config, const char * access_key)
-{
-    _copy_config_string(access_key, &config->accessKey);
-}
-
-
-void log_producer_config_reset_security_token(log_producer_config * config, const char * access_id, const char * access_secret, const char * security_token)
-{
-    if (config->securityTokenLock == NULL)
-    {
-        config->securityTokenLock = CreateCriticalSection();
-    }
-    CS_ENTER(config->securityTokenLock);
-    _copy_config_string(access_id, &config->accessKeyId);
-    _copy_config_string(access_secret, &config->accessKey);
-    _copy_config_string(security_token, &config->securityToken);
-    CS_LEAVE(config->securityTokenLock);
-}
-
-void log_producer_config_get_security(log_producer_config * config, char ** access_id, char ** access_secret, char ** security_token)
-{
-    if (config->securityTokenLock == NULL)
-    {
-        _copy_config_string(config->accessKeyId, access_id);
-        _copy_config_string(config->accessKey, access_secret);
-    }
-    else
-    {
-        CS_ENTER(config->securityTokenLock);
-        _copy_config_string(config->accessKeyId, access_id);
-        _copy_config_string(config->accessKey, access_secret);
-        _copy_config_string(config->securityToken, security_token);
-        CS_LEAVE(config->securityTokenLock);
-    }
 }
 
 void log_producer_config_set_topic(log_producer_config * config, const char * topic)

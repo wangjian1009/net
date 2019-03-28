@@ -22,8 +22,7 @@ void log_queue_destroy(log_queue * queue) {
 }
 
 int32_t log_queue_size(log_queue * queue) {
-    int32_t len = queue->tail - queue->head;
-    return len;
+    return (int32_t)(queue->tail - queue->head);
 }
 
 int32_t log_queue_isfull(log_queue * queue) {
