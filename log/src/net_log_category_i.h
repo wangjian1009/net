@@ -13,8 +13,13 @@ struct net_log_category {
     TAILQ_ENTRY(net_log_category) m_next_for_sender;
     char m_name[64];
     uint8_t m_id;
-    log_producer_manager_t m_producer_manager;
     log_producer_config_t m_producer_config;
+    volatile uint32_t m_networkRecover;
+    volatile uint32_t m_totalBufferSize;
+    log_group_builder_t m_builder;
+    int32_t m_firstLogTime;
+    char * m_pack_prefix;
+    volatile uint32_t m_pack_index;
 };
 
 void net_log_category_network_recover(net_log_category_t category);

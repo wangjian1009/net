@@ -32,6 +32,12 @@ struct net_log_request {
     CURL * m_handler;
     net_watcher_t m_watcher;
     net_log_category_t m_category;
+
+    /*result*/
+    net_log_request_param_t m_send_param;
+    net_log_request_send_result_t m_last_send_error;
+    int32_t m_last_sleep_ms;
+    int32_t m_first_error_time;
 };
 
 net_log_request_t net_log_request_create(net_log_request_manage_t mgr, net_log_request_param_t send_param);
@@ -39,7 +45,8 @@ void net_log_request_free(net_log_request_t request);
 
 void net_log_request_real_free(net_log_request_t request);
 
-void net_log_request_complete(net_log_schedule_t schedule, net_log_request_t request, net_log_request_complete_state_t complete_state);
+void net_log_request_complete(
+    net_log_schedule_t schedule, net_log_request_t request, net_log_request_complete_state_t complete_state);
 
 const char * net_log_request_complete_state_str(net_log_request_complete_state_t state);
 

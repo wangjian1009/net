@@ -135,16 +135,6 @@ void log_producer_config_set_max_buffer_limit(log_producer_config * config, int6
     config->maxBufferBytes = max_buffer_bytes;
 }
 
-void log_producer_config_set_send_thread_count(log_producer_config * config, int32_t thread_count)
-{
-    if (config == NULL || thread_count < 0)
-    {
-        return;
-    }
-    config->sendThreadCount = thread_count;
-}
-
-
 void log_producer_config_set_net_interface(log_producer_config * config, const char * net_interface)
 {
     if (config == NULL || net_interface == NULL)

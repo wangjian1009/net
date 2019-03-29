@@ -3,7 +3,6 @@
 //
 
 #include "log_producer_sender.h"
-#include "log_producer_manager.h"
 #include "lz4.h"
 #include "sds.h"
 #include <stdlib.h>
@@ -29,8 +28,6 @@ const char* LOGE_TIME_EXPIRED = "RequestTimeExpired";
 #define SEND_TIME_INVALID_FIX
 
 extern volatile uint8_t g_send_thread_destroy;
-
-extern void destroy_log_producer_manager_tail(log_producer_manager * manager);
 
 typedef struct _send_error_info
 {

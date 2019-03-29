@@ -13,7 +13,6 @@
 #include "net_log_sender_i.h"
 #include "net_log_request_manage.h"
 #include "net_log_request_pipe.h"
-#include "log_producer_manager.h"
 
 net_log_schedule_t
 net_log_schedule_create(
@@ -40,7 +39,7 @@ net_log_schedule_create(
     schedule->m_debug = 0;
     schedule->m_net_schedule = net_schedule;
     schedule->m_net_driver = net_driver;
-    
+    schedule->m_cfg_source = NULL;
     schedule->m_cfg_project = cpe_str_mem_dup(alloc, cfg_project);
 
     if (cpe_str_start_with(cfg_ep, "http://")) {
@@ -356,12 +355,15 @@ void net_log_commit(net_log_schedule_t schedule) {
         return;
     }
 
-    log_producer_result r =
-        net_log_category_add_log(
-            schedule->m_current_category,
-            schedule->m_kv_count, schedule->m_keys, schedule->m_keys_len, schedule->m_values, schedule->m_values_len);
-    if (r != LOG_PRODUCER_OK) {
-        CPE_ERROR(schedule->m_em, "log: commit fail, rv=%d", r);
+    net_log_category_t category = schedule->m_current_category;
+    
+    if (net_log_category_add_log(
+            category,
+            schedule->m_kv_count, schedule->m_keys, schedule->m_keys_len, schedule->m_values, schedule->m_values_len) != 0)
+    {
+        CPE_ERROR(
+            schedule->m_em, "log: category [%d]%s: commit fail",
+            category->m_id, category->m_name);
     }
 }
 

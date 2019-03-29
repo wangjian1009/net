@@ -6,15 +6,27 @@
 #include "net_log_request.h"
 #include "net_log_util.h"
 #include "log_producer_sender.h"
-#include "log_producer_manager.h"
 #include "lz4.h"
+
+#define MAX_NETWORK_ERROR_SLEEP_MS 3600000
+#define BASE_NETWORK_ERROR_SLEEP_MS 1000
+
+#define MAX_QUOTA_ERROR_SLEEP_MS 60000
+#define BASE_QUOTA_ERROR_SLEEP_MS 3000
+
+#define INVALID_TIME_TRY_INTERVAL 3000
+
+#define DROP_FAIL_DATA_TIME_SECOND (3600 * 6)
 
 #define SEND_TIME_INVALID_FIX
 
-static int net_log_request_send(net_log_request_t request, net_log_request_param_t send_param);
-
+static int net_log_request_send(net_log_request_t request);
+static net_log_request_send_result_t net_log_request_calc_result(net_log_schedule_t schedule, net_log_request_t request);
+static int32_t net_log_request_check_result(
+    net_log_schedule_t schedule, net_log_category_t category, net_log_request_t request, net_log_request_send_result_t send_result);
+    
 #ifdef SEND_TIME_INVALID_FIX
-static void net_log_request_rebuild_time(net_log_schedule_t schedule, lz4_log_buf_t lz4_buf, lz4_log_buf_t * new_lz4_buf);
+static void net_log_request_rebuild_time(net_log_schedule_t schedule, net_log_category_t category, net_log_request_t request);
 #endif
 
 net_log_request_t
@@ -38,11 +50,13 @@ net_log_request_create(net_log_request_manage_t mgr, net_log_request_param_t sen
     request->m_watcher = NULL;
     request->m_category = send_param->category;
     request->m_id = ++mgr->m_request_max_id;
-
+    request->m_send_param = send_param;
+    
+    mgr->m_request_count++;
     TAILQ_INSERT_TAIL(&mgr->m_requests, request, m_next);
     
     /*init success*/
-    if (net_log_request_send(request, send_param) != 0) {
+    if (net_log_request_send(request) != 0) {
         net_log_request_free(request);
         return NULL;
     }
@@ -62,7 +76,14 @@ void net_log_request_free(net_log_request_t request) {
         curl_easy_cleanup(request->m_handler);
         request->m_handler = NULL;
     }
+
+    if (request->m_send_param) {
+        net_log_request_param_free(request->m_send_param);
+        request->m_send_param = NULL;
+    }
     
+    assert(mgr->m_request_count > 0);
+    mgr->m_request_count--;
     TAILQ_REMOVE(&mgr->m_requests, request, m_next);
     TAILQ_INSERT_TAIL(&mgr->m_free_requests, request, m_next);
 }
@@ -98,9 +119,9 @@ static size_t net_log_request_on_header(void *ptr, size_t size, size_t nmemb, vo
     return totalLen;
 }
 
-static int net_log_request_send(net_log_request_t request, net_log_request_param_t send_param) {
-    net_log_category_t category =  send_param->category;
-    log_producer_manager_t producer_manager = category->m_producer_manager;
+static int net_log_request_send(net_log_request_t request) {
+    net_log_request_param_t send_param = request->m_send_param;
+    net_log_category_t category = request->m_category;
     net_log_schedule_t schedule = category->m_schedule;
     log_producer_config_t config = category->m_producer_config;
     lz4_log_buf_t buffer = send_param->log_buf;
@@ -270,161 +291,27 @@ void net_log_request_complete(net_log_schedule_t schedule, net_log_request_t req
             schedule->m_em, "log: category [%d]%s: request %d: complete with state %s",
             category->m_id, category->m_name, request->m_id, net_log_request_complete_state_str(complete_state));
     }
-    
-    /* net_log_request_send_result_t send_result; */
-    /* if (net_log_request_calc_result(net_log_request_send_result_t * result, net_log_schedule_t schedule, net_log_request_t request) { */
-/*     log_producer_manager * producer_manager = category->m_producer_manager; */
-/*     log_producer_send_result send_result = AosStatusToResult(result); */
-/*     net_log_schedule_t schedule = category->m_schedule; */
 
-/*     switch (send_result) */
-/*     { */
-/*         case LOG_SEND_OK: */
-/*             break; */
-/*         case LOG_SEND_TIME_ERROR: */
-/*             // if no this marco, drop data */
-/* #ifdef SEND_TIME_INVALID_FIX */
-/*             error_info->last_send_error = LOG_SEND_TIME_ERROR; */
-/*             error_info->last_sleep_ms = INVALID_TIME_TRY_INTERVAL; */
-/*             return error_info->last_sleep_ms; */
-/* #else */
-/*             break; */
-/* #endif */
-/*         case LOG_SEND_QUOTA_EXCEED: */
-/*             if (error_info->last_send_error != LOG_SEND_QUOTA_EXCEED) */
-/*             { */
-/*                 error_info->last_send_error = LOG_SEND_QUOTA_EXCEED; */
-/*                 error_info->last_sleep_ms = BASE_QUOTA_ERROR_SLEEP_MS; */
-/*                 error_info->first_error_time = time(NULL); */
-/*             } */
-/*             else */
-/*             { */
-/*                 if (error_info->last_sleep_ms < MAX_QUOTA_ERROR_SLEEP_MS) */
-/*                 { */
-/*                     error_info->last_sleep_ms *= 2; */
-/*                 } */
+    net_log_request_send_result_t send_result;
 
-/* #ifndef SEND_TIME_INVALID_FIX */
-/*                 // only drop data when SEND_TIME_INVALID_FIX not defined */
-/*                 if (time(NULL) - error_info->first_error_time > DROP_FAIL_DATA_TIME_SECOND) */
-/*                 { */
-/*                     break; */
-/*                 } */
-/* #endif */
-/*             } */
-/*             if (schedule->m_debug) { */
-/*                 CPE_INFO(schedule->m_em, "send quota error, project : %s, logstore : %s, buffer len : %d, raw len : %d, code : %d, error msg : %s", */
-/*                          schedule->m_cfg_project, */
-/*                          category->m_name, */
-/*                          (int)send_param->log_buf->length, */
-/*                          (int)send_param->log_buf->raw_length, */
-/*                          result->statusCode, */
-/*                          result->errorMessage); */
-/*             } */
-/*             return error_info->last_sleep_ms; */
-/*         case LOG_SEND_SERVER_ERROR : */
-/*         case LOG_SEND_NETWORK_ERROR: */
-/*             if (error_info->last_send_error != LOG_SEND_NETWORK_ERROR) */
-/*             { */
-/*                 error_info->last_send_error = LOG_SEND_NETWORK_ERROR; */
-/*                 error_info->last_sleep_ms = BASE_NETWORK_ERROR_SLEEP_MS; */
-/*                 error_info->first_error_time = time(NULL); */
-/*             } */
-/*             else */
-/*             { */
-/*                 if (error_info->last_sleep_ms < MAX_NETWORK_ERROR_SLEEP_MS) */
-/*                 { */
-/*                     error_info->last_sleep_ms *= 2; */
-/*                 } */
-/* #ifndef SEND_TIME_INVALID_FIX */
-/*                 // only drop data when SEND_TIME_INVALID_FIX not defined */
-/*                 if (time(NULL) - error_info->first_error_time > DROP_FAIL_DATA_TIME_SECOND) */
-/*                 { */
-/*                     break; */
-/*                 } */
-/* #endif */
-/*             } */
-/*             if (schedule->m_debug) { */
-/*                 CPE_INFO( */
-/*                     schedule->m_em, "send network error, project : %s, logstore : %s, buffer len : %d, raw len : %d, code : %d, error msg : %s", */
-/*                     schedule->m_cfg_project, */
-/*                     category->m_name, */
-/*                     (int)send_param->log_buf->length, */
-/*                     (int)send_param->log_buf->raw_length, */
-/*                     result->statusCode, */
-/*                     result->errorMessage); */
-/*             } */
-/*             return error_info->last_sleep_ms; */
-/*         default: */
-/*             // discard data */
-/*             break; */
+    switch(complete_state) {
+    case net_log_request_complete_done:
+        send_result = net_log_request_calc_result(schedule, request);
+        break;
+    case net_log_request_complete_cancel:
+        send_result = net_log_request_send_network_error;
+        break;
+    case net_log_request_complete_timeout:
+        send_result = net_log_request_send_network_error;
+        break;
+    }
 
-/*     } */
-
-/*     producer_manager->totalBufferSize -= send_param->log_buf->length; */
-/*     if (send_result == LOG_SEND_OK) */
-/*     { */
-/*         if (schedule->m_debug) { */
-/*             CPE_INFO( */
-/*                 schedule->m_em, "send success, project : %s, logstore : %s, buffer len : %d, raw len : %d, total buffer : %d, code : %d, error msg : %s", */
-/*                 schedule->m_cfg_project, */
-/*                 category->m_name, */
-/*                 (int)send_param->log_buf->length, */
-/*                 (int)send_param->log_buf->raw_length, */
-/*                 (int)producer_manager->totalBufferSize, */
-/*                 result->statusCode, */
-/*                 result->errorMessage); */
-/*         } */
-/*     } */
-/*     else */
-/*     { */
-/*         CPE_ERROR( */
-/*             schedule->m_em, "send fail, discard data, project : %s, logstore : %s, buffer len : %d, raw len : %d, total buffer : %d, code : %d, error msg : %s", */
-/*             schedule->m_cfg_project, */
-/*             category->m_name, */
-/*             (int)send_param->log_buf->length, */
-/*             (int)send_param->log_buf->raw_length, */
-/*             (int)producer_manager->totalBufferSize, */
-/*             result->statusCode, */
-/*             result->errorMessage); */
-/*     } */
+    int32_t sleepMs = net_log_request_check_result(schedule, category, request, send_result);
+    if (sleepMs <= 0) { /*done or discard*/
+    }
+    else { /*delay process*/
+    }
 }
-
-
-/*     int32_t sleepMs = log_producer_on_send_done(send_param, rst, &error_info); */
-
-/*     post_log_result_destroy(rst); */
-
-/*     // tmp buffer, free */
-/*     if (send_buf != send_param->log_buf) */
-/*     { */
-/*         free(send_buf); */
-/*     } */
-
-/*     if (sleepMs <= 0) */
-/*     { */
-/*         break; */
-/*     } */
-/*     int i =0; */
-/*     for (i = 0; i < sleepMs; i += SEND_SLEEP_INTERVAL_MS) */
-/*     { */
-/*         usleep(SEND_SLEEP_INTERVAL_MS * 1000); */
-/*         if (producer_manager->shutdown || producer_manager->networkRecover) */
-/*         { */
-/*             break; */
-/*         } */
-/*     } */
-
-/*     /\* if (producer_manager->networkRecover) { *\/ */
-/*     /\*     producer_manager->networkRecover = 0; *\/ */
-/*     /\* } *\/ */
-
-/*     // at last, free all buffer */
-/*     /\* free_lz4_log_buf(send_param->log_buf); *\/ */
-/*     /\* free(send_param); *\/ */
-
-/*     return NULL; */
-/* } */
 
 const char * net_log_request_complete_state_str(net_log_request_complete_state_t state) {
     switch(state) {
@@ -454,86 +341,149 @@ void net_log_request_param_free(net_log_request_param_t send_param) {
     free(send_param);
 }
 
-    /* CURLcode res = curl_easy_perform(curl); */
-    /* //printf("result : %s \n", curl_easy_strerror(res)); */
-    /* long http_code; */
-    /* if (res == CURLE_OK) */
-    /* { */
-    /*     if ((res = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code)) != CURLE_OK) */
-    /*     { */
-    /*         printf("get info result : %s \n", curl_easy_strerror(res)); */
-    /*         result->statusCode = -2; */
-    /*     } else { */
-    /*         result->statusCode = http_code; */
-    /*     } */
-    /* } */
-    /* else */
-    /* { */
-    /*     if (body == NULL) */
-    /*     { */
-    /*         body = sdsnew(curl_easy_strerror(res)); */
-    /*     } */
-    /*     else */
-    /*     { */
-    /*         body = sdscpy(body, curl_easy_strerror(res)); */
-    /*     } */
-    /*     result->statusCode = -1 * (int)res; */
-    /* } */
-    /* // header and body 's pointer may be modified in callback (size > 256) */
-    /* if (sdslen(header) > 0) */
-    /* { */
-    /*     result->requestID = header; */
-    /* } */
-    /* else */
-    /* { */
-    /*     sdsfree(header); */
-    /*     header = NULL; */
-    /* } */
-    /* // body will be NULL or a error string(net error or request error) */
-    /* result->errorMessage = body; */
-
-    /* return result; */
-
-static int net_log_request_calc_result(net_log_request_send_result_t * result, net_log_schedule_t schedule, net_log_request_t request) {
+static net_log_request_send_result_t net_log_request_calc_result(net_log_schedule_t schedule, net_log_request_t request) {
     long http_code = 0;    
     CURLcode res = curl_easy_getinfo(request->m_handler, CURLINFO_RESPONSE_CODE, &http_code);
     if (res != CURLE_OK) {
         CPE_ERROR(schedule->m_em, "log: request: get curl response code fail: %s", curl_easy_strerror(res));
-        return -1;
+        return net_log_request_send_network_error;
     }
-    
-    if (http_code / 100 == 2) {
-        *result = net_log_request_send_ok;
+    else {
+        if (http_code / 100 == 2) {
+            return net_log_request_send_ok;
+        }
+        /* else if (http_code >= 500 || result->requestID == NULL) { */
+        /*     requestID->m_last_send_error = net_log_request_send_server_error; */
+        /* } */
+        else if (http_code == 403) {
+            return net_log_request_send_quota_exceed;
+        }
+        else if (http_code == 401 || http_code == 404) {
+            return net_log_request_send_unauthorized;
+        }
+        /* else if (result->errorMessage != NULL && strstr(result->errorMessage, LOGE_TIME_EXPIRED) != NULL) { */
+        /*     return net_log_request_send_time_error; */
+        /* } */
+        else {
+            return net_log_request_send_discard_error;
+        }
     }
-    else if (http_code <= 0) {
-        *result = net_log_request_send_network_error;
-    }
-    /* else if (http_code >= 500 || result->requestID == NULL) */
-    /* { */
-    /*     return LOG_SEND_SERVER_ERROR; */
-    /* } */
-    /* if (http_code == 403) */
-    /* { */
-    /*     return LOG_SEND_QUOTA_EXCEED; */
-    /* } */
-    /* if (http_code == 401 || http_code == 404) */
-    /* { */
-    /*     return LOG_SEND_UNAUTHORIZED; */
-    /* } */
-    /* if (result->errorMessage != NULL && strstr(result->errorMessage, LOGE_TIME_EXPIRED) != NULL) */
-    /* { */
-    /*     return LOG_SEND_TIME_ERROR; */
-    /* } */
+}
 
-    /* return LOG_SEND_DISCARD_ERROR; */
+static int32_t net_log_request_check_result(
+    net_log_schedule_t schedule, net_log_category_t category, net_log_request_t request, net_log_request_send_result_t send_result)
+{
+    switch (send_result) {
+    case net_log_request_send_ok:
+        break;
+    case net_log_request_send_time_error:
+        // if no this marco, drop data
+#ifdef SEND_TIME_INVALID_FIX
+        request->m_last_send_error = net_log_request_send_time_error;
+        request->m_last_sleep_ms = INVALID_TIME_TRY_INTERVAL;
+        return request->m_last_sleep_ms;
+#else
+        break;
+#endif
+    case net_log_request_send_quota_exceed:
+        if (request->m_last_send_error != net_log_request_send_quota_exceed) {
+            request->m_last_send_error = net_log_request_send_quota_exceed;
+            request->m_last_sleep_ms = BASE_QUOTA_ERROR_SLEEP_MS;
+            request->m_first_error_time = time(NULL);
+        }
+        else {
+            if (request->m_last_sleep_ms < MAX_QUOTA_ERROR_SLEEP_MS) {
+                request->m_last_sleep_ms *= 2;
+            }
+
+#ifndef SEND_TIME_INVALID_FIX
+            // only drop data when SEND_TIME_INVALID_FIX not defined
+            if (time(NULL) - request->m_first_error_time > DROP_FAIL_DATA_TIME_SECOND) {
+                break;
+            }
+#endif
+        }
+        if (schedule->m_debug) {
+            /* CPE_INFO( */
+            /*     schedule->m_em, "send quota error, project : %s, logstore : %s, buffer len : %d, raw len : %d, code : %d, error msg : %s", */
+            /*     schedule->m_cfg_project, */
+            /*     category->m_name, */
+            /*     (int)request->m_send_param->log_buf->length, */
+            /*     (int)request->m_send_param->log_buf->raw_length, */
+            /*     result->statusCode, */
+            /*     result->errorMessage); */
+        }
+        return request->m_last_sleep_ms;
+    case net_log_request_send_server_error:
+    case net_log_request_send_network_error:
+        if (request->m_last_send_error != net_log_request_send_network_error) {
+            request->m_last_send_error = net_log_request_send_network_error;
+            request->m_last_sleep_ms = BASE_NETWORK_ERROR_SLEEP_MS;
+            request->m_first_error_time = time(NULL);
+        }
+        else {
+            if (request->m_last_sleep_ms < MAX_NETWORK_ERROR_SLEEP_MS) {
+                request->m_last_sleep_ms *= 2;
+            }
+#ifndef SEND_TIME_INVALID_FIX
+            // only drop data when SEND_TIME_INVALID_FIX not defined
+            if (time(NULL) - request->m_first_error_time > DROP_FAIL_DATA_TIME_SECOND) {
+                break;
+            }
+#endif
+        }
+        if (schedule->m_debug) {
+            /* CPE_INFO( */
+            /*     schedule->m_em, "send network error, project : %s, logstore : %s, buffer len : %d, raw len : %d, code : %d, error msg : %s", */
+            /*     send_param->producer_config->project, */
+            /*     send_param->producer_config->logstore, */
+            /*     (int)send_param->log_buf->length, */
+            /*     (int)send_param->log_buf->raw_length, */
+            /*     result->statusCode, */
+            /*     result->errorMessage); */
+        }
+        return request->m_last_sleep_ms;
+    default:
+        // discard data
+        break;
+    }
+
+    request->m_category->m_totalBufferSize -= request->m_send_param->log_buf->length;
+
+    if (schedule->m_debug) {
+        if (send_result == net_log_request_send_ok) {
+            CPE_INFO(
+                schedule->m_em, "log: category [%d]%s: request %d: send success, buffer-len=%d, raw-len=%d, total-buffer=%d",
+                category->m_id, category->m_name, request->m_id,
+                (int)request->m_send_param->log_buf->length,
+                (int)request->m_send_param->log_buf->raw_length,
+                (int)category->m_totalBufferSize);
+        }
+        else {
+            CPE_INFO(
+                schedule->m_em, "log: category [%d]%s: request %d: send fail, discard data, buffer-len=%d, raw=len=%d, total-buffer=%d",
+                category->m_id, category->m_name, request->m_id,
+                (int)request->m_send_param->log_buf->length,
+                (int)request->m_send_param->log_buf->raw_length,
+                (int)category->m_totalBufferSize);
+        }
+    }
 
     return 0;
 }
 
 #ifdef SEND_TIME_INVALID_FIX
 
-static void net_log_request__rebuild_time(net_log_schedule_t schedule, lz4_log_buf * lz4_buf, lz4_log_buf ** new_lz4_buf) {
-    CPE_INFO(schedule->m_em, "rebuild log.");
+static void net_log_request_rebuild_time(net_log_schedule_t schedule, net_log_category_t category, net_log_request_t request) {
+
+    if (schedule->m_debug) {
+        CPE_INFO(
+            schedule->m_em, "log: category [%d]%s: request %d: rebuild time",
+            category->m_id, category->m_name, request->m_id);
+    }
+
+    lz4_log_buf_t lz4_buf = request->m_send_param->log_buf;
+    
     char * buf = (char *)malloc(lz4_buf->raw_length);
     if (LZ4_decompress_safe((const char* )lz4_buf->data, buf, lz4_buf->length, lz4_buf->raw_length) <= 0) {
         free(buf);
@@ -554,13 +504,15 @@ static void net_log_request__rebuild_time(net_log_schedule_t schedule, lz4_log_b
         return;
     }
 
-    *new_lz4_buf = (lz4_log_buf*)malloc(sizeof(lz4_log_buf) + compressed_size);
-    (*new_lz4_buf)->length = compressed_size;
-    (*new_lz4_buf)->raw_length = lz4_buf->raw_length;
-    memcpy((*new_lz4_buf)->data, compress_data, compressed_size);
+    lz4_log_buf_t new_lz4_buf = (lz4_log_buf_t)malloc(sizeof(lz4_log_buf) + compressed_size);
+    new_lz4_buf->length = compressed_size;
+    new_lz4_buf->raw_length = lz4_buf->raw_length;
+    memcpy(new_lz4_buf->data, compress_data, compressed_size);
     free(buf);
     free(compress_data);
-    return;
+
+    free(request->m_send_param->log_buf);
+    request->m_send_param->log_buf = new_lz4_buf;
 }
 
 #endif

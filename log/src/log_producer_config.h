@@ -21,8 +21,6 @@ typedef struct _log_producer_config
     int32_t tagAllocSize;
     int32_t tagCount;
 
-    int32_t sendThreadCount;
-
     int32_t packageTimeoutInMS;
     int32_t logCountPerPackage;
     int32_t logBytesPerPackage;

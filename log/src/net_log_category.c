@@ -1,4 +1,5 @@
 #include <assert.h>
+#include "md5.h"
 #include "cpe/pal/pal_string.h"
 #include "cpe/utils/string_utils.h"
 #include "net_log_category_i.h"
@@ -6,7 +7,10 @@
 #include "net_log_sender_i.h"
 #include "net_log_request.h"
 #include "net_log_request_pipe.h"
-#include "log_producer_manager.h"
+#include "log_producer_config.h"
+#include "log_builder.h"
+
+static char * net_log_category_get_pack_id(net_log_schedule_t schedule, const char * configName, const char * ip);
 
 net_log_category_t
 net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, net_log_sender_t sender, const char * name, uint8_t id) {
@@ -66,9 +70,14 @@ net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, 
     cpe_str_dup(category->m_name, sizeof(category->m_name), name);
     category->m_id = id;
     category->m_producer_config = NULL;
-    category->m_producer_manager = NULL;
+    category->m_networkRecover = 0;
+    category->m_totalBufferSize = 0;
+    category->m_builder = NULL;
+    category->m_firstLogTime = 0;
+    category->m_pack_prefix = NULL;
+    category->m_pack_index = 0;
     
-    log_producer_config * config = create_log_producer_config(category);
+    log_producer_config_t config = create_log_producer_config(category);
 
     //log_producer_config_set_topic(config, "test_topic");
 
@@ -77,9 +86,6 @@ net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, 
     log_producer_config_set_packet_log_count(config, 512);
     log_producer_config_set_packet_timeout(config, 3000);
     log_producer_config_set_max_buffer_limit(config, 4*1024*1024);
-
-    // set send thread count
-    log_producer_config_set_send_thread_count(config, 1);
 
     // set compress type : lz4
     log_producer_config_set_compress_type(config, 1);
@@ -95,9 +101,10 @@ net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, 
 
     // create manager
     category->m_producer_config = config;
-    category->m_producer_manager = create_log_producer_manager(category);
-    if (category->m_producer_manager == NULL) {
-        CPE_ERROR(schedule->m_em, "log: category [%d]%s: create producer manager fail!", id, name);
+
+    category->m_pack_prefix = net_log_category_get_pack_id(schedule, category->m_name, schedule->m_cfg_source);
+    if (category->m_pack_prefix == NULL) {
+        CPE_ERROR(schedule->m_em, "log: category [%d]%s: create pack prefix fail!", id, name);
         destroy_log_producer_config(config);
         mem_free(schedule->m_alloc, category);
         return NULL;
@@ -143,24 +150,24 @@ void net_log_category_free(net_log_category_t category) {
     if (category->m_sender) {
         TAILQ_REMOVE(&category->m_sender->m_categories, category, m_next_for_sender);
     }
+
+    mem_free(schedule->m_alloc, category->m_pack_prefix);
     
-    destroy_log_producer_manager(category->m_producer_manager);
     destroy_log_producer_config(category->m_producer_config);
 
     mem_free(schedule->m_alloc, category);
 }
 
 void net_log_category_network_recover(net_log_category_t category) {
-    category->m_producer_manager->networkRecover = 1;
+    category->m_networkRecover = 1;
 }
 
 net_log_request_param_t
 net_log_category_build_request(net_log_category_t category, log_group_builder_t builder) {
     net_log_schedule_t schedule = category->m_schedule;
-    log_producer_manager * producer_manager = category->m_producer_manager;
     log_producer_config * config = category->m_producer_config;
 
-    producer_manager->totalBufferSize -= builder->loggroup_size;
+    category->m_totalBufferSize -= builder->loggroup_size;
 
     int i = 0;
     for (i = 0; i < config->tagCount; ++i) {
@@ -171,12 +178,12 @@ net_log_category_build_request(net_log_category_t category, log_group_builder_t 
         add_topic(builder, config->topic, strlen(config->topic));
     }
     
-    if (producer_manager->source != NULL) {
-        add_source(builder, producer_manager->source, strlen(producer_manager->source));
+    if (schedule->m_cfg_source != NULL) {
+        add_source(builder, schedule->m_cfg_source, strlen(schedule->m_cfg_source));
     }
 
-    if (producer_manager->pack_prefix != NULL) {
-        add_pack_id(builder, producer_manager->pack_prefix, strlen(producer_manager->pack_prefix), producer_manager->pack_index++);
+    if (category->m_pack_prefix != NULL) {
+        add_pack_id(builder, category->m_pack_prefix, strlen(category->m_pack_prefix), category->m_pack_index++);
     }
 
     lz4_log_buf * lz4_buf = NULL;
@@ -192,13 +199,13 @@ net_log_category_build_request(net_log_category_t category, log_group_builder_t 
         return NULL;
     }
 
-    producer_manager->totalBufferSize += lz4_buf->length;
+    category->m_totalBufferSize += lz4_buf->length;
 
     if (schedule->m_debug) {
         CPE_INFO(
             schedule->m_em, "log: category [%d]%s: push loggroup to sender, loggroup size %d, lz4 size %d, now buffer size %d",
             category->m_id, category->m_name,
-            (int)lz4_buf->raw_length, (int)lz4_buf->length, (int)producer_manager->totalBufferSize);
+            (int)lz4_buf->raw_length, (int)lz4_buf->length, (int)category->m_totalBufferSize);
     }
 
     net_log_request_param_t send_param = net_log_request_param_create(category, lz4_buf, builder->builder_time);
@@ -252,35 +259,34 @@ int net_log_category_commit_request(net_log_category_t category, net_log_request
 int net_log_category_add_log(
     net_log_category_t category, int32_t pair_count, char ** keys, size_t * key_lens, char ** values, size_t * val_lens)
 {
-    log_producer_manager * producer_manager = category->m_producer_manager;
     net_log_schedule_t schedule = category->m_schedule;
-    log_producer_config * config = category->m_producer_config;
+    log_producer_config_t config = category->m_producer_config;
 
-    if (producer_manager->totalBufferSize > config->maxBufferBytes) {
+    if (category->m_totalBufferSize > config->maxBufferBytes) {
         return LOG_PRODUCER_DROP_ERROR;
     }
     
-    if (producer_manager->builder == NULL) {
+    if (category->m_builder == NULL) {
         int32_t now_time = time(NULL);
 
-        producer_manager->builder = log_group_create();
-        producer_manager->firstLogTime = now_time;
-        producer_manager->builder->private_value = producer_manager;
+        category->m_builder = log_group_create();
+        category->m_firstLogTime = now_time;
+        category->m_builder->private_value = category;
     }
 
-    add_log_full(producer_manager->builder, (uint32_t)time(NULL), pair_count, keys, key_lens, values, val_lens);
+    add_log_full(category->m_builder, (uint32_t)time(NULL), pair_count, keys, key_lens, values, val_lens);
 
-    log_group_builder * builder = producer_manager->builder;
+    log_group_builder_t builder = category->m_builder;
 
     int32_t nowTime = time(NULL);
-    if (producer_manager->builder->loggroup_size < config->logBytesPerPackage
-        && nowTime - producer_manager->firstLogTime < config->packageTimeoutInMS / 1000
-        && producer_manager->builder->grp->n_logs < config->logCountPerPackage)
+    if (category->m_builder->loggroup_size < config->logBytesPerPackage
+        && nowTime - category->m_firstLogTime < config->packageTimeoutInMS / 1000
+        && category->m_builder->grp->n_logs < config->logCountPerPackage)
     {
         return LOG_PRODUCER_OK;
     }
 
-    producer_manager->builder = NULL;
+    category->m_builder = NULL;
 
     size_t loggroup_size = builder->loggroup_size;
 
@@ -296,11 +302,11 @@ int net_log_category_add_log(
             log_group_destroy(builder);
         }
         else {
-            producer_manager->totalBufferSize += loggroup_size;
+            category->m_totalBufferSize += loggroup_size;
         }
     }
     else { /*同步flush */
-        producer_manager->totalBufferSize += loggroup_size;
+        category->m_totalBufferSize += loggroup_size;
 
         net_log_request_param_t send_param = net_log_category_build_request(category, builder);
         log_group_destroy(builder);
@@ -313,6 +319,20 @@ int net_log_category_add_log(
     }
     
     return LOG_PRODUCER_OK;
+}
+
+char * net_log_category_get_pack_id(net_log_schedule_t schedule, const char * configName, const char * ip) {
+    unsigned char md5Buf[16];
+    mbedtls_md5((const unsigned char *)configName, strlen(configName), md5Buf);
+    int loop = 0;
+    char * val = (char *)mem_alloc(schedule->m_alloc, sizeof(char) * 32);
+    memset(val, 0, sizeof(char) * 32);
+    for(; loop < 8; ++loop) {
+        unsigned char a = ((md5Buf[loop])>>4) & 0xF, b = (md5Buf[loop]) & 0xF;
+        val[loop<<1] = a > 9 ? (a - 10 + 'A') : (a + '0');
+        val[(loop<<1)|1] = b > 9 ? (b - 10 + 'A') : (b + '0');
+    }
+    return val;
 }
 
 /* static void net_log_on_send_done( */

@@ -8,7 +8,7 @@
 #include "net_log_category_i.h"
 #include "net_log_request.h"
 #include "log_queue.h"
-#include "log_producer_manager.h"
+#include "log_builder.h"
 
 static void * net_log_flusher_thread(void * param);
 
@@ -68,7 +68,7 @@ net_log_flusher_t net_log_flusher_find(net_log_schedule_t schedule, const char *
     return NULL;
 }
 
-int net_log_flusher_queue(net_log_flusher_t flusher, log_group_builder * builder) {
+int net_log_flusher_queue(net_log_flusher_t flusher, log_group_builder_t builder) {
     net_log_schedule_t schedule = flusher->m_schedule;
 
     pthread_mutex_lock(&flusher->m_mutex);
@@ -105,8 +105,7 @@ static void * net_log_flusher_thread(void * param) {
 
         pthread_mutex_unlock(&flusher->m_mutex);
 
-        log_producer_manager * producer_manager = (log_producer_manager *)builder->private_value;
-        net_log_category_t category = producer_manager->m_category;
+        net_log_category_t category = (net_log_category_t)builder->private_value;
 
         net_log_request_param_t send_param = net_log_category_build_request(category, builder);
         log_group_destroy(builder);
