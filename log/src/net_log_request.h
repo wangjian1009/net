@@ -42,7 +42,7 @@ void net_log_request_complete(net_log_request_t request, net_log_request_complet
 
 /**/
 net_log_request_param_t
-create_net_log_request_param(
+net_log_request_param_create(
     net_log_category_t category, lz4_log_buf_t log_buf, uint32_t builder_time);
 
 void net_log_request_param_free(net_log_request_param_t send_param);

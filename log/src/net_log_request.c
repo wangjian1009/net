@@ -239,6 +239,18 @@ static int net_log_request_send(net_log_request_t request, net_log_request_param
 
     //curl_easy_setopt(request->m_handler, CURLOPT_VERBOSE, 1); //打印调试信息
 
+    CURLMcode rc = curl_multi_add_handle(request->m_mgr->m_multi_handle, request->m_handler);
+    if (rc != 0) {
+        CPE_ERROR(schedule->m_em, "log: category [%d]%s: start curl query fail", category->m_id, category->m_name);
+        return -1;
+    }
+
+    request->m_mgr->m_still_running = 1;
+
+    if (schedule->m_debug) {
+        CPE_INFO(schedule->m_em, "log: category [%d]%s: start curl query success", category->m_id, category->m_name);
+    }
+    
     return 0;
 }
 
@@ -278,7 +290,7 @@ static int net_log_request_send(net_log_request_t request, net_log_request_param
 /* } */
 
 net_log_request_param_t
-create_net_log_request_param(
+net_log_request_param_create(
     net_log_category_t category, lz4_log_buf * log_buf, uint32_t builder_time)
 {
     net_log_request_param_t param = (net_log_request_param_t)malloc(sizeof(struct net_log_request_param));
