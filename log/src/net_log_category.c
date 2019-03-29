@@ -204,8 +204,7 @@ net_log_category_build_request(net_log_category_t category, log_group_builder_t 
             (int)lz4_buf->raw_length, (int)lz4_buf->length, (int)producer_manager->totalBufferSize);
     }
 
-    net_log_request_param_t send_param =
-        create_net_log_request_param(config, producer_manager, lz4_buf, builder->builder_time);
+    net_log_request_param_t send_param = create_net_log_request_param(category, lz4_buf, builder->builder_time);
     if (send_param == NULL) {
         CPE_ERROR(
             schedule->m_em, "log: category [%d]%s: build send params: create fail!",

@@ -173,9 +173,9 @@ void * log_producer_send_fun(void * param)
 
 int32_t log_producer_on_send_done(net_log_request_param_t send_param, post_log_result * result, send_error_info * error_info)
 {
+    net_log_category_t category = send_param->category;
+    log_producer_manager * producer_manager = category->m_producer_manager;
     log_producer_send_result send_result = AosStatusToResult(result);
-    log_producer_manager * producer_manager = (log_producer_manager *)send_param->producer_manager;
-    net_log_category_t category = producer_manager->m_category;
     net_log_schedule_t schedule = category->m_schedule;
 
     if (producer_manager->send_done_function != NULL)

@@ -209,8 +209,8 @@ static int net_log_request_prepare(
 }
 
 static int net_log_request_send(net_log_request_t request, net_log_request_param_t send_param) {
-    log_producer_manager_t producer_manager = (log_producer_manager_t)send_param->producer_manager;
-    net_log_category_t category =  producer_manager->m_category;
+    net_log_category_t category =  send_param->category;
+    log_producer_manager_t producer_manager = category->m_producer_manager;
     net_log_schedule_t schedule = category->m_schedule;
 
     if (send_param->magic_num != LOG_PRODUCER_SEND_MAGIC_NUM) {
@@ -236,7 +236,7 @@ static int net_log_request_send(net_log_request_t request, net_log_request_param
 
     int rv = net_log_request_prepare(
         schedule, category, request,
-        send_param->log_buf, send_param->producer_config);
+        send_param->log_buf, category->m_producer_config);
 
     return rv;
 }
@@ -278,11 +278,10 @@ static int net_log_request_send(net_log_request_t request, net_log_request_param
 
 net_log_request_param_t
 create_net_log_request_param(
-    log_producer_config_t producer_config, void * producer_manager, lz4_log_buf * log_buf, uint32_t builder_time)
+    net_log_category_t category, lz4_log_buf * log_buf, uint32_t builder_time)
 {
     net_log_request_param_t param = (net_log_request_param_t)malloc(sizeof(struct net_log_request_param));
-    param->producer_config = producer_config;
-    param->producer_manager = producer_manager;
+    param->category = category;
     param->log_buf = log_buf;
     param->magic_num = LOG_PRODUCER_SEND_MAGIC_NUM;
     param->builder_time = builder_time;

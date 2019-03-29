@@ -11,8 +11,7 @@
 #define LOG_SEND_TIME_ERROR 6
 
 struct net_log_request_param {
-    log_producer_config_t producer_config;
-    void * producer_manager;
+    net_log_category_t category;
     lz4_log_buf * log_buf;
     uint32_t magic_num;
     uint32_t builder_time;
@@ -31,11 +30,10 @@ void net_log_request_free(net_log_request_t request);
 
 void net_log_request_real_free(net_log_request_t request);
 
-net_log_request_param_t create_net_log_request_param(
-    log_producer_config_t producer_config,
-    void * producer_manager,
-    lz4_log_buf * log_buf,
-    uint32_t builder_time);
+/**/
+net_log_request_param_t
+create_net_log_request_param(
+    net_log_category_t category, lz4_log_buf * log_buf, uint32_t builder_time);
 
 void net_log_request_param_free(net_log_request_param_t send_param);
 
