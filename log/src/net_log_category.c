@@ -339,7 +339,7 @@ int net_log_category_add_log(
     if (category->m_builder == NULL) {
         int32_t now_time = time(NULL);
 
-        category->m_builder = log_group_create();
+        category->m_builder = log_group_create(schedule);
         category->m_firstLogTime = now_time;
         category->m_builder->private_value = category;
     }

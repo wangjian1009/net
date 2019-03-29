@@ -1,9 +1,9 @@
 #include <assert.h>
 #include "cpe/pal/pal_string.h"
 #include "cpe/pal/pal_stdlib.h"
+#include "cpe/utils/string_utils.h"
 #include "log_builder.h"
 #include "lz4.h"
-#include "sds.h"
 
 // 1+3( 1 --->  header;  2 ---> 128 * 128 = 16KB)
 #define INIT_LOG_SIZE_BYTES 3
@@ -98,8 +98,7 @@ static unsigned scan_varint(unsigned len, const uint8_t *data)
     return i + 1;
 }
 
-log_group_builder* log_group_create()
-{
+log_group_builder* log_group_create(net_log_schedule_t schedule) {
     log_group_builder* bder = (log_group_builder*)malloc(sizeof(log_group_builder)+sizeof(log_group));
     memset(bder, 0, sizeof(log_group_builder)+sizeof(log_group));
     bder->grp = (log_group*)((char *)(bder) + sizeof(log_group_builder));
@@ -121,13 +120,13 @@ void log_group_destroy(log_group_builder* bder)
     {
         free(group->logs.buffer);
     }
-    if (group->topic != NULL)
-    {
-        sdsfree(group->topic);
+
+    if (group->topic != NULL) {
+        mem_free(bder->m_schedule->m_alloc, group->topic);
     }
-    if (group->source != NULL)
-    {
-        sdsfree(group->source);
+
+    if (group->source != NULL)     {
+        mem_free(bder->m_schedule->m_alloc, group->source);
     }
     // free self
     free(bder);
@@ -220,16 +219,15 @@ void add_log_full(log_group_builder* bder, uint32_t logTime, int32_t pair_count,
 }
 
 
-void add_source(log_group_builder* bder,const char* src,size_t len)
-{
+void add_source(log_group_builder* bder, const char* src,size_t len) {
     bder->loggroup_size += sizeof(char)*(len) + uint32_size((uint32_t)len) + 1;
-    bder->grp->source = sdsnewlen(src, len);
+    bder->grp->source = cpe_str_mem_dup_len(bder->m_schedule->m_alloc, src, len);
 }
 
 void add_topic(log_group_builder* bder,const char* tpc,size_t len)
 {
     bder->loggroup_size += sizeof(char)*(len) + uint32_size((uint32_t)len) + 1;
-    bder->grp->topic = sdsnewlen(tpc, len);
+    bder->grp->topic = cpe_str_mem_dup_len(bder->m_schedule->m_alloc, tpc, len);
 }
 
 void add_pack_id(log_group_builder* bder, const char* pack, size_t pack_len, size_t packNum)
@@ -281,24 +279,23 @@ static uint32_t _log_pack(log_group * grp, uint8_t * buf)
         return 0;
     }
 
-    if (grp->topic != NULL)
-    {
+    if (grp->topic != NULL) {
         *buf++ = 0x1A;
-        buf+= uint32_pack((uint32_t)sdslen(grp->topic), buf);
-        memcpy(buf, grp->topic, sdslen(grp->topic));
-        buf += sdslen(grp->topic);
+        uint32_t topic_len = (uint32_t)strlen(grp->topic);
+        buf+= uint32_pack(topic_len, buf);
+        memcpy(buf, grp->topic, topic_len);
+        buf += topic_len;
     }
 
-    if (grp->source != NULL)
-    {
+    if (grp->source != NULL) {
         *buf++ = 0x22;
-        buf+= uint32_pack((uint32_t)sdslen(grp->source), buf);
-        memcpy(buf, grp->source, sdslen(grp->source));
-        buf += sdslen(grp->source);
+        uint32_t source_len = (uint32_t)strlen(grp->source);
+        buf+= uint32_pack(source_len, buf);
+        memcpy(buf, grp->source, source_len);
+        buf += source_len;
     }
 
-    if (grp->tags.buffer != NULL)
-    {
+    if (grp->tags.buffer != NULL) {
         memcpy(buf, grp->tags.buffer, grp->tags.now_buffer_len);
         buf += grp->tags.now_buffer_len;
     }
