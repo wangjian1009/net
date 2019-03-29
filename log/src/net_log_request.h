@@ -12,6 +12,12 @@ typedef enum net_log_request_send_result {
     net_log_request_send_time_error = 6,
 } net_log_request_send_result_t;
 
+typedef enum net_log_request_complete_state {
+    net_log_request_complete_done,
+    net_log_request_complete_cancel,
+    net_log_request_complete_timeout,
+} net_log_request_complete_state_t;
+
 struct net_log_request_param {
     net_log_category_t category;
     lz4_log_buf_t log_buf;
@@ -32,9 +38,7 @@ void net_log_request_free(net_log_request_t request);
 
 void net_log_request_real_free(net_log_request_t request);
 
-void net_log_request_complete(net_log_request_t request);
-void net_log_request_timeout(net_log_request_t request);
-void net_log_request_cancel(net_log_request_t request);
+void net_log_request_complete(net_log_request_t request, net_log_request_complete_state_t complete_state);
 
 /**/
 net_log_request_param_t

@@ -36,7 +36,8 @@ net_log_request_create(net_log_request_manage_t mgr, net_log_request_param_t sen
     request->m_mgr = mgr;
     request->m_handler = NULL;
     request->m_watcher = NULL;
-    
+    request->m_category = send_param->category;
+
     TAILQ_INSERT_TAIL(&mgr->m_requests, request, m_next);
     
     /*init success*/
@@ -96,10 +97,34 @@ static size_t net_log_request_on_header(void *ptr, size_t size, size_t nmemb, vo
     return totalLen;
 }
 
-static int net_log_request_prepare(
-    net_log_schedule_t schedule, net_log_category_t category, net_log_request_t request,
-    lz4_log_buf * buffer, log_producer_config * config)
-{
+static int net_log_request_send(net_log_request_t request, net_log_request_param_t send_param) {
+    net_log_category_t category =  send_param->category;
+    log_producer_manager_t producer_manager = category->m_producer_manager;
+    net_log_schedule_t schedule = category->m_schedule;
+    log_producer_config_t config = category->m_producer_config;
+    lz4_log_buf_t buffer = send_param->log_buf;
+    
+    if (send_param->magic_num != LOG_PRODUCER_SEND_MAGIC_NUM) {
+        CPE_ERROR(
+            schedule->m_em, "log: category [%d]%s: invalid send param, magic num not found, num 0x%x",
+            category->m_id, category->m_name, send_param->magic_num);
+        return -1;
+    }
+
+    assert(buffer);
+
+    if (request->m_handler) {
+        curl_easy_cleanup(request->m_handler);
+        request->m_handler = NULL;
+    }
+    
+    request->m_handler = curl_easy_init();
+    if (request->m_handler == NULL) {
+        CPE_ERROR(schedule->m_em, "log: category [%d]%s: curl_easy_init fail", category->m_id, category->m_name);
+        return -1;
+    }
+    curl_easy_setopt(request->m_handler, CURLOPT_PRIVATE, request);
+
     char buf[512];
     size_t sz;
     
@@ -213,41 +238,8 @@ static int net_log_request_prepare(
     curl_easy_setopt(request->m_handler, CURLOPT_WRITEDATA, request);
 
     //curl_easy_setopt(request->m_handler, CURLOPT_VERBOSE, 1); //打印调试信息
-    
+
     return 0;
-}
-
-static int net_log_request_send(net_log_request_t request, net_log_request_param_t send_param) {
-    net_log_category_t category =  send_param->category;
-    log_producer_manager_t producer_manager = category->m_producer_manager;
-    net_log_schedule_t schedule = category->m_schedule;
-
-    if (send_param->magic_num != LOG_PRODUCER_SEND_MAGIC_NUM) {
-        CPE_ERROR(
-            schedule->m_em, "log: category [%d]%s: invalid send param, magic num not found, num 0x%x",
-            category->m_id, category->m_name, send_param->magic_num);
-        return -1;
-    }
-
-    assert(send_param->log_buf);
-
-    if (request->m_handler) {
-        curl_easy_cleanup(request->m_handler);
-        request->m_handler = NULL;
-    }
-    
-    request->m_handler = curl_easy_init();
-    if (request->m_handler == NULL) {
-        CPE_ERROR(schedule->m_em, "log: category [%d]%s: curl_easy_init fail", category->m_id, category->m_name);
-        return -1;
-    }
-    curl_easy_setopt(request->m_handler, CURLOPT_PRIVATE, request);
-
-    int rv = net_log_request_prepare(
-        schedule, category, request,
-        send_param->log_buf, category->m_producer_config);
-
-    return rv;
 }
 
 /*     int32_t sleepMs = log_producer_on_send_done(send_param, rst, &error_info); */
@@ -342,9 +334,12 @@ void net_log_request_param_free(net_log_request_param_t send_param) {
 
     /* return result; */
 
-void net_log_request_complete(net_log_request_t request) {
-/* int32_t log_producer_on_send_done(net_log_request_param_t send_param, post_log_result * result, send_error_info * error_info) { */
-/*     net_log_category_t category = send_param->category; */
+void net_log_request_complete(net_log_request_t request, net_log_request_complete_state_t complete_state) {
+    net_log_category_t category = request->m_category;
+    assert(category);
+
+    /* net_log_request_send_result_t send_result; */
+    /* if (net_log_request_calc_result(net_log_request_send_result_t * result, net_log_schedule_t schedule, net_log_request_t request) { */
 /*     log_producer_manager * producer_manager = category->m_producer_manager; */
 /*     log_producer_send_result send_result = AosStatusToResult(result); */
 /*     net_log_schedule_t schedule = category->m_schedule; */
@@ -460,12 +455,6 @@ void net_log_request_complete(net_log_request_t request) {
 /*             result->statusCode, */
 /*             result->errorMessage); */
 /*     } */
-}
-
-void net_log_request_cancel(net_log_request_t request) {
-}
-
-void net_log_request_timeout(net_log_request_t request) {
 }
 
 static int net_log_request_calc_result(net_log_request_send_result_t * result, net_log_schedule_t schedule, net_log_request_t request) {

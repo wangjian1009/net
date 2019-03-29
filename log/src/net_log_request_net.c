@@ -68,7 +68,7 @@ void net_watcher_event_cb(void * ctx, int fd, uint8_t do_read, uint8_t do_write)
     rc = curl_multi_socket_action(mgr->m_multi_handle, fd, action, &mgr->m_still_running);
     if (rc != CURLM_OK) {
         CPE_ERROR(schedule->m_em, "log: event_cb: curl_multi_socket_action return error %d!", rc);
-        net_log_request_cancel(request);
+        net_log_request_complete(request, net_log_request_complete_cancel);
         return;
     }
 
@@ -104,16 +104,16 @@ static void net_log_request_manage_check_multi_info(net_log_schedule_t schedule,
         case CURLMSG_DONE: {
             switch(res) {
             case CURLE_OK:
-                net_log_request_complete(request);
+                net_log_request_complete(request, net_log_request_complete_done);
                 break;
             case CURLE_OPERATION_TIMEDOUT:
-                net_log_request_timeout(request);
+                net_log_request_complete(request, net_log_request_complete_timeout);
                 break;
             default:
                 CPE_ERROR(
                     schedule->m_em, "log: category [%d]%s: check_multi_info done: res=%d!",
                     request->m_category->m_id, request->m_category->m_name, res);
-                net_log_request_cancel(request);
+                net_log_request_complete(request, net_log_request_complete_cancel);
                 break;
             }
             break;
