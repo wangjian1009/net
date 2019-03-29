@@ -28,6 +28,7 @@ struct net_log_request_param {
 struct net_log_request {
     net_log_request_manage_t m_mgr;
     TAILQ_ENTRY(net_log_request) m_next;
+    uint32_t m_id;
     CURL * m_handler;
     net_watcher_t m_watcher;
     net_log_category_t m_category;
@@ -38,7 +39,9 @@ void net_log_request_free(net_log_request_t request);
 
 void net_log_request_real_free(net_log_request_t request);
 
-void net_log_request_complete(net_log_request_t request, net_log_request_complete_state_t complete_state);
+void net_log_request_complete(net_log_schedule_t schedule, net_log_request_t request, net_log_request_complete_state_t complete_state);
+
+const char * net_log_request_complete_state_str(net_log_request_complete_state_t state);
 
 /**/
 net_log_request_param_t

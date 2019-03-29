@@ -14,6 +14,7 @@ net_log_request_manage_create(net_log_schedule_t schedule, net_schedule_t net_sc
 
 	mgr->m_multi_handle = curl_multi_init();
     mgr->m_still_running = 0;
+    mgr->m_request_max_id = 0;
 
     TAILQ_INIT(&mgr->m_requests);
     TAILQ_INIT(&mgr->m_free_requests);

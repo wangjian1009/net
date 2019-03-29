@@ -7,6 +7,7 @@ struct net_log_request_manage {
     net_log_schedule_t m_schedule;
     net_schedule_t m_net_schedule;
     net_driver_t m_net_driver;
+    uint32_t m_request_max_id;
     net_log_request_list_t m_requests;
     net_log_request_list_t m_free_requests;
     net_timer_t m_timer_event;
