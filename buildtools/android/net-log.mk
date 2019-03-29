@@ -6,9 +6,11 @@ LOCAL_MODULE := net_log
 LOCAL_CFLAGS += $(if $(filter 0,$(APKD)),,-DDEBUG=1)
 LOCAL_CFLAGS += 
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../../depends/curl/include \
+                    $(LOCAL_PATH)/../../depends/libev/include \
                     $(LOCAL_PATH)/../../depends/mbedtls/include/mbedtls \
                     $(LOCAL_PATH)/../../../cpe/include \
                     $(LOCAL_PATH)/../../core/include \
+                    $(LOCAL_PATH)/../../driver_ev/include \
                     $(LOCAL_PATH)/../../log/include
 LOCAL_SRC_FILES +=  $(patsubst $(LOCAL_PATH)/%,%,\
                         $(wildcard $(LOCAL_PATH)/../../log/src/*.c))

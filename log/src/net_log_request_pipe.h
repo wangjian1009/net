@@ -7,6 +7,8 @@ NET_BEGIN_DECL
 struct net_log_request_pipe {
     net_log_schedule_t m_schedule;
     pthread_mutex_t m_mutex;
+    int m_pipe_fd[2];
+    net_watcher_t m_bind_watcher;
     net_log_request_manage_t m_bind_to;
 };
 
