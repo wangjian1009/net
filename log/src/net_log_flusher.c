@@ -2,6 +2,7 @@
 #include "cpe/utils/string_utils.h"
 #include "net_log_flusher_i.h"
 #include "net_log_category_i.h"
+#include "net_log_request.h"
 #include "log_queue.h"
 #include "log_producer_manager.h"
 
@@ -103,7 +104,7 @@ static void * net_log_flusher_thread(void * param) {
         log_producer_manager * producer_manager = (log_producer_manager *)builder->private_value;
         net_log_category_t category = producer_manager->m_category;
 
-        log_producer_send_param * send_param = net_log_category_build_request(category, builder);
+        net_log_request_param_t send_param = net_log_category_build_request(category, builder);
         log_group_destroy(builder);
         
         if (send_param) {

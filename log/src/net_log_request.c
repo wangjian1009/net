@@ -6,10 +6,10 @@
 #include "log_producer_manager.h"
 #include "log_util.h"
 
-static int net_log_request_send(net_log_request_t request, log_producer_send_param_t send_param);
+static int net_log_request_send(net_log_request_t request, net_log_request_param_t send_param);
 
 net_log_request_t
-net_log_request_create(net_log_request_manage_t mgr, log_producer_send_param_t send_param) {
+net_log_request_create(net_log_request_manage_t mgr, net_log_request_param_t send_param) {
     net_log_schedule_t schedule = mgr->m_schedule;
     net_log_request_t request = TAILQ_FIRST(&mgr->m_requests);
 
@@ -208,7 +208,7 @@ static int net_log_request_prepare(
     return 0;
 }
 
-static int net_log_request_send(net_log_request_t request, log_producer_send_param_t send_param) {
+static int net_log_request_send(net_log_request_t request, net_log_request_param_t send_param) {
     log_producer_manager_t producer_manager = (log_producer_manager_t)send_param->producer_manager;
     net_log_category_t category =  producer_manager->m_category;
     net_log_schedule_t schedule = category->m_schedule;
@@ -275,3 +275,21 @@ static int net_log_request_send(net_log_request_t request, log_producer_send_par
 
 /*     return NULL; */
 /* } */
+
+net_log_request_param_t
+create_net_log_request_param(
+    log_producer_config_t producer_config, void * producer_manager, lz4_log_buf * log_buf, uint32_t builder_time)
+{
+    net_log_request_param_t param = (net_log_request_param_t)malloc(sizeof(struct net_log_request_param));
+    param->producer_config = producer_config;
+    param->producer_manager = producer_manager;
+    param->log_buf = log_buf;
+    param->magic_num = LOG_PRODUCER_SEND_MAGIC_NUM;
+    param->builder_time = builder_time;
+    return param;
+}
+
+void net_log_request_param_free(net_log_request_param_t send_param) {
+    free_lz4_log_buf(send_param->log_buf);
+    free(send_param);
+}

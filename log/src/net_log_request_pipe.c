@@ -82,7 +82,7 @@ void net_log_request_pipe_unbind(net_log_request_pipe_t pipe) {
     pipe->m_bind_to = NULL;
 }
 
-int net_log_request_pipe_queue(net_log_request_pipe_t pipe, log_producer_send_param_t send_param) {
+int net_log_request_pipe_queue(net_log_request_pipe_t pipe, net_log_request_param_t send_param) {
     net_log_schedule_t schedule = pipe->m_schedule;
 
     pthread_mutex_lock(&pipe->m_mutex);

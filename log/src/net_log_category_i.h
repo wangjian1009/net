@@ -19,8 +19,11 @@ struct net_log_category {
 
 void net_log_category_network_recover(net_log_category_t category);
 
-log_producer_send_param_t net_log_category_build_request(net_log_category_t category, log_group_builder_t builder);
-int net_log_category_commit_request(net_log_category_t category, log_producer_send_param_t send_param, uint8_t in_main_thread);
+net_log_request_param_t net_log_category_build_request(net_log_category_t category, log_group_builder_t builder);
+int net_log_category_commit_request(net_log_category_t category, net_log_request_param_t send_param, uint8_t in_main_thread);
+
+int net_log_category_add_log(
+    net_log_category_t category, int32_t pair_count, char ** keys, size_t * key_lens, char ** values, size_t * val_lens);
 
 NET_END_DECL
 

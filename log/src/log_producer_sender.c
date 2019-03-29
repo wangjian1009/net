@@ -40,7 +40,7 @@ typedef struct _send_error_info
     int32_t first_error_time;
 }send_error_info;
 
-int32_t log_producer_on_send_done(log_producer_send_param * send_param, post_log_result * result, send_error_info * error_info);
+int32_t log_producer_on_send_done(net_log_request_param_t send_param, post_log_result * result, send_error_info * error_info);
 
 #ifdef SEND_TIME_INVALID_FIX
 
@@ -80,7 +80,7 @@ void _rebuild_time(net_log_schedule_t schedule, lz4_log_buf * lz4_buf, lz4_log_b
 
 void * log_producer_send_fun(void * param)
 {
-/*     log_producer_send_param * send_param = (log_producer_send_param *)param; */
+/*     net_log_request_param * send_param = (net_log_request_param *)param; */
 /*     log_producer_manager * producer_manager = (log_producer_manager *)send_param->producer_manager; */
 /*     net_log_category_t category = producer_manager->m_category; */
 /*     net_log_schedule_t schedule = category->m_schedule; */
@@ -171,7 +171,7 @@ void * log_producer_send_fun(void * param)
     return NULL;
 }
 
-int32_t log_producer_on_send_done(log_producer_send_param * send_param, post_log_result * result, send_error_info * error_info)
+int32_t log_producer_on_send_done(net_log_request_param_t send_param, post_log_result * result, send_error_info * error_info)
 {
     log_producer_send_result send_result = AosStatusToResult(result);
     log_producer_manager * producer_manager = (log_producer_manager *)send_param->producer_manager;
@@ -308,7 +308,7 @@ int32_t log_producer_on_send_done(log_producer_send_param * send_param, post_log
     return 0;
 }
 
-log_producer_result log_producer_send_data(log_producer_send_param * send_param)
+log_producer_result log_producer_send_data(net_log_request_param_t send_param)
 {
     log_producer_send_fun(send_param);
     return LOG_PRODUCER_OK;
@@ -344,21 +344,3 @@ log_producer_send_result AosStatusToResult(post_log_result * result)
 
 }
 
-log_producer_send_param * create_log_producer_send_param(log_producer_config * producer_config,
-                                                         void * producer_manager,
-                                                         lz4_log_buf * log_buf,
-                                                         uint32_t builder_time)
-{
-    log_producer_send_param * param = (log_producer_send_param *)malloc(sizeof(log_producer_send_param));
-    param->producer_config = producer_config;
-    param->producer_manager = producer_manager;
-    param->log_buf = log_buf;
-    param->magic_num = LOG_PRODUCER_SEND_MAGIC_NUM;
-    param->builder_time = builder_time;
-    return param;
-}
-
-void log_producer_send_param_free(log_producer_send_param_t send_param) {
-    free_lz4_log_buf(send_param->log_buf);
-    free(send_param);
-}

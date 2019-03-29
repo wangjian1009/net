@@ -357,8 +357,8 @@ void net_log_commit(net_log_schedule_t schedule) {
     }
 
     log_producer_result r =
-        log_producer_manager_add_log(
-            schedule->m_current_category->m_producer_manager,
+        net_log_category_add_log(
+            schedule->m_current_category,
             schedule->m_kv_count, schedule->m_keys, schedule->m_keys_len, schedule->m_values, schedule->m_values_len);
     if (r != LOG_PRODUCER_OK) {
         CPE_ERROR(schedule->m_em, "log: commit fail, rv=%d", r);

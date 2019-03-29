@@ -38,7 +38,7 @@ typedef struct _lz4_log_buf{
     size_t length;
     size_t raw_length;
     unsigned char data[0];
-}lz4_log_buf;
+} lz4_log_buf;
 
 typedef struct _log_group_builder{
     log_group* grp;

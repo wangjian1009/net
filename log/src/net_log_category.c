@@ -153,7 +153,7 @@ void net_log_category_network_recover(net_log_category_t category) {
     category->m_producer_manager->networkRecover = 1;
 }
 
-log_producer_send_param_t
+net_log_request_param_t
 net_log_category_build_request(net_log_category_t category, log_group_builder_t builder) {
     net_log_schedule_t schedule = category->m_schedule;
     log_producer_manager * producer_manager = category->m_producer_manager;
@@ -204,8 +204,8 @@ net_log_category_build_request(net_log_category_t category, log_group_builder_t 
             (int)lz4_buf->raw_length, (int)lz4_buf->length, (int)producer_manager->totalBufferSize);
     }
 
-    log_producer_send_param_t send_param =
-        create_log_producer_send_param(config, producer_manager, lz4_buf, builder->builder_time);
+    net_log_request_param_t send_param =
+        create_net_log_request_param(config, producer_manager, lz4_buf, builder->builder_time);
     if (send_param == NULL) {
         CPE_ERROR(
             schedule->m_em, "log: category [%d]%s: build send params: create fail!",
@@ -216,7 +216,7 @@ net_log_category_build_request(net_log_category_t category, log_group_builder_t 
     return send_param;
 }
 
-int net_log_category_commit_request(net_log_category_t category, log_producer_send_param_t send_param, uint8_t in_main_thread) {
+int net_log_category_commit_request(net_log_category_t category, net_log_request_param_t send_param, uint8_t in_main_thread) {
     net_log_schedule_t schedule = category->m_schedule;
 
     if (category->m_sender) {
@@ -251,6 +251,83 @@ int net_log_category_commit_request(net_log_category_t category, log_producer_se
         }
         return 0;
     }
+}
+
+int net_log_category_add_log(
+    net_log_category_t category, int32_t pair_count, char ** keys, size_t * key_lens, char ** values, size_t * val_lens)
+{
+    log_producer_manager * producer_manager = category->m_producer_manager;
+    net_log_schedule_t schedule = category->m_schedule;
+    
+    if (producer_manager->totalBufferSize > producer_manager->producer_config->maxBufferBytes) {
+        return LOG_PRODUCER_DROP_ERROR;
+    }
+    
+    CS_ENTER(producer_manager->lock);
+    if (producer_manager->builder == NULL)
+    {
+        // if queue is full, return drop error
+        if (log_queue_isfull(producer_manager->loggroup_queue))
+        {
+            CS_LEAVE(producer_manager->lock);
+            return LOG_PRODUCER_DROP_ERROR;
+        }
+        int32_t now_time = time(NULL);
+
+        producer_manager->builder = log_group_create();
+        producer_manager->firstLogTime = now_time;
+        producer_manager->builder->private_value = producer_manager;
+    }
+
+    add_log_full(producer_manager->builder, (uint32_t)time(NULL), pair_count, keys, key_lens, values, val_lens);
+
+    log_group_builder * builder = producer_manager->builder;
+
+    int32_t nowTime = time(NULL);
+    if (producer_manager->builder->loggroup_size < producer_manager->producer_config->logBytesPerPackage
+        && nowTime - producer_manager->firstLogTime < producer_manager->producer_config->packageTimeoutInMS / 1000
+        && producer_manager->builder->grp->n_logs < producer_manager->producer_config->logCountPerPackage)
+    {
+        CS_LEAVE(producer_manager->lock);
+        return LOG_PRODUCER_OK;
+    }
+
+    producer_manager->builder = NULL;
+
+    size_t loggroup_size = builder->loggroup_size;
+
+    if (schedule->m_debug) {
+        CPE_INFO(
+            schedule->m_em, "try push loggroup to flusher, size : %d, log count %d",
+            (int)builder->loggroup_size, (int)builder->grp->n_logs);
+    }
+
+    if (category->m_flusher) { /*异步flush */
+        if (net_log_flusher_queue(category->m_flusher, builder) != 0) {
+            CPE_ERROR(schedule->m_em, "try push loggroup to flusher failed, force drop this log group");
+            log_group_destroy(builder);
+        }
+        else {
+            producer_manager->totalBufferSize += loggroup_size;
+            COND_SIGNAL(producer_manager->triger_cond);
+        }
+    }
+    else { /*同步flush */
+        producer_manager->totalBufferSize += loggroup_size;
+
+        net_log_request_param_t send_param = net_log_category_build_request(category, builder);
+        log_group_destroy(builder);
+        
+        if (send_param) {
+            if (net_log_category_commit_request(category, send_param, 0) != 0) {
+                net_log_request_param_free(send_param);
+            }
+        }
+    }
+    
+    CS_LEAVE(producer_manager->lock);
+
+    return LOG_PRODUCER_OK;
 }
 
 /* static void net_log_on_send_done( */
