@@ -1,3 +1,5 @@
+#include "cpe/pal/pal_stdlib.h"
+#include "cpe/pal/pal_string.h"
 #include "cpe/pal/pal_strings.h"
 #include "log_queue.h"
 

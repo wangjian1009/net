@@ -1,3 +1,4 @@
+#include "cpe/pal/pal_stdlib.h"
 #include "cpe/pal/pal_string.h"
 #include "log_producer_manager.h"
 #include "net_log_flusher_i.h"

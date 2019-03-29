@@ -1,7 +1,5 @@
 #ifndef LOG_C_SDK_LOG_PRODUCER_CONFIG_H
 #define LOG_C_SDK_LOG_PRODUCER_CONFIG_H
-
-#include "log_define.h"
 #include "log_producer_common.h"
 #include <stdio.h>
 #include <stddef.h>
@@ -45,7 +43,7 @@ typedef struct _log_producer_config
  * create a empty producer config, should set config params manually
  * @return empty producer config
  */
-LOG_EXPORT log_producer_config * create_log_producer_config(net_log_category_t category);
+log_producer_config * create_log_producer_config(net_log_category_t category);
 
 
 /**
@@ -55,28 +53,28 @@ LOG_EXPORT log_producer_config * create_log_producer_config(net_log_category_t c
  * @param config
  * @param endpoint
  */
-LOG_EXPORT void log_producer_config_set_endpoint(log_producer_config * config, const char * endpoint);
+void log_producer_config_set_endpoint(log_producer_config * config, const char * endpoint);
 
 /**
  * set producer config project
  * @param config
  * @param project
  */
-LOG_EXPORT void log_producer_config_set_project(log_producer_config * config, const char * project);
+void log_producer_config_set_project(log_producer_config * config, const char * project);
 
 /**
  * set producer config logstore
  * @param config
  * @param logstore
  */
-LOG_EXPORT void log_producer_config_set_logstore(log_producer_config * config, const char * logstore);
+void log_producer_config_set_logstore(log_producer_config * config, const char * logstore);
 
 /**
  * set producer config access id
  * @param config
  * @param access_id
  */
-LOG_EXPORT void log_producer_config_set_access_id(log_producer_config * config, const char * access_id);
+void log_producer_config_set_access_id(log_producer_config * config, const char * access_id);
 
 
 /**
@@ -84,7 +82,7 @@ LOG_EXPORT void log_producer_config_set_access_id(log_producer_config * config, 
  * @param config
  * @param access_id
  */
-LOG_EXPORT void log_producer_config_set_access_key(log_producer_config * config, const char * access_id);
+void log_producer_config_set_access_key(log_producer_config * config, const char * access_id);
 
 
 /**
@@ -94,27 +92,27 @@ LOG_EXPORT void log_producer_config_set_access_key(log_producer_config * config,
  * @param config
  * @param access_id
  */
-LOG_EXPORT void log_producer_config_reset_security_token(log_producer_config * config, const char * access_id, const char * access_secret, const char * security_token);
+void log_producer_config_reset_security_token(log_producer_config * config, const char * access_id, const char * access_secret, const char * security_token);
 
 
 /**
  * inner api
  */
-LOG_EXPORT void log_producer_config_get_security(log_producer_config * config, char ** access_id, char ** access_secret, char ** security_token);
+void log_producer_config_get_security(log_producer_config * config, char ** access_id, char ** access_secret, char ** security_token);
 
 /**
  * set producer config topic
  * @param config
  * @param topic
  */
-LOG_EXPORT void log_producer_config_set_topic(log_producer_config * config, const char * topic);
+void log_producer_config_set_topic(log_producer_config * config, const char * topic);
 
 /**
  * set producer source, this source will been set to every loggroup's "source" field
  * @param config
  * @param source
  */
-LOG_EXPORT void log_producer_config_set_source(log_producer_config * config, const char * source);
+void log_producer_config_set_source(log_producer_config * config, const char * source);
 
 /**
  * add tag, this tag will been set to every loggroup's "tag" field
@@ -122,35 +120,35 @@ LOG_EXPORT void log_producer_config_set_source(log_producer_config * config, con
  * @param key
  * @param value
  */
-LOG_EXPORT void log_producer_config_add_tag(log_producer_config * config, const char * key, const char * value);
+void log_producer_config_add_tag(log_producer_config * config, const char * key, const char * value);
 
 /**
  * set loggroup timeout, if delta time from first log's time >= time_out_ms, current loggroup will been flushed out
  * @param config
  * @param time_out_ms
  */
-LOG_EXPORT void log_producer_config_set_packet_timeout(log_producer_config * config, int32_t time_out_ms);
+void log_producer_config_set_packet_timeout(log_producer_config * config, int32_t time_out_ms);
 
 /**
  * set loggroup max log count, if loggoup's logs count  >= log_count, current loggroup will been flushed out
  * @param config
  * @param log_count
  */
-LOG_EXPORT void log_producer_config_set_packet_log_count(log_producer_config * config, int32_t log_count);
+void log_producer_config_set_packet_log_count(log_producer_config * config, int32_t log_count);
 
 /**
  * set loggroup max log bytes, if loggoup's log bytes  >= log_bytes, current loggroup will been flushed out
  * @param config
  * @param log_bytes
  */
-LOG_EXPORT void log_producer_config_set_packet_log_bytes(log_producer_config * config, int32_t log_bytes);
+void log_producer_config_set_packet_log_bytes(log_producer_config * config, int32_t log_bytes);
 
 /**
  * set max buffer size, if total buffer size > max_buffer_bytes, all send will fail immediately
  * @param config
  * @param max_buffer_bytes
  */
-LOG_EXPORT void log_producer_config_set_max_buffer_limit(log_producer_config * config, int64_t max_buffer_bytes);
+void log_producer_config_set_max_buffer_limit(log_producer_config * config, int64_t max_buffer_bytes);
 
 /**
  * set send thread count, default is 0.
@@ -159,69 +157,69 @@ LOG_EXPORT void log_producer_config_set_max_buffer_limit(log_producer_config * c
  * @param config
  * @param thread_count
  */
-LOG_EXPORT void log_producer_config_set_send_thread_count(log_producer_config * config, int32_t thread_count);
+void log_producer_config_set_send_thread_count(log_producer_config * config, int32_t thread_count);
 
 /**
  * set interface to send log out
  * @param config
  * @param net_interface
  */
-LOG_EXPORT void log_producer_config_set_net_interface(log_producer_config * config, const char * net_interface);
+void log_producer_config_set_net_interface(log_producer_config * config, const char * net_interface);
 
 /**
  * set remote_address to send log out
  * @param config
  * @param remote_address
  */
-LOG_EXPORT void log_producer_config_set_remote_address(log_producer_config * config, const char * remote_address);
+void log_producer_config_set_remote_address(log_producer_config * config, const char * remote_address);
 
 /**
  * set connect timeout seconds
  * @param config
  * @param connect_timeout_sec
  */
-LOG_EXPORT void log_producer_config_set_connect_timeout_sec(log_producer_config * config, int32_t connect_timeout_sec);
+void log_producer_config_set_connect_timeout_sec(log_producer_config * config, int32_t connect_timeout_sec);
 
 /**
  * set send timeout seconds
  * @param config
  * @param send_timeout_sec
  */
-LOG_EXPORT void log_producer_config_set_send_timeout_sec(log_producer_config * config, int32_t send_timeout_sec);
+void log_producer_config_set_send_timeout_sec(log_producer_config * config, int32_t send_timeout_sec);
 
 /**
  * set wait seconds when destroy flusher
  * @param config
  * @param destroy_flusher_wait_sec
  */
-LOG_EXPORT void log_producer_config_set_destroy_flusher_wait_sec(log_producer_config * config, int32_t destroy_flusher_wait_sec);
+void log_producer_config_set_destroy_flusher_wait_sec(log_producer_config * config, int32_t destroy_flusher_wait_sec);
 
 /**
  * set wait seconds when destroy sender
  * @param config
  * @param destroy_sender_wait_sec
  */
-LOG_EXPORT void log_producer_config_set_destroy_sender_wait_sec(log_producer_config * config, int32_t destroy_sender_wait_sec);
+void log_producer_config_set_destroy_sender_wait_sec(log_producer_config * config, int32_t destroy_sender_wait_sec);
 
 /**
  * set compress type, default 1 (lz4)
  * @param config
  * @param compress_type only support 1 or 0. 1 -> lz4, 0 -> no compress
  */
-LOG_EXPORT void log_producer_config_set_compress_type(log_producer_config * config, int32_t compress_type);
+void log_producer_config_set_compress_type(log_producer_config * config, int32_t compress_type);
 
 /**
  * default http, 0 http, 1 https
  * @param config
  * @param using_https
  */
-LOG_EXPORT void log_producer_config_set_using_http(log_producer_config * config, int32_t using_https);
+void log_producer_config_set_using_http(log_producer_config * config, int32_t using_https);
 
 /**
  * destroy config, this will free all memory allocated by this config
  * @param config
  */
-LOG_EXPORT void destroy_log_producer_config(log_producer_config * config);
+void destroy_log_producer_config(log_producer_config * config);
 
 #ifdef LOG_PRODUCER_DEBUG
 /**

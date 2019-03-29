@@ -1,14 +1,8 @@
-//
-// Created by ZhangCheng on 21/11/2017.
-//
-
 #ifndef LOG_C_SDK_LOG_PRODUCER_COMMON_H_H
 #define LOG_C_SDK_LOG_PRODUCER_COMMON_H_H
 
-#include "log_define.h"
 #include <stdint.h>
 #include <stddef.h>
-LOG_CPP_START
 
 
 /**
@@ -39,16 +33,5 @@ extern log_producer_result LOG_PRODUCER_SEND_DISCARD_ERROR;
 extern log_producer_result LOG_PRODUCER_SEND_TIME_ERROR;
 // this error code is passed when producer is being destroyed, you should save this buffer to local
 extern log_producer_result LOG_PRODUCER_SEND_EXIT_BUFFERED;
-
-
-/**
- * check if rst if ok
- * @param rst
- * @return 1 if ok, 0 not ok
- */
-LOG_EXPORT int is_log_producer_result_ok(log_producer_result rst);
-
-
-LOG_CPP_END
 
 #endif //LOG_C_SDK_LOG_PRODUCER_COMMON_H_H

@@ -3,7 +3,6 @@
 //
 
 #include "log_producer_sender.h"
-#include "log_api.h"
 #include "log_producer_manager.h"
 #include "lz4.h"
 #include "sds.h"
@@ -40,43 +39,7 @@ typedef struct _send_error_info
     int32_t first_error_time;
 }send_error_info;
 
-int32_t log_producer_on_send_done(net_log_request_param_t send_param, post_log_result * result, send_error_info * error_info);
-
-#ifdef SEND_TIME_INVALID_FIX
-
-void _rebuild_time(net_log_schedule_t schedule, lz4_log_buf * lz4_buf, lz4_log_buf ** new_lz4_buf)
-{
-    CPE_INFO(schedule->m_em, "rebuild log.");
-    char * buf = (char *)malloc(lz4_buf->raw_length);
-    if (LZ4_decompress_safe((const char* )lz4_buf->data, buf, lz4_buf->length, lz4_buf->raw_length) <= 0)
-    {
-        free(buf);
-        CPE_ERROR(schedule->m_em, "LZ4_decompress_safe error");
-        return;
-    }
-    uint32_t nowTime = time(NULL);
-    fix_log_group_time(buf, lz4_buf->raw_length, nowTime);
-
-    int compress_bound = LZ4_compressBound(lz4_buf->raw_length);
-    char *compress_data = (char *)malloc(compress_bound);
-    int compressed_size = LZ4_compress_default((char *)buf, compress_data, lz4_buf->raw_length, compress_bound);
-    if(compressed_size <= 0)
-    {
-        CPE_ERROR(schedule->m_em, "LZ4_compress_default error");
-        free(buf);
-        free(compress_data);
-        return;
-    }
-    *new_lz4_buf = (lz4_log_buf*)malloc(sizeof(lz4_log_buf) + compressed_size);
-    (*new_lz4_buf)->length = compressed_size;
-    (*new_lz4_buf)->raw_length = lz4_buf->raw_length;
-    memcpy((*new_lz4_buf)->data, compress_data, compressed_size);
-    free(buf);
-    free(compress_data);
-    return;
-}
-
-#endif
+//int32_t log_producer_on_send_done(net_log_request_param_t send_param, post_log_result * result, send_error_info * error_info);
 
 void * log_producer_send_fun(void * param)
 {
@@ -111,14 +74,6 @@ void * log_producer_send_fun(void * param)
 /*             send_param->builder_time = nowTime; */
 /*         } */
 /* #endif */
-/*         log_post_option option; */
-/*         memset(&option, 0, sizeof(log_post_option)); */
-/*         option.connect_timeout = config->connectTimeoutSec; */
-/*         option.operation_timeout = config->sendTimeoutSec; */
-/*         option.interface = config->netInterface; */
-/*         option.compress_type = config->compressType; */
-/*         option.remote_address = config->remote_address; */
-/*         option.using_https = config->using_https; */
 
 /*         sds accessKeyId = NULL; */
 /*         sds accessKey = NULL; */
@@ -171,161 +126,9 @@ void * log_producer_send_fun(void * param)
     return NULL;
 }
 
-int32_t log_producer_on_send_done(net_log_request_param_t send_param, post_log_result * result, send_error_info * error_info)
-{
-    net_log_category_t category = send_param->category;
-    log_producer_manager * producer_manager = category->m_producer_manager;
-    log_producer_send_result send_result = AosStatusToResult(result);
-    net_log_schedule_t schedule = category->m_schedule;
-
-    switch (send_result)
-    {
-        case LOG_SEND_OK:
-            break;
-        case LOG_SEND_TIME_ERROR:
-            // if no this marco, drop data
-#ifdef SEND_TIME_INVALID_FIX
-            error_info->last_send_error = LOG_SEND_TIME_ERROR;
-            error_info->last_sleep_ms = INVALID_TIME_TRY_INTERVAL;
-            return error_info->last_sleep_ms;
-#else
-            break;
-#endif
-        case LOG_SEND_QUOTA_EXCEED:
-            if (error_info->last_send_error != LOG_SEND_QUOTA_EXCEED)
-            {
-                error_info->last_send_error = LOG_SEND_QUOTA_EXCEED;
-                error_info->last_sleep_ms = BASE_QUOTA_ERROR_SLEEP_MS;
-                error_info->first_error_time = time(NULL);
-            }
-            else
-            {
-                if (error_info->last_sleep_ms < MAX_QUOTA_ERROR_SLEEP_MS)
-                {
-                    error_info->last_sleep_ms *= 2;
-                }
-
-#ifndef SEND_TIME_INVALID_FIX
-                // only drop data when SEND_TIME_INVALID_FIX not defined
-                if (time(NULL) - error_info->first_error_time > DROP_FAIL_DATA_TIME_SECOND)
-                {
-                    break;
-                }
-#endif
-            }
-            if (schedule->m_debug) {
-                CPE_INFO(schedule->m_em, "send quota error, project : %s, logstore : %s, buffer len : %d, raw len : %d, code : %d, error msg : %s",
-                         schedule->m_cfg_project,
-                         category->m_name,
-                         (int)send_param->log_buf->length,
-                         (int)send_param->log_buf->raw_length,
-                         result->statusCode,
-                         result->errorMessage);
-            }
-            return error_info->last_sleep_ms;
-        case LOG_SEND_SERVER_ERROR :
-        case LOG_SEND_NETWORK_ERROR:
-            if (error_info->last_send_error != LOG_SEND_NETWORK_ERROR)
-            {
-                error_info->last_send_error = LOG_SEND_NETWORK_ERROR;
-                error_info->last_sleep_ms = BASE_NETWORK_ERROR_SLEEP_MS;
-                error_info->first_error_time = time(NULL);
-            }
-            else
-            {
-                if (error_info->last_sleep_ms < MAX_NETWORK_ERROR_SLEEP_MS)
-                {
-                    error_info->last_sleep_ms *= 2;
-                }
-#ifndef SEND_TIME_INVALID_FIX
-                // only drop data when SEND_TIME_INVALID_FIX not defined
-                if (time(NULL) - error_info->first_error_time > DROP_FAIL_DATA_TIME_SECOND)
-                {
-                    break;
-                }
-#endif
-            }
-            if (schedule->m_debug) {
-                CPE_INFO(
-                    schedule->m_em, "send network error, project : %s, logstore : %s, buffer len : %d, raw len : %d, code : %d, error msg : %s",
-                    schedule->m_cfg_project,
-                    category->m_name,
-                    (int)send_param->log_buf->length,
-                    (int)send_param->log_buf->raw_length,
-                    result->statusCode,
-                    result->errorMessage);
-            }
-            return error_info->last_sleep_ms;
-        default:
-            // discard data
-            break;
-
-    }
-
-    producer_manager->totalBufferSize -= send_param->log_buf->length;
-    if (send_result == LOG_SEND_OK)
-    {
-        if (schedule->m_debug) {
-            CPE_INFO(
-                schedule->m_em, "send success, project : %s, logstore : %s, buffer len : %d, raw len : %d, total buffer : %d, code : %d, error msg : %s",
-                schedule->m_cfg_project,
-                category->m_name,
-                (int)send_param->log_buf->length,
-                (int)send_param->log_buf->raw_length,
-                (int)producer_manager->totalBufferSize,
-                result->statusCode,
-                result->errorMessage);
-        }
-    }
-    else
-    {
-        CPE_ERROR(
-            schedule->m_em, "send fail, discard data, project : %s, logstore : %s, buffer len : %d, raw len : %d, total buffer : %d, code : %d, error msg : %s",
-            schedule->m_cfg_project,
-            category->m_name,
-            (int)send_param->log_buf->length,
-            (int)send_param->log_buf->raw_length,
-            (int)producer_manager->totalBufferSize,
-            result->statusCode,
-            result->errorMessage);
-    }
-
-    return 0;
-}
 
 log_producer_result log_producer_send_data(net_log_request_param_t send_param)
 {
     log_producer_send_fun(send_param);
     return LOG_PRODUCER_OK;
 }
-
-log_producer_send_result AosStatusToResult(post_log_result * result)
-{
-    if (result->statusCode / 100 == 2)
-    {
-        return LOG_SEND_OK;
-    }
-    if (result->statusCode <= 0)
-    {
-        return LOG_SEND_NETWORK_ERROR;
-    }
-    if (result->statusCode >= 500 || result->requestID == NULL)
-    {
-        return LOG_SEND_SERVER_ERROR;
-    }
-    if (result->statusCode == 403)
-    {
-        return LOG_SEND_QUOTA_EXCEED;
-    }
-    if (result->statusCode == 401 || result->statusCode == 404)
-    {
-        return LOG_SEND_UNAUTHORIZED;
-    }
-    if (result->errorMessage != NULL && strstr(result->errorMessage, LOGE_TIME_EXPIRED) != NULL)
-    {
-        return LOG_SEND_TIME_ERROR;
-    }
-    return LOG_SEND_DISCARD_ERROR;
-
-}
-

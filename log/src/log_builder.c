@@ -1,9 +1,9 @@
+#include <assert.h>
+#include "cpe/pal/pal_string.h"
+#include "cpe/pal/pal_stdlib.h"
 #include "log_builder.h"
 #include "lz4.h"
 #include "sds.h"
-#include <string.h>
-#include <stdio.h>
-#include <assert.h>
 
 // 1+3( 1 --->  header;  2 ---> 128 * 128 = 16KB)
 #define INIT_LOG_SIZE_BYTES 3

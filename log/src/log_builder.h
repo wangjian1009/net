@@ -1,27 +1,13 @@
-//
-//  log_builder.h
-//  log-c-sdk
-//
-//  Created by 王佳玮 on 16/8/23.
-//  Copyright © 2016年 wangjwchn. All rights reserved.
-//
-#ifndef LOG_BUILDER_H
-#define LOG_BUILDER_H
+#ifndef NET_LOG_BUILDER_H_INCLEDED
+#define NET_LOG_BUILDER_H_INCLEDED
+#include "net_log_schedule_i.h"
 
-#include <stdlib.h>
-#include <time.h>
-#include <stdint.h>
-
-#include "log_define.h"
-LOG_CPP_START
-
-typedef struct _log_tag{
+typedef struct _log_tag {
     char * buffer;
     char * now_buffer;
     uint32_t max_buffer_len;
     uint32_t now_buffer_len;
-}log_tag;
-
+} log_tag;
 
 typedef struct _log_group{
     char * source;
@@ -99,5 +85,4 @@ extern void add_log_end(log_group_builder * bder);
 
 #endif
 
-LOG_CPP_END
-#endif /* log_builder_h */
+#endif

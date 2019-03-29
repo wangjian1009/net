@@ -1,7 +1,6 @@
 #ifndef NET_LOG_MANAGER_I_H_INCLEDED
 #define NET_LOG_MANAGER_I_H_INCLEDED
 #include "net_log_category_i.h"
-#include "log_define.h"
 #include "log_producer_config.h"
 #include "log_producer_sender.h"
 #include "log_builder.h"

@@ -1,6 +1,5 @@
-#include <arpa/inet.h>
-#include <string.h>
-#include "log_util.h"
+#include "cpe/pal/pal_string.h"
+#include "net_log_util.h"
 #include "md5.h"
 #include "hmac-sha.h"
 

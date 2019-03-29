@@ -2,17 +2,19 @@
 #define NET_LOG_REQUEST_H_INCLEDED
 #include "net_log_request_manage.h"
 
-#define LOG_SEND_OK 0
-#define LOG_SEND_NETWORK_ERROR 1
-#define LOG_SEND_QUOTA_EXCEED 2
-#define LOG_SEND_UNAUTHORIZED 3
-#define LOG_SEND_SERVER_ERROR 4
-#define LOG_SEND_DISCARD_ERROR 5
-#define LOG_SEND_TIME_ERROR 6
+typedef enum net_log_request_send_result {
+    net_log_request_send_ok = 0,
+    net_log_request_send_network_error = 1,
+    net_log_request_send_quota_exceed = 2,
+    net_log_request_send_unauthorized = 3,
+    net_log_request_send_server_error = 4,
+    net_log_request_send_discard_error = 5,
+    net_log_request_send_time_error = 6,
+} net_log_request_send_result_t;
 
 struct net_log_request_param {
     net_log_category_t category;
-    lz4_log_buf * log_buf;
+    lz4_log_buf_t log_buf;
     uint32_t magic_num;
     uint32_t builder_time;
 };
@@ -30,10 +32,14 @@ void net_log_request_free(net_log_request_t request);
 
 void net_log_request_real_free(net_log_request_t request);
 
+void net_log_request_complete(net_log_request_t request);
+void net_log_request_timeout(net_log_request_t request);
+void net_log_request_cancel(net_log_request_t request);
+
 /**/
 net_log_request_param_t
 create_net_log_request_param(
-    net_log_category_t category, lz4_log_buf * log_buf, uint32_t builder_time);
+    net_log_category_t category, lz4_log_buf_t log_buf, uint32_t builder_time);
 
 void net_log_request_param_free(net_log_request_param_t send_param);
 

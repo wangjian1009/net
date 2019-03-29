@@ -2,6 +2,7 @@
 #include "cpe/pal/pal_errno.h"
 #include "cpe/pal/pal_string.h"
 #include "cpe/pal/pal_strings.h"
+#include "cpe/pal/pal_stdlib.h"
 #include "cpe/utils/string_utils.h"
 #include "net_log_flusher_i.h"
 #include "net_log_category_i.h"

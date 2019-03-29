@@ -7,7 +7,6 @@
 #include "cpe/utils/error.h"
 #include "cpe/utils/buffer.h"
 #include "net_log_schedule.h"
-#include "log_api.h"
 
 NET_BEGIN_DECL
 
@@ -21,6 +20,7 @@ typedef struct net_log_request_manage * net_log_request_manage_t;
 typedef struct net_log_request_pipe * net_log_request_pipe_t;
 typedef struct net_log_request_param * net_log_request_param_t;
 
+typedef struct _lz4_log_buf * lz4_log_buf_t;
 typedef struct _log_group_builder * log_group_builder_t;
 typedef struct _log_queue * log_queue_t;
 typedef struct _log_producer_config * log_producer_config_t;
