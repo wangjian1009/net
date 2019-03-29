@@ -4,6 +4,11 @@
 
 NET_BEGIN_DECL
 
+typedef enum net_log_compress_type {
+    net_log_compress_none,
+    net_log_compress_lz4,
+} net_log_compress_type_t;
+
 typedef enum net_log_schedule_state {
     net_log_schedule_state_init,
     net_log_schedule_state_runing,

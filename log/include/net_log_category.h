@@ -8,6 +8,10 @@ net_log_category_t net_log_category_create(
     net_log_schedule_t schedule, net_log_flusher_t flusher, net_log_sender_t sender, const char * name, uint8_t id);
 void net_log_category_free(net_log_category_t category);
 
+void net_log_category_set_compress(net_log_category_t category, net_log_compress_type_t compress);
+int net_log_category_set_topic(net_log_category_t category, const char * topic);
+int net_log_category_add_global_tag(net_log_category_t category, const char * key, const char * value);
+
 NET_END_DECL
 
 #endif

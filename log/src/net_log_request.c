@@ -6,7 +6,6 @@
 #include "net_log_request.h"
 #include "net_log_category_i.h"
 #include "net_log_util.h"
-#include "log_producer_config.h"
 #include "log_builder.h"
 #include "lz4.h"
 
@@ -125,7 +124,6 @@ static int net_log_request_send(net_log_request_t request) {
     net_log_request_param_t send_param = request->m_send_param;
     net_log_category_t category = request->m_category;
     net_log_schedule_t schedule = category->m_schedule;
-    log_producer_config_t config = category->m_producer_config;
     lz4_log_buf_t buffer = send_param->log_buf;
     
     if (send_param->magic_num != LOG_PRODUCER_SEND_MAGIC_NUM) {
@@ -180,7 +178,7 @@ static int net_log_request_send(net_log_request_t request) {
     md5Buf[32] = '\0';
     md5_to_string((const char *)buffer->data, buffer->length, md5Buf);
     
-    int lz4Flag = config->compressType == 1;
+    int lz4Flag = category->m_cfg_compress == net_log_compress_lz4;
     
     struct curl_slist * headers = NULL;
 
@@ -251,10 +249,10 @@ static int net_log_request_send(net_log_request_t request) {
         curl_easy_setopt(request->m_handler, CURLOPT_INTERFACE, schedule->m_cfg_net_interface);
     }
     
-    curl_easy_setopt(request->m_handler, CURLOPT_TIMEOUT, config->sendTimeoutSec > 0 ? config->sendTimeoutSec : 15);
+    curl_easy_setopt(request->m_handler, CURLOPT_TIMEOUT, category->m_cfg_send_timeout_s > 0 ? category->m_cfg_send_timeout_s : 15);
     
-    if (config->connectTimeoutSec > 0) {
-        curl_easy_setopt(request->m_handler, CURLOPT_CONNECTTIMEOUT, config->connectTimeoutSec);
+    if (category->m_cfg_connect_timeout_s > 0) {
+        curl_easy_setopt(request->m_handler, CURLOPT_CONNECTTIMEOUT, category->m_cfg_connect_timeout_s);
     }
 
     curl_easy_setopt(request->m_handler, CURLOPT_HEADERFUNCTION, net_log_request_on_header);

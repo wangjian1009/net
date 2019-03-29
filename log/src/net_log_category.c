@@ -7,7 +7,6 @@
 #include "net_log_sender_i.h"
 #include "net_log_request.h"
 #include "net_log_request_pipe.h"
-#include "log_producer_config.h"
 #include "log_builder.h"
 
 static char * net_log_category_get_pack_id(net_log_schedule_t schedule, const char * configName, const char * ip);
@@ -69,40 +68,30 @@ net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, 
     category->m_sender = sender;
     cpe_str_dup(category->m_name, sizeof(category->m_name), name);
     category->m_id = id;
-    category->m_producer_config = NULL;
     category->m_networkRecover = 0;
     category->m_totalBufferSize = 0;
     category->m_builder = NULL;
     category->m_firstLogTime = 0;
     category->m_pack_prefix = NULL;
     category->m_pack_index = 0;
+
+    category->m_cfg_topic = NULL;
+    category->m_cfg_tags = NULL;
+    category->m_cfg_tag_count = 0;
+    category->m_cfg_tag_capacity = 0;
+    category->m_cfg_compress = net_log_compress_lz4;
+    category->m_cfg_bytes_per_package = 3 * 1024 * 1024;
+    category->m_cfg_count_per_package = 2048;
+    category->m_cfg_timeout_ms = 3000;
+    category->m_cfg_max_buffer_bytes = 64 * 1024 * 1024;
+    category->m_cfg_connect_timeout_s = 10;
+    category->m_cfg_send_timeout_s = 15;
+    /* category->destroySenderWaitTimeoutSec = 1; */
+    /* category->destroyFlusherWaitTimeoutSec = 1; */
     
-    log_producer_config_t config = create_log_producer_config(category);
-
-    //log_producer_config_set_topic(config, "test_topic");
-
-    // set resource params
-    log_producer_config_set_packet_log_bytes(config, 1*1024*1024);
-    log_producer_config_set_packet_log_count(config, 512);
-    log_producer_config_set_packet_timeout(config, 3000);
-    log_producer_config_set_max_buffer_limit(config, 4*1024*1024);
-
-    // set compress type : lz4
-    log_producer_config_set_compress_type(config, 1);
-
-    // set timeout
-    log_producer_config_set_connect_timeout_sec(config, 10);
-    log_producer_config_set_send_timeout_sec(config, 15);
-    log_producer_config_set_destroy_flusher_wait_sec(config, 1);
-    log_producer_config_set_destroy_sender_wait_sec(config, 1);
-
-    // create manager
-    category->m_producer_config = config;
-
     category->m_pack_prefix = net_log_category_get_pack_id(schedule, category->m_name, schedule->m_cfg_source);
     if (category->m_pack_prefix == NULL) {
         CPE_ERROR(schedule->m_em, "log: category [%d]%s: create pack prefix fail!", id, name);
-        destroy_log_producer_config(config);
         mem_free(schedule->m_alloc, category);
         return NULL;
     }
@@ -149,9 +138,24 @@ void net_log_category_free(net_log_category_t category) {
     }
 
     mem_free(schedule->m_alloc, category->m_pack_prefix);
-    
-    destroy_log_producer_config(category->m_producer_config);
 
+    /*config*/
+    if (category->m_cfg_topic) {
+        mem_free(schedule->m_alloc, category->m_cfg_topic);
+        category->m_cfg_topic = NULL;
+    }
+    
+    if (category->m_cfg_tags) {
+        uint16_t i = 0;
+        for (; i < category->m_cfg_tag_count; ++i) {
+            mem_free(schedule->m_alloc, category->m_cfg_tags[i].m_key);
+            mem_free(schedule->m_alloc, category->m_cfg_tags[i].m_value);
+        }
+        mem_free(schedule->m_alloc, category->m_cfg_tags);
+        category->m_cfg_tags = NULL;
+        category->m_cfg_tag_count = 0;
+    }
+    
     mem_free(schedule->m_alloc, category);
 }
 
@@ -162,17 +166,17 @@ void net_log_category_network_recover(net_log_category_t category) {
 net_log_request_param_t
 net_log_category_build_request(net_log_category_t category, log_group_builder_t builder) {
     net_log_schedule_t schedule = category->m_schedule;
-    log_producer_config * config = category->m_producer_config;
 
     category->m_totalBufferSize -= builder->loggroup_size;
 
-    int i = 0;
-    for (i = 0; i < config->tagCount; ++i) {
-        add_tag(builder, config->tags[i].key, strlen(config->tags[i].key), config->tags[i].value, strlen(config->tags[i].value));
+    uint16_t i;
+    for (i = 0; i < category->m_cfg_tag_count; ++i) {
+        net_log_category_cfg_tag_t tag = category->m_cfg_tags + i;
+        add_tag(builder, tag->m_key, strlen(tag->m_key), tag->m_value, strlen(tag->m_value));
     }
 
-    if (config->topic != NULL) {
-        add_topic(builder, config->topic, strlen(config->topic));
+    if (category->m_cfg_topic != NULL) {
+        add_topic(builder, category->m_cfg_topic, strlen(category->m_cfg_topic));
     }
     
     if (schedule->m_cfg_source != NULL) {
@@ -184,7 +188,7 @@ net_log_category_build_request(net_log_category_t category, log_group_builder_t 
     }
 
     lz4_log_buf * lz4_buf = NULL;
-    if (config->compressType == 1) {
+    if (category->m_cfg_compress == net_log_compress_lz4) {
         lz4_buf = serialize_to_proto_buf_with_malloc_lz4(builder);
     }
     else {
@@ -253,13 +257,82 @@ int net_log_category_commit_request(net_log_category_t category, net_log_request
     }
 }
 
+
+int net_log_category_set_topic(net_log_category_t category, const char * topic) {
+    net_log_schedule_t schedule = category->m_schedule;
+    assert(schedule->m_state == net_log_schedule_state_init);
+
+    char * new_topic = cpe_str_mem_dup(schedule->m_alloc, topic);
+    if (new_topic == NULL) {
+        CPE_ERROR(
+            schedule->m_em, "log: category [%d]%s: set topic: dup topic '%s' fail!",
+            category->m_id, category->m_name, topic);
+        return -1; 
+    }
+
+    if (category->m_cfg_topic) {
+        mem_free(schedule->m_alloc, category->m_cfg_topic);
+    }
+
+    category->m_cfg_topic = new_topic;
+
+    return 0;
+}
+
+int net_log_category_add_global_tag(net_log_category_t category, const char * key, const char * value) {
+    net_log_schedule_t schedule = category->m_schedule;
+    assert(schedule->m_state == net_log_schedule_state_init);
+    
+    if (category->m_cfg_tag_count >= category->m_cfg_tag_capacity) {
+        uint16_t new_capacity = category->m_cfg_tag_capacity < 4 ? 4 : (category->m_cfg_tag_capacity * 2);
+        net_log_category_cfg_tag_t new_tags = mem_alloc(schedule->m_alloc, sizeof(struct net_log_category_cfg_tag) * new_capacity);
+        if (new_tags == NULL) {
+            CPE_ERROR(
+                schedule->m_em, "log: category [%d]%s: add cfg tag: resize capacity fail, new-capacity=%d!",
+                category->m_id, category->m_name, new_capacity);
+            return -1; 
+        }
+
+        if (category->m_cfg_tags) {
+            memcpy(new_tags, category->m_cfg_tags, sizeof(struct net_log_category_cfg_tag) * category->m_cfg_tag_count);
+            mem_free(schedule->m_alloc, category->m_cfg_tags);
+        }
+
+        category->m_cfg_tags = new_tags;
+        category->m_cfg_tag_capacity = new_capacity;
+    }
+
+    char * new_key = cpe_str_mem_dup(schedule->m_alloc, key);
+    if (new_key == NULL) {
+        CPE_ERROR(
+            schedule->m_em, "log: category [%d]%s: add cfg tag: dup key '%s' fail!",
+            category->m_id, category->m_name, key);
+        return -1; 
+    }
+
+    char * new_value = cpe_str_mem_dup(schedule->m_alloc, value);
+    if (new_value == NULL) {
+        CPE_ERROR(
+            schedule->m_em, "log: category [%d]%s: add cfg tag: dup value '%s' fail!",
+            category->m_id, category->m_name, value);
+        mem_free(schedule->m_alloc, new_key);
+        return -1; 
+    }
+
+    net_log_category_cfg_tag_t tag = category->m_cfg_tags + category->m_cfg_tag_count;
+    tag->m_key = new_key;
+    tag->m_value = new_value;
+    category->m_cfg_tag_count ++;
+
+    return 0;
+}
+
 int net_log_category_add_log(
     net_log_category_t category, int32_t pair_count, char ** keys, size_t * key_lens, char ** values, size_t * val_lens)
 {
     net_log_schedule_t schedule = category->m_schedule;
-    log_producer_config_t config = category->m_producer_config;
 
-    if (category->m_totalBufferSize > config->maxBufferBytes) {
+    if (category->m_totalBufferSize > category->m_cfg_max_buffer_bytes) {
         return -1;
     }
     
@@ -276,9 +349,9 @@ int net_log_category_add_log(
     log_group_builder_t builder = category->m_builder;
 
     int32_t nowTime = time(NULL);
-    if (category->m_builder->loggroup_size < config->logBytesPerPackage
-        && nowTime - category->m_firstLogTime < config->packageTimeoutInMS / 1000
-        && category->m_builder->grp->n_logs < config->logCountPerPackage)
+    if (category->m_builder->loggroup_size < category->m_cfg_bytes_per_package
+        && nowTime - category->m_firstLogTime < category->m_cfg_timeout_ms / 1000
+        && category->m_builder->grp->n_logs < category->m_cfg_count_per_package)
     {
         return 0;
     }
