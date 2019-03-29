@@ -1,6 +1,6 @@
-#include <curl/curl.h>
 #include "assert.h"
 #include "cpe/pal/pal_strings.h"
+#include "cpe/pal/pal_string.h"
 #include "cpe/pal/pal_stdio.h"
 #include "cpe/utils/md5.h"
 #include "cpe/utils/string_utils.h"

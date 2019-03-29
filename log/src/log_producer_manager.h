@@ -10,12 +10,8 @@
 typedef struct _log_producer_manager
 {
     net_log_category_t m_category;
-    log_producer_config * producer_config;
-    volatile uint32_t shutdown;
     volatile uint32_t networkRecover;
     volatile uint32_t totalBufferSize;
-    log_queue * loggroup_queue;
-    log_queue * sender_data_queue;
     log_group_builder * builder;
     int32_t firstLogTime;
     char * source;
@@ -23,7 +19,7 @@ typedef struct _log_producer_manager
     volatile uint32_t pack_index;
 } log_producer_manager;
 
-extern log_producer_manager * create_log_producer_manager(net_log_category_t category, log_producer_config * producer_config);
+extern log_producer_manager * create_log_producer_manager(net_log_category_t category);
 extern void destroy_log_producer_manager(log_producer_manager * manager);
 
 extern log_producer_result log_producer_manager_add_log(log_producer_manager * producer_manager, int32_t pair_count, char ** keys, size_t * key_lens, char ** values, size_t * val_lens);

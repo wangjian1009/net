@@ -95,7 +95,7 @@ net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, 
 
     // create manager
     category->m_producer_config = config;
-    category->m_producer_manager = create_log_producer_manager(category, config);
+    category->m_producer_manager = create_log_producer_manager(category);
     if (category->m_producer_manager == NULL) {
         CPE_ERROR(schedule->m_em, "log: category [%d]%s: create producer manager fail!", id, name);
         destroy_log_producer_config(config);
@@ -158,10 +158,10 @@ net_log_request_param_t
 net_log_category_build_request(net_log_category_t category, log_group_builder_t builder) {
     net_log_schedule_t schedule = category->m_schedule;
     log_producer_manager * producer_manager = category->m_producer_manager;
+    log_producer_config * config = category->m_producer_config;
 
     producer_manager->totalBufferSize -= builder->loggroup_size;
 
-    log_producer_config * config = producer_manager->producer_config;
     int i = 0;
     for (i = 0; i < config->tagCount; ++i) {
         add_tag(builder, config->tags[i].key, strlen(config->tags[i].key), config->tags[i].value, strlen(config->tags[i].value));
@@ -254,18 +254,13 @@ int net_log_category_add_log(
 {
     log_producer_manager * producer_manager = category->m_producer_manager;
     net_log_schedule_t schedule = category->m_schedule;
-    
-    if (producer_manager->totalBufferSize > producer_manager->producer_config->maxBufferBytes) {
+    log_producer_config * config = category->m_producer_config;
+
+    if (producer_manager->totalBufferSize > config->maxBufferBytes) {
         return LOG_PRODUCER_DROP_ERROR;
     }
     
-    if (producer_manager->builder == NULL)
-    {
-        // if queue is full, return drop error
-        if (log_queue_isfull(producer_manager->loggroup_queue))
-        {
-            return LOG_PRODUCER_DROP_ERROR;
-        }
+    if (producer_manager->builder == NULL) {
         int32_t now_time = time(NULL);
 
         producer_manager->builder = log_group_create();
@@ -278,9 +273,9 @@ int net_log_category_add_log(
     log_group_builder * builder = producer_manager->builder;
 
     int32_t nowTime = time(NULL);
-    if (producer_manager->builder->loggroup_size < producer_manager->producer_config->logBytesPerPackage
-        && nowTime - producer_manager->firstLogTime < producer_manager->producer_config->packageTimeoutInMS / 1000
-        && producer_manager->builder->grp->n_logs < producer_manager->producer_config->logCountPerPackage)
+    if (producer_manager->builder->loggroup_size < config->logBytesPerPackage
+        && nowTime - producer_manager->firstLogTime < config->packageTimeoutInMS / 1000
+        && producer_manager->builder->grp->n_logs < config->logCountPerPackage)
     {
         return LOG_PRODUCER_OK;
     }
