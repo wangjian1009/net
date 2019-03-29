@@ -263,7 +263,7 @@ int net_log_category_add_log(
     log_producer_config_t config = category->m_producer_config;
 
     if (category->m_totalBufferSize > config->maxBufferBytes) {
-        return LOG_PRODUCER_DROP_ERROR;
+        return -1;
     }
     
     if (category->m_builder == NULL) {
@@ -283,7 +283,7 @@ int net_log_category_add_log(
         && nowTime - category->m_firstLogTime < config->packageTimeoutInMS / 1000
         && category->m_builder->grp->n_logs < config->logCountPerPackage)
     {
-        return LOG_PRODUCER_OK;
+        return 0;
     }
 
     category->m_builder = NULL;
@@ -318,7 +318,7 @@ int net_log_category_add_log(
         }
     }
     
-    return LOG_PRODUCER_OK;
+    return 0;
 }
 
 char * net_log_category_get_pack_id(net_log_schedule_t schedule, const char * configName, const char * ip) {
@@ -334,29 +334,3 @@ char * net_log_category_get_pack_id(net_log_schedule_t schedule, const char * co
     }
     return val;
 }
-
-/* static void net_log_on_send_done( */
-/*     const char * config_name, log_producer_result result, size_t log_bytes, size_t compressed_bytes, */
-/*     const char * req_id, const char * message, const unsigned char * raw_buffer) */
-/* { */
-/*     if (s_logger == NULL) return; */
-
-/*     sfox_agent_t agent = s_logger->m_chain->m_agent; */
-
-/*     if (result == LOG_PRODUCER_OK) { */
-/*         if (agent->m_debug) { */
-/*             CPE_INFO( */
-/*                 agent->m_em, */
-/*                 "sfox: logger: %s: send success, result : %d, log bytes : %d, compressed bytes : %d, request id : %s", */
-/*                 config_name, (result), */
-/*                 (int)log_bytes, (int)compressed_bytes, req_id); */
-/*         } */
-/*     } */
-/*     else { */
-/*         CPE_ERROR( */
-/*             agent->m_em, */
-/*             "sfox: logger: %s: send fail, result : %d, log bytes : %d, compressed bytes : %d, request id : %s, error message : %s", */
-/*             config_name, (result), */
-/*             (int)log_bytes, (int)compressed_bytes, req_id, message); */
-/*     } */
-/* } */

@@ -2,6 +2,8 @@
 #define NET_LOG_REQUEST_H_INCLEDED
 #include "net_log_request_manage.h"
 
+#define LOG_PRODUCER_SEND_MAGIC_NUM 0x1B35487A
+
 typedef enum net_log_request_send_result {
     net_log_request_send_ok = 0,
     net_log_request_send_network_error = 1,

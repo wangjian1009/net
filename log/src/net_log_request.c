@@ -4,8 +4,10 @@
 #include "cpe/utils/md5.h"
 #include "net_watcher.h"
 #include "net_log_request.h"
+#include "net_log_category_i.h"
 #include "net_log_util.h"
-#include "log_producer_sender.h"
+#include "log_producer_config.h"
+#include "log_builder.h"
 #include "lz4.h"
 
 #define MAX_NETWORK_ERROR_SLEEP_MS 3600000

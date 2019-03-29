@@ -1,6 +1,5 @@
 #ifndef LOG_C_SDK_LOG_PRODUCER_CONFIG_H
 #define LOG_C_SDK_LOG_PRODUCER_CONFIG_H
-#include "log_producer_common.h"
 #include <stdio.h>
 #include <stddef.h>
 #include <stdint.h>
