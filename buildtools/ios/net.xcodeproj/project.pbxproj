@@ -279,6 +279,19 @@
 		C985533F224CBBCB0096C780 /* net_log_request_pipe.c in Sources */ = {isa = PBXBuildFile; fileRef = C985533C224CBBCB0096C780 /* net_log_request_pipe.c */; };
 		C9855340224CBBCB0096C780 /* net_log_request_manage.c in Sources */ = {isa = PBXBuildFile; fileRef = C985533D224CBBCB0096C780 /* net_log_request_manage.c */; };
 		C9855342224CFAC00096C780 /* net_log_request_net.c in Sources */ = {isa = PBXBuildFile; fileRef = C9855341224CFAC00096C780 /* net_log_request_net.c */; };
+		C9855374224D96060096C780 /* ev.c in Sources */ = {isa = PBXBuildFile; fileRef = C9855359224D96060096C780 /* ev.c */; };
+		C985537E224D96F40096C780 /* net_dq_driver.m in Sources */ = {isa = PBXBuildFile; fileRef = C96A82E22110054D000CB30D /* net_dq_driver.m */; };
+		C985537F224D96F40096C780 /* net_dq_watcher.m in Sources */ = {isa = PBXBuildFile; fileRef = C96D849D221A7D87001002B6 /* net_dq_watcher.m */; };
+		C9855380224D96F40096C780 /* net_dq_endpoint.m in Sources */ = {isa = PBXBuildFile; fileRef = C96A82E62110054D000CB30D /* net_dq_endpoint.m */; };
+		C9855381224D96F40096C780 /* net_dq_dgram.m in Sources */ = {isa = PBXBuildFile; fileRef = C96A82E72110054D000CB30D /* net_dq_dgram.m */; };
+		C9855382224D96F40096C780 /* net_dq_acceptor.m in Sources */ = {isa = PBXBuildFile; fileRef = C96A82E42110054D000CB30D /* net_dq_acceptor.m */; };
+		C9855383224D96F40096C780 /* net_dq_timer.m in Sources */ = {isa = PBXBuildFile; fileRef = C96A82E82110054D000CB30D /* net_dq_timer.m */; };
+		C985539B224D973A0096C780 /* net_ev_driver.c in Sources */ = {isa = PBXBuildFile; fileRef = C985538F224D973A0096C780 /* net_ev_driver.c */; };
+		C985539C224D973A0096C780 /* net_ev_timer.c in Sources */ = {isa = PBXBuildFile; fileRef = C9855392224D973A0096C780 /* net_ev_timer.c */; };
+		C985539D224D973A0096C780 /* net_ev_acceptor.c in Sources */ = {isa = PBXBuildFile; fileRef = C9855395224D973A0096C780 /* net_ev_acceptor.c */; };
+		C985539E224D973A0096C780 /* net_ev_endpoint.c in Sources */ = {isa = PBXBuildFile; fileRef = C9855396224D973A0096C780 /* net_ev_endpoint.c */; };
+		C985539F224D973A0096C780 /* net_ev_watcher.c in Sources */ = {isa = PBXBuildFile; fileRef = C9855399224D973A0096C780 /* net_ev_watcher.c */; };
+		C98553A0224D973A0096C780 /* net_ev_dgram.c in Sources */ = {isa = PBXBuildFile; fileRef = C985539A224D973A0096C780 /* net_ev_dgram.c */; };
 		C98F307A213D3CA700C64DC6 /* net_schedule_ipstack.c in Sources */ = {isa = PBXBuildFile; fileRef = C98F3079213D3CA700C64DC6 /* net_schedule_ipstack.c */; };
 		C9951627224AFADE00DDEEB1 /* net_statistics_transaction.c in Sources */ = {isa = PBXBuildFile; fileRef = C930DEB321CE523200597387 /* net_statistics_transaction.c */; };
 		C9951628224AFADE00DDEEB1 /* net_statistics.c in Sources */ = {isa = PBXBuildFile; fileRef = C9BAA6902195143400C46526 /* net_statistics.c */; };
@@ -387,6 +400,24 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C96D82D7221A7628001002B6 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "include/$(PRODUCT_NAME)";
+			dstSubfolderSpec = 16;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C985534B224D95E30096C780 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "include/$(PRODUCT_NAME)";
+			dstSubfolderSpec = 16;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C9855385224D96F40096C780 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "include/$(PRODUCT_NAME)";
@@ -994,6 +1025,27 @@
 		C985533C224CBBCB0096C780 /* net_log_request_pipe.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_log_request_pipe.c; sourceTree = "<group>"; };
 		C985533D224CBBCB0096C780 /* net_log_request_manage.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_log_request_manage.c; sourceTree = "<group>"; };
 		C9855341224CFAC00096C780 /* net_log_request_net.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_log_request_net.c; sourceTree = "<group>"; };
+		C985534F224D95E30096C780 /* libev.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libev.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		C9855354224D96060096C780 /* ev.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ev.h; sourceTree = "<group>"; };
+		C9855358224D96060096C780 /* ev_vars.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ev_vars.h; sourceTree = "<group>"; };
+		C9855359224D96060096C780 /* ev.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ev.c; sourceTree = "<group>"; };
+		C985535A224D96060096C780 /* ev_wrap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ev_wrap.h; sourceTree = "<group>"; };
+		C985535E224D96060096C780 /* libev_config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = libev_config.h; sourceTree = "<group>"; };
+		C9855389224D96F40096C780 /* libnet_driver_ev.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_driver_ev.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		C985538C224D973A0096C780 /* net_ev_types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ev_types.h; sourceTree = "<group>"; };
+		C985538D224D973A0096C780 /* net_ev_driver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ev_driver.h; sourceTree = "<group>"; };
+		C985538F224D973A0096C780 /* net_ev_driver.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ev_driver.c; sourceTree = "<group>"; };
+		C9855390224D973A0096C780 /* net_ev_endpoint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ev_endpoint.h; sourceTree = "<group>"; };
+		C9855391224D973A0096C780 /* net_ev_watcher.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ev_watcher.h; sourceTree = "<group>"; };
+		C9855392224D973A0096C780 /* net_ev_timer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ev_timer.c; sourceTree = "<group>"; };
+		C9855393224D973A0096C780 /* net_ev_dgram.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ev_dgram.h; sourceTree = "<group>"; };
+		C9855394224D973A0096C780 /* net_ev_driver_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ev_driver_i.h; sourceTree = "<group>"; };
+		C9855395224D973A0096C780 /* net_ev_acceptor.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ev_acceptor.c; sourceTree = "<group>"; };
+		C9855396224D973A0096C780 /* net_ev_endpoint.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ev_endpoint.c; sourceTree = "<group>"; };
+		C9855397224D973A0096C780 /* net_ev_acceptor_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ev_acceptor_i.h; sourceTree = "<group>"; };
+		C9855398224D973A0096C780 /* net_ev_timer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ev_timer.h; sourceTree = "<group>"; };
+		C9855399224D973A0096C780 /* net_ev_watcher.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ev_watcher.c; sourceTree = "<group>"; };
+		C985539A224D973A0096C780 /* net_ev_dgram.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ev_dgram.c; sourceTree = "<group>"; };
 		C98F3079213D3CA700C64DC6 /* net_schedule_ipstack.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_schedule_ipstack.c; sourceTree = "<group>"; };
 		C9951630224AFADE00DDEEB1 /* libnet_log.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_log.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		C9951636224AFC3400DDEEB1 /* sds.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = sds.c; sourceTree = "<group>"; };
@@ -1181,6 +1233,20 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C96D82D6221A7628001002B6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C985534A224D95E30096C780 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C9855384224D96F40096C780 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -1465,6 +1531,7 @@
 		C9323A382105E2CD005DD3C0 = {
 			isa = PBXGroup;
 			children = (
+				C985538A224D973A0096C780 /* driver_ev */,
 				C9951633224AFC3400DDEEB1 /* log */,
 				C9F3114E21094371006A7621 /* depends */,
 				C9323A522105E2E3005DD3C0 /* core */,
@@ -1501,6 +1568,8 @@
 				C9BAA683219513D300C46526 /* libnet_statistics.a */,
 				C96D82DB221A7628001002B6 /* libcurl.a */,
 				C9951630224AFADE00DDEEB1 /* libnet_log.a */,
+				C985534F224D95E30096C780 /* libev.a */,
+				C9855389224D96F40096C780 /* libnet_driver_ev.a */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1936,6 +2005,80 @@
 			path = vtls;
 			sourceTree = "<group>";
 		};
+		C9855350224D96060096C780 /* libev */ = {
+			isa = PBXGroup;
+			children = (
+				C9855351224D96060096C780 /* include */,
+				C9855355224D96060096C780 /* src */,
+			);
+			path = libev;
+			sourceTree = "<group>";
+		};
+		C9855351224D96060096C780 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				C9855354224D96060096C780 /* ev.h */,
+			);
+			path = include;
+			sourceTree = "<group>";
+		};
+		C9855355224D96060096C780 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				C9855358224D96060096C780 /* ev_vars.h */,
+				C9855359224D96060096C780 /* ev.c */,
+				C985535A224D96060096C780 /* ev_wrap.h */,
+				C985535D224D96060096C780 /* ios */,
+			);
+			path = src;
+			sourceTree = "<group>";
+		};
+		C985535D224D96060096C780 /* ios */ = {
+			isa = PBXGroup;
+			children = (
+				C985535E224D96060096C780 /* libev_config.h */,
+			);
+			path = ios;
+			sourceTree = "<group>";
+		};
+		C985538A224D973A0096C780 /* driver_ev */ = {
+			isa = PBXGroup;
+			children = (
+				C985538B224D973A0096C780 /* include */,
+				C985538E224D973A0096C780 /* src */,
+			);
+			name = driver_ev;
+			path = ../../driver_ev;
+			sourceTree = "<group>";
+		};
+		C985538B224D973A0096C780 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				C985538C224D973A0096C780 /* net_ev_types.h */,
+				C985538D224D973A0096C780 /* net_ev_driver.h */,
+			);
+			path = include;
+			sourceTree = "<group>";
+		};
+		C985538E224D973A0096C780 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				C985538F224D973A0096C780 /* net_ev_driver.c */,
+				C9855390224D973A0096C780 /* net_ev_endpoint.h */,
+				C9855391224D973A0096C780 /* net_ev_watcher.h */,
+				C9855392224D973A0096C780 /* net_ev_timer.c */,
+				C9855393224D973A0096C780 /* net_ev_dgram.h */,
+				C9855394224D973A0096C780 /* net_ev_driver_i.h */,
+				C9855395224D973A0096C780 /* net_ev_acceptor.c */,
+				C9855396224D973A0096C780 /* net_ev_endpoint.c */,
+				C9855397224D973A0096C780 /* net_ev_acceptor_i.h */,
+				C9855398224D973A0096C780 /* net_ev_timer.h */,
+				C9855399224D973A0096C780 /* net_ev_watcher.c */,
+				C985539A224D973A0096C780 /* net_ev_dgram.c */,
+			);
+			path = src;
+			sourceTree = "<group>";
+		};
 		C9951633224AFC3400DDEEB1 /* log */ = {
 			isa = PBXGroup;
 			children = (
@@ -2255,6 +2398,7 @@
 		C9F3114E21094371006A7621 /* depends */ = {
 			isa = PBXGroup;
 			children = (
+				C9855350224D96060096C780 /* libev */,
 				C96D82E2221A78DA001002B6 /* curl */,
 				C9F3114F21094392006A7621 /* wslay */,
 			);
@@ -2439,6 +2583,40 @@
 			name = curl;
 			productName = mbedtls;
 			productReference = C96D82DB221A7628001002B6 /* libcurl.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+		C9855343224D95E30096C780 /* ev */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C985534C224D95E30096C780 /* Build configuration list for PBXNativeTarget "ev" */;
+			buildPhases = (
+				C9855344224D95E30096C780 /* Sources */,
+				C985534A224D95E30096C780 /* Frameworks */,
+				C985534B224D95E30096C780 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ev;
+			productName = wslay;
+			productReference = C985534F224D95E30096C780 /* libev.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+		C985537C224D96F40096C780 /* net_driver_ev */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C9855386224D96F40096C780 /* Build configuration list for PBXNativeTarget "net_driver_ev" */;
+			buildPhases = (
+				C985537D224D96F40096C780 /* Sources */,
+				C9855384224D96F40096C780 /* Frameworks */,
+				C9855385224D96F40096C780 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = net_driver_ev;
+			productName = net_driver_dq;
+			productReference = C9855389224D96F40096C780 /* libnet_driver_ev.a */;
 			productType = "com.apple.product-type.library.static";
 		};
 		C9951625224AFADE00DDEEB1 /* net_log */ = {
@@ -2672,6 +2850,8 @@
 				C9BAA682219513D300C46526 /* net_statistics */,
 				C96D8285221A7628001002B6 /* curl */,
 				C9951625224AFADE00DDEEB1 /* net_log */,
+				C9855343224D95E30096C780 /* ev */,
+				C985537C224D96F40096C780 /* net_driver_ev */,
 			);
 		};
 /* End PBXProject section */
@@ -2977,6 +3157,33 @@
 				C96D8424221A78DB001002B6 /* formdata.c in Sources */,
 				C96D8433221A78DB001002B6 /* nwos.c in Sources */,
 				C96D8412221A78DB001002B6 /* pingpong.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C9855344224D95E30096C780 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C9855374224D96060096C780 /* ev.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C985537D224D96F40096C780 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C985539F224D973A0096C780 /* net_ev_watcher.c in Sources */,
+				C985539C224D973A0096C780 /* net_ev_timer.c in Sources */,
+				C985537E224D96F40096C780 /* net_dq_driver.m in Sources */,
+				C985537F224D96F40096C780 /* net_dq_watcher.m in Sources */,
+				C985539E224D973A0096C780 /* net_ev_endpoint.c in Sources */,
+				C985539D224D973A0096C780 /* net_ev_acceptor.c in Sources */,
+				C98553A0224D973A0096C780 /* net_ev_dgram.c in Sources */,
+				C9855380224D96F40096C780 /* net_dq_endpoint.m in Sources */,
+				C9855381224D96F40096C780 /* net_dq_dgram.m in Sources */,
+				C9855382224D96F40096C780 /* net_dq_acceptor.m in Sources */,
+				C985539B224D973A0096C780 /* net_ev_driver.c in Sources */,
+				C9855383224D96F40096C780 /* net_dq_timer.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3414,6 +3621,70 @@
 			};
 			name = Release;
 		};
+		C985534D224D95E30096C780 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
+				CLANG_WARN_STRICT_PROTOTYPES = NO;
+				CODE_SIGN_STYLE = Automatic;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
+				GCC_WARN_INHIBIT_ALL_WARNINGS = YES;
+				GCC_WARN_UNUSED_VARIABLE = NO;
+				HEADER_SEARCH_PATHS = ../../depends/libev/include;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C985534E224D95E30096C780 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
+				CLANG_WARN_STRICT_PROTOTYPES = NO;
+				CODE_SIGN_STYLE = Automatic;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
+				GCC_WARN_INHIBIT_ALL_WARNINGS = YES;
+				GCC_WARN_UNUSED_VARIABLE = NO;
+				HEADER_SEARCH_PATHS = ../../depends/libev/include;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		C9855387224D96F40096C780 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_ARC = NO;
+				CODE_SIGN_STYLE = Automatic;
+				HEADER_SEARCH_PATHS = (
+					../../../cpe/include,
+					../../depends/libev/include,
+				);
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C9855388224D96F40096C780 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_ARC = NO;
+				CODE_SIGN_STYLE = Automatic;
+				HEADER_SEARCH_PATHS = (
+					../../../cpe/include,
+					../../depends/libev/include,
+				);
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		C995162E224AFADE00DDEEB1 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -3742,6 +4013,24 @@
 			buildConfigurations = (
 				C96D82D9221A7628001002B6 /* Debug */,
 				C96D82DA221A7628001002B6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C985534C224D95E30096C780 /* Build configuration list for PBXNativeTarget "ev" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C985534D224D95E30096C780 /* Debug */,
+				C985534E224D95E30096C780 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C9855386224D96F40096C780 /* Build configuration list for PBXNativeTarget "net_driver_ev" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C9855387224D96F40096C780 /* Debug */,
+				C9855388224D96F40096C780 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
