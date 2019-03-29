@@ -1,3 +1,4 @@
+#include "cpe/pal/pal_string.h"
 #include "log_producer_manager.h"
 #include "net_log_flusher_i.h"
 #include "md5.h"
@@ -30,38 +31,36 @@ char * _get_pack_id(const char * configName, const char * ip)
     return val;
 }
 
-void _try_flush_loggroup(log_producer_manager * producer_manager)
-{
-    net_log_schedule_t schedule = producer_manager->m_category->m_schedule;
+/* void _try_flush_loggroup(log_producer_manager * producer_manager) */
+/* { */
+/*     net_log_schedule_t schedule = producer_manager->m_category->m_schedule; */
 
-    int32_t now_time = time(NULL);
+/*     int32_t now_time = time(NULL); */
 
-    CS_ENTER(producer_manager->lock);
-    if (producer_manager->builder != NULL && now_time - producer_manager->firstLogTime > producer_manager->producer_config->packageTimeoutInMS / 1000)
-    {
-        log_group_builder * builder = producer_manager->builder;
-        producer_manager->builder = NULL;
-        CS_LEAVE(producer_manager->lock);
+/*     if (producer_manager->builder != NULL && now_time - producer_manager->firstLogTime > producer_manager->producer_config->packageTimeoutInMS / 1000) */
+/*     { */
+/*         log_group_builder * builder = producer_manager->builder; */
+/*         producer_manager->builder = NULL; */
 
-        size_t loggroup_size = builder->loggroup_size;
-        int rst = log_queue_push(producer_manager->loggroup_queue, builder);
-        CPE_INFO(schedule->m_em, "try push loggroup to flusher, size : %d, status : %d", (int)loggroup_size, rst);
-        if (rst != 0)
-        {
-            CPE_ERROR(schedule->m_em, "try push loggroup to flusher failed, force drop this log group, error code : %d", rst);
-            log_group_destroy(builder);
-        }
-        else
-        {
-            producer_manager->totalBufferSize += loggroup_size;
-            COND_SIGNAL(producer_manager->triger_cond);
-        }
-    }
-    else
-    {
-        CS_LEAVE(producer_manager->lock);
-    }
-}
+/*         size_t loggroup_size = builder->loggroup_size; */
+/*         int rst = log_queue_push(producer_manager->loggroup_queue, builder); */
+/*         CPE_INFO(schedule->m_em, "try push loggroup to flusher, size : %d, status : %d", (int)loggroup_size, rst); */
+/*         if (rst != 0) */
+/*         { */
+/*             CPE_ERROR(schedule->m_em, "try push loggroup to flusher failed, force drop this log group, error code : %d", rst); */
+/*             log_group_destroy(builder); */
+/*         } */
+/*         else */
+/*         { */
+/*             producer_manager->totalBufferSize += loggroup_size; */
+/*             COND_SIGNAL(producer_manager->triger_cond); */
+/*         } */
+/*     } */
+/*     else */
+/*     { */
+/*         CS_LEAVE(producer_manager->lock); */
+/*     } */
+/* } */
 
 log_producer_manager * create_log_producer_manager(net_log_category_t category, log_producer_config * producer_config)
 {
@@ -85,12 +84,6 @@ log_producer_manager * create_log_producer_manager(net_log_category_t category, 
     }
 
     producer_manager->loggroup_queue = log_queue_create(base_queue_size);
-    producer_manager->send_param_queue_size = base_queue_size * 2;
-    producer_manager->send_param_queue = malloc(sizeof(net_log_request_param_t) * producer_manager->send_param_queue_size);
-
-    producer_manager->triger_cond = CreateCond();
-    producer_manager->lock = CreateCriticalSection();
-    //THREAD_INIT(producer_manager->flush_thread, log_producer_flush_thread, producer_manager);
 
     if (producer_config->source != NULL)
     {
@@ -121,7 +114,6 @@ log_producer_manager * create_log_producer_manager(net_log_category_t category, 
 void _push_last_loggroup(log_producer_manager * manager) {
     net_log_schedule_t schedule = manager->m_category->m_schedule;
    
-    CS_ENTER(manager->lock);
     log_group_builder * builder = manager->builder;
     manager->builder = NULL;
     if (builder != NULL)
@@ -140,10 +132,8 @@ void _push_last_loggroup(log_producer_manager * manager) {
         else
         {
             manager->totalBufferSize += loggroup_size;
-            COND_SIGNAL(manager->triger_cond);
         }
     }
-    CS_LEAVE(manager->lock);
 }
 
 void destroy_log_producer_manager_tail(log_producer_manager * manager)
@@ -154,14 +144,9 @@ void destroy_log_producer_manager_tail(log_producer_manager * manager)
         CPE_INFO(schedule->m_em, "delete producer manager tail");
     }
     
-    DeleteCriticalSection(manager->lock);
     if (manager->pack_prefix != NULL)
     {
         free(manager->pack_prefix);
-    }
-    if (manager->send_param_queue != NULL)
-    {
-        free(manager->send_param_queue);
     }
     sdsfree(manager->source);
     destroy_log_producer_config(manager->producer_config);
@@ -181,18 +166,18 @@ void destroy_log_producer_manager(log_producer_manager * manager) {
     int32_t total_wait_count = manager->producer_config->destroyFlusherWaitTimeoutSec > 0 ? manager->producer_config->destroyFlusherWaitTimeoutSec * 100 : MAX_MANAGER_FLUSH_COUNT;
     total_wait_count += manager->producer_config->destroySenderWaitTimeoutSec > 0 ? manager->producer_config->destroySenderWaitTimeoutSec * 100 : MAX_SENDER_FLUSH_COUNT;
 
-    usleep(10 * 1000);
+    //usleep(10 * 1000);
     int waitCount = 0;
-    while (log_queue_size(manager->loggroup_queue) > 0 ||
-            manager->send_param_queue_write - manager->send_param_queue_read > 0 ||
-            (manager->sender_data_queue != NULL && log_queue_size(manager->sender_data_queue) > 0) )
-    {
-        usleep(10 * 1000);
-        if (++waitCount == total_wait_count)
-        {
-            break;
-        }
-    }
+    /* while (log_queue_size(manager->loggroup_queue) > 0 || */
+    /*         manager->send_param_queue_write - manager->send_param_queue_read > 0 || */
+    /*         (manager->sender_data_queue != NULL && log_queue_size(manager->sender_data_queue) > 0) ) */
+    /* { */
+    /*     usleep(10 * 1000); */
+    /*     if (++waitCount == total_wait_count) */
+    /*     { */
+    /*         break; */
+    /*     } */
+    /* } */
     if (waitCount == total_wait_count)
     {
         CPE_ERROR(
@@ -208,12 +193,10 @@ void destroy_log_producer_manager(log_producer_manager * manager) {
     manager->shutdown = 1;
 
     // destroy root resources
-    COND_SIGNAL(manager->triger_cond);
     if (schedule->m_debug) {
         CPE_INFO(schedule->m_em, "join flush thread begin");
     }
 
-    DeleteCond(manager->triger_cond);
     log_queue_destroy(manager->loggroup_queue);
     if (manager->sender_data_queue != NULL)
     {

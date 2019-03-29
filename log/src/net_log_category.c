@@ -1,3 +1,5 @@
+#include <assert.h>
+#include "cpe/pal/pal_string.h"
 #include "cpe/utils/string_utils.h"
 #include "net_log_category_i.h"
 #include "net_log_flusher_i.h"
@@ -100,7 +102,6 @@ net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, 
         mem_free(schedule->m_alloc, category);
         return NULL;
     }
-    category->m_producer_manager->send_done_function = NULL;
 
     schedule->m_categories[id] = category;
 
@@ -158,9 +159,7 @@ net_log_category_build_request(net_log_category_t category, log_group_builder_t 
     net_log_schedule_t schedule = category->m_schedule;
     log_producer_manager * producer_manager = category->m_producer_manager;
 
-    CS_ENTER(producer_manager->lock);
     producer_manager->totalBufferSize -= builder->loggroup_size;
-    CS_LEAVE(producer_manager->lock);
 
     log_producer_config * config = producer_manager->producer_config;
     int i = 0;
@@ -193,9 +192,7 @@ net_log_category_build_request(net_log_category_t category, log_group_builder_t 
         return NULL;
     }
 
-    CS_ENTER(producer_manager->lock);
     producer_manager->totalBufferSize += lz4_buf->length;
-    CS_LEAVE(producer_manager->lock);
 
     if (schedule->m_debug) {
         CPE_INFO(
@@ -262,13 +259,11 @@ int net_log_category_add_log(
         return LOG_PRODUCER_DROP_ERROR;
     }
     
-    CS_ENTER(producer_manager->lock);
     if (producer_manager->builder == NULL)
     {
         // if queue is full, return drop error
         if (log_queue_isfull(producer_manager->loggroup_queue))
         {
-            CS_LEAVE(producer_manager->lock);
             return LOG_PRODUCER_DROP_ERROR;
         }
         int32_t now_time = time(NULL);
@@ -287,7 +282,6 @@ int net_log_category_add_log(
         && nowTime - producer_manager->firstLogTime < producer_manager->producer_config->packageTimeoutInMS / 1000
         && producer_manager->builder->grp->n_logs < producer_manager->producer_config->logCountPerPackage)
     {
-        CS_LEAVE(producer_manager->lock);
         return LOG_PRODUCER_OK;
     }
 
@@ -308,7 +302,6 @@ int net_log_category_add_log(
         }
         else {
             producer_manager->totalBufferSize += loggroup_size;
-            COND_SIGNAL(producer_manager->triger_cond);
         }
     }
     else { /*同步flush */
@@ -324,8 +317,6 @@ int net_log_category_add_log(
         }
     }
     
-    CS_LEAVE(producer_manager->lock);
-
     return LOG_PRODUCER_OK;
 }
 

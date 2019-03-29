@@ -178,19 +178,6 @@ int32_t log_producer_on_send_done(net_log_request_param_t send_param, post_log_r
     log_producer_send_result send_result = AosStatusToResult(result);
     net_log_schedule_t schedule = category->m_schedule;
 
-    if (producer_manager->send_done_function != NULL)
-    {
-        log_producer_result callback_result = send_result == LOG_SEND_OK ?
-                                              LOG_PRODUCER_OK :
-                                              (LOG_PRODUCER_SEND_NETWORK_ERROR + send_result - LOG_SEND_NETWORK_ERROR);
-        producer_manager->send_done_function(category->m_name,
-                                             callback_result,
-                                             send_param->log_buf->raw_length,
-                                             send_param->log_buf->length,
-                                             result->requestID,
-                                             result->errorMessage,
-                                             send_param->log_buf->data);
-    }
     switch (send_result)
     {
         case LOG_SEND_OK:
@@ -275,9 +262,7 @@ int32_t log_producer_on_send_done(net_log_request_param_t send_param, post_log_r
 
     }
 
-    CS_ENTER(producer_manager->lock);
     producer_manager->totalBufferSize -= send_param->log_buf->length;
-    CS_LEAVE(producer_manager->lock);
     if (send_result == LOG_SEND_OK)
     {
         if (schedule->m_debug) {

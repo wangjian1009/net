@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "log_multi_thread.h"
 #include "net_log_category_i.h"
 
 typedef struct _log_producer_config_tag

@@ -27,8 +27,6 @@ typedef int log_producer_result;
  * @param raw_buffer lz4 buffer
  * @note you can only read raw_buffer, but can't modify or free it
  */
-typedef void (*on_log_producer_send_done_function)(const char * config_name, log_producer_result result, size_t log_bytes, size_t compressed_bytes, const char * req_id, const char * error_message, const unsigned char * raw_buffer);
-
 extern log_producer_result LOG_PRODUCER_OK;
 extern log_producer_result LOG_PRODUCER_INVALID;
 extern log_producer_result LOG_PRODUCER_WRITE_ERROR;

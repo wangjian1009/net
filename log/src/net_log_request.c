@@ -1,4 +1,5 @@
 #include <assert.h>
+#include "cpe/pal/pal_string.h"
 #include "cpe/utils/md5.h"
 #include "net_watcher.h"
 #include "net_log_request.h"
