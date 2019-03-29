@@ -96,9 +96,6 @@ net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, 
     log_producer_config_set_destroy_flusher_wait_sec(config, 1);
     log_producer_config_set_destroy_sender_wait_sec(config, 1);
 
-    // set interface
-    log_producer_config_set_net_interface(config, NULL);
-
     // create manager
     category->m_producer_config = config;
 

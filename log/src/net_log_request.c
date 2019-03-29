@@ -164,9 +164,9 @@ static int net_log_request_send(net_log_request_t request) {
     curl_easy_setopt(request->m_handler, CURLOPT_URL, buf);
     
     struct curl_slist *connect_to = NULL;
-    if (config->remote_address != NULL) {
+    if (schedule->m_cfg_remote_address != NULL) {
         // example.com::192.168.1.5:
-        snprintf(buf, sizeof(buf), "%s.%s::%s:", schedule->m_cfg_project, schedule->m_cfg_ep, config->remote_address);
+        snprintf(buf, sizeof(buf), "%s.%s::%s:", schedule->m_cfg_project, schedule->m_cfg_ep, schedule->m_cfg_remote_address);
         connect_to = curl_slist_append(connect_to, buf);
         curl_easy_setopt(request->m_handler, CURLOPT_CONNECT_TO, connect_to);
     }
@@ -247,8 +247,8 @@ static int net_log_request_send(net_log_request_t request) {
     curl_easy_setopt(request->m_handler, CURLOPT_SSL_VERIFYPEER, 0);
     curl_easy_setopt(request->m_handler, CURLOPT_USERAGENT, "log-c-lite_0.1.0");
 
-    if (config->netInterface != NULL) {
-        curl_easy_setopt(request->m_handler, CURLOPT_INTERFACE, config->netInterface);
+    if (schedule->m_cfg_net_interface != NULL) {
+        curl_easy_setopt(request->m_handler, CURLOPT_INTERFACE, schedule->m_cfg_net_interface);
     }
     
     curl_easy_setopt(request->m_handler, CURLOPT_TIMEOUT, config->sendTimeoutSec > 0 ? config->sendTimeoutSec : 15);

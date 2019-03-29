@@ -15,7 +15,6 @@ typedef struct _log_producer_config
 {
     net_log_category_t m_category;
     char * topic;
-    char * source;
     log_producer_config_tag * tags;
     int32_t tagAllocSize;
     int32_t tagCount;
@@ -25,8 +24,6 @@ typedef struct _log_producer_config
     int32_t logBytesPerPackage;
     int32_t maxBufferBytes;
 
-    char * netInterface;
-    char * remote_address;
     int32_t connectTimeoutSec;
     int32_t sendTimeoutSec;
     int32_t destroyFlusherWaitTimeoutSec;

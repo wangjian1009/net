@@ -49,18 +49,6 @@ void destroy_log_producer_config(log_producer_config * pConfig)
     {
         sdsfree(pConfig->topic);
     }
-    if (pConfig->source != NULL)
-    {
-        sdsfree(pConfig->source);
-    }
-    if (pConfig->netInterface != NULL)
-    {
-        sdsfree(pConfig->netInterface);
-    }
-    if (pConfig->remote_address != NULL)
-    {
-        sdsfree(pConfig->remote_address);
-    }
     if (pConfig->tagCount > 0 && pConfig->tags != NULL)
     {
         int i = 0;
@@ -133,24 +121,6 @@ void log_producer_config_set_max_buffer_limit(log_producer_config * config, int6
         return;
     }
     config->maxBufferBytes = max_buffer_bytes;
-}
-
-void log_producer_config_set_net_interface(log_producer_config * config, const char * net_interface)
-{
-    if (config == NULL || net_interface == NULL)
-    {
-        return;
-    }
-    _copy_config_string(net_interface, &config->netInterface);
-}
-
-void log_producer_config_set_remote_address(log_producer_config * config, const char * remote_address)
-{
-    if (config == NULL || remote_address == NULL)
-    {
-        return;
-    }
-    _copy_config_string(remote_address, &config->remote_address);
 }
 
 void log_producer_config_set_connect_timeout_sec(log_producer_config * config, int32_t connect_timeout_sec)
@@ -233,9 +203,4 @@ void log_producer_config_add_tag(log_producer_config * pConfig, const char * key
 void log_producer_config_set_topic(log_producer_config * config, const char * topic)
 {
     _copy_config_string(topic, &config->topic);
-}
-
-void log_producer_config_set_source(log_producer_config * config, const char * source)
-{
-    _copy_config_string(source, &config->source);
 }

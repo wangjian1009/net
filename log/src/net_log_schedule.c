@@ -106,7 +106,43 @@ void net_log_schedule_free(net_log_schedule_t schedule) {
     while(!TAILQ_EMPTY(&schedule->m_senders)) {
         net_log_sender_free(TAILQ_FIRST(&schedule->m_senders));
     }
+
+    /*cfg*/
+    if (schedule->m_cfg_project) {
+        mem_free(schedule->m_alloc, schedule->m_cfg_project);
+        schedule->m_cfg_project = NULL;
+    }
+
+    if (schedule->m_cfg_ep) {
+        mem_free(schedule->m_alloc, schedule->m_cfg_ep);
+        schedule->m_cfg_ep = NULL;
+    }
     
+    if (schedule->m_cfg_access_id) {
+        mem_free(schedule->m_alloc, schedule->m_cfg_access_id);
+        schedule->m_cfg_access_id = NULL;
+    }
+
+    if (schedule->m_cfg_access_key) {
+        mem_free(schedule->m_alloc, schedule->m_cfg_access_key);
+        schedule->m_cfg_access_key = NULL;
+    }
+    
+    if (schedule->m_cfg_source) {
+        mem_free(schedule->m_alloc, schedule->m_cfg_source);
+        schedule->m_cfg_source = NULL;
+    }
+
+    if (schedule->m_cfg_net_interface) {
+        mem_free(schedule->m_alloc, schedule->m_cfg_net_interface);
+        schedule->m_cfg_net_interface = NULL;
+    }
+    
+    if (schedule->m_cfg_remote_address) {
+        mem_free(schedule->m_alloc, schedule->m_cfg_remote_address);
+        schedule->m_cfg_remote_address = NULL;
+    }
+
     /*cache*/
     if (schedule->m_keys) {
         mem_free(schedule->m_alloc, schedule->m_keys);
