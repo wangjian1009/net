@@ -31,15 +31,17 @@ struct net_log_request {
     net_log_request_manage_t m_mgr;
     TAILQ_ENTRY(net_log_request) m_next;
     uint32_t m_id;
+    net_log_category_t m_category;
     CURL * m_handler;
     net_watcher_t m_watcher;
-    net_log_category_t m_category;
+    net_timer_t m_delay_process;
 
     /*result*/
     net_log_request_param_t m_send_param;
+    uint8_t m_response_have_request_id;
     net_log_request_send_result_t m_last_send_error;
-    int32_t m_last_sleep_ms;
-    int32_t m_first_error_time;
+    uint32_t m_last_sleep_ms;
+    uint32_t m_first_error_time;
 };
 
 net_log_request_t net_log_request_create(net_log_request_manage_t mgr, net_log_request_param_t send_param);

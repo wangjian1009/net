@@ -5,6 +5,7 @@
 #include "cpe/utils/string_utils.h"
 #include "cpe/utils/stream_buffer.h"
 #include "net_watcher.h"
+#include "net_timer.h"
 #include "net_log_request.h"
 #include "net_log_category_i.h"
 #include "net_log_util.h"
@@ -28,6 +29,7 @@ static net_log_request_send_result_t net_log_request_calc_result(net_log_schedul
 static int32_t net_log_request_check_result(
     net_log_schedule_t schedule, net_log_category_t category, net_log_request_t request, net_log_request_send_result_t send_result);
 static int net_log_request_trace(CURL *handle, curl_infotype type, char *data, size_t size, void *userp);
+static void net_log_request_delay_commit(net_timer_t timer, void * ctx);
 
 #ifdef SEND_TIME_INVALID_FIX
 static void net_log_request_rebuild_time(net_log_schedule_t schedule, net_log_category_t category, net_log_request_t request);
@@ -36,6 +38,7 @@ static void net_log_request_rebuild_time(net_log_schedule_t schedule, net_log_ca
 net_log_request_t
 net_log_request_create(net_log_request_manage_t mgr, net_log_request_param_t send_param) {
     net_log_schedule_t schedule = mgr->m_schedule;
+    net_log_category_t category = send_param->category;
     net_log_request_t request = TAILQ_FIRST(&mgr->m_requests);
 
     if (request) {
@@ -52,12 +55,23 @@ net_log_request_create(net_log_request_manage_t mgr, net_log_request_param_t sen
     request->m_mgr = mgr;
     request->m_handler = NULL;
     request->m_watcher = NULL;
-    request->m_category = send_param->category;
+    request->m_category = category;
     request->m_id = ++mgr->m_request_max_id;
     request->m_send_param = send_param;
-    
+    request->m_response_have_request_id = 0;
+    request->m_last_send_error = net_log_request_send_ok;
+    request->m_last_sleep_ms = 0;
+    request->m_first_error_time = 0;
+    request->m_delay_process = NULL;
+
     mgr->m_request_count++;
     TAILQ_INSERT_TAIL(&mgr->m_requests, request, m_next);
+
+    if (schedule->m_debug) {
+        CPE_INFO(
+            schedule->m_em, "log: category [%d]%s: request %d: created",
+            category->m_id, category->m_name, request->m_id);
+    }
     
     /*init success*/
     if (net_log_request_send(request) != 0) {
@@ -70,6 +84,19 @@ net_log_request_create(net_log_request_manage_t mgr, net_log_request_param_t sen
 
 void net_log_request_free(net_log_request_t request) {
     net_log_request_manage_t mgr = request->m_mgr;
+    net_log_category_t category = request->m_category;
+    net_log_schedule_t schedule = mgr->m_schedule;
+
+    if (schedule->m_debug) {
+        CPE_INFO(
+            schedule->m_em, "log: category [%d]%s: request %d: free",
+            category->m_id, category->m_name, request->m_id);
+    }
+
+    if (request->m_delay_process) {
+        net_timer_free(request->m_delay_process);
+        request->m_delay_process = NULL;
+    }
 
     if (request->m_watcher) {
         net_watcher_free(request->m_watcher);
@@ -85,7 +112,7 @@ void net_log_request_free(net_log_request_t request) {
         net_log_request_param_free(request->m_send_param);
         request->m_send_param = NULL;
     }
-    
+
     assert(mgr->m_request_count > 0);
     mgr->m_request_count--;
     TAILQ_REMOVE(&mgr->m_requests, request, m_next);
@@ -100,14 +127,17 @@ void net_log_request_real_free(net_log_request_t request) {
 }
 
 static size_t net_log_request_on_data(void *ptr, size_t size, size_t nmemb, void *stream) {
-    net_log_request_manage_t mgr = ptr;
-    net_log_schedule_t schedule = mgr->m_schedule;
-    net_log_request_t request = stream;
+    /* net_log_request_t request = stream; */
+    /* net_log_category_t category = request->m_category; */
+    /* net_log_request_manage_t mgr = request->m_mgr; */
+    /* net_log_schedule_t schedule = mgr->m_schedule; */
 
-    size_t totalLen = size * nmemb;
-    if (schedule->m_debug) {
-        CPE_INFO(schedule->m_em, "body  ---->  %d  %s", (int)totalLen, (const char*) ptr);
-    }
+    /* size_t totalLen = size * nmemb; */
+    /* if (schedule->m_debug) { */
+    /*     CPE_INFO( */
+    /*         schedule->m_em, "log: category [%d]%s: request %d: body  ---->  %d  %s", */
+    /*         category->m_id, category->m_name, request->m_id, (int)totalLen, (const char*) ptr); */
+    /* } */
     
     /* sds * buffer = (sds *)stream; */
     /* if (*buffer == NULL) */
@@ -116,27 +146,25 @@ static size_t net_log_request_on_data(void *ptr, size_t size, size_t nmemb, void
     /* } */
     /* *buffer = sdscpylen(*buffer, ptr, totalLen); */
     
-    return totalLen;
+    return size * nmemb;
 }
 
 static size_t net_log_request_on_header(void *ptr, size_t size, size_t nmemb, void *stream) {
-    net_log_request_manage_t mgr = ptr;
-    net_log_schedule_t schedule = mgr->m_schedule;
     net_log_request_t request = stream;
+    net_log_request_manage_t mgr = request->m_mgr;
+    net_log_category_t category = request->m_category;
+    net_log_schedule_t schedule = mgr->m_schedule;
 
-    size_t totalLen = size * nmemb;
-
-    if (schedule->m_debug) {
-        CPE_INFO(schedule->m_em, "header  ---->  %d  %s", (int) (totalLen), (const char*) ptr);
+    if (cpe_str_start_with((const char *)ptr, "x-log-requestid:")) {
+        request->m_response_have_request_id = 1;
+        if (schedule->m_debug) {
+            CPE_INFO(
+                schedule->m_em, "log: category [%d]%s: request %d: response have request-id",
+                category->m_id, category->m_name, request->m_id);
+        }
     }
-    
-    /* sds * buffer = (sds *)stream; */
-    /* // only copy header start with x-log- */
-    /* if (totalLen > 6 && memcmp(ptr, "x-log-", 6) == 0) */
-    /* { */
-    /*     *buffer = sdscpylen(*buffer, ptr, totalLen); */
-    /* } */
-    return totalLen;
+
+    return size * nmemb;
 }
 
 static int net_log_request_send(net_log_request_t request) {
@@ -158,6 +186,8 @@ static int net_log_request_send(net_log_request_t request) {
         curl_easy_cleanup(request->m_handler);
         request->m_handler = NULL;
     }
+
+    request->m_response_have_request_id = 0;
     
     request->m_handler = curl_easy_init();
     if (request->m_handler == NULL) {
@@ -308,13 +338,8 @@ static int net_log_request_send(net_log_request_t request) {
 
 void net_log_request_complete(net_log_schedule_t schedule, net_log_request_t request, net_log_request_complete_state_t complete_state) {
     net_log_category_t category = request->m_category;
+    net_log_request_manage_t mgr = request->m_mgr;
     assert(category);
-
-    if (schedule->m_debug) {
-        CPE_INFO(
-            schedule->m_em, "log: category [%d]%s: request %d: complete with state %s",
-            category->m_id, category->m_name, request->m_id, net_log_request_complete_state_str(complete_state));
-    }
 
     net_log_request_send_result_t send_result;
 
@@ -332,8 +357,37 @@ void net_log_request_complete(net_log_schedule_t schedule, net_log_request_t req
 
     int32_t sleepMs = net_log_request_check_result(schedule, category, request, send_result);
     if (sleepMs <= 0) { /*done or discard*/
+        if (schedule->m_debug) {
+            CPE_INFO(
+                schedule->m_em, "log: category [%d]%s: request %d: commit success",
+                category->m_id, category->m_name, request->m_id);
+        }
+
+        net_log_request_free(request);
     }
     else { /*delay process*/
+        if (request->m_delay_process == NULL) {
+            request->m_delay_process = net_timer_create(mgr->m_net_driver, net_log_request_delay_commit, request);
+            if (request->m_delay_process == NULL) {
+                CPE_ERROR(
+                    schedule->m_em, "log: category [%d]%s: request %d: complete with state %s, create delay process timer fail",
+                    category->m_id, category->m_name, request->m_id,
+                    net_log_request_complete_state_str(complete_state));
+
+                net_log_request_free(request);
+                return;
+            }
+        }
+
+        net_timer_active(request->m_delay_process, sleepMs);
+
+        if (schedule->m_debug) {
+            CPE_INFO(
+                schedule->m_em, "log: category [%d]%s: request %d: complete with state %s, delay %.2fs",
+                category->m_id, category->m_name, request->m_id,
+                net_log_request_complete_state_str(complete_state),
+                ((float)sleepMs) / 1000.0f);
+        }
     }
 }
 
@@ -376,9 +430,9 @@ static net_log_request_send_result_t net_log_request_calc_result(net_log_schedul
         if (http_code / 100 == 2) {
             return net_log_request_send_ok;
         }
-        /* else if (http_code >= 500 || result->requestID == NULL) { */
-        /*     requestID->m_last_send_error = net_log_request_send_server_error; */
-        /* } */
+        else if (http_code >= 500 || !request->m_response_have_request_id) {
+            return net_log_request_send_server_error;
+        }
         else if (http_code == 403) {
             return net_log_request_send_quota_exceed;
         }
@@ -620,7 +674,15 @@ static int net_log_request_trace(CURL *handle, curl_infotype type, char *data, s
  
     return 0;
 }
- 
+
+static void net_log_request_delay_commit(net_timer_t timer, void * ctx) {
+    net_log_request_t request = ctx;
+
+    if (net_log_request_send(request) != 0) {
+        net_log_request_free(request);
+    }
+}
+
 #ifdef SEND_TIME_INVALID_FIX
 
 static void net_log_request_rebuild_time(net_log_schedule_t schedule, net_log_category_t category, net_log_request_t request) {

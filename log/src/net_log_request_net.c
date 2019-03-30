@@ -132,25 +132,19 @@ void net_log_request_manage_do_timeout(net_timer_t timer, void * ctx) {
     net_log_schedule_t schedule = mgr->m_schedule;
     CURLMcode rc;
 
-    if (schedule->m_debug) {
-        CPE_INFO(schedule->m_em, "trans: net: do_timieout: curl_multi_socket_action(timeout)");
+    if (schedule->m_debug >= 2) {
+        CPE_INFO(schedule->m_em, "log: schedule: net: do_timieout: curl_multi_socket_action(timeout)");
     }
 
     rc = curl_multi_socket_action(mgr->m_multi_handle, CURL_SOCKET_TIMEOUT, 0, &mgr->m_still_running);
     if (rc != CURLM_OK) {
-        CPE_ERROR(schedule->m_em, "log: net: do_timeout: curl_multi_socket_action return error %d!", rc);
+        CPE_ERROR(schedule->m_em, "log: schedule: net: do_timeout: curl_multi_socket_action return error %d!", rc);
     }
 
     net_log_request_manage_check_multi_info(schedule, mgr);
 }
 
 int net_log_request_manage_timer_cb(CURLM *multi, long timeout_ms, net_log_request_manage_t mgr) {
-    net_log_schedule_t schedule = mgr->m_schedule;
-
-    if (schedule->m_debug >= 2) {
-        CPE_INFO(schedule->m_em, "log: net: timer_cb: timeout_ms=%d", (int)timeout_ms);
-    }
-
     net_timer_active(mgr->m_timer_event, (int32_t)timeout_ms);
     return 0;
 }

@@ -418,7 +418,7 @@ static void net_log_category_do_commit(net_log_schedule_t schedule, net_log_cate
         net_log_group_destroy(builder);
         
         if (send_param) {
-            if (net_log_category_commit_request(category, send_param, 0) != 0) {
+            if (net_log_category_commit_request(category, send_param, 1) != 0) {
                 net_log_request_param_free(send_param);
             }
         }
