@@ -101,7 +101,7 @@ int net_log_pipe_queue(net_log_pipe_t pipe, net_log_request_param_t send_param) 
 
     struct net_log_pipe_cmd cmd;
     cmd.m_size = sizeof(cmd);
-    cmd.m_type = net_log_pipe_cmd_send;
+    cmd.m_cmd = net_log_pipe_cmd_send;
 
     if (write(pipe->m_pipe_fd[1], &cmd, cmd.m_size) < 0) {
         CPE_ERROR(
@@ -139,6 +139,36 @@ int net_log_pipe_send_cmd(net_log_pipe_t pipe, net_log_pipe_cmd_t cmd) {
     return 0;
 }
 
+static net_log_request_param_t net_log_pipe_pop_send_param(net_log_pipe_t pipe) {
+    net_log_request_param_t send_param;
+
+    pthread_mutex_lock(&pipe->m_mutex);
+    send_param = net_log_queue_pop(pipe->m_send_param_queue);
+    pthread_mutex_unlock(&pipe->m_mutex);
+
+    return send_param;
+}
+
+static void net_log_pipe_process_cmd(net_log_schedule_t schedule, net_log_pipe_t pipe, net_log_pipe_cmd_t cmd) {
+    if (cmd->m_cmd == net_log_pipe_cmd_send) {
+        assert(pipe->m_bind_to);
+
+        net_log_request_param_t send_param;
+        while((send_param = net_log_pipe_pop_send_param(pipe))) {
+            net_log_request_t request = net_log_request_create(pipe->m_bind_to, send_param);
+            if (request == NULL) {
+                CPE_ERROR(
+                    schedule->m_em, "log: pipe %s: create request fail %d", pipe->m_name, cmd->m_cmd);
+                net_log_request_param_free(send_param);
+            }
+        }
+    }
+    else {
+        CPE_ERROR(
+            schedule->m_em, "log: pipe %s: unknown cmd %d", pipe->m_name, cmd->m_cmd);
+    }
+}
+
 static void net_log_pipe_action(void * ctx, int fd, uint8_t do_read, uint8_t do_write) {
     net_log_pipe_t pipe = ctx;
     net_log_schedule_t schedule = pipe->m_schedule;
@@ -172,16 +202,8 @@ static void net_log_pipe_action(void * ctx, int fd, uint8_t do_read, uint8_t do_
                     need_process = 0;
                     break;
                 }
-                
-                /* if (cmd->m_cmd == sfox_android_pipe_cmd_schedule_runnable) { */
-                /*     (*pipe->m_env)->CallVoidMethod(pipe->m_env, pipe->m_jobject, pipe->m_scheduleRunnable); */
-                /* } */
-                /* else if (cmd->m_cmd == sfox_android_pipe_cmd_cancel) { */
-                /*     ev_break(pipe->m_ev_loop, EVBREAK_CANCEL); */
-                /* } */
-                /* else { */
-                /*     CPE_ERROR(schedule->m_em, "android: pipe: unknown cmd %d", cmd->m_cmd); */
-                /* } */
+
+                net_log_pipe_process_cmd(schedule, pipe, cmd);
 
                 memmove(pipe->m_pipe_r_buf, pipe->m_pipe_r_buf + cmd->m_size, pipe->m_pipe_r_size - cmd->m_size);
                 pipe->m_pipe_r_size -= cmd->m_size;

@@ -41,7 +41,7 @@ int32_t net_log_queue_push(net_log_queue_t queue, void * data) {
     return 0;
 }
 
-void * net_log_queue_trypop(net_log_queue_t queue) {
+void * net_log_queue_pop(net_log_queue_t queue) {
     void * result = NULL;
     if (queue->tail > queue->head) {
         result = queue->data[queue->head++ % queue->size];

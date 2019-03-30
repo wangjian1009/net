@@ -97,7 +97,7 @@ static void * net_log_flusher_thread(void * param) {
     pthread_mutex_lock(&flusher->m_mutex);
 
     while(schedule->m_state == net_log_schedule_state_runing) {
-        net_log_group_builder_t builder = net_log_queue_trypop(flusher->m_queue);
+        net_log_group_builder_t builder = net_log_queue_pop(flusher->m_queue);
         if (builder == NULL) {
             pthread_cond_wait(&flusher->m_cond, &flusher->m_mutex);
             continue;

@@ -10,7 +10,7 @@ typedef enum net_log_pipe_cmd_type {
 
 struct net_log_pipe_cmd {
     uint8_t m_size;
-    net_log_pipe_cmd_type_t m_type;
+    net_log_pipe_cmd_type_t m_cmd;
 };
 
 NET_END_DECL
