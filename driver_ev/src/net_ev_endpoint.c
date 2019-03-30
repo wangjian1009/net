@@ -396,7 +396,7 @@ static uint8_t net_ev_endpoint_do_read(net_ev_driver_t driver, net_ev_endpoint_t
         if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) break;
             
         assert(endpoint->m_fd != -1);
-        int bytes = cpe_recv(endpoint->m_fd, rbuf, capacity, 0);
+        int bytes = (int)cpe_recv(endpoint->m_fd, rbuf, capacity, 0);
         if (bytes > 0) {
             if (net_endpoint_driver_debug(base_endpoint)) {
                 CPE_INFO(
@@ -496,7 +496,7 @@ static uint8_t net_ev_endpoint_do_write(net_ev_driver_t driver, net_ev_endpoint_
         assert(data);
         assert(endpoint->m_fd != -1);
         
-        int bytes = cpe_send(endpoint->m_fd, data, data_size, CPE_SOCKET_DEFAULT_SEND_FLAGS);
+        int bytes = (int)cpe_send(endpoint->m_fd, data, data_size, CPE_SOCKET_DEFAULT_SEND_FLAGS);
         if (bytes > 0) {
             if (net_endpoint_driver_debug(base_endpoint)) {
                 CPE_INFO(

@@ -225,7 +225,7 @@ static int net_log_request_send(net_log_request_t request) {
 
     char md5Buf[33];
     md5Buf[32] = '\0';
-    md5_to_string((const char *)buffer->data, buffer->length, md5Buf);
+    md5_to_string((const char *)buffer->data, (int)buffer->length, md5Buf);
     
     int lz4Flag = category->m_cfg_compress == net_log_compress_lz4;
     
@@ -273,7 +273,7 @@ static int net_log_request_send(net_log_request_t request) {
     }
 
     char sha1Buf[65];
-    int sha1Len = signature_to_base64(buf, sz, schedule->m_cfg_access_key, strlen(schedule->m_cfg_access_key), sha1Buf);
+    int sha1Len = signature_to_base64(buf, sz, schedule->m_cfg_access_key, (int)strlen(schedule->m_cfg_access_key), sha1Buf);
     sha1Buf[sha1Len] = 0;
 
     snprintf(buf, sizeof(buf),  "Authorization:LOG %s:%s", schedule->m_cfg_access_id, sha1Buf);
