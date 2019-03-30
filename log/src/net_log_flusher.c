@@ -108,7 +108,7 @@ static void * net_log_flusher_thread(void * param) {
         net_log_category_t category = (net_log_category_t)builder->private_value;
 
         net_log_request_param_t send_param = net_log_category_build_request(category, builder);
-        log_group_destroy(builder);
+        net_log_group_destroy(builder);
         
         if (send_param) {
             if (net_log_category_commit_request(category, send_param, 0) != 0) {

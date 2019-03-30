@@ -4,6 +4,7 @@
 #include "cpe/pal/pal_stdio.h"
 #include "cpe/utils/md5.h"
 #include "cpe/utils/string_utils.h"
+#include "cpe/utils/buffer.h"
 #include "net_schedule.h"
 #include "net_address.h"
 #include "net_timer.h"
@@ -404,6 +405,27 @@ void net_log_commit(net_log_schedule_t schedule) {
         CPE_ERROR(
             schedule->m_em, "log: category [%d]%s: commit fail",
             category->m_id, category->m_name);
+    }
+
+    if (schedule->m_debug) {
+        mem_buffer_t tmp_buf = net_log_schedule_tmp_buffer(schedule);
+        mem_buffer_clear_data(tmp_buf);
+
+        uint16_t i;
+        for(i = 0; i < schedule->m_kv_count; ++i) {
+            if (i != 0) {
+                mem_buffer_strcat(tmp_buf, ", ");
+            }
+
+            mem_buffer_strcat(tmp_buf, schedule->m_keys[i]);
+            mem_buffer_strcat(tmp_buf, "=");
+            mem_buffer_strcat(tmp_buf, schedule->m_values[i]);
+        }
+        
+        CPE_INFO(
+            schedule->m_em, "log: category [%d]%s: commit log: %s",
+            category->m_id, category->m_name,
+            (const char *)mem_buffer_make_continuous(tmp_buf, 0));
     }
 }
 

@@ -35,10 +35,10 @@ struct net_log_category {
     /* int32_t destroySenderWaitTimeoutSec; */
     
     /*runtime*/
+    net_timer_t m_commit_timer;
     volatile uint32_t m_networkRecover;
-    volatile uint32_t m_totalBufferSize;
+    volatile uint32_t m_total_buffer_size;
     net_log_group_builder_t m_builder;
-    int32_t m_firstLogTime;
     char * m_pack_prefix;
     volatile uint32_t m_pack_index;
 };

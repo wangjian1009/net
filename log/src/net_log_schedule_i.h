@@ -56,8 +56,8 @@ struct net_log_schedule {
     
     /*builder helper*/
     net_log_category_t m_current_category;
-    int32_t m_kv_count;
-    int32_t m_kv_capacity;
+    uint16_t m_kv_count;
+    uint16_t m_kv_capacity;
     char * * m_keys;
     size_t * m_keys_len;
     char * * m_values;

@@ -44,7 +44,7 @@ extern lz4_log_buf* serialize_to_proto_buf_with_malloc_lz4(net_log_group_builder
 extern lz4_log_buf* serialize_to_proto_buf_with_malloc_no_lz4(net_log_group_builder_t bder);
 extern void free_lz4_log_buf(lz4_log_buf* pBuf);
 extern net_log_group_builder_t log_group_create(net_log_schedule_t schedule);
-extern void log_group_destroy(net_log_group_builder_t bder);
+extern void net_log_group_destroy(net_log_group_builder_t bder);
 extern void add_log_full(net_log_group_builder_t bder, uint32_t logTime, int32_t pair_count, char ** keys, size_t * key_lens, char ** values, size_t * val_lens);
 extern void add_source(net_log_group_builder_t bder,const char* src,size_t len);
 extern void add_topic(net_log_group_builder_t bder,const char* tpc,size_t len);

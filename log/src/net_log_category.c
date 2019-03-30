@@ -2,6 +2,7 @@
 #include "md5.h"
 #include "cpe/pal/pal_string.h"
 #include "cpe/utils/string_utils.h"
+#include "net_timer.h"
 #include "net_log_category_i.h"
 #include "net_log_flusher_i.h"
 #include "net_log_sender_i.h"
@@ -10,6 +11,8 @@
 #include "net_log_builder.h"
 
 static char * net_log_category_get_pack_id(net_log_schedule_t schedule, const char * configName, const char * ip);
+static void net_log_category_do_commit(net_log_schedule_t schedule, net_log_category_t category);
+static void net_log_category_commit_timer(net_timer_t timer, void * ctx);
 
 net_log_category_t
 net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, net_log_sender_t sender, const char * name, uint8_t id) {
@@ -69,9 +72,8 @@ net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, 
     cpe_str_dup(category->m_name, sizeof(category->m_name), name);
     category->m_id = id;
     category->m_networkRecover = 0;
-    category->m_totalBufferSize = 0;
+    category->m_total_buffer_size = 0;
     category->m_builder = NULL;
-    category->m_firstLogTime = 0;
     category->m_pack_prefix = NULL;
     category->m_pack_index = 0;
 
@@ -88,10 +90,18 @@ net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, 
     category->m_cfg_send_timeout_s = 15;
     /* category->destroySenderWaitTimeoutSec = 1; */
     /* category->destroyFlusherWaitTimeoutSec = 1; */
-    
+
+    category->m_commit_timer = net_timer_create(schedule->m_net_driver, net_log_category_commit_timer, category);
+    if (category->m_commit_timer == NULL) {
+        CPE_ERROR(schedule->m_em, "log: category [%d]%s: create timer fail!", id, name);
+        mem_free(schedule->m_alloc, category);
+        return NULL;
+    }
+
     category->m_pack_prefix = net_log_category_get_pack_id(schedule, category->m_name, schedule->m_cfg_source);
     if (category->m_pack_prefix == NULL) {
         CPE_ERROR(schedule->m_em, "log: category [%d]%s: create pack prefix fail!", id, name);
+        net_timer_free(category->m_commit_timer);
         mem_free(schedule->m_alloc, category);
         return NULL;
     }
@@ -137,6 +147,9 @@ void net_log_category_free(net_log_category_t category) {
         TAILQ_REMOVE(&category->m_sender->m_categories, category, m_next_for_sender);
     }
 
+    net_timer_free(category->m_commit_timer);
+    category->m_commit_timer = NULL;
+
     mem_free(schedule->m_alloc, category->m_pack_prefix);
 
     /*config*/
@@ -167,7 +180,7 @@ net_log_request_param_t
 net_log_category_build_request(net_log_category_t category, net_log_group_builder_t builder) {
     net_log_schedule_t schedule = category->m_schedule;
 
-    category->m_totalBufferSize -= builder->loggroup_size;
+    category->m_total_buffer_size -= builder->loggroup_size;
 
     uint16_t i;
     for (i = 0; i < category->m_cfg_tag_count; ++i) {
@@ -200,13 +213,13 @@ net_log_category_build_request(net_log_category_t category, net_log_group_builde
         return NULL;
     }
 
-    category->m_totalBufferSize += lz4_buf->length;
+    category->m_total_buffer_size += lz4_buf->length;
 
     if (schedule->m_debug) {
         CPE_INFO(
             schedule->m_em, "log: category [%d]%s: push loggroup to sender, loggroup size %d, lz4 size %d, now buffer size %d",
             category->m_id, category->m_name,
-            (int)lz4_buf->raw_length, (int)lz4_buf->length, (int)category->m_totalBufferSize);
+            (int)lz4_buf->raw_length, (int)lz4_buf->length, (int)category->m_total_buffer_size);
     }
 
     net_log_request_param_t send_param = net_log_request_param_create(category, lz4_buf, builder->builder_time);
@@ -256,7 +269,6 @@ int net_log_category_commit_request(net_log_category_t category, net_log_request
         return 0;
     }
 }
-
 
 int net_log_category_set_topic(net_log_category_t category, const char * topic) {
     net_log_schedule_t schedule = category->m_schedule;
@@ -332,62 +344,31 @@ int net_log_category_add_log(
 {
     net_log_schedule_t schedule = category->m_schedule;
 
-    if (category->m_totalBufferSize > category->m_cfg_max_buffer_bytes) {
+    if (category->m_total_buffer_size > category->m_cfg_max_buffer_bytes) {
+        CPE_ERROR(
+            schedule->m_em, "log: category [%d]%s: add log: buffer overflow, max=%d, curent=%d",
+            category->m_id, category->m_name,
+            category->m_cfg_max_buffer_bytes, category->m_total_buffer_size);
         return -1;
     }
     
     if (category->m_builder == NULL) {
-        int32_t now_time = time(NULL);
-
         category->m_builder = log_group_create(schedule);
-        category->m_firstLogTime = now_time;
         category->m_builder->private_value = category;
+        net_timer_active(category->m_commit_timer, category->m_cfg_timeout_ms);
     }
 
     add_log_full(category->m_builder, (uint32_t)time(NULL), pair_count, keys, key_lens, values, val_lens);
 
-    net_log_group_builder_t builder = category->m_builder;
-
-    int32_t nowTime = time(NULL);
     if (category->m_builder->loggroup_size < category->m_cfg_bytes_per_package
-        && nowTime - category->m_firstLogTime < category->m_cfg_timeout_ms / 1000
         && category->m_builder->grp->n_logs < category->m_cfg_count_per_package)
     {
         return 0;
     }
 
-    category->m_builder = NULL;
+    net_timer_cancel(category->m_commit_timer);
+    net_log_category_do_commit(schedule, category);
 
-    size_t loggroup_size = builder->loggroup_size;
-
-    if (schedule->m_debug) {
-        CPE_INFO(
-            schedule->m_em, "try push loggroup to flusher, size : %d, log count %d",
-            (int)builder->loggroup_size, (int)builder->grp->n_logs);
-    }
-
-    if (category->m_flusher) { /*异步flush */
-        if (net_log_flusher_queue(category->m_flusher, builder) != 0) {
-            CPE_ERROR(schedule->m_em, "try push loggroup to flusher failed, force drop this log group");
-            log_group_destroy(builder);
-        }
-        else {
-            category->m_totalBufferSize += loggroup_size;
-        }
-    }
-    else { /*同步flush */
-        category->m_totalBufferSize += loggroup_size;
-
-        net_log_request_param_t send_param = net_log_category_build_request(category, builder);
-        log_group_destroy(builder);
-        
-        if (send_param) {
-            if (net_log_category_commit_request(category, send_param, 0) != 0) {
-                net_log_request_param_free(send_param);
-            }
-        }
-    }
-    
     return 0;
 }
 
@@ -403,4 +384,48 @@ char * net_log_category_get_pack_id(net_log_schedule_t schedule, const char * co
         val[(loop<<1)|1] = b > 9 ? (b - 10 + 'A') : (b + '0');
     }
     return val;
+}
+
+static void net_log_category_do_commit(net_log_schedule_t schedule, net_log_category_t category) {
+    net_log_group_builder_t builder = category->m_builder;
+    assert(builder);
+    
+    category->m_builder = NULL;
+
+    size_t loggroup_size = builder->loggroup_size;
+
+    if (schedule->m_debug) {
+        CPE_INFO(
+            schedule->m_em, "log: category [%d]%s: try push loggroup to flusher, size : %d, log count %d",
+            category->m_id, category->m_name, (int)builder->loggroup_size, (int)builder->grp->n_logs);
+    }
+
+    if (category->m_flusher) { /*异步flush */
+        if (net_log_flusher_queue(category->m_flusher, builder) != 0) {
+            CPE_ERROR(
+                schedule->m_em, "log: category [%d]%s: try push loggroup to flusher failed, force drop this log group",
+                category->m_id, category->m_name);
+            net_log_group_destroy(builder);
+        }
+        else {
+            category->m_total_buffer_size += loggroup_size;
+        }
+    }
+    else { /*同步flush */
+        category->m_total_buffer_size += loggroup_size;
+
+        net_log_request_param_t send_param = net_log_category_build_request(category, builder);
+        net_log_group_destroy(builder);
+        
+        if (send_param) {
+            if (net_log_category_commit_request(category, send_param, 0) != 0) {
+                net_log_request_param_free(send_param);
+            }
+        }
+    }
+}
+
+static void net_log_category_commit_timer(net_timer_t timer, void * ctx) {
+    net_log_category_t category = ctx;
+    net_log_category_do_commit(category->m_schedule, category);
 }

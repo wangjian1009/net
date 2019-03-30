@@ -115,7 +115,7 @@ net_log_group_builder_t log_group_create(net_log_schedule_t schedule) {
     return bder;
 }
 
-void log_group_destroy(net_log_group_builder_t bder) {
+void net_log_group_destroy(net_log_group_builder_t bder) {
     // free tag
     log_group* group = bder->grp;
     if (group->tags.buffer != NULL) {
