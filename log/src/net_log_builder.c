@@ -380,7 +380,7 @@ void free_lz4_log_buf(lz4_log_buf* pBuf) {
 
 #ifdef LOG_KEY_VALUE_FLAG
 
-void add_log_begin(log_group_builder * bder) {
+void add_log_begin(net_log_group_builder_t bder) {
     log_tag * logs = &bder->grp->logs;
     if (logs->buffer == NULL || logs->now_buffer_len + INIT_LOG_SIZE_BYTES > logs->max_buffer_len) {
         _adjust_buffer(logs, INIT_LOG_SIZE_BYTES);
@@ -388,7 +388,7 @@ void add_log_begin(log_group_builder * bder) {
     bder->grp->log_now_buffer = logs->now_buffer + INIT_LOG_SIZE_BYTES;
 }
 
-void add_log_time(log_group_builder * bder, uint32_t logTime) {
+void add_log_time(net_log_group_builder_t bder, uint32_t logTime) {
     log_tag * logs = &bder->grp->logs;
     // 1 header and 5 time
     if (bder->grp->log_now_buffer - logs->buffer + 6 > logs->max_buffer_len) {
@@ -405,7 +405,7 @@ void add_log_time(log_group_builder * bder, uint32_t logTime) {
     bder->grp->log_now_buffer = (char *)buf;
 }
 
-void add_log_key_value(log_group_builder *bder, char * key, size_t key_len, char * value, size_t value_len) {
+void add_log_key_value(net_log_group_builder_t bder, char * key, size_t key_len, char * value, size_t value_len) {
     // sum total size
     uint32_t kv_size = sizeof(char) * (key_len + value_len) + uint32_size((uint32_t)key_len) + uint32_size((uint32_t)value_len) + 2;
     kv_size += 1 + uint32_size(kv_size);
@@ -436,7 +436,7 @@ void add_log_key_value(log_group_builder *bder, char * key, size_t key_len, char
     bder->grp->log_now_buffer = (char *)buf;
 }
 
-void add_log_end(log_group_builder * bder) {
+void add_log_end(net_log_group_builder_t bder) {
     log_tag * logs = &bder->grp->logs;
     uint32_t log_size = bder->grp->log_now_buffer - logs->now_buffer - INIT_LOG_SIZE_BYTES;
     // check total size and uint32_size(total size)

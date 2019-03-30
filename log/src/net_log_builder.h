@@ -59,14 +59,14 @@ extern void fix_log_group_time(char * pb_buffer, size_t len, uint32_t new_time);
  * @note sequence must be : add_log_begin -> add_log_time/add_log_key_value..... -> add_log_end
  * @param bder
  */
-extern void add_log_begin(log_group_builder * bder);
+extern void add_log_begin(net_log_group_builder_t bder);
 
 /**
  * set log's time, must been called only once in one log
  * @param bder
  * @param logTime
  */
-extern void add_log_time(log_group_builder * bder, uint32_t logTime);
+extern void add_log_time(net_log_group_builder_t bder, uint32_t logTime);
 
 /**
  * add key&value pair to log tail
@@ -76,13 +76,13 @@ extern void add_log_time(log_group_builder * bder, uint32_t logTime);
  * @param value
  * @param value_len
  */
-extern void add_log_key_value(log_group_builder *bder, char * key, size_t key_len, char * value, size_t value_len);
+extern void add_log_key_value(net_log_group_builder_t bder, char * key, size_t key_len, char * value, size_t value_len);
 
 /**
  * add log end, call it when you add time and key&value done
  * @param bder
  */
-extern void add_log_end(log_group_builder * bder);
+extern void add_log_end(net_log_group_builder_t bder);
 
 #endif
 
