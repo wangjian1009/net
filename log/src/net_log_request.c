@@ -281,7 +281,7 @@ static int net_log_request_send(net_log_request_t request) {
     curl_easy_setopt(request->m_handler, CURLOPT_WRITEDATA, request);
 
     /*打印调试信息 */
-    if (schedule->m_debug) {
+    if (schedule->m_debug >= 2) {
         curl_easy_setopt(request->m_handler, CURLOPT_VERBOSE, 1);
         curl_easy_setopt(request->m_handler, CURLOPT_DEBUGFUNCTION, net_log_request_trace);
         curl_easy_setopt(request->m_handler, CURLOPT_DEBUGDATA, request);
