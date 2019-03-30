@@ -37,7 +37,7 @@ struct net_log_category {
     /*runtime*/
     volatile uint32_t m_networkRecover;
     volatile uint32_t m_totalBufferSize;
-    log_group_builder_t m_builder;
+    net_log_group_builder_t m_builder;
     int32_t m_firstLogTime;
     char * m_pack_prefix;
     volatile uint32_t m_pack_index;
@@ -45,7 +45,7 @@ struct net_log_category {
 
 void net_log_category_network_recover(net_log_category_t category);
 
-net_log_request_param_t net_log_category_build_request(net_log_category_t category, log_group_builder_t builder);
+net_log_request_param_t net_log_category_build_request(net_log_category_t category, net_log_group_builder_t builder);
 int net_log_category_commit_request(net_log_category_t category, net_log_request_param_t send_param, uint8_t in_main_thread);
 
 int net_log_category_add_log(

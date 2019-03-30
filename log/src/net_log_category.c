@@ -7,7 +7,7 @@
 #include "net_log_sender_i.h"
 #include "net_log_request.h"
 #include "net_log_request_pipe.h"
-#include "log_builder.h"
+#include "net_log_builder.h"
 
 static char * net_log_category_get_pack_id(net_log_schedule_t schedule, const char * configName, const char * ip);
 
@@ -164,7 +164,7 @@ void net_log_category_network_recover(net_log_category_t category) {
 }
 
 net_log_request_param_t
-net_log_category_build_request(net_log_category_t category, log_group_builder_t builder) {
+net_log_category_build_request(net_log_category_t category, net_log_group_builder_t builder) {
     net_log_schedule_t schedule = category->m_schedule;
 
     category->m_totalBufferSize -= builder->loggroup_size;
@@ -346,7 +346,7 @@ int net_log_category_add_log(
 
     add_log_full(category->m_builder, (uint32_t)time(NULL), pair_count, keys, key_lens, values, val_lens);
 
-    log_group_builder_t builder = category->m_builder;
+    net_log_group_builder_t builder = category->m_builder;
 
     int32_t nowTime = time(NULL);
     if (category->m_builder->loggroup_size < category->m_cfg_bytes_per_package

@@ -6,7 +6,7 @@
 #include "net_log_request.h"
 #include "net_log_category_i.h"
 #include "net_log_util.h"
-#include "log_builder.h"
+#include "net_log_builder.h"
 #include "lz4.h"
 
 #define MAX_NETWORK_ERROR_SLEEP_MS 3600000

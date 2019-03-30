@@ -20,11 +20,9 @@ typedef struct net_log_request_manage * net_log_request_manage_t;
 typedef struct net_log_request_pipe * net_log_request_pipe_t;
 typedef struct net_log_request_param * net_log_request_param_t;
 typedef struct net_log_queue * net_log_queue_t;
+typedef struct net_log_group_builder * net_log_group_builder_t;
 
 typedef struct _lz4_log_buf * lz4_log_buf_t;
-typedef struct _log_group_builder * log_group_builder_t;
-typedef struct _log_producer_config * log_producer_config_t;
-typedef struct _log_producer_manager * log_producer_manager_t;
 
 struct net_log_schedule {
     mem_allocrator_t m_alloc;

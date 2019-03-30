@@ -26,30 +26,30 @@ typedef struct _lz4_log_buf{
     unsigned char data[0];
 } lz4_log_buf;
 
-typedef struct _log_group_builder{
+struct net_log_group_builder {
     net_log_schedule_t m_schedule;
     log_group* grp;
     size_t loggroup_size;
     void * private_value;
     uint32_t builder_time;
-}log_group_builder;
+};
 
 typedef struct _log_buffer {
     char * buffer;
     uint32_t n_buffer;
-}log_buf;
+} log_buf;
 
-extern log_buf serialize_to_proto_buf_with_malloc(log_group_builder* bder);
-extern lz4_log_buf* serialize_to_proto_buf_with_malloc_lz4(log_group_builder* bder);
-extern lz4_log_buf* serialize_to_proto_buf_with_malloc_no_lz4(log_group_builder* bder);
+extern log_buf serialize_to_proto_buf_with_malloc(net_log_group_builder_t bder);
+extern lz4_log_buf* serialize_to_proto_buf_with_malloc_lz4(net_log_group_builder_t bder);
+extern lz4_log_buf* serialize_to_proto_buf_with_malloc_no_lz4(net_log_group_builder_t bder);
 extern void free_lz4_log_buf(lz4_log_buf* pBuf);
-extern log_group_builder* log_group_create(net_log_schedule_t schedule);
-extern void log_group_destroy(log_group_builder* bder);
-extern void add_log_full(log_group_builder* bder, uint32_t logTime, int32_t pair_count, char ** keys, size_t * key_lens, char ** values, size_t * val_lens);
-extern void add_source(log_group_builder* bder,const char* src,size_t len);
-extern void add_topic(log_group_builder* bder,const char* tpc,size_t len);
-extern void add_tag(log_group_builder* bder,const char* k,size_t k_len,const char* v,size_t v_len);
-extern void add_pack_id(log_group_builder* bder, const char* pack, size_t pack_len, size_t packNum);
+extern net_log_group_builder_t log_group_create(net_log_schedule_t schedule);
+extern void log_group_destroy(net_log_group_builder_t bder);
+extern void add_log_full(net_log_group_builder_t bder, uint32_t logTime, int32_t pair_count, char ** keys, size_t * key_lens, char ** values, size_t * val_lens);
+extern void add_source(net_log_group_builder_t bder,const char* src,size_t len);
+extern void add_topic(net_log_group_builder_t bder,const char* tpc,size_t len);
+extern void add_tag(net_log_group_builder_t bder,const char* k,size_t k_len,const char* v,size_t v_len);
+extern void add_pack_id(net_log_group_builder_t bder, const char* pack, size_t pack_len, size_t packNum);
 extern void fix_log_group_time(char * pb_buffer, size_t len, uint32_t new_time);
 
 // if you want to use this functions, add `-DADD_LOG_KEY_VALUE_FUN=ON` for cmake. eg `cmake . -DADD_LOG_KEY_VALUE_FUN=ON`

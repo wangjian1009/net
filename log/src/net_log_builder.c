@@ -2,7 +2,7 @@
 #include "cpe/pal/pal_string.h"
 #include "cpe/pal/pal_stdlib.h"
 #include "cpe/utils/string_utils.h"
-#include "log_builder.h"
+#include "net_log_builder.h"
 #include "lz4.h"
 
 // 1+3( 1 --->  header;  2 ---> 128 * 128 = 16KB)
@@ -106,16 +106,16 @@ static unsigned scan_varint(unsigned len, const uint8_t *data) {
     return i + 1;
 }
 
-log_group_builder* log_group_create(net_log_schedule_t schedule) {
-    log_group_builder* bder = (log_group_builder*)malloc(sizeof(log_group_builder)+sizeof(log_group));
-    memset(bder, 0, sizeof(log_group_builder)+sizeof(log_group));
-    bder->grp = (log_group*)((char *)(bder) + sizeof(log_group_builder));
-    bder->loggroup_size = sizeof(log_group) + sizeof(log_group_builder);
+net_log_group_builder_t log_group_create(net_log_schedule_t schedule) {
+    net_log_group_builder_t bder = (net_log_group_builder_t)malloc(sizeof(struct net_log_group_builder)+sizeof(log_group));
+    memset(bder, 0, sizeof(struct net_log_group_builder) + sizeof(log_group));
+    bder->grp = (log_group*)((char *)(bder) + sizeof(struct net_log_group_builder));
+    bder->loggroup_size = sizeof(log_group) + sizeof(struct net_log_group_builder);
     bder->builder_time = time(NULL);
     return bder;
 }
 
-void log_group_destroy(log_group_builder* bder) {
+void log_group_destroy(net_log_group_builder_t bder) {
     // free tag
     log_group* group = bder->grp;
     if (group->tags.buffer != NULL) {
@@ -164,7 +164,7 @@ void _adjust_buffer(log_tag * tag, uint32_t new_len) {
     tag->max_buffer_len = new_buffer_len;
 }
 
-void add_log_full(log_group_builder* bder, uint32_t logTime, int32_t pair_count, char ** keys, size_t * key_lens, char ** values, size_t * val_lens) {
+void add_log_full(net_log_group_builder_t bder, uint32_t logTime, int32_t pair_count, char ** keys, size_t * key_lens, char ** values, size_t * val_lens) {
     ++bder->grp->n_logs;
 
     // limit logTime's min value, ensure varint size is 5
@@ -217,24 +217,24 @@ void add_log_full(log_group_builder* bder, uint32_t logTime, int32_t pair_count,
     log->now_buffer = (char *)buf;
 }
 
-void add_source(log_group_builder* bder, const char* src,size_t len) {
+void add_source(net_log_group_builder_t bder, const char* src,size_t len) {
     bder->loggroup_size += sizeof(char)*(len) + uint32_size((uint32_t)len) + 1;
     bder->grp->source = cpe_str_mem_dup_len(bder->m_schedule->m_alloc, src, len);
 }
 
-void add_topic(log_group_builder* bder,const char* tpc,size_t len) {
+void add_topic(net_log_group_builder_t bder,const char* tpc,size_t len) {
     bder->loggroup_size += sizeof(char)*(len) + uint32_size((uint32_t)len) + 1;
     bder->grp->topic = cpe_str_mem_dup_len(bder->m_schedule->m_alloc, tpc, len);
 }
 
-void add_pack_id(log_group_builder* bder, const char* pack, size_t pack_len, size_t packNum) {
+void add_pack_id(net_log_group_builder_t bder, const char* pack, size_t pack_len, size_t packNum) {
     char packStr[128];
     packStr[127] = '\0';
     snprintf(packStr, 127, "%s-%X", pack, (unsigned int)packNum);
     add_tag(bder, "__pack_id__", strlen("__pack_id__"), packStr, strlen(packStr));
 }
 
-void add_tag(log_group_builder* bder, const char* k, size_t k_len, const char* v, size_t v_len) {
+void add_tag(net_log_group_builder_t bder, const char* k, size_t k_len, const char* v, size_t v_len) {
     // use only 1 malloc
     uint32_t tag_size = sizeof(char) * (k_len + v_len) + uint32_size((uint32_t)k_len) + uint32_size((uint32_t)v_len) + 2;
     uint32_t n_buffer = 1 + uint32_size(tag_size) + tag_size;
@@ -317,7 +317,7 @@ void fix_log_group_time(char * pb_buffer, size_t len, uint32_t new_time) {
     }
 }
 
-log_buf serialize_to_proto_buf_with_malloc(log_group_builder* bder) {
+log_buf serialize_to_proto_buf_with_malloc(net_log_group_builder_t bder) {
     log_buf buf;
     buf.buffer = NULL;
     buf.n_buffer = 0;
@@ -333,7 +333,7 @@ log_buf serialize_to_proto_buf_with_malloc(log_group_builder* bder) {
     return buf;
 }
 
-lz4_log_buf* serialize_to_proto_buf_with_malloc_no_lz4(log_group_builder* bder) {
+lz4_log_buf* serialize_to_proto_buf_with_malloc_no_lz4(net_log_group_builder_t bder) {
     log_buf buf = serialize_to_proto_buf_with_malloc(bder);
     lz4_log_buf* pLogbuf = (lz4_log_buf*)malloc(sizeof(lz4_log_buf) + buf.n_buffer);
     pLogbuf->length = buf.n_buffer;
@@ -342,7 +342,7 @@ lz4_log_buf* serialize_to_proto_buf_with_malloc_no_lz4(log_group_builder* bder) 
     return pLogbuf;
 }
 
-lz4_log_buf* serialize_to_proto_buf_with_malloc_lz4(log_group_builder* bder) {
+lz4_log_buf* serialize_to_proto_buf_with_malloc_lz4(net_log_group_builder_t bder) {
     log_tag * log = &(bder->grp->logs);
     if (log->buffer == NULL) {
         return NULL;
