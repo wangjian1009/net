@@ -52,7 +52,7 @@ net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, 
         schedule->m_category_count = new_count;
     }
 
-    if (schedule->m_categories[id] == NULL) {
+    if (schedule->m_categories[id] != NULL) {
         CPE_ERROR(schedule->m_em, "log: category [%d]%s: already created!", id, name);
         return NULL;
     }
@@ -114,7 +114,7 @@ net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, 
             sender ? sender->m_name : "N/A");
     }
     
-    return 0;
+    return category;
 }
 
 void net_log_category_free(net_log_category_t category) {
@@ -285,7 +285,7 @@ int net_log_category_add_global_tag(net_log_category_t category, const char * ke
     
     if (category->m_cfg_tag_count >= category->m_cfg_tag_capacity) {
         uint16_t new_capacity = category->m_cfg_tag_capacity < 4 ? 4 : (category->m_cfg_tag_capacity * 2);
-        net_log_category_cfg_tag_t new_tags = mem_alloc(schedule->m_alloc, sizeof(struct net_log_category_cfg_tag) * new_capacity);
+        net_log_category_cfg_tag_t new_tags = mem_calloc(schedule->m_alloc, sizeof(struct net_log_category_cfg_tag) * new_capacity);
         if (new_tags == NULL) {
             CPE_ERROR(
                 schedule->m_em, "log: category [%d]%s: add cfg tag: resize capacity fail, new-capacity=%d!",
