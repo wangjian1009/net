@@ -7,7 +7,7 @@
 #include "net_log_flusher_i.h"
 #include "net_log_category_i.h"
 #include "net_log_request.h"
-#include "log_queue.h"
+#include "net_log_queue.h"
 #include "log_builder.h"
 
 static void * net_log_flusher_thread(void * param);
@@ -22,7 +22,7 @@ net_log_flusher_create(net_log_schedule_t schedule, const char * name) {
 
     flusher->m_schedule = schedule;
     cpe_str_dup(flusher->m_name, sizeof(flusher->m_name), name);
-    flusher->m_queue = log_queue_create(32);
+    flusher->m_queue = net_log_queue_create(32);
     if (flusher->m_queue == NULL) {
         CPE_ERROR(schedule->m_em, "log: flusher %s: queue create fail", name);
         mem_free(schedule->m_alloc, flusher);
@@ -73,7 +73,7 @@ int net_log_flusher_queue(net_log_flusher_t flusher, log_group_builder_t builder
 
     pthread_mutex_lock(&flusher->m_mutex);
 
-    if (log_queue_push(flusher->m_queue, builder) != 0) {
+    if (net_log_queue_push(flusher->m_queue, builder) != 0) {
         CPE_ERROR(schedule->m_em, "log: flusher %s: push log group fail", flusher->m_name);
         return -1;
     }
@@ -97,7 +97,7 @@ static void * net_log_flusher_thread(void * param) {
     pthread_mutex_lock(&flusher->m_mutex);
 
     while(schedule->m_state == net_log_schedule_state_runing) {
-        log_group_builder_t builder = log_queue_trypop(flusher->m_queue);
+        log_group_builder_t builder = net_log_queue_trypop(flusher->m_queue);
         if (builder == NULL) {
             pthread_cond_wait(&flusher->m_cond, &flusher->m_mutex);
             continue;

@@ -10,7 +10,7 @@
 #include "net_log_category_i.h"
 #include "net_log_request_manage.h"
 #include "net_log_request_pipe.h"
-#include "log_queue.h"
+#include "net_log_queue.h"
 
 static void * net_log_sender_thread(void * param);
 

@@ -10,7 +10,7 @@ struct net_log_flusher {
     TAILQ_ENTRY(net_log_flusher) m_next;
     net_log_category_list_t m_categories;
     char m_name[64];
-    log_queue_t m_queue;
+    net_log_queue_t m_queue;
     pthread_t * m_thread;
     pthread_mutex_t m_mutex;
     pthread_cond_t m_cond;
