@@ -7,8 +7,8 @@
 #include "net_log_flusher_i.h"
 #include "net_log_sender_i.h"
 #include "net_log_request.h"
-#include "net_log_request_pipe.h"
 #include "net_log_builder.h"
+#include "net_log_pipe.h"
 
 static char * net_log_category_get_pack_id(net_log_schedule_t schedule, const char * configName, const char * ip);
 static void net_log_category_do_commit(net_log_schedule_t schedule, net_log_category_t category);
@@ -237,7 +237,7 @@ int net_log_category_commit_request(net_log_category_t category, net_log_request
     net_log_schedule_t schedule = category->m_schedule;
 
     if (category->m_sender) {
-        if (net_log_request_pipe_queue(category->m_sender->m_request_pipe, send_param) != 0) {
+        if (net_log_pipe_queue(category->m_sender->m_request_pipe, send_param) != 0) {
             CPE_ERROR(
                 schedule->m_em, "log: category [%d]%s: commit request to %s fail!",
                 category->m_id, category->m_name, category->m_sender->m_name);
@@ -260,7 +260,7 @@ int net_log_category_commit_request(net_log_category_t category, net_log_request
     }
     else { /*提交到主线程处理 */
         assert(schedule->m_main_thread_request_pipe);
-        if (net_log_request_pipe_queue(schedule->m_main_thread_request_pipe, send_param) != 0) {
+        if (net_log_pipe_queue(schedule->m_main_thread_request_pipe, send_param) != 0) {
             CPE_ERROR(
                 schedule->m_em, "log: category [%d]%s: commit request to main-thread fail!",
                 category->m_id, category->m_name);

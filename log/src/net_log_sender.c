@@ -9,7 +9,7 @@
 #include "net_log_sender_i.h"
 #include "net_log_category_i.h"
 #include "net_log_request_manage.h"
-#include "net_log_request_pipe.h"
+#include "net_log_pipe.h"
 #include "net_log_queue.h"
 
 static void * net_log_sender_thread(void * param);
@@ -24,7 +24,7 @@ net_log_sender_create(net_log_schedule_t schedule, const char * name, int32_t qu
 
     sender->m_schedule = schedule;
     cpe_str_dup(sender->m_name, sizeof(sender->m_name), name);
-    sender->m_request_pipe = net_log_request_pipe_create(schedule);
+    sender->m_request_pipe = net_log_pipe_create(schedule, sender->m_name);
     if (sender->m_request_pipe == NULL) {
         CPE_ERROR(schedule->m_em, "log: sender %s: queue request pipe fail", name);
         mem_free(schedule->m_alloc, sender);

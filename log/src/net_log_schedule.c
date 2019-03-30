@@ -13,7 +13,7 @@
 #include "net_log_flusher_i.h"
 #include "net_log_sender_i.h"
 #include "net_log_request_manage.h"
-#include "net_log_request_pipe.h"
+#include "net_log_pipe.h"
 
 net_log_schedule_t
 net_log_schedule_create(
@@ -75,7 +75,7 @@ void net_log_schedule_free(net_log_schedule_t schedule) {
     }
 
     if (schedule->m_main_thread_request_pipe) {
-        net_log_request_pipe_free(schedule->m_main_thread_request_pipe);
+        net_log_pipe_free(schedule->m_main_thread_request_pipe);
         schedule->m_main_thread_request_pipe = NULL;
     }
     
@@ -191,7 +191,7 @@ int net_log_schedule_init_main_thread_pipe(net_log_schedule_t schedule) {
     assert(schedule->m_state == net_log_schedule_state_init);
 
     if (schedule->m_main_thread_request_pipe == NULL) {
-        schedule->m_main_thread_request_pipe = net_log_request_pipe_create(schedule);
+        schedule->m_main_thread_request_pipe = net_log_pipe_create(schedule, "main");
         if (schedule->m_main_thread_request_pipe == NULL) {
             CPE_ERROR(schedule->m_em, "log: schedule: create main thread request pipe fail");
             return -1;
@@ -210,7 +210,7 @@ int net_log_schedule_init_main_thread_pipe(net_log_schedule_t schedule) {
     }
 
     if (schedule->m_main_thread_request_pipe->m_bind_to == NULL) {
-        if (net_log_request_pipe_bind(schedule->m_main_thread_request_pipe, schedule->m_main_thread_request_mgr) != 0) {
+        if (net_log_pipe_bind(schedule->m_main_thread_request_pipe, schedule->m_main_thread_request_mgr) != 0) {
             CPE_ERROR(schedule->m_em, "log: schedule: create main thread request pipe bind fail");
             return -1;
         }
@@ -219,7 +219,7 @@ int net_log_schedule_init_main_thread_pipe(net_log_schedule_t schedule) {
     return 0;
 }
 
-static void net_log_schedule_do_stop(net_log_schedule_t schedule, uint8_t category_count);
+static void net_log_schedule_do_stop(net_log_schedule_t schedule);
 
 int net_log_schedule_start(net_log_schedule_t schedule) {
     if (schedule->m_state != net_log_schedule_state_init) {
@@ -238,11 +238,17 @@ int net_log_schedule_start(net_log_schedule_t schedule) {
     net_log_sender_t sender;
 
     TAILQ_FOREACH(flusher, &schedule->m_flushers, m_next) {
-        net_log_flusher_start(flusher);
+        if (net_log_flusher_start(flusher) != 0) {
+            net_log_schedule_do_stop(schedule);
+            return -1;
+        }
     }
 
     TAILQ_FOREACH(sender, &schedule->m_senders, m_next) {
-        net_log_sender_start(sender);
+        if (net_log_sender_start(sender) != 0) {
+            net_log_schedule_do_stop(schedule);
+            return -1;
+        }
     }
     
     return 0;
@@ -250,10 +256,10 @@ int net_log_schedule_start(net_log_schedule_t schedule) {
 
 void net_log_schedule_stop(net_log_schedule_t schedule) {
     if (schedule->m_state == net_log_schedule_state_init) return;
-    net_log_schedule_do_stop(schedule, schedule->m_category_count);
+    net_log_schedule_do_stop(schedule);
 }
 
-static void net_log_schedule_do_stop(net_log_schedule_t schedule, uint8_t category_count) {
+static void net_log_schedule_do_stop(net_log_schedule_t schedule) {
     if (schedule->m_debug) {
         CPE_INFO(
             schedule->m_em, "log: schedule: %s ==> %s",

@@ -19,7 +19,7 @@ net_log_queue_t net_log_queue_create(int32_t size) {
     return queue;
 }
 
-void net_log_queue_destroy(net_log_queue_t queue) {
+void net_log_queue_free(net_log_queue_t queue) {
     free(queue);
 }
 
@@ -33,10 +33,10 @@ int32_t net_log_queue_isfull(net_log_queue_t queue) {
 }
 
 int32_t net_log_queue_push(net_log_queue_t queue, void * data) {
-    if (queue->tail - queue->head == queue->size)
-    {
+    if (queue->tail - queue->head == queue->size) {
         return -1;
     }
+    
     queue->data[queue->tail++ % queue->size] = data;
     return 0;
 }

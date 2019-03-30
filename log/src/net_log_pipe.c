@@ -1,0 +1,191 @@
+#include <assert.h>
+#include "cpe/pal/pal_socket.h"
+#include "cpe/pal/pal_errno.h"
+#include "cpe/pal/pal_unistd.h"
+#include "cpe/pal/pal_string.h"
+#include "net_watcher.h"
+#include "net_log_pipe.h"
+#include "net_log_pipe_cmd.h"
+#include "net_log_request_manage.h"
+#include "net_log_queue.h"
+#include "net_log_category_i.h"
+#include "net_log_request.h"
+
+static void net_log_pipe_action(void * ctx, int fd, uint8_t do_read, uint8_t do_write);
+
+net_log_pipe_t net_log_pipe_create(net_log_schedule_t schedule, const char * name) {
+    net_log_pipe_t request_pipe = mem_alloc(schedule->m_alloc, sizeof(struct net_log_pipe));
+
+    request_pipe->m_schedule = schedule;
+    request_pipe->m_name = name;
+    pthread_mutex_init(&request_pipe->m_mutex, NULL);
+    request_pipe->m_send_param_queue = net_log_queue_create(32);
+    request_pipe->m_bind_watcher = NULL;
+    request_pipe->m_bind_to = NULL;
+    request_pipe->m_pipe_r_size = 0;
+
+    if (pipe(request_pipe->m_pipe_fd) != 0) {
+        CPE_ERROR(schedule->m_em, "log: pipe %s: create pipe fail, error=%d (%s)!", name, errno, strerror(errno));
+        net_log_queue_free(request_pipe->m_send_param_queue);
+        mem_free(schedule->m_alloc, request_pipe);
+        return NULL;
+    }
+
+    if (cpe_sock_set_none_block(request_pipe->m_pipe_fd[0], 1) != 0) {
+        CPE_ERROR(schedule->m_em, "log: pipe %s: set none block fail, error=%d (%s)!", name, errno, strerror(errno));
+        close(request_pipe->m_pipe_fd[0]);
+        close(request_pipe->m_pipe_fd[1]);
+        net_log_queue_free(request_pipe->m_send_param_queue);
+        mem_free(schedule->m_alloc, request_pipe);
+        return NULL;
+    }
+    
+    return request_pipe;
+}
+
+void net_log_pipe_free(net_log_pipe_t pipe) {
+    net_log_schedule_t schedule = pipe->m_schedule;
+
+    if (pipe->m_bind_to) {
+        net_log_pipe_unbind(pipe);
+    }
+    assert(pipe->m_bind_to == NULL);
+    assert(pipe->m_bind_watcher == NULL);
+
+    close(pipe->m_pipe_fd[0]);
+    close(pipe->m_pipe_fd[1]);
+    pipe->m_pipe_fd[0] = -1;
+    pipe->m_pipe_fd[1] = -1;
+
+    net_log_queue_free(pipe->m_send_param_queue);
+    
+    pthread_mutex_destroy(&pipe->m_mutex);
+    
+    mem_free(schedule->m_alloc, pipe);
+}
+
+int net_log_pipe_bind(net_log_pipe_t pipe, net_log_request_manage_t mgr) {
+    net_log_schedule_t schedule = pipe->m_schedule;
+
+    if (pipe->m_bind_to != NULL) {
+        CPE_ERROR(schedule->m_em, "log: pipe %s: bind: already binded!", pipe->m_name);
+        return -1;
+    }
+
+    assert(pipe->m_bind_watcher == NULL);
+    pipe->m_bind_watcher = net_watcher_create(mgr->m_net_driver, pipe->m_pipe_fd[0], pipe, net_log_pipe_action);
+    if (pipe->m_bind_watcher == NULL) {
+        CPE_ERROR(schedule->m_em, "log: pipe %s: bind: create watcher fail!", pipe->m_name);
+        return -1;
+    }
+
+    pipe->m_bind_to = mgr;
+    
+    return 0;
+}
+
+void net_log_pipe_unbind(net_log_pipe_t pipe) {
+    assert(pipe->m_bind_to != NULL);
+    assert(pipe->m_bind_watcher != NULL);
+
+    net_watcher_free(pipe->m_bind_watcher);
+    pipe->m_bind_watcher = NULL;
+    pipe->m_bind_to = NULL;
+}
+
+int net_log_pipe_queue(net_log_pipe_t pipe, net_log_request_param_t send_param) {
+    net_log_schedule_t schedule = pipe->m_schedule;
+    net_log_category_t category = send_param->category;
+
+    pthread_mutex_lock(&pipe->m_mutex);
+
+    struct net_log_pipe_cmd cmd;
+    cmd.m_size = sizeof(cmd);
+    cmd.m_type = net_log_pipe_cmd_send;
+
+    if (write(pipe->m_pipe_fd[1], &cmd, cmd.m_size) < 0) {
+        CPE_ERROR(
+            schedule->m_em, "log: category [%d]%s: pipe %s: send notify cmd fail",
+            category->m_id, category->m_name, pipe->m_name);
+        pthread_mutex_unlock(&pipe->m_mutex);
+        return -1;
+    }
+
+    if (net_log_queue_push(pipe->m_send_param_queue, send_param) != 0) {
+        CPE_ERROR(
+            schedule->m_em, "log: category [%d]%s: pipe %s: push param fail",
+            category->m_id, category->m_name, pipe->m_name);
+        pthread_mutex_unlock(&pipe->m_mutex);
+        return -1;
+    }
+
+    pthread_mutex_unlock(&pipe->m_mutex);
+
+    return 0;
+}
+
+int net_log_pipe_send_cmd(net_log_pipe_t pipe, net_log_pipe_cmd_t cmd) {
+    pthread_mutex_lock(&pipe->m_mutex);
+    
+    if (write(pipe->m_pipe_fd[1], cmd, cmd->m_size) < 0) {
+        CPE_ERROR(
+            pipe->m_schedule->m_em, "log: pipe %s: write pipe fail, error=%d (%s)!",
+            pipe->m_name, errno, strerror(errno));
+        pthread_mutex_unlock(&pipe->m_mutex);
+        return -1;
+    }
+
+    pthread_mutex_unlock(&pipe->m_mutex);
+    return 0;
+}
+
+static void net_log_pipe_action(void * ctx, int fd, uint8_t do_read, uint8_t do_write) {
+    net_log_pipe_t pipe = ctx;
+    net_log_schedule_t schedule = pipe->m_schedule;
+
+    if (do_read) {
+        uint8_t need_process = 1;
+
+        while(need_process) {
+            int rv = read(
+                pipe->m_pipe_fd[0], pipe->m_pipe_r_buf + pipe->m_pipe_r_size,
+                sizeof(pipe->m_pipe_r_buf) - pipe->m_pipe_r_size);
+            if (rv < 0) {
+                if (errno == EINPROGRESS || errno == EWOULDBLOCK) {
+                }
+                else {
+                    CPE_ERROR(
+                        schedule->m_em, "log: pipe %s: read pipe fail, error=%d (%s)!",
+                        pipe->m_name, errno, strerror(errno));
+                }
+                need_process = 0;
+            }
+            else {
+                pipe->m_pipe_r_size += (uint16_t)rv;
+                assert(pipe->m_pipe_r_size <= sizeof(pipe->m_pipe_r_buf));
+            }
+
+            while(pipe->m_pipe_r_size >= sizeof(struct net_log_pipe_cmd)) {
+                net_log_pipe_cmd_t cmd = (net_log_pipe_cmd_t)pipe->m_pipe_r_buf;
+
+                if (pipe->m_pipe_r_size < cmd->m_size) {
+                    need_process = 0;
+                    break;
+                }
+                
+                /* if (cmd->m_cmd == sfox_android_pipe_cmd_schedule_runnable) { */
+                /*     (*pipe->m_env)->CallVoidMethod(pipe->m_env, pipe->m_jobject, pipe->m_scheduleRunnable); */
+                /* } */
+                /* else if (cmd->m_cmd == sfox_android_pipe_cmd_cancel) { */
+                /*     ev_break(pipe->m_ev_loop, EVBREAK_CANCEL); */
+                /* } */
+                /* else { */
+                /*     CPE_ERROR(schedule->m_em, "android: pipe: unknown cmd %d", cmd->m_cmd); */
+                /* } */
+
+                memmove(pipe->m_pipe_r_buf, pipe->m_pipe_r_buf + cmd->m_size, pipe->m_pipe_r_size - cmd->m_size);
+                pipe->m_pipe_r_size -= cmd->m_size;
+            }
+        }
+    }
+}

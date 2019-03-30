@@ -4,7 +4,7 @@
 
 net_log_queue_t net_log_queue_create(int32_t max_size);
 
-void net_log_queue_destroy(net_log_queue_t queue);
+void net_log_queue_free(net_log_queue_t queue);
 
 int32_t net_log_queue_size(net_log_queue_t queue);
 
