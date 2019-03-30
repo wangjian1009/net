@@ -174,7 +174,9 @@ net_log_schedule_state_t net_log_schedule_state(net_log_schedule_t log_schedule)
 int net_log_schedule_init_main_thread_mgr(net_log_schedule_t schedule) {
     if (schedule->m_main_thread_request_mgr == NULL) {
         schedule->m_main_thread_request_mgr =
-            net_log_request_manage_create(schedule, schedule->m_net_schedule, schedule->m_net_driver);
+            net_log_request_manage_create(
+                schedule, schedule->m_net_schedule, schedule->m_net_driver,
+                net_log_schedule_tmp_buffer(schedule));
         if (schedule->m_main_thread_request_mgr == NULL) {
             CPE_ERROR(schedule->m_em, "log: schedule: create main thread request mgr fail");
             return -1;
@@ -197,7 +199,9 @@ int net_log_schedule_init_main_thread_pipe(net_log_schedule_t schedule) {
 
     if (schedule->m_main_thread_request_mgr == NULL) {
         schedule->m_main_thread_request_mgr =
-            net_log_request_manage_create(schedule, schedule->m_net_schedule, schedule->m_net_driver);
+            net_log_request_manage_create(
+                schedule, schedule->m_net_schedule, schedule->m_net_driver,
+                net_log_schedule_tmp_buffer(schedule));
         if (schedule->m_main_thread_request_mgr == NULL) {
             CPE_ERROR(schedule->m_em, "log: schedule: create main thread request mgr fail");
             return -1;

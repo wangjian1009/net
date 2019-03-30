@@ -14,9 +14,12 @@ struct net_log_request_manage {
     net_timer_t m_timer_event;
 	CURLM * m_multi_handle;
     int m_still_running;
+    mem_buffer_t m_tmp_buffer;
 };
 
-net_log_request_manage_t net_log_request_manage_create(net_log_schedule_t schedule, net_schedule_t net_schedule, net_driver_t net_driver);
+net_log_request_manage_t
+net_log_request_manage_create(
+    net_log_schedule_t schedule, net_schedule_t net_schedule, net_driver_t net_driver, mem_buffer_t tmp_buffer);
 void net_log_request_manage_free(net_log_request_manage_t request_mgr);
 
 int net_log_request_manage_sock_cb(CURL *e, curl_socket_t s, int what, void *cbp, void *sockp);

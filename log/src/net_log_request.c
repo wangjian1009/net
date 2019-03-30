@@ -2,6 +2,8 @@
 #include "cpe/pal/pal_string.h"
 #include "cpe/pal/pal_stdlib.h"
 #include "cpe/utils/md5.h"
+#include "cpe/utils/string_utils.h"
+#include "cpe/utils/stream_buffer.h"
 #include "net_watcher.h"
 #include "net_log_request.h"
 #include "net_log_category_i.h"
@@ -25,7 +27,8 @@ static int net_log_request_send(net_log_request_t request);
 static net_log_request_send_result_t net_log_request_calc_result(net_log_schedule_t schedule, net_log_request_t request);
 static int32_t net_log_request_check_result(
     net_log_schedule_t schedule, net_log_category_t category, net_log_request_t request, net_log_request_send_result_t send_result);
-    
+static int net_log_request_trace(CURL *handle, curl_infotype type, char *data, size_t size, void *userp);
+
 #ifdef SEND_TIME_INVALID_FIX
 static void net_log_request_rebuild_time(net_log_schedule_t schedule, net_log_category_t category, net_log_request_t request);
 #endif
@@ -97,20 +100,36 @@ void net_log_request_real_free(net_log_request_t request) {
 }
 
 static size_t net_log_request_on_data(void *ptr, size_t size, size_t nmemb, void *stream) {
+    net_log_request_manage_t mgr = ptr;
+    net_log_schedule_t schedule = mgr->m_schedule;
+    net_log_request_t request = stream;
+
     size_t totalLen = size * nmemb;
-    /* //printf("body  ---->  %d  %s \n", (int) (totalLen, (const char*) ptr); */
+    if (schedule->m_debug) {
+        CPE_INFO(schedule->m_em, "body  ---->  %d  %s", (int)totalLen, (const char*) ptr);
+    }
+    
     /* sds * buffer = (sds *)stream; */
     /* if (*buffer == NULL) */
     /* { */
     /*     *buffer = sdsnewEmpty(256); */
     /* } */
     /* *buffer = sdscpylen(*buffer, ptr, totalLen); */
+    
     return totalLen;
 }
 
 static size_t net_log_request_on_header(void *ptr, size_t size, size_t nmemb, void *stream) {
+    net_log_request_manage_t mgr = ptr;
+    net_log_schedule_t schedule = mgr->m_schedule;
+    net_log_request_t request = stream;
+
     size_t totalLen = size * nmemb;
-    /* //printf("header  ---->  %d  %s \n", (int) (totalLen), (const char*) ptr); */
+
+    if (schedule->m_debug) {
+        CPE_INFO(schedule->m_em, "header  ---->  %d  %s", (int) (totalLen), (const char*) ptr);
+    }
+    
     /* sds * buffer = (sds *)stream; */
     /* // only copy header start with x-log- */
     /* if (totalLen > 6 && memcmp(ptr, "x-log-", 6) == 0) */
@@ -261,7 +280,12 @@ static int net_log_request_send(net_log_request_t request) {
     curl_easy_setopt(request->m_handler, CURLOPT_WRITEFUNCTION, net_log_request_on_data);
     curl_easy_setopt(request->m_handler, CURLOPT_WRITEDATA, request);
 
-    //curl_easy_setopt(request->m_handler, CURLOPT_VERBOSE, 1); //打印调试信息
+    /*打印调试信息 */
+    if (schedule->m_debug) {
+        curl_easy_setopt(request->m_handler, CURLOPT_VERBOSE, 1);
+        curl_easy_setopt(request->m_handler, CURLOPT_DEBUGFUNCTION, net_log_request_trace);
+        curl_easy_setopt(request->m_handler, CURLOPT_DEBUGDATA, request);
+    }
 
     CURLMcode rc = curl_multi_add_handle(request->m_mgr->m_multi_handle, request->m_handler);
     if (rc != 0) {
@@ -472,6 +496,131 @@ static int32_t net_log_request_check_result(
     return 0;
 }
 
+static const char * net_log_request_dump(
+    net_log_schedule_t schedule, net_log_request_manage_t mgr, char *i_ptr, size_t size, char nohex)
+{
+    unsigned char * ptr = (unsigned char *)i_ptr;
+    size_t i;
+    size_t c;
+
+    mem_buffer_t buffer = mgr->m_tmp_buffer;
+    mem_buffer_clear_data(buffer);
+    struct write_stream_buffer ws = CPE_WRITE_STREAM_BUFFER_INITIALIZER(buffer);
+    
+    unsigned int width = 0x10;
+ 
+    if(nohex) {
+        /* without the hex output, we can fit more on screen */ 
+        width = 0x40;
+    }
+    
+    for(i = 0; i < size; i += width) {
+        if (i != 0) stream_printf((write_stream_t)&ws, "\n");
+
+        stream_printf((write_stream_t)&ws, "%4.4lx: ", (unsigned long)i);
+ 
+        if(!nohex) {
+            /* hex not disabled, show it */ 
+            for(c = 0; c < width; c++) {
+                if(i + c < size) {
+                    stream_printf((write_stream_t)&ws, "%02x ", ptr[i + c]);
+                }
+                else {
+                    stream_printf((write_stream_t)&ws, "   ");
+                }
+            }
+        }
+ 
+        for (c = 0; (c < width) && (i + c < size); c++) {
+            /* check for 0D0A; if found, skip past and start a new line of output */ 
+            if (nohex && (i + c + 1 < size) && ptr[i + c] == 0x0D && ptr[i + c + 1] == 0x0A) {
+                i += (c + 2 - width);
+                break;
+            }
+            stream_printf((write_stream_t)&ws, "%c", (ptr[i + c] >= 0x20) && (ptr[i + c]<0x80)?ptr[i + c]:'.');
+            /* check again for 0D0A, to avoid an extra \n if it's at width */ 
+            if (nohex && (i + c + 2 < size) && ptr[i + c + 1] == 0x0D && ptr[i + c + 2] == 0x0A) {
+                i += (c + 3 - width);
+                break;
+            }
+        }
+    }
+
+    stream_putc((write_stream_t)&ws, 0);
+
+    return (const char *)mem_buffer_make_continuous(buffer, 0);
+}
+
+static int net_log_request_trace(CURL *handle, curl_infotype type, char *data, size_t size, void *userp) {
+    net_log_request_t request = userp;
+    net_log_request_manage_t mgr = request->m_mgr;
+    net_log_schedule_t schedule = mgr->m_schedule;
+    net_log_category_t category = request->m_category;
+
+    switch(type) {
+    case CURLINFO_TEXT: {
+        char * end = data + size;
+        char * p = cpe_str_trim_tail(end, data);
+        char keep = 0;
+        if (p < end) {
+            keep = *p;
+            *p = 0;
+        }
+
+        CPE_INFO(
+            schedule->m_em, "log: category [%d]%s: request %d: == Info %s",
+            category->m_id, category->m_name, request->m_id,
+            data);
+        
+        if (p < end) {
+            *p = keep;
+        }
+
+        break;
+    }
+    case CURLINFO_HEADER_OUT:
+        CPE_INFO(
+            schedule->m_em, "log: category [%d]%s: request %d: => header: %s",
+            category->m_id, category->m_name, request->m_id,
+            net_log_request_dump(schedule, mgr, data, size, 1));
+        break;
+    case CURLINFO_DATA_OUT:
+        CPE_INFO(
+            schedule->m_em, "log: category [%d]%s: request %d: => data(%d): %s",
+            category->m_id, category->m_name, request->m_id,
+            (int)size, net_log_request_dump(schedule, mgr, data, size, 1));
+        break;
+    case CURLINFO_SSL_DATA_OUT:
+        CPE_INFO(
+            schedule->m_em, "log: category [%d]%s: request %d: => SSL data(%d): %s",
+            category->m_id, category->m_name, request->m_id,
+            (int)size, net_log_request_dump(schedule, mgr, data, size, 1));
+        break;
+    case CURLINFO_HEADER_IN:
+        CPE_INFO(
+            schedule->m_em, "log: category [%d]%s: request %d: <= header: %s",
+            category->m_id, category->m_name, request->m_id,
+            net_log_request_dump(schedule, mgr, data, size, 1));
+        break;
+    case CURLINFO_DATA_IN:
+        CPE_INFO(
+            schedule->m_em, "log: category [%d]%s: request %d: <= data(%d): %s",
+            category->m_id, category->m_name, request->m_id,
+            (int)size, net_log_request_dump(schedule, mgr, data, size, 1));
+        break;
+    case CURLINFO_SSL_DATA_IN:
+        CPE_INFO(
+            schedule->m_em, "log: category [%d]%s: request %d: <= SSL data(%d): %s",
+            category->m_id, category->m_name, request->m_id,
+            (int)size, net_log_request_dump(schedule, mgr, data, size, 1));
+        break;
+    default:
+        break;
+    }
+ 
+    return 0;
+}
+ 
 #ifdef SEND_TIME_INVALID_FIX
 
 static void net_log_request_rebuild_time(net_log_schedule_t schedule, net_log_category_t category, net_log_request_t request) {

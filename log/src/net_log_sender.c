@@ -152,9 +152,14 @@ static void * net_log_sender_thread(void * param) {
         return NULL;
     }
 
-    net_log_request_manage_t request_mgr = net_log_request_manage_create(schedule, net_schedule, net_driver_from_data(ev_driver));
+    struct mem_buffer tmp_buffer;
+    mem_buffer_init(&tmp_buffer, schedule->m_alloc);
+    
+    net_log_request_manage_t request_mgr = net_log_request_manage_create(
+        schedule, net_schedule, net_driver_from_data(ev_driver), &tmp_buffer);
     if (request_mgr == NULL) {
         CPE_ERROR(schedule->m_em, "log: sender %s: create request mgr fail", sender->m_name);
+        mem_buffer_clear(&tmp_buffer);
         net_schedule_free(net_schedule);
         ev_loop_destroy(ev_loop);
         return NULL;
@@ -164,6 +169,8 @@ static void * net_log_sender_thread(void * param) {
         
     ev_run(ev_loop, 0);
 
+    net_log_request_manage_free(request_mgr);
+    mem_buffer_clear(&tmp_buffer);
     net_schedule_free(net_schedule);
     ev_loop_destroy(ev_loop);
     

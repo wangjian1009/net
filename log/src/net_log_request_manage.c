@@ -3,7 +3,10 @@
 #include "net_log_request.h"
 
 net_log_request_manage_t
-net_log_request_manage_create(net_log_schedule_t schedule, net_schedule_t net_schedule, net_driver_t net_driver) {
+net_log_request_manage_create(
+    net_log_schedule_t schedule, net_schedule_t net_schedule, net_driver_t net_driver,
+    mem_buffer_t tmp_buffer)
+{
     net_log_request_manage_t mgr = mem_alloc(schedule->m_alloc, sizeof(struct net_log_request_manage));
 
     mgr->m_schedule = schedule;
@@ -16,6 +19,8 @@ net_log_request_manage_create(net_log_schedule_t schedule, net_schedule_t net_sc
     mgr->m_still_running = 0;
     mgr->m_request_max_id = 0;
     mgr->m_request_count = 0;
+
+    mgr->m_tmp_buffer = tmp_buffer;
 
     TAILQ_INIT(&mgr->m_requests);
     TAILQ_INIT(&mgr->m_free_requests);
