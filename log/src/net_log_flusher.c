@@ -116,7 +116,6 @@ static void * net_log_flusher_thread(void * param) {
             CPE_ERROR(schedule->m_em, "log: flusher %s: build param fail", flusher->m_name);
         }
         else {
-            CPE_ERROR(schedule->m_em, "log: flusher %s: xxxxx category=%p", flusher->m_name, category);
             if (net_log_category_commit_request(category, send_param, 0) != 0) {
                 free(send_param);
             }

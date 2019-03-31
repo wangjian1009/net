@@ -102,7 +102,7 @@ net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, 
     category->m_statistics_package_count = 0;
     cpe_traffic_bps_init(&category->m_statistics_input_bps);
 
-    pthread_mutex_init(&category->m_statistics_mutex);
+    pthread_mutex_init(&category->m_statistics_mutex, NULL);
     category->m_statistics_fail_log_count = 0;
     category->m_statistics_fail_package_count = 0;
     cpe_traffic_bps_init(&category->m_statistics_output_bps);
@@ -135,6 +135,8 @@ void net_log_category_free(net_log_category_t category) {
     assert(schedule->m_state == net_log_schedule_state_init);
     assert(schedule->m_categories[category->m_id] == category);
 
+    pthread_mutex_destroy(&category->m_statistics_mutex);
+    
     if (schedule->m_current_category == category) {
         schedule->m_current_category = NULL;
     }
@@ -223,48 +225,54 @@ net_log_category_build_request(net_log_category_t category, net_log_group_builde
 int net_log_category_commit_request(net_log_category_t category, net_log_request_param_t send_param, uint8_t in_main_thread) {
     net_log_schedule_t schedule = category->m_schedule;
 
-    CPE_INFO(schedule->m_em, "xxx 1");
-    
     if (category->m_sender) {
         if (net_log_pipe_queue(category->m_sender->m_request_pipe, send_param) != 0) {
             CPE_ERROR(
-                schedule->m_em, "log: category [%d]%s: commit request to sender %s fail!",
+                schedule->m_em, "log: category [%d]%s: commit param to sender %s fail!",
                 category->m_id, category->m_name, category->m_sender->m_name);
             return -1;
         }
 
         if (schedule->m_debug) {
             CPE_INFO(
-                schedule->m_em, "log: category [%d]%s: commit request to sender %s success!",
+                schedule->m_em, "log: category [%d]%s: commit param to sender %s success!",
                 category->m_id, category->m_name, category->m_sender->m_name);
         }
 
         return 0;
     }
     else if (in_main_thread) { /*在主线程中，直接发送 */
-        if (schedule->m_debug) {
-            CPE_INFO(schedule->m_em, "xxx 2");
-        }
         assert(schedule->m_main_thread_request_mgr);
 
         net_log_request_t request = net_log_request_create(schedule->m_main_thread_request_mgr, send_param);
         if (request == NULL) {
             CPE_ERROR(
-                schedule->m_em, "log: category [%d]%s: process request at main-thread fail!",
+                schedule->m_em, "log: category [%d]%s: process param at main-thread fail!",
                 category->m_id, category->m_name);
             return -1;
+        }
+
+        if (schedule->m_debug) {
+            CPE_INFO(
+                schedule->m_em, "log: category [%d]%s: process param at main-thread success!",
+                category->m_id, category->m_name);
         }
 
         return 0;
     }
     else { /*提交到主线程处理 */
-        CPE_ERROR(schedule->m_em, "xxxxxx bbbb");
         assert(schedule->m_main_thread_request_pipe);
         if (net_log_pipe_queue(schedule->m_main_thread_request_pipe, send_param) != 0) {
             CPE_ERROR(
-                schedule->m_em, "log: category [%d]%s: commit request to main-thread fail!",
+                schedule->m_em, "log: category [%d]%s: commit param to main-thread fail!",
                 category->m_id, category->m_name);
             return -1;
+        }
+
+        if (schedule->m_debug) {
+            CPE_INFO(
+                schedule->m_em, "log: category [%d]%s: post param to main-thread success!",
+                category->m_id, category->m_name);
         }
 
         return 0;

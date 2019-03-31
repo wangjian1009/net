@@ -79,6 +79,8 @@ int net_log_pipe_bind(net_log_pipe_t pipe, net_log_request_manage_t mgr) {
         return -1;
     }
 
+    net_watcher_update(pipe->m_bind_watcher, 1, 0);
+
     pipe->m_bind_to = mgr;
     
     return 0;
