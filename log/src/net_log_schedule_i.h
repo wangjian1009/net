@@ -23,7 +23,7 @@ typedef struct net_log_request_param * net_log_request_param_t;
 typedef struct net_log_queue * net_log_queue_t;
 typedef struct net_log_group_builder * net_log_group_builder_t;
 
-typedef struct _lz4_log_buf * lz4_log_buf_t;
+typedef struct net_log_lz4_buf * net_log_lz4_buf_t;
 
 struct net_log_schedule {
     mem_allocrator_t m_alloc;

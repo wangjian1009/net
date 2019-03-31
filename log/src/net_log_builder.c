@@ -333,16 +333,16 @@ log_buf serialize_to_proto_buf_with_malloc(net_log_group_builder_t bder) {
     return buf;
 }
 
-lz4_log_buf* serialize_to_proto_buf_with_malloc_no_lz4(net_log_group_builder_t bder) {
+net_log_lz4_buf_t serialize_to_proto_buf_with_malloc_no_lz4(net_log_group_builder_t bder) {
     log_buf buf = serialize_to_proto_buf_with_malloc(bder);
-    lz4_log_buf* pLogbuf = (lz4_log_buf*)malloc(sizeof(lz4_log_buf) + buf.n_buffer);
+    net_log_lz4_buf_t pLogbuf = (net_log_lz4_buf_t)malloc(sizeof(struct net_log_lz4_buf) + buf.n_buffer);
     pLogbuf->length = buf.n_buffer;
     pLogbuf->raw_length = buf.n_buffer;
     memcpy(pLogbuf->data, buf.buffer, buf.n_buffer);
     return pLogbuf;
 }
 
-lz4_log_buf* serialize_to_proto_buf_with_malloc_lz4(net_log_group_builder_t bder) {
+net_log_lz4_buf_t serialize_to_proto_buf_with_malloc_lz4(net_log_group_builder_t bder) {
     log_tag * log = &(bder->grp->logs);
     if (log->buffer == NULL) {
         return NULL;
@@ -366,7 +366,7 @@ lz4_log_buf* serialize_to_proto_buf_with_malloc_lz4(net_log_group_builder_t bder
         return NULL;
     }
 
-    lz4_log_buf* pLogbuf = (lz4_log_buf*)malloc(sizeof(lz4_log_buf) + compressed_size);
+    net_log_lz4_buf_t pLogbuf = (net_log_lz4_buf_t)malloc(sizeof(struct net_log_lz4_buf) + compressed_size);
     pLogbuf->length = compressed_size;
     pLogbuf->raw_length = length;
     memcpy(pLogbuf->data, compress_data, compressed_size);
@@ -374,7 +374,7 @@ lz4_log_buf* serialize_to_proto_buf_with_malloc_lz4(net_log_group_builder_t bder
     return pLogbuf;
 }
 
-void free_lz4_log_buf(lz4_log_buf* pBuf) {
+void free_lz4_log_buf(net_log_lz4_buf_t pBuf) {
     free(pBuf);
 }
 

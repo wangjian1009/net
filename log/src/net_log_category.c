@@ -200,7 +200,7 @@ net_log_category_build_request(net_log_category_t category, net_log_group_builde
         add_pack_id(builder, category->m_pack_prefix, strlen(category->m_pack_prefix), category->m_pack_index++);
     }
 
-    lz4_log_buf * lz4_buf = NULL;
+    net_log_lz4_buf_t lz4_buf = NULL;
     if (category->m_cfg_compress == net_log_compress_lz4) {
         lz4_buf = serialize_to_proto_buf_with_malloc_lz4(builder);
     }

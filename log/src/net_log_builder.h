@@ -20,11 +20,11 @@ typedef struct _log_group{
 #endif
 }log_group;
 
-typedef struct _lz4_log_buf{
+struct net_log_lz4_buf {
     size_t length;
     size_t raw_length;
     unsigned char data[0];
-} lz4_log_buf;
+};
 
 struct net_log_group_builder {
     net_log_schedule_t m_schedule;
@@ -40,9 +40,9 @@ typedef struct _log_buffer {
 } log_buf;
 
 extern log_buf serialize_to_proto_buf_with_malloc(net_log_group_builder_t bder);
-extern lz4_log_buf* serialize_to_proto_buf_with_malloc_lz4(net_log_group_builder_t bder);
-extern lz4_log_buf* serialize_to_proto_buf_with_malloc_no_lz4(net_log_group_builder_t bder);
-extern void free_lz4_log_buf(lz4_log_buf* pBuf);
+extern net_log_lz4_buf_t serialize_to_proto_buf_with_malloc_lz4(net_log_group_builder_t bder);
+extern net_log_lz4_buf_t serialize_to_proto_buf_with_malloc_no_lz4(net_log_group_builder_t bder);
+extern void free_lz4_log_buf(net_log_lz4_buf_t pBuf);
 extern net_log_group_builder_t log_group_create(net_log_schedule_t schedule);
 extern void net_log_group_destroy(net_log_group_builder_t bder);
 extern void add_log_full(net_log_group_builder_t bder, uint32_t logTime, int32_t pair_count, char ** keys, size_t * key_lens, char ** values, size_t * val_lens);

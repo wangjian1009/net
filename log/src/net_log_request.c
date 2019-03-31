@@ -171,7 +171,7 @@ static int net_log_request_send(net_log_request_t request) {
     net_log_request_param_t send_param = request->m_send_param;
     net_log_category_t category = request->m_category;
     net_log_schedule_t schedule = category->m_schedule;
-    lz4_log_buf_t buffer = send_param->log_buf;
+    net_log_lz4_buf_t buffer = send_param->log_buf;
     
     if (send_param->magic_num != LOG_PRODUCER_SEND_MAGIC_NUM) {
         CPE_ERROR(
@@ -404,7 +404,7 @@ const char * net_log_request_complete_state_str(net_log_request_complete_state_t
 
 net_log_request_param_t
 net_log_request_param_create(
-    net_log_category_t category, lz4_log_buf * log_buf, uint32_t builder_time)
+    net_log_category_t category, net_log_lz4_buf_t log_buf, uint32_t builder_time)
 {
     net_log_request_param_t param = (net_log_request_param_t)malloc(sizeof(struct net_log_request_param));
     param->category = category;
@@ -693,7 +693,7 @@ static void net_log_request_rebuild_time(net_log_schedule_t schedule, net_log_ca
             category->m_id, category->m_name, request->m_id);
     }
 
-    lz4_log_buf_t lz4_buf = request->m_send_param->log_buf;
+    net_log_lz4_buf_t lz4_buf = request->m_send_param->log_buf;
     
     char * buf = (char *)malloc(lz4_buf->raw_length);
     if (LZ4_decompress_safe((const char* )lz4_buf->data, buf, lz4_buf->length, lz4_buf->raw_length) <= 0) {
@@ -715,7 +715,7 @@ static void net_log_request_rebuild_time(net_log_schedule_t schedule, net_log_ca
         return;
     }
 
-    lz4_log_buf_t new_lz4_buf = (lz4_log_buf_t)malloc(sizeof(lz4_log_buf) + compressed_size);
+    net_log_lz4_buf_t new_lz4_buf = (net_log_lz4_buf_t)malloc(sizeof(struct net_log_lz4_buf) + compressed_size);
     new_lz4_buf->length = compressed_size;
     new_lz4_buf->raw_length = lz4_buf->raw_length;
     memcpy(new_lz4_buf->data, compress_data, compressed_size);
