@@ -210,13 +210,6 @@ net_log_category_build_request(net_log_category_t category, net_log_group_builde
 
     category->m_total_buffer_size += lz4_buf->length;
 
-    if (schedule->m_debug) {
-        CPE_INFO(
-            schedule->m_em, "log: category [%d]%s: push loggroup to sender, loggroup size %d, lz4 size %d, now buffer size %d",
-            category->m_id, category->m_name,
-            (int)lz4_buf->raw_length, (int)lz4_buf->length, (int)category->m_total_buffer_size);
-    }
-
     net_log_request_param_t send_param = net_log_request_param_create(category, lz4_buf, builder->builder_time);
     if (send_param == NULL) {
         CPE_ERROR(
@@ -254,6 +247,7 @@ int net_log_category_commit_request(net_log_category_t category, net_log_request
         return 0;
     }
     else { /*提交到主线程处理 */
+        CPE_ERROR(schedule->m_em, "xxxxxx bbbb");
         assert(schedule->m_main_thread_request_pipe);
         if (net_log_pipe_queue(schedule->m_main_thread_request_pipe, send_param) != 0) {
             CPE_ERROR(
@@ -261,6 +255,7 @@ int net_log_category_commit_request(net_log_category_t category, net_log_request
                 category->m_id, category->m_name);
             return -1;
         }
+
         return 0;
     }
 }
@@ -340,8 +335,7 @@ int net_log_category_add_log(
     net_log_schedule_t schedule = category->m_schedule;
 
     if (category->m_builder == NULL) {
-        category->m_builder = log_group_create(schedule);
-        category->m_builder->private_value = category;
+        category->m_builder = log_group_create(category);
         net_timer_active(category->m_commit_timer, schedule->m_cfg_timeout_ms);
     }
 

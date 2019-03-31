@@ -99,18 +99,25 @@ static void * net_log_flusher_thread(void * param) {
     while(schedule->m_state == net_log_schedule_state_runing) {
         net_log_group_builder_t builder = net_log_queue_pop(flusher->m_queue);
         if (builder == NULL) {
+            CPE_INFO(schedule->m_em, "log: flusher %s: begin wait", flusher->m_name);
             pthread_cond_wait(&flusher->m_cond, &flusher->m_mutex);
+            CPE_INFO(schedule->m_em, "log: flusher %s: after wait", flusher->m_name);
             continue;
         }
 
+        CPE_INFO(schedule->m_em, "log: flusher %s: get aaa", flusher->m_name);
         pthread_mutex_unlock(&flusher->m_mutex);
 
-        net_log_category_t category = (net_log_category_t)builder->private_value;
+        net_log_category_t category = builder->m_category;
 
         net_log_request_param_t send_param = net_log_category_build_request(category, builder);
+
         net_log_group_destroy(builder);
         
-        if (send_param) {
+        if (send_param == NULL) {
+            CPE_ERROR(schedule->m_em, "log: flusher %s: build param fail", flusher->m_name);
+        }
+        else {
             if (net_log_category_commit_request(category, send_param, 0) != 0) {
                 free(send_param);
             }

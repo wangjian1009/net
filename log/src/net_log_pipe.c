@@ -173,6 +173,8 @@ static void net_log_pipe_action(void * ctx, int fd, uint8_t do_read, uint8_t do_
     net_log_pipe_t pipe = ctx;
     net_log_schedule_t schedule = pipe->m_schedule;
 
+    CPE_INFO(schedule->m_em, "xxxxx: pipe action");
+    
     if (do_read) {
         uint8_t need_process = 1;
 

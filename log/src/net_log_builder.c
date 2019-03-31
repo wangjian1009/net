@@ -3,6 +3,7 @@
 #include "cpe/pal/pal_stdlib.h"
 #include "cpe/utils/string_utils.h"
 #include "net_log_builder.h"
+#include "net_log_category_i.h"
 #include "lz4.h"
 
 // 1+3( 1 --->  header;  2 ---> 128 * 128 = 16KB)
@@ -106,9 +107,10 @@ static unsigned scan_varint(unsigned len, const uint8_t *data) {
     return i + 1;
 }
 
-net_log_group_builder_t log_group_create(net_log_schedule_t schedule) {
+net_log_group_builder_t log_group_create(net_log_category_t category) {
     net_log_group_builder_t bder = (net_log_group_builder_t)malloc(sizeof(struct net_log_group_builder)+sizeof(log_group));
     memset(bder, 0, sizeof(struct net_log_group_builder) + sizeof(log_group));
+    bder->m_category = category;
     bder->grp = (log_group*)((char *)(bder) + sizeof(struct net_log_group_builder));
     bder->loggroup_size = sizeof(log_group) + sizeof(struct net_log_group_builder);
     bder->builder_time = time(NULL);
@@ -116,6 +118,8 @@ net_log_group_builder_t log_group_create(net_log_schedule_t schedule) {
 }
 
 void net_log_group_destroy(net_log_group_builder_t bder) {
+    net_log_schedule_t schedule = bder->m_category->m_schedule;
+
     // free tag
     log_group* group = bder->grp;
     if (group->tags.buffer != NULL) {
@@ -128,11 +132,11 @@ void net_log_group_destroy(net_log_group_builder_t bder) {
     }
 
     if (group->topic != NULL) {
-        mem_free(bder->m_schedule->m_alloc, group->topic);
+        mem_free(schedule->m_alloc, group->topic);
     }
 
     if (group->source != NULL)     {
-        mem_free(bder->m_schedule->m_alloc, group->source);
+        mem_free(schedule->m_alloc, group->source);
     }
 
     // free self
@@ -218,13 +222,15 @@ void add_log_full(net_log_group_builder_t bder, uint32_t logTime, int32_t pair_c
 }
 
 void add_source(net_log_group_builder_t bder, const char* src,size_t len) {
+    net_log_schedule_t schedule = bder->m_category->m_schedule;
     bder->loggroup_size += sizeof(char)*(len) + uint32_size((uint32_t)len) + 1;
-    bder->grp->source = cpe_str_mem_dup_len(bder->m_schedule->m_alloc, src, len);
+    bder->grp->source = cpe_str_mem_dup_len(schedule->m_alloc, src, len);
 }
 
 void add_topic(net_log_group_builder_t bder,const char* tpc,size_t len) {
+    net_log_schedule_t schedule = bder->m_category->m_schedule;
     bder->loggroup_size += sizeof(char)*(len) + uint32_size((uint32_t)len) + 1;
-    bder->grp->topic = cpe_str_mem_dup_len(bder->m_schedule->m_alloc, tpc, len);
+    bder->grp->topic = cpe_str_mem_dup_len(schedule->m_alloc, tpc, len);
 }
 
 void add_pack_id(net_log_group_builder_t bder, const char* pack, size_t pack_len, size_t packNum) {
