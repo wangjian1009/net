@@ -75,6 +75,7 @@ int net_log_flusher_queue(net_log_flusher_t flusher, net_log_group_builder_t bui
 
     if (net_log_queue_push(flusher->m_queue, builder) != 0) {
         CPE_ERROR(schedule->m_em, "log: flusher %s: push log group fail", flusher->m_name);
+        pthread_mutex_unlock(&flusher->m_mutex);
         return -1;
     }
     else {
@@ -99,13 +100,10 @@ static void * net_log_flusher_thread(void * param) {
     while(schedule->m_state == net_log_schedule_state_runing) {
         net_log_group_builder_t builder = net_log_queue_pop(flusher->m_queue);
         if (builder == NULL) {
-            CPE_INFO(schedule->m_em, "log: flusher %s: begin wait", flusher->m_name);
             pthread_cond_wait(&flusher->m_cond, &flusher->m_mutex);
-            CPE_INFO(schedule->m_em, "log: flusher %s: after wait", flusher->m_name);
             continue;
         }
 
-        CPE_INFO(schedule->m_em, "log: flusher %s: get aaa", flusher->m_name);
         pthread_mutex_unlock(&flusher->m_mutex);
 
         net_log_category_t category = builder->m_category;
@@ -118,6 +116,7 @@ static void * net_log_flusher_thread(void * param) {
             CPE_ERROR(schedule->m_em, "log: flusher %s: build param fail", flusher->m_name);
         }
         else {
+            CPE_ERROR(schedule->m_em, "log: flusher %s: xxxxx category=%p", flusher->m_name, category);
             if (net_log_category_commit_request(category, send_param, 0) != 0) {
                 free(send_param);
             }

@@ -30,13 +30,19 @@ struct net_log_category {
     
     /*runtime*/
     net_timer_t m_commit_timer;
-    volatile uint32_t m_networkRecover;
-    volatile uint32_t m_total_buffer_size;
     net_log_group_builder_t m_builder;
     char * m_pack_prefix;
     volatile uint32_t m_pack_index;
 
-    struct cpe_traffic_bps m_bps;
+    /*statistics*/
+    uint32_t m_statistics_log_count;
+    uint32_t m_statistics_package_count;
+    struct cpe_traffic_bps m_statistics_input_bps;
+
+    pthread_mutex_t m_statistics_mutex;
+    uint32_t m_statistics_fail_log_count;    
+    uint32_t m_statistics_fail_package_count;    
+    struct cpe_traffic_bps m_statistics_output_bps;
 };
 
 void net_log_category_network_recover(net_log_category_t category);
@@ -46,6 +52,8 @@ int net_log_category_commit_request(net_log_category_t category, net_log_request
 
 int net_log_category_add_log(
     net_log_category_t category, int32_t pair_count, char ** keys, size_t * key_lens, char ** values, size_t * val_lens);
+
+void net_log_category_add_fail_statistics(net_log_category_t category);
 
 NET_END_DECL
 

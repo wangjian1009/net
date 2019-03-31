@@ -526,24 +526,20 @@ static int32_t net_log_request_check_result(
         break;
     }
 
-    request->m_category->m_total_buffer_size -= request->m_send_param->log_buf->length;
-
     if (schedule->m_debug) {
         if (send_result == net_log_request_send_ok) {
             CPE_INFO(
-                schedule->m_em, "log: category [%d]%s: request %d: send success, buffer-len=%d, raw-len=%d, total-buffer=%d",
+                schedule->m_em, "log: category [%d]%s: request %d: send success, buffer-len=%d, raw-len=%d",
                 category->m_id, category->m_name, request->m_id,
                 (int)request->m_send_param->log_buf->length,
-                (int)request->m_send_param->log_buf->raw_length,
-                (int)category->m_total_buffer_size);
+                (int)request->m_send_param->log_buf->raw_length);
         }
         else {
             CPE_INFO(
-                schedule->m_em, "log: category [%d]%s: request %d: send fail, discard data, buffer-len=%d, raw=len=%d, total-buffer=%d",
+                schedule->m_em, "log: category [%d]%s: request %d: send fail, discard data, buffer-len=%d, raw=len=%d",
                 category->m_id, category->m_name, request->m_id,
                 (int)request->m_send_param->log_buf->length,
-                (int)request->m_send_param->log_buf->raw_length,
-                (int)category->m_total_buffer_size);
+                (int)request->m_send_param->log_buf->raw_length);
         }
     }
 

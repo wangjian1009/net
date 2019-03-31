@@ -71,8 +71,6 @@ net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, 
     category->m_sender = sender;
     cpe_str_dup(category->m_name, sizeof(category->m_name), name);
     category->m_id = id;
-    category->m_networkRecover = 0;
-    category->m_total_buffer_size = 0;
     category->m_builder = NULL;
     category->m_pack_prefix = NULL;
     category->m_pack_index = 0;
@@ -83,8 +81,6 @@ net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, 
     category->m_cfg_tag_capacity = 0;
     category->m_cfg_bytes_per_package = 3 * 1024 * 1024;
     category->m_cfg_count_per_package = 2048;
-    /* category->destroySenderWaitTimeoutSec = 1; */
-    /* category->destroyFlusherWaitTimeoutSec = 1; */
 
     category->m_commit_timer = net_timer_create(schedule->m_net_driver, net_log_category_commit_timer, category);
     if (category->m_commit_timer == NULL) {
@@ -101,6 +97,17 @@ net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, 
         return NULL;
     }
 
+    /*statistics*/
+    category->m_statistics_log_count = 0;
+    category->m_statistics_package_count = 0;
+    cpe_traffic_bps_init(&category->m_statistics_input_bps);
+
+    pthread_mutex_init(&category->m_statistics_mutex);
+    category->m_statistics_fail_log_count = 0;
+    category->m_statistics_fail_package_count = 0;
+    cpe_traffic_bps_init(&category->m_statistics_output_bps);
+
+    /*commit*/
     schedule->m_categories[id] = category;
 
     if (flusher) {
@@ -110,7 +117,7 @@ net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, 
     if (sender) {
         TAILQ_INSERT_TAIL(&sender->m_categories, category, m_next_for_sender);
     }
-    
+
     if (schedule->m_debug) {
         CPE_INFO(
             schedule->m_em, "log: category [%d]%s: create success, flusher %s, sender %s!",
@@ -167,15 +174,9 @@ void net_log_category_free(net_log_category_t category) {
     mem_free(schedule->m_alloc, category);
 }
 
-void net_log_category_network_recover(net_log_category_t category) {
-    category->m_networkRecover = 1;
-}
-
 net_log_request_param_t
 net_log_category_build_request(net_log_category_t category, net_log_group_builder_t builder) {
     net_log_schedule_t schedule = category->m_schedule;
-
-    category->m_total_buffer_size -= builder->loggroup_size;
 
     uint16_t i;
     for (i = 0; i < category->m_cfg_tag_count; ++i) {
@@ -208,8 +209,6 @@ net_log_category_build_request(net_log_category_t category, net_log_group_builde
         return NULL;
     }
 
-    category->m_total_buffer_size += lz4_buf->length;
-
     net_log_request_param_t send_param = net_log_request_param_create(category, lz4_buf, builder->builder_time);
     if (send_param == NULL) {
         CPE_ERROR(
@@ -224,16 +223,28 @@ net_log_category_build_request(net_log_category_t category, net_log_group_builde
 int net_log_category_commit_request(net_log_category_t category, net_log_request_param_t send_param, uint8_t in_main_thread) {
     net_log_schedule_t schedule = category->m_schedule;
 
+    CPE_INFO(schedule->m_em, "xxx 1");
+    
     if (category->m_sender) {
         if (net_log_pipe_queue(category->m_sender->m_request_pipe, send_param) != 0) {
             CPE_ERROR(
-                schedule->m_em, "log: category [%d]%s: commit request to %s fail!",
+                schedule->m_em, "log: category [%d]%s: commit request to sender %s fail!",
                 category->m_id, category->m_name, category->m_sender->m_name);
             return -1;
         }
+
+        if (schedule->m_debug) {
+            CPE_INFO(
+                schedule->m_em, "log: category [%d]%s: commit request to sender %s success!",
+                category->m_id, category->m_name, category->m_sender->m_name);
+        }
+
         return 0;
     }
     else if (in_main_thread) { /*在主线程中，直接发送 */
+        if (schedule->m_debug) {
+            CPE_INFO(schedule->m_em, "xxx 2");
+        }
         assert(schedule->m_main_thread_request_mgr);
 
         net_log_request_t request = net_log_request_create(schedule->m_main_thread_request_mgr, send_param);
@@ -375,12 +386,12 @@ static void net_log_category_do_commit(net_log_schedule_t schedule, net_log_cate
 
     size_t loggroup_size = builder->loggroup_size;
 
-    if (schedule->m_debug) {
-        CPE_INFO(
-            schedule->m_em, "log: category [%d]%s: try push loggroup to flusher, size : %d, log count %d",
-            category->m_id, category->m_name, (int)builder->loggroup_size, (int)builder->grp->n_logs);
-    }
+    /*input statistics*/
+    category->m_statistics_log_count = builder->grp->n_logs;
+    category->m_statistics_package_count++;
+    cpe_traffic_bps_add_flow(&category->m_statistics_input_bps, loggroup_size, time(0));
 
+    /*提交 */
     if (category->m_flusher) { /*异步flush */
         if (net_log_flusher_queue(category->m_flusher, builder) != 0) {
             CPE_ERROR(
@@ -389,18 +400,25 @@ static void net_log_category_do_commit(net_log_schedule_t schedule, net_log_cate
             net_log_group_destroy(builder);
         }
         else {
-            category->m_total_buffer_size += loggroup_size;
+            if (schedule->m_debug) {
+                CPE_INFO(
+                    schedule->m_em, "log: category [%d]%s: commit: queue to flusher, package(count=%d, size=%d)",
+                    category->m_id, category->m_name, (int)builder->loggroup_size, (int)builder->grp->n_logs);
+            }
         }
     }
     else { /*同步flush */
-        category->m_total_buffer_size += loggroup_size;
-
         net_log_request_param_t send_param = net_log_category_build_request(category, builder);
         net_log_group_destroy(builder);
-        
-        if (send_param) {
+
+        if (send_param == NULL) {
+            CPE_ERROR(schedule->m_em, "log: category [%d]%s: commit: build request fail", category->m_id, category->m_name);
+        }
+        else {        
             if (net_log_category_commit_request(category, send_param, 1) != 0) {
                 net_log_request_param_free(send_param);
+            }
+            else {
             }
         }
     }
