@@ -15,7 +15,7 @@
 static void * net_log_sender_thread(void * param);
 
 net_log_sender_t
-net_log_sender_create(net_log_schedule_t schedule, const char * name, int32_t queue_size) {
+net_log_sender_create(net_log_schedule_t schedule, const char * name) {
     net_log_sender_t sender = mem_alloc(schedule->m_alloc, sizeof(struct net_log_sender));
     if (sender == NULL) {
         CPE_ERROR(schedule->m_em, "log: sender %s: alloc fail", name);
@@ -164,7 +164,16 @@ static void * net_log_sender_thread(void * param) {
         ev_loop_destroy(ev_loop);
         return NULL;
     }
-    
+
+    if (net_log_pipe_bind(sender->m_request_pipe, request_mgr) != 0) {
+        CPE_ERROR(schedule->m_em, "log: sender %s: bind request mgr fail", sender->m_name);
+        net_log_request_manage_free(request_mgr);
+        mem_buffer_clear(&tmp_buffer);
+        net_schedule_free(net_schedule);
+        ev_loop_destroy(ev_loop);
+        return NULL;
+    }
+
     ev_set_userdata(ev_loop, request_mgr);
         
     ev_run(ev_loop, 0);
