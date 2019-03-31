@@ -113,7 +113,7 @@ net_log_group_builder_t log_group_create(net_log_category_t category) {
     bder->m_category = category;
     bder->grp = (log_group*)((char *)(bder) + sizeof(struct net_log_group_builder));
     bder->loggroup_size = sizeof(log_group) + sizeof(struct net_log_group_builder);
-    bder->builder_time = time(NULL);
+    bder->builder_time = (uint32_t)time(NULL);
     return bder;
 }
 

@@ -181,7 +181,7 @@ static void net_log_pipe_action(void * ctx, int fd, uint8_t do_read, uint8_t do_
         uint8_t need_process = 1;
 
         while(need_process) {
-            int rv = read(
+            ssize_t rv = read(
                 pipe->m_pipe_fd[0], pipe->m_pipe_r_buf + pipe->m_pipe_r_size,
                 sizeof(pipe->m_pipe_r_buf) - pipe->m_pipe_r_size);
             if (rv < 0) {
