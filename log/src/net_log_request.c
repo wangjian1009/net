@@ -227,7 +227,7 @@ static int net_log_request_send(net_log_request_t request) {
     md5Buf[32] = '\0';
     md5_to_string((const char *)buffer->data, (int)buffer->length, md5Buf);
     
-    int lz4Flag = category->m_cfg_compress == net_log_compress_lz4;
+    int lz4Flag = schedule->m_cfg_compress == net_log_compress_lz4;
     
     struct curl_slist * headers = NULL;
 

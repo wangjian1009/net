@@ -81,7 +81,6 @@ net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, 
     category->m_cfg_tags = NULL;
     category->m_cfg_tag_count = 0;
     category->m_cfg_tag_capacity = 0;
-    category->m_cfg_compress = net_log_compress_lz4;
     category->m_cfg_bytes_per_package = 3 * 1024 * 1024;
     category->m_cfg_count_per_package = 2048;
     /* category->destroySenderWaitTimeoutSec = 1; */
@@ -197,7 +196,7 @@ net_log_category_build_request(net_log_category_t category, net_log_group_builde
     }
 
     net_log_lz4_buf_t lz4_buf = NULL;
-    if (category->m_cfg_compress == net_log_compress_lz4) {
+    if (schedule->m_cfg_compress == net_log_compress_lz4) {
         lz4_buf = serialize_to_proto_buf_with_malloc_lz4(builder);
     }
     else {

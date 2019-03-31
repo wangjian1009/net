@@ -25,7 +25,6 @@ struct net_log_category {
     net_log_category_cfg_tag_t m_cfg_tags;
     uint16_t m_cfg_tag_count;
     uint16_t m_cfg_tag_capacity;
-    net_log_compress_type_t m_cfg_compress;
     uint32_t m_cfg_count_per_package;
     uint32_t m_cfg_bytes_per_package;
     
