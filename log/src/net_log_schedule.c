@@ -42,6 +42,9 @@ net_log_schedule_create(
     schedule->m_net_driver = net_driver;
     schedule->m_cfg_source = NULL;
     schedule->m_cfg_project = cpe_str_mem_dup(alloc, cfg_project);
+    schedule->m_cfg_timeout_ms = 3000;
+    schedule->m_cfg_connect_timeout_s = 10;
+    schedule->m_cfg_send_timeout_s = 15;
 
     if (cpe_str_start_with(cfg_ep, "http://")) {
         schedule->m_cfg_using_https = 0;

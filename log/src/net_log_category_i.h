@@ -1,14 +1,15 @@
 #ifndef NET_LOG_CATEGORY_I_H_INCLEDED
 #define NET_LOG_CATEGORY_I_H_INCLEDED
+#include "cpe/utils/traffic_bps.h"
 #include "net_log_category.h"
 #include "net_log_schedule_i.h"
 
 NET_BEGIN_DECL
 
-typedef struct net_log_category_cfg_tag {
+struct net_log_category_cfg_tag {
     char * m_key;
     char * m_value;
-} * net_log_category_cfg_tag_t;
+};
 
 struct net_log_category {
     net_log_schedule_t m_schedule;
@@ -25,14 +26,8 @@ struct net_log_category {
     uint16_t m_cfg_tag_count;
     uint16_t m_cfg_tag_capacity;
     net_log_compress_type_t m_cfg_compress;
-    uint32_t m_cfg_timeout_ms;
     uint32_t m_cfg_count_per_package;
     uint32_t m_cfg_bytes_per_package;
-    uint32_t m_cfg_max_buffer_bytes;
-    uint32_t m_cfg_connect_timeout_s;
-    uint32_t m_cfg_send_timeout_s;
-    /* uint32_t m_cfg_destroyFlusherWaitTimeoutSec; */
-    /* int32_t destroySenderWaitTimeoutSec; */
     
     /*runtime*/
     net_timer_t m_commit_timer;
@@ -41,6 +36,8 @@ struct net_log_category {
     net_log_group_builder_t m_builder;
     char * m_pack_prefix;
     volatile uint32_t m_pack_index;
+
+    struct cpe_traffic_bps m_bps;
 };
 
 void net_log_category_network_recover(net_log_category_t category);

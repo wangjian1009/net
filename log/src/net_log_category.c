@@ -84,10 +84,6 @@ net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, 
     category->m_cfg_compress = net_log_compress_lz4;
     category->m_cfg_bytes_per_package = 3 * 1024 * 1024;
     category->m_cfg_count_per_package = 2048;
-    category->m_cfg_timeout_ms = 3000;
-    category->m_cfg_max_buffer_bytes = 64 * 1024 * 1024;
-    category->m_cfg_connect_timeout_s = 10;
-    category->m_cfg_send_timeout_s = 15;
     /* category->destroySenderWaitTimeoutSec = 1; */
     /* category->destroyFlusherWaitTimeoutSec = 1; */
 
@@ -344,18 +340,10 @@ int net_log_category_add_log(
 {
     net_log_schedule_t schedule = category->m_schedule;
 
-    if (category->m_total_buffer_size > category->m_cfg_max_buffer_bytes) {
-        CPE_ERROR(
-            schedule->m_em, "log: category [%d]%s: add log: buffer overflow, max=%d, curent=%d",
-            category->m_id, category->m_name,
-            category->m_cfg_max_buffer_bytes, category->m_total_buffer_size);
-        return -1;
-    }
-    
     if (category->m_builder == NULL) {
         category->m_builder = log_group_create(schedule);
         category->m_builder->private_value = category;
-        net_timer_active(category->m_commit_timer, category->m_cfg_timeout_ms);
+        net_timer_active(category->m_commit_timer, schedule->m_cfg_timeout_ms);
     }
 
     add_log_full(category->m_builder, (uint32_t)time(NULL), pair_count, keys, key_lens, values, val_lens);

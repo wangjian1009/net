@@ -298,10 +298,10 @@ static int net_log_request_send(net_log_request_t request) {
         curl_easy_setopt(request->m_handler, CURLOPT_INTERFACE, schedule->m_cfg_net_interface);
     }
     
-    curl_easy_setopt(request->m_handler, CURLOPT_TIMEOUT, category->m_cfg_send_timeout_s > 0 ? category->m_cfg_send_timeout_s : 15);
+    curl_easy_setopt(request->m_handler, CURLOPT_TIMEOUT, schedule->m_cfg_send_timeout_s > 0 ? schedule->m_cfg_send_timeout_s : 15);
     
-    if (category->m_cfg_connect_timeout_s > 0) {
-        curl_easy_setopt(request->m_handler, CURLOPT_CONNECTTIMEOUT, category->m_cfg_connect_timeout_s);
+    if (schedule->m_cfg_connect_timeout_s > 0) {
+        curl_easy_setopt(request->m_handler, CURLOPT_CONNECTTIMEOUT, schedule->m_cfg_connect_timeout_s);
     }
 
     curl_easy_setopt(request->m_handler, CURLOPT_HEADERFUNCTION, net_log_request_on_header);
