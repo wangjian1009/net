@@ -14,6 +14,7 @@
 #include "net_log_sender_i.h"
 #include "net_log_request_manage.h"
 #include "net_log_pipe.h"
+#include "net_log_builder.h"
 
 net_log_schedule_t
 net_log_schedule_create(
@@ -64,8 +65,6 @@ net_log_schedule_create(
     
     schedule->m_cfg_access_id = cpe_str_mem_dup(alloc, cfg_access_id);
     schedule->m_cfg_access_key = cpe_str_mem_dup(alloc, cfg_access_key);
-
-    mem_buffer_init(&schedule->m_kv_buffer, alloc);
 
     TAILQ_INIT(&schedule->m_flushers);
     TAILQ_INIT(&schedule->m_senders);
@@ -147,17 +146,6 @@ void net_log_schedule_free(net_log_schedule_t schedule) {
         mem_free(schedule->m_alloc, schedule->m_cfg_remote_address);
         schedule->m_cfg_remote_address = NULL;
     }
-
-    /*cache*/
-    if (schedule->m_keys) {
-        mem_free(schedule->m_alloc, schedule->m_keys);
-        schedule->m_keys = NULL;
-        schedule->m_keys_len = NULL;
-        schedule->m_values = NULL;
-        schedule->m_values_len = NULL;
-    }
-    
-    mem_buffer_clear(&schedule->m_kv_buffer);
 
     curl_global_cleanup();
     
@@ -312,84 +300,45 @@ const char * net_log_schedule_state_str(net_log_schedule_state_t schedule_state)
 }
 
 void net_log_begin(net_log_schedule_t schedule, uint8_t log_type) {
-    schedule->m_kv_count = 0;
-    mem_buffer_clear_data(&schedule->m_kv_buffer);
-    schedule->m_current_category = schedule->m_categories[log_type];
+    assert(schedule->m_current_category == NULL);
+    assert(log_type < schedule->m_category_count);
+
+    net_log_category_t category = schedule->m_categories[log_type];
+    schedule->m_current_category = category;
+    net_log_category_log_begin(category);
 }
 
 void net_log_append_int32(net_log_schedule_t schedule, const char * name, int32_t value) {
+    assert(schedule->m_current_category);
     char buf[32];
     snprintf(buf, sizeof(buf), "%d", value);
-    net_log_append_str(schedule, name, buf);
+    net_log_category_log_apppend(schedule->m_current_category, name, buf);
 }
 
 void net_log_append_uint32(net_log_schedule_t schedule, const char * name, uint32_t value) {
+    assert(schedule->m_current_category);
     char buf[32];
     snprintf(buf, sizeof(buf), "%u", value);
-    net_log_append_str(schedule, name, buf);
+    net_log_category_log_apppend(schedule->m_current_category, name, buf);
 }
 
 void net_log_append_int64(net_log_schedule_t schedule, const char * name, int64_t value) {
+    assert(schedule->m_current_category);
     char buf[32];
     snprintf(buf, sizeof(buf), FMT_INT64_T, value);
-    net_log_append_str(schedule, name, buf);
+    net_log_category_log_apppend(schedule->m_current_category, name, buf);
 }
 
 void net_log_append_uint64(net_log_schedule_t schedule, const char * name, uint64_t value) {
+    assert(schedule->m_current_category);
     char buf[32];
     snprintf(buf, sizeof(buf), FMT_UINT64_T, value);
-    net_log_append_str(schedule, name, buf);
+    net_log_category_log_apppend(schedule->m_current_category, name, buf);
 }
 
 void net_log_append_str(net_log_schedule_t schedule, const char * name, const char * value) {
-    if (schedule->m_kv_count >= schedule->m_kv_capacity) {
-        uint32_t new_capacity = schedule->m_kv_capacity < 32 ? 32 : schedule->m_kv_capacity * 2;
-        while(schedule->m_kv_count >= new_capacity) {
-            if (new_capacity > 1024) {
-                CPE_ERROR(schedule->m_em, "chain: log: append value overflow, capacity=%d!", schedule->m_kv_capacity);
-                return;
-            }
-            new_capacity *= 2;
-        }
-
-        uint32_t p_capacity = sizeof(char *) * new_capacity;
-        uint32_t len_capacity = sizeof(size_t) * new_capacity;
-        uint32_t buf_capacity = (p_capacity + len_capacity) * 2;
-        char * new_buf = mem_alloc(schedule->m_alloc, buf_capacity);
-        if (new_buf == NULL) {
-            CPE_ERROR(
-                schedule->m_em, "chain: log: append  value: alloc array_buf fail, capacity=%d, buf-capacity=%d!",
-                new_capacity, buf_capacity);
-            return;
-        }
-        
-        char * * new_keys = (char**)new_buf + 0;
-        size_t * new_keys_len = (size_t*)(new_buf + p_capacity);
-        char * * new_values = (char**)(new_buf + p_capacity + len_capacity);
-        size_t * new_values_len = (size_t*)(new_buf + p_capacity + len_capacity + p_capacity);
-
-        if (schedule->m_keys) {
-            memcpy(new_keys, schedule->m_keys, sizeof(char *) * schedule->m_kv_count);
-            memcpy(new_keys_len, schedule->m_keys_len, sizeof(size_t) * schedule->m_kv_count);
-            memcpy(new_values, schedule->m_values, sizeof(char *) * schedule->m_kv_count);
-            memcpy(new_values_len, schedule->m_values_len, sizeof(size_t) * schedule->m_kv_count);
-
-            mem_free(schedule->m_alloc, schedule->m_keys);
-        }
-
-        schedule->m_keys = new_keys;
-        schedule->m_keys_len = new_keys_len;
-        schedule->m_values = new_values;
-        schedule->m_values_len = new_values_len;
-    }
-
-    int32_t pos = schedule->m_kv_count++;
-
-    schedule->m_keys[pos] = mem_buffer_strdup(&schedule->m_kv_buffer, name);
-    schedule->m_keys_len[pos] = strlen(name);
-
-    schedule->m_values[pos] = mem_buffer_strdup(&schedule->m_kv_buffer, value);
-    schedule->m_values_len[pos] = strlen(value);
+    assert(schedule->m_current_category);
+    net_log_category_log_apppend(schedule->m_current_category, name, value);
 }
 
 void net_log_append_md5(net_log_schedule_t schedule, const char * name, cpe_md5_value_t value) {
@@ -401,42 +350,9 @@ void net_log_append_net_address(net_log_schedule_t schedule, const char * name, 
 }
 
 void net_log_commit(net_log_schedule_t schedule) {
-    if (schedule->m_current_category == NULL) {
-        CPE_ERROR(schedule->m_em, "log: commit: no current producer!");
-        return;
-    }
-
-    net_log_category_t category = schedule->m_current_category;
-    
-    if (net_log_category_add_log(
-            category,
-            schedule->m_kv_count, schedule->m_keys, schedule->m_keys_len, schedule->m_values, schedule->m_values_len) != 0)
-    {
-        CPE_ERROR(
-            schedule->m_em, "log: category [%d]%s: commit fail",
-            category->m_id, category->m_name);
-    }
-
-    if (schedule->m_debug) {
-        mem_buffer_t tmp_buf = net_log_schedule_tmp_buffer(schedule);
-        mem_buffer_clear_data(tmp_buf);
-
-        uint16_t i;
-        for(i = 0; i < schedule->m_kv_count; ++i) {
-            if (i != 0) {
-                mem_buffer_strcat(tmp_buf, ", ");
-            }
-
-            mem_buffer_strcat(tmp_buf, schedule->m_keys[i]);
-            mem_buffer_strcat(tmp_buf, "=");
-            mem_buffer_strcat(tmp_buf, schedule->m_values[i]);
-        }
-        
-        CPE_INFO(
-            schedule->m_em, "log: category [%d]%s: commit log: %s",
-            category->m_id, category->m_name,
-            (const char *)mem_buffer_make_continuous(tmp_buf, 0));
-    }
+    assert(schedule->m_current_category);
+    net_log_category_log_end(schedule->m_current_category);
+    schedule->m_current_category = NULL;
 }
 
 mem_buffer_t net_log_schedule_tmp_buffer(net_log_schedule_t schedule) {

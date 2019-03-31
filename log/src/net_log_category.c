@@ -177,7 +177,7 @@ void net_log_category_free(net_log_category_t category) {
 }
 
 net_log_request_param_t
-net_log_category_build_request(net_log_category_t category, net_log_group_builder_t builder) {
+net_log_category_build_request(net_log_category_t category, net_log_builder_t builder) {
     net_log_schedule_t schedule = category->m_schedule;
 
     uint16_t i;
@@ -348,9 +348,7 @@ int net_log_category_add_global_tag(net_log_category_t category, const char * ke
     return 0;
 }
 
-int net_log_category_add_log(
-    net_log_category_t category, int32_t pair_count, char ** keys, size_t * key_lens, char ** values, size_t * val_lens)
-{
+void net_log_category_log_begin(net_log_category_t category) {
     net_log_schedule_t schedule = category->m_schedule;
 
     if (category->m_builder == NULL) {
@@ -358,18 +356,31 @@ int net_log_category_add_log(
         net_timer_active(category->m_commit_timer, schedule->m_cfg_timeout_ms);
     }
 
-    add_log_full(category->m_builder, (uint32_t)time(NULL), pair_count, keys, key_lens, values, val_lens);
+    add_log_begin(category->m_builder);
+    add_log_time(category->m_builder, (uint32_t)time(NULL));
+    
+}
 
-    if (category->m_builder->loggroup_size < category->m_cfg_bytes_per_package
-        && category->m_builder->grp->n_logs < category->m_cfg_count_per_package)
+void net_log_category_log_apppend(net_log_category_t category, const char * key, const char * value) {
+    net_log_builder_t builder = category->m_builder;
+    assert(builder);
+    add_log_key_value(builder, (char*)key, strlen(key), (char * )value, strlen(value));
+}
+
+void net_log_category_log_end(net_log_category_t category) {
+    net_log_schedule_t schedule = category->m_schedule;
+    net_log_builder_t builder = category->m_builder;
+
+    add_log_end(builder);
+
+    if (builder->loggroup_size < category->m_cfg_bytes_per_package
+        && builder->grp->n_logs < category->m_cfg_count_per_package)
     {
-        return 0;
+        return;
     }
 
     net_timer_cancel(category->m_commit_timer);
     net_log_category_do_commit(schedule, category);
-
-    return 0;
 }
 
 char * net_log_category_get_pack_id(net_log_schedule_t schedule, const char * configName, const char * ip) {
@@ -387,7 +398,7 @@ char * net_log_category_get_pack_id(net_log_schedule_t schedule, const char * co
 }
 
 static void net_log_category_do_commit(net_log_schedule_t schedule, net_log_category_t category) {
-    net_log_group_builder_t builder = category->m_builder;
+    net_log_builder_t builder = category->m_builder;
     assert(builder);
     
     category->m_builder = NULL;

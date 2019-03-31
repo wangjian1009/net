@@ -16,7 +16,7 @@ struct net_log_flusher {
     pthread_cond_t m_cond;
 };
 
-int net_log_flusher_queue(net_log_flusher_t flusher, net_log_group_builder_t builder);
+int net_log_flusher_queue(net_log_flusher_t flusher, net_log_builder_t builder);
 
 int net_log_flusher_start(net_log_flusher_t flusher);
 void net_log_flusher_notify_stop(net_log_flusher_t flusher);

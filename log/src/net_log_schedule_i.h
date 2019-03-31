@@ -21,7 +21,7 @@ typedef struct net_log_pipe * net_log_pipe_t;
 typedef struct net_log_pipe_cmd * net_log_pipe_cmd_t;
 typedef struct net_log_request_param * net_log_request_param_t;
 typedef struct net_log_queue * net_log_queue_t;
-typedef struct net_log_group_builder * net_log_group_builder_t;
+typedef struct net_log_builder * net_log_builder_t;
 typedef struct net_log_category_cfg_tag * net_log_category_cfg_tag_t;
 typedef struct net_log_lz4_buf * net_log_lz4_buf_t;
 
@@ -61,13 +61,6 @@ struct net_log_schedule {
     
     /*builder helper*/
     net_log_category_t m_current_category;
-    uint16_t m_kv_count;
-    uint16_t m_kv_capacity;
-    char * * m_keys;
-    size_t * m_keys_len;
-    char * * m_values;
-    size_t * m_values_len;
-    struct mem_buffer m_kv_buffer;
 };
 
 mem_buffer_t net_log_schedule_tmp_buffer(net_log_schedule_t schedule);

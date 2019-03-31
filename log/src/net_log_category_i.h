@@ -30,7 +30,7 @@ struct net_log_category {
     
     /*runtime*/
     net_timer_t m_commit_timer;
-    net_log_group_builder_t m_builder;
+    net_log_builder_t m_builder;
     char * m_pack_prefix;
     volatile uint32_t m_pack_index;
 
@@ -47,11 +47,12 @@ struct net_log_category {
 
 void net_log_category_network_recover(net_log_category_t category);
 
-net_log_request_param_t net_log_category_build_request(net_log_category_t category, net_log_group_builder_t builder);
+net_log_request_param_t net_log_category_build_request(net_log_category_t category, net_log_builder_t builder);
 int net_log_category_commit_request(net_log_category_t category, net_log_request_param_t send_param, uint8_t in_main_thread);
 
-int net_log_category_add_log(
-    net_log_category_t category, int32_t pair_count, char ** keys, size_t * key_lens, char ** values, size_t * val_lens);
+void net_log_category_log_begin(net_log_category_t category);
+void net_log_category_log_apppend(net_log_category_t category, const char * key, const char * value);
+void net_log_category_log_end(net_log_category_t category);
 
 void net_log_category_add_fail_statistics(net_log_category_t category);
 

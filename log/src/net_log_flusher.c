@@ -68,7 +68,7 @@ net_log_flusher_t net_log_flusher_find(net_log_schedule_t schedule, const char *
     return NULL;
 }
 
-int net_log_flusher_queue(net_log_flusher_t flusher, net_log_group_builder_t builder) {
+int net_log_flusher_queue(net_log_flusher_t flusher, net_log_builder_t builder) {
     net_log_schedule_t schedule = flusher->m_schedule;
 
     pthread_mutex_lock(&flusher->m_mutex);
@@ -98,7 +98,7 @@ static void * net_log_flusher_thread(void * param) {
     pthread_mutex_lock(&flusher->m_mutex);
 
     while(schedule->m_state == net_log_schedule_state_runing) {
-        net_log_group_builder_t builder = net_log_queue_pop(flusher->m_queue);
+        net_log_builder_t builder = net_log_queue_pop(flusher->m_queue);
         if (builder == NULL) {
             pthread_cond_wait(&flusher->m_cond, &flusher->m_mutex);
             continue;
