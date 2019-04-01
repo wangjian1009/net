@@ -75,7 +75,7 @@ void net_watcher_event_cb(void * ctx, int fd, uint8_t do_read, uint8_t do_write)
     net_log_request_manage_check_multi_info(schedule, mgr);
 
     if (mgr->m_still_running <= 0) {
-        if(schedule->m_debug) {
+        if(schedule->m_debug >= 2) {
             CPE_INFO(schedule->m_em, "log: event_cb: last transfer done, kill timeout");
         }
         if (request->m_watcher) {
