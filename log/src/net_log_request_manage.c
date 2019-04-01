@@ -3,6 +3,7 @@
 #include "net_log_request_manage.h"
 #include "net_log_request.h"
 #include "net_log_request_cmd.h"
+#include "net_log_category_i.h"
 
 net_log_request_manage_t
 net_log_request_manage_create(
@@ -80,6 +81,7 @@ void net_log_request_manage_process_cmd(
         if (request == NULL) {
             CPE_ERROR(
                 schedule->m_em, "log: %s: manage: create request fail %d", mgr->m_name, cmd->m_cmd);
+            net_log_category_add_fail_statistics(send_param->category, send_param->log_count);
             net_log_request_param_free(send_param);
         }
         else {
