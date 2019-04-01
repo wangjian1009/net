@@ -14,7 +14,6 @@
 #include "net_log_sender_i.h"
 #include "net_log_request_manage.h"
 #include "net_log_request_pipe.h"
-#include "net_log_builder.h"
 
 net_log_schedule_t
 net_log_schedule_create(
@@ -252,6 +251,18 @@ int net_log_schedule_init_main_thread_pipe(net_log_schedule_t schedule) {
     return 0;
 }
 
+void net_log_schedule_commit(net_log_schedule_t schedule) {
+    uint8_t i;
+    for(i = 0; i < schedule->m_category_count; ++i) {
+        net_log_category_t category = schedule->m_categories[i];
+        if (category == NULL) continue;
+
+        if (category->m_builder) {
+            net_log_category_commit(category);
+        }
+    }
+}
+
 static void net_log_schedule_do_stop(net_log_schedule_t schedule);
 
 int net_log_schedule_start(net_log_schedule_t schedule) {
@@ -423,7 +434,7 @@ static void net_log_schedule_dump_timer(net_timer_t timer, void * ctx) {
         if (category == NULL) continue;
 
         CPE_INFO(
-            schedule->m_em, "log: category [%d]%s: input-count=%d, input-pckage=%d, input-bytes=%.2fM",
+            schedule->m_em, "log: category [%d]%s: input-log=%d, input-pckage=%d, input-bytes=%.2fM",
             category->m_id, category->m_name,
             category->m_statistics_log_count, category->m_statistics_package_count,
             ((float)category->m_statistics_input_bps.m_total_bytes / 1024.0f / 1024.0f));

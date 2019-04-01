@@ -12,7 +12,6 @@
 #include "net_log_request_cmd.h"
 
 static char * net_log_category_get_pack_id(net_log_schedule_t schedule, const char * configName, const char * ip);
-static void net_log_category_do_commit(net_log_schedule_t schedule, net_log_category_t category);
 static void net_log_category_commit_timer(net_timer_t timer, void * ctx);
 
 net_log_category_t
@@ -372,7 +371,7 @@ void net_log_category_log_end(net_log_category_t category) {
     }
 
     net_timer_cancel(category->m_commit_timer);
-    net_log_category_do_commit(schedule, category);
+    net_log_category_commit(category);
 }
 
 char * net_log_category_get_pack_id(net_log_schedule_t schedule, const char * configName, const char * ip) {
@@ -389,7 +388,8 @@ char * net_log_category_get_pack_id(net_log_schedule_t schedule, const char * co
     return val;
 }
 
-static void net_log_category_do_commit(net_log_schedule_t schedule, net_log_category_t category) {
+void net_log_category_commit(net_log_category_t category) {
+    net_log_schedule_t schedule = category->m_schedule;
     net_log_builder_t builder = category->m_builder;
     assert(builder);
     
@@ -398,7 +398,7 @@ static void net_log_category_do_commit(net_log_schedule_t schedule, net_log_cate
     size_t loggroup_size = builder->loggroup_size;
 
     /*input statistics*/
-    category->m_statistics_log_count = builder->grp->n_logs;
+    category->m_statistics_log_count += builder->grp->n_logs;
     category->m_statistics_package_count++;
     cpe_traffic_bps_add_flow(&category->m_statistics_input_bps, loggroup_size, time(0));
 
@@ -414,7 +414,7 @@ static void net_log_category_do_commit(net_log_schedule_t schedule, net_log_cate
             if (schedule->m_debug) {
                 CPE_INFO(
                     schedule->m_em, "log: category [%d]%s: commit: queue to flusher, package(count=%d, size=%d)",
-                    category->m_id, category->m_name, (int)builder->loggroup_size, (int)builder->grp->n_logs);
+                    category->m_id, category->m_name, (int)builder->grp->n_logs, (int)builder->loggroup_size);
             }
         }
     }
@@ -437,5 +437,5 @@ static void net_log_category_do_commit(net_log_schedule_t schedule, net_log_cate
 
 static void net_log_category_commit_timer(net_timer_t timer, void * ctx) {
     net_log_category_t category = ctx;
-    net_log_category_do_commit(category->m_schedule, category);
+    net_log_category_commit(category);
 }

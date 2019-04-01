@@ -17,6 +17,8 @@ net_log_schedule_state_t net_log_schedule_state(net_log_schedule_t schedule);
 int net_log_schedule_start(net_log_schedule_t schedule);
 void net_log_schedule_stop(net_log_schedule_t schedule);
 
+void net_log_schedule_commit(net_log_schedule_t schedule);
+
 int net_log_schedule_start_dump(net_log_schedule_t schedule, uint32_t dump_span_ms);
 void net_log_schedule_set_active_request_count(net_log_schedule_t schedule, uint8_t max_active_request_count);
 
