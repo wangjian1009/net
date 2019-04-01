@@ -314,6 +314,12 @@ void net_log_schedule_stop(net_log_schedule_t schedule) {
     }
 }
 
+void net_log_schedule_pause(net_log_schedule_t schedule) {
+}
+
+void net_log_schedule_resume(net_log_schedule_t schedule) {
+}
+
 void net_log_schedule_set_max_active_request_count(net_log_schedule_t schedule, uint8_t max_active_request_count) {
     assert(schedule->m_state == net_log_schedule_state_init);
     schedule->m_cfg_active_request_count = max_active_request_count;
@@ -361,6 +367,8 @@ const char * net_log_schedule_state_str(net_log_schedule_state_t schedule_state)
     case net_log_schedule_state_init:
         return "init";
     case net_log_schedule_state_runing:
+        return "runing";
+    case net_log_schedule_state_pause:
         return "runing";
     case net_log_schedule_state_stoping:
         return "stoping";

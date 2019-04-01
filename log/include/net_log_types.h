@@ -12,6 +12,7 @@ typedef enum net_log_compress_type {
 typedef enum net_log_schedule_state {
     net_log_schedule_state_init,
     net_log_schedule_state_runing,
+    net_log_schedule_state_pause,    
     net_log_schedule_state_stoping,
 } net_log_schedule_state_t;
 
