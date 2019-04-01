@@ -10,9 +10,18 @@ static void net_log_state_fsm_error_leave(fsm_machine_t fsm, fsm_def_state_t sta
 }
 
 static uint32_t net_log_state_fsm_error_trans(fsm_machine_t fsm, fsm_def_state_t state, void * input_evt) {
+    net_log_schedule_t schedule = fsm_machine_context(fsm);
     net_log_state_fsm_evt_t evt = input_evt;
 
-    return FSM_KEEP_STATE;
+    switch(evt->m_type) {
+    case net_log_state_fsm_evt_start:
+        if (net_log_schedule_start_threads(schedule) != 0) {
+            return net_log_schedule_state_error;
+        }
+        return net_log_schedule_state_runing;
+    default:
+        return FSM_KEEP_STATE;
+    }
 }
 
 int net_log_state_fsm_create_error(fsm_def_machine_t fsm_def, error_monitor_t em) {
