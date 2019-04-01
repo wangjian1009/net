@@ -19,6 +19,8 @@ static uint32_t net_log_state_fsm_error_trans(fsm_machine_t fsm, fsm_def_state_t
             return net_log_schedule_state_error;
         }
         return net_log_schedule_state_runing;
+    case net_log_state_fsm_evt_stop:
+        return net_log_schedule_state_init;
     default:
         return FSM_KEEP_STATE;
     }
