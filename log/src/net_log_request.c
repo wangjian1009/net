@@ -22,18 +22,13 @@
 
 #define DROP_FAIL_DATA_TIME_SECOND (3600 * 6)
 
-#define SEND_TIME_INVALID_FIX
-
 static int net_log_request_send(net_log_request_t request);
 static net_log_request_send_result_t net_log_request_calc_result(net_log_schedule_t schedule, net_log_request_t request);
 static int32_t net_log_request_check_result(
     net_log_schedule_t schedule, net_log_category_t category, net_log_request_t request, net_log_request_send_result_t send_result);
 static int net_log_request_trace(CURL *handle, curl_infotype type, char *data, size_t size, void *userp);
 static void net_log_request_delay_commit(net_timer_t timer, void * ctx);
-
-#ifdef SEND_TIME_INVALID_FIX
 static void net_log_request_rebuild_time(net_log_schedule_t schedule, net_log_category_t category, net_log_request_t request);
-#endif
 
 net_log_request_t
 net_log_request_create(net_log_request_manage_t mgr, net_log_request_param_t send_param) {
@@ -47,7 +42,7 @@ net_log_request_create(net_log_request_manage_t mgr, net_log_request_param_t sen
     else {
         request = mem_alloc(schedule->m_alloc, sizeof(struct net_log_request));
         if (request == NULL) {
-            CPE_ERROR(schedule->m_em, "log: request: alloc fail!");
+            CPE_ERROR(schedule->m_em, "log: %s: request: alloc fail!", mgr->m_name);
             return NULL;
         }
     }
@@ -70,16 +65,10 @@ net_log_request_create(net_log_request_manage_t mgr, net_log_request_param_t sen
 
     if (schedule->m_debug) {
         CPE_INFO(
-            schedule->m_em, "log: category [%d]%s: request %d: created",
-            category->m_id, category->m_name, request->m_id);
+            schedule->m_em, "log: %s: category [%d]%s: request %d: created",
+            mgr->m_name, category->m_id, category->m_name, request->m_id);
     }
 
-    /*init success*/
-    /* if (net_log_request_send(request) != 0) { */
-    /*     net_log_request_free(request); */
-    /*     return NULL; */
-    /* } */
-    
     return request;
 }
 
@@ -90,8 +79,8 @@ void net_log_request_free(net_log_request_t request) {
 
     if (schedule->m_debug) {
         CPE_INFO(
-            schedule->m_em, "log: category [%d]%s: request %d: free",
-            category->m_id, category->m_name, request->m_id);
+            schedule->m_em, "log: %s: category [%d]%s: request %d: free",
+            mgr->m_name, category->m_id, category->m_name, request->m_id);
     }
 
     if (request->m_delay_process) {
@@ -122,6 +111,8 @@ void net_log_request_free(net_log_request_t request) {
         TAILQ_REMOVE(&mgr->m_waiting_requests, request, m_next);
         break;
     case net_log_request_state_active:
+        assert(mgr->m_active_request_count > 0);
+        mgr->m_active_request_count--;
         TAILQ_REMOVE(&mgr->m_active_requests, request, m_next);
         break;
     }
@@ -136,25 +127,37 @@ void net_log_request_real_free(net_log_request_t request) {
     mem_free(mgr->m_schedule->m_alloc, request);
 }
 
+void net_log_request_active(net_log_request_t request) {
+    net_log_request_manage_t mgr = request->m_mgr;
+    net_log_category_t category = request->m_category;
+    net_log_schedule_t schedule = mgr->m_schedule;
+
+    if (request->m_state != net_log_request_state_active) {
+        assert(request->m_state == net_log_request_state_waiting);
+        TAILQ_REMOVE(&mgr->m_waiting_requests, request, m_next);
+
+        request->m_state = net_log_request_state_active;
+        mgr->m_active_request_count++;
+        TAILQ_INSERT_TAIL(&mgr->m_active_requests, request, m_next);
+
+        if (schedule->m_debug) {
+            CPE_INFO(
+                schedule->m_em, "log: %s: category [%d]%s: request %d: active",
+                mgr->m_name, category->m_id, category->m_name, request->m_id);
+        }
+    }
+    
+    if (net_log_request_send(request) != 0) {
+    /*     net_log_request_free(request); */
+    /*     return NULL; */
+    }
+}
+
 static size_t net_log_request_on_data(void *ptr, size_t size, size_t nmemb, void *stream) {
     /* net_log_request_t request = stream; */
     /* net_log_category_t category = request->m_category; */
     /* net_log_request_manage_t mgr = request->m_mgr; */
     /* net_log_schedule_t schedule = mgr->m_schedule; */
-
-    /* size_t totalLen = size * nmemb; */
-    /* if (schedule->m_debug) { */
-    /*     CPE_INFO( */
-    /*         schedule->m_em, "log: category [%d]%s: request %d: body  ---->  %d  %s", */
-    /*         category->m_id, category->m_name, request->m_id, (int)totalLen, (const char*) ptr); */
-    /* } */
-    
-    /* sds * buffer = (sds *)stream; */
-    /* if (*buffer == NULL) */
-    /* { */
-    /*     *buffer = sdsnewEmpty(256); */
-    /* } */
-    /* *buffer = sdscpylen(*buffer, ptr, totalLen); */
     
     return size * nmemb;
 }
@@ -169,8 +172,8 @@ static size_t net_log_request_on_header(void *ptr, size_t size, size_t nmemb, vo
         request->m_response_have_request_id = 1;
         if (schedule->m_debug) {
             CPE_INFO(
-                schedule->m_em, "log: category [%d]%s: request %d: response have request-id",
-                category->m_id, category->m_name, request->m_id);
+                schedule->m_em, "log: %s: category [%d]%s: request %d: response have request-id",
+                mgr->m_name, category->m_id, category->m_name, request->m_id);
         }
     }
 
@@ -178,18 +181,12 @@ static size_t net_log_request_on_header(void *ptr, size_t size, size_t nmemb, vo
 }
 
 static int net_log_request_send(net_log_request_t request) {
+    net_log_request_manage_t mgr = request->m_mgr;
     net_log_request_param_t send_param = request->m_send_param;
     net_log_category_t category = request->m_category;
     net_log_schedule_t schedule = category->m_schedule;
     net_log_lz4_buf_t buffer = send_param->log_buf;
     
-    if (send_param->magic_num != LOG_PRODUCER_SEND_MAGIC_NUM) {
-        CPE_ERROR(
-            schedule->m_em, "log: category [%d]%s: request %d: invalid send param, magic num not found, num 0x%x",
-            category->m_id, category->m_name, request->m_id, send_param->magic_num);
-        return -1;
-    }
-
     assert(buffer);
 
     if (request->m_handler) {
@@ -202,8 +199,8 @@ static int net_log_request_send(net_log_request_t request) {
     request->m_handler = curl_easy_init();
     if (request->m_handler == NULL) {
         CPE_ERROR(
-            schedule->m_em, "log: category [%d]%s: request %d: curl_easy_init fail",
-            category->m_id, category->m_name, request->m_id);
+            schedule->m_em, "log: %s: category [%d]%s: request %d: curl_easy_init fail",
+            mgr->m_name, category->m_id, category->m_name, request->m_id);
         return -1;
     }
     curl_easy_setopt(request->m_handler, CURLOPT_PRIVATE, request);
@@ -330,8 +327,8 @@ static int net_log_request_send(net_log_request_t request) {
     CURLMcode rc = curl_multi_add_handle(request->m_mgr->m_multi_handle, request->m_handler);
     if (rc != 0) {
         CPE_ERROR(
-            schedule->m_em, "log: category [%d]%s: request %d: start fail",
-            category->m_id, category->m_name, request->m_id);
+            schedule->m_em, "log: %s: category [%d]%s: request %d: start fail",
+            mgr->m_name, category->m_id, category->m_name, request->m_id);
         return -1;
     }
 
@@ -339,8 +336,8 @@ static int net_log_request_send(net_log_request_t request) {
 
     if (schedule->m_debug) {
         CPE_INFO(
-            schedule->m_em, "log: category [%d]%s: request %d: start success",
-            category->m_id, category->m_name, request->m_id);
+            schedule->m_em, "log: %s: category [%d]%s: request %d: start success",
+            mgr->m_name, category->m_id, category->m_name, request->m_id);
     }
     
     return 0;
@@ -369,8 +366,8 @@ void net_log_request_complete(net_log_schedule_t schedule, net_log_request_t req
     if (sleepMs <= 0) { /*done or discard*/
         if (schedule->m_debug) {
             CPE_INFO(
-                schedule->m_em, "log: category [%d]%s: request %d: commit success",
-                category->m_id, category->m_name, request->m_id);
+                schedule->m_em, "log: %s: category [%d]%s: request %d: commit success",
+                mgr->m_name, category->m_id, category->m_name, request->m_id);
         }
 
         net_log_request_free(request);
@@ -380,8 +377,8 @@ void net_log_request_complete(net_log_schedule_t schedule, net_log_request_t req
             request->m_delay_process = net_timer_create(mgr->m_net_driver, net_log_request_delay_commit, request);
             if (request->m_delay_process == NULL) {
                 CPE_ERROR(
-                    schedule->m_em, "log: category [%d]%s: request %d: complete with state %s, create delay process timer fail",
-                    category->m_id, category->m_name, request->m_id,
+                    schedule->m_em, "log: %s: category [%d]%s: request %d: complete with state %s, create delay process timer fail",
+                    mgr->m_name, category->m_id, category->m_name, request->m_id,
                     net_log_request_complete_state_str(complete_state));
 
                 net_log_request_free(request);
@@ -393,8 +390,8 @@ void net_log_request_complete(net_log_schedule_t schedule, net_log_request_t req
 
         if (schedule->m_debug) {
             CPE_INFO(
-                schedule->m_em, "log: category [%d]%s: request %d: complete with state %s, delay %.2fs",
-                category->m_id, category->m_name, request->m_id,
+                schedule->m_em, "log: %s: category [%d]%s: request %d: complete with state %s, delay %.2fs",
+                mgr->m_name, category->m_id, category->m_name, request->m_id,
                 net_log_request_complete_state_str(complete_state),
                 ((float)sleepMs) / 1000.0f);
         }
@@ -461,18 +458,16 @@ static net_log_request_send_result_t net_log_request_calc_result(net_log_schedul
 static int32_t net_log_request_check_result(
     net_log_schedule_t schedule, net_log_category_t category, net_log_request_t request, net_log_request_send_result_t send_result)
 {
+    net_log_request_manage_t mgr = request->m_mgr;
+
     switch (send_result) {
     case net_log_request_send_ok:
         break;
     case net_log_request_send_time_error:
         // if no this marco, drop data
-#ifdef SEND_TIME_INVALID_FIX
         request->m_last_send_error = net_log_request_send_time_error;
         request->m_last_sleep_ms = INVALID_TIME_TRY_INTERVAL;
         return request->m_last_sleep_ms;
-#else
-        break;
-#endif
     case net_log_request_send_quota_exceed:
         if (request->m_last_send_error != net_log_request_send_quota_exceed) {
             request->m_last_send_error = net_log_request_send_quota_exceed;
@@ -484,13 +479,12 @@ static int32_t net_log_request_check_result(
                 request->m_last_sleep_ms *= 2;
             }
 
-#ifndef SEND_TIME_INVALID_FIX
             // only drop data when SEND_TIME_INVALID_FIX not defined
             if (time(NULL) - request->m_first_error_time > DROP_FAIL_DATA_TIME_SECOND) {
                 break;
             }
-#endif
         }
+        
         if (schedule->m_debug) {
             /* CPE_INFO( */
             /*     schedule->m_em, "send quota error, project : %s, logstore : %s, buffer len : %d, raw len : %d, code : %d, error msg : %s", */
@@ -513,12 +507,10 @@ static int32_t net_log_request_check_result(
             if (request->m_last_sleep_ms < MAX_NETWORK_ERROR_SLEEP_MS) {
                 request->m_last_sleep_ms *= 2;
             }
-#ifndef SEND_TIME_INVALID_FIX
             // only drop data when SEND_TIME_INVALID_FIX not defined
             if (time(NULL) - request->m_first_error_time > DROP_FAIL_DATA_TIME_SECOND) {
                 break;
             }
-#endif
         }
         if (schedule->m_debug) {
             /* CPE_INFO( */
@@ -539,15 +531,15 @@ static int32_t net_log_request_check_result(
     if (schedule->m_debug) {
         if (send_result == net_log_request_send_ok) {
             CPE_INFO(
-                schedule->m_em, "log: category [%d]%s: request %d: send success, buffer-len=%d, raw-len=%d",
-                category->m_id, category->m_name, request->m_id,
+                schedule->m_em, "log: %s: category [%d]%s: request %d: send success, buffer-len=%d, raw-len=%d",
+                mgr->m_name, category->m_id, category->m_name, request->m_id,
                 (int)request->m_send_param->log_buf->length,
                 (int)request->m_send_param->log_buf->raw_length);
         }
         else {
             CPE_INFO(
-                schedule->m_em, "log: category [%d]%s: request %d: send fail, discard data, buffer-len=%d, raw=len=%d",
-                category->m_id, category->m_name, request->m_id,
+                schedule->m_em, "log: %s: category [%d]%s: request %d: send fail, discard data, buffer-len=%d, raw=len=%d",
+                mgr->m_name, category->m_id, category->m_name, request->m_id,
                 (int)request->m_send_param->log_buf->length,
                 (int)request->m_send_param->log_buf->raw_length);
         }
@@ -628,8 +620,8 @@ static int net_log_request_trace(CURL *handle, curl_infotype type, char *data, s
         }
 
         CPE_INFO(
-            schedule->m_em, "log: category [%d]%s: request %d: == Info %s",
-            category->m_id, category->m_name, request->m_id,
+            schedule->m_em, "log: %s: category [%d]%s: request %d: == Info %s",
+            mgr->m_name, category->m_id, category->m_name, request->m_id,
             data);
         
         if (p < end) {
@@ -640,38 +632,38 @@ static int net_log_request_trace(CURL *handle, curl_infotype type, char *data, s
     }
     case CURLINFO_HEADER_OUT:
         CPE_INFO(
-            schedule->m_em, "log: category [%d]%s: request %d: => header: %s",
-            category->m_id, category->m_name, request->m_id,
+            schedule->m_em, "log: %s: category [%d]%s: request %d: => header: %s",
+            mgr->m_name, category->m_id, category->m_name, request->m_id,
             net_log_request_dump(schedule, mgr, data, size, 1));
         break;
     case CURLINFO_DATA_OUT:
         CPE_INFO(
-            schedule->m_em, "log: category [%d]%s: request %d: => data(%d): %s",
-            category->m_id, category->m_name, request->m_id,
+            schedule->m_em, "log: %s: category [%d]%s: request %d: => data(%d): %s",
+            mgr->m_name, category->m_id, category->m_name, request->m_id,
             (int)size, net_log_request_dump(schedule, mgr, data, size, 1));
         break;
     case CURLINFO_SSL_DATA_OUT:
         CPE_INFO(
-            schedule->m_em, "log: category [%d]%s: request %d: => SSL data(%d): %s",
-            category->m_id, category->m_name, request->m_id,
+            schedule->m_em, "log: %s: category [%d]%s: request %d: => SSL data(%d): %s",
+            mgr->m_name, category->m_id, category->m_name, request->m_id,
             (int)size, net_log_request_dump(schedule, mgr, data, size, 1));
         break;
     case CURLINFO_HEADER_IN:
         CPE_INFO(
-            schedule->m_em, "log: category [%d]%s: request %d: <= header: %s",
-            category->m_id, category->m_name, request->m_id,
+            schedule->m_em, "log: %s: category [%d]%s: request %d: <= header: %s",
+            mgr->m_name, category->m_id, category->m_name, request->m_id,
             net_log_request_dump(schedule, mgr, data, size, 1));
         break;
     case CURLINFO_DATA_IN:
         CPE_INFO(
-            schedule->m_em, "log: category [%d]%s: request %d: <= data(%d): %s",
-            category->m_id, category->m_name, request->m_id,
+            schedule->m_em, "log: %s: category [%d]%s: request %d: <= data(%d): %s",
+            mgr->m_name, category->m_id, category->m_name, request->m_id,
             (int)size, net_log_request_dump(schedule, mgr, data, size, 1));
         break;
     case CURLINFO_SSL_DATA_IN:
         CPE_INFO(
-            schedule->m_em, "log: category [%d]%s: request %d: <= SSL data(%d): %s",
-            category->m_id, category->m_name, request->m_id,
+            schedule->m_em, "log: %s: category [%d]%s: request %d: <= SSL data(%d): %s",
+            mgr->m_name, category->m_id, category->m_name, request->m_id,
             (int)size, net_log_request_dump(schedule, mgr, data, size, 1));
         break;
     default:
@@ -689,14 +681,13 @@ static void net_log_request_delay_commit(net_timer_t timer, void * ctx) {
     }
 }
 
-#ifdef SEND_TIME_INVALID_FIX
-
 static void net_log_request_rebuild_time(net_log_schedule_t schedule, net_log_category_t category, net_log_request_t request) {
+    net_log_request_manage_t mgr = request->m_mgr;
 
     if (schedule->m_debug) {
         CPE_INFO(
-            schedule->m_em, "log: category [%d]%s: request %d: rebuild time",
-            category->m_id, category->m_name, request->m_id);
+            schedule->m_em, "log: %s: category [%d]%s: request %d: rebuild time",
+            mgr->m_name, category->m_id, category->m_name, request->m_id);
     }
 
     net_log_lz4_buf_t lz4_buf = request->m_send_param->log_buf;
@@ -704,7 +695,9 @@ static void net_log_request_rebuild_time(net_log_schedule_t schedule, net_log_ca
     char * buf = (char *)malloc(lz4_buf->raw_length);
     if (LZ4_decompress_safe((const char* )lz4_buf->data, buf, lz4_buf->length, lz4_buf->raw_length) <= 0) {
         free(buf);
-        CPE_ERROR(schedule->m_em, "LZ4_decompress_safe error");
+        CPE_ERROR(
+            schedule->m_em, "log: %s: category [%d]%s: request %d: LZ4_decompress_safe error",
+            mgr->m_name, category->m_id, category->m_name, request->m_id);
         return;
     }
 
@@ -715,7 +708,9 @@ static void net_log_request_rebuild_time(net_log_schedule_t schedule, net_log_ca
     char *compress_data = (char *)malloc(compress_bound);
     int compressed_size = LZ4_compress_default((char *)buf, compress_data, lz4_buf->raw_length, compress_bound);
     if(compressed_size <= 0) {
-        CPE_ERROR(schedule->m_em, "LZ4_compress_default error");
+        CPE_ERROR(
+            schedule->m_em, "log: %s: category [%d]%s: request %d: LZ4_compress_default error",
+            mgr->m_name, category->m_id, category->m_name, request->m_id);
         free(buf);
         free(compress_data);
         return;
@@ -731,5 +726,3 @@ static void net_log_request_rebuild_time(net_log_schedule_t schedule, net_log_ca
     free(request->m_send_param->log_buf);
     request->m_send_param->log_buf = new_lz4_buf;
 }
-
-#endif

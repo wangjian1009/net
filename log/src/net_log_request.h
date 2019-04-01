@@ -60,6 +60,8 @@ void net_log_request_complete(
 
 const char * net_log_request_complete_state_str(net_log_request_complete_state_t state);
 
+void net_log_request_active(net_log_request_t request);
+
 /**/
 net_log_request_param_t
 net_log_request_param_create(

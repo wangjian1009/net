@@ -75,8 +75,18 @@ void net_log_request_manage_process_cmd(
                 schedule->m_em, "log: %s: manage: create request fail %d", mgr->m_name, cmd->m_cmd);
             net_log_request_param_free(send_param);
         }
-
-        
+        else {
+            if (mgr->m_active_request_count < mgr->m_cfg_max_active_request_count) {
+                net_log_request_active(request);
+            }
+            else {
+                if (schedule->m_debug) {
+                    CPE_INFO(
+                        schedule->m_em, "log: %s: manage: max active request %d reached, delay active",
+                        mgr->m_name);
+                }
+            }
+        }
     }
     else {
         CPE_ERROR(
