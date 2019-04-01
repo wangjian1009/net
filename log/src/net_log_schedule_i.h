@@ -17,6 +17,7 @@ typedef TAILQ_HEAD(net_log_request_list, net_log_request) net_log_request_list_t
 
 typedef struct net_log_request * net_log_request_t;
 typedef struct net_log_request_manage * net_log_request_manage_t;
+typedef struct net_log_request_cache * net_log_request_cache_t;
 typedef struct net_log_request_pipe * net_log_request_pipe_t;
 typedef struct net_log_request_cmd * net_log_request_cmd_t;
 typedef struct net_log_request_param * net_log_request_param_t;

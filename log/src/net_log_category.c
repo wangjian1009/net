@@ -105,7 +105,6 @@ net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, 
     pthread_mutex_init(&category->m_statistics_mutex, NULL);
     category->m_statistics_fail_log_count = 0;
     category->m_statistics_fail_package_count = 0;
-    cpe_traffic_bps_init(&category->m_statistics_output_bps);
 
     /*commit*/
     schedule->m_categories[id] = category;
@@ -211,7 +210,7 @@ net_log_category_build_request(net_log_category_t category, net_log_builder_t bu
         return NULL;
     }
 
-    net_log_request_param_t send_param = net_log_request_param_create(category, lz4_buf, builder->builder_time);
+    net_log_request_param_t send_param = net_log_request_param_create(category, lz4_buf, builder->grp->n_logs, builder->builder_time);
     if (send_param == NULL) {
         CPE_ERROR(
             schedule->m_em, "log: category [%d]%s: build send params: create fail!",
@@ -408,6 +407,7 @@ void net_log_category_commit(net_log_category_t category) {
             CPE_ERROR(
                 schedule->m_em, "log: category [%d]%s: try push loggroup to flusher failed, force drop this log group",
                 category->m_id, category->m_name);
+            net_log_category_add_fail_statistics(category, builder->grp->n_logs);
             net_log_group_destroy(builder);
         }
         else {
@@ -420,16 +420,16 @@ void net_log_category_commit(net_log_category_t category) {
     }
     else { /*同步flush */
         net_log_request_param_t send_param = net_log_category_build_request(category, builder);
-        net_log_group_destroy(builder);
-
         if (send_param == NULL) {
             CPE_ERROR(schedule->m_em, "log: category [%d]%s: commit: build request fail", category->m_id, category->m_name);
+            net_log_category_add_fail_statistics(category, builder->grp->n_logs);
+            net_log_group_destroy(builder);
         }
         else {        
             if (net_log_category_commit_request(category, send_param, 1) != 0) {
+                net_log_category_add_fail_statistics(category, builder->grp->n_logs);
+                net_log_group_destroy(builder);
                 net_log_request_param_free(send_param);
-            }
-            else {
             }
         }
     }
@@ -438,4 +438,13 @@ void net_log_category_commit(net_log_category_t category) {
 static void net_log_category_commit_timer(net_timer_t timer, void * ctx) {
     net_log_category_t category = ctx;
     net_log_category_commit(category);
+}
+
+void net_log_category_add_fail_statistics(net_log_category_t category, uint32_t log_count) {
+    pthread_mutex_lock(&category->m_statistics_mutex);
+
+    category->m_statistics_fail_log_count += log_count;
+    category->m_statistics_fail_package_count++;
+
+    pthread_mutex_unlock(&category->m_statistics_mutex);
 }

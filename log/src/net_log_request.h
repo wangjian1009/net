@@ -28,6 +28,7 @@ typedef enum net_log_request_complete_state {
 struct net_log_request_param {
     net_log_category_t category;
     net_log_lz4_buf_t log_buf;
+    uint32_t log_count;
     uint32_t magic_num;
     uint32_t builder_time;
 };
@@ -66,7 +67,7 @@ void net_log_request_active(net_log_request_t request);
 /**/
 net_log_request_param_t
 net_log_request_param_create(
-    net_log_category_t category, net_log_lz4_buf_t log_buf, uint32_t builder_time);
+    net_log_category_t category, net_log_lz4_buf_t log_buf, uint32_t log_count, uint32_t builder_time);
 
 void net_log_request_param_free(net_log_request_param_t send_param);
 

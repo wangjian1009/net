@@ -359,7 +359,6 @@ static void net_log_request_process_result(
         }
 
         net_log_request_free(request);
-
         net_log_request_manage_active_next(mgr);
     }
     else { /*delay process*/
@@ -371,6 +370,7 @@ static void net_log_request_process_result(
                     mgr->m_name, category->m_id, category->m_name, request->m_id,
                     net_log_request_send_result_str(send_result));
 
+                net_log_category_add_fail_statistics(category, request->m_send_param->log_count);
                 net_log_request_free(request);
                 net_log_request_manage_active_next(mgr);
                 return;
@@ -443,11 +443,12 @@ const char * net_log_request_send_result_str(net_log_request_send_result_t resul
 
 net_log_request_param_t
 net_log_request_param_create(
-    net_log_category_t category, net_log_lz4_buf_t log_buf, uint32_t builder_time)
+    net_log_category_t category, net_log_lz4_buf_t log_buf, uint32_t log_count, uint32_t builder_time)
 {
     net_log_request_param_t param = (net_log_request_param_t)malloc(sizeof(struct net_log_request_param));
     param->category = category;
     param->log_buf = log_buf;
+    param->log_count = log_count;
     param->magic_num = LOG_PRODUCER_SEND_MAGIC_NUM;
     param->builder_time = builder_time;
     return param;

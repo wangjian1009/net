@@ -42,7 +42,6 @@ struct net_log_category {
     pthread_mutex_t m_statistics_mutex;
     uint32_t m_statistics_fail_log_count;    
     uint32_t m_statistics_fail_package_count;    
-    struct cpe_traffic_bps m_statistics_output_bps;
 };
 
 void net_log_category_network_recover(net_log_category_t category);
@@ -56,7 +55,7 @@ void net_log_category_log_end(net_log_category_t category);
 
 void net_log_category_commit(net_log_category_t category);
 
-void net_log_category_add_fail_statistics(net_log_category_t category);
+void net_log_category_add_fail_statistics(net_log_category_t category, uint32_t log_count);
 
 NET_END_DECL
 
