@@ -42,7 +42,7 @@ net_log_sender_create(net_log_schedule_t schedule, const char * name) {
 void net_log_sender_free(net_log_sender_t sender) {
     net_log_schedule_t schedule = sender->m_schedule;
 
-    assert(schedule->m_state == net_log_schedule_state_init);
+    assert(net_log_schedule_state(schedule) == net_log_schedule_state_init);
     assert(sender->m_thread == NULL);
 
     while(!TAILQ_EMPTY(&sender->m_categories)) {

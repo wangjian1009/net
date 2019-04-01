@@ -6,6 +6,7 @@
 #include "cpe/utils/memory.h"
 #include "cpe/utils/error.h"
 #include "cpe/utils/buffer.h"
+#include "cpe/fsm/fsm_ins.h"
 #include "net_log_schedule.h"
 
 NET_BEGIN_DECL
@@ -50,7 +51,8 @@ struct net_log_schedule {
     net_timer_t m_dump_timer;
 
     /*state*/
-    volatile net_log_schedule_state_t m_state;
+    fsm_def_machine_t m_state_fsm_def;
+    struct fsm_machine m_state_fsm;
     
     /*categories*/
     uint8_t m_category_count;

@@ -16,10 +16,10 @@ static void net_log_category_commit_timer(net_timer_t timer, void * ctx);
 
 net_log_category_t
 net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, net_log_sender_t sender, const char * name, uint8_t id) {
-    if (schedule->m_state != net_log_schedule_state_init) {
+    if (net_log_schedule_state(schedule) != net_log_schedule_state_init) {
         CPE_ERROR(
             schedule->m_em, "log: category [%d]%s: schedule in state %s, can`t create !", id, name,
-            net_log_schedule_state_str(schedule->m_state));
+            net_log_schedule_state_str(net_log_schedule_state(schedule)));
         return NULL;
     }
 
@@ -131,7 +131,7 @@ net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, 
 void net_log_category_free(net_log_category_t category) {
     net_log_schedule_t schedule = category->m_schedule;
 
-    assert(schedule->m_state == net_log_schedule_state_init);
+    assert(net_log_schedule_state(schedule) == net_log_schedule_state_init);
     assert(schedule->m_categories[category->m_id] == category);
 
     pthread_mutex_destroy(&category->m_statistics_mutex);
@@ -271,7 +271,7 @@ int net_log_category_commit_request(net_log_category_t category, net_log_request
 
 int net_log_category_set_topic(net_log_category_t category, const char * topic) {
     net_log_schedule_t schedule = category->m_schedule;
-    assert(schedule->m_state == net_log_schedule_state_init);
+    assert(net_log_schedule_state(schedule) == net_log_schedule_state_init);
 
     char * new_topic = cpe_str_mem_dup(schedule->m_alloc, topic);
     if (new_topic == NULL) {
@@ -292,7 +292,7 @@ int net_log_category_set_topic(net_log_category_t category, const char * topic) 
 
 int net_log_category_add_global_tag(net_log_category_t category, const char * key, const char * value) {
     net_log_schedule_t schedule = category->m_schedule;
-    assert(schedule->m_state == net_log_schedule_state_init);
+    assert(net_log_schedule_state(schedule) == net_log_schedule_state_init);
     
     if (category->m_cfg_tag_count >= category->m_cfg_tag_capacity) {
         uint16_t new_capacity = category->m_cfg_tag_capacity < 4 ? 4 : (category->m_cfg_tag_capacity * 2);

@@ -5,10 +5,12 @@
 #include "cpe/utils/md5.h"
 #include "cpe/utils/string_utils.h"
 #include "cpe/utils/buffer.h"
+#include "cpe/fsm/fsm_def.h"
 #include "net_schedule.h"
 #include "net_address.h"
 #include "net_timer.h"
 #include "net_log_schedule_i.h"
+#include "net_log_state_i.h"
 #include "net_log_category_i.h"
 #include "net_log_flusher_i.h"
 #include "net_log_sender_i.h"
@@ -86,6 +88,17 @@ net_log_schedule_create(
         CPE_ERROR(schedule->m_em, "log: schedule: dup endpoint fail!");
         goto CREATE_ERROR;
     }
+
+    schedule->m_state_fsm_def = net_log_create_fsm_def(schedule);
+    if (schedule->m_state_fsm_def == NULL) {
+        CPE_ERROR(schedule->m_em, "log: schedule: create state fsm def fail!");
+        goto CREATE_ERROR;
+    }
+
+    if (fsm_machine_init(&schedule->m_state_fsm, schedule->m_state_fsm_def, "init", schedule, "fsm", schedule->m_debug) != 0) {
+        CPE_ERROR(schedule->m_em, "log: schedule: init fsm machine fail!");
+        goto CREATE_ERROR;
+    }
     
     TAILQ_INIT(&schedule->m_flushers);
     TAILQ_INIT(&schedule->m_senders);
@@ -93,6 +106,7 @@ net_log_schedule_create(
     return schedule;
 
 CREATE_ERROR:
+    if (schedule->m_state_fsm_def) fsm_def_machine_free(schedule->m_state_fsm_def);
     if (schedule->m_dump_timer) net_timer_free(schedule->m_dump_timer);
     if (schedule->m_cfg_project) mem_free(alloc, schedule->m_cfg_project);
     if (schedule->m_cfg_access_id) mem_free(alloc, schedule->m_cfg_access_id);
@@ -109,7 +123,7 @@ void net_log_schedule_free(net_log_schedule_t schedule) {
         CPE_INFO(schedule->m_em, "log: schedule: free");
     }
     
-    if (schedule->m_state != net_log_schedule_state_init) {
+    if (net_log_schedule_state(schedule) != net_log_schedule_state_init) {
         net_log_schedule_stop(schedule);
     }
 
@@ -152,7 +166,12 @@ void net_log_schedule_free(net_log_schedule_t schedule) {
         net_timer_free(schedule->m_dump_timer);
         schedule->m_dump_timer = NULL;
     }
-    
+
+    /*state*/
+    fsm_machine_fini(&schedule->m_state_fsm);
+    fsm_def_machine_free(schedule->m_state_fsm_def);
+    schedule->m_state_fsm_def = NULL;
+
     /*cfg*/
     if (schedule->m_cfg_project) {
         mem_free(schedule->m_alloc, schedule->m_cfg_project);
@@ -202,8 +221,8 @@ void net_log_schedule_set_debug(net_log_schedule_t schedule, uint8_t debug) {
     schedule->m_debug = debug;
 }
 
-net_log_schedule_state_t net_log_schedule_state(net_log_schedule_t log_schedule) {
-    return log_schedule->m_state;
+net_log_schedule_state_t net_log_schedule_state(net_log_schedule_t schedule) {
+    return (net_log_schedule_state_t)schedule->m_state_fsm.m_curent_state;
 }
 
 int net_log_schedule_init_main_thread_mgr(net_log_schedule_t schedule) {
@@ -222,7 +241,7 @@ int net_log_schedule_init_main_thread_mgr(net_log_schedule_t schedule) {
 }
 
 int net_log_schedule_init_main_thread_pipe(net_log_schedule_t schedule) {
-    assert(schedule->m_state == net_log_schedule_state_init);
+    assert(net_log_schedule_state(schedule) == net_log_schedule_state_init);
 
     if (schedule->m_main_thread_request_pipe == NULL) {
         schedule->m_main_thread_request_pipe = net_log_request_pipe_create(schedule, "main");
@@ -265,53 +284,46 @@ void net_log_schedule_commit(net_log_schedule_t schedule) {
     }
 }
 
-static void net_log_schedule_do_stop(net_log_schedule_t schedule);
-
 int net_log_schedule_start(net_log_schedule_t schedule) {
-    if (schedule->m_state != net_log_schedule_state_init) {
-        CPE_ERROR(schedule->m_em, "log: schedule: state is %s, can`t start", net_log_schedule_state_str(schedule->m_state));
-        return -1;
-    }
+    /* if (net_log_schedule_start(schedule) != net_log_schedule_state_init) { */
+    /*     CPE_ERROR(schedule->m_em, "log: schedule: state is %s, can`t start", net_log_schedule_state_str(net_log_schedule_start(schedule))); */
+    /*     return -1; */
+    /* } */
 
-    if (schedule->m_debug) {
-        CPE_INFO(
-            schedule->m_em, "log: schedule: %s ==> %s",
-            net_log_schedule_state_str(schedule->m_state), net_log_schedule_state_str(net_log_schedule_state_runing));
-    }
-    schedule->m_state = net_log_schedule_state_runing;
+    /* if (schedule->m_debug) { */
+    /*     CPE_INFO( */
+    /*         schedule->m_em, "log: schedule: %s ==> %s", */
+    /*         net_log_schedule_state_str(net_log_schedule_state(schedule)), */
+    /*         net_log_schedule_state_str(net_log_schedule_state_runing)); */
+    /* } */
+    /* schedule->m_state = net_log_schedule_state_runing; */
 
-    net_log_flusher_t flusher;
-    net_log_sender_t sender;
-
-    TAILQ_FOREACH(flusher, &schedule->m_flushers, m_next) {
-        if (net_log_flusher_start(flusher) != 0) {
-            net_log_schedule_do_stop(schedule);
-            return -1;
-        }
-    }
-
-    TAILQ_FOREACH(sender, &schedule->m_senders, m_next) {
-        if (net_log_sender_start(sender) != 0) {
-            net_log_schedule_do_stop(schedule);
-            return -1;
-        }
-    }
     
     return 0;
 }
 
 void net_log_schedule_stop(net_log_schedule_t schedule) {
-    if (schedule->m_state == net_log_schedule_state_init) return;
+    /* switch(schedule->m_state) { */
+    /* case net_log_schedule_state_init: */
+    /*     break; */
+    /* case net_log_schedule_state_runing: */
+    /*     break; */
+    /* case net_log_schedule_state_pause: */
+    /*     break; */
+    /* case net_log_schedule_state_stoping: */
+    /*     break; */
 
-    if (schedule->m_debug) {
-        CPE_INFO(schedule->m_em, "log: schedule: stop begin");
-    }
+    /*     net_log_schedule_state_init) return; */
+
+    /* if (schedule->m_debug) { */
+    /*     CPE_INFO(schedule->m_em, "log: schedule: stop begin"); */
+    /* } */
     
-    net_log_schedule_do_stop(schedule);
+    /* net_log_schedule_do_stop(schedule); */
 
-    if (schedule->m_debug) {
-        CPE_INFO(schedule->m_em, "log: schedule: stop complete");
-    }
+    /* if (schedule->m_debug) { */
+    /*     CPE_INFO(schedule->m_em, "log: schedule: stop complete"); */
+    /* } */
 }
 
 void net_log_schedule_pause(net_log_schedule_t schedule) {
@@ -321,45 +333,8 @@ void net_log_schedule_resume(net_log_schedule_t schedule) {
 }
 
 void net_log_schedule_set_max_active_request_count(net_log_schedule_t schedule, uint8_t max_active_request_count) {
-    assert(schedule->m_state == net_log_schedule_state_init);
+    assert(net_log_schedule_state(schedule) == net_log_schedule_state_init);
     schedule->m_cfg_active_request_count = max_active_request_count;
-}
-
-static void net_log_schedule_do_stop(net_log_schedule_t schedule) {
-    if (schedule->m_debug) {
-        CPE_INFO(
-            schedule->m_em, "log: schedule: %s ==> %s",
-            net_log_schedule_state_str(schedule->m_state), net_log_schedule_state_str(net_log_schedule_state_stoping));
-    }
-    schedule->m_state = net_log_schedule_state_stoping;
-
-    net_log_flusher_t flusher;
-    net_log_sender_t sender;
-
-    /*首先通知所有线程停止 */
-    TAILQ_FOREACH(flusher, &schedule->m_flushers, m_next) {
-        if (flusher->m_thread) net_log_flusher_notify_stop(flusher);
-    }
-
-    TAILQ_FOREACH(sender, &schedule->m_senders, m_next) {
-        if (sender->m_thread) net_log_sender_notify_stop(sender);
-    }
-
-    /*然后等待所有线程停止 */
-    TAILQ_FOREACH(flusher, &schedule->m_flushers, m_next) {
-        if (flusher->m_thread) net_log_flusher_wait_stop(flusher);
-    }
-
-    TAILQ_FOREACH(sender, &schedule->m_senders, m_next) {
-        if (sender->m_thread) net_log_sender_wait_stop(sender);
-    }
-    
-    if (schedule->m_debug) {
-        CPE_INFO(
-            schedule->m_em, "log: schedule: %s ==> %s",
-            net_log_schedule_state_str(net_log_schedule_state_stoping), net_log_schedule_state_str(net_log_schedule_state_init));
-    }
-    schedule->m_state = net_log_schedule_state_init;
 }
 
 const char * net_log_schedule_state_str(net_log_schedule_state_t schedule_state) {
@@ -372,6 +347,8 @@ const char * net_log_schedule_state_str(net_log_schedule_state_t schedule_state)
         return "runing";
     case net_log_schedule_state_stoping:
         return "stoping";
+    case net_log_schedule_state_error:
+        return "error";
     }
 }
 
