@@ -42,13 +42,33 @@ net_log_schedule_create(
     schedule->m_net_schedule = net_schedule;
     schedule->m_net_driver = net_driver;
     schedule->m_cfg_source = NULL;
-    schedule->m_cfg_project = cpe_str_mem_dup(alloc, cfg_project);
     schedule->m_cfg_timeout_ms = 3000;
     schedule->m_cfg_connect_timeout_s = 10;
     schedule->m_cfg_send_timeout_s = 15;
     schedule->m_cfg_compress = net_log_compress_lz4;
     schedule->m_cfg_active_request_count = 1;
+    schedule->m_cfg_dump_span_ms = 0;
+    schedule->m_dump_timer = NULL;
+    schedule->m_cfg_dump_span_ms = 0;
 
+    schedule->m_cfg_project = cpe_str_mem_dup(alloc, cfg_project);
+    if (schedule->m_cfg_project == NULL) {
+        CPE_ERROR(schedule->m_em, "log: schedule: dup cfg project fail!");
+        goto CREATE_ERROR;
+    }
+
+    schedule->m_cfg_access_id = cpe_str_mem_dup(alloc, cfg_access_id);
+    if (schedule->m_cfg_access_id == NULL) {
+        CPE_ERROR(schedule->m_em, "log: schedule: dup cfg access id fail!");
+        goto CREATE_ERROR;
+    }
+
+    schedule->m_cfg_access_key = cpe_str_mem_dup(alloc, cfg_access_key);
+    if (schedule->m_cfg_access_key == NULL) {
+        CPE_ERROR(schedule->m_em, "log: schedule: dup cfg access key fail!");
+        goto CREATE_ERROR;
+    }
+    
     if (cpe_str_start_with(cfg_ep, "http://")) {
         schedule->m_cfg_using_https = 0;
         schedule->m_cfg_ep = cpe_str_mem_dup(alloc, cfg_ep + 7);
@@ -59,18 +79,28 @@ net_log_schedule_create(
     }
     else {
         CPE_ERROR(em, "log: schedule: endpoint %s format error", cfg_ep);
-        mem_free(alloc, schedule);
-        curl_global_cleanup();
-        return NULL;
+        goto CREATE_ERROR;
+    }
+    if (schedule->m_cfg_ep == NULL) {
+        CPE_ERROR(schedule->m_em, "log: schedule: dup endpoint fail!");
+        goto CREATE_ERROR;
     }
     
-    schedule->m_cfg_access_id = cpe_str_mem_dup(alloc, cfg_access_id);
-    schedule->m_cfg_access_key = cpe_str_mem_dup(alloc, cfg_access_key);
-
     TAILQ_INIT(&schedule->m_flushers);
     TAILQ_INIT(&schedule->m_senders);
     
     return schedule;
+
+CREATE_ERROR:
+    if (schedule->m_dump_timer) net_timer_free(schedule->m_dump_timer);
+    if (schedule->m_cfg_project) mem_free(alloc, schedule->m_cfg_project);
+    if (schedule->m_cfg_access_id) mem_free(alloc, schedule->m_cfg_access_id);
+    if (schedule->m_cfg_access_key) mem_free(alloc, schedule->m_cfg_access_key);
+    if (schedule->m_cfg_ep) mem_free(alloc, schedule->m_cfg_ep);
+    
+    mem_free(alloc, schedule);
+    curl_global_cleanup();
+    return NULL;
 }
 
 void net_log_schedule_free(net_log_schedule_t schedule) {
@@ -116,6 +146,12 @@ void net_log_schedule_free(net_log_schedule_t schedule) {
         net_log_sender_free(TAILQ_FIRST(&schedule->m_senders));
     }
 
+    /**/
+    if (schedule->m_dump_timer == NULL) {
+        net_timer_free(schedule->m_dump_timer);
+        schedule->m_dump_timer = NULL;
+    }
+    
     /*cfg*/
     if (schedule->m_cfg_project) {
         mem_free(schedule->m_alloc, schedule->m_cfg_project);
@@ -376,4 +412,32 @@ void net_log_commit(net_log_schedule_t schedule) {
 
 mem_buffer_t net_log_schedule_tmp_buffer(net_log_schedule_t schedule) {
     return net_schedule_tmp_buffer(schedule->m_net_schedule);
+}
+
+static void net_log_schedule_dump_timer(net_timer_t timer, void * ctx) {
+    net_log_schedule_t schedule = ctx;
+
+    net_timer_active(schedule->m_dump_timer, schedule->m_cfg_dump_span_ms);
+}
+
+int net_log_schedule_start_dump(net_log_schedule_t schedule, uint32_t dump_span_ms) {
+    if (dump_span_ms == 0) {
+        if (schedule->m_dump_timer) {
+            net_timer_cancel(schedule->m_dump_timer);
+        }
+    }
+    else {
+        if (schedule->m_dump_timer == NULL) {
+            schedule->m_dump_timer = net_timer_auto_create(schedule->m_net_schedule, net_log_schedule_dump_timer, schedule);
+            if (schedule->m_dump_timer == NULL) {
+                CPE_ERROR(schedule->m_em, "log: schedule: start dump: create timer fail!");
+                return -1;
+            }
+        }
+
+        schedule->m_cfg_dump_span_ms = dump_span_ms;
+        net_timer_active(schedule->m_dump_timer, schedule->m_cfg_dump_span_ms);
+    }
+
+    return 0;
 }

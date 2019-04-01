@@ -44,6 +44,8 @@ struct net_log_schedule {
     uint32_t m_cfg_send_timeout_s;
     uint32_t m_cfg_timeout_ms;
     net_log_compress_type_t m_cfg_compress;
+    uint32_t m_cfg_dump_span_ms;
+    net_timer_t m_dump_timer;
 
     /*state*/
     volatile net_log_schedule_state_t m_state;
