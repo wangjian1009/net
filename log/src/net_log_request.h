@@ -59,6 +59,7 @@ void net_log_request_complete(
     net_log_schedule_t schedule, net_log_request_t request, net_log_request_complete_state_t complete_state);
 
 const char * net_log_request_complete_state_str(net_log_request_complete_state_t state);
+const char * net_log_request_send_result_str(net_log_request_send_result_t result);
 
 void net_log_request_active(net_log_request_t request);
 
