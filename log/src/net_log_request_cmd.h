@@ -4,13 +4,13 @@
 
 NET_BEGIN_DECL
 
-typedef enum net_log_pipe_cmd_type {
-    net_log_pipe_cmd_send,
-} net_log_pipe_cmd_type_t;
+typedef enum net_log_request_cmd_type {
+    net_log_request_cmd_send,
+} net_log_request_cmd_type_t;
 
-struct net_log_pipe_cmd {
+struct net_log_request_cmd {
     uint8_t m_size;
-    net_log_pipe_cmd_type_t m_cmd;
+    net_log_request_cmd_type_t m_cmd;
 };
 
 NET_END_DECL

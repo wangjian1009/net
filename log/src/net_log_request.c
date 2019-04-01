@@ -39,8 +39,8 @@ net_log_request_t
 net_log_request_create(net_log_request_manage_t mgr, net_log_request_param_t send_param) {
     net_log_schedule_t schedule = mgr->m_schedule;
     net_log_category_t category = send_param->category;
-    net_log_request_t request = TAILQ_FIRST(&mgr->m_requests);
 
+    net_log_request_t request = TAILQ_FIRST(&mgr->m_free_requests);
     if (request) {
         TAILQ_REMOVE(&mgr->m_free_requests, request, m_next);
     }
@@ -56,6 +56,7 @@ net_log_request_create(net_log_request_manage_t mgr, net_log_request_param_t sen
     request->m_handler = NULL;
     request->m_watcher = NULL;
     request->m_category = category;
+    request->m_state = net_log_request_state_waiting;
     request->m_id = ++mgr->m_request_max_id;
     request->m_send_param = send_param;
     request->m_response_have_request_id = 0;
@@ -65,19 +66,19 @@ net_log_request_create(net_log_request_manage_t mgr, net_log_request_param_t sen
     request->m_delay_process = NULL;
 
     mgr->m_request_count++;
-    TAILQ_INSERT_TAIL(&mgr->m_requests, request, m_next);
+    TAILQ_INSERT_TAIL(&mgr->m_waiting_requests, request, m_next);
 
     if (schedule->m_debug) {
         CPE_INFO(
             schedule->m_em, "log: category [%d]%s: request %d: created",
             category->m_id, category->m_name, request->m_id);
     }
-    
+
     /*init success*/
-    if (net_log_request_send(request) != 0) {
-        net_log_request_free(request);
-        return NULL;
-    }
+    /* if (net_log_request_send(request) != 0) { */
+    /*     net_log_request_free(request); */
+    /*     return NULL; */
+    /* } */
     
     return request;
 }
@@ -115,7 +116,16 @@ void net_log_request_free(net_log_request_t request) {
 
     assert(mgr->m_request_count > 0);
     mgr->m_request_count--;
-    TAILQ_REMOVE(&mgr->m_requests, request, m_next);
+
+    switch(request->m_state) {
+    case net_log_request_state_waiting:
+        TAILQ_REMOVE(&mgr->m_waiting_requests, request, m_next);
+        break;
+    case net_log_request_state_active:
+        TAILQ_REMOVE(&mgr->m_active_requests, request, m_next);
+        break;
+    }
+
     TAILQ_INSERT_TAIL(&mgr->m_free_requests, request, m_next);
 }
 

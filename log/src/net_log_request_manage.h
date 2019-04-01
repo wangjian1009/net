@@ -7,20 +7,28 @@ struct net_log_request_manage {
     net_log_schedule_t m_schedule;
     net_schedule_t m_net_schedule;
     net_driver_t m_net_driver;
-    uint32_t m_request_max_id;
+    uint8_t m_cfg_max_active_request_count;
+    uint8_t m_active_request_count;    
     uint16_t m_request_count;
-    net_log_request_list_t m_requests;
+    uint32_t m_request_max_id;
+    net_log_request_list_t m_waiting_requests;
+    net_log_request_list_t m_active_requests;
     net_log_request_list_t m_free_requests;
     net_timer_t m_timer_event;
 	CURLM * m_multi_handle;
     int m_still_running;
+    const char * m_name;
     mem_buffer_t m_tmp_buffer;
 };
 
 net_log_request_manage_t
 net_log_request_manage_create(
-    net_log_schedule_t schedule, net_schedule_t net_schedule, net_driver_t net_driver, mem_buffer_t tmp_buffer);
+    net_log_schedule_t schedule, net_schedule_t net_schedule, net_driver_t net_driver,
+    uint8_t max_active_request_count, const char * name, mem_buffer_t tmp_buffer);
 void net_log_request_manage_free(net_log_request_manage_t request_mgr);
+
+void net_log_request_manage_process_cmd(
+    net_log_request_manage_t mgr, net_log_request_cmd_t cmd, net_log_request_param_t send_param);
 
 int net_log_request_manage_sock_cb(CURL *e, curl_socket_t s, int what, void *cbp, void *sockp);
 int net_log_request_manage_timer_cb(CURLM *multi, long timeout_ms, net_log_request_manage_t mgr);

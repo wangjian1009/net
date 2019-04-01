@@ -8,7 +8,8 @@
 #include "net_log_sender_i.h"
 #include "net_log_request.h"
 #include "net_log_builder.h"
-#include "net_log_pipe.h"
+#include "net_log_request_pipe.h"
+#include "net_log_request_cmd.h"
 
 static char * net_log_category_get_pack_id(net_log_schedule_t schedule, const char * configName, const char * ip);
 static void net_log_category_do_commit(net_log_schedule_t schedule, net_log_category_t category);
@@ -226,7 +227,7 @@ int net_log_category_commit_request(net_log_category_t category, net_log_request
     net_log_schedule_t schedule = category->m_schedule;
 
     if (category->m_sender) {
-        if (net_log_pipe_queue(category->m_sender->m_request_pipe, send_param) != 0) {
+        if (net_log_request_pipe_queue(category->m_sender->m_request_pipe, send_param) != 0) {
             CPE_ERROR(
                 schedule->m_em, "log: category [%d]%s: commit param to sender %s fail!",
                 category->m_id, category->m_name, category->m_sender->m_name);
@@ -244,25 +245,16 @@ int net_log_category_commit_request(net_log_category_t category, net_log_request
     else if (in_main_thread) { /*在主线程中，直接发送 */
         assert(schedule->m_main_thread_request_mgr);
 
-        net_log_request_t request = net_log_request_create(schedule->m_main_thread_request_mgr, send_param);
-        if (request == NULL) {
-            CPE_ERROR(
-                schedule->m_em, "log: category [%d]%s: process param at main-thread fail!",
-                category->m_id, category->m_name);
-            return -1;
-        }
-
-        if (schedule->m_debug) {
-            CPE_INFO(
-                schedule->m_em, "log: category [%d]%s: process param at main-thread success!",
-                category->m_id, category->m_name);
-        }
+        struct net_log_request_cmd cmd;
+        cmd.m_size = sizeof(cmd);
+        cmd.m_cmd = net_log_request_cmd_send;
+        net_log_request_manage_process_cmd(schedule->m_main_thread_request_mgr, &cmd, send_param);
 
         return 0;
     }
     else { /*提交到主线程处理 */
         assert(schedule->m_main_thread_request_pipe);
-        if (net_log_pipe_queue(schedule->m_main_thread_request_pipe, send_param) != 0) {
+        if (net_log_request_pipe_queue(schedule->m_main_thread_request_pipe, send_param) != 0) {
             CPE_ERROR(
                 schedule->m_em, "log: category [%d]%s: commit param to main-thread fail!",
                 category->m_id, category->m_name);

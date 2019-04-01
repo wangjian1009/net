@@ -4,17 +4,17 @@
 #include "cpe/pal/pal_unistd.h"
 #include "cpe/pal/pal_string.h"
 #include "net_watcher.h"
-#include "net_log_pipe.h"
-#include "net_log_pipe_cmd.h"
+#include "net_log_request_pipe.h"
+#include "net_log_request_cmd.h"
 #include "net_log_request_manage.h"
 #include "net_log_queue.h"
 #include "net_log_category_i.h"
 #include "net_log_request.h"
 
-static void net_log_pipe_action(void * ctx, int fd, uint8_t do_read, uint8_t do_write);
+static void net_log_request_pipe_action(void * ctx, int fd, uint8_t do_read, uint8_t do_write);
 
-net_log_pipe_t net_log_pipe_create(net_log_schedule_t schedule, const char * name) {
-    net_log_pipe_t request_pipe = mem_alloc(schedule->m_alloc, sizeof(struct net_log_pipe));
+net_log_request_pipe_t net_log_request_pipe_create(net_log_schedule_t schedule, const char * name) {
+    net_log_request_pipe_t request_pipe = mem_alloc(schedule->m_alloc, sizeof(struct net_log_request_pipe));
 
     request_pipe->m_schedule = schedule;
     request_pipe->m_name = name;
@@ -43,11 +43,11 @@ net_log_pipe_t net_log_pipe_create(net_log_schedule_t schedule, const char * nam
     return request_pipe;
 }
 
-void net_log_pipe_free(net_log_pipe_t pipe) {
+void net_log_request_pipe_free(net_log_request_pipe_t pipe) {
     net_log_schedule_t schedule = pipe->m_schedule;
 
     if (pipe->m_bind_to) {
-        net_log_pipe_unbind(pipe);
+        net_log_request_pipe_unbind(pipe);
     }
     assert(pipe->m_bind_to == NULL);
     assert(pipe->m_bind_watcher == NULL);
@@ -64,7 +64,7 @@ void net_log_pipe_free(net_log_pipe_t pipe) {
     mem_free(schedule->m_alloc, pipe);
 }
 
-int net_log_pipe_bind(net_log_pipe_t pipe, net_log_request_manage_t mgr) {
+int net_log_request_pipe_bind(net_log_request_pipe_t pipe, net_log_request_manage_t mgr) {
     net_log_schedule_t schedule = pipe->m_schedule;
 
     if (pipe->m_bind_to != NULL) {
@@ -73,7 +73,7 @@ int net_log_pipe_bind(net_log_pipe_t pipe, net_log_request_manage_t mgr) {
     }
 
     assert(pipe->m_bind_watcher == NULL);
-    pipe->m_bind_watcher = net_watcher_create(mgr->m_net_driver, pipe->m_pipe_fd[0], pipe, net_log_pipe_action);
+    pipe->m_bind_watcher = net_watcher_create(mgr->m_net_driver, pipe->m_pipe_fd[0], pipe, net_log_request_pipe_action);
     if (pipe->m_bind_watcher == NULL) {
         CPE_ERROR(schedule->m_em, "log: pipe %s: bind: create watcher fail!", pipe->m_name);
         return -1;
@@ -86,7 +86,7 @@ int net_log_pipe_bind(net_log_pipe_t pipe, net_log_request_manage_t mgr) {
     return 0;
 }
 
-void net_log_pipe_unbind(net_log_pipe_t pipe) {
+void net_log_request_pipe_unbind(net_log_request_pipe_t pipe) {
     assert(pipe->m_bind_to != NULL);
     assert(pipe->m_bind_watcher != NULL);
 
@@ -95,15 +95,15 @@ void net_log_pipe_unbind(net_log_pipe_t pipe) {
     pipe->m_bind_to = NULL;
 }
 
-int net_log_pipe_queue(net_log_pipe_t pipe, net_log_request_param_t send_param) {
+int net_log_request_pipe_queue(net_log_request_pipe_t pipe, net_log_request_param_t send_param) {
     net_log_schedule_t schedule = pipe->m_schedule;
     net_log_category_t category = send_param->category;
 
     pthread_mutex_lock(&pipe->m_mutex);
 
-    struct net_log_pipe_cmd cmd;
+    struct net_log_request_cmd cmd;
     cmd.m_size = sizeof(cmd);
-    cmd.m_cmd = net_log_pipe_cmd_send;
+    cmd.m_cmd = net_log_request_cmd_send;
 
     if (write(pipe->m_pipe_fd[1], &cmd, cmd.m_size) < 0) {
         CPE_ERROR(
@@ -126,7 +126,7 @@ int net_log_pipe_queue(net_log_pipe_t pipe, net_log_request_param_t send_param) 
     return 0;
 }
 
-int net_log_pipe_send_cmd(net_log_pipe_t pipe, net_log_pipe_cmd_t cmd) {
+int net_log_request_pipe_send_cmd(net_log_request_pipe_t pipe, net_log_request_cmd_t cmd) {
     pthread_mutex_lock(&pipe->m_mutex);
     
     if (write(pipe->m_pipe_fd[1], cmd, cmd->m_size) < 0) {
@@ -141,7 +141,7 @@ int net_log_pipe_send_cmd(net_log_pipe_t pipe, net_log_pipe_cmd_t cmd) {
     return 0;
 }
 
-static net_log_request_param_t net_log_pipe_pop_send_param(net_log_pipe_t pipe) {
+static net_log_request_param_t net_log_request_pipe_pop_send_param(net_log_request_pipe_t pipe) {
     net_log_request_param_t send_param;
 
     pthread_mutex_lock(&pipe->m_mutex);
@@ -151,32 +151,10 @@ static net_log_request_param_t net_log_pipe_pop_send_param(net_log_pipe_t pipe) 
     return send_param;
 }
 
-static void net_log_pipe_process_cmd(net_log_schedule_t schedule, net_log_pipe_t pipe, net_log_pipe_cmd_t cmd) {
-    if (cmd->m_cmd == net_log_pipe_cmd_send) {
-        assert(pipe->m_bind_to);
-
-        net_log_request_param_t send_param;
-        while((send_param = net_log_pipe_pop_send_param(pipe))) {
-            net_log_request_t request = net_log_request_create(pipe->m_bind_to, send_param);
-            if (request == NULL) {
-                CPE_ERROR(
-                    schedule->m_em, "log: pipe %s: create request fail %d", pipe->m_name, cmd->m_cmd);
-                net_log_request_param_free(send_param);
-            }
-        }
-    }
-    else {
-        CPE_ERROR(
-            schedule->m_em, "log: pipe %s: unknown cmd %d", pipe->m_name, cmd->m_cmd);
-    }
-}
-
-static void net_log_pipe_action(void * ctx, int fd, uint8_t do_read, uint8_t do_write) {
-    net_log_pipe_t pipe = ctx;
+static void net_log_request_pipe_action(void * ctx, int fd, uint8_t do_read, uint8_t do_write) {
+    net_log_request_pipe_t pipe = ctx;
     net_log_schedule_t schedule = pipe->m_schedule;
 
-    CPE_INFO(schedule->m_em, "xxxxx: pipe action");
-    
     if (do_read) {
         uint8_t need_process = 1;
 
@@ -199,15 +177,20 @@ static void net_log_pipe_action(void * ctx, int fd, uint8_t do_read, uint8_t do_
                 assert(pipe->m_pipe_r_size <= sizeof(pipe->m_pipe_r_buf));
             }
 
-            while(pipe->m_pipe_r_size >= sizeof(struct net_log_pipe_cmd)) {
-                net_log_pipe_cmd_t cmd = (net_log_pipe_cmd_t)pipe->m_pipe_r_buf;
+            while(pipe->m_pipe_r_size >= sizeof(struct net_log_request_cmd)) {
+                net_log_request_cmd_t cmd = (net_log_request_cmd_t)pipe->m_pipe_r_buf;
 
                 if (pipe->m_pipe_r_size < cmd->m_size) {
                     need_process = 0;
                     break;
                 }
 
-                net_log_pipe_process_cmd(schedule, pipe, cmd);
+                assert(pipe->m_bind_to);
+                net_log_request_param_t send_param = NULL;
+                if (cmd->m_cmd == net_log_request_cmd_send) {
+                    send_param = net_log_request_pipe_pop_send_param(pipe);
+                }
+                net_log_request_manage_process_cmd(pipe->m_bind_to, cmd, send_param);
 
                 memmove(pipe->m_pipe_r_buf, pipe->m_pipe_r_buf + cmd->m_size, pipe->m_pipe_r_size - cmd->m_size);
                 pipe->m_pipe_r_size -= cmd->m_size;

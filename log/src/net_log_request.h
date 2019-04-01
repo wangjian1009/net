@@ -4,6 +4,11 @@
 
 #define LOG_PRODUCER_SEND_MAGIC_NUM 0x1B35487A
 
+typedef enum net_log_request_state {
+    net_log_request_state_waiting,
+    net_log_request_state_active,
+} net_log_request_state_t;
+
 typedef enum net_log_request_send_result {
     net_log_request_send_ok = 0,
     net_log_request_send_network_error = 1,
@@ -32,6 +37,7 @@ struct net_log_request {
     TAILQ_ENTRY(net_log_request) m_next;
     uint32_t m_id;
     net_log_category_t m_category;
+    net_log_request_state_t m_state;
     CURL * m_handler;
     net_watcher_t m_watcher;
     net_timer_t m_delay_process;

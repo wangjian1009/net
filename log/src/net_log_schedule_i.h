@@ -17,8 +17,8 @@ typedef TAILQ_HEAD(net_log_request_list, net_log_request) net_log_request_list_t
 
 typedef struct net_log_request * net_log_request_t;
 typedef struct net_log_request_manage * net_log_request_manage_t;
-typedef struct net_log_pipe * net_log_pipe_t;
-typedef struct net_log_pipe_cmd * net_log_pipe_cmd_t;
+typedef struct net_log_request_pipe * net_log_request_pipe_t;
+typedef struct net_log_request_cmd * net_log_request_cmd_t;
 typedef struct net_log_request_param * net_log_request_param_t;
 typedef struct net_log_queue * net_log_queue_t;
 typedef struct net_log_builder * net_log_builder_t;
@@ -37,6 +37,7 @@ struct net_log_schedule {
     char * m_cfg_access_key;
     char * m_cfg_source;
     uint8_t m_cfg_using_https;
+    uint8_t m_cfg_active_request_count;
     char * m_cfg_net_interface;
     char * m_cfg_remote_address;
     uint32_t m_cfg_connect_timeout_s;
@@ -56,7 +57,7 @@ struct net_log_schedule {
     net_log_sender_list_t m_senders;
 
     /*main thread request*/
-    net_log_pipe_t m_main_thread_request_pipe;
+    net_log_request_pipe_t m_main_thread_request_pipe;
     net_log_request_manage_t m_main_thread_request_mgr;
     
     /*builder helper*/
