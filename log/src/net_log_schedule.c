@@ -74,6 +74,10 @@ net_log_schedule_create(
 }
 
 void net_log_schedule_free(net_log_schedule_t schedule) {
+    if (schedule->m_debug) {
+        CPE_INFO(schedule->m_em, "log: schedule: free");
+    }
+    
     if (schedule->m_state != net_log_schedule_state_init) {
         net_log_schedule_stop(schedule);
     }
@@ -249,7 +253,16 @@ int net_log_schedule_start(net_log_schedule_t schedule) {
 
 void net_log_schedule_stop(net_log_schedule_t schedule) {
     if (schedule->m_state == net_log_schedule_state_init) return;
+
+    if (schedule->m_debug) {
+        CPE_INFO(schedule->m_em, "log: schedule: stop begin");
+    }
+    
     net_log_schedule_do_stop(schedule);
+
+    if (schedule->m_debug) {
+        CPE_INFO(schedule->m_em, "log: schedule: stop complete");
+    }
 }
 
 void net_log_schedule_set_max_active_request_count(net_log_schedule_t schedule, uint8_t max_active_request_count) {
