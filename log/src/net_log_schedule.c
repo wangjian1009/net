@@ -417,6 +417,18 @@ mem_buffer_t net_log_schedule_tmp_buffer(net_log_schedule_t schedule) {
 static void net_log_schedule_dump_timer(net_timer_t timer, void * ctx) {
     net_log_schedule_t schedule = ctx;
 
+    uint8_t i;
+    for(i = 0; i < schedule->m_category_count; ++i) {
+        net_log_category_t category = schedule->m_categories[i];
+        if (category == NULL) continue;
+
+        CPE_INFO(
+            schedule->m_em, "log: category [%d]%s: input-count=%d, input-pckage=%d, input-bytes=%.2fM",
+            category->m_id, category->m_name,
+            category->m_statistics_log_count, category->m_statistics_package_count,
+            ((float)category->m_statistics_input_bps.m_total_bytes / 1024.0f / 1024.0f));
+    }
+    
     net_timer_active(schedule->m_dump_timer, schedule->m_cfg_dump_span_ms);
 }
 
