@@ -359,6 +359,8 @@ static void net_log_request_process_result(
         }
 
         net_log_request_free(request);
+
+        net_log_request_manage_active_next(mgr);
     }
     else { /*delay process*/
         if (request->m_delay_process == NULL) {
@@ -370,6 +372,7 @@ static void net_log_request_process_result(
                     net_log_request_send_result_str(send_result));
 
                 net_log_request_free(request);
+                net_log_request_manage_active_next(mgr);
                 return;
             }
         }
