@@ -32,6 +32,7 @@ struct net_log_schedule {
     uint8_t m_debug;
     net_schedule_t m_net_schedule;
     net_driver_t m_net_driver;
+    vfs_mgr_t m_vfs;
     char * m_cfg_project;
     char * m_cfg_ep;
     char * m_cfg_access_id;

@@ -3,10 +3,16 @@
 #include "curl/curl.h"
 #include "net_log_schedule_i.h"
 
+typedef enum net_log_request_manage_state {
+    net_log_request_manage_state_runing,
+    net_log_request_manage_state_pause,
+} net_log_request_manage_state_t;
+
 struct net_log_request_manage {
     net_log_schedule_t m_schedule;
     net_schedule_t m_net_schedule;
     net_driver_t m_net_driver;
+    net_log_request_manage_state_t m_state;
     uint8_t m_cfg_active_request_count;
     uint8_t m_active_request_count;
     uint16_t m_request_count;
