@@ -358,6 +358,10 @@ static void net_log_request_process_result(
                 mgr->m_name, category->m_id, category->m_name, request->m_id);
         }
 
+        if (send_result != net_log_request_send_ok) {
+            net_log_category_add_fail_statistics(category, request->m_send_param->log_count);
+        }
+        
         net_log_request_free(request);
         net_log_request_manage_active_next(mgr);
     }
