@@ -87,7 +87,7 @@ static void net_log_request_manage_process_cmd_send(
 
     net_log_request_cache_t cache = TAILQ_FIRST(&mgr->m_caches);
     if (cache) {
-        if (net_log_request_cache_push(cache, send_param) != 0) {
+        if (net_log_request_cache_append(cache, send_param) != 0) {
             CPE_ERROR(schedule->m_em, "log: %s: cache: append fail", mgr->m_name);
             net_log_category_add_fail_statistics(send_param->category, send_param->log_count);
             net_log_request_param_free(send_param);

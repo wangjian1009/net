@@ -84,7 +84,7 @@ struct CPE_PACKED net_log_request_cache_head {
 
 CPE_END_PACKED
 
-int net_log_request_cache_push(net_log_request_cache_t cache, net_log_request_param_t send_param) {
+int net_log_request_cache_append(net_log_request_cache_t cache, net_log_request_param_t send_param) {
     net_log_request_manage_t mgr = cache->m_mgr;
     net_log_schedule_t schedule = mgr->m_schedule;
 
@@ -122,6 +122,37 @@ int net_log_request_cache_push(net_log_request_cache_t cache, net_log_request_pa
     }
     
     cache->m_size += sizeof(head) + send_param->log_buf->length;
+    return 0;
+}
+
+int net_log_request_cache_load(net_log_request_cache_t cache) {
+    net_log_request_manage_t mgr = cache->m_mgr;
+    net_log_schedule_t schedule = mgr->m_schedule;
+
+    if (cache->m_state != net_log_request_cache_done) {
+        CPE_ERROR(
+            schedule->m_em, "log: %s: cache %d: load: state is %s, can`t load",
+            mgr->m_name, cache->m_id, net_log_request_cache_state_str(cache->m_state));
+        return -1;
+    }
+
+    const char * file = net_log_request_manage_cache_file(mgr, cache->m_id, mgr->m_tmp_buffer);
+    if (file == NULL) {
+        CPE_ERROR(schedule->m_em, "log: %s: cache %d: load: calc file path fail", mgr->m_name, cache->m_id);
+        return -1;
+    }
+
+    vfs_file_t fp = vfs_file_open(schedule->m_vfs, file, "w");
+    if (fp == NULL) {
+        CPE_ERROR(
+            schedule->m_em, "log: %s: cache %d: open file %s fail, error=%d(%s)",
+            mgr->m_name, cache->m_id, file, errno, strerror(errno));
+        return -1;
+    }
+
+    //ssize_t vfs_file_read(vfs_file_t f, void * buf, size_t size);
+
+    vfs_file_close(fp);
     return 0;
 }
 

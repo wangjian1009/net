@@ -48,8 +48,8 @@ net_log_schedule_create(
     schedule->m_cfg_timeout_ms = 3000;
     schedule->m_cfg_connect_timeout_s = 10;
     schedule->m_cfg_send_timeout_s = 15;
-    schedule->m_cfg_cache_mem_buf_capacity = 0;
-    schedule->m_cfg_cache_file_buf_capacity = 0;
+    schedule->m_cfg_cache_mem_capacity = 0;
+    schedule->m_cfg_cache_file_capacity = 0;
     schedule->m_cfg_compress = net_log_compress_lz4;
     schedule->m_cfg_active_request_count = 1;
     schedule->m_cfg_dump_span_ms = 0;
