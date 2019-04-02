@@ -30,6 +30,7 @@ net_log_flusher_create(net_log_schedule_t schedule, const char * name) {
     }
 
     flusher->m_thread = NULL;
+    flusher->m_is_runing = 0;
     pthread_mutex_init(&flusher->m_mutex, NULL);
     pthread_cond_init(&flusher->m_cond, NULL);
 
@@ -97,7 +98,7 @@ static void * net_log_flusher_thread(void * param) {
 
     pthread_mutex_lock(&flusher->m_mutex);
 
-    while(net_log_schedule_state(schedule) == net_log_schedule_state_runing) {
+    while(flusher->m_is_runing) {
         net_log_builder_t builder = net_log_queue_pop(flusher->m_queue);
         if (builder == NULL) {
             pthread_cond_wait(&flusher->m_cond, &flusher->m_mutex);
@@ -147,12 +148,14 @@ int net_log_flusher_start(net_log_flusher_t flusher) {
         return -1;
     }
 
+    flusher->m_is_runing = 1;
     if (pthread_create(flusher->m_thread, NULL, net_log_flusher_thread, flusher) != 0) {
         CPE_ERROR(
             schedule->m_em, "log: flusher %s: start: create thread fail, error=%d (%s)",
             flusher->m_name, errno, strerror(errno));
         mem_free(schedule->m_alloc, flusher->m_thread);
         flusher->m_thread = NULL;
+        flusher->m_is_runing = 0;
         return -1;
     }
     
@@ -168,6 +171,7 @@ void net_log_flusher_notify_stop(net_log_flusher_t flusher) {
     }
 
     pthread_mutex_lock(&flusher->m_mutex);
+    flusher->m_is_runing = 0;
     pthread_cond_signal(&flusher->m_cond);
     pthread_mutex_unlock(&flusher->m_mutex);
 
