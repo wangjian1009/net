@@ -4,6 +4,7 @@
 #include "net_log_request.h"
 #include "net_log_request_cmd.h"
 #include "net_log_category_i.h"
+#include "net_log_request_cache.h"
 
 net_log_request_manage_t
 net_log_request_manage_create(
@@ -28,6 +29,7 @@ net_log_request_manage_create(
     mgr->m_request_count = 0;
     mgr->m_active_request_count = 0;
 
+    mgr->m_cache = NULL;
     mgr->m_name = name;
     mgr->m_tmp_buffer = tmp_buffer;
 
@@ -56,6 +58,11 @@ void net_log_request_manage_free(net_log_request_manage_t mgr) {
     
     while(!TAILQ_EMPTY(&mgr->m_free_requests)) {
         net_log_request_real_free(TAILQ_FIRST(&mgr->m_free_requests));
+    }
+
+    if (mgr->m_cache) {
+        net_log_request_cache_free(mgr->m_cache);
+        mgr->m_cache = NULL;
     }
 
     mem_free(schedule->m_alloc, mgr);
