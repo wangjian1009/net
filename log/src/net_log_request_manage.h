@@ -12,6 +12,8 @@ struct net_log_request_manage {
     net_log_schedule_t m_schedule;
     net_schedule_t m_net_schedule;
     net_driver_t m_net_driver;
+    void (*m_stop_fun)(void * ctx);
+    void * m_stop_ctx;
     net_log_request_manage_state_t m_state;
     uint8_t m_cfg_active_request_count;
     uint8_t m_active_request_count;
@@ -31,7 +33,9 @@ struct net_log_request_manage {
 net_log_request_manage_t
 net_log_request_manage_create(
     net_log_schedule_t schedule, net_schedule_t net_schedule, net_driver_t net_driver,
-    uint8_t max_active_request_count, const char * name, mem_buffer_t tmp_buffer);
+    uint8_t max_active_request_count, const char * name, mem_buffer_t tmp_buffer,
+    void (*stop_fun)(void * ctx), void * stop_ctx);
+
 void net_log_request_manage_free(net_log_request_manage_t request_mgr);
 
 void net_log_request_manage_process_cmd(

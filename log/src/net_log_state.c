@@ -9,7 +9,7 @@
 static void net_log_state_fsm_dump_event(write_stream_t s, fsm_def_machine_t m, void * input_event);
 
 fsm_def_machine_t net_log_create_fsm_def(net_log_schedule_t schedule) {
-    fsm_def_machine_t fsm_def = fsm_def_machine_create("net.log", schedule->m_alloc, schedule->m_em);
+    fsm_def_machine_t fsm_def = fsm_def_machine_create("log", schedule->m_alloc, schedule->m_em);
     if (fsm_def == NULL) {
         CPE_ERROR(schedule->m_em, "sfox: client: create state fsm def: def create fail!");
         return NULL;

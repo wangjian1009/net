@@ -230,7 +230,8 @@ int net_log_schedule_init_main_thread_mgr(net_log_schedule_t schedule) {
         schedule->m_main_thread_request_mgr =
             net_log_request_manage_create(
                 schedule, schedule->m_net_schedule, schedule->m_net_driver,
-                schedule->m_cfg_active_request_count, "main", net_log_schedule_tmp_buffer(schedule));
+                schedule->m_cfg_active_request_count, "main", net_log_schedule_tmp_buffer(schedule),
+                NULL, NULL);
         if (schedule->m_main_thread_request_mgr == NULL) {
             CPE_ERROR(schedule->m_em, "log: schedule: create main thread request mgr fail");
             return -1;
@@ -255,7 +256,8 @@ int net_log_schedule_init_main_thread_pipe(net_log_schedule_t schedule) {
         schedule->m_main_thread_request_mgr =
             net_log_request_manage_create(
                 schedule, schedule->m_net_schedule, schedule->m_net_driver,
-                schedule->m_cfg_active_request_count, "main", net_log_schedule_tmp_buffer(schedule));
+                schedule->m_cfg_active_request_count, "main", net_log_schedule_tmp_buffer(schedule),
+                NULL, NULL);
         if (schedule->m_main_thread_request_mgr == NULL) {
             CPE_ERROR(schedule->m_em, "log: schedule: create main thread request mgr fail");
             return -1;
@@ -313,7 +315,7 @@ const char * net_log_schedule_state_str(net_log_schedule_state_t schedule_state)
     case net_log_schedule_state_runing:
         return "runing";
     case net_log_schedule_state_pause:
-        return "runing";
+        return "pause";
     case net_log_schedule_state_stoping:
         return "stoping";
     case net_log_schedule_state_error:

@@ -13,6 +13,7 @@
 #include "net_log_queue.h"
 
 static void * net_log_sender_thread(void * param);
+static void net_log_send_stop(void* ctx);
 
 net_log_sender_t
 net_log_sender_create(net_log_schedule_t schedule, const char * name) {
@@ -162,7 +163,8 @@ static void * net_log_sender_thread(void * param) {
     
     net_log_request_manage_t request_mgr = net_log_request_manage_create(
         schedule, net_schedule, net_driver_from_data(ev_driver),
-        sender->m_cfg_active_request_count, sender->m_name, &tmp_buffer);
+        sender->m_cfg_active_request_count, sender->m_name, &tmp_buffer,
+        net_log_send_stop, ev_loop);
     if (request_mgr == NULL) {
         CPE_ERROR(schedule->m_em, "log: %s: sender: create request mgr fail", sender->m_name);
         mem_buffer_clear(&tmp_buffer);
@@ -194,4 +196,9 @@ static void * net_log_sender_thread(void * param) {
     }
     
     return NULL;
+}
+
+static void net_log_send_stop(void* ctx) {
+    struct ev_loop * ev_loop = ctx;
+    ev_break(ev_loop, EVBREAK_ALL);
 }

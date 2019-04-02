@@ -8,7 +8,8 @@
 net_log_request_manage_t
 net_log_request_manage_create(
     net_log_schedule_t schedule, net_schedule_t net_schedule, net_driver_t net_driver,
-    uint8_t max_active_request_count, const char * name, mem_buffer_t tmp_buffer)
+    uint8_t max_active_request_count, const char * name, mem_buffer_t tmp_buffer,
+    void (*stop_fun)(void * ctx), void * stop_ctx)
 {
     net_log_request_manage_t mgr = mem_alloc(schedule->m_alloc, sizeof(struct net_log_request_manage));
 
@@ -17,7 +18,8 @@ net_log_request_manage_create(
     mgr->m_net_driver = net_driver;
     mgr->m_state = net_log_request_manage_state_runing;
     mgr->m_cfg_active_request_count = max_active_request_count;
-    
+    mgr->m_stop_fun = stop_fun;
+    mgr->m_stop_ctx = stop_ctx;
     mgr->m_timer_event = net_timer_auto_create(net_schedule, net_log_request_manage_do_timeout, mgr);
 
 	mgr->m_multi_handle = curl_multi_init();
@@ -119,6 +121,15 @@ static void net_log_request_manage_process_cmd_resume(net_log_schedule_t schedul
     }
 }
 
+static void net_log_request_manage_process_cmd_stop(net_log_schedule_t schedule, net_log_request_manage_t mgr) {
+    if (mgr->m_stop_fun) {
+        mgr->m_stop_fun(mgr->m_stop_ctx);
+    }
+    else {
+        CPE_ERROR(schedule->m_em, "log: %s: manage: not support stop", mgr->m_name);
+    }
+}
+
 void net_log_request_manage_process_cmd(
     net_log_request_manage_t mgr, net_log_request_cmd_t cmd, net_log_request_param_t send_param)
 {
@@ -137,6 +148,9 @@ void net_log_request_manage_process_cmd(
         break;
     case net_log_request_cmd_resume:
         net_log_request_manage_process_cmd_resume(schedule, mgr);
+        break;
+    case net_log_request_cmd_stop:
+        net_log_request_manage_process_cmd_stop(schedule, mgr);
         break;
     default:
         CPE_ERROR(schedule->m_em, "log: %s: manage: unknown cmd %d", mgr->m_name, cmd->m_cmd);

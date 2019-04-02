@@ -27,7 +27,8 @@ static uint32_t net_log_state_fsm_error_trans(fsm_machine_t fsm, fsm_def_state_t
 }
 
 int net_log_state_fsm_create_error(fsm_def_machine_t fsm_def, error_monitor_t em) {
-    fsm_def_state_t s = fsm_def_state_create_ex(fsm_def, "error", net_log_schedule_state_error);
+    fsm_def_state_t s = fsm_def_state_create_ex(
+        fsm_def, net_log_schedule_state_str(net_log_schedule_state_error), net_log_schedule_state_error);
     if (s == NULL) {
         CPE_ERROR(em, "log: schedule: state-fsm: error: create state fail!");
         return -1;
