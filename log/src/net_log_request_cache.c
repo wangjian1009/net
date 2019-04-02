@@ -2,6 +2,7 @@
 #include "cpe/pal/pal_platform.h"
 #include "cpe/pal/pal_errno.h"
 #include "cpe/pal/pal_string.h"
+#include "cpe/pal/pal_stdlib.h"
 #include "cpe/vfs/vfs_file.h"
 #include "net_log_request_cache.h"
 #include "net_log_request.h"
@@ -145,21 +146,125 @@ int net_log_request_cache_load(net_log_request_cache_t cache) {
     vfs_file_t fp = vfs_file_open(schedule->m_vfs, file, "w");
     if (fp == NULL) {
         CPE_ERROR(
-            schedule->m_em, "log: %s: cache %d: open file %s fail, error=%d(%s)",
+            schedule->m_em, "log: %s: cache %d: load: open file %s fail, error=%d(%s)",
             mgr->m_name, cache->m_id, file, errno, strerror(errno));
         return -1;
     }
 
-    //ssize_t vfs_file_read(vfs_file_t f, void * buf, size_t size);
+    int rv = 0;
+    uint16_t count = 0;
+    do {
+        struct net_log_request_cache_head head;
+        ssize_t sz = vfs_file_read(fp, &head, sizeof(head));
+        if (sz == 0) {
+            break;
+        }
+        else if (sz < 0) {
+            CPE_ERROR(
+                schedule->m_em, "log: %s: cache %d: load: read head fail, error=%d(%s)",
+                mgr->m_name, cache->m_id, errno, strerror(errno));
+            rv = -1;
+            break;
+        }
+        else if (sz != sizeof(head)) {
+            CPE_ERROR(
+                schedule->m_em, "log: %s: cache %d: load: read head not enough data, readed=%d, head-size=%d",
+                mgr->m_name, cache->m_id, (int)sz, (int)sizeof(head));
+            rv = -1;
+            break;
+        }
 
+        if (head.magic_num != LOG_PRODUCER_SEND_MAGIC_NUM) {
+            CPE_ERROR(schedule->m_em, "log: %s: cache %d: load: magic num mismatch", mgr->m_name, cache->m_id);
+            rv = -1;
+            break;
+        }
+        
+        if (head.compressed_size > UINT16_MAX) {
+            CPE_ERROR(
+                schedule->m_em, "log: %s: cache %d: load: compressed_size %d overflow",
+                mgr->m_name, cache->m_id, head.compressed_size);
+            rv = -1;
+            break;
+        }
+
+        if (head.category_id > schedule->m_category_count
+            || schedule->m_categories[head.category_id] == NULL)
+        {
+            CPE_ERROR(
+                schedule->m_em, "log: %s: cache %d: load: category %d not exist, ignore",
+                mgr->m_name, cache->m_id, head.category_id);
+            continue;
+        }
+        net_log_category_t category = schedule->m_categories[head.category_id];
+
+        net_log_lz4_buf_t buf = malloc(sizeof(struct net_log_lz4_buf) + head.compressed_size);
+        if (buf == NULL) {
+            CPE_ERROR(
+                schedule->m_em, "log: %s: cache %d: load: alloc buf fail, size=%d",
+                mgr->m_name, cache->m_id, head.compressed_size);
+            rv = -1;
+            break;
+        }
+
+        buf->length = head.compressed_size;
+        buf->raw_length = head.raw_size;
+
+        sz = vfs_file_read(fp, buf->data, buf->length);
+        if (sz == 0) {
+            CPE_ERROR(schedule->m_em, "log: %s: cache %d: load: read body fail, no data", mgr->m_name, cache->m_id);
+            rv = -1;
+            free(buf);
+            break;
+        }
+        else if (sz < 0) {
+            CPE_ERROR(
+                schedule->m_em, "log: %s: cache %d: load: read data fail, error=%d(%s)",
+                mgr->m_name, cache->m_id, errno, strerror(errno));
+            rv = -1;
+            free(buf);
+            break;
+        }
+        else if (sz != buf->length) {
+            CPE_ERROR(
+                schedule->m_em, "log: %s: cache %d: load: read data not enough data, readed=%d, body-size=%d",
+                mgr->m_name, cache->m_id, (int)sz, buf->length);
+            rv = -1;
+            free(buf);
+            break;
+        }
+
+        net_log_request_param_t param =
+            net_log_request_param_create(
+                category, buf, head.log_count, head.builder_time);
+        if (param == NULL) {
+            CPE_ERROR(schedule->m_em, "log: %s: cache %d: load: create param fail", mgr->m_name, cache->m_id);
+            rv = -1;
+            free(buf);
+            break;
+        }
+
+        net_log_request_t request = net_log_request_create(mgr, param);
+        if (request == NULL) {
+            CPE_ERROR(schedule->m_em, "log: %s: cache %d: load: create request fail", mgr->m_name, cache->m_id);
+            net_log_request_param_free(param);
+            return -1;
+        }
+
+        count++;
+    } while(1);
+
+    if (schedule->m_debug) {
+        CPE_INFO(schedule->m_em, "log: %s: cache %d: load: read %d requests", mgr->m_name, cache->m_id, count);
+    }
+    
     vfs_file_close(fp);
-    return 0;
+
+    return rv;
 }
 
 int net_log_request_cache_cmp(net_log_request_cache_t l, net_log_request_cache_t r, void * ctx) {
-    return l->m_id < r->m_id
-        ? (- (r->m_id - l->m_id))
-        : (l->m_id - r->m_id);
+    return l->m_id < r->m_id ? (- (r->m_id - l->m_id)) : (l->m_id - r->m_id);
 }
 
 const char * net_log_request_cache_state_str(net_log_request_cache_state_t state) {
