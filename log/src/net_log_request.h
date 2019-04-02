@@ -4,6 +4,12 @@
 
 #define LOG_PRODUCER_SEND_MAGIC_NUM 0x1B35487A
 
+struct net_log_lz4_buf {
+    size_t length;
+    size_t raw_length;
+    unsigned char data[0];
+};
+
 typedef enum net_log_request_state {
     net_log_request_state_waiting,
     net_log_request_state_active,

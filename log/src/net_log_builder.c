@@ -4,6 +4,7 @@
 #include "cpe/utils/string_utils.h"
 #include "net_log_builder.h"
 #include "net_log_category_i.h"
+#include "net_log_request.h"
 #include "lz4.h"
 
 // 1+3( 1 --->  header;  2 ---> 128 * 128 = 16KB)

@@ -18,12 +18,6 @@ typedef struct _log_group {
     char * log_now_buffer;
 }log_group;
 
-struct net_log_lz4_buf {
-    size_t length;
-    size_t raw_length;
-    unsigned char data[0];
-};
-
 struct net_log_builder {
     net_log_category_t m_category;
     log_group* grp;
