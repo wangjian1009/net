@@ -19,7 +19,7 @@
 
 net_log_schedule_t
 net_log_schedule_create(
-    mem_allocrator_t alloc, error_monitor_t em,
+    mem_allocrator_t alloc, error_monitor_t em, uint8_t debug,
     net_schedule_t net_schedule, net_driver_t net_driver, vfs_mgr_t vfs,
     const char * cfg_project, const char * cfg_ep, const char * cfg_access_id, const char * cfg_access_key)
 {
@@ -40,7 +40,7 @@ net_log_schedule_create(
 
     schedule->m_alloc = alloc;
     schedule->m_em = em;
-    schedule->m_debug = 0;
+    schedule->m_debug = debug;
     schedule->m_net_schedule = net_schedule;
     schedule->m_net_driver = net_driver;
     schedule->m_vfs = vfs;
