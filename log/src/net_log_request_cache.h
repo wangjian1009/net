@@ -1,9 +1,10 @@
 #ifndef NET_LOG_REQUEST_CACHE_H_INCLEDED
 #define NET_LOG_REQUEST_CACHE_H_INCLEDED
-#include "net_log_schedule_i.h"
+#include "net_log_request_manage.h"
 
 struct net_log_request_cache {
     net_log_request_manage_t m_mgr;
+    TAILQ_ENTRY(net_log_request_cache) m_next;
 };
 
 net_log_request_cache_t net_log_request_cache_create(net_log_request_manage_t mgr);

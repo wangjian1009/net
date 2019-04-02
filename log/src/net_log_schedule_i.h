@@ -15,6 +15,7 @@ typedef TAILQ_HEAD(net_log_flusher_list, net_log_flusher) net_log_flusher_list_t
 typedef TAILQ_HEAD(net_log_sender_list, net_log_sender) net_log_sender_list_t;
 typedef TAILQ_HEAD(net_log_category_list, net_log_category) net_log_category_list_t;
 typedef TAILQ_HEAD(net_log_request_list, net_log_request) net_log_request_list_t;
+typedef TAILQ_HEAD(net_log_request_cache_list, net_log_request_cache) net_log_request_cache_list_t;
 
 typedef struct net_log_request * net_log_request_t;
 typedef struct net_log_request_manage * net_log_request_manage_t;

@@ -29,10 +29,10 @@ net_log_request_manage_create(
     mgr->m_request_count = 0;
     mgr->m_active_request_count = 0;
 
-    mgr->m_cache = NULL;
     mgr->m_name = name;
     mgr->m_tmp_buffer = tmp_buffer;
 
+    TAILQ_INIT(&mgr->m_caches);
     TAILQ_INIT(&mgr->m_waiting_requests);
     TAILQ_INIT(&mgr->m_active_requests);
     TAILQ_INIT(&mgr->m_free_requests);
@@ -60,9 +60,8 @@ void net_log_request_manage_free(net_log_request_manage_t mgr) {
         net_log_request_real_free(TAILQ_FIRST(&mgr->m_free_requests));
     }
 
-    if (mgr->m_cache) {
-        net_log_request_cache_free(mgr->m_cache);
-        mgr->m_cache = NULL;
+    while(!TAILQ_EMPTY(&mgr->m_caches)) {
+        net_log_request_cache_free(TAILQ_FIRST(&mgr->m_caches));
     }
 
     mem_free(schedule->m_alloc, mgr);
@@ -79,6 +78,17 @@ static void net_log_request_manage_process_cmd_send(
     net_log_schedule_t schedule, net_log_request_manage_t mgr, net_log_request_param_t send_param)
 {
     assert(send_param);
+
+    net_log_request_cache_t cache = TAILQ_FIRST(&mgr->m_caches);
+    if (cache) {
+        if (net_log_request_cache_push(cache, send_param) != 0) {
+            CPE_ERROR(schedule->m_em, "log: %s: cache: append fail", mgr->m_name);
+            net_log_category_add_fail_statistics(send_param->category, send_param->log_count);
+            net_log_request_param_free(send_param);
+        }
+
+        return;
+    }
 
     net_log_request_t request = net_log_request_create(mgr, send_param);
     if (request == NULL) {
