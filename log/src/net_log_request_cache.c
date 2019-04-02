@@ -1,7 +1,7 @@
 #include "net_log_request_cache.h"
 
 net_log_request_cache_t
-net_log_request_cache_create(net_log_request_manage_t mgr) {
+net_log_request_cache_create(net_log_request_manage_t mgr, uint32_t id) {
     net_log_schedule_t schedule = mgr->m_schedule;
 
     net_log_request_cache_t cache = mem_alloc(schedule->m_alloc, sizeof(struct net_log_request_cache));
@@ -11,6 +11,7 @@ net_log_request_cache_create(net_log_request_manage_t mgr) {
     }
 
     cache->m_mgr = mgr;
+    cache->m_id = id;
 
     TAILQ_INSERT_TAIL(&mgr->m_caches, cache, m_next);
     return cache;

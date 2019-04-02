@@ -28,7 +28,7 @@ net_log_request_manage_create(
     mgr->m_request_max_id = 0;
     mgr->m_request_count = 0;
     mgr->m_active_request_count = 0;
-
+    mgr->m_cache_max_id = 0;
     mgr->m_name = name;
     mgr->m_tmp_buffer = tmp_buffer;
 
@@ -172,4 +172,8 @@ void net_log_request_manage_process_cmd(
     default:
         CPE_ERROR(schedule->m_em, "log: %s: manage: unknown cmd %d", mgr->m_name, cmd->m_cmd);
     }
+}
+
+int net_log_request_mgr_search_cache(net_log_request_manage_t mgr) {
+    return 0;
 }

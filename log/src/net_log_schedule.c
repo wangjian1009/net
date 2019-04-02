@@ -51,6 +51,7 @@ net_log_schedule_create(
     schedule->m_cfg_compress = net_log_compress_lz4;
     schedule->m_cfg_active_request_count = 1;
     schedule->m_cfg_dump_span_ms = 0;
+    schedule->m_cfg_cache_dir = NULL;
     schedule->m_dump_timer = NULL;
     schedule->m_cfg_dump_span_ms = 0;
 
@@ -208,6 +209,11 @@ void net_log_schedule_free(net_log_schedule_t schedule) {
         schedule->m_cfg_remote_address = NULL;
     }
 
+    if (schedule->m_cfg_cache_dir) {
+        mem_free(schedule->m_alloc, schedule->m_cfg_cache_dir);
+        schedule->m_cfg_cache_dir = NULL;
+    }
+    
     curl_global_cleanup();
     
     mem_free(schedule->m_alloc, schedule);
@@ -219,6 +225,23 @@ uint8_t net_log_schedule_debug(net_log_schedule_t schedule) {
 
 void net_log_schedule_set_debug(net_log_schedule_t schedule, uint8_t debug) {
     schedule->m_debug = debug;
+}
+
+int net_log_schedule_set_cache_dir(net_log_schedule_t schedule, const char * dir) {
+    assert(net_log_schedule_state(schedule) == net_log_schedule_state_init);
+    
+    char * new_cache_dir = cpe_str_mem_dup(schedule->m_alloc, dir);
+    if (new_cache_dir == NULL) {
+        CPE_ERROR(schedule->m_em, "log: schedule: dup cache dir '%s' fail", dir);
+        return -1;
+    }
+
+    if (schedule->m_cfg_cache_dir) {
+        mem_free(schedule->m_alloc, schedule->m_cfg_cache_dir);
+    }
+    schedule->m_cfg_cache_dir = new_cache_dir;
+    
+    return 0;
 }
 
 net_log_schedule_state_t net_log_schedule_state(net_log_schedule_t schedule) {
