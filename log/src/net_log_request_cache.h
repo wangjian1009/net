@@ -21,6 +21,8 @@ net_log_request_cache_create(
     net_log_request_manage_t mgr, uint32_t id, net_log_request_cache_state_t state);
 void net_log_request_cache_free(net_log_request_cache_t cache);
 
+void net_log_request_cache_clear_and_free(net_log_request_cache_t cache);
+
 int net_log_request_cache_append(net_log_request_cache_t cache, net_log_request_param_t send_param);
 int net_log_request_cache_load(net_log_request_cache_t cache);
 

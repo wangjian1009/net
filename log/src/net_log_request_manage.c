@@ -272,3 +272,18 @@ int net_log_request_mgr_search_cache(net_log_request_manage_t mgr) {
     
     return rv;
 }
+
+void net_log_request_mgr_restore_cache(net_log_request_manage_t mgr) {
+    net_log_schedule_t schedule = mgr->m_schedule;
+
+    net_log_request_cache_t cache;
+    while((cache = TAILQ_LAST(&mgr->m_caches, net_log_request_cache_list))) {
+        if (net_log_request_cache_load(cache) != 0) {
+            CPE_ERROR(schedule->m_em, "log: %s: restore: cache %d load fail, clear", mgr->m_name, cache->m_id);
+            net_log_request_cache_clear_and_free(cache);
+            continue;
+        }
+
+        net_log_request_cache_clear_and_free(cache);
+    }
+}

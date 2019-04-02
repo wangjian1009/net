@@ -71,6 +71,21 @@ void net_log_request_cache_free(net_log_request_cache_t cache) {
     mem_free(schedule->m_alloc, cache);
 }
 
+void net_log_request_cache_clear_and_free(net_log_request_cache_t cache) {
+    net_log_request_manage_t mgr = cache->m_mgr;
+    net_log_schedule_t schedule = mgr->m_schedule;
+
+    const char * file = net_log_request_manage_cache_file(mgr, cache->m_id, mgr->m_tmp_buffer);
+    if (file == NULL) {
+        CPE_ERROR(schedule->m_em, "log: %s: cache %d: clear and free: calc file path fail", mgr->m_name, cache->m_id);
+    }
+    else {
+        vfs_file_rm(schedule->m_vfs, file);
+    }
+
+    net_log_request_cache_free(cache);
+}
+
 CPE_START_PACKED
 
 struct CPE_PACKED net_log_request_cache_head {
