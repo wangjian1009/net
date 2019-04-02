@@ -79,29 +79,43 @@ static void net_log_request_manage_process_cmd_send(
     assert(send_param);
 
     net_log_request_cache_t cache = TAILQ_FIRST(&mgr->m_caches);
-    if (cache == NULL) {
-        //cache = TAILQ_FIRST(&mgr->m_caches);
+    if (cache == NULL) { /*没有使用中的缓存 */
+        if (mgr->m_request_buf_size < schedule->m_cfg_cache_mem_capacity) { /*没有超过内存限制 */
+            net_log_request_t request = net_log_request_create(mgr, send_param);
+            if (request == NULL) {
+                CPE_ERROR(schedule->m_em, "log: %s: manage: send: create request fail", mgr->m_name);
+                goto SEND_FAIL;
+            }
+
+            net_log_request_mgr_check_active_requests(mgr);
+            return;
+        }
     }
-    
-    if (cache) {
-        if (net_log_request_cache_append(cache, send_param) != 0) {
-            CPE_ERROR(schedule->m_em, "log: %s: cache: append fail", mgr->m_name);
+
+    if (cache == NULL || cache->m_state != net_log_request_cache_building) {
+        cache = net_log_request_cache_create(mgr, mgr->m_cache_max_id + 1, net_log_request_cache_building);
+        if (cache == NULL) {
+            CPE_ERROR(schedule->m_em, "log: %s: manage: send: create cache fail", mgr->m_name);
             net_log_category_add_fail_statistics(send_param->category, send_param->log_count);
             net_log_request_param_free(send_param);
+            goto SEND_FAIL;
         }
-
-        return;
     }
 
-    net_log_request_t request = net_log_request_create(mgr, send_param);
-    if (request == NULL) {
-        CPE_ERROR(schedule->m_em, "log: %s: manage: create request fail", mgr->m_name);
-        net_log_category_add_fail_statistics(send_param->category, send_param->log_count);
-        net_log_request_param_free(send_param);
+    if (net_log_request_cache_append(cache, send_param) != 0) {
+        CPE_ERROR(schedule->m_em, "log: %s: manage: send: append to cache %d fail", mgr->m_name, cache->m_id);
+        goto SEND_FAIL;
     }
-    else {
-        net_log_request_mgr_check_active_requests(mgr);
+
+    if (cache->m_size >= schedule->m_cfg_cache_file_capacity) {
+        net_log_request_cache_close(cache);
     }
+
+    return;
+    
+SEND_FAIL:
+    net_log_category_add_fail_statistics(send_param->category, send_param->log_count);
+    net_log_request_param_free(send_param);
 }
 
 static void net_log_request_manage_process_cmd_pause(net_log_schedule_t schedule, net_log_request_manage_t mgr) {
@@ -297,28 +311,28 @@ void net_log_request_mgr_check_active_requests(net_log_request_manage_t mgr) {
     }
 }
 
-int net_log_request_mgr_cache_append(net_log_request_manage_t mgr, net_log_request_param_t send_param) {
-    net_log_request_cache_t cache = TAILQ_FIRST(&mgr->m_caches);
-    net_log_schedule_t schedule = mgr->m_schedule;
-
-    if (cache == NULL || cache->m_state != net_log_request_cache_building) {
-        cache = net_log_request_cache_create(mgr, mgr->m_cache_max_id + 1, net_log_request_cache_building);
-        if (cache == NULL) return -1;
-    }
-
-    if (net_log_request_cache_append(cache, send_param) != 0) return -1;
-
-    if (cache->m_size >= schedule->m_cfg_cache_file_capacity) {
-        if (net_log_request_cache_close(cache) != 0) return -1;
-    }
-
-    return 0;
-}
-
 int net_log_request_mgr_save_and_clear_requests(net_log_request_manage_t mgr) {
+    net_log_schedule_t schedule = mgr->m_schedule;
+    
+    if(TAILQ_EMPTY(&mgr->m_active_requests) && TAILQ_EMPTY(&mgr->m_waiting_requests)) {
+        return 0;
+    }
+        
+    net_log_request_cache_t next_cache = TAILQ_FIRST(&mgr->m_caches);
+    assert(next_cache == NULL || next_cache->m_id > 0);
+    
+    uint32_t cache_id = next_cache ? (next_cache->m_id - 1) : (mgr->m_cache_max_id + 1);
+
+    net_log_request_cache_t cache = net_log_request_cache_create(mgr, cache_id, net_log_request_cache_building);
+    if (cache == NULL) {
+        CPE_ERROR(schedule->m_em, "log: %s: manage: sanve and clear: create cache fail", mgr->m_name);
+        return -1;
+    }
+    if (cache_id > mgr->m_cache_max_id) mgr->m_cache_max_id = cache_id;
+    
     while(!TAILQ_EMPTY(&mgr->m_active_requests)) {
         net_log_request_t request = TAILQ_FIRST(&mgr->m_active_requests);
-        if (net_log_request_mgr_cache_append(mgr, request->m_send_param) != 0) {
+        if (net_log_request_cache_append(cache, request->m_send_param) != 0) {
             return -1;
         }
         net_log_request_free(request);
@@ -326,11 +340,13 @@ int net_log_request_mgr_save_and_clear_requests(net_log_request_manage_t mgr) {
 
     while(!TAILQ_EMPTY(&mgr->m_waiting_requests)) {
         net_log_request_t request = TAILQ_FIRST(&mgr->m_waiting_requests);
-        if (net_log_request_mgr_cache_append(mgr, request->m_send_param) != 0) {
+        if (net_log_request_cache_append(cache, request->m_send_param) != 0) {
             return -1;
         }
         net_log_request_free(request);
     }
+
+    if (net_log_request_cache_close(cache) != 0) return -1;
 
     return 0;
 }
