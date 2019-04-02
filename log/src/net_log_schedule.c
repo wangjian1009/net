@@ -386,6 +386,8 @@ mem_buffer_t net_log_schedule_tmp_buffer(net_log_schedule_t schedule) {
 static void net_log_schedule_dump_timer(net_timer_t timer, void * ctx) {
     net_log_schedule_t schedule = ctx;
 
+    CPE_INFO(schedule->m_em, "log: begin dump, category-count=%d", schedule->m_category_count);
+    
     uint8_t i;
     for(i = 0; i < schedule->m_category_count; ++i) {
         net_log_category_t category = schedule->m_categories[i];
