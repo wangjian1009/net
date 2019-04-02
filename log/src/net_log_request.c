@@ -142,21 +142,47 @@ void net_log_request_active(net_log_request_t request) {
 
     if (request->m_state != net_log_request_state_active) {
         assert(request->m_state == net_log_request_state_waiting);
-        TAILQ_REMOVE(&mgr->m_waiting_requests, request, m_next);
-
-        request->m_state = net_log_request_state_active;
-        mgr->m_active_request_count++;
-        TAILQ_INSERT_TAIL(&mgr->m_active_requests, request, m_next);
-
-        if (schedule->m_debug) {
-            CPE_INFO(
-                schedule->m_em, "log: %s: category [%d]%s: request %d: active",
-                mgr->m_name, category->m_id, category->m_name, request->m_id);
-        }
+        net_log_request_set_state(request, net_log_request_state_active);
     }
     
     if (net_log_request_send(request) != 0) {
         net_log_request_process_result(schedule, category, mgr, request, net_log_request_send_network_error);
+    }
+}
+
+void net_log_request_set_state(net_log_request_t request, net_log_request_state_t state) {
+    net_log_request_manage_t mgr = request->m_mgr;
+    net_log_category_t category = request->m_category;
+    net_log_schedule_t schedule = mgr->m_schedule;
+
+    if (request->m_state == state) return;
+
+    if (request->m_state == net_log_request_state_active) {
+        assert(mgr->m_active_request_count > 0);
+        mgr->m_active_request_count--;
+        TAILQ_REMOVE(&mgr->m_active_requests, request, m_next);
+    }
+    else {
+        TAILQ_REMOVE(&mgr->m_waiting_requests, request, m_next);
+    }
+
+    net_log_request_state_t old_state = request->m_state;
+    request->m_state = state;
+
+    if (request->m_state == net_log_request_state_active) {
+        mgr->m_active_request_count++;
+        TAILQ_INSERT_TAIL(&mgr->m_active_requests, request, m_next);
+    }
+    else {
+        TAILQ_INSERT_HEAD(&mgr->m_waiting_requests, request, m_next);
+    }
+
+    if (schedule->m_debug) {
+        CPE_INFO(
+            schedule->m_em, "log: %s: category [%d]%s: request %d: state %s ==> %s",
+            mgr->m_name, category->m_id, category->m_name, request->m_id,
+            net_log_request_state_str(old_state),
+            net_log_request_state_str(request->m_state));
     }
 }
 
@@ -367,7 +393,17 @@ static void net_log_request_process_result(
         }
         
         net_log_request_free(request);
-        net_log_request_manage_active_next(mgr);
+        net_log_request_mgr_check_active_requests(mgr);
+    }
+    else if (mgr->m_state == net_log_request_manage_state_pause) {
+        net_log_request_set_state(request, net_log_request_state_waiting);
+
+        if (schedule->m_debug) {
+            CPE_INFO(
+                schedule->m_em, "log: %s: category [%d]%s: request %d: complete with result %s, pause",
+                mgr->m_name, category->m_id, category->m_name, request->m_id,
+                net_log_request_send_result_str(send_result));
+        }
     }
     else { /*delay process*/
         if (request->m_delay_process == NULL) {
@@ -380,7 +416,7 @@ static void net_log_request_process_result(
 
                 net_log_category_add_fail_statistics(category, request->m_send_param->log_count);
                 net_log_request_free(request);
-                net_log_request_manage_active_next(mgr);
+                net_log_request_mgr_check_active_requests(mgr);
                 return;
             }
         }
@@ -446,6 +482,15 @@ const char * net_log_request_send_result_str(net_log_request_send_result_t resul
         return "discard-error";
     case net_log_request_send_time_error:
         return "time-error";
+    }
+}
+
+const char * net_log_request_state_str(net_log_request_state_t state) {
+    switch(state) {
+    case net_log_request_state_waiting:
+        return "waiting";
+    case net_log_request_state_active:
+        return "active";
     }
 }
 

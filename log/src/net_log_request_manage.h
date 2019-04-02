@@ -43,14 +43,14 @@ void net_log_request_manage_free(net_log_request_manage_t request_mgr);
 void net_log_request_manage_process_cmd(
     net_log_request_manage_t mgr, net_log_request_cmd_t cmd, net_log_request_param_t send_param);
 
-void net_log_request_manage_active_next(net_log_request_manage_t mgr);
-
 int net_log_request_manage_sock_cb(CURL *e, curl_socket_t s, int what, void *cbp, void *sockp);
 int net_log_request_manage_timer_cb(CURLM *multi, long timeout_ms, net_log_request_manage_t mgr);
 void net_log_request_manage_do_timeout(net_timer_t timer, void * ctx);
 
 const char * net_log_request_manage_cache_dir(net_log_request_manage_t mgr, mem_buffer_t tmp_buffer);
 const char * net_log_request_manage_cache_file(net_log_request_manage_t mgr, uint32_t id, mem_buffer_t tmp_buffer);
+
 int net_log_request_mgr_search_cache(net_log_request_manage_t mgr);
+void net_log_request_mgr_check_active_requests(net_log_request_manage_t mgr);
 
 #endif

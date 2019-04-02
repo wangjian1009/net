@@ -73,13 +73,6 @@ void net_log_request_manage_free(net_log_request_manage_t mgr) {
     mem_free(schedule->m_alloc, mgr);
 }
 
-void net_log_request_manage_active_next(net_log_request_manage_t mgr) {
-    net_log_request_t request = TAILQ_FIRST(&mgr->m_waiting_requests);
-    if (request) {
-        net_log_request_active(request);
-    }
-}
-
 static void net_log_request_manage_process_cmd_send(
     net_log_schedule_t schedule, net_log_request_manage_t mgr, net_log_request_param_t send_param)
 {
@@ -273,17 +266,36 @@ int net_log_request_mgr_search_cache(net_log_request_manage_t mgr) {
     return rv;
 }
 
-void net_log_request_mgr_restore_cache(net_log_request_manage_t mgr) {
+void net_log_request_mgr_check_active_requests(net_log_request_manage_t mgr) {
     net_log_schedule_t schedule = mgr->m_schedule;
 
-    net_log_request_cache_t cache;
-    while((cache = TAILQ_LAST(&mgr->m_caches, net_log_request_cache_list))) {
-        if (net_log_request_cache_load(cache) != 0) {
-            CPE_ERROR(schedule->m_em, "log: %s: restore: cache %d load fail, clear", mgr->m_name, cache->m_id);
-            net_log_request_cache_clear_and_free(cache);
-            continue;
+    while(mgr->m_active_request_count < mgr->m_cfg_active_request_count) {
+        net_log_request_t request = TAILQ_FIRST(&mgr->m_waiting_requests);
+        if (request) {
+            net_log_request_active(request);
         }
+        else {
+            net_log_request_cache_t cache;
+            while((cache = TAILQ_LAST(&mgr->m_caches, net_log_request_cache_list))) {
+                if (net_log_request_cache_load(cache) != 0) {
+                    CPE_ERROR(schedule->m_em, "log: %s: restore: cache %d load fail, clear", mgr->m_name, cache->m_id);
+                    net_log_request_cache_clear_and_free(cache);
+                    continue;
+                }
 
-        net_log_request_cache_clear_and_free(cache);
+                net_log_request_cache_clear_and_free(cache);
+
+                if (!TAILQ_EMPTY(&mgr->m_waiting_requests)) {
+                    if (schedule->m_debug) {
+                        CPE_INFO(
+                            schedule->m_em, "log: %s: restore: load %d requests",
+                            mgr->m_name, (mgr->m_request_count - mgr->m_active_request_count));
+                    }
+                    break;
+                }
+            }
+
+            if (TAILQ_EMPTY(&mgr->m_waiting_requests)) break;
+        }
     }
 }
