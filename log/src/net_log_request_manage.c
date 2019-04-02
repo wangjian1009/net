@@ -135,6 +135,8 @@ static void net_log_request_manage_process_cmd_resume(net_log_schedule_t schedul
     if (schedule->m_debug) {
         CPE_INFO(schedule->m_em, "log: %s: manage: running", mgr->m_name);
     }
+
+    net_log_request_mgr_check_active_requests(mgr);    
 }
 
 static void net_log_request_manage_process_cmd_stop(net_log_schedule_t schedule, net_log_request_manage_t mgr) {
