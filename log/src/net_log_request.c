@@ -65,6 +65,7 @@ net_log_request_create(net_log_request_manage_t mgr, net_log_request_param_t sen
     request->m_delay_process = NULL;
 
     mgr->m_request_count++;
+    mgr->m_request_buf_size += send_param->log_buf->length;
     TAILQ_INSERT_TAIL(&mgr->m_waiting_requests, request, m_next);
 
     if (schedule->m_debug) {
@@ -109,6 +110,9 @@ void net_log_request_free(net_log_request_t request) {
 
     assert(mgr->m_request_count > 0);
     mgr->m_request_count--;
+
+    assert(mgr->m_request_buf_size >= request->m_send_param->log_buf->length);
+    mgr->m_request_buf_size -= request->m_send_param->log_buf->length;
 
     switch(request->m_state) {
     case net_log_request_state_waiting:

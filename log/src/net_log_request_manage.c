@@ -32,6 +32,7 @@ net_log_request_manage_create(
     mgr->m_still_running = 0;
     mgr->m_request_max_id = 0;
     mgr->m_request_count = 0;
+    mgr->m_request_buf_size = 0;
     mgr->m_active_request_count = 0;
     mgr->m_cache_max_id = 0;
     mgr->m_name = name;
@@ -194,6 +195,21 @@ const char * net_log_request_manage_cache_dir(net_log_request_manage_t mgr, mem_
     return mem_buffer_make_continuous(tmp_buffer, 0);
 }
 
+const char * net_log_request_manage_cache_file(net_log_request_manage_t mgr, uint32_t id, mem_buffer_t tmp_buffer) {
+    net_log_schedule_t schedule = mgr->m_schedule;
+
+    assert(schedule->m_cfg_cache_dir);
+    
+    mem_buffer_clear_data(tmp_buffer);
+
+    if (mem_buffer_printf(tmp_buffer, "%s/%s/cache_%5d", schedule->m_cfg_cache_dir, mgr->m_name, id) < 0) {
+        CPE_ERROR(schedule->m_em, "log: %s: manage: format buffer fail", mgr->m_name);
+        return NULL;
+    }
+
+    return mem_buffer_make_continuous(tmp_buffer, 0);
+}
+
 int net_log_request_mgr_search_cache(net_log_request_manage_t mgr) {
     net_log_schedule_t schedule = mgr->m_schedule;
 
@@ -233,7 +249,7 @@ int net_log_request_mgr_search_cache(net_log_request_manage_t mgr) {
         const char * str_id = entry->m_name + 6;
         uint32_t id = atoi(str_id);
 
-        net_log_request_cache_t cache = net_log_request_cache_create(mgr, id);
+        net_log_request_cache_t cache = net_log_request_cache_create(mgr, id, net_log_request_cache_done);
         if (cache == NULL) {
             CPE_ERROR(
                 schedule->m_em, "log: %s: manage: cache %s(id=%d) create fail",

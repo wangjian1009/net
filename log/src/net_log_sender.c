@@ -172,6 +172,7 @@ static void * net_log_sender_thread(void * param) {
         ev_loop_destroy(ev_loop);
         return NULL;
     }
+    net_log_request_mgr_search_cache(request_mgr);
 
     if (net_log_request_pipe_bind(sender->m_request_pipe, request_mgr) != 0) {
         CPE_ERROR(schedule->m_em, "log: %s: sender: bind request mgr fail", sender->m_name);

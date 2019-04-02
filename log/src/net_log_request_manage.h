@@ -18,6 +18,7 @@ struct net_log_request_manage {
     uint8_t m_cfg_active_request_count;
     uint8_t m_active_request_count;
     uint16_t m_request_count;
+    uint32_t m_request_buf_size;
     uint32_t m_request_max_id;
     uint32_t m_cache_max_id;
     net_log_request_cache_list_t m_caches;
@@ -49,5 +50,7 @@ int net_log_request_manage_timer_cb(CURLM *multi, long timeout_ms, net_log_reque
 void net_log_request_manage_do_timeout(net_timer_t timer, void * ctx);
 
 const char * net_log_request_manage_cache_dir(net_log_request_manage_t mgr, mem_buffer_t tmp_buffer);
+const char * net_log_request_manage_cache_file(net_log_request_manage_t mgr, uint32_t id, mem_buffer_t tmp_buffer);
+int net_log_request_mgr_search_cache(net_log_request_manage_t mgr);
 
 #endif
