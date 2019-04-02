@@ -2,11 +2,14 @@
 #include "net_log_state_i.h"
 #include "net_log_flusher_i.h"
 #include "net_log_sender_i.h"
+#include "net_log_request_cmd.h"
+#include "net_log_request_pipe.h"
+#include "net_log_request_manage.h"
 
 static void net_log_state_fsm_dump_event(write_stream_t s, fsm_def_machine_t m, void * input_event);
 
 fsm_def_machine_t net_log_create_fsm_def(net_log_schedule_t schedule) {
-    fsm_def_machine_t fsm_def = fsm_def_machine_create("sfox.client", schedule->m_alloc, schedule->m_em);
+    fsm_def_machine_t fsm_def = fsm_def_machine_create("net.log", schedule->m_alloc, schedule->m_em);
     if (fsm_def == NULL) {
         CPE_ERROR(schedule->m_em, "sfox: client: create state fsm def: def create fail!");
         return NULL;
@@ -95,5 +98,35 @@ void net_log_schedule_stop_threads(net_log_schedule_t schedule) {
 
     TAILQ_FOREACH(sender, &schedule->m_senders, m_next) {
         if (sender->m_thread) net_log_sender_wait_stop(sender);
+    }
+}
+
+void net_log_schedule_pause_senders(net_log_schedule_t schedule) {
+    struct net_log_request_cmd cmd;
+    cmd.m_size = sizeof(cmd);
+    cmd.m_cmd = net_log_request_cmd_pause;
+
+    if (schedule->m_main_thread_request_mgr) {
+        net_log_request_manage_process_cmd(schedule->m_main_thread_request_mgr, &cmd, NULL);
+    }
+
+    net_log_sender_t sender;
+    TAILQ_FOREACH(sender, &schedule->m_senders, m_next) {
+        net_log_request_pipe_send_cmd(sender->m_request_pipe, &cmd);
+    }
+}
+
+void net_log_schedule_resume_senders(net_log_schedule_t schedule) {
+    struct net_log_request_cmd cmd;
+    cmd.m_size = sizeof(cmd);
+    cmd.m_cmd = net_log_request_cmd_resume;
+
+    if (schedule->m_main_thread_request_mgr) {
+        net_log_request_manage_process_cmd(schedule->m_main_thread_request_mgr, &cmd, NULL);
+    }
+
+    net_log_sender_t sender;
+    TAILQ_FOREACH(sender, &schedule->m_senders, m_next) {
+        net_log_request_pipe_send_cmd(sender->m_request_pipe, &cmd);
     }
 }

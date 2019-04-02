@@ -18,7 +18,8 @@ static uint32_t net_log_state_fsm_runing_trans(fsm_machine_t fsm, fsm_def_state_
         net_log_schedule_stop_threads(schedule);
         return net_log_schedule_state_init;
     case net_log_state_fsm_evt_pause:
-        return FSM_KEEP_STATE;
+        net_log_schedule_pause_senders(schedule);
+        return net_log_schedule_state_pause;
     case net_log_state_fsm_evt_start:
     case net_log_state_fsm_evt_resume:
         return FSM_KEEP_STATE;

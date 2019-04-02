@@ -285,51 +285,20 @@ void net_log_schedule_commit(net_log_schedule_t schedule) {
 }
 
 int net_log_schedule_start(net_log_schedule_t schedule) {
-    /* if (net_log_schedule_start(schedule) != net_log_schedule_state_init) { */
-    /*     CPE_ERROR(schedule->m_em, "log: schedule: state is %s, can`t start", net_log_schedule_state_str(net_log_schedule_start(schedule))); */
-    /*     return -1; */
-    /* } */
-
-    /* if (schedule->m_debug) { */
-    /*     CPE_INFO( */
-    /*         schedule->m_em, "log: schedule: %s ==> %s", */
-    /*         net_log_schedule_state_str(net_log_schedule_state(schedule)), */
-    /*         net_log_schedule_state_str(net_log_schedule_state_runing)); */
-    /* } */
-    /* schedule->m_state = net_log_schedule_state_runing; */
-
-    
+    net_log_state_fsm_apply_evt(schedule, net_log_state_fsm_evt_start);
     return 0;
 }
 
 void net_log_schedule_stop(net_log_schedule_t schedule) {
-    /* switch(schedule->m_state) { */
-    /* case net_log_schedule_state_init: */
-    /*     break; */
-    /* case net_log_schedule_state_runing: */
-    /*     break; */
-    /* case net_log_schedule_state_pause: */
-    /*     break; */
-    /* case net_log_schedule_state_stoping: */
-    /*     break; */
-
-    /*     net_log_schedule_state_init) return; */
-
-    /* if (schedule->m_debug) { */
-    /*     CPE_INFO(schedule->m_em, "log: schedule: stop begin"); */
-    /* } */
-    
-    /* net_log_schedule_do_stop(schedule); */
-
-    /* if (schedule->m_debug) { */
-    /*     CPE_INFO(schedule->m_em, "log: schedule: stop complete"); */
-    /* } */
+    net_log_state_fsm_apply_evt(schedule, net_log_state_fsm_evt_stop);
 }
 
 void net_log_schedule_pause(net_log_schedule_t schedule) {
+    net_log_state_fsm_apply_evt(schedule, net_log_state_fsm_evt_pause);
 }
 
 void net_log_schedule_resume(net_log_schedule_t schedule) {
+    net_log_state_fsm_apply_evt(schedule, net_log_state_fsm_evt_resume);
 }
 
 void net_log_schedule_set_max_active_request_count(net_log_schedule_t schedule, uint8_t max_active_request_count) {

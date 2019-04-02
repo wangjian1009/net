@@ -4,16 +4,26 @@
 #include "net_log_state_i.h"
 
 static void net_log_state_fsm_pause_enter(fsm_machine_t fsm, fsm_def_state_t state, void * event) {
-    //net_log_schedule_t schedule = fsm_machine_context(fsm);
 }
 
 static void net_log_state_fsm_pause_leave(fsm_machine_t fsm, fsm_def_state_t state, void * event) {
 }
 
 static uint32_t net_log_state_fsm_pause_trans(fsm_machine_t fsm, fsm_def_state_t state, void * input_evt) {
+    net_log_schedule_t schedule = fsm_machine_context(fsm);
     net_log_state_fsm_evt_t evt = input_evt;
 
-    return FSM_KEEP_STATE;
+    switch(evt->m_type) {
+    case net_log_state_fsm_evt_stop:
+        net_log_schedule_stop_threads(schedule);
+        return net_log_schedule_state_init;
+    case net_log_state_fsm_evt_resume:
+        net_log_schedule_resume_senders(schedule);
+        return net_log_schedule_state_runing;
+    case net_log_state_fsm_evt_start:
+    case net_log_state_fsm_evt_pause:
+        return FSM_KEEP_STATE;
+    }
 }
 
 int net_log_state_fsm_create_pause(fsm_def_machine_t fsm_def, error_monitor_t em) {

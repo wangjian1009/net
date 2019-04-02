@@ -25,5 +25,7 @@ int net_log_state_fsm_apply_evt(net_log_schedule_t schedule, net_log_state_fsm_e
 
 int net_log_schedule_start_threads(net_log_schedule_t schedule);
 void net_log_schedule_stop_threads(net_log_schedule_t schedule);
+void net_log_schedule_pause_senders(net_log_schedule_t schedule);
+void net_log_schedule_resume_senders(net_log_schedule_t schedule);
 
 #endif
