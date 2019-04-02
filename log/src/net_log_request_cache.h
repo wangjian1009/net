@@ -13,4 +13,6 @@ void net_log_request_cache_free(net_log_request_cache_t cache);
 
 int net_log_request_cache_push(net_log_request_cache_t cache, net_log_request_param_t send_param);
 
+int net_log_request_cache_cmp(net_log_request_cache_t l, net_log_request_cache_t r, void * ctx);
+
 #endif

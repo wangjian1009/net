@@ -1,4 +1,9 @@
 #include "assert.h"
+#include "cpe/pal/pal_stdlib.h"
+#include "cpe/utils/string_utils.h"
+#include "cpe/utils/tailq_sort.h"
+#include "cpe/vfs/vfs_dir.h"
+#include "cpe/vfs/vfs_entry_info.h"
 #include "net_timer.h"
 #include "net_log_request_manage.h"
 #include "net_log_request.h"
@@ -174,6 +179,80 @@ void net_log_request_manage_process_cmd(
     }
 }
 
+const char * net_log_request_manage_cache_dir(net_log_request_manage_t mgr, mem_buffer_t tmp_buffer) {
+    net_log_schedule_t schedule = mgr->m_schedule;
+
+    assert(schedule->m_cfg_cache_dir);
+    
+    mem_buffer_clear_data(tmp_buffer);
+
+    if (mem_buffer_printf(tmp_buffer, "%s/%s", schedule->m_cfg_cache_dir, mgr->m_name) < 0) {
+        CPE_ERROR(schedule->m_em, "log: %s: manage: format buffer fail", mgr->m_name);
+        return NULL;
+    }
+
+    return mem_buffer_make_continuous(tmp_buffer, 0);
+}
+
 int net_log_request_mgr_search_cache(net_log_request_manage_t mgr) {
-    return 0;
+    net_log_schedule_t schedule = mgr->m_schedule;
+
+    const char * cache_dir = net_log_request_manage_cache_dir(mgr, mgr->m_tmp_buffer);
+    if (cache_dir == NULL) {
+        CPE_ERROR(schedule->m_em, "log: %s: manage: calc cache dir fail", mgr->m_name);
+        return -1;
+    }
+
+    if (!vfs_dir_exist(schedule->m_vfs, cache_dir)) {
+        if (schedule->m_debug) {
+            CPE_INFO(
+                schedule->m_em, "log: %s: manage: cache dir %s not exist, skip",
+                mgr->m_name, cache_dir);
+        }
+        return 0;
+    }
+    
+    vfs_dir_t d = vfs_dir_open(schedule->m_vfs, cache_dir);
+    if (d == NULL) {
+        CPE_ERROR(
+            schedule->m_em, "log: %s: manage: cache dir %s open fail",
+            mgr->m_name, cache_dir);
+        return -1;
+    }
+
+    struct vfs_entry_info_it entry_it;
+    vfs_dir_entries(d, &entry_it);
+
+    int rv = 0;
+
+    vfs_entry_info_t entry;
+    while((entry = vfs_entry_info_it_next(&entry_it))) {
+        if (entry->m_type != vfs_entry_file) continue;
+        if (!cpe_str_start_with(entry->m_name, "cache_")) continue;
+
+        const char * str_id = entry->m_name + 6;
+        uint32_t id = atoi(str_id);
+
+        net_log_request_cache_t cache = net_log_request_cache_create(mgr, id);
+        if (cache == NULL) {
+            CPE_ERROR(
+                schedule->m_em, "log: %s: manage: cache %s(id=%d) create fail",
+                mgr->m_name, entry->m_name, id);
+            rv = -1;
+            continue;
+        }
+    }
+
+    vfs_dir_close(d);
+
+    TAILQ_SORT(&mgr->m_caches, net_log_request_cache, net_log_request_cache_list, m_next, net_log_request_cache_cmp, NULL);
+
+    if (schedule->m_debug) {
+        net_log_request_cache_t cache;
+        TAILQ_FOREACH(cache, &mgr->m_caches, m_next) {
+            CPE_INFO(schedule->m_em, "log: %s: manage: found cache %d", mgr->m_name, cache->m_id);
+        }
+    }
+    
+    return rv;
 }

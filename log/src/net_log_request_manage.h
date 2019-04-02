@@ -48,4 +48,6 @@ int net_log_request_manage_sock_cb(CURL *e, curl_socket_t s, int what, void *cbp
 int net_log_request_manage_timer_cb(CURLM *multi, long timeout_ms, net_log_request_manage_t mgr);
 void net_log_request_manage_do_timeout(net_timer_t timer, void * ctx);
 
+const char * net_log_request_manage_cache_dir(net_log_request_manage_t mgr, mem_buffer_t tmp_buffer);
+
 #endif
