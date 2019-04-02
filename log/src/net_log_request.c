@@ -39,6 +39,8 @@ net_log_request_create(net_log_request_manage_t mgr, net_log_request_param_t sen
     net_log_schedule_t schedule = mgr->m_schedule;
     net_log_category_t category = send_param->category;
 
+    assert(send_param);
+
     net_log_request_t request = TAILQ_FIRST(&mgr->m_free_requests);
     if (request) {
         TAILQ_REMOVE(&mgr->m_free_requests, request, m_next);
@@ -103,6 +105,9 @@ void net_log_request_free(net_log_request_t request) {
         request->m_handler = NULL;
     }
 
+    assert(mgr->m_request_buf_size >= request->m_send_param->log_buf->length);
+    mgr->m_request_buf_size -= request->m_send_param->log_buf->length;
+
     if (request->m_send_param) {
         net_log_request_param_free(request->m_send_param);
         request->m_send_param = NULL;
@@ -110,9 +115,6 @@ void net_log_request_free(net_log_request_t request) {
 
     assert(mgr->m_request_count > 0);
     mgr->m_request_count--;
-
-    assert(mgr->m_request_buf_size >= request->m_send_param->log_buf->length);
-    mgr->m_request_buf_size -= request->m_send_param->log_buf->length;
 
     switch(request->m_state) {
     case net_log_request_state_waiting:
@@ -302,13 +304,28 @@ static int net_log_request_send(net_log_request_t request) {
     if (lz4Flag) {
         sz = snprintf(
             buf, sizeof(buf),
-            "POST\n%s\napplication/x-protobuf\n%s\nx-log-apiversion:0.6.0\nx-log-bodyrawsize:%d\nx-log-compresstype:lz4\nx-log-signaturemethod:hmac-sha1\n/logstores/%s/shards/lb",
+            "POST\n"
+            "%s\n"
+            "application/x-protobuf\n"
+            "%s\n"
+            "x-log-apiversion:0.6.0\n"
+            "x-log-bodyrawsize:%d\n"
+            "x-log-compresstype:lz4\n"
+            "x-log-signaturemethod:hmac-sha1\n"
+            "/logstores/%s/shards/lb",
             md5Buf, nowTime, (int)buffer->raw_length, category->m_name);
     }
     else {
         sz = snprintf(
             buf, sizeof(buf),
-            "POST\n%s\napplication/x-protobuf\n%s\nx-log-apiversion:0.6.0\nx-log-bodyrawsize:%d\nx-log-signaturemethod:hmac-sha1\n/logstores/%s/shards/lb",
+            "POST\n"
+            "%s\n"
+            "application/x-protobuf\n"
+            "%s\n"
+            "x-log-apiversion:0.6.0\n"
+            "x-log-bodyrawsize:%d\n"
+            "x-log-signaturemethod:hmac-sha1\n"
+            "/logstores/%s/shards/lb",
             md5Buf, nowTime, (int)buffer->raw_length, category->m_name);
     }
 
