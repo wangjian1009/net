@@ -184,11 +184,17 @@ static void * net_log_sender_thread(void * param) {
 
     ev_set_userdata(ev_loop, request_mgr);
 
-    net_log_request_mgr_search_cache(request_mgr);
-    net_log_request_mgr_check_active_requests(request_mgr);
+    if (schedule->m_cfg_cache_dir) { /*加载缓存 */
+        net_log_request_mgr_search_cache(request_mgr);
+        net_log_request_mgr_check_active_requests(request_mgr);
+    }
     
     ev_run(ev_loop, 0);
 
+    if (schedule->m_cfg_cache_dir) { /*保存缓存 */
+        net_log_request_mgr_save_and_clear_requests(request_mgr);
+    }
+    
     net_log_request_manage_free(request_mgr);
     mem_buffer_clear(&tmp_buffer);
     net_schedule_free(net_schedule);

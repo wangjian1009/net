@@ -79,6 +79,10 @@ static void net_log_request_manage_process_cmd_send(
     assert(send_param);
 
     net_log_request_cache_t cache = TAILQ_FIRST(&mgr->m_caches);
+    if (cache == NULL) {
+        //cache = TAILQ_FIRST(&mgr->m_caches);
+    }
+    
     if (cache) {
         if (net_log_request_cache_append(cache, send_param) != 0) {
             CPE_ERROR(schedule->m_em, "log: %s: cache: append fail", mgr->m_name);
@@ -96,16 +100,7 @@ static void net_log_request_manage_process_cmd_send(
         net_log_request_param_free(send_param);
     }
     else {
-        if (mgr->m_active_request_count < mgr->m_cfg_active_request_count) {
-            net_log_request_active(request);
-        }
-        else {
-            if (schedule->m_debug) {
-                CPE_INFO(
-                    schedule->m_em, "log: %s: manage: max active request %d reached, delay active",
-                    mgr->m_name, mgr->m_cfg_active_request_count);
-            }
-        }
+        net_log_request_mgr_check_active_requests(mgr);
     }
 }
 
@@ -300,4 +295,42 @@ void net_log_request_mgr_check_active_requests(net_log_request_manage_t mgr) {
             if (TAILQ_EMPTY(&mgr->m_waiting_requests)) break;
         }
     }
+}
+
+int net_log_request_mgr_cache_append(net_log_request_manage_t mgr, net_log_request_param_t send_param) {
+    net_log_request_cache_t cache = TAILQ_FIRST(&mgr->m_caches);
+    net_log_schedule_t schedule = mgr->m_schedule;
+
+    if (cache == NULL || cache->m_state != net_log_request_cache_building) {
+        cache = net_log_request_cache_create(mgr, mgr->m_cache_max_id + 1, net_log_request_cache_building);
+        if (cache == NULL) return -1;
+    }
+
+    if (net_log_request_cache_append(cache, send_param) != 0) return -1;
+
+    if (cache->m_size >= schedule->m_cfg_cache_file_capacity) {
+        if (net_log_request_cache_close(cache) != 0) return -1;
+    }
+
+    return 0;
+}
+
+int net_log_request_mgr_save_and_clear_requests(net_log_request_manage_t mgr) {
+    while(!TAILQ_EMPTY(&mgr->m_active_requests)) {
+        net_log_request_t request = TAILQ_FIRST(&mgr->m_active_requests);
+        if (net_log_request_mgr_cache_append(mgr, request->m_send_param) != 0) {
+            return -1;
+        }
+        net_log_request_free(request);
+    }
+
+    while(!TAILQ_EMPTY(&mgr->m_waiting_requests)) {
+        net_log_request_t request = TAILQ_FIRST(&mgr->m_waiting_requests);
+        if (net_log_request_mgr_cache_append(mgr, request->m_send_param) != 0) {
+            return -1;
+        }
+        net_log_request_free(request);
+    }
+
+    return 0;
 }

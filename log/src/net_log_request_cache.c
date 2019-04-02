@@ -278,6 +278,32 @@ int net_log_request_cache_load(net_log_request_cache_t cache) {
     return rv;
 }
 
+int net_log_request_cache_close(net_log_request_cache_t cache) {
+    net_log_request_manage_t mgr = cache->m_mgr;
+    net_log_schedule_t schedule = mgr->m_schedule;
+
+    if (cache->m_state != net_log_request_cache_building) {
+        CPE_ERROR(
+            schedule->m_em, "log: %s: cache %d: load: state is %s, can`t save",
+            mgr->m_name, cache->m_id, net_log_request_cache_state_str(cache->m_state));
+        return -1;
+    }
+
+    assert(cache->m_file);
+    vfs_file_close(cache->m_file);
+    cache->m_file = NULL;
+
+    cache->m_state = net_log_request_cache_done;
+
+    if (schedule->m_debug) {
+        CPE_INFO(
+            schedule->m_em, "log: %s: cache %d: save: success, size=%.2fKB",
+            mgr->m_name, cache->m_id, (float)cache->m_size / 1024.0f);
+    }
+    
+    return 0;
+}
+
 int net_log_request_cache_cmp(net_log_request_cache_t l, net_log_request_cache_t r, void * ctx) {
     return l->m_id < r->m_id ? (- (r->m_id - l->m_id)) : (l->m_id - r->m_id);
 }
