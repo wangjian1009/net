@@ -48,6 +48,8 @@ net_log_schedule_create(
     schedule->m_cfg_timeout_ms = 3000;
     schedule->m_cfg_connect_timeout_s = 10;
     schedule->m_cfg_send_timeout_s = 15;
+    schedule->m_cfg_cache_mem_buf_capacity = 0;
+    schedule->m_cfg_cache_file_buf_capacity = 0;
     schedule->m_cfg_compress = net_log_compress_lz4;
     schedule->m_cfg_active_request_count = 1;
     schedule->m_cfg_dump_span_ms = 0;
@@ -242,6 +244,16 @@ int net_log_schedule_set_cache_dir(net_log_schedule_t schedule, const char * dir
     schedule->m_cfg_cache_dir = new_cache_dir;
     
     return 0;
+}
+
+void net_log_schedule_set_cache_mem_capacity(net_log_schedule_t schedule, uint32_t capacity) {
+    assert(net_log_schedule_state(schedule) == net_log_schedule_state_init);
+    schedule->m_cfg_cache_mem_capacity = capacity;
+}
+
+void net_log_schedule_set_cache_file_capacity(net_log_schedule_t schedule, uint32_t capacity) {
+    assert(net_log_schedule_state(schedule) == net_log_schedule_state_init);
+    schedule->m_cfg_cache_file_capacity = capacity;
 }
 
 net_log_schedule_state_t net_log_schedule_state(net_log_schedule_t schedule) {

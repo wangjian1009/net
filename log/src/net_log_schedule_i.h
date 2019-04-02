@@ -47,6 +47,8 @@ struct net_log_schedule {
     uint32_t m_cfg_connect_timeout_s;
     uint32_t m_cfg_send_timeout_s;
     uint32_t m_cfg_timeout_ms;
+    uint32_t m_cfg_cache_mem_capacity;
+    uint32_t m_cfg_cache_file_capacity;
     net_log_compress_type_t m_cfg_compress;
     char * m_cfg_cache_dir;
     uint32_t m_cfg_dump_span_ms;

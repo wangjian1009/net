@@ -16,6 +16,8 @@ uint8_t net_log_schedule_debug(net_log_schedule_t schedule);
 void net_log_schedule_set_debug(net_log_schedule_t schedule, uint8_t debug);
 
 int net_log_schedule_set_cache_dir(net_log_schedule_t schedule, const char * dir);
+void net_log_schedule_set_cache_mem_capacity(net_log_schedule_t schedule, uint32_t capacity);
+void net_log_schedule_set_cache_file_capacity(net_log_schedule_t schedule, uint32_t capacity);
 
 net_log_schedule_state_t net_log_schedule_state(net_log_schedule_t schedule);
 int net_log_schedule_start(net_log_schedule_t schedule);
