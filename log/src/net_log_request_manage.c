@@ -102,6 +102,7 @@ static void net_log_request_manage_process_cmd_send(
             net_log_request_param_free(send_param);
             goto SEND_FAIL;
         }
+        mgr->m_cache_max_id++;
     }
 
     if (net_log_request_cache_append(cache, send_param) != 0) {
@@ -263,6 +264,8 @@ int net_log_request_mgr_search_cache(net_log_request_manage_t mgr) {
             rv = -1;
             continue;
         }
+
+        if (id > mgr->m_cache_max_id) mgr->m_cache_max_id = id;
     }
 
     vfs_dir_close(d);
