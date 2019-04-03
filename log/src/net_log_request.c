@@ -90,6 +90,17 @@ void net_log_request_free(net_log_request_t request) {
     assert(mgr->m_request_count > 0);
     mgr->m_request_count--;
 
+    switch(request->m_state) {
+    case net_log_request_state_waiting:
+        TAILQ_REMOVE(&mgr->m_waiting_requests, request, m_next);
+        break;
+    case net_log_request_state_active:
+        assert(mgr->m_active_request_count > 0);
+        mgr->m_active_request_count--;
+        TAILQ_REMOVE(&mgr->m_active_requests, request, m_next);
+        break;
+    }
+
     if (schedule->m_debug) {
         CPE_INFO(
             schedule->m_em, "log: %s: category [%d]%s: request %d: free  (total-active=%d, total-waiting=%d)",
@@ -115,17 +126,6 @@ void net_log_request_free(net_log_request_t request) {
     if (request->m_send_param) {
         net_log_request_param_free(request->m_send_param);
         request->m_send_param = NULL;
-    }
-
-    switch(request->m_state) {
-    case net_log_request_state_waiting:
-        TAILQ_REMOVE(&mgr->m_waiting_requests, request, m_next);
-        break;
-    case net_log_request_state_active:
-        assert(mgr->m_active_request_count > 0);
-        mgr->m_active_request_count--;
-        TAILQ_REMOVE(&mgr->m_active_requests, request, m_next);
-        break;
     }
 
     TAILQ_INSERT_TAIL(&mgr->m_free_requests, request, m_next);
