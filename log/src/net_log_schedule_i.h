@@ -63,6 +63,7 @@ struct net_log_schedule {
     net_log_category_t * m_categories;
 
     /*flusher*/
+    uint8_t m_runing_thread_count;
     net_log_flusher_list_t m_flushers;
     net_log_sender_list_t m_senders;
 

@@ -9,6 +9,7 @@
 #include "net_log_request.h"
 #include "net_log_queue.h"
 #include "net_log_builder.h"
+#include "net_log_state_i.h"
 
 static void * net_log_flusher_thread(void * param);
 
@@ -159,6 +160,7 @@ int net_log_flusher_start(net_log_flusher_t flusher) {
         return -1;
     }
     
+    schedule->m_runing_thread_count++;
     return 0;
 }
 
@@ -197,6 +199,12 @@ void net_log_flusher_wait_stop(net_log_flusher_t flusher) {
 
     if (schedule->m_debug) {
         CPE_INFO(schedule->m_em, "log: flusher %s: wait stop: wait success", flusher->m_name);
+    }
+
+    assert(schedule->m_runing_thread_count > 0);
+    schedule->m_runing_thread_count--;
+    if (schedule->m_runing_thread_count == 0) {
+        net_log_state_fsm_apply_evt(schedule, net_log_state_fsm_evt_stop_complete);
     }
 }
 

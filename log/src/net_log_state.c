@@ -45,8 +45,11 @@ static void net_log_state_fsm_dump_event(write_stream_t s, fsm_def_machine_t m, 
     case net_log_state_fsm_evt_start:
         stream_printf(s, "start");
         break;
-    case net_log_state_fsm_evt_stop:
-        stream_printf(s, "stop");
+    case net_log_state_fsm_evt_stop_begin:
+        stream_printf(s, "stop-begin");
+        break;
+    case net_log_state_fsm_evt_stop_complete:
+        stream_printf(s, "stop-complete");
         break;
     case net_log_state_fsm_evt_pause:
         stream_printf(s, "pause");
@@ -63,14 +66,18 @@ int net_log_schedule_start_threads(net_log_schedule_t schedule) {
 
     TAILQ_FOREACH(flusher, &schedule->m_flushers, m_next) {
         if (net_log_flusher_start(flusher) != 0) {
-            net_log_schedule_stop_threads(schedule);
+            if (net_log_schedule_notify_stop_threads(schedule)) {
+                net_log_schedule_wait_stop_threads(schedule);
+            }
             return -1;
         }
     }
 
     TAILQ_FOREACH(sender, &schedule->m_senders, m_next) {
         if (net_log_sender_start(sender) != 0) {
-            net_log_schedule_stop_threads(schedule);
+            if (net_log_schedule_notify_stop_threads(schedule)) {
+                net_log_schedule_wait_stop_threads(schedule);
+            }
             return -1;
         }
     }
@@ -78,20 +85,34 @@ int net_log_schedule_start_threads(net_log_schedule_t schedule) {
     return 0;
 }
 
-void net_log_schedule_stop_threads(net_log_schedule_t schedule) {
+uint8_t net_log_schedule_notify_stop_threads(net_log_schedule_t schedule) {
     net_log_flusher_t flusher;
     net_log_sender_t sender;
 
+    uint8_t have_runing_thread = 0;
+
     /*首先通知所有线程停止 */
     TAILQ_FOREACH(flusher, &schedule->m_flushers, m_next) {
-        if (flusher->m_thread) net_log_flusher_notify_stop(flusher);
+        if (flusher->m_thread) {
+            net_log_flusher_notify_stop(flusher);
+            have_runing_thread = 1;
+        }
     }
 
     TAILQ_FOREACH(sender, &schedule->m_senders, m_next) {
-        if (sender->m_thread) net_log_sender_notify_stop(sender);
+        if (sender->m_thread) {
+            net_log_sender_notify_stop(sender);
+            have_runing_thread = 1;
+        }
     }
 
-    /*然后等待所有线程停止 */
+    return have_runing_thread;
+}
+
+void net_log_schedule_wait_stop_threads(net_log_schedule_t schedule) {
+    net_log_flusher_t flusher;
+    net_log_sender_t sender;
+
     TAILQ_FOREACH(flusher, &schedule->m_flushers, m_next) {
         if (flusher->m_thread) net_log_flusher_wait_stop(flusher);
     }

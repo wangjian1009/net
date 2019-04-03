@@ -4,7 +4,6 @@
 #include "net_log_state_i.h"
 
 static void net_log_state_fsm_stoping_enter(fsm_machine_t fsm, fsm_def_state_t state, void * event) {
-    //net_log_schedule_t schedule = fsm_machine_context(fsm);
 }
 
 static void net_log_state_fsm_stoping_leave(fsm_machine_t fsm, fsm_def_state_t state, void * event) {
@@ -13,7 +12,15 @@ static void net_log_state_fsm_stoping_leave(fsm_machine_t fsm, fsm_def_state_t s
 static uint32_t net_log_state_fsm_stoping_trans(fsm_machine_t fsm, fsm_def_state_t state, void * input_evt) {
     net_log_state_fsm_evt_t evt = input_evt;
 
-    return FSM_KEEP_STATE;
+    switch(evt->m_type) {
+    case net_log_state_fsm_evt_stop_complete:
+        return net_log_schedule_state_init;
+    case net_log_state_fsm_evt_resume:
+    case net_log_state_fsm_evt_stop_begin:
+    case net_log_state_fsm_evt_start:
+    case net_log_state_fsm_evt_pause:
+        return FSM_KEEP_STATE;
+    }
 }
 
 int net_log_state_fsm_create_stoping(fsm_def_machine_t fsm_def, error_monitor_t em) {

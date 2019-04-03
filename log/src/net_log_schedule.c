@@ -56,6 +56,7 @@ net_log_schedule_create(
     schedule->m_cfg_cache_dir = NULL;
     schedule->m_dump_timer = NULL;
     schedule->m_cfg_dump_span_ms = 0;
+    schedule->m_runing_thread_count = 0;
 
     schedule->m_cfg_project = cpe_str_mem_dup(alloc, cfg_project);
     if (schedule->m_cfg_project == NULL) {
@@ -323,7 +324,7 @@ int net_log_schedule_start(net_log_schedule_t schedule) {
 }
 
 void net_log_schedule_stop(net_log_schedule_t schedule) {
-    net_log_state_fsm_apply_evt(schedule, net_log_state_fsm_evt_stop);
+    net_log_state_fsm_apply_evt(schedule, net_log_state_fsm_evt_stop_begin);
 }
 
 void net_log_schedule_pause(net_log_schedule_t schedule) {

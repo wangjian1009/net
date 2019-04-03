@@ -14,8 +14,14 @@ static uint32_t net_log_state_fsm_pause_trans(fsm_machine_t fsm, fsm_def_state_t
     net_log_state_fsm_evt_t evt = input_evt;
 
     switch(evt->m_type) {
-    case net_log_state_fsm_evt_stop:
-        net_log_schedule_stop_threads(schedule);
+    case net_log_state_fsm_evt_stop_begin:
+        if (net_log_schedule_notify_stop_threads(schedule)) {
+            return net_log_schedule_state_stoping;
+        }
+        else {
+            return net_log_schedule_state_init;
+        }
+    case net_log_state_fsm_evt_stop_complete:
         return net_log_schedule_state_init;
     case net_log_state_fsm_evt_resume:
         net_log_schedule_resume_senders(schedule);
