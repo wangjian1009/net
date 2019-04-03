@@ -25,7 +25,7 @@
 static int net_log_request_send(net_log_request_t request);
 static int net_log_request_trace(CURL *handle, curl_infotype type, char *data, size_t size, void *userp);
 static void net_log_request_delay_commit(net_timer_t timer, void * ctx);
-static void net_log_request_rebuild_time(net_log_schedule_t schedule, net_log_category_t category, net_log_request_t request);
+static void net_log_request_rebuild_time(net_log_schedule_t schedule, net_log_category_t category, net_log_request_t request, uint32_t nowTime);
 
 static net_log_request_send_result_t net_log_request_calc_result(net_log_schedule_t schedule, net_log_request_t request);
 static int32_t net_log_request_check_result(
@@ -225,6 +225,14 @@ static int net_log_request_send(net_log_request_t request) {
     
     assert(buffer);
 
+    time_t nowTime = (uint32_t)time(NULL);
+    if (nowTime - send_param->builder_time > 600
+        || send_param->builder_time > (uint32_t)nowTime
+        || request->m_last_send_error == net_log_request_send_time_error)
+    {
+        net_log_request_rebuild_time(schedule, category, request, (uint32_t)nowTime);
+    }
+    
     if (request->m_handler) {
         curl_easy_cleanup(request->m_handler);
         request->m_handler = NULL;
@@ -261,10 +269,9 @@ static int net_log_request_send(net_log_request_t request) {
         curl_easy_setopt(request->m_handler, CURLOPT_CONNECT_TO, connect_to);
     }
 
-    char nowTime[64];
-    time_t rawtime = time(0);
-    struct tm * timeinfo = gmtime(&rawtime);
-    strftime(nowTime, sizeof(nowTime), "%a, %d %b %Y %H:%M:%S GMT", timeinfo);
+    char nowTimeStr[64];
+    struct tm * timeinfo = gmtime(&nowTime);
+    strftime(nowTimeStr, sizeof(nowTimeStr), "%a, %d %b %Y %H:%M:%S GMT", timeinfo);
 
     char md5Buf[33];
     md5Buf[32] = '\0';
@@ -283,7 +290,7 @@ static int net_log_request_send(net_log_request_t request) {
     headers = curl_slist_append(headers, "x-log-signaturemethod:hmac-sha1");
 
     /**/
-    snprintf(buf, sizeof(buf), "Date:%s", nowTime);
+    snprintf(buf, sizeof(buf), "Date:%s", nowTimeStr);
     headers = curl_slist_append(headers, buf);
 
     /**/
@@ -314,7 +321,7 @@ static int net_log_request_send(net_log_request_t request) {
             "x-log-compresstype:lz4\n"
             "x-log-signaturemethod:hmac-sha1\n"
             "/logstores/%s/shards/lb",
-            md5Buf, nowTime, (int)buffer->raw_length, category->m_name);
+            md5Buf, nowTimeStr, (int)buffer->raw_length, category->m_name);
     }
     else {
         sz = snprintf(
@@ -327,7 +334,7 @@ static int net_log_request_send(net_log_request_t request) {
             "x-log-bodyrawsize:%d\n"
             "x-log-signaturemethod:hmac-sha1\n"
             "/logstores/%s/shards/lb",
-            md5Buf, nowTime, (int)buffer->raw_length, category->m_name);
+            md5Buf, nowTimeStr, (int)buffer->raw_length, category->m_name);
     }
 
     char sha1Buf[65];
@@ -780,7 +787,9 @@ static void net_log_request_delay_commit(net_timer_t timer, void * ctx) {
     }
 }
 
-static void net_log_request_rebuild_time(net_log_schedule_t schedule, net_log_category_t category, net_log_request_t request) {
+static void net_log_request_rebuild_time(
+    net_log_schedule_t schedule, net_log_category_t category, net_log_request_t request, uint32_t nowTime)
+{
     net_log_request_manage_t mgr = request->m_mgr;
 
     if (schedule->m_debug) {
@@ -800,8 +809,7 @@ static void net_log_request_rebuild_time(net_log_schedule_t schedule, net_log_ca
         return;
     }
 
-    time_t nowTime = time(NULL);
-    fix_log_group_time(buf, lz4_buf->raw_length, (uint32_t)nowTime);
+    fix_log_group_time(buf, lz4_buf->raw_length, nowTime);
 
     int compress_bound = LZ4_compressBound(lz4_buf->raw_length);
     char *compress_data = (char *)malloc(compress_bound);
@@ -824,4 +832,5 @@ static void net_log_request_rebuild_time(net_log_schedule_t schedule, net_log_ca
 
     free(request->m_send_param->log_buf);
     request->m_send_param->log_buf = new_lz4_buf;
+    request->m_send_param->builder_time = nowTime;
 }
