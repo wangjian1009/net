@@ -9,11 +9,17 @@ typedef enum net_log_pipe_cmd_type {
     net_log_pipe_cmd_pause,
     net_log_pipe_cmd_resume,
     net_log_pipe_cmd_stop,
+    net_log_pipe_cmd_stoped,
 } net_log_pipe_cmd_type_t;
 
 struct net_log_pipe_cmd {
     uint8_t m_size;
-    net_log_pipe_cmd_type_t m_cmd;
+    uint8_t m_cmd;
+};
+
+struct net_log_pipe_cmd_stoped {
+    struct net_log_pipe_cmd head;
+    void * owner;
 };
 
 NET_END_DECL

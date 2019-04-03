@@ -135,12 +135,15 @@ void net_log_sender_wait_stop(net_log_sender_t sender) {
     mem_free(schedule->m_alloc, sender->m_thread);
     sender->m_thread = NULL;
 
-    if (schedule->m_debug) {
-        CPE_INFO(schedule->m_em, "log: %s: sender: wait stop: wait success", sender->m_name);
-    }
-
     assert(schedule->m_runing_thread_count > 0);
     schedule->m_runing_thread_count--;
+    
+    if (schedule->m_debug) {
+        CPE_INFO(
+            schedule->m_em, "log: %s: sender: wait stop: wait success, thread-count=%d",
+            sender->m_name, schedule->m_runing_thread_count);
+    }
+
     if (schedule->m_runing_thread_count == 0) {
         net_log_state_fsm_apply_evt(schedule, net_log_state_fsm_evt_stop_complete);
     }
@@ -235,7 +238,14 @@ THREAD_COMPLETED:
     }
 
     mem_buffer_clear(&tmp_buffer);
-    
+
+    struct net_log_pipe_cmd_stoped stop_cmd;
+    stop_cmd.head.m_size = sizeof(stop_cmd);
+    stop_cmd.head.m_cmd = net_log_pipe_cmd_stoped;
+    stop_cmd.owner = sender;
+    assert(schedule->m_main_thread_pipe);
+    net_log_pipe_send_cmd(schedule->m_main_thread_pipe, (net_log_pipe_cmd_t)&stop_cmd);
+
     if (schedule->m_debug) {
         CPE_INFO(schedule->m_em, "log: %s: sender: thread stoped", sender->m_name);
     }

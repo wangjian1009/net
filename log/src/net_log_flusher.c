@@ -10,6 +10,8 @@
 #include "net_log_queue.h"
 #include "net_log_builder.h"
 #include "net_log_state_i.h"
+#include "net_log_pipe.h"
+#include "net_log_pipe_cmd.h"
 
 static void * net_log_flusher_thread(void * param);
 
@@ -127,6 +129,13 @@ static void * net_log_flusher_thread(void * param) {
     }
     
     pthread_mutex_unlock(&flusher->m_mutex);
+
+    struct net_log_pipe_cmd_stoped stop_cmd;
+    stop_cmd.head.m_size = sizeof(stop_cmd);
+    stop_cmd.head.m_cmd = net_log_pipe_cmd_stoped;
+    stop_cmd.owner = flusher;
+    assert(schedule->m_main_thread_pipe);
+    net_log_pipe_send_cmd(schedule->m_main_thread_pipe, (net_log_pipe_cmd_t)&stop_cmd);
     
     if (schedule->m_debug) {
         CPE_INFO(schedule->m_em, "log: flusher %s: thread stoped", flusher->m_name);
@@ -197,12 +206,15 @@ void net_log_flusher_wait_stop(net_log_flusher_t flusher) {
     mem_free(schedule->m_alloc, flusher->m_thread);
     flusher->m_thread = NULL;
 
-    if (schedule->m_debug) {
-        CPE_INFO(schedule->m_em, "log: flusher %s: wait stop: wait success", flusher->m_name);
-    }
-
     assert(schedule->m_runing_thread_count > 0);
     schedule->m_runing_thread_count--;
+    
+    if (schedule->m_debug) {
+        CPE_INFO(
+            schedule->m_em, "log: flusher %s: wait stop: wait success, thread-count=%d",
+            flusher->m_name, schedule->m_runing_thread_count);
+    }
+
     if (schedule->m_runing_thread_count == 0) {
         net_log_state_fsm_apply_evt(schedule, net_log_state_fsm_evt_stop_complete);
     }

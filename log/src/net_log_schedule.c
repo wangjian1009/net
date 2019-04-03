@@ -528,3 +528,23 @@ int net_log_schedule_start_dump(net_log_schedule_t schedule, uint32_t dump_span_
 
     return 0;
 }
+
+void net_log_schedule_process_cmd_stoped(net_log_schedule_t schedule, void * owner) {
+    net_log_flusher_t flusher;
+    TAILQ_FOREACH(flusher, &schedule->m_flushers, m_next) {
+        if (flusher == owner) {
+            net_log_flusher_wait_stop(flusher);
+            return;
+        }
+    }
+
+    net_log_sender_t sender;
+    TAILQ_FOREACH(sender, &schedule->m_senders, m_next) {
+        if (sender == owner) {
+            net_log_sender_wait_stop(sender);
+            return;
+        }
+    }
+
+    CPE_ERROR(schedule->m_em, "log: schedule: cmd stoped: no owner matched");
+}

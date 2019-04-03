@@ -220,6 +220,15 @@ static void net_log_pipe_action(void * ctx, int fd, uint8_t do_read, uint8_t do_
                         CPE_ERROR(schedule->m_em, "log: pipe %s: cmd stop: no bind request mgr", pipe->m_name);
                     }
                     break;
+                case net_log_pipe_cmd_stoped:
+                    if (schedule->m_main_thread_pipe == pipe) {
+                        struct net_log_pipe_cmd_stoped * stoped_cmd = (struct net_log_pipe_cmd_stoped *)cmd;
+                        assert(stoped_cmd->head.m_size = sizeof(*stoped_cmd));
+                        net_log_schedule_process_cmd_stoped(schedule, stoped_cmd->owner);
+                    }
+                    else {
+                        CPE_ERROR(schedule->m_em, "log: pipe %s: cmd stoped: not in main thread", pipe->m_name);
+                    }
                 default:
                     CPE_ERROR(schedule->m_em, "log: pipe %s: unknown cmd %d", pipe->m_name, cmd->m_cmd);
                     break;
