@@ -23,10 +23,18 @@ net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, 
         return NULL;
     }
 
-    if (sender || flusher) {
-        if (net_log_schedule_init_main_thread_pipe(schedule) != 0) {
-            CPE_ERROR(schedule->m_em, "log: category [%d]%s: init main thread pipe fail!", id, name);
-            return NULL;
+    if (sender == NULL) {
+        if (flusher == NULL) {
+            if (net_log_schedule_init_main_thread_mgr(schedule) != 0) {
+                CPE_ERROR(schedule->m_em, "log: category [%d]%s: init main thread mgr fail!", id, name);
+                return NULL;
+            }
+        }
+        else {
+            if (net_log_schedule_init_main_thread_pipe(schedule) != 0) {
+                CPE_ERROR(schedule->m_em, "log: category [%d]%s: init main thread pipe fail!", id, name);
+                return NULL;
+            }
         }
     }
     

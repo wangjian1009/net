@@ -271,16 +271,8 @@ net_log_schedule_state_t net_log_schedule_state(net_log_schedule_t schedule) {
     return (net_log_schedule_state_t)schedule->m_state_fsm.m_curent_state;
 }
 
-int net_log_schedule_init_main_thread_pipe(net_log_schedule_t schedule) {
+int net_log_schedule_init_main_thread_mgr(net_log_schedule_t schedule) {
     assert(net_log_schedule_state(schedule) == net_log_schedule_state_init);
-
-    if (schedule->m_main_thread_pipe == NULL) {
-        schedule->m_main_thread_pipe = net_log_pipe_create(schedule, "main");
-        if (schedule->m_main_thread_pipe == NULL) {
-            CPE_ERROR(schedule->m_em, "log: schedule: create main thread request pipe fail");
-            return -1;
-        }
-    }
 
     if (schedule->m_main_thread_request_mgr == NULL) {
         schedule->m_main_thread_request_mgr =
@@ -297,6 +289,22 @@ int net_log_schedule_init_main_thread_pipe(net_log_schedule_t schedule) {
             if (net_log_request_mgr_init_cache_dir(schedule->m_main_thread_request_mgr) != 0) return -1;
             if (net_log_request_mgr_search_cache(schedule->m_main_thread_request_mgr) != 0) return -1;
             net_log_request_mgr_check_active_requests(schedule->m_main_thread_request_mgr);
+        }
+    }
+
+    return 0;
+}
+
+int net_log_schedule_init_main_thread_pipe(net_log_schedule_t schedule) {
+    assert(net_log_schedule_state(schedule) == net_log_schedule_state_init);
+
+    if (net_log_schedule_init_main_thread_mgr(schedule) != 0) return -1;
+
+    if (schedule->m_main_thread_pipe == NULL) {
+        schedule->m_main_thread_pipe = net_log_pipe_create(schedule, "main");
+        if (schedule->m_main_thread_pipe == NULL) {
+            CPE_ERROR(schedule->m_em, "log: schedule: create main thread request pipe fail");
+            return -1;
         }
     }
 

@@ -77,6 +77,7 @@ struct net_log_schedule {
 
 mem_buffer_t net_log_schedule_tmp_buffer(net_log_schedule_t schedule);
 
+int net_log_schedule_init_main_thread_mgr(net_log_schedule_t schedule);
 int net_log_schedule_init_main_thread_pipe(net_log_schedule_t schedule);
 
 void net_log_schedule_process_cmd_stoped(net_log_schedule_t schedule, void * owner);

@@ -87,7 +87,6 @@
 		C904629F21369E2D00330168 /* ecdsa.c in Sources */ = {isa = PBXBuildFile; fileRef = C904624F21369E2D00330168 /* ecdsa.c */; };
 		C90462A021369E2D00330168 /* nist_kw.c in Sources */ = {isa = PBXBuildFile; fileRef = C904625021369E2D00330168 /* nist_kw.c */; };
 		C9046461213777B300330168 /* net_http_ssl_ctx.c in Sources */ = {isa = PBXBuildFile; fileRef = C9046460213777B300330168 /* net_http_ssl_ctx.c */; };
-		C911EB372251AC2200285F39 /* net_log_request_pipe.c in Sources */ = {isa = PBXBuildFile; fileRef = C911EB362251AC2200285F39 /* net_log_request_pipe.c */; };
 		C91AE889223C6E3E00E4E007 /* net_endpoint_writer.c in Sources */ = {isa = PBXBuildFile; fileRef = C91AE888223C6E3E00E4E007 /* net_endpoint_writer.c */; };
 		C91E1EEC2105E4160080FAD8 /* net_endpoint_link_to.c in Sources */ = {isa = PBXBuildFile; fileRef = C91E1EC52105E4160080FAD8 /* net_endpoint_link_to.c */; };
 		C91E1EED2105E4160080FAD8 /* net_timer.c in Sources */ = {isa = PBXBuildFile; fileRef = C91E1EC62105E4160080FAD8 /* net_timer.c */; };
@@ -322,6 +321,7 @@
 		C99B018A2134D5BC00352CCB /* net_ws_endpoint.c in Sources */ = {isa = PBXBuildFile; fileRef = C99B01862134D5BC00352CCB /* net_ws_endpoint.c */; };
 		C99B018B2134D5BC00352CCB /* net_ws_protocol.c in Sources */ = {isa = PBXBuildFile; fileRef = C99B01882134D5BC00352CCB /* net_ws_protocol.c */; };
 		C99C3FF021250FDF00E985D2 /* net_proxy_http_svr_endpoint_tunnel.c in Sources */ = {isa = PBXBuildFile; fileRef = C99C3FEE21250FDF00E985D2 /* net_proxy_http_svr_endpoint_tunnel.c */; };
+		C9A45DDB2254BFF400AFBAD0 /* net_log_pipe.c in Sources */ = {isa = PBXBuildFile; fileRef = C9A45DD92254BFF400AFBAD0 /* net_log_pipe.c */; };
 		C9B0C46F2123F35F008DB367 /* net_proxy_http_svr_endpoint.c in Sources */ = {isa = PBXBuildFile; fileRef = C9B0C46B2123F35F008DB367 /* net_proxy_http_svr_endpoint.c */; };
 		C9B0C4882124099F008DB367 /* net_proxy_http_svr_protocol.c in Sources */ = {isa = PBXBuildFile; fileRef = C9B0C4872124099F008DB367 /* net_proxy_http_svr_protocol.c */; };
 		C9B6048F224F1C1000DF9744 /* net_log_builder.c in Sources */ = {isa = PBXBuildFile; fileRef = C9B6048C224F1C1000DF9744 /* net_log_builder.c */; };
@@ -593,9 +593,6 @@
 		C904625021369E2D00330168 /* nist_kw.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = nist_kw.c; sourceTree = "<group>"; };
 		C904645F213777B300330168 /* net_http_ssl_ctx_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_http_ssl_ctx_i.h; sourceTree = "<group>"; };
 		C9046460213777B300330168 /* net_http_ssl_ctx.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_http_ssl_ctx.c; sourceTree = "<group>"; };
-		C911EB342251AC2100285F39 /* net_log_request_pipe.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_log_request_pipe.h; sourceTree = "<group>"; };
-		C911EB352251AC2200285F39 /* net_log_request_cmd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_log_request_cmd.h; sourceTree = "<group>"; };
-		C911EB362251AC2200285F39 /* net_log_request_pipe.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_log_request_pipe.c; sourceTree = "<group>"; };
 		C91AE887223C6E2E00E4E007 /* net_endpoint_writer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_endpoint_writer.h; sourceTree = "<group>"; };
 		C91AE888223C6E3E00E4E007 /* net_endpoint_writer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_endpoint_writer.c; sourceTree = "<group>"; };
 		C91E1EB42105E4150080FAD8 /* net_protocol.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_protocol.h; sourceTree = "<group>"; };
@@ -1099,6 +1096,9 @@
 		C99B01882134D5BC00352CCB /* net_ws_protocol.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ws_protocol.c; sourceTree = "<group>"; };
 		C99B01892134D5BC00352CCB /* net_ws_endpoint_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ws_endpoint_i.h; sourceTree = "<group>"; };
 		C99C3FEE21250FDF00E985D2 /* net_proxy_http_svr_endpoint_tunnel.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_proxy_http_svr_endpoint_tunnel.c; sourceTree = "<group>"; };
+		C9A45DD82254BFF400AFBAD0 /* net_log_pipe_cmd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_log_pipe_cmd.h; sourceTree = "<group>"; };
+		C9A45DD92254BFF400AFBAD0 /* net_log_pipe.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_log_pipe.c; sourceTree = "<group>"; };
+		C9A45DDA2254BFF400AFBAD0 /* net_log_pipe.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_log_pipe.h; sourceTree = "<group>"; };
 		C9B0C44F2123F30F008DB367 /* libnet_protocol_proxy_http.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_protocol_proxy_http.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		C9B0C4672123F35F008DB367 /* net_proxy_http_types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_proxy_http_types.h; sourceTree = "<group>"; };
 		C9B0C4682123F35F008DB367 /* net_proxy_http_svr_endpoint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_proxy_http_svr_endpoint.h; sourceTree = "<group>"; };
@@ -2100,6 +2100,9 @@
 		C9951635224AFC3400DDEEB1 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				C9A45DD82254BFF400AFBAD0 /* net_log_pipe_cmd.h */,
+				C9A45DD92254BFF400AFBAD0 /* net_log_pipe.c */,
+				C9A45DDA2254BFF400AFBAD0 /* net_log_pipe.h */,
 				C9978B242254471C002F1F36 /* net_log_request_cache.c */,
 				C9978B1D2254471B002F1F36 /* net_log_request_cache.h */,
 				C9978B232254471C002F1F36 /* net_log_state_error.c */,
@@ -2109,9 +2112,6 @@
 				C9978B1E2254471B002F1F36 /* net_log_state_runing.c */,
 				C9978B212254471B002F1F36 /* net_log_state_stoping.c */,
 				C9978B1F2254471B002F1F36 /* net_log_state.c */,
-				C911EB352251AC2200285F39 /* net_log_request_cmd.h */,
-				C911EB362251AC2200285F39 /* net_log_request_pipe.c */,
-				C911EB342251AC2100285F39 /* net_log_request_pipe.h */,
 				C9B6048C224F1C1000DF9744 /* net_log_builder.c */,
 				C9B6048A224F1C0F00DF9744 /* net_log_builder.h */,
 				C9B6048D224F1C1000DF9744 /* net_log_queue.c */,
@@ -3195,7 +3195,6 @@
 				C9B60491224F1C1000DF9744 /* net_log_util.c in Sources */,
 				C9978B252254471C002F1F36 /* net_log_state_runing.c in Sources */,
 				C9978B2B2254471C002F1F36 /* net_log_request_cache.c in Sources */,
-				C911EB372251AC2200285F39 /* net_log_request_pipe.c in Sources */,
 				C9951659224AFC3400DDEEB1 /* sha1.c in Sources */,
 				C995166C224B11B100DDEEB1 /* net_log_category.c in Sources */,
 				C9978B2A2254471C002F1F36 /* net_log_state_error.c in Sources */,
@@ -3205,6 +3204,7 @@
 				C995165F224AFC3400DDEEB1 /* lz4.c in Sources */,
 				C995162A224AFADE00DDEEB1 /* net_statistics_backend.c in Sources */,
 				C9855330224C49EE0096C780 /* net_log_flusher.c in Sources */,
+				C9A45DDB2254BFF400AFBAD0 /* net_log_pipe.c in Sources */,
 				C9978B292254471C002F1F36 /* net_log_state_pause.c in Sources */,
 				C9978B282254471C002F1F36 /* net_log_state_stoping.c in Sources */,
 			);
