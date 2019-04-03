@@ -19,7 +19,7 @@
  * \return
  *      Number of bytes required.
  */
-static inline size_t uint32_size(uint32_t v) {
+static inline uint32_t uint32_size(uint32_t v) {
     if (v < (1UL << 7)) {
         return 1;
     }
@@ -48,7 +48,7 @@ static inline size_t uint32_size(uint32_t v) {
  * \return
  *      Number of bytes written to `out`.
  */
-static inline size_t uint32_pack(uint32_t value, uint8_t *out) {
+static inline uint32_t uint32_pack(uint32_t value, uint8_t *out) {
     unsigned rv = 0;
 
     if (value >= 0x80) {
@@ -169,59 +169,6 @@ void _adjust_buffer(log_tag * tag, uint32_t new_len) {
     tag->max_buffer_len = new_buffer_len;
 }
 
-void add_log_full(net_log_builder_t bder, uint32_t logTime, int32_t pair_count, char ** keys, size_t * key_lens, char ** values, size_t * val_lens) {
-    ++bder->grp->n_logs;
-
-    // limit logTime's min value, ensure varint size is 5
-    if (logTime < 1263563523) {
-        logTime = 1263563523;
-    }
-
-    int32_t i = 0;
-    int32_t logSize = 6;
-    for (; i < pair_count; ++i) {
-        uint32_t contSize = uint32_size(key_lens[i]) + uint32_size(val_lens[i]) + key_lens[i] + val_lens[i] + 2;
-        logSize += 1 + uint32_size(contSize) + contSize;
-    }
-    int32_t totalBufferSize = logSize + 1 + uint32_size(logSize);
-
-    log_tag * log = &(bder->grp->logs);
-
-    if (log->now_buffer == NULL || log->max_buffer_len < log->now_buffer_len + totalBufferSize) {
-        _adjust_buffer(log, totalBufferSize);
-    }
-
-
-    bder->loggroup_size += totalBufferSize;
-    uint8_t * buf = (uint8_t*)log->now_buffer;
-
-    *buf++ = 0x0A;
-    buf += uint32_pack(logSize, buf);
-
-    // time
-    *buf++=0x08;
-    buf += uint32_pack(logTime, buf);
-
-    // Content
-    // header
-    i = 0;
-    for (; i < pair_count; ++i) {
-        *buf++ = 0x12;
-        buf += uint32_pack(uint32_size(key_lens[i]) + uint32_size(val_lens[i]) + 2 + key_lens[i] + val_lens[i], buf);
-        *buf++ = 0x0A;
-        buf += uint32_pack(key_lens[i], buf);
-        memcpy(buf, keys[i], key_lens[i]);
-        buf += key_lens[i];
-        *buf++ = 0x12;
-        buf += uint32_pack(val_lens[i], buf);
-        memcpy(buf, values[i], val_lens[i]);
-        buf += val_lens[i];
-    }
-    assert(buf - (uint8_t*)log->now_buffer == totalBufferSize);
-    log->now_buffer_len += totalBufferSize;
-    log->now_buffer = (char *)buf;
-}
-
 void add_source(net_log_builder_t bder, const char* src,size_t len) {
     net_log_schedule_t schedule = bder->m_category->m_schedule;
     bder->loggroup_size += sizeof(char)*(len) + uint32_size((uint32_t)len) + 1;
@@ -243,7 +190,7 @@ void add_pack_id(net_log_builder_t bder, const char* pack, size_t pack_len, size
 
 void add_tag(net_log_builder_t bder, const char* k, size_t k_len, const char* v, size_t v_len) {
     // use only 1 malloc
-    uint32_t tag_size = sizeof(char) * (k_len + v_len) + uint32_size((uint32_t)k_len) + uint32_size((uint32_t)v_len) + 2;
+    uint32_t tag_size = (uint32_t)(sizeof(char) * (k_len + v_len)) + uint32_size((uint32_t)k_len) + uint32_size((uint32_t)v_len) + 2u;
     uint32_t n_buffer = 1 + uint32_size(tag_size) + tag_size;
     log_tag * tag = &(bder->grp->tags);
     if (tag->now_buffer == NULL || tag->now_buffer_len + n_buffer > tag->max_buffer_len) {
@@ -297,7 +244,7 @@ static uint32_t _log_pack(log_group * grp, uint8_t * buf) {
         buf += grp->tags.now_buffer_len;
     }
 
-    return buf - start_buf;
+    return (uint32_t)(buf - start_buf);
 }
 
 void fix_log_group_time(char * pb_buffer, size_t len, uint32_t new_time) {
@@ -333,7 +280,7 @@ log_buf serialize_to_proto_buf_with_malloc(net_log_builder_t bder) {
         return buf;
     }
     if (log->max_buffer_len < bder->loggroup_size) {
-        _adjust_buffer(log, bder->loggroup_size - log->now_buffer_len);
+        _adjust_buffer(log, (uint32_t)(bder->loggroup_size - log->now_buffer_len));
     }
     buf.n_buffer = _log_pack(bder->grp, (uint8_t *)log->buffer);
     buf.buffer = log->buffer;
@@ -356,10 +303,10 @@ net_log_lz4_buf_t serialize_to_proto_buf_with_malloc_lz4(net_log_builder_t bder)
     }
 
     if (log->max_buffer_len < bder->loggroup_size) {
-        _adjust_buffer(log, bder->loggroup_size - log->now_buffer_len);
+        _adjust_buffer(log, (uint32_t)(bder->loggroup_size - log->now_buffer_len));
     }
 
-    size_t length = _log_pack(bder->grp, (uint8_t *)log->buffer);
+    uint32_t length = _log_pack(bder->grp, (uint8_t *)log->buffer);
     // @debug
     //FILE * pFile = fopen("dump.dat", "wb+");
     //fwrite(log->buffer, 1, length, pFile);
@@ -405,8 +352,8 @@ void add_log_time(net_log_builder_t bder, uint32_t logTime) {
     // 1 header and 5 time
     if (bder->grp->log_now_buffer - logs->buffer + 6 > logs->max_buffer_len) {
         // reset log_now_buffer
-        size_t delta = bder->grp->log_now_buffer - logs->buffer;
-        _adjust_buffer(logs, delta + 6);
+        uint32_t delta = (uint32_t)(bder->grp->log_now_buffer - logs->buffer);
+        _adjust_buffer(logs, delta + 6u);
         bder->grp->log_now_buffer = logs->buffer + delta;
     }
 
@@ -419,29 +366,29 @@ void add_log_time(net_log_builder_t bder, uint32_t logTime) {
 
 void add_log_key_value(net_log_builder_t bder, char * key, size_t key_len, char * value, size_t value_len) {
     // sum total size
-    uint32_t kv_size = sizeof(char) * (key_len + value_len) + uint32_size((uint32_t)key_len) + uint32_size((uint32_t)value_len) + 2;
+    uint32_t kv_size = (uint32_t)(sizeof(char) * (key_len + value_len)) + uint32_size((uint32_t)key_len) + uint32_size((uint32_t)value_len) + 2u;
     kv_size += 1 + uint32_size(kv_size);
     log_tag * logs = &bder->grp->logs;
     // ensure buffer size
     if (bder->grp->log_now_buffer - logs->buffer + kv_size > logs->max_buffer_len) {
         // reset log_now_buffer
-        size_t delta = bder->grp->log_now_buffer - logs->buffer;
+        uint32_t delta = (uint32_t)(bder->grp->log_now_buffer - logs->buffer);
         _adjust_buffer(logs, delta + kv_size);
         bder->grp->log_now_buffer = logs->buffer + delta;
     }
     uint8_t * buf = (uint8_t *)bder->grp->log_now_buffer;
     // key_value header
     *buf++ = 0x12;
-    buf += uint32_pack(uint32_size(key_len) + uint32_size(value_len) + 2 + key_len + value_len, buf);
+    buf += uint32_pack(uint32_size((uint32_t)key_len) + uint32_size((uint32_t)value_len) + 2u + (uint32_t)key_len + (uint32_t)value_len, buf);
     // key len
     *buf++ = 0x0A;
-    buf += uint32_pack(key_len, buf);
+    buf += uint32_pack((uint32_t)key_len, buf);
     // key
-    memcpy(buf, key, key_len);
+    memcpy(buf, key, (uint32_t)key_len);
     buf += key_len;
     // value len
     *buf++ = 0x12;
-    buf += uint32_pack(value_len, buf);
+    buf += uint32_pack((uint32_t)value_len, buf);
     // value
     memcpy(buf, value, value_len);
     buf += value_len;
@@ -450,7 +397,7 @@ void add_log_key_value(net_log_builder_t bder, char * key, size_t key_len, char 
 
 void add_log_end(net_log_builder_t bder) {
     log_tag * logs = &bder->grp->logs;
-    uint32_t log_size = bder->grp->log_now_buffer - logs->now_buffer - INIT_LOG_SIZE_BYTES;
+    uint32_t log_size = (uint32_t)(bder->grp->log_now_buffer - logs->now_buffer - INIT_LOG_SIZE_BYTES);
     // check total size and uint32_size(total size)
 
     int32_t header_size = uint32_size(log_size) + 1;
@@ -460,7 +407,7 @@ void add_log_end(net_log_builder_t bder) {
         // need check buffer size
         if (delta_header_size > 0 && bder->grp->log_now_buffer - logs->buffer +  delta_header_size > logs->max_buffer_len) {
             // reset log_now_buffer
-            size_t delta = bder->grp->log_now_buffer - logs->buffer;
+            uint32_t delta = (uint32_t)(bder->grp->log_now_buffer - logs->buffer);
             _adjust_buffer(logs, delta + delta_header_size);
             bder->grp->log_now_buffer = logs->buffer + delta;
         }

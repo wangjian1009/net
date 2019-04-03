@@ -331,7 +331,7 @@ static int net_log_request_send(net_log_request_t request) {
     }
 
     char sha1Buf[65];
-    int sha1Len = signature_to_base64(buf, sz, schedule->m_cfg_access_key, (int)strlen(schedule->m_cfg_access_key), sha1Buf);
+    int sha1Len = signature_to_base64(buf, (int)sz, schedule->m_cfg_access_key, (int)strlen(schedule->m_cfg_access_key), sha1Buf);
     sha1Buf[sha1Len] = 0;
 
     snprintf(buf, sizeof(buf),  "Authorization:LOG %s:%s", schedule->m_cfg_access_id, sha1Buf);
@@ -576,7 +576,7 @@ static int32_t net_log_request_check_result(
         if (request->m_last_send_error != net_log_request_send_quota_exceed) {
             request->m_last_send_error = net_log_request_send_quota_exceed;
             request->m_last_sleep_ms = BASE_QUOTA_ERROR_SLEEP_MS;
-            request->m_first_error_time = time(NULL);
+            request->m_first_error_time = (uint32_t)time(NULL);
         }
         else {
             if (request->m_last_sleep_ms < MAX_QUOTA_ERROR_SLEEP_MS) {
@@ -600,7 +600,7 @@ static int32_t net_log_request_check_result(
         if (request->m_last_send_error != net_log_request_send_network_error) {
             request->m_last_send_error = net_log_request_send_network_error;
             request->m_last_sleep_ms = BASE_NETWORK_ERROR_SLEEP_MS;
-            request->m_first_error_time = time(NULL);
+            request->m_first_error_time = (uint32_t)time(NULL);
         }
         else {
             if (request->m_last_sleep_ms < MAX_NETWORK_ERROR_SLEEP_MS) {
@@ -800,8 +800,8 @@ static void net_log_request_rebuild_time(net_log_schedule_t schedule, net_log_ca
         return;
     }
 
-    uint32_t nowTime = time(NULL);
-    fix_log_group_time(buf, lz4_buf->raw_length, nowTime);
+    time_t nowTime = time(NULL);
+    fix_log_group_time(buf, lz4_buf->raw_length, (uint32_t)nowTime);
 
     int compress_bound = LZ4_compressBound(lz4_buf->raw_length);
     char *compress_data = (char *)malloc(compress_bound);
