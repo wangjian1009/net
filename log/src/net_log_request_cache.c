@@ -80,7 +80,18 @@ void net_log_request_cache_clear_and_free(net_log_request_cache_t cache) {
         CPE_ERROR(schedule->m_em, "log: %s: cache %d: clear and free: calc file path fail", mgr->m_name, cache->m_id);
     }
     else {
-        vfs_file_rm(schedule->m_vfs, file);
+        if (vfs_file_rm(schedule->m_vfs, file) != 0) {
+            CPE_ERROR(
+                schedule->m_em, "log: %s: cache %d: clear and free: rm file %s fail, error=%d (%s)",
+                mgr->m_name, cache->m_id, file, errno, strerror(errno));
+        }
+        else {
+            if (schedule->m_debug) {
+                CPE_INFO(
+                    schedule->m_em, "log: %s: cache %d: clear and free: rm file %s success",
+                    mgr->m_name, cache->m_id, file);
+            }
+        }
     }
 
     net_log_request_cache_free(cache);
@@ -305,7 +316,7 @@ int net_log_request_cache_close(net_log_request_cache_t cache) {
 }
 
 int net_log_request_cache_cmp(net_log_request_cache_t l, net_log_request_cache_t r, void * ctx) {
-    return l->m_id < r->m_id ? (- (r->m_id - l->m_id)) : (l->m_id - r->m_id);
+    return r->m_id < l->m_id ? (- (l->m_id - r->m_id)) : (r->m_id - l->m_id);
 }
 
 const char * net_log_request_cache_state_str(net_log_request_cache_state_t state) {
