@@ -370,6 +370,40 @@ void net_log_schedule_stop_wait(net_log_schedule_t schedule) {
     }
 }
 
+uint8_t net_log_schedule_stop_check(net_log_schedule_t schedule) {
+    switch(net_log_schedule_state(schedule)) {
+    case net_log_schedule_state_runing:
+    case net_log_schedule_state_pause:
+        net_log_schedule_stop_begin(schedule);
+        break;
+    default:
+        break;
+    }
+    
+    if (net_log_schedule_state(schedule) == net_log_schedule_state_stoping) {
+        return 0;
+    }
+
+    assert(net_log_schedule_state(schedule) == net_log_schedule_state_init
+           || net_log_schedule_state(schedule) == net_log_schedule_state_error);
+
+    if (schedule->m_main_thread_request_pipe) {
+        net_log_request_pipe_free(schedule->m_main_thread_request_pipe);
+        schedule->m_main_thread_request_pipe = NULL;
+    }
+    
+    if (schedule->m_main_thread_request_mgr) {
+        if (schedule->m_cfg_cache_dir) { /*保存缓存 */
+            net_log_request_mgr_save_and_clear_requests(schedule->m_main_thread_request_mgr);
+        }
+
+        net_log_request_manage_free(schedule->m_main_thread_request_mgr);
+        schedule->m_main_thread_request_mgr = NULL;
+    }
+
+    return 1;
+}
+
 void net_log_schedule_pause(net_log_schedule_t schedule) {
     net_log_state_fsm_apply_evt(schedule, net_log_state_fsm_evt_pause);
 }

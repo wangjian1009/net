@@ -23,6 +23,7 @@ net_log_schedule_state_t net_log_schedule_state(net_log_schedule_t schedule);
 int net_log_schedule_start(net_log_schedule_t schedule);
 void net_log_schedule_stop_begin(net_log_schedule_t schedule);
 void net_log_schedule_stop_wait(net_log_schedule_t schedule);
+uint8_t net_log_schedule_stop_check(net_log_schedule_t schedule);
 void net_log_schedule_pause(net_log_schedule_t schedule);
 void net_log_schedule_resume(net_log_schedule_t schedule);
 
