@@ -338,6 +338,20 @@ int net_log_category_add_global_tag(net_log_category_t category, const char * ke
     return 0;
 }
 
+void net_log_category_set_bytes_per_package(net_log_category_t category, uint32_t sz) {
+    net_log_schedule_t schedule = category->m_schedule;
+    assert(net_log_schedule_state(schedule) == net_log_schedule_state_init);
+
+    category->m_cfg_bytes_per_package = sz;
+}
+
+void net_log_category_set_count_per_package(net_log_category_t category, uint32_t count) {
+    net_log_schedule_t schedule = category->m_schedule;
+    assert(net_log_schedule_state(schedule) == net_log_schedule_state_init);
+
+    category->m_cfg_count_per_package = count;
+}
+
 void net_log_category_log_begin(net_log_category_t category) {
     net_log_schedule_t schedule = category->m_schedule;
 

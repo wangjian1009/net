@@ -284,7 +284,7 @@ int net_log_request_cache_close(net_log_request_cache_t cache) {
 
     if (cache->m_state != net_log_request_cache_building) {
         CPE_ERROR(
-            schedule->m_em, "log: %s: cache %d: load: state is %s, can`t save",
+            schedule->m_em, "log: %s: cache %d: close: state is %s, can`t save",
             mgr->m_name, cache->m_id, net_log_request_cache_state_str(cache->m_state));
         return -1;
     }
@@ -297,7 +297,7 @@ int net_log_request_cache_close(net_log_request_cache_t cache) {
 
     if (schedule->m_debug) {
         CPE_INFO(
-            schedule->m_em, "log: %s: cache %d: save: success, size=%.2fKB",
+            schedule->m_em, "log: %s: cache %d: close: success, size=%.2fKB",
             mgr->m_name, cache->m_id, (float)cache->m_size / 1024.0f);
     }
     
