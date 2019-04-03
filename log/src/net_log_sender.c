@@ -18,7 +18,7 @@ static void * net_log_sender_thread(void * param);
 static void net_log_send_stop(void* ctx);
 
 net_log_sender_t
-net_log_sender_create(net_log_schedule_t schedule, const char * name) {
+net_log_sender_create(net_log_schedule_t schedule, const char * name, uint8_t active_request_count) {
     net_log_sender_t sender = mem_alloc(schedule->m_alloc, sizeof(struct net_log_sender));
     if (sender == NULL) {
         CPE_ERROR(schedule->m_em, "log: %s: sender: alloc fail", name);
@@ -27,7 +27,7 @@ net_log_sender_create(net_log_schedule_t schedule, const char * name) {
 
     sender->m_schedule = schedule;
     cpe_str_dup(sender->m_name, sizeof(sender->m_name), name);
-    sender->m_cfg_active_request_count = 1;
+    sender->m_cfg_active_request_count = active_request_count;
     sender->m_request_pipe = net_log_request_pipe_create(schedule, sender->m_name);
     if (sender->m_request_pipe == NULL) {
         CPE_ERROR(schedule->m_em, "log: %s: sender: queue request pipe fail", name);
@@ -180,10 +180,11 @@ static void * net_log_sender_thread(void * param) {
         goto THREAD_COMPLETED;
     }
 
-    request_mgr = net_log_request_manage_create(
-        schedule, net_schedule, net_driver_from_data(ev_driver),
-        sender->m_cfg_active_request_count, sender->m_name, &tmp_buffer,
-        net_log_send_stop, ev_loop);
+    request_mgr =
+        net_log_request_manage_create(
+            schedule, net_schedule, net_driver_from_data(ev_driver),
+            sender->m_cfg_active_request_count, sender->m_name, &tmp_buffer,
+            net_log_send_stop, ev_loop);
     if (request_mgr == NULL) {
         CPE_ERROR(schedule->m_em, "log: %s: sender: create request mgr fail", sender->m_name);
         goto THREAD_COMPLETED;

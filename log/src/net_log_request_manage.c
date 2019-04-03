@@ -16,7 +16,7 @@
 net_log_request_manage_t
 net_log_request_manage_create(
     net_log_schedule_t schedule, net_schedule_t net_schedule, net_driver_t net_driver,
-    uint8_t max_active_request_count, const char * name, mem_buffer_t tmp_buffer,
+    uint16_t max_active_request_count, const char * name, mem_buffer_t tmp_buffer,
     void (*stop_fun)(void * ctx), void * stop_ctx)
 {
     net_log_request_manage_t mgr = mem_alloc(schedule->m_alloc, sizeof(struct net_log_request_manage));
@@ -281,7 +281,7 @@ int net_log_request_mgr_search_cache(net_log_request_manage_t mgr) {
             CPE_INFO(schedule->m_em, "log: %s: manage: found cache %d", mgr->m_name, cache->m_id);
         }
     }
-    
+
     return rv;
 }
 
@@ -290,7 +290,9 @@ void net_log_request_mgr_check_active_requests(net_log_request_manage_t mgr) {
 
     if (mgr->m_state != net_log_request_manage_state_runing) return;
 
-    while(mgr->m_active_request_count < mgr->m_cfg_active_request_count) {
+    while(mgr->m_cfg_active_request_count == 0
+          || mgr->m_active_request_count < mgr->m_cfg_active_request_count)
+    {
         net_log_request_t request = TAILQ_FIRST(&mgr->m_waiting_requests);
         if (request) {
             net_log_request_active(request);
