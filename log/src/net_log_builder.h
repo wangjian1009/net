@@ -14,7 +14,7 @@ typedef struct _log_group {
     char * topic;
     log_tag tags;
     log_tag logs;
-    size_t n_logs;
+    uint32_t n_logs;
     char * log_now_buffer;
 }log_group;
 

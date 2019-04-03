@@ -372,7 +372,7 @@ void net_log_category_log_apppend(net_log_category_t category, const char * key,
 }
 
 void net_log_category_log_end(net_log_category_t category) {
-    net_log_schedule_t schedule = category->m_schedule;
+    //net_log_schedule_t schedule = category->m_schedule;
     net_log_builder_t builder = category->m_builder;
 
     add_log_end(builder);
