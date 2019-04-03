@@ -4,7 +4,7 @@
 
 NET_BEGIN_DECL
 
-net_log_sender_t net_log_sender_create(net_log_schedule_t schedule, const char * name);
+net_log_sender_t net_log_sender_create(net_log_schedule_t schedule, const char * name, uint16_t active_request_count);
 void net_log_sender_free(net_log_sender_t sender);
 
 net_log_sender_t net_log_sender_find(net_log_schedule_t schedule, const char * name);

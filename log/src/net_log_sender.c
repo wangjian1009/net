@@ -18,7 +18,7 @@ static void * net_log_sender_thread(void * param);
 static void net_log_send_stop(void* ctx);
 
 net_log_sender_t
-net_log_sender_create(net_log_schedule_t schedule, const char * name, uint8_t active_request_count) {
+net_log_sender_create(net_log_schedule_t schedule, const char * name, uint16_t active_request_count) {
     net_log_sender_t sender = mem_alloc(schedule->m_alloc, sizeof(struct net_log_sender));
     if (sender == NULL) {
         CPE_ERROR(schedule->m_em, "log: %s: sender: alloc fail", name);
