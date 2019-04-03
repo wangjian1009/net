@@ -55,4 +55,6 @@ void net_log_request_mgr_check_active_requests(net_log_request_manage_t mgr);
 
 int net_log_request_mgr_save_and_clear_requests(net_log_request_manage_t mgr);
 
+int net_log_request_mgr_init_cache_dir(net_log_request_manage_t mgr);
+
 #endif

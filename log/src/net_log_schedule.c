@@ -271,6 +271,12 @@ int net_log_schedule_init_main_thread_mgr(net_log_schedule_t schedule) {
             CPE_ERROR(schedule->m_em, "log: schedule: create main thread request mgr fail");
             return -1;
         }
+
+        if (schedule->m_cfg_cache_dir) { /*加载缓存 */
+            if (net_log_request_mgr_init_cache_dir(schedule->m_main_thread_request_mgr) != 0) return -1;
+            if (net_log_request_mgr_search_cache(schedule->m_main_thread_request_mgr) != 0) return -1;
+            net_log_request_mgr_check_active_requests(schedule->m_main_thread_request_mgr);
+        }
     }
 
     return 0;
@@ -287,17 +293,7 @@ int net_log_schedule_init_main_thread_pipe(net_log_schedule_t schedule) {
         }
     }
 
-    if (schedule->m_main_thread_request_mgr == NULL) {
-        schedule->m_main_thread_request_mgr =
-            net_log_request_manage_create(
-                schedule, schedule->m_net_schedule, schedule->m_net_driver,
-                schedule->m_cfg_active_request_count, "main", net_log_schedule_tmp_buffer(schedule),
-                NULL, NULL);
-        if (schedule->m_main_thread_request_mgr == NULL) {
-            CPE_ERROR(schedule->m_em, "log: schedule: create main thread request mgr fail");
-            return -1;
-        }
-    }
+    if (net_log_schedule_init_main_thread_mgr(schedule) != 0) return -1;
 
     if (schedule->m_main_thread_request_pipe->m_bind_to == NULL) {
         if (net_log_request_pipe_bind(schedule->m_main_thread_request_pipe, schedule->m_main_thread_request_mgr) != 0) {

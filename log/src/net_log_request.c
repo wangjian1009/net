@@ -72,8 +72,9 @@ net_log_request_create(net_log_request_manage_t mgr, net_log_request_param_t sen
 
     if (schedule->m_debug) {
         CPE_INFO(
-            schedule->m_em, "log: %s: category [%d]%s: request %d: created",
-            mgr->m_name, category->m_id, category->m_name, request->m_id);
+            schedule->m_em, "log: %s: category [%d]%s: request %d: created (total-active=%d, total-waiting=%d)",
+            mgr->m_name, category->m_id, category->m_name, request->m_id,
+            mgr->m_active_request_count, mgr->m_request_count - mgr->m_active_request_count);
     }
 
     return request;
@@ -84,10 +85,16 @@ void net_log_request_free(net_log_request_t request) {
     net_log_category_t category = request->m_category;
     net_log_schedule_t schedule = mgr->m_schedule;
 
+    assert(mgr->m_request_buf_size >= request->m_send_param->log_buf->length);
+    mgr->m_request_buf_size -= request->m_send_param->log_buf->length;
+    assert(mgr->m_request_count > 0);
+    mgr->m_request_count--;
+
     if (schedule->m_debug) {
         CPE_INFO(
-            schedule->m_em, "log: %s: category [%d]%s: request %d: free",
-            mgr->m_name, category->m_id, category->m_name, request->m_id);
+            schedule->m_em, "log: %s: category [%d]%s: request %d: free  (total-active=%d, total-waiting=%d)",
+            mgr->m_name, category->m_id, category->m_name, request->m_id,
+            mgr->m_active_request_count, mgr->m_request_count - mgr->m_active_request_count);
     }
 
     if (request->m_delay_process) {
@@ -105,16 +112,10 @@ void net_log_request_free(net_log_request_t request) {
         request->m_handler = NULL;
     }
 
-    assert(mgr->m_request_buf_size >= request->m_send_param->log_buf->length);
-    mgr->m_request_buf_size -= request->m_send_param->log_buf->length;
-
     if (request->m_send_param) {
         net_log_request_param_free(request->m_send_param);
         request->m_send_param = NULL;
     }
-
-    assert(mgr->m_request_count > 0);
-    mgr->m_request_count--;
 
     switch(request->m_state) {
     case net_log_request_state_waiting:

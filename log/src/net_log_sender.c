@@ -137,68 +137,82 @@ static void * net_log_sender_thread(void * param) {
         CPE_INFO(schedule->m_em, "log: %s: sender: thread starated", sender->m_name);
     }
 
-    struct ev_loop * ev_loop = ev_loop_new(EVFLAG_AUTO);
-    if (ev_loop == NULL) {
-        CPE_ERROR(schedule->m_em, "log: %s: sender: create ev loop fail", sender->m_name);
-        return NULL;
-    }
-
-    net_schedule_t net_schedule = net_schedule_create(schedule->m_alloc, schedule->m_em, 128/*not use this buf*/);
-    if (net_schedule == NULL) {
-        CPE_ERROR(schedule->m_em, "log: %s: sender: create local net schedule fail", sender->m_name);
-        ev_loop_destroy(ev_loop);
-        return NULL;
-    }
-
-    net_ev_driver_t ev_driver = net_ev_driver_create(net_schedule, ev_loop);
-    if (ev_driver == NULL) {
-        CPE_ERROR(schedule->m_em, "log: %s: sender: create local ev driver fail", sender->m_name);
-        net_schedule_free(net_schedule);
-        ev_loop_destroy(ev_loop);
-        return NULL;
-    }
-
     struct mem_buffer tmp_buffer;
     mem_buffer_init(&tmp_buffer, schedule->m_alloc);
-    
-    net_log_request_manage_t request_mgr = net_log_request_manage_create(
+
+    struct ev_loop * ev_loop = NULL;
+    net_schedule_t net_schedule = NULL;
+    net_ev_driver_t ev_driver = NULL;
+    net_log_request_manage_t request_mgr = NULL;
+
+    ev_loop = ev_loop_new(EVFLAG_AUTO);
+    if (ev_loop == NULL) {
+        CPE_ERROR(schedule->m_em, "log: %s: sender: create ev loop fail", sender->m_name);
+        goto THREAD_COMPLETED;
+    }
+
+    net_schedule = net_schedule_create(schedule->m_alloc, schedule->m_em, 128/*not use this buf*/);
+    if (net_schedule == NULL) {
+        CPE_ERROR(schedule->m_em, "log: %s: sender: create local net schedule fail", sender->m_name);
+        goto THREAD_COMPLETED;
+    }
+
+    ev_driver = net_ev_driver_create(net_schedule, ev_loop);
+    if (ev_driver == NULL) {
+        CPE_ERROR(schedule->m_em, "log: %s: sender: create local ev driver fail", sender->m_name);
+        goto THREAD_COMPLETED;
+    }
+
+    request_mgr = net_log_request_manage_create(
         schedule, net_schedule, net_driver_from_data(ev_driver),
         sender->m_cfg_active_request_count, sender->m_name, &tmp_buffer,
         net_log_send_stop, ev_loop);
     if (request_mgr == NULL) {
         CPE_ERROR(schedule->m_em, "log: %s: sender: create request mgr fail", sender->m_name);
-        mem_buffer_clear(&tmp_buffer);
-        net_schedule_free(net_schedule);
-        ev_loop_destroy(ev_loop);
-        return NULL;
+        goto THREAD_COMPLETED;
     }
     
     if (net_log_request_pipe_bind(sender->m_request_pipe, request_mgr) != 0) {
         CPE_ERROR(schedule->m_em, "log: %s: sender: bind request mgr fail", sender->m_name);
-        net_log_request_manage_free(request_mgr);
-        mem_buffer_clear(&tmp_buffer);
-        net_schedule_free(net_schedule);
-        ev_loop_destroy(ev_loop);
-        return NULL;
+        goto THREAD_COMPLETED;
     }
 
     ev_set_userdata(ev_loop, request_mgr);
 
     if (schedule->m_cfg_cache_dir) { /*加载缓存 */
-        net_log_request_mgr_search_cache(request_mgr);
+        if (net_log_request_mgr_init_cache_dir(request_mgr) != 0
+            || net_log_request_mgr_search_cache(request_mgr) != 0)
+        {
+            goto THREAD_COMPLETED;
+        }
+        
         net_log_request_mgr_check_active_requests(request_mgr);
     }
     
     ev_run(ev_loop, 0);
 
-    if (schedule->m_cfg_cache_dir) { /*保存缓存 */
-        net_log_request_mgr_save_and_clear_requests(request_mgr);
+THREAD_COMPLETED:
+    if (request_mgr) {
+        if (schedule->m_cfg_cache_dir) { /*保存缓存 */
+            net_log_request_mgr_save_and_clear_requests(request_mgr);
+        }
+
+        if (sender->m_request_pipe->m_bind_to == request_mgr) {
+            net_log_request_pipe_unbind(sender->m_request_pipe);
+        }
+
+        net_log_request_manage_free(request_mgr);
     }
-    
-    net_log_request_manage_free(request_mgr);
+
+    if (net_schedule) {
+        net_schedule_free(net_schedule);
+    }
+
+    if (ev_loop) {
+        ev_loop_destroy(ev_loop);
+    }
+
     mem_buffer_clear(&tmp_buffer);
-    net_schedule_free(net_schedule);
-    ev_loop_destroy(ev_loop);
     
     if (schedule->m_debug) {
         CPE_INFO(schedule->m_em, "log: %s: sender: thread stoped", sender->m_name);
