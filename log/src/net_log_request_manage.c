@@ -9,7 +9,7 @@
 #include "net_timer.h"
 #include "net_log_request_manage.h"
 #include "net_log_request.h"
-#include "net_log_request_cmd.h"
+#include "net_log_pipe_cmd.h"
 #include "net_log_category_i.h"
 #include "net_log_request_cache.h"
 
@@ -78,9 +78,11 @@ void net_log_request_manage_free(net_log_request_manage_t mgr) {
     mem_free(schedule->m_alloc, mgr);
 }
 
-static void net_log_request_manage_process_cmd_send(
-    net_log_schedule_t schedule, net_log_request_manage_t mgr, net_log_request_param_t send_param)
+void net_log_request_manage_process_cmd_send(
+    net_log_request_manage_t mgr, net_log_request_param_t send_param)
 {
+    net_log_schedule_t schedule = mgr->m_schedule;
+    
     assert(send_param);
 
     net_log_request_cache_t cache = TAILQ_FIRST(&mgr->m_caches);
@@ -124,7 +126,9 @@ SEND_FAIL:
     net_log_request_param_free(send_param);
 }
 
-static void net_log_request_manage_process_cmd_pause(net_log_schedule_t schedule, net_log_request_manage_t mgr) {
+void net_log_request_manage_process_cmd_pause(net_log_request_manage_t mgr) {
+    net_log_schedule_t schedule = mgr->m_schedule;
+    
     if (mgr->m_state == net_log_request_manage_state_pause) {
         if (schedule->m_debug) {
             CPE_INFO(schedule->m_em, "log: %s: manage: already pause", mgr->m_name);
@@ -138,7 +142,9 @@ static void net_log_request_manage_process_cmd_pause(net_log_schedule_t schedule
     }
 }
 
-static void net_log_request_manage_process_cmd_resume(net_log_schedule_t schedule, net_log_request_manage_t mgr) {
+void net_log_request_manage_process_cmd_resume(net_log_request_manage_t mgr) {
+    net_log_schedule_t schedule = mgr->m_schedule;
+
     if (mgr->m_state == net_log_request_manage_state_runing) {
         if (schedule->m_debug) {
             CPE_INFO(schedule->m_em, "log: %s: manage: already running", mgr->m_name);
@@ -154,39 +160,14 @@ static void net_log_request_manage_process_cmd_resume(net_log_schedule_t schedul
     net_log_request_mgr_check_active_requests(mgr);    
 }
 
-static void net_log_request_manage_process_cmd_stop(net_log_schedule_t schedule, net_log_request_manage_t mgr) {
+void net_log_request_manage_process_cmd_stop(net_log_request_manage_t mgr) {
+    net_log_schedule_t schedule = mgr->m_schedule;
+
     if (mgr->m_stop_fun) {
         mgr->m_stop_fun(mgr->m_stop_ctx);
     }
     else {
         CPE_ERROR(schedule->m_em, "log: %s: manage: not support stop", mgr->m_name);
-    }
-}
-
-void net_log_request_manage_process_cmd(
-    net_log_request_manage_t mgr, net_log_request_cmd_t cmd, net_log_request_param_t send_param)
-{
-    net_log_schedule_t schedule = mgr->m_schedule;
-
-    assert((cmd->m_cmd == net_log_request_cmd_send && send_param != NULL)
-           ||
-           (cmd->m_cmd != net_log_request_cmd_send && send_param == NULL));
-           
-    switch(cmd->m_cmd) {
-    case net_log_request_cmd_send:
-        net_log_request_manage_process_cmd_send(schedule, mgr, send_param);
-        break;
-    case net_log_request_cmd_pause:
-        net_log_request_manage_process_cmd_pause(schedule, mgr);
-        break;
-    case net_log_request_cmd_resume:
-        net_log_request_manage_process_cmd_resume(schedule, mgr);
-        break;
-    case net_log_request_cmd_stop:
-        net_log_request_manage_process_cmd_stop(schedule, mgr);
-        break;
-    default:
-        CPE_ERROR(schedule->m_em, "log: %s: manage: unknown cmd %d", mgr->m_name, cmd->m_cmd);
     }
 }
 

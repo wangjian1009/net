@@ -20,8 +20,8 @@ typedef TAILQ_HEAD(net_log_request_cache_list, net_log_request_cache) net_log_re
 typedef struct net_log_request * net_log_request_t;
 typedef struct net_log_request_manage * net_log_request_manage_t;
 typedef struct net_log_request_cache * net_log_request_cache_t;
-typedef struct net_log_request_pipe * net_log_request_pipe_t;
-typedef struct net_log_request_cmd * net_log_request_cmd_t;
+typedef struct net_log_pipe * net_log_pipe_t;
+typedef struct net_log_pipe_cmd * net_log_pipe_cmd_t;
 typedef struct net_log_request_param * net_log_request_param_t;
 typedef struct net_log_queue * net_log_queue_t;
 typedef struct net_log_builder * net_log_builder_t;
@@ -68,7 +68,7 @@ struct net_log_schedule {
     net_log_sender_list_t m_senders;
 
     /*main thread request*/
-    net_log_request_pipe_t m_main_thread_request_pipe;
+    net_log_pipe_t m_main_thread_pipe;
     net_log_request_manage_t m_main_thread_request_mgr;
     
     /*builder helper*/
@@ -78,7 +78,6 @@ struct net_log_schedule {
 mem_buffer_t net_log_schedule_tmp_buffer(net_log_schedule_t schedule);
 
 int net_log_schedule_init_main_thread_pipe(net_log_schedule_t schedule);
-int net_log_schedule_init_main_thread_mgr(net_log_schedule_t schedule);
 
 NET_END_DECL
 

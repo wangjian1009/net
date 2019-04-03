@@ -9,8 +9,8 @@
 #include "net_log_sender_i.h"
 #include "net_log_category_i.h"
 #include "net_log_request_manage.h"
-#include "net_log_request_pipe.h"
-#include "net_log_request_cmd.h"
+#include "net_log_pipe.h"
+#include "net_log_pipe_cmd.h"
 #include "net_log_queue.h"
 #include "net_log_state_i.h"
 
@@ -28,8 +28,8 @@ net_log_sender_create(net_log_schedule_t schedule, const char * name, uint16_t a
     sender->m_schedule = schedule;
     cpe_str_dup(sender->m_name, sizeof(sender->m_name), name);
     sender->m_cfg_active_request_count = active_request_count;
-    sender->m_request_pipe = net_log_request_pipe_create(schedule, sender->m_name);
-    if (sender->m_request_pipe == NULL) {
+    sender->m_pipe = net_log_pipe_create(schedule, sender->m_name);
+    if (sender->m_pipe == NULL) {
         CPE_ERROR(schedule->m_em, "log: %s: sender: queue request pipe fail", name);
         mem_free(schedule->m_alloc, sender);
         return NULL;
@@ -107,10 +107,10 @@ void net_log_sender_notify_stop(net_log_sender_t sender) {
         return;
     }
 
-    struct net_log_request_cmd cmd;
+    struct net_log_pipe_cmd cmd;
     cmd.m_size = sizeof(cmd);
-    cmd.m_cmd = net_log_request_cmd_stop;
-    if (net_log_request_pipe_send_cmd(sender->m_request_pipe, &cmd) != 0) {
+    cmd.m_cmd = net_log_pipe_cmd_stop;
+    if (net_log_pipe_send_cmd(sender->m_pipe, &cmd) != 0) {
         CPE_ERROR(schedule->m_em, "log: %s: sender: notify stop: send stop cmd fail", sender->m_name);
         return;
     }
@@ -190,7 +190,7 @@ static void * net_log_sender_thread(void * param) {
         goto THREAD_COMPLETED;
     }
     
-    if (net_log_request_pipe_bind(sender->m_request_pipe, request_mgr) != 0) {
+    if (net_log_pipe_begin_process(sender->m_pipe, net_driver_from_data(ev_driver)) != 0) {
         CPE_ERROR(schedule->m_em, "log: %s: sender: bind request mgr fail", sender->m_name);
         goto THREAD_COMPLETED;
     }
@@ -210,13 +210,17 @@ static void * net_log_sender_thread(void * param) {
     ev_run(ev_loop, 0);
 
 THREAD_COMPLETED:
+    if (net_log_pipe_is_processing(sender->m_pipe)) {
+        net_log_pipe_stop_process(sender->m_pipe);
+    }
+
     if (request_mgr) {
         if (schedule->m_cfg_cache_dir) { /*保存缓存 */
             net_log_request_mgr_save_and_clear_requests(request_mgr);
         }
 
-        if (sender->m_request_pipe->m_bind_to == request_mgr) {
-            net_log_request_pipe_unbind(sender->m_request_pipe);
+        if (sender->m_pipe->m_bind_request_mgr == request_mgr) {
+            sender->m_pipe->m_bind_request_mgr = NULL;
         }
 
         net_log_request_manage_free(request_mgr);

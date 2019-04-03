@@ -15,7 +15,7 @@
 #include "net_log_flusher_i.h"
 #include "net_log_sender_i.h"
 #include "net_log_request_manage.h"
-#include "net_log_request_pipe.h"
+#include "net_log_pipe.h"
 
 net_log_schedule_t
 net_log_schedule_create(
@@ -141,9 +141,9 @@ void net_log_schedule_free(net_log_schedule_t schedule) {
         net_log_schedule_wait_stop_threads(schedule);
     }
 
-    if (schedule->m_main_thread_request_pipe) {
-        net_log_request_pipe_free(schedule->m_main_thread_request_pipe);
-        schedule->m_main_thread_request_pipe = NULL;
+    if (schedule->m_main_thread_pipe) {
+        net_log_pipe_free(schedule->m_main_thread_pipe);
+        schedule->m_main_thread_pipe = NULL;
     }
     
     if (schedule->m_main_thread_request_mgr) {
@@ -271,7 +271,17 @@ net_log_schedule_state_t net_log_schedule_state(net_log_schedule_t schedule) {
     return (net_log_schedule_state_t)schedule->m_state_fsm.m_curent_state;
 }
 
-int net_log_schedule_init_main_thread_mgr(net_log_schedule_t schedule) {
+int net_log_schedule_init_main_thread_pipe(net_log_schedule_t schedule) {
+    assert(net_log_schedule_state(schedule) == net_log_schedule_state_init);
+
+    if (schedule->m_main_thread_pipe == NULL) {
+        schedule->m_main_thread_pipe = net_log_pipe_create(schedule, "main");
+        if (schedule->m_main_thread_pipe == NULL) {
+            CPE_ERROR(schedule->m_em, "log: schedule: create main thread request pipe fail");
+            return -1;
+        }
+    }
+
     if (schedule->m_main_thread_request_mgr == NULL) {
         schedule->m_main_thread_request_mgr =
             net_log_request_manage_create(
@@ -290,27 +300,12 @@ int net_log_schedule_init_main_thread_mgr(net_log_schedule_t schedule) {
         }
     }
 
-    return 0;
-}
-
-int net_log_schedule_init_main_thread_pipe(net_log_schedule_t schedule) {
-    assert(net_log_schedule_state(schedule) == net_log_schedule_state_init);
-
-    if (schedule->m_main_thread_request_pipe == NULL) {
-        schedule->m_main_thread_request_pipe = net_log_request_pipe_create(schedule, "main");
-        if (schedule->m_main_thread_request_pipe == NULL) {
-            CPE_ERROR(schedule->m_em, "log: schedule: create main thread request pipe fail");
-            return -1;
-        }
-    }
-
-    if (net_log_schedule_init_main_thread_mgr(schedule) != 0) return -1;
-
-    if (schedule->m_main_thread_request_pipe->m_bind_to == NULL) {
-        if (net_log_request_pipe_bind(schedule->m_main_thread_request_pipe, schedule->m_main_thread_request_mgr) != 0) {
+    if (!net_log_pipe_is_processing(schedule->m_main_thread_pipe)) {
+        if (net_log_pipe_begin_process(schedule->m_main_thread_pipe, schedule->m_net_driver) != 0) {
             CPE_ERROR(schedule->m_em, "log: schedule: create main thread request pipe bind fail");
             return -1;
         }
+        schedule->m_main_thread_pipe->m_bind_request_mgr = schedule->m_main_thread_request_mgr;
     }
     
     return 0;
@@ -355,9 +350,9 @@ void net_log_schedule_stop_wait(net_log_schedule_t schedule) {
     assert(net_log_schedule_state(schedule) == net_log_schedule_state_init
            || net_log_schedule_state(schedule) == net_log_schedule_state_error);
 
-    if (schedule->m_main_thread_request_pipe) {
-        net_log_request_pipe_free(schedule->m_main_thread_request_pipe);
-        schedule->m_main_thread_request_pipe = NULL;
+    if (schedule->m_main_thread_pipe) {
+        net_log_pipe_free(schedule->m_main_thread_pipe);
+        schedule->m_main_thread_pipe = NULL;
     }
     
     if (schedule->m_main_thread_request_mgr) {
@@ -387,9 +382,9 @@ uint8_t net_log_schedule_stop_check(net_log_schedule_t schedule) {
     assert(net_log_schedule_state(schedule) == net_log_schedule_state_init
            || net_log_schedule_state(schedule) == net_log_schedule_state_error);
 
-    if (schedule->m_main_thread_request_pipe) {
-        net_log_request_pipe_free(schedule->m_main_thread_request_pipe);
-        schedule->m_main_thread_request_pipe = NULL;
+    if (schedule->m_main_thread_pipe) {
+        net_log_pipe_free(schedule->m_main_thread_pipe);
+        schedule->m_main_thread_pipe = NULL;
     }
     
     if (schedule->m_main_thread_request_mgr) {

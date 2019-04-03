@@ -8,8 +8,8 @@
 #include "net_log_sender_i.h"
 #include "net_log_request.h"
 #include "net_log_builder.h"
-#include "net_log_request_pipe.h"
-#include "net_log_request_cmd.h"
+#include "net_log_pipe.h"
+#include "net_log_pipe_cmd.h"
 
 static char * net_log_category_get_pack_id(net_log_schedule_t schedule, const char * configName, const char * ip);
 static void net_log_category_commit_timer(net_timer_t timer, void * ctx);
@@ -23,18 +23,10 @@ net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, 
         return NULL;
     }
 
-    if (sender == NULL) {
-        if (flusher != NULL) { /*flushe需要通过主线程发送数据，需要创建主线程通道 */
-            if (net_log_schedule_init_main_thread_pipe(schedule) != 0) {
-                CPE_ERROR(schedule->m_em, "log: category [%d]%s: init main thread pipe fail!", id, name);
-                return NULL;
-            }
-        }
-        else { /*没有flusher，数据从主线程直接发送，只需要创建manager */
-            if (net_log_schedule_init_main_thread_mgr(schedule) != 0) {
-                CPE_ERROR(schedule->m_em, "log: category [%d]%s: init main thread mgr fail!", id, name);
-                return NULL;
-            }
+    if (sender || flusher) {
+        if (net_log_schedule_init_main_thread_pipe(schedule) != 0) {
+            CPE_ERROR(schedule->m_em, "log: category [%d]%s: init main thread pipe fail!", id, name);
+            return NULL;
         }
     }
     
@@ -225,7 +217,7 @@ int net_log_category_commit_request(net_log_category_t category, net_log_request
     net_log_schedule_t schedule = category->m_schedule;
 
     if (category->m_sender) {
-        if (net_log_request_pipe_queue(category->m_sender->m_request_pipe, send_param) != 0) {
+        if (net_log_pipe_queue(category->m_sender->m_pipe, send_param) != 0) {
             CPE_ERROR(
                 schedule->m_em, "log: category [%d]%s: commit param to sender %s fail!",
                 category->m_id, category->m_name, category->m_sender->m_name);
@@ -242,17 +234,12 @@ int net_log_category_commit_request(net_log_category_t category, net_log_request
     }
     else if (in_main_thread) { /*在主线程中，直接发送 */
         assert(schedule->m_main_thread_request_mgr);
-
-        struct net_log_request_cmd cmd;
-        cmd.m_size = sizeof(cmd);
-        cmd.m_cmd = net_log_request_cmd_send;
-        net_log_request_manage_process_cmd(schedule->m_main_thread_request_mgr, &cmd, send_param);
-
+        net_log_request_manage_process_cmd_send(schedule->m_main_thread_request_mgr, send_param);
         return 0;
     }
     else { /*提交到主线程处理 */
-        assert(schedule->m_main_thread_request_pipe);
-        if (net_log_request_pipe_queue(schedule->m_main_thread_request_pipe, send_param) != 0) {
+        assert(schedule->m_main_thread_pipe);
+        if (net_log_pipe_queue(schedule->m_main_thread_pipe, send_param) != 0) {
             CPE_ERROR(
                 schedule->m_em, "log: category [%d]%s: commit param to main-thread fail!",
                 category->m_id, category->m_name);

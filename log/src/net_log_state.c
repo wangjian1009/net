@@ -2,8 +2,8 @@
 #include "net_log_state_i.h"
 #include "net_log_flusher_i.h"
 #include "net_log_sender_i.h"
-#include "net_log_request_cmd.h"
-#include "net_log_request_pipe.h"
+#include "net_log_pipe_cmd.h"
+#include "net_log_pipe.h"
 #include "net_log_request_manage.h"
 
 static void net_log_state_fsm_dump_event(write_stream_t s, fsm_def_machine_t m, void * input_event);
@@ -123,31 +123,31 @@ void net_log_schedule_wait_stop_threads(net_log_schedule_t schedule) {
 }
 
 void net_log_schedule_pause_senders(net_log_schedule_t schedule) {
-    struct net_log_request_cmd cmd;
+    struct net_log_pipe_cmd cmd;
     cmd.m_size = sizeof(cmd);
-    cmd.m_cmd = net_log_request_cmd_pause;
+    cmd.m_cmd = net_log_pipe_cmd_pause;
 
     if (schedule->m_main_thread_request_mgr) {
-        net_log_request_manage_process_cmd(schedule->m_main_thread_request_mgr, &cmd, NULL);
+        net_log_request_manage_process_cmd_pause(schedule->m_main_thread_request_mgr);
     }
 
     net_log_sender_t sender;
     TAILQ_FOREACH(sender, &schedule->m_senders, m_next) {
-        net_log_request_pipe_send_cmd(sender->m_request_pipe, &cmd);
+        net_log_pipe_send_cmd(sender->m_pipe, &cmd);
     }
 }
 
 void net_log_schedule_resume_senders(net_log_schedule_t schedule) {
-    struct net_log_request_cmd cmd;
+    struct net_log_pipe_cmd cmd;
     cmd.m_size = sizeof(cmd);
-    cmd.m_cmd = net_log_request_cmd_resume;
+    cmd.m_cmd = net_log_pipe_cmd_resume;
 
     if (schedule->m_main_thread_request_mgr) {
-        net_log_request_manage_process_cmd(schedule->m_main_thread_request_mgr, &cmd, NULL);
+        net_log_request_manage_process_cmd_resume(schedule->m_main_thread_request_mgr);
     }
 
     net_log_sender_t sender;
     TAILQ_FOREACH(sender, &schedule->m_senders, m_next) {
-        net_log_request_pipe_send_cmd(sender->m_request_pipe, &cmd);
+        net_log_pipe_send_cmd(sender->m_pipe, &cmd);
     }
 }

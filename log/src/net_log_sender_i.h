@@ -11,7 +11,7 @@ struct net_log_sender {
     net_log_category_list_t m_categories;
     char m_name[64];
     uint16_t m_cfg_active_request_count;
-    net_log_request_pipe_t m_request_pipe;
+    net_log_pipe_t m_pipe;
     pthread_t * m_thread;
 };
 

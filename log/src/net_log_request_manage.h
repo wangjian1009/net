@@ -41,8 +41,10 @@ net_log_request_manage_create(
 
 void net_log_request_manage_free(net_log_request_manage_t request_mgr);
 
-void net_log_request_manage_process_cmd(
-    net_log_request_manage_t mgr, net_log_request_cmd_t cmd, net_log_request_param_t send_param);
+void net_log_request_manage_process_cmd_send(net_log_request_manage_t mgr, net_log_request_param_t send_param);
+void net_log_request_manage_process_cmd_pause(net_log_request_manage_t mgr);
+void net_log_request_manage_process_cmd_resume(net_log_request_manage_t mgr);
+void net_log_request_manage_process_cmd_stop(net_log_request_manage_t mgr);
 
 int net_log_request_manage_sock_cb(CURL *e, curl_socket_t s, int what, void *cbp, void *sockp);
 int net_log_request_manage_timer_cb(CURLM *multi, long timeout_ms, net_log_request_manage_t mgr);
