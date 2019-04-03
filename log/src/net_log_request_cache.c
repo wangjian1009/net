@@ -32,7 +32,7 @@ net_log_request_cache_create(net_log_request_manage_t mgr, uint32_t id, net_log_
             return NULL;
         }
 
-        cache->m_file = vfs_file_open(schedule->m_vfs, file, "w");
+        cache->m_file = vfs_file_open(schedule->m_vfs, file, "wb");
         if (cache->m_file == NULL) {
             CPE_ERROR(schedule->m_em, "log: %s: cache %d: open file %s fail", mgr->m_name, id, file);
             mem_free(schedule->m_alloc, cache);
@@ -169,7 +169,7 @@ int net_log_request_cache_load(net_log_request_cache_t cache) {
         return -1;
     }
 
-    vfs_file_t fp = vfs_file_open(schedule->m_vfs, file, "w");
+    vfs_file_t fp = vfs_file_open(schedule->m_vfs, file, "rb");
     if (fp == NULL) {
         CPE_ERROR(
             schedule->m_em, "log: %s: cache %d: load: open file %s fail, error=%d(%s)",
@@ -187,15 +187,15 @@ int net_log_request_cache_load(net_log_request_cache_t cache) {
         }
         else if (sz < 0) {
             CPE_ERROR(
-                schedule->m_em, "log: %s: cache %d: load: read head fail, error=%d(%s)",
-                mgr->m_name, cache->m_id, errno, strerror(errno));
+                schedule->m_em, "log: %s: cache %d: load: read head from %s fail, error=%d(%s)",
+                mgr->m_name, cache->m_id, file, errno, strerror(errno));
             rv = -1;
             break;
         }
         else if (sz != sizeof(head)) {
             CPE_ERROR(
-                schedule->m_em, "log: %s: cache %d: load: read head not enough data, readed=%d, head-size=%d",
-                mgr->m_name, cache->m_id, (int)sz, (int)sizeof(head));
+                schedule->m_em, "log: %s: cache %d: load: read head from %s not enough data, readed=%d, head-size=%d",
+                mgr->m_name, cache->m_id, file, (int)sz, (int)sizeof(head));
             rv = -1;
             break;
         }

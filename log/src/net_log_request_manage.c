@@ -24,7 +24,10 @@ net_log_request_manage_create(
     mgr->m_schedule = schedule;
     mgr->m_net_schedule = net_schedule;
     mgr->m_net_driver = net_driver;
-    mgr->m_state = net_log_request_manage_state_runing;
+    mgr->m_state =
+        net_log_schedule_state(schedule) == net_log_schedule_state_pause
+        ? net_log_request_manage_state_pause
+        : net_log_request_manage_state_runing;
     mgr->m_cfg_active_request_count = max_active_request_count;
     mgr->m_stop_fun = stop_fun;
     mgr->m_stop_ctx = stop_ctx;

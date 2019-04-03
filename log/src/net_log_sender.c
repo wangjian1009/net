@@ -185,7 +185,7 @@ static void * net_log_sender_thread(void * param) {
         {
             goto THREAD_COMPLETED;
         }
-        
+
         net_log_request_mgr_check_active_requests(request_mgr);
     }
     
