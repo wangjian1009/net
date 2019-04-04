@@ -332,6 +332,37 @@ void net_log_schedule_commit(net_log_schedule_t schedule) {
 }
 
 int net_log_schedule_start(net_log_schedule_t schedule) {
+    uint8_t need_mgr = 0;
+    uint8_t need_pipe = 0;
+
+    uint8_t i;
+    for(i = 0; i < schedule->m_category_count; ++i) {
+        net_log_category_t category = schedule->m_categories[i];
+        if (category == NULL) continue;
+
+        if (category->m_sender == NULL) {
+            if (category->m_flusher == NULL) {
+                need_mgr = 1;
+            }
+            else {
+                need_pipe = 1;
+            }
+        }
+    }
+
+    if (need_pipe) {
+        if (net_log_schedule_init_main_thread_pipe(schedule) != 0) {
+            CPE_ERROR(schedule->m_em, "log: schedule: init main thread pipe fail!");
+            return -1;
+        }
+    }
+    else if (need_mgr) {
+        if (net_log_schedule_init_main_thread_mgr(schedule) != 0) {
+            CPE_ERROR(schedule->m_em, "log: schedule: init main thread mgr fail!");
+            return -1;
+        }
+    }
+    
     net_log_state_fsm_apply_evt(schedule, net_log_state_fsm_evt_start);
     return 0;
 }
@@ -386,6 +417,8 @@ uint8_t net_log_schedule_stop_check(net_log_schedule_t schedule) {
     if (net_log_schedule_state(schedule) == net_log_schedule_state_stoping) {
         return 0;
     }
+
+    CPE_ERROR(schedule->m_em, "log: schedule: stop check");
 
     assert(net_log_schedule_state(schedule) == net_log_schedule_state_init
            || net_log_schedule_state(schedule) == net_log_schedule_state_error);

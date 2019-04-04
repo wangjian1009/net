@@ -308,6 +308,9 @@ int net_log_request_mgr_save_and_clear_requests(net_log_request_manage_t mgr) {
     net_log_schedule_t schedule = mgr->m_schedule;
     
     if(TAILQ_EMPTY(&mgr->m_active_requests) && TAILQ_EMPTY(&mgr->m_waiting_requests)) {
+        if (schedule->m_debug) {
+            CPE_INFO(schedule->m_em, "log: %s: manage: sanve and clear: no requests", mgr->m_name);
+        }
         return 0;
     }
         
@@ -322,12 +325,14 @@ int net_log_request_mgr_save_and_clear_requests(net_log_request_manage_t mgr) {
         return -1;
     }
     if (cache_id > mgr->m_cache_max_id) mgr->m_cache_max_id = cache_id;
-    
+
+    uint32_t count = 0;
     while(!TAILQ_EMPTY(&mgr->m_active_requests)) {
         net_log_request_t request = TAILQ_FIRST(&mgr->m_active_requests);
         if (net_log_request_cache_append(cache, request->m_send_param) != 0) {
             return -1;
         }
+        count++;
         net_log_request_free(request);
     }
 
@@ -336,11 +341,16 @@ int net_log_request_mgr_save_and_clear_requests(net_log_request_manage_t mgr) {
         if (net_log_request_cache_append(cache, request->m_send_param) != 0) {
             return -1;
         }
+        count++;
         net_log_request_free(request);
     }
 
     if (net_log_request_cache_close(cache) != 0) return -1;
 
+    if (schedule->m_debug) {
+        CPE_INFO(schedule->m_em, "log: %s: manage: sanve and clear: saved %d requests", mgr->m_name, count);
+    }
+    
     return 0;
 }
 
