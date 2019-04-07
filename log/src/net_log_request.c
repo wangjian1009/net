@@ -407,12 +407,6 @@ static void net_log_request_process_result(
 {
     int32_t sleepMs = net_log_request_check_result(schedule, category, request, send_result);
     if (sleepMs <= 0) { /*done or discard*/
-        if (schedule->m_debug) {
-            CPE_INFO(
-                schedule->m_em, "log: %s: category [%d]%s: request %d: commit success",
-                mgr->m_name, category->m_id, category->m_name, request->m_id);
-        }
-
         if (send_result != net_log_request_send_ok) {
             net_log_category_add_fail_statistics(category, request->m_send_param->log_count);
         }
@@ -578,6 +572,13 @@ static int32_t net_log_request_check_result(
         // if no this marco, drop data
         request->m_last_send_error = net_log_request_send_time_error;
         request->m_last_sleep_ms = INVALID_TIME_TRY_INTERVAL;
+
+        if (schedule->m_debug) {
+            CPE_INFO(
+                schedule->m_em, "log: %s: category [%d]%s: request %d: time error",
+                mgr->m_name, category->m_id, category->m_name, request->m_id);
+        }
+        
         return request->m_last_sleep_ms;
     case net_log_request_send_quota_exceed:
         if (request->m_last_send_error != net_log_request_send_quota_exceed) {
