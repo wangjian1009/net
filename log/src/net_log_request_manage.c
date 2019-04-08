@@ -323,6 +323,9 @@ void net_log_request_mgr_check_active_requests(net_log_request_manage_t mgr) {
 
     if (mgr->m_state == net_log_request_manage_state_stoping) {
         if (net_log_request_mgr_is_empty(mgr)) {
+            if (schedule->m_debug) {
+                CPE_INFO(schedule->m_em, "log: %s: manage: stoping: all request done!", mgr->m_name);
+            }
             net_log_request_manage_process_cmd_stop_complete(mgr);
         }
     }

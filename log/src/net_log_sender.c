@@ -195,6 +195,7 @@ static void * net_log_sender_thread(void * param) {
         CPE_ERROR(schedule->m_em, "log: %s: sender: bind request mgr fail", sender->m_name);
         goto THREAD_COMPLETED;
     }
+    sender->m_pipe->m_bind_request_mgr = request_mgr;
 
     ev_set_userdata(ev_loop, request_mgr);
 

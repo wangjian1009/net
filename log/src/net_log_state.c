@@ -171,6 +171,9 @@ int net_log_schedule_start_main(net_log_schedule_t schedule) {
                 need_pipe = 1;
             }
         }
+        else {
+            need_pipe = 1;
+        }
     }
 
     if (need_pipe) {
@@ -190,18 +193,28 @@ int net_log_schedule_start_main(net_log_schedule_t schedule) {
 }
 
 void net_log_schedule_stop_main(net_log_schedule_t schedule) {
-    if (schedule->m_main_thread_pipe) {
-        net_log_pipe_free(schedule->m_main_thread_pipe);
-        schedule->m_main_thread_pipe = NULL;
-    }
-    
     if (schedule->m_main_thread_request_mgr) {
         if (schedule->m_cfg_cache_dir) { /*保存缓存 */
             net_log_request_mgr_save_and_clear_requests(schedule->m_main_thread_request_mgr);
         }
 
+        if (schedule->m_main_thread_pipe
+            && schedule->m_main_thread_pipe->m_bind_request_mgr == schedule->m_main_thread_request_mgr)
+        {
+            schedule->m_main_thread_pipe->m_bind_request_mgr = NULL;
+        }
+        
         net_log_request_manage_free(schedule->m_main_thread_request_mgr);
         schedule->m_main_thread_request_mgr = NULL;
+    }
+
+    if (schedule->m_main_thread_pipe) {
+        if (net_log_pipe_is_processing(schedule->m_main_thread_pipe)) {
+            net_log_pipe_stop_process(schedule->m_main_thread_pipe);
+        }
+        
+        net_log_pipe_free(schedule->m_main_thread_pipe);
+        schedule->m_main_thread_pipe = NULL;
     }
 }
 

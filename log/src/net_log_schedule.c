@@ -145,14 +145,22 @@ void net_log_schedule_free(net_log_schedule_t schedule) {
         net_log_schedule_wait_stop_threads(schedule);
     }
 
-    if (schedule->m_main_thread_pipe) {
-        net_log_pipe_free(schedule->m_main_thread_pipe);
-        schedule->m_main_thread_pipe = NULL;
-    }
-    
     if (schedule->m_main_thread_request_mgr) {
+        if (schedule->m_main_thread_pipe
+            && schedule->m_main_thread_pipe->m_bind_request_mgr == schedule->m_main_thread_request_mgr)
+        {
+            schedule->m_main_thread_pipe->m_bind_request_mgr = NULL;
+        }
         net_log_request_manage_free(schedule->m_main_thread_request_mgr);
         schedule->m_main_thread_request_mgr = NULL;
+    }
+
+    if (schedule->m_main_thread_pipe) {
+        if (net_log_pipe_is_processing(schedule->m_main_thread_pipe)) {
+            net_log_pipe_stop_process(schedule->m_main_thread_pipe);
+        }
+        net_log_pipe_free(schedule->m_main_thread_pipe);
+        schedule->m_main_thread_pipe = NULL;
     }
     
     uint8_t i;
@@ -341,20 +349,32 @@ void net_log_schedule_commit(net_log_schedule_t schedule) {
 }
 
 int net_log_schedule_start(net_log_schedule_t schedule) {
+    if (schedule->m_debug) {
+        CPE_INFO(schedule->m_em, "log: schedule: start!");
+    }
     net_log_state_fsm_apply_evt(schedule, net_log_state_fsm_evt_start);
     return 0;
 }
 
 void net_log_schedule_stop(net_log_schedule_t schedule) {
+    if (schedule->m_debug) {
+        CPE_INFO(schedule->m_em, "log: schedule: stop!");
+    }
     net_log_schedule_commit(schedule);
     net_log_state_fsm_apply_evt(schedule, net_log_state_fsm_evt_stop_begin);
 }
 
 void net_log_schedule_pause(net_log_schedule_t schedule) {
+    if (schedule->m_debug) {
+        CPE_INFO(schedule->m_em, "log: schedule: pause!");
+    }
     net_log_state_fsm_apply_evt(schedule, net_log_state_fsm_evt_pause);
 }
 
 void net_log_schedule_resume(net_log_schedule_t schedule) {
+    if (schedule->m_debug) {
+        CPE_INFO(schedule->m_em, "log: schedule: resume!");
+    }
     net_log_state_fsm_apply_evt(schedule, net_log_state_fsm_evt_resume);
 }
 
