@@ -90,7 +90,6 @@ static void net_dq_watcher_start_r(net_dq_driver_t driver, int fd, net_dq_watche
 static void net_dq_watcher_stop_r(net_dq_driver_t driver, net_dq_watcher_t watcher, net_watcher_t base_watcher) {
     assert(watcher->m_source_r != NULL);
     
-    dispatch_source_set_event_handler(watcher->m_source_r, nil);
     dispatch_source_cancel(watcher->m_source_r);
     dispatch_release(watcher->m_source_r);
     watcher->m_source_r = nil;

@@ -46,6 +46,8 @@ net_log_pipe_t net_log_pipe_create(net_log_schedule_t schedule, const char * nam
 void net_log_pipe_free(net_log_pipe_t pipe) {
     net_log_schedule_t schedule = pipe->m_schedule;
 
+    CPE_ERROR(schedule->m_em, "log: pipe %s: free!", pipe->m_name);
+    
     assert(pipe->m_bind_request_mgr == NULL);
     assert(pipe->m_bind_watcher == NULL);
 
@@ -85,8 +87,11 @@ int net_log_pipe_begin_process(net_log_pipe_t pipe, net_driver_t net_driver) {
 }
 
 void net_log_pipe_stop_process(net_log_pipe_t pipe) {
+    net_log_schedule_t schedule = pipe->m_schedule;
     assert(pipe->m_bind_watcher != NULL);
 
+    CPE_ERROR(schedule->m_em, "log: pipe %s: stop process!", pipe->m_name);
+    
     net_watcher_free(pipe->m_bind_watcher);
     pipe->m_bind_watcher = NULL;
 }
@@ -233,6 +238,7 @@ static void net_log_pipe_action(void * ctx, int fd, uint8_t do_read, uint8_t do_
                         struct net_log_pipe_cmd_stoped * stoped_cmd = (struct net_log_pipe_cmd_stoped *)cmd;
                         assert(stoped_cmd->head.m_size = sizeof(*stoped_cmd));
                         net_log_schedule_process_cmd_stoped(schedule, stoped_cmd->owner);
+                        return;
                     }
                     else {
                         CPE_ERROR(schedule->m_em, "log: pipe %s: cmd stoped: not in main thread", pipe->m_name);

@@ -343,6 +343,7 @@ void net_log_schedule_commit(net_log_schedule_t schedule) {
         if (category == NULL) continue;
 
         if (category->m_builder) {
+            net_timer_cancel(category->m_commit_timer);
             net_log_category_commit(category);
         }
     }

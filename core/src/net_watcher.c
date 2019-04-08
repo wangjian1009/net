@@ -42,13 +42,14 @@ net_watcher_t net_watcher_create(net_driver_t driver, int fd, void * ctx, net_wa
 }
 
 void net_watcher_free(net_watcher_t watcher) {
+    net_driver_t driver = watcher->m_driver;
+
     if (watcher->m_in_processing) {
+        watcher->m_driver->m_watcher_update(watcher, watcher->m_fd, 0, 0);
         watcher->m_deleting = 1;
         return;
     }
 
-    net_driver_t driver = watcher->m_driver;
-    
     driver->m_watcher_fini(watcher);
 
     TAILQ_REMOVE(&driver->m_watchers, watcher, m_next_for_driver);
@@ -93,6 +94,8 @@ void net_watcher_notify(net_watcher_t watcher, uint8_t do_read, uint8_t do_write
 }
 
 void net_watcher_update(net_watcher_t watcher, uint8_t expect_read, uint8_t expect_write) {
+    if (watcher->m_deleting) return;
+
     uint8_t tag_local = 0;
     if (watcher->m_in_processing == 0) {
         watcher->m_in_processing = 1;
