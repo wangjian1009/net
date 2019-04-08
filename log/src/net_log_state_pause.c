@@ -4,6 +4,8 @@
 #include "net_log_state_i.h"
 
 static void net_log_state_fsm_pause_enter(fsm_machine_t fsm, fsm_def_state_t state, void * event) {
+    net_log_schedule_t schedule = fsm_machine_context(fsm);
+    net_log_state_fsm_notify_state_chagne(schedule);
 }
 
 static void net_log_state_fsm_pause_leave(fsm_machine_t fsm, fsm_def_state_t state, void * event) {

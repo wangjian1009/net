@@ -6,6 +6,7 @@
 #include "net_log_pipe.h"
 #include "net_log_request_manage.h"
 #include "net_log_category_i.h"
+#include "net_log_state_monitor_i.h"
 
 static void net_log_state_fsm_dump_event(write_stream_t s, fsm_def_machine_t m, void * input_event);
 
@@ -201,5 +202,13 @@ void net_log_schedule_stop_main(net_log_schedule_t schedule) {
 
         net_log_request_manage_free(schedule->m_main_thread_request_mgr);
         schedule->m_main_thread_request_mgr = NULL;
+    }
+}
+
+void net_log_state_fsm_notify_state_chagne(net_log_schedule_t schedule) {
+    net_log_state_monitor_t monitor;
+
+    TAILQ_FOREACH(monitor, &schedule->m_state_monitors, m_next) {
+        monitor->m_monitor_fun(monitor->m_monitor_ctx, schedule);
     }
 }

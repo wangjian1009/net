@@ -35,4 +35,6 @@ void net_log_schedule_wait_stop_threads(net_log_schedule_t schedule);
 void net_log_schedule_pause_senders(net_log_schedule_t schedule);
 void net_log_schedule_resume_senders(net_log_schedule_t schedule);
 
+void net_log_state_fsm_notify_state_chagne(net_log_schedule_t schedule);
+
 #endif
