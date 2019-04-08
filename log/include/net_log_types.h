@@ -21,6 +21,7 @@ typedef struct net_log_schedule * net_log_schedule_t;
 typedef struct net_log_category * net_log_category_t;
 typedef struct net_log_flusher * net_log_flusher_t;
 typedef struct net_log_sender * net_log_sender_t;
+typedef struct net_log_state_monitor * net_log_state_monitor_t;
 
 NET_END_DECL
 

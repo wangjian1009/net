@@ -15,6 +15,7 @@
 #include "net_log_category_i.h"
 #include "net_log_flusher_i.h"
 #include "net_log_sender_i.h"
+#include "net_log_state_monitor_i.h"
 #include "net_log_request_manage.h"
 #include "net_log_pipe.h"
 
@@ -107,6 +108,7 @@ net_log_schedule_create(
         goto CREATE_ERROR;
     }
     
+    TAILQ_INIT(&schedule->m_state_monitors);
     TAILQ_INIT(&schedule->m_flushers);
     TAILQ_INIT(&schedule->m_senders);
     
@@ -167,6 +169,11 @@ void net_log_schedule_free(net_log_schedule_t schedule) {
         schedule->m_category_count = 0;
     }
 
+    /*state-monitor*/
+    while(!TAILQ_EMPTY(&schedule->m_state_monitors)) {
+        net_log_state_monitor_free(TAILQ_FIRST(&schedule->m_state_monitors));
+    }
+    
     /*flusher*/
     while(!TAILQ_EMPTY(&schedule->m_flushers)) {
         net_log_flusher_free(TAILQ_FIRST(&schedule->m_flushers));
