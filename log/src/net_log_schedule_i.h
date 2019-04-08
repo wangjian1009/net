@@ -52,12 +52,13 @@ struct net_log_schedule {
     net_log_compress_type_t m_cfg_compress;
     char * m_cfg_cache_dir;
     uint32_t m_cfg_dump_span_ms;
+    uint32_t m_cfg_stop_wait_ms;
     net_timer_t m_dump_timer;
 
     /*state*/
     fsm_def_machine_t m_state_fsm_def;
     struct fsm_machine m_state_fsm;
-    
+
     /*categories*/
     uint8_t m_category_count;
     net_log_category_t * m_categories;
@@ -81,6 +82,7 @@ int net_log_schedule_init_main_thread_mgr(net_log_schedule_t schedule);
 int net_log_schedule_init_main_thread_pipe(net_log_schedule_t schedule);
 
 void net_log_schedule_process_cmd_stoped(net_log_schedule_t schedule, void * owner);
+void net_log_schedule_check_stop_complete(net_log_schedule_t schedule);
 
 NET_END_DECL
 

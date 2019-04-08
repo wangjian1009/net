@@ -109,7 +109,7 @@ void net_log_sender_notify_stop(net_log_sender_t sender) {
 
     struct net_log_pipe_cmd cmd;
     cmd.m_size = sizeof(cmd);
-    cmd.m_cmd = net_log_pipe_cmd_stop;
+    cmd.m_cmd = net_log_pipe_cmd_stop_begin;
     if (net_log_pipe_send_cmd(sender->m_pipe, &cmd) != 0) {
         CPE_ERROR(schedule->m_em, "log: %s: sender: notify stop: send stop cmd fail", sender->m_name);
         return;
@@ -144,9 +144,7 @@ void net_log_sender_wait_stop(net_log_sender_t sender) {
             sender->m_name, schedule->m_runing_thread_count);
     }
 
-    if (schedule->m_runing_thread_count == 0) {
-        net_log_state_fsm_apply_evt(schedule, net_log_state_fsm_evt_stop_complete);
-    }
+    net_log_schedule_check_stop_complete(schedule);
 }
 
 static void * net_log_sender_thread(void * param) {

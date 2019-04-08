@@ -1,5 +1,6 @@
 #include <assert.h>
 #include "cpe/pal/pal_string.h"
+#include "cpe/utils/time_utils.h"
 #include "cpe/fsm/fsm_def.h"
 #include "net_log_state_i.h"
 
@@ -10,10 +11,12 @@ static void net_log_state_fsm_stoping_leave(fsm_machine_t fsm, fsm_def_state_t s
 }
 
 static uint32_t net_log_state_fsm_stoping_trans(fsm_machine_t fsm, fsm_def_state_t state, void * input_evt) {
+    net_log_schedule_t schedule = fsm_machine_context(fsm);
     net_log_state_fsm_evt_t evt = input_evt;
 
     switch(evt->m_type) {
     case net_log_state_fsm_evt_stop_complete:
+        net_log_schedule_stop_main(schedule);
         return net_log_schedule_state_init;
     case net_log_state_fsm_evt_resume:
     case net_log_state_fsm_evt_stop_begin:

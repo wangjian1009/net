@@ -160,9 +160,26 @@ void net_log_request_manage_process_cmd_resume(net_log_request_manage_t mgr) {
     net_log_request_mgr_check_active_requests(mgr);    
 }
 
-void net_log_request_manage_process_cmd_stop(net_log_request_manage_t mgr) {
+void net_log_request_manage_process_cmd_stop_begin(net_log_request_manage_t mgr) {
     net_log_schedule_t schedule = mgr->m_schedule;
 
+    if (net_log_request_mgr_is_empty(mgr)) {
+        net_log_request_manage_process_cmd_stop_complete(mgr);
+    }
+    else {
+        mgr->m_state = net_log_request_manage_state_stoping;
+        if (schedule->m_debug) {
+            CPE_INFO(schedule->m_em, "log: %s: manage: stoping: wait all request done", mgr->m_name);
+        }
+    }
+}
+
+void net_log_request_manage_process_cmd_stop_complete(net_log_request_manage_t mgr) {
+    net_log_schedule_t schedule = mgr->m_schedule;
+
+    if (mgr->m_state == net_log_request_manage_state_stoped) return;
+    
+    mgr->m_state = net_log_request_manage_state_stoped;
     if (mgr->m_stop_fun) {
         mgr->m_stop_fun(mgr->m_stop_ctx);
     }
@@ -269,7 +286,8 @@ int net_log_request_mgr_search_cache(net_log_request_manage_t mgr) {
 void net_log_request_mgr_check_active_requests(net_log_request_manage_t mgr) {
     net_log_schedule_t schedule = mgr->m_schedule;
 
-    if (mgr->m_state != net_log_request_manage_state_runing) return;
+    if (mgr->m_state == net_log_request_manage_state_pause
+        || mgr->m_state == net_log_request_manage_state_stoped) return;
 
     while(mgr->m_cfg_active_request_count == 0
           || mgr->m_active_request_count < mgr->m_cfg_active_request_count)
@@ -300,6 +318,12 @@ void net_log_request_mgr_check_active_requests(net_log_request_manage_t mgr) {
             }
 
             if (TAILQ_EMPTY(&mgr->m_waiting_requests)) break;
+        }
+    }
+
+    if (mgr->m_state == net_log_request_manage_state_stoping) {
+        if (net_log_request_mgr_is_empty(mgr)) {
+            net_log_request_manage_process_cmd_stop_complete(mgr);
         }
     }
 }
@@ -372,3 +396,10 @@ int net_log_request_mgr_init_cache_dir(net_log_request_manage_t mgr) {
 
     return 0;
 }
+
+uint8_t net_log_request_mgr_is_empty(net_log_request_manage_t mgr) {
+    return (mgr->m_request_count == 0 && TAILQ_EMPTY(&mgr->m_caches))
+        ? 1
+        : 0;
+}
+

@@ -7,6 +7,7 @@ typedef enum net_log_request_manage_state {
     net_log_request_manage_state_runing,
     net_log_request_manage_state_pause,
     net_log_request_manage_state_stoping,
+    net_log_request_manage_state_stoped,
 } net_log_request_manage_state_t;
 
 struct net_log_request_manage {
@@ -44,7 +45,8 @@ void net_log_request_manage_free(net_log_request_manage_t request_mgr);
 void net_log_request_manage_process_cmd_send(net_log_request_manage_t mgr, net_log_request_param_t send_param);
 void net_log_request_manage_process_cmd_pause(net_log_request_manage_t mgr);
 void net_log_request_manage_process_cmd_resume(net_log_request_manage_t mgr);
-void net_log_request_manage_process_cmd_stop(net_log_request_manage_t mgr);
+void net_log_request_manage_process_cmd_stop_begin(net_log_request_manage_t mgr);
+void net_log_request_manage_process_cmd_stop_complete(net_log_request_manage_t mgr);
 
 int net_log_request_manage_sock_cb(CURL *e, curl_socket_t s, int what, void *cbp, void *sockp);
 int net_log_request_manage_timer_cb(CURLM *multi, long timeout_ms, net_log_request_manage_t mgr);
@@ -59,5 +61,7 @@ void net_log_request_mgr_check_active_requests(net_log_request_manage_t mgr);
 int net_log_request_mgr_save_and_clear_requests(net_log_request_manage_t mgr);
 
 int net_log_request_mgr_init_cache_dir(net_log_request_manage_t mgr);
+
+uint8_t net_log_request_mgr_is_empty(net_log_request_manage_t mgr);
 
 #endif

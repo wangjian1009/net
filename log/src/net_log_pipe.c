@@ -212,12 +212,20 @@ static void net_log_pipe_action(void * ctx, int fd, uint8_t do_read, uint8_t do_
                         CPE_ERROR(schedule->m_em, "log: pipe %s: cmd resume: no bind request mgr", pipe->m_name);
                     }
                     break;
-                case net_log_pipe_cmd_stop:
+                case net_log_pipe_cmd_stop_begin:
                     if (pipe->m_bind_request_mgr) {
-                        net_log_request_manage_process_cmd_stop(pipe->m_bind_request_mgr);
+                        net_log_request_manage_process_cmd_stop_begin(pipe->m_bind_request_mgr);
                     }
                     else {
-                        CPE_ERROR(schedule->m_em, "log: pipe %s: cmd stop: no bind request mgr", pipe->m_name);
+                        CPE_ERROR(schedule->m_em, "log: pipe %s: cmd stop-begin: no bind request mgr", pipe->m_name);
+                    }
+                    break;
+                case net_log_pipe_cmd_stop_complete:
+                    if (pipe->m_bind_request_mgr) {
+                        net_log_request_manage_process_cmd_stop_complete(pipe->m_bind_request_mgr);
+                    }
+                    else {
+                        CPE_ERROR(schedule->m_em, "log: pipe %s: cmd stop-complete: no bind request mgr", pipe->m_name);
                     }
                     break;
                 case net_log_pipe_cmd_stoped:

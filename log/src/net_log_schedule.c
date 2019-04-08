@@ -5,6 +5,7 @@
 #include "cpe/utils/md5.h"
 #include "cpe/utils/string_utils.h"
 #include "cpe/utils/buffer.h"
+#include "cpe/utils/time_utils.h"
 #include "cpe/fsm/fsm_def.h"
 #include "net_schedule.h"
 #include "net_address.h"
@@ -56,6 +57,7 @@ net_log_schedule_create(
     schedule->m_cfg_cache_dir = NULL;
     schedule->m_dump_timer = NULL;
     schedule->m_cfg_dump_span_ms = 0;
+    schedule->m_cfg_stop_wait_ms = 3000;
     schedule->m_category_count = 0;
     schedule->m_runing_thread_count = 0;
 
@@ -131,7 +133,7 @@ void net_log_schedule_free(net_log_schedule_t schedule) {
     switch(net_log_schedule_state(schedule)) {
     case net_log_schedule_state_runing:
     case net_log_schedule_state_pause:
-        net_log_schedule_stop_begin(schedule);
+        net_log_schedule_stop(schedule);
         break;
     default:
         break;
@@ -332,112 +334,13 @@ void net_log_schedule_commit(net_log_schedule_t schedule) {
 }
 
 int net_log_schedule_start(net_log_schedule_t schedule) {
-    uint8_t need_mgr = 0;
-    uint8_t need_pipe = 0;
-
-    uint8_t i;
-    for(i = 0; i < schedule->m_category_count; ++i) {
-        net_log_category_t category = schedule->m_categories[i];
-        if (category == NULL) continue;
-
-        if (category->m_sender == NULL) {
-            if (category->m_flusher == NULL) {
-                need_mgr = 1;
-            }
-            else {
-                need_pipe = 1;
-            }
-        }
-    }
-
-    if (need_pipe) {
-        if (net_log_schedule_init_main_thread_pipe(schedule) != 0) {
-            CPE_ERROR(schedule->m_em, "log: schedule: init main thread pipe fail!");
-            return -1;
-        }
-    }
-    else if (need_mgr) {
-        if (net_log_schedule_init_main_thread_mgr(schedule) != 0) {
-            CPE_ERROR(schedule->m_em, "log: schedule: init main thread mgr fail!");
-            return -1;
-        }
-    }
-    
     net_log_state_fsm_apply_evt(schedule, net_log_state_fsm_evt_start);
     return 0;
 }
 
-void net_log_schedule_stop_begin(net_log_schedule_t schedule) {
+void net_log_schedule_stop(net_log_schedule_t schedule) {
     net_log_schedule_commit(schedule);
     net_log_state_fsm_apply_evt(schedule, net_log_state_fsm_evt_stop_begin);
-}
-
-void net_log_schedule_stop_wait(net_log_schedule_t schedule) {
-    switch(net_log_schedule_state(schedule)) {
-    case net_log_schedule_state_runing:
-    case net_log_schedule_state_pause:
-        net_log_schedule_stop_begin(schedule);
-        break;
-    default:
-        break;
-    }
-    
-    if (net_log_schedule_state(schedule) == net_log_schedule_state_stoping) {
-        net_log_schedule_wait_stop_threads(schedule);
-    }
-
-    assert(net_log_schedule_state(schedule) == net_log_schedule_state_init
-           || net_log_schedule_state(schedule) == net_log_schedule_state_error);
-
-    if (schedule->m_main_thread_pipe) {
-        net_log_pipe_free(schedule->m_main_thread_pipe);
-        schedule->m_main_thread_pipe = NULL;
-    }
-    
-    if (schedule->m_main_thread_request_mgr) {
-        if (schedule->m_cfg_cache_dir) { /*保存缓存 */
-            net_log_request_mgr_save_and_clear_requests(schedule->m_main_thread_request_mgr);
-        }
-
-        net_log_request_manage_free(schedule->m_main_thread_request_mgr);
-        schedule->m_main_thread_request_mgr = NULL;
-    }
-}
-
-uint8_t net_log_schedule_stop_check(net_log_schedule_t schedule) {
-    switch(net_log_schedule_state(schedule)) {
-    case net_log_schedule_state_runing:
-    case net_log_schedule_state_pause:
-        net_log_schedule_stop_begin(schedule);
-        break;
-    default:
-        break;
-    }
-    
-    if (net_log_schedule_state(schedule) == net_log_schedule_state_stoping) {
-        return 0;
-    }
-
-    CPE_ERROR(schedule->m_em, "log: schedule: stop check");
-
-    assert(net_log_schedule_state(schedule) == net_log_schedule_state_init
-           || net_log_schedule_state(schedule) == net_log_schedule_state_error);
-
-    if (schedule->m_main_thread_pipe) {
-        net_log_pipe_free(schedule->m_main_thread_pipe);
-        schedule->m_main_thread_pipe = NULL;
-    }
-    
-    if (schedule->m_main_thread_request_mgr) {
-        if (schedule->m_cfg_cache_dir) { /*保存缓存 */
-            net_log_request_mgr_save_and_clear_requests(schedule->m_main_thread_request_mgr);
-        }
-
-        net_log_request_manage_free(schedule->m_main_thread_request_mgr);
-        schedule->m_main_thread_request_mgr = NULL;
-    }
-
-    return 1;
 }
 
 void net_log_schedule_pause(net_log_schedule_t schedule) {
@@ -588,4 +491,15 @@ void net_log_schedule_process_cmd_stoped(net_log_schedule_t schedule, void * own
     }
 
     CPE_ERROR(schedule->m_em, "log: schedule: cmd stoped: no owner matched");
+}
+
+void net_log_schedule_check_stop_complete(net_log_schedule_t schedule) {
+    if (schedule->m_runing_thread_count != 0) return;
+    
+    if (schedule->m_main_thread_request_mgr == NULL
+        || net_log_request_mgr_is_empty(schedule->m_main_thread_request_mgr))
+    {
+        net_log_state_fsm_apply_evt(schedule, net_log_state_fsm_evt_stop_complete);
+        return;
+    }
 }

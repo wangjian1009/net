@@ -8,7 +8,8 @@ typedef enum net_log_pipe_cmd_type {
     net_log_pipe_cmd_send,
     net_log_pipe_cmd_pause,
     net_log_pipe_cmd_resume,
-    net_log_pipe_cmd_stop,
+    net_log_pipe_cmd_stop_begin,
+    net_log_pipe_cmd_stop_complete,
     net_log_pipe_cmd_stoped,
 } net_log_pipe_cmd_type_t;
 

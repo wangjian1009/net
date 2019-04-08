@@ -215,8 +215,6 @@ void net_log_flusher_wait_stop(net_log_flusher_t flusher) {
             flusher->m_name, schedule->m_runing_thread_count);
     }
 
-    if (schedule->m_runing_thread_count == 0) {
-        net_log_state_fsm_apply_evt(schedule, net_log_state_fsm_evt_stop_complete);
-    }
+    net_log_schedule_check_stop_complete(schedule);
 }
 
