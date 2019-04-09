@@ -40,7 +40,9 @@ void net_address_matcher_free(net_address_matcher_t matcher) {
     net_ipset_free(matcher->m_ipset_ipv6);
 
     while(!TAILQ_EMPTY(&matcher->m_rules)) {
-        net_address_rule_free(matcher, TAILQ_FIRST(&matcher->m_rules));
+        net_address_rule_t rule = TAILQ_FIRST(&matcher->m_rules);
+        TAILQ_REMOVE(&matcher->m_rules, rule, m_next);
+        net_address_rule_free(matcher->m_schedule, rule);
     }
     
     mem_free(matcher->m_schedule->m_alloc, matcher);
@@ -106,7 +108,7 @@ int net_address_matcher_add(net_address_matcher_t matcher, net_address_t address
         *p++ = '$';
         *p++ = 0;
 
-        if (net_address_rule_create(matcher, buf) == NULL) {
+        if (net_address_matcher_add_rule(matcher, buf) == NULL) {
             CPE_ERROR(
                 schedule->m_em,
                 "net_address_matcher_add: create rule %s fail!", (const char *)net_address_data(address));
@@ -139,8 +141,12 @@ int net_address_matcher_add_network(net_address_matcher_t matcher, net_address_t
     }
 }
 
-net_address_rule_t net_address_matcher_add_rule(net_address_matcher_t matcher, const char * rule) {
-    return net_address_rule_create(matcher, rule);
+net_address_rule_t net_address_matcher_add_rule(net_address_matcher_t matcher, const char * str_rule) {
+    net_address_rule_t rule = net_address_rule_create(matcher->m_schedule, str_rule);
+    if (rule) {
+        TAILQ_INSERT_TAIL(&matcher->m_rules, rule, m_next);
+    }
+    return rule;
 }
 
 static const char * net_address_matcher_parse_cidr(mem_buffer_t buffer, const char * str, uint8_t * cidr) {
@@ -201,7 +207,7 @@ int net_address_matcher_add_by_string(net_address_matcher_t matcher, const char 
         }
     }
     else {
-        net_address_rule_t rule = net_address_rule_create(matcher, def);
+        net_address_rule_t rule = net_address_matcher_add_rule(matcher, def);
         if (rule == NULL) {
             CPE_ERROR(
                 matcher->m_schedule->m_em,
@@ -211,4 +217,17 @@ int net_address_matcher_add_by_string(net_address_matcher_t matcher, const char 
 
         return 0;
     }
+}
+
+net_address_rule_t
+net_address_rule_lookup(net_address_matcher_t matcher, const char * address) {
+    net_address_rule_t rule;
+
+    TAILQ_FOREACH(rule, &matcher->m_rules, m_next) {
+        if (net_address_rule_check(matcher->m_schedule, rule, address)) {
+            return rule;
+        }
+    }
+
+    return NULL;
 }

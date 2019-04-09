@@ -12,6 +12,9 @@ struct net_address_matcher {
     net_address_rule_list_t m_rules;
 };
 
+net_address_rule_t
+net_address_rule_lookup(net_address_matcher_t matcher, const char * address);
+
 NET_END_DECL
 
 #endif

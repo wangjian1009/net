@@ -1,7 +1,7 @@
 #ifndef NET_ADDRESS_RULE_I_H_INCLEDED
 #define NET_ADDRESS_RULE_I_H_INCLEDED
 #include "pcre2.h"
-#include "net_address_matcher_i.h"
+#include "net_schedule_i.h"
 
 NET_BEGIN_DECL
 
@@ -10,11 +10,10 @@ struct net_address_rule {
     pcre2_code * m_pattern_re;
 };
 
-net_address_rule_t net_address_rule_create(net_address_matcher_t matcher, const char * rule);
-void net_address_rule_free(net_address_matcher_t matcher, net_address_rule_t rule);
+net_address_rule_t net_address_rule_create(net_schedule_t schedule, const char * rule);
+void net_address_rule_free(net_schedule_t schedule, net_address_rule_t rule);
 
-net_address_rule_t
-net_address_rule_lookup(net_address_matcher_t matcher, const char * address);
+uint8_t net_address_rule_check(net_schedule_t schedule, net_address_rule_t rule, const char * address);
 
 NET_END_DECL
 
