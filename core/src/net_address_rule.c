@@ -33,13 +33,10 @@ uint8_t net_address_rule_check(net_schedule_t schedule, net_address_rule_t rule,
     pcre2_match_data_free(match_data);
 
     if (rc < 0) {
-        if (rc == PCRE2_ERROR_NOMATCH) { /*not match*/
-            return 0;
-        }
-        else {
+        if (rc != PCRE2_ERROR_NOMATCH) {
             CPE_ERROR(schedule->m_em, "net_address_rule_check: check %s fail, rv=%d", address, rc);
-            return 0;
         }
+        return 0;
     }
     else {
         return 1;

@@ -97,10 +97,12 @@ int net_dns_task_start(net_dns_task_t task) {
     
     task->m_step_current = TAILQ_FIRST(&task->m_steps);
     if (task->m_step_current == NULL) {
-        CPE_ERROR(
-            manage->m_em, "dns-cli: query %s: no step", task->m_entry->m_hostname);
-        net_dns_task_update_state(task, net_dns_task_state_error);
-        return -1;
+        if (manage->m_debug) {
+            CPE_INFO(
+                manage->m_em, "dns-cli: query %s: no step", task->m_entry->m_hostname);
+        }
+        net_dns_task_update_state(task, net_dns_task_state_success);
+        return 0;
     }
 
     do {
@@ -185,6 +187,9 @@ void net_dns_task_update_state(net_dns_task_t task, net_dns_task_state_t new_sta
     
     if (new_is_complete) {
         task->m_complete_time_ms = cur_time_ms();
+        if (task->m_begin_time_ms == 0) {
+            task->m_begin_time_ms = task->m_complete_time_ms;
+        }
         TAILQ_REMOVE(&manage->m_runing_tasks, task, m_next);
         TAILQ_INSERT_TAIL(&manage->m_complete_tasks, task, m_next);
         net_dns_manage_active_delay_process(manage);

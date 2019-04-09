@@ -335,7 +335,7 @@ uint8_t net_schedule_is_domain_address_valid(net_schedule_t schedule, const char
         schedule->m_domain_address_rule =
             net_address_rule_create(
                 schedule,
-                "[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+.?");
+                "[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+\\.?");
         if (schedule->m_domain_address_rule == NULL) {
             return 0;
         }
