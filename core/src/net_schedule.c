@@ -9,6 +9,7 @@
 #include "net_endpoint_monitor_i.h"
 #include "net_address_i.h"
 #include "net_address_matcher_i.h"
+#include "net_address_rule_i.h"
 #include "net_timer_i.h"
 #include "net_link_i.h"
 #include "net_direct_endpoint_i.h"
@@ -43,7 +44,8 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em, uint32_t common_
     schedule->m_endpoint_max_id = 0;
     schedule->m_endpoint_protocol_capacity = 0;
     schedule->m_local_ip_stack = net_local_ip_stack_ipv4;
-    
+    schedule->m_domain_address_rule = NULL;
+
     TAILQ_INIT(&schedule->m_debug_setups);
     TAILQ_INIT(&schedule->m_drivers);
     TAILQ_INIT(&schedule->m_protocols);
@@ -133,6 +135,11 @@ void net_schedule_free(net_schedule_t schedule) {
         net_debug_setup_free(TAILQ_FIRST(&schedule->m_debug_setups));
     }
 
+    if (schedule->m_domain_address_rule) {
+        net_address_rule_free(schedule, schedule->m_domain_address_rule);
+        schedule->m_domain_address_rule = NULL;
+    }
+    
     while(!TAILQ_EMPTY(&schedule->m_free_addresses)) {
         net_address_real_free(TAILQ_FIRST(&schedule->m_free_addresses));
     }
@@ -321,6 +328,21 @@ void net_schedule_start_delay_process(net_schedule_t schedule) {
     if (!net_timer_is_active(schedule->m_delay_processor)) {
         net_timer_active(schedule->m_delay_processor, 0);
     }
+}
+
+uint8_t net_schedule_is_domain_address_valid(net_schedule_t schedule, const char * str_address) {
+    if (schedule->m_domain_address_rule == NULL) {
+        schedule->m_domain_address_rule =
+            net_address_rule_create(
+                schedule,
+                "[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+.?");
+        if (schedule->m_domain_address_rule == NULL) {
+            return 0;
+        }
+    }
+
+    assert(schedule->m_domain_address_rule == NULL);
+    return net_address_rule_check(schedule, schedule->m_domain_address_rule, str_address);
 }
 
 static void net_schedule_do_delay_process(net_timer_t timer, void * input_ctx) {

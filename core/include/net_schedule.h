@@ -21,6 +21,8 @@ net_protocol_t net_schedule_direct_protocol(net_schedule_t schedule);
 net_driver_t net_schedule_direct_driver(net_schedule_t schedule);
 void net_schedule_set_direct_driver(net_schedule_t schedule, net_driver_t driver);
 
+uint8_t net_schedule_is_domain_address_valid(net_schedule_t schedule, const char * str_address);
+
 /*dns*/
 typedef int (*net_schedule_dns_local_query_fun_t)(void * ctx, const char * hostname, net_address_it_t resolved_it, uint8_t recursive);
 typedef int (*net_schedule_dns_query_init_fun_t)(void * ctx, net_dns_query_t query, const char * hostname, const char * policy);

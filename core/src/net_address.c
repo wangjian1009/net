@@ -561,6 +561,16 @@ net_address_t net_address_resolved(net_address_t address) {
     }
 }
 
+uint8_t net_address_domain_is_valid(net_address_t address) {
+    switch(address->m_type) {
+    case net_address_ipv4:
+    case net_address_ipv6:
+        return 0;
+    case net_address_domain:
+        return net_schedule_is_domain_address_valid(address->m_schedule, ((struct net_address_domain *)address)->m_url);
+    }
+}
+
 void net_address_print(write_stream_t ws, net_address_t address) {
     switch(address->m_type) {
     case net_address_ipv4: {

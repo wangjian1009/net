@@ -84,6 +84,7 @@ net_address_t net_address_rand_same_network(net_address_t base_address, net_addr
 /*domain*/
 int net_address_set_resolved(net_address_t address, net_address_t resolved, uint8_t is_own);
 net_address_t net_address_resolved(net_address_t address);
+uint8_t net_address_domain_is_valid(net_address_t address);
 
 /*ipv6*/
 uint8_t net_address_ipv6_is_ipv4_map(net_address_t address);
