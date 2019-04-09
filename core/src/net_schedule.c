@@ -341,7 +341,7 @@ uint8_t net_schedule_is_domain_address_valid(net_schedule_t schedule, const char
         }
     }
 
-    assert(schedule->m_domain_address_rule == NULL);
+    assert(schedule->m_domain_address_rule);
     return net_address_rule_check(schedule, schedule->m_domain_address_rule, str_address);
 }
 
