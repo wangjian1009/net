@@ -45,6 +45,7 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em, uint32_t common_
     schedule->m_endpoint_protocol_capacity = 0;
     schedule->m_local_ip_stack = net_local_ip_stack_ipv4;
     schedule->m_domain_address_rule = NULL;
+    schedule->m_domain_arpa_rule = NULL;
 
     TAILQ_INIT(&schedule->m_debug_setups);
     TAILQ_INIT(&schedule->m_drivers);
@@ -138,6 +139,11 @@ void net_schedule_free(net_schedule_t schedule) {
     if (schedule->m_domain_address_rule) {
         net_address_rule_free(schedule, schedule->m_domain_address_rule);
         schedule->m_domain_address_rule = NULL;
+    }
+
+    if (schedule->m_domain_arpa_rule) {
+        net_address_rule_free(schedule, schedule->m_domain_arpa_rule);
+        schedule->m_domain_arpa_rule = NULL;
     }
     
     while(!TAILQ_EMPTY(&schedule->m_free_addresses)) {
@@ -343,6 +349,18 @@ uint8_t net_schedule_is_domain_address_valid(net_schedule_t schedule, const char
 
     assert(schedule->m_domain_address_rule);
     return net_address_rule_check(schedule, schedule->m_domain_address_rule, str_address);
+}
+
+uint8_t net_schedule_is_domain_address_arpa(net_schedule_t schedule, const char * str_address) {
+    if (schedule->m_domain_arpa_rule == NULL) {
+        schedule->m_domain_arpa_rule = net_address_rule_create(schedule, "\\.in-addr\\.arpa\\.?");
+        if (schedule->m_domain_arpa_rule == NULL) {
+            return 0;
+        }
+    }
+
+    assert(schedule->m_domain_arpa_rule);
+    return net_address_rule_check(schedule, schedule->m_domain_arpa_rule, str_address);
 }
 
 static void net_schedule_do_delay_process(net_timer_t timer, void * input_ctx) {
