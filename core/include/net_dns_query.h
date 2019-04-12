@@ -18,6 +18,8 @@ net_dns_query_t net_dns_query_from_data(void * data);
 
 void net_dns_query_notify_result_and_free(net_dns_query_t query, net_address_t main_address, net_address_it_t all_address);
 
+const char * net_dns_query_type_str(net_dns_query_type_t type);
+
 NET_END_DECL
 
 #endif

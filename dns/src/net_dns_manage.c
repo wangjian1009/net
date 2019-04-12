@@ -294,7 +294,9 @@ static void net_dns_manage_do_delay_process(net_timer_t timer, void * input_ctx)
                 net_dns_entry_select_item(query_ex->m_entry, manage->m_default_item_select_policy, query_ex->m_query_type);
             if (item == NULL) {
                 if (manage->m_debug) {
-                    CPE_INFO(manage->m_em, "dns-cli: query %s: no item!", query_ex->m_entry->m_hostname);
+                    CPE_INFO(
+                        manage->m_em, "dns-cli: query %s %s: no item!",
+                        query_ex->m_entry->m_hostname, net_dns_query_type_str(query_ex->m_query_type));
                 }
             }
             else {
@@ -307,8 +309,8 @@ static void net_dns_manage_do_delay_process(net_timer_t timer, void * input_ctx)
         if (manage->m_debug) {
             if (query_ex->m_entry) {
                 CPE_INFO(
-                    manage->m_em, "dns-cli: response: %s ==> %s",
-                    query_ex->m_entry->m_hostname,
+                    manage->m_em, "dns-cli: response: %s %s ==> %s",
+                    query_ex->m_entry->m_hostname, net_dns_query_type_str(query_ex->m_query_type),
                     address ? net_address_dump(net_dns_manage_tmp_buffer(manage), address) : "N/A");
             }
             else {

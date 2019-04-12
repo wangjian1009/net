@@ -122,6 +122,19 @@ net_dns_query_t net_dns_query_from_data(void * data) {
     return ((net_dns_query_t)data) - 1;
 }
 
+const char * net_dns_query_type_str(net_dns_query_type_t type) {
+    switch(type) {
+    case net_dns_query_ipv4:
+        return "ipv4";
+    case net_dns_query_ipv6:
+        return "ipv6";
+    case net_dns_query_ipv4v6:
+        return "ipv4v6";
+    case net_dns_query_domain:
+        return "domain";
+    }
+}
+
 uint32_t net_dns_query_hash(net_dns_query_t o, void * user_data) {
     return o->m_query_id;
 }
