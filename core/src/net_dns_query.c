@@ -2,7 +2,7 @@
 
 net_dns_query_t net_dns_query_create(
     net_schedule_t schedule,
-    const char * hostname,
+    net_address_t hostname,
     net_dns_query_type_t query_type,
     const char * policy,
     net_dns_query_callback_fun_t callback,
@@ -10,7 +10,9 @@ net_dns_query_t net_dns_query_create(
     void * ctx)
 {
     if (schedule->m_dns_resolver_ctx == NULL) {
-        CPE_ERROR(schedule->m_em, "dns-query: %s: no dns resolver!", hostname);
+        CPE_ERROR(
+            schedule->m_em, "dns-query: %s: no dns resolver!",
+            net_address_host(net_schedule_tmp_buffer(schedule), hostname));
         return NULL;
     }
     
@@ -34,13 +36,17 @@ net_dns_query_t net_dns_query_create(
 
     cpe_hash_entry_init(&query->m_hh);
     if (cpe_hash_table_insert_unique(&schedule->m_dns_querys, query) != 0) {
-        CPE_ERROR(schedule->m_em, "dns-query: %s: id duplicate!", hostname);
+        CPE_ERROR(
+            schedule->m_em, "dns-query: %s: id duplicate!",
+            net_address_host(net_schedule_tmp_buffer(schedule), hostname));
         TAILQ_INSERT_TAIL(&schedule->m_free_dns_querys, query, m_next);
         return NULL;
     }
 
     if (schedule->m_dns_query_init_fun(schedule->m_dns_resolver_ctx, query, hostname, query_type, policy) != 0) {
-        CPE_ERROR(schedule->m_em, "dns-query: %s: init fail!", hostname);
+        CPE_ERROR(
+            schedule->m_em, "dns-query: %s: init fail!",
+            net_address_host(net_schedule_tmp_buffer(schedule), hostname));
         cpe_hash_table_remove_by_ins(&schedule->m_dns_querys, query);
         TAILQ_INSERT_TAIL(&schedule->m_free_dns_querys, query, m_next);
         return NULL;

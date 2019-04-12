@@ -167,7 +167,7 @@ net_dns_entry_select_item(net_dns_entry_t entry, net_dns_item_select_policy_t po
             if (query_type != net_dns_query_domain) continue;
             break;
         }
-        
+
         switch(policy) {
         case net_dns_item_select_policy_first:
             if (item == NULL) {

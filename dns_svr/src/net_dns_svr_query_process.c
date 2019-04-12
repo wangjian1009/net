@@ -1,3 +1,4 @@
+#include <assert.h>
 #include "cpe/pal/pal_platform.h"
 #include "cpe/pal/pal_string.h"
 #include "cpe/pal/pal_strings.h"
@@ -64,29 +65,40 @@ net_dns_svr_query_parse_request(net_dns_svr_itf_t itf, void const * data, uint32
         uint16_t class;
         CPE_COPY_NTOH16(&class, p); p+=2;
 
-        net_dns_svr_query_entry_type_t entry_type;
-        if (type == 1) {
-            entry_type = net_dns_svr_query_entry_type_ipv4;
-        }
-        else if (type == 28) {
-            entry_type = net_dns_svr_query_entry_type_ipv6;
-        }
-        else if (type == 12) {
-            entry_type = net_dns_svr_query_entry_type_ptr;
-        }
-        else {
-            CPE_ERROR(svr->m_em, "dns-svr: %s: not support query type %d!", domain_name, type);
-            continue;
-        }
-        
         if (class != 1) {
             CPE_ERROR(svr->m_em, "dns-svr: %s: not support class %d!", domain_name, class);
             continue;
         }
         
-        net_dns_svr_query_entry_t entry = net_dns_svr_query_entry_create(query, domain_name, entry_type);
+        net_address_t address = NULL;
+        net_dns_svr_query_entry_type_t entry_type;
+        if (type == 1) {
+            entry_type = net_dns_svr_query_entry_type_ipv4;
+            address = net_address_create_domain(svr->m_schedule, domain_name, 0, NULL);
+        }
+        else if (type == 28) {
+            entry_type = net_dns_svr_query_entry_type_ipv6;
+            address = net_address_create_domain(svr->m_schedule, domain_name, 0, NULL);
+        }
+        else if (type == 12) {
+            entry_type = net_dns_svr_query_entry_type_ptr;
+            //TODO:
+        }
+        else {
+            CPE_ERROR(svr->m_em, "dns-svr: %s: not support query type %d!", domain_name, type);
+            continue;
+        }
+
+        if (address == NULL) {
+            CPE_ERROR(svr->m_em, "dns-svr: %s: create address fail!", domain_name);
+            net_dns_svr_query_free(query);
+            return NULL;
+        }
+
+        net_dns_svr_query_entry_t entry = net_dns_svr_query_entry_create(query, address, entry_type); /*query manage address*/
         if (entry == NULL) {
             CPE_ERROR(svr->m_em, "dns-svr: create query entry fail!");
+            net_address_free(address);
             net_dns_svr_query_free(query);
             return NULL;
         }
@@ -96,9 +108,24 @@ net_dns_svr_query_parse_request(net_dns_svr_itf_t itf, void const * data, uint32
 }
 
 static uint32_t net_dns_svr_query_calc_entry_query_size(net_dns_svr_query_entry_t query_entry) {
-    return (uint32_t)strlen(query_entry->m_domain_name) + 2u /*name*/
-        + 2 /*type*/
-        + 2 /*class*/
+    uint32_t sz = 0;
+    
+    switch(net_address_type(query_entry->m_address)) {
+    case net_address_ipv4:
+        sz += 4;
+        break;
+    case net_address_ipv6:
+        sz += 16;
+        break;
+    case net_address_domain:
+        sz += (uint32_t)strlen(net_address_data(query_entry->m_address));
+        break;
+    }
+    
+    return sz
+        + 2u /*name*/
+        + 2u /*type*/
+        + 2u /*class*/
         ;
 }
 
@@ -188,6 +215,26 @@ static char * net_dns_svr_query_append_name(net_dns_svr_t svr, char * p, void * 
     return p;
 }
 
+static char * net_dns_svr_query_append_address(net_dns_svr_t svr, char * p, void * data, uint32_t capacity, net_address_t address) {
+    const char * domain_name;
+    
+    switch(net_address_type(address)) {
+    case net_address_domain:
+        domain_name = (const char *)net_address_data(address);
+        break;
+    case net_address_ipv4:
+        assert(0);
+        domain_name = "not-support-ipv4";
+        break;
+    case net_address_ipv6:
+        assert(0);
+        domain_name = "not-support-ipv6";
+        break;
+    }
+
+    return net_dns_svr_query_append_name(svr, p, data, capacity, domain_name);
+}
+    
 #define net_dns_svr_query_build_response_check_capacity(__sz)           \
     if (left_capacity < (__sz)) {                                       \
         CPE_ERROR(                                                      \
@@ -239,7 +286,7 @@ int net_dns_svr_query_build_response(net_dns_svr_query_t query, void * data, uin
     /*query*/
     TAILQ_FOREACH(entry, &query->m_entries, m_next) {
         entry->m_cache_name_offset = (uint16_t)(p - (char*)data);
-        p = net_dns_svr_query_append_name(svr, p, data, capacity, entry->m_domain_name);
+        p = net_dns_svr_query_append_address(svr, p, data, capacity, entry->m_address);
         if (p == NULL) return -1;
         
         uint16_t qtype = net_dns_svr_query_entry_type_to_atype(entry->m_type);

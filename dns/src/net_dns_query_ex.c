@@ -1,5 +1,6 @@
 #include "assert.h"
 #include "cpe/utils/time_utils.h"
+#include "net_address.h"
 #include "net_dns_query.h"
 #include "net_dns_query_ex_i.h"
 #include "net_dns_entry_i.h"
@@ -8,58 +9,69 @@
 #include "net_dns_task_builder_i.h"
 
 int net_dns_query_ex_init(
-    void * ctx, net_dns_query_t query, const char * hostname, net_dns_query_type_t query_type, const char * policy) {
+    void * ctx, net_dns_query_t query, net_address_t address, net_dns_query_type_t query_type, const char * policy) {
     net_dns_manage_t manage = ctx;
     struct net_dns_query_ex * query_ex = net_dns_query_data(query);
 
+    uint8_t have_response = 0;
+    net_dns_entry_t entry = NULL;
     uint8_t is_entry_new = 0;
     uint8_t is_task_new = 0;
 
-    net_dns_entry_t entry = net_dns_entry_find(manage, hostname);
-    if (entry == NULL) {
-        entry = net_dns_entry_create(manage, hostname);
-        if (entry == NULL) return -1;
-        is_entry_new = 1;
+    if (query_type == net_dns_query_domain) {
+        assert(net_address_type(address) == net_address_ipv4
+               || net_address_type(address) == net_address_ipv6);
+        assert(0);
     }
-    assert(entry);
+    else {
+        assert(net_address_type(address) == net_address_domain);
+        const char * hostname = (const char *)net_address_data(address);
 
-    uint8_t have_response = 0;
-    if (net_dns_entry_select_item(entry, manage->m_default_item_select_policy, query_type) != NULL) {
-        have_response = 1;
-    }
-
-    uint8_t expired =
-        (entry->m_expire_time_s == 0
-         || entry->m_expire_time_s < (uint32_t)(cur_time_ms() / 1000))
-        ? 1 : 0;
-    
-    if (!have_response || expired) {
-        //TODO: task with type
-        if (entry->m_task == NULL) {
-            if (manage->m_builder_default == NULL) {
-                CPE_ERROR(manage->m_em, "dns-cli: query %s: no task builder!", hostname);
-                goto START_ERROR;
-            }
-            
-            if (net_dns_task_create(manage, entry, query_type) == NULL) {
-                goto START_ERROR;
-            }
-            assert(entry->m_task != NULL);
-            is_task_new = 1;
-
-            if (net_dns_task_builder_build(manage->m_builder_default, entry->m_task, policy) != 0) {
-                CPE_ERROR(manage->m_em, "dns-cli: query %s: build task fail!", hostname);
-                goto START_ERROR;
-            }
-
-            if (net_dns_task_start(entry->m_task) != 0) {
-                CPE_ERROR(manage->m_em, "dns-cli: query %s: start task fail!", hostname);
-                goto START_ERROR;
-            }
+        entry = net_dns_entry_find(manage, hostname);
+        if (entry == NULL) {
+            entry = net_dns_entry_create(manage, hostname);
+            if (entry == NULL) return -1;
+            is_entry_new = 1;
         }
-        else {
-            if (manage->m_debug) {
-                CPE_INFO(manage->m_em, "dns-cli: query %s: already have task!", hostname);
+        assert(entry);
+
+        if (net_dns_entry_select_item(entry, manage->m_default_item_select_policy, query_type) != NULL) {
+            have_response = 1;
+        }
+
+        uint8_t expired =
+            (entry->m_expire_time_s == 0
+             || entry->m_expire_time_s < (uint32_t)(cur_time_ms() / 1000))
+            ? 1 : 0;
+    
+        if (!have_response || expired) {
+            //TODO: task with type
+            if (entry->m_task == NULL) {
+                if (manage->m_builder_default == NULL) {
+                    CPE_ERROR(manage->m_em, "dns-cli: query %s: no task builder!", hostname);
+                    goto START_ERROR;
+                }
+            
+                if (net_dns_task_create(manage, entry, query_type) == NULL) {
+                    goto START_ERROR;
+                }
+                assert(entry->m_task != NULL);
+                is_task_new = 1;
+
+                if (net_dns_task_builder_build(manage->m_builder_default, entry->m_task, policy) != 0) {
+                    CPE_ERROR(manage->m_em, "dns-cli: query %s: build task fail!", hostname);
+                    goto START_ERROR;
+                }
+
+                if (net_dns_task_start(entry->m_task) != 0) {
+                    CPE_ERROR(manage->m_em, "dns-cli: query %s: start task fail!", hostname);
+                    goto START_ERROR;
+                }
+            }
+            else {
+                if (manage->m_debug) {
+                    CPE_INFO(manage->m_em, "dns-cli: query %s: already have task!", hostname);
+                }
             }
         }
     }
@@ -98,11 +110,19 @@ START_ERROR:
 void net_dns_query_ex_fini(void * ctx, net_dns_query_t query) {
     struct net_dns_query_ex * query_ex = net_dns_query_data(query);
 
-    if (query_ex->m_task) {
-        TAILQ_REMOVE(&query_ex->m_task->m_querys, query_ex, m_next);
+    if (query_ex->m_query_type == net_dns_query_domain) {
+        if (query_ex->m_address) {
+            net_address_free(query_ex->m_address);
+            query_ex->m_address = NULL;
+        }
     }
     else {
-        TAILQ_REMOVE(&query_ex->m_manage->m_to_notify_querys, query_ex, m_next);
+        if (query_ex->m_task) {
+            TAILQ_REMOVE(&query_ex->m_task->m_querys, query_ex, m_next);
+        }
+        else {
+            TAILQ_REMOVE(&query_ex->m_manage->m_to_notify_querys, query_ex, m_next);
+        }
     }
 }
 

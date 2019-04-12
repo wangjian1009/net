@@ -7,7 +7,7 @@
 static void net_dns_svr_query_entry_callback(void * ctx, net_address_t main_address, net_address_it_t all_address);
 
 net_dns_svr_query_entry_t
-net_dns_svr_query_entry_create(net_dns_svr_query_t query, const char * domain_name, net_dns_svr_query_entry_type_t type) {
+net_dns_svr_query_entry_create(net_dns_svr_query_t query, net_address_t address_own, net_dns_svr_query_entry_type_t type) {
     net_dns_svr_t dns_svr = query->m_itf->m_svr;
     
     net_dns_svr_query_entry_t query_entry = TAILQ_FIRST(&dns_svr->m_free_query_entries);
@@ -24,7 +24,7 @@ net_dns_svr_query_entry_create(net_dns_svr_query_t query, const char * domain_na
 
     query_entry->m_query = query;
     query_entry->m_type = type;
-    cpe_str_dup(query_entry->m_domain_name, sizeof(query_entry->m_domain_name), domain_name);
+    query_entry->m_address = address_own;
     query_entry->m_result_count = 0;
     query_entry->m_local_query = NULL;
     query_entry->m_cache_name_offset = 0;
@@ -49,6 +49,9 @@ void net_dns_svr_query_entry_free(net_dns_svr_query_entry_t query_entry) {
         net_address_free(query_entry->m_results[i]);
     }
     query_entry->m_result_count = 0;
+
+    net_address_free(query_entry->m_address);
+    query_entry->m_address = NULL;
     
     TAILQ_REMOVE(&query_entry->m_query->m_entries, query_entry, m_next);
 
@@ -85,7 +88,7 @@ int net_dns_svr_query_entry_start(net_dns_svr_query_entry_t query_entry) {
     query_entry->m_local_query =
         net_dns_query_create(
             svr->m_schedule,
-            query_entry->m_domain_name, query_type,
+            query_entry->m_address, query_type,
             svr->m_query_policy,
             net_dns_svr_query_entry_callback, NULL, query_entry);
     if (query_entry->m_local_query == NULL) {
@@ -126,10 +129,12 @@ static void net_dns_svr_query_entry_callback(void * ctx, net_address_t main_addr
 
         if (query_entry->m_result_count + 1 >= CPE_ARRAY_SIZE(query_entry->m_results)) {
             if (svr->m_debug >= 2) {
+                char address_buf[512];
+                cpe_str_dup(address_buf, sizeof(address_buf), net_address_host(net_dns_svr_tmp_buffer(svr), query_entry->m_address));
                 CPE_INFO(
                     svr->m_em, "dns-svr: query %s ==> %s, count=%d, overflow, ignore",
-                    query_entry->m_domain_name,
-                    net_address_dump(net_dns_svr_tmp_buffer(svr), result),
+                    address_buf,
+                    net_address_host(net_dns_svr_tmp_buffer(svr), result),
                     query_entry->m_result_count);
             }
             break;
@@ -137,19 +142,22 @@ static void net_dns_svr_query_entry_callback(void * ctx, net_address_t main_addr
 
         query_entry->m_results[query_entry->m_result_count] = net_address_copy(svr->m_schedule, result);
         if (query_entry->m_results[query_entry->m_result_count] == NULL) {
+            char address_buf[512];
+            cpe_str_dup(address_buf, sizeof(address_buf), net_address_host(net_dns_svr_tmp_buffer(svr), query_entry->m_address));
             CPE_ERROR(
                 svr->m_em, "dns-svr: query %s ==> %s, dup address error, ignore",
-                query_entry->m_domain_name,
-                net_address_dump(net_dns_svr_tmp_buffer(svr), result));
+                address_buf, net_address_host(net_dns_svr_tmp_buffer(svr), result));
             continue;
         }
 
         if (svr->m_debug >= 2) {
+            char address_buf[512];
+            cpe_str_dup(address_buf, sizeof(address_buf), net_address_host(net_dns_svr_tmp_buffer(svr), query_entry->m_address));
             CPE_INFO(
                 svr->m_em, "dns-svr: query %s ==> [%d]%s",
-                query_entry->m_domain_name,
+                address_buf,
                 query_entry->m_result_count,
-                net_address_dump(net_dns_svr_tmp_buffer(svr), query_entry->m_results[query_entry->m_result_count]));
+                net_address_host(net_dns_svr_tmp_buffer(svr), query_entry->m_results[query_entry->m_result_count]));
         }
 
         query_entry->m_result_count++;
@@ -159,7 +167,7 @@ static void net_dns_svr_query_entry_callback(void * ctx, net_address_t main_addr
         if (query_entry->m_result_count == 0) {
             CPE_INFO(
                 svr->m_em, "dns-svr: query %s ==> none",
-                query_entry->m_domain_name);
+                net_address_host(net_dns_svr_tmp_buffer(svr), query_entry->m_address));
         }
     }
 
