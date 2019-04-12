@@ -167,24 +167,39 @@ static char * net_dns_svr_query_append_name(net_dns_svr_t svr, char * p, void * 
     return p;
 }
 
+#define net_dns_svr_query_build_response_check_capacity(__sz)           \
+    if (left_capacity < (__sz)) {                                       \
+        CPE_ERROR(                                                      \
+            svr->m_em, "dns-svr: build response: not enouth buf, capacity=%d", \
+            capacity);                                                  \
+        return -1;                                                      \
+    }                                                                   \
+    else {                                                              \
+        left_capacity -= (__sz);                                        \
+    }
+
 int net_dns_svr_query_build_response(net_dns_svr_query_t query, void * data, uint32_t capacity) {
     net_dns_svr_t svr = query->m_itf->m_svr;
     
     net_dns_svr_query_entry_t entry;
     char * p = (char*)data;
-    
+    uint32_t left_capacity = capacity;
+
+    net_dns_svr_query_build_response_check_capacity(2);
     CPE_COPY_HTON16(p, &query->m_trans_id); p+=2;
 
     uint16_t flags = 0;
     flags |= 1u << 15; /*qr*/
     flags |= 1u << 8;  /**/
     flags |= 1u << 7;  /**/
+    net_dns_svr_query_build_response_check_capacity(2);
     CPE_COPY_HTON16(p, &flags); p+=2;
 
     uint16_t qdcount = 0;
     TAILQ_FOREACH(entry, &query->m_entries, m_next) {
         qdcount++;
     }
+    net_dns_svr_query_build_response_check_capacity(2);
     CPE_COPY_NTOH16(p, &qdcount); p+=2;
     
     uint16_t ancount = 0;
@@ -202,31 +217,48 @@ int net_dns_svr_query_build_response(net_dns_svr_query_t query, void * data, uin
             }
         }
     }
+    net_dns_svr_query_build_response_check_capacity(2);
     CPE_COPY_NTOH16(p, &ancount); p+=2;
 
     uint16_t nscount = 0;
+    net_dns_svr_query_build_response_check_capacity(2);
     CPE_COPY_NTOH16(p, &nscount); p+=2;
     
     uint16_t arcount = 0;
+    net_dns_svr_query_build_response_check_capacity(2);
     CPE_COPY_NTOH16(p, &arcount); p+=2;
 
     /*query*/
     TAILQ_FOREACH(entry, &query->m_entries, m_next) {
-        entry->m_cache_name_offset = (uint16_t)(p - (char*)data);
-        p = net_dns_svr_query_append_name(svr, p, data, capacity, entry->m_domain_name);
-
         uint16_t qtype;
         switch(entry->m_type) {
         case net_dns_svr_query_entry_type_ipv4:
-            qtype = 1;
+            if (entry->m_type != net_dns_svr_query_entry_type_ipv4) {
+                continue;
+            }
+            else {
+                qtype = 1;
+            }
             break;
         case net_dns_svr_query_entry_type_ipv6:
-            qtype = 28;
+            if (entry->m_type != net_dns_svr_query_entry_type_ipv6) {
+                continue;
+            }
+            else {
+                qtype = 28;
+            }
             break;
         }
+
+        entry->m_cache_name_offset = (uint16_t)(p - (char*)data);
+        p = net_dns_svr_query_append_name(svr, p, data, capacity, entry->m_domain_name);
+        if (p == NULL) return -1;
+        
+        net_dns_svr_query_build_response_check_capacity(2);
         CPE_COPY_HTON16(p, &qtype); p+=2;
     
         uint16_t qclass = 1;
+        net_dns_svr_query_build_response_check_capacity(2);
         CPE_COPY_HTON16(p, &qclass); p+=2;
     }
 
@@ -235,6 +267,7 @@ int net_dns_svr_query_build_response(net_dns_svr_query_t query, void * data, uin
         uint8_t i;
         for(i = 0; i < entry->m_result_count; ++i) {
             uint16_t rdlength;
+            uint16_t atype;
             
             net_address_t address = entry->m_results[i];
             switch(net_address_type(address)) {
@@ -243,6 +276,7 @@ int net_dns_svr_query_build_response(net_dns_svr_query_t query, void * data, uin
                     continue;
                 }
                 else {
+                    atype = 1;
                     rdlength = 4;
                 }
                 break;
@@ -251,6 +285,7 @@ int net_dns_svr_query_build_response(net_dns_svr_query_t query, void * data, uin
                     continue;
                 }
                 else {
+                    atype = 28;
                     rdlength = 16;
                 }
                 break;
@@ -260,19 +295,24 @@ int net_dns_svr_query_build_response(net_dns_svr_query_t query, void * data, uin
 
             uint16_t name_offset = entry->m_cache_name_offset;
             name_offset |= 0xC000u;
+            net_dns_svr_query_build_response_check_capacity(2);
             CPE_COPY_HTON16(p, &name_offset); p+=2;
 
-            uint16_t atype = 1;
+            net_dns_svr_query_build_response_check_capacity(2);
             CPE_COPY_HTON16(p, &atype); p+=2;
     
             uint16_t aclass = 1;
+            net_dns_svr_query_build_response_check_capacity(2);
             CPE_COPY_HTON16(p, &aclass); p+=2;
 
             uint32_t ttl = 300;
+            net_dns_svr_query_build_response_check_capacity(4);
             CPE_COPY_HTON32(p, &ttl); p+=4;
 
+            net_dns_svr_query_build_response_check_capacity(2);
             CPE_COPY_HTON16(p, &rdlength); p+=2;
             
+            net_dns_svr_query_build_response_check_capacity(rdlength);
             memcpy(p, net_address_data(address), rdlength);
             p += rdlength;
         }
