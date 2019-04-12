@@ -45,7 +45,7 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em, uint32_t common_
     schedule->m_endpoint_protocol_capacity = 0;
     schedule->m_local_ip_stack = net_local_ip_stack_ipv4;
     schedule->m_domain_address_rule = NULL;
-    schedule->m_domain_arpa_rule = NULL;
+    schedule->m_domain_arpa_rule_ipv4 = NULL;
 
     TAILQ_INIT(&schedule->m_debug_setups);
     TAILQ_INIT(&schedule->m_drivers);
@@ -141,9 +141,9 @@ void net_schedule_free(net_schedule_t schedule) {
         schedule->m_domain_address_rule = NULL;
     }
 
-    if (schedule->m_domain_arpa_rule) {
-        net_address_rule_free(schedule, schedule->m_domain_arpa_rule);
-        schedule->m_domain_arpa_rule = NULL;
+    if (schedule->m_domain_arpa_rule_ipv4) {
+        net_address_rule_free(schedule, schedule->m_domain_arpa_rule_ipv4);
+        schedule->m_domain_arpa_rule_ipv4 = NULL;
     }
     
     while(!TAILQ_EMPTY(&schedule->m_free_addresses)) {
@@ -352,22 +352,37 @@ uint8_t net_schedule_is_domain_address_valid(net_schedule_t schedule, const char
 }
 
 uint8_t net_schedule_is_domain_address_arpa(net_schedule_t schedule, const char * str_address, net_address_t * address) {
-    if (schedule->m_domain_arpa_rule == NULL) {
-        schedule->m_domain_arpa_rule = net_address_rule_create(schedule, "\\.in-addr\\.arpa\\.?");
-        if (schedule->m_domain_arpa_rule == NULL) {
+    if (schedule->m_domain_arpa_rule_ipv4 == NULL) {
+        schedule->m_domain_arpa_rule_ipv4 = net_address_rule_create(schedule, "^([0-9]+)\\.([0-9]+)\\.([0-9]+)\\.([0-9]+)\\.\\.in-addr\\.arpa\\.?$");
+        if (schedule->m_domain_arpa_rule_ipv4 == NULL) {
             if (address) *address = NULL;
             return 0;
         }
     }
 
-    assert(schedule->m_domain_arpa_rule);
+    net_address_rule_t rule_ipv4 = schedule->m_domain_arpa_rule_ipv4;
+    assert(rule_ipv4);
 
-    //net_address_rule_check(schedule, schedule->m_domain_arpa_rule, str_address);
-
-    if (address) {
-        *address = NULL;
+    pcre2_match_data * match_data = pcre2_match_data_create_from_pattern(rule_ipv4->m_pattern_re, NULL);
+    int rc = pcre2_match_8(rule_ipv4->m_pattern_re, (PCRE2_SPTR8)address, PCRE2_ZERO_TERMINATED, 0, 0, match_data, NULL);
+    if (rc < 0) {
+        pcre2_match_data_free(match_data);
+        if (rc != PCRE2_ERROR_NOMATCH) {
+            CPE_ERROR(schedule->m_em, "net_schedule_is_domain_address_arpa: check %s fail, rv=%d", str_address, rc);
+            if (address) *address = NULL;
+            return 0;
+        }
     }
+    else {
+        if (address) {
+            *address = NULL;
+        }
     
+        pcre2_match_data_free(match_data);
+        return 1;
+    }
+
+    //TODO: ipv6
     return 0;
 }
 

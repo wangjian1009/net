@@ -34,6 +34,8 @@ int net_dns_svr_query_entry_start(net_dns_svr_query_entry_t query_entry);
 
 uint16_t net_dns_svr_query_entry_type_to_atype(net_dns_svr_query_entry_type_t entry_type);
 
+const char * net_dns_svr_query_entry_dump(mem_buffer_t buffer, net_dns_svr_query_entry_t entry);
+
 NET_END_DECL
 
 #endif

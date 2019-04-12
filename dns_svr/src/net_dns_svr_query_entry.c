@@ -1,5 +1,6 @@
 #include <assert.h>
 #include "cpe/utils/string_utils.h"
+#include "cpe/utils/stream_buffer.h"
 #include "net_dns_query.h"
 #include "net_address.h"
 #include "net_dns_svr_query_entry_i.h"
@@ -130,7 +131,7 @@ static void net_dns_svr_query_entry_callback(void * ctx, net_address_t main_addr
         if (query_entry->m_result_count + 1 >= CPE_ARRAY_SIZE(query_entry->m_results)) {
             if (svr->m_debug >= 2) {
                 char address_buf[512];
-                cpe_str_dup(address_buf, sizeof(address_buf), net_address_host(net_dns_svr_tmp_buffer(svr), query_entry->m_address));
+                cpe_str_dup(address_buf, sizeof(address_buf), net_dns_svr_query_entry_dump(net_dns_svr_tmp_buffer(svr), query_entry));
                 CPE_INFO(
                     svr->m_em, "dns-svr: query %s ==> %s, count=%d, overflow, ignore",
                     address_buf,
@@ -143,7 +144,7 @@ static void net_dns_svr_query_entry_callback(void * ctx, net_address_t main_addr
         query_entry->m_results[query_entry->m_result_count] = net_address_copy(svr->m_schedule, result);
         if (query_entry->m_results[query_entry->m_result_count] == NULL) {
             char address_buf[512];
-            cpe_str_dup(address_buf, sizeof(address_buf), net_address_host(net_dns_svr_tmp_buffer(svr), query_entry->m_address));
+            cpe_str_dup(address_buf, sizeof(address_buf), net_dns_svr_query_entry_dump(net_dns_svr_tmp_buffer(svr), query_entry));
             CPE_ERROR(
                 svr->m_em, "dns-svr: query %s ==> %s, dup address error, ignore",
                 address_buf, net_address_host(net_dns_svr_tmp_buffer(svr), result));
@@ -152,7 +153,7 @@ static void net_dns_svr_query_entry_callback(void * ctx, net_address_t main_addr
 
         if (svr->m_debug >= 2) {
             char address_buf[512];
-            cpe_str_dup(address_buf, sizeof(address_buf), net_address_host(net_dns_svr_tmp_buffer(svr), query_entry->m_address));
+            cpe_str_dup(address_buf, sizeof(address_buf), net_dns_svr_query_entry_dump(net_dns_svr_tmp_buffer(svr), query_entry));
             CPE_INFO(
                 svr->m_em, "dns-svr: query %s ==> [%d]%s",
                 address_buf,
@@ -167,7 +168,7 @@ static void net_dns_svr_query_entry_callback(void * ctx, net_address_t main_addr
         if (query_entry->m_result_count == 0) {
             CPE_INFO(
                 svr->m_em, "dns-svr: query %s ==> none",
-                net_address_host(net_dns_svr_tmp_buffer(svr), query_entry->m_address));
+                net_dns_svr_query_entry_dump(net_dns_svr_tmp_buffer(svr), query_entry));
         }
     }
 
@@ -195,4 +196,28 @@ uint16_t net_dns_svr_query_entry_type_to_atype(net_dns_svr_query_entry_type_t en
     case net_dns_svr_query_entry_type_ptr:
         return 12;
     }
+}
+
+const char * net_dns_svr_query_entry_dump(mem_buffer_t buffer, net_dns_svr_query_entry_t entry) {
+    struct write_stream_buffer stream = CPE_WRITE_STREAM_BUFFER_INITIALIZER(buffer);
+
+    mem_buffer_clear_data(buffer);
+
+    net_address_print((write_stream_t)&stream, entry->m_address);
+
+    switch(entry->m_type) {
+    case net_dns_svr_query_entry_type_ipv4:
+        stream_printf((write_stream_t)&stream, " ipv4");
+        break;
+    case net_dns_svr_query_entry_type_ipv6:
+        stream_printf((write_stream_t)&stream, " ipv6");
+        break;
+    case net_dns_svr_query_entry_type_ptr:
+        stream_printf((write_stream_t)&stream, " ptr");
+        break;
+    }
+
+    stream_putc((write_stream_t)&stream, 0);
+    
+    return mem_buffer_make_continuous(buffer, 0);
 }
