@@ -217,15 +217,18 @@ static char * net_dns_svr_query_append_name(net_dns_svr_t svr, char * p, void * 
 
 static char * net_dns_svr_query_append_address(net_dns_svr_t svr, char * p, void * data, uint32_t capacity, net_address_t address) {
     const char * domain_name;
+    char buf[128];
     
     switch(net_address_type(address)) {
     case net_address_domain:
         domain_name = (const char *)net_address_data(address);
         break;
-    case net_address_ipv4:
-        assert(0);
-        domain_name = "not-support-ipv4";
+    case net_address_ipv4: {
+        struct net_address_data_ipv4 * ipv4 = (struct net_address_data_ipv4 * )net_address_data(address);
+        snprintf(buf, sizeof(buf), "%d.%d.%d.%d.in-addr.arpa", ipv4->u8[0], ipv4->u8[1], ipv4->u8[2], ipv4->u8[3]);
+        domain_name = buf;
         break;
+    }
     case net_address_ipv6:
         assert(0);
         domain_name = "not-support-ipv6";
