@@ -215,7 +215,15 @@ int net_dns_svr_query_build_response(net_dns_svr_query_t query, void * data, uin
         entry->m_cache_name_offset = (uint16_t)(p - (char*)data);
         p = net_dns_svr_query_append_name(svr, p, data, capacity, entry->m_domain_name);
 
-        uint16_t qtype = 1;
+        uint16_t qtype;
+        switch(entry->m_type) {
+        case net_dns_svr_query_entry_type_ipv4:
+            qtype = 1;
+            break;
+        case net_dns_svr_query_entry_type_ipv6:
+            qtype = 28;
+            break;
+        }
         CPE_COPY_HTON16(p, &qtype); p+=2;
     
         uint16_t qclass = 1;
@@ -231,10 +239,20 @@ int net_dns_svr_query_build_response(net_dns_svr_query_t query, void * data, uin
             net_address_t address = entry->m_results[i];
             switch(net_address_type(address)) {
             case net_address_ipv4:
-                rdlength = 4;
+                if (entry->m_type != net_dns_svr_query_entry_type_ipv4) {
+                    continue;
+                }
+                else {
+                    rdlength = 4;
+                }
                 break;
             case net_address_ipv6:
-                rdlength = 16;
+                if (entry->m_type != net_dns_svr_query_entry_type_ipv6) {
+                    continue;
+                }
+                else {
+                    rdlength = 16;
+                }
                 break;
             default:
                 continue;
