@@ -144,23 +144,40 @@ uint32_t net_dns_svr_query_calc_response_size(net_dns_svr_query_t query) {
     return sz;
 }
 
+#define net_dns_svr_query_append_name_check_capacity(__sz)              \
+    if (left_capacity < (__sz)) {                                       \
+        CPE_ERROR(                                                      \
+            svr->m_em, "dns-svr: build response: append name: not enouth buf, capacity=%d", \
+            capacity);                                                  \
+        return NULL;                                                      \
+    }                                                                   \
+    else {                                                              \
+        left_capacity -= (__sz);                                        \
+    }
+
 static char * net_dns_svr_query_append_name(net_dns_svr_t svr, char * p, void * data, uint32_t capacity, const char * name) {
+    uint32_t left_capacity = capacity;
+
+    net_dns_svr_query_append_name_check_capacity(1);
     char * countp = p++;
     *countp = 0;
 
     const char * q;
     for(q = name; *q != 0; q++) {
-        if(*q != '.') {
+        if (*q != '.') {
             (*countp)++;
+            net_dns_svr_query_append_name_check_capacity(1);
             *(p++) = *q;
         }
         else if(*countp != 0) {
+            net_dns_svr_query_append_name_check_capacity(1);
             countp = p++;
             *countp = 0;
         }
     }
 
     if (*countp != 0) {
+        net_dns_svr_query_append_name_check_capacity(1);
         *(p++) = 0;
     }
 
