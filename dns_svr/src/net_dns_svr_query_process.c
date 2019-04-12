@@ -57,9 +57,31 @@ net_dns_svr_query_parse_request(net_dns_svr_itf_t itf, void const * data, uint32
         stream_putc((write_stream_t)&ws, 0);
 
         const char * domain_name = mem_buffer_make_continuous(buffer, 0);
-        p += 2 + 2; /*type + class*/
 
-        net_dns_svr_query_entry_t entry = net_dns_svr_query_entry_create(query, domain_name);
+        uint16_t type;
+        CPE_COPY_NTOH16(&type, p); p+=2;
+        
+        uint16_t class;
+        CPE_COPY_NTOH16(&class, p); p+=2;
+
+        net_dns_svr_query_entry_type_t entry_type;
+        if (type == 1) {
+            entry_type = net_dns_svr_query_entry_type_ipv4;
+        }
+        else if (type == 28) {
+            entry_type = net_dns_svr_query_entry_type_ipv6;
+        }
+        else {
+            CPE_ERROR(svr->m_em, "dns-svr: %s: not support query type %d!", domain_name, type);
+            continue;
+        }
+        
+        if (class != 1) {
+            CPE_ERROR(svr->m_em, "dns-svr: %s: not support class %d!", domain_name, class);
+            continue;
+        }
+        
+        net_dns_svr_query_entry_t entry = net_dns_svr_query_entry_create(query, domain_name, entry_type);
         if (entry == NULL) {
             CPE_ERROR(svr->m_em, "dns-svr: create query entry fail!");
             net_dns_svr_query_free(query);

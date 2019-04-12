@@ -6,7 +6,8 @@
 
 static void net_dns_svr_query_entry_callback(void * ctx, net_address_t main_address, net_address_it_t all_address);
 
-net_dns_svr_query_entry_t net_dns_svr_query_entry_create(net_dns_svr_query_t query, const char * domain_name) {
+net_dns_svr_query_entry_t
+net_dns_svr_query_entry_create(net_dns_svr_query_t query, const char * domain_name, net_dns_svr_query_entry_type_t type) {
     net_dns_svr_t dns_svr = query->m_itf->m_svr;
     
     net_dns_svr_query_entry_t query_entry = TAILQ_FIRST(&dns_svr->m_free_query_entries);
@@ -22,6 +23,7 @@ net_dns_svr_query_entry_t net_dns_svr_query_entry_create(net_dns_svr_query_t que
     }
 
     query_entry->m_query = query;
+    query_entry->m_type = type;
     cpe_str_dup(query_entry->m_domain_name, sizeof(query_entry->m_domain_name), domain_name);
     query_entry->m_result_count = 0;
     query_entry->m_local_query = NULL;
