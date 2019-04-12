@@ -597,7 +597,12 @@ void net_address_print(write_stream_t ws, net_address_t address) {
     }
     case net_address_domain: {
         struct net_address_domain * address_domain = (struct net_address_domain *)address;
-        stream_printf(ws, "%s:%d", address_domain->m_url, address_domain->m_port);
+        if (address_domain->m_port) {
+            stream_printf(ws, "%s:%d", address_domain->m_url, address_domain->m_port);
+        }
+        else {
+            stream_printf(ws, "%s", address_domain->m_url);
+        }
         if (address_domain->m_resolved) {
             stream_printf(ws, "(");
             net_address_print(ws, address_domain->m_resolved);
