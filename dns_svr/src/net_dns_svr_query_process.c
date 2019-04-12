@@ -3,6 +3,7 @@
 #include "cpe/pal/pal_string.h"
 #include "cpe/pal/pal_strings.h"
 #include "cpe/utils/stream_buffer.h"
+#include "net_schedule.h"
 #include "net_address.h"
 #include "net_dns_svr_itf_i.h"
 #include "net_dns_svr_query_i.h"
@@ -82,7 +83,11 @@ net_dns_svr_query_parse_request(net_dns_svr_itf_t itf, void const * data, uint32
         }
         else if (type == 12) {
             entry_type = net_dns_svr_query_entry_type_ptr;
-            //TODO:
+            if (!net_schedule_is_domain_address_arpa(svr->m_schedule, domain_name, &address)) {
+                CPE_ERROR(svr->m_em, "dns-svr: %s: is not arpa record!", domain_name);
+                net_dns_svr_query_free(query);
+                return NULL;
+            }
         }
         else {
             CPE_ERROR(svr->m_em, "dns-svr: %s: not support query type %d!", domain_name, type);

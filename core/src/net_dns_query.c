@@ -1,3 +1,4 @@
+#include "net_address.h"
 #include "net_dns_query_i.h"
 
 net_dns_query_t net_dns_query_create(
@@ -23,7 +24,9 @@ net_dns_query_t net_dns_query_create(
     else {
         query = mem_alloc(schedule->m_alloc, sizeof(struct net_dns_query) + schedule->m_dns_query_capacity);
         if (query == NULL) {
-            CPE_ERROR(schedule->m_em, "dns-query: %s: alloc fail!", hostname);
+            CPE_ERROR(
+                schedule->m_em, "dns-query: %s: alloc fail!",
+                net_address_host(net_schedule_tmp_buffer(schedule), hostname));
             return NULL;
         }
     }

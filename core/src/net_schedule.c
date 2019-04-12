@@ -351,16 +351,24 @@ uint8_t net_schedule_is_domain_address_valid(net_schedule_t schedule, const char
     return net_address_rule_check(schedule, schedule->m_domain_address_rule, str_address);
 }
 
-uint8_t net_schedule_is_domain_address_arpa(net_schedule_t schedule, const char * str_address) {
+uint8_t net_schedule_is_domain_address_arpa(net_schedule_t schedule, const char * str_address, net_address_t * address) {
     if (schedule->m_domain_arpa_rule == NULL) {
         schedule->m_domain_arpa_rule = net_address_rule_create(schedule, "\\.in-addr\\.arpa\\.?");
         if (schedule->m_domain_arpa_rule == NULL) {
+            if (address) *address = NULL;
             return 0;
         }
     }
 
     assert(schedule->m_domain_arpa_rule);
-    return net_address_rule_check(schedule, schedule->m_domain_arpa_rule, str_address);
+
+    //net_address_rule_check(schedule, schedule->m_domain_arpa_rule, str_address);
+
+    if (address) {
+        *address = NULL;
+    }
+    
+    return 0;
 }
 
 static void net_schedule_do_delay_process(net_timer_t timer, void * input_ctx) {
