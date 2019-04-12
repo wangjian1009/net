@@ -39,7 +39,6 @@ net_dns_manage_t net_dns_manage_create(
     manage->m_debug = 0;
     manage->m_cfg_ttl_s = 3 * 60;
     manage->m_schedule = schedule;
-    manage->m_mode = net_dns_ipv4_first;
     manage->m_task_ctx_capacity = 0;
     manage->m_builder_internal = NULL;
     manage->m_builder_default = NULL;
@@ -195,10 +194,6 @@ void net_dns_manage_free(net_dns_manage_t manage) {
 
 static void net_dns_manage_fini(void * ctx) {
     //net_dns_manage_t manage = ctx;
-}
-
-net_dns_mode_t net_dns_manage_mode(net_dns_manage_t manage) {
-    return manage->m_mode;
 }
 
 uint8_t net_dns_manage_debug(net_dns_manage_t manage) {

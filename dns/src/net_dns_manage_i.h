@@ -35,7 +35,6 @@ struct net_dns_manage {
     uint32_t m_cfg_ttl_s;
     net_schedule_t m_schedule;
     net_dns_ns_cli_protocol_t m_protocol_dns_ns_cli;
-    net_dns_mode_t m_mode;
     net_dns_source_list_t m_sources;
     net_dns_task_monitor_list_t m_monitors;
 

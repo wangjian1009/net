@@ -39,7 +39,7 @@ int net_dns_query_ex_init(void * ctx, net_dns_query_t query, const char * hostna
                 goto START_ERROR;
             }
             
-            if (net_dns_task_create(manage, entry) == NULL) {
+            if (net_dns_task_create(manage, entry, query_type) == NULL) {
                 goto START_ERROR;
             }
             assert(entry->m_task != NULL);

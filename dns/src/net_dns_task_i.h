@@ -7,6 +7,7 @@ NET_BEGIN_DECL
 
 struct net_dns_task {
     net_dns_manage_t m_manage;
+    net_dns_query_type_t m_query_type;
     net_dns_entry_t m_entry;
     TAILQ_ENTRY(net_dns_task) m_next;
     int64_t m_begin_time_ms;

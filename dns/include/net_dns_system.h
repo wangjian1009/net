@@ -4,11 +4,6 @@
 
 NET_BEGIN_DECL
 
-typedef enum net_dns_mode {
-    net_dns_ipv4_first,
-    net_dns_ipv6_first,
-} net_dns_mode_t;
-
 typedef struct net_dns_manage * net_dns_manage_t;
 typedef struct net_dns_scope * net_dns_scope_t;
 typedef struct net_dns_scope_it * net_dns_scope_it_t;

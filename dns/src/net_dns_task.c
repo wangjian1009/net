@@ -5,7 +5,7 @@
 #include "net_dns_query_ex_i.h"
 #include "net_dns_entry_i.h"
 
-net_dns_task_t net_dns_task_create(net_dns_manage_t manage, net_dns_entry_t entry) {
+net_dns_task_t net_dns_task_create(net_dns_manage_t manage, net_dns_entry_t entry, net_dns_query_type_t query_type) {
     net_dns_task_t task;
 
     assert(entry->m_task == NULL);
@@ -23,6 +23,7 @@ net_dns_task_t net_dns_task_create(net_dns_manage_t manage, net_dns_entry_t entr
     }
 
     task->m_manage = manage;
+    task->m_query_type = query_type;
     task->m_entry = entry;
     task->m_state = net_dns_task_state_init;
     task->m_step_current = NULL;
@@ -79,6 +80,10 @@ void net_dns_task_real_free(net_dns_task_t task) {
 
 const char * net_dns_task_hostname(net_dns_task_t task) {
     return task->m_entry->m_hostname;
+}
+
+net_dns_query_type_t net_dns_task_query_type(net_dns_task_t task) {
+    return task->m_query_type;
 }
 
 int net_dns_task_start(net_dns_task_t task) {
