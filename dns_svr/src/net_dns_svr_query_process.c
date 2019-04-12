@@ -71,6 +71,9 @@ net_dns_svr_query_parse_request(net_dns_svr_itf_t itf, void const * data, uint32
         else if (type == 28) {
             entry_type = net_dns_svr_query_entry_type_ipv6;
         }
+        else if (type == 12) {
+            entry_type = net_dns_svr_query_entry_type_ptr;
+        }
         else {
             CPE_ERROR(svr->m_em, "dns-svr: %s: not support query type %d!", domain_name, type);
             continue;
@@ -120,8 +123,9 @@ static uint32_t net_dns_svr_query_calc_entry_answer_size(net_dns_svr_query_entry
         case net_address_ipv6:
             one_sz += 16;
             break;
-        default:
-            continue;
+        case net_address_domain:
+            one_sz += strlen((const char *)net_address_data(address)) + 2;
+            break;
         }
 
         sz +=  one_sz;
