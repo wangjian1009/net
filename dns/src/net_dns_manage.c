@@ -291,7 +291,7 @@ static void net_dns_manage_do_delay_process(net_timer_t timer, void * input_ctx)
 
         if (query_ex->m_entry) {
             net_dns_entry_item_t item = 
-                net_dns_entry_select_item(query_ex->m_entry, manage->m_default_item_select_policy);
+                net_dns_entry_select_item(query_ex->m_entry, manage->m_default_item_select_policy, query_ex->m_query_type);
             if (item == NULL) {
                 if (manage->m_debug) {
                     CPE_INFO(manage->m_em, "dns-cli: query %s: no item!", query_ex->m_entry->m_hostname);

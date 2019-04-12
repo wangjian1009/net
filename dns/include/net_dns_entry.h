@@ -23,7 +23,7 @@ uint8_t net_dns_entry_is_origin_of(net_dns_entry_t entry, net_dns_entry_t check_
 
 void net_dns_entry_clear_item_by_source(net_dns_entry_t entry, net_dns_source_t source);
 
-net_dns_entry_item_t net_dns_entry_select_item(net_dns_entry_t entry, net_dns_item_select_policy_t policy);
+net_dns_entry_item_t net_dns_entry_select_item(net_dns_entry_t entry, net_dns_item_select_policy_t policy, net_dns_query_type_t query_type);
 
 void net_dns_entry_addresses(net_dns_entry_t entry, net_address_it_t it, uint8_t recursive);
 void net_dns_entry_items(net_dns_entry_t entry, net_dns_entry_item_it_t it, uint8_t recursive);

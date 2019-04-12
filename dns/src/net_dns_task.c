@@ -5,7 +5,8 @@
 #include "net_dns_query_ex_i.h"
 #include "net_dns_entry_i.h"
 
-net_dns_task_t net_dns_task_create(net_dns_manage_t manage, net_dns_entry_t entry, net_dns_query_type_t query_type) {
+net_dns_task_t
+net_dns_task_create(net_dns_manage_t manage, net_dns_entry_t entry, net_dns_query_type_t query_type) {
     net_dns_task_t task;
 
     assert(entry->m_task == NULL);

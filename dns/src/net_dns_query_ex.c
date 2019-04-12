@@ -7,7 +7,8 @@
 #include "net_dns_task_i.h"
 #include "net_dns_task_builder_i.h"
 
-int net_dns_query_ex_init(void * ctx, net_dns_query_t query, const char * hostname, net_dns_query_type_t query_type, const char * policy) {
+int net_dns_query_ex_init(
+    void * ctx, net_dns_query_t query, const char * hostname, net_dns_query_type_t query_type, const char * policy) {
     net_dns_manage_t manage = ctx;
     struct net_dns_query_ex * query_ex = net_dns_query_data(query);
 
@@ -23,7 +24,7 @@ int net_dns_query_ex_init(void * ctx, net_dns_query_t query, const char * hostna
     assert(entry);
 
     uint8_t have_response = 0;
-    if (net_dns_entry_select_item(entry, manage->m_default_item_select_policy) != NULL) {
+    if (net_dns_entry_select_item(entry, manage->m_default_item_select_policy, query_type) != NULL) {
         have_response = 1;
     }
 
@@ -33,6 +34,7 @@ int net_dns_query_ex_init(void * ctx, net_dns_query_t query, const char * hostna
         ? 1 : 0;
     
     if (!have_response || expired) {
+        //TODO: task with type
         if (entry->m_task == NULL) {
             if (manage->m_builder_default == NULL) {
                 CPE_ERROR(manage->m_em, "dns-cli: query %s: no task builder!", hostname);
@@ -63,6 +65,7 @@ int net_dns_query_ex_init(void * ctx, net_dns_query_t query, const char * hostna
     }
     
     query_ex->m_manage = manage;
+    query_ex->m_query_type = query_type;
 
     if (!have_response) {
         assert(entry->m_task != NULL);

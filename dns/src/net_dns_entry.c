@@ -145,7 +145,7 @@ net_dns_entry_find(net_dns_manage_t manage, const char * hostname) {
 }
 
 net_dns_entry_item_t
-net_dns_entry_select_item(net_dns_entry_t entry, net_dns_item_select_policy_t policy) {
+net_dns_entry_select_item(net_dns_entry_t entry, net_dns_item_select_policy_t policy, net_dns_query_type_t query_type) {
     net_dns_entry_item_t item = NULL;
     net_dns_entry_item_t check, next;
 
@@ -156,36 +156,17 @@ net_dns_entry_select_item(net_dns_entry_t entry, net_dns_item_select_policy_t po
         next = net_dns_entry_item_it_next(&item_it);
         assert(next != check);
 
-        if (net_address_type(check->m_address) == net_address_domain) continue;
-
-        /* if (item) { */
-        /*     switch(entry->m_manage->m_mode) { */
-        /*     case net_dns_ipv4_first: */
-        /*         if (net_address_type(check->m_address) == net_address_ipv6) { */
-        /*             if (net_address_type(item->m_address) == net_address_ipv4) continue; */
-        /*         } */
-        /*         else { */
-        /*             assert(net_address_type(check->m_address) == net_address_ipv4); */
-        /*             if (net_address_type(item->m_address) == net_address_ipv6) { */
-        /*                 item = NULL; */
-        /*             } */
-        /*         } */
-        /*         break; */
-        /*     case net_dns_ipv6_first: */
-        /*         if (net_address_type(check->m_address) == net_address_ipv6) { */
-        /*             if (net_address_type(item->m_address) == net_address_ipv4) { */
-        /*                 item = NULL; */
-        /*             } */
-        /*         } */
-        /*         else { */
-        /*             assert(net_address_type(check->m_address) == net_address_ipv4); */
-        /*             if (net_address_type(item->m_address) == net_address_ipv6) { */
-        /*                 continue; */
-        /*             } */
-        /*         } */
-        /*         break; */
-        /*     } */
-        /* } */
+        switch(net_address_type(check->m_address)) {
+        case net_address_ipv4:
+            if (query_type != net_dns_query_ipv4 && query_type != net_dns_query_ipv4v6) continue;
+            break;
+        case net_address_ipv6:
+            if (query_type != net_dns_query_ipv6 && query_type != net_dns_query_ipv4v6) continue;
+            break;
+        case net_address_domain:
+            if (query_type != net_dns_query_domain) continue;
+            break;
+        }
         
         switch(policy) {
         case net_dns_item_select_policy_first:
