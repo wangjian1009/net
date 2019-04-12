@@ -221,30 +221,7 @@ int net_dns_svr_query_build_response(net_dns_svr_query_t query, void * data, uin
     
     uint16_t ancount = 0;
     TAILQ_FOREACH(entry, &query->m_entries, m_next) {
-        uint8_t i;
-        for(i = 0; i < entry->m_result_count; ++i) {
-            net_address_t address = entry->m_results[i];
-            switch(net_address_type(address)) {
-            case net_address_ipv4:
-                if (entry->m_type != net_dns_svr_query_entry_type_ipv4) {
-                    continue;
-                }
-                else {
-                    ancount++;
-                }
-                break;
-            case net_address_ipv6:
-                if (entry->m_type != net_dns_svr_query_entry_type_ipv6) {
-                    continue;
-                }
-                else {
-                    ancount++;
-                }
-                break;
-            default:
-                continue;
-            }
-        }
+        ancount += entry->m_result_count;
     }
     net_dns_svr_query_build_response_check_capacity(2);
     CPE_COPY_NTOH16(p, &ancount); p+=2;
@@ -259,30 +236,11 @@ int net_dns_svr_query_build_response(net_dns_svr_query_t query, void * data, uin
 
     /*query*/
     TAILQ_FOREACH(entry, &query->m_entries, m_next) {
-        uint16_t qtype;
-        switch(entry->m_type) {
-        case net_dns_svr_query_entry_type_ipv4:
-            if (entry->m_type != net_dns_svr_query_entry_type_ipv4) {
-                continue;
-            }
-            else {
-                qtype = 1;
-            }
-            break;
-        case net_dns_svr_query_entry_type_ipv6:
-            if (entry->m_type != net_dns_svr_query_entry_type_ipv6) {
-                continue;
-            }
-            else {
-                qtype = 28;
-            }
-            break;
-        }
-
         entry->m_cache_name_offset = (uint16_t)(p - (char*)data);
         p = net_dns_svr_query_append_name(svr, p, data, capacity, entry->m_domain_name);
         if (p == NULL) return -1;
         
+        uint16_t qtype = net_dns_svr_query_entry_type_to_atype(entry->m_type);
         net_dns_svr_query_build_response_check_capacity(2);
         CPE_COPY_HTON16(p, &qtype); p+=2;
     
@@ -295,41 +253,15 @@ int net_dns_svr_query_build_response(net_dns_svr_query_t query, void * data, uin
     TAILQ_FOREACH(entry, &query->m_entries, m_next) {
         uint8_t i;
         for(i = 0; i < entry->m_result_count; ++i) {
-            uint16_t rdlength;
-            uint16_t atype;
-            
-            net_address_t address = entry->m_results[i];
-            switch(net_address_type(address)) {
-            case net_address_ipv4:
-                if (entry->m_type != net_dns_svr_query_entry_type_ipv4) {
-                    continue;
-                }
-                else {
-                    atype = 1;
-                    rdlength = 4;
-                }
-                break;
-            case net_address_ipv6:
-                if (entry->m_type != net_dns_svr_query_entry_type_ipv6) {
-                    continue;
-                }
-                else {
-                    atype = 28;
-                    rdlength = 16;
-                }
-                break;
-            default:
-                continue;
-            }
-
             uint16_t name_offset = entry->m_cache_name_offset;
             name_offset |= 0xC000u;
             net_dns_svr_query_build_response_check_capacity(2);
             CPE_COPY_HTON16(p, &name_offset); p+=2;
 
+            uint16_t atype = net_dns_svr_query_entry_type_to_atype(entry->m_type);
             net_dns_svr_query_build_response_check_capacity(2);
             CPE_COPY_HTON16(p, &atype); p+=2;
-    
+
             uint16_t aclass = 1;
             net_dns_svr_query_build_response_check_capacity(2);
             CPE_COPY_HTON16(p, &aclass); p+=2;
@@ -338,12 +270,39 @@ int net_dns_svr_query_build_response(net_dns_svr_query_t query, void * data, uin
             net_dns_svr_query_build_response_check_capacity(4);
             CPE_COPY_HTON32(p, &ttl); p+=4;
 
-            net_dns_svr_query_build_response_check_capacity(2);
-            CPE_COPY_HTON16(p, &rdlength); p+=2;
+            uint16_t rdlength;
+            net_address_t address = entry->m_results[i];
+            switch(net_address_type(address)) {
+            case net_address_ipv4:
+                rdlength = 4;
+                net_dns_svr_query_build_response_check_capacity(2);
+                CPE_COPY_HTON16(p, &rdlength); p+=2;
             
-            net_dns_svr_query_build_response_check_capacity(rdlength);
-            memcpy(p, net_address_data(address), rdlength);
-            p += rdlength;
+                net_dns_svr_query_build_response_check_capacity(rdlength);
+                memcpy(p, net_address_data(address), rdlength);
+                p += rdlength;
+                break;
+            case net_address_ipv6:
+                rdlength = 16;
+                net_dns_svr_query_build_response_check_capacity(2);
+                CPE_COPY_HTON16(p, &rdlength); p+=2;
+            
+                net_dns_svr_query_build_response_check_capacity(rdlength);
+                memcpy(p, net_address_data(address), rdlength);
+                p += rdlength;
+                break;
+            case net_address_domain: {
+                net_dns_svr_query_build_response_check_capacity(2);
+                char * rdlength_buf = p; p += 2;
+                
+                p = net_dns_svr_query_append_name(svr, p, data, capacity, (const char *)net_address_data(address));
+                if (p == NULL) return -1;
+
+                rdlength = (uint16_t)((p - rdlength_buf) - 2);
+                CPE_COPY_HTON16(rdlength_buf, &rdlength);
+                break;
+            }
+            }
         }
     }
     

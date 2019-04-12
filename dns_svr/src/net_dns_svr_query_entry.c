@@ -97,7 +97,18 @@ static void net_dns_svr_query_entry_callback(void * ctx, net_address_t main_addr
     query_entry->m_query->m_runing_entry_count--;
 
     while((result = net_address_it_next(all_address))) {
-        if (net_address_type(result) == net_address_domain) continue;
+        switch(query_entry->m_type) {
+        case net_dns_svr_query_entry_type_ipv4:
+            if (net_address_type(result) != net_address_ipv4) continue;
+            break;
+        case net_dns_svr_query_entry_type_ipv6:
+            if (net_address_type(result) != net_address_ipv6) continue;
+            break;
+        case net_dns_svr_query_entry_type_ptr:
+            if (net_address_type(result) != net_address_domain) continue;
+            break;
+        }
+        
         if (net_dns_svr_query_entry_have_address(query_entry, result)) continue;
 
         if (query_entry->m_result_count + 1 >= CPE_ARRAY_SIZE(query_entry->m_results)) {
@@ -152,4 +163,15 @@ uint8_t net_dns_svr_query_entry_have_address(net_dns_svr_query_entry_t query_ent
     }
 
     return 0;
+}
+
+uint16_t net_dns_svr_query_entry_type_to_atype(net_dns_svr_query_entry_type_t entry_type) {
+    switch(entry_type) {
+    case net_dns_svr_query_entry_type_ipv4:
+        return 1;
+    case net_dns_svr_query_entry_type_ipv6:
+        return 28;
+    case net_dns_svr_query_entry_type_ptr:
+        return 12;
+    }
 }

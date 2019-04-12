@@ -7,6 +7,7 @@ NET_BEGIN_DECL
 typedef enum net_dns_svr_query_entry_type {
     net_dns_svr_query_entry_type_ipv4,
     net_dns_svr_query_entry_type_ipv6,
+    net_dns_svr_query_entry_type_ptr,
 } net_dns_svr_query_entry_type_t;
 
 struct net_dns_svr_query_entry {
@@ -29,6 +30,8 @@ uint8_t net_dns_svr_query_entry_have_address(net_dns_svr_query_entry_t query_ent
 void net_dns_svr_query_entry_real_free(net_dns_svr_query_entry_t query_entry);
 
 int net_dns_svr_query_entry_start(net_dns_svr_query_entry_t query_entry);
+
+uint16_t net_dns_svr_query_entry_type_to_atype(net_dns_svr_query_entry_type_t entry_type);
 
 NET_END_DECL
 
