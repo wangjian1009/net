@@ -168,7 +168,7 @@ int net_dns_svr_itf_send_response(net_dns_svr_itf_t dns_itf, net_dns_svr_query_t
                 address_buf,
                 net_dns_svr_req_dump(svr, net_dns_svr_tmp_buffer(svr), buf, (uint32_t)rv));
         }
-        
+
         if (net_dgram_send(dns_itf->m_dgram, query->m_source_addr, buf, (uint32_t)rv) < 0) {
             CPE_ERROR(svr->m_em, "dns-svr: send response fail!");
             return -1;

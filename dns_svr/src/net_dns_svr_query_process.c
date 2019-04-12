@@ -226,8 +226,20 @@ int net_dns_svr_query_build_response(net_dns_svr_query_t query, void * data, uin
             net_address_t address = entry->m_results[i];
             switch(net_address_type(address)) {
             case net_address_ipv4:
+                if (entry->m_type != net_dns_svr_query_entry_type_ipv4) {
+                    continue;
+                }
+                else {
+                    ancount++;
+                }
+                break;
             case net_address_ipv6:
-                ancount++;
+                if (entry->m_type != net_dns_svr_query_entry_type_ipv6) {
+                    continue;
+                }
+                else {
+                    ancount++;
+                }
                 break;
             default:
                 continue;
