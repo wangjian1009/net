@@ -3,6 +3,7 @@
 net_dns_query_t net_dns_query_create(
     net_schedule_t schedule,
     const char * hostname,
+    net_dns_query_type_t query_type,
     const char * policy,
     net_dns_query_callback_fun_t callback,
     net_dns_query_ctx_free_fun_t ctx_free,
@@ -38,7 +39,7 @@ net_dns_query_t net_dns_query_create(
         return NULL;
     }
 
-    if (schedule->m_dns_query_init_fun(schedule->m_dns_resolver_ctx, query, hostname, policy) != 0) {
+    if (schedule->m_dns_query_init_fun(schedule->m_dns_resolver_ctx, query, hostname, query_type, policy) != 0) {
         CPE_ERROR(schedule->m_em, "dns-query: %s: init fail!", hostname);
         cpe_hash_table_remove_by_ins(&schedule->m_dns_querys, query);
         TAILQ_INSERT_TAIL(&schedule->m_free_dns_querys, query, m_next);

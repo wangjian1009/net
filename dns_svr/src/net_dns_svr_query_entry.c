@@ -67,12 +67,25 @@ int net_dns_svr_query_entry_start(net_dns_svr_query_entry_t query_entry) {
     net_dns_svr_t svr = query_entry->m_query->m_itf->m_svr;
     
     assert(query_entry->m_local_query == NULL);
-           
+
+    net_dns_query_type_t query_type;
+    switch(query_entry->m_type) {
+    case net_dns_svr_query_entry_type_ipv4:
+        query_type = net_dns_query_ipv4;
+        break;
+    case net_dns_svr_query_entry_type_ipv6:
+        query_type = net_dns_query_ipv6;
+        break;
+    case net_dns_svr_query_entry_type_ptr:
+        query_type = net_dns_query_domain;
+        break;
+    }
+
     /*启动查询 */
     query_entry->m_local_query =
         net_dns_query_create(
             svr->m_schedule,
-            query_entry->m_domain_name,
+            query_entry->m_domain_name, query_type,
             svr->m_query_policy,
             net_dns_svr_query_entry_callback, NULL, query_entry);
     if (query_entry->m_local_query == NULL) {

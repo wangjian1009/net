@@ -573,9 +573,24 @@ int net_endpoint_connect(net_endpoint_t endpoint) {
             return -1;
         }
 
+        net_dns_query_type_t query_type;
+        switch(schedule->m_local_ip_stack) {
+        case net_local_ip_stack_none:
+        case net_local_ip_stack_dual:
+            query_type = net_dns_query_ipv4v6;
+            break;
+        case net_local_ip_stack_ipv4:
+            query_type = net_dns_query_ipv4;
+            break;
+        case net_local_ip_stack_ipv6:
+            query_type = net_dns_query_ipv6;
+            break;
+        }
+
         endpoint->m_dns_query =
             net_dns_query_create(
-                schedule, (const char *)net_address_data(endpoint->m_remote_address), NULL,
+                schedule, (const char *)net_address_data(endpoint->m_remote_address), query_type,
+                NULL,
                 net_endpoint_dns_query_callback, NULL, endpoint);
         if (endpoint->m_dns_query == NULL) {
             CPE_ERROR(

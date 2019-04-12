@@ -84,6 +84,12 @@ typedef void (*net_data_monitor_fun_t) (
     void * ctx, net_endpoint_t endpoint, net_data_direct_t direct, uint32_t sz);
 
 /*dns*/
+typedef enum net_dns_query_type {
+    net_dns_query_ipv4,
+    net_dns_query_ipv6,
+    net_dns_query_ipv4v6,
+    net_dns_query_domain,
+} net_dns_query_type_t;
 typedef void (*net_dns_query_callback_fun_t)(void * ctx, net_address_t main_address, net_address_it_t all_address);
 typedef void (*net_dns_query_ctx_free_fun_t)(void * ctx);
 

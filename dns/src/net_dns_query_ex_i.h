@@ -13,7 +13,7 @@ struct net_dns_query_ex {
 
 void net_dns_query_ex_set_task(net_dns_query_ex_t query_ex, net_dns_task_t task);
     
-int net_dns_query_ex_init(void * ctx, net_dns_query_t query, const char * hostname, const char * policy);
+int net_dns_query_ex_init(void * ctx, net_dns_query_t query, const char * hostname, net_dns_query_type_t query_type, const char * policy);
 void net_dns_query_ex_fini(void * ctx, net_dns_query_t query);
 
 NET_END_DECL
