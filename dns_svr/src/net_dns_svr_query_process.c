@@ -155,7 +155,8 @@ int net_dns_svr_query_build_response(net_dns_svr_query_t query, void * data, uin
 
     uint16_t flags = 0;
     flags |= 1u << 15; /*qr*/
-    
+    flags |= 1u << 8;  /**/
+    flags |= 1u << 7;  /**/
     CPE_COPY_HTON16(p, &flags); p+=2;
 
     uint16_t qdcount = 0;

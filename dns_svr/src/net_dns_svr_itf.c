@@ -5,6 +5,7 @@
 #include "net_dgram.h"
 #include "net_acceptor.h"
 #include "net_endpoint.h"
+#include "net_protocol.h"
 #include "net_dns_svr_itf_i.h"
 #include "net_dns_svr_endpoint_i.h"
 #include "net_dns_svr_query_i.h"
@@ -159,7 +160,7 @@ int net_dns_svr_itf_send_response(net_dns_svr_itf_t dns_itf, net_dns_svr_query_t
         }
         assert((uint32_t)rv <= capacity);
 
-        if (net_dgram_protocol_debug(dns_itf->m_dgram, query->m_source_addr) >= 2) {
+        if (net_dgram_protocol_debug(dns_itf->m_dgram, query->m_source_addr) >= 2 || net_protocol_debug(svr->m_dns_protocol) >= 2) {
             char address_buf[128];
             cpe_str_dup(address_buf, sizeof(address_buf), net_address_dump(net_dns_svr_tmp_buffer(svr), net_dgram_address(dns_itf->m_dgram)));
             CPE_INFO(
@@ -231,7 +232,7 @@ static void net_dns_svr_dgram_process(net_dgram_t dgram, void * ctx, void * data
     net_dns_svr_itf_t dns_itf = ctx;
     net_dns_svr_t svr = dns_itf->m_svr;
 
-    if (net_dgram_protocol_debug(dgram, source) >= 2) {
+    if (net_dgram_protocol_debug(dgram, source) >= 2 || net_protocol_debug(svr->m_dns_protocol) >= 2) {
         char address_buf[128];
         cpe_str_dup(address_buf, sizeof(address_buf), net_address_dump(net_dns_svr_tmp_buffer(svr), net_dgram_address(dgram)));
         CPE_INFO(
