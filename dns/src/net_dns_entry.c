@@ -43,7 +43,7 @@ net_dns_entry_create(net_dns_manage_t manage, const char * hostname) {
     entry->m_hostname = entry->m_hostname_buf;
     entry->m_expire_time_s = 0;
     memcpy(entry->m_hostname_buf, hostname, hostname_len);
-    entry->m_task = NULL;
+    TAILQ_INIT(&entry->m_tasks);
     TAILQ_INIT(&entry->m_origins);
     TAILQ_INIT(&entry->m_cnames);
     TAILQ_INIT(&entry->m_items);
@@ -68,9 +68,8 @@ void net_dns_entry_free(net_dns_entry_t entry) {
     size_t hostname_len = strlen(entry->m_hostname) + 1;
     uint8_t use_cache = hostname_len <= CPE_ENTRY_SIZE(net_dns_entry, m_hostname_buf);
 
-    if (entry->m_task) {
-        net_dns_task_free(entry->m_task);
-        assert(entry->m_task == NULL);
+    while(!TAILQ_EMPTY(&entry->m_tasks)) {
+        net_dns_task_free(TAILQ_FIRST(&entry->m_tasks));
     }
 
     while(!TAILQ_EMPTY(&entry->m_origins)) {
@@ -113,10 +112,6 @@ void net_dns_entry_free_all(net_dns_manage_t manage) {
         net_dns_entry_free(entry);
         entry = next;
     }
-}
-
-net_dns_task_t net_dns_entry_task(net_dns_entry_t entry) {
-    return entry->m_task;
 }
 
 const char * net_dns_entry_hostname(net_dns_entry_t entry) {

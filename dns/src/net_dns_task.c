@@ -1,19 +1,18 @@
 #include "assert.h"
 #include "cpe/utils/time_utils.h"
+#include "net_address.h"
 #include "net_dns_task_i.h"
 #include "net_dns_task_step_i.h"
 #include "net_dns_query_ex_i.h"
 #include "net_dns_entry_i.h"
 
-net_dns_task_t
-net_dns_task_create(net_dns_manage_t manage, net_dns_entry_t entry, net_dns_query_type_t query_type) {
+static net_dns_task_t
+net_dns_task_create_i(net_dns_manage_t manage, net_dns_query_type_t query_type) {
     net_dns_task_t task;
 
-    assert(entry->m_task == NULL);
-    
     task = TAILQ_FIRST(&manage->m_free_tasks);
     if (task) {
-        TAILQ_REMOVE(&manage->m_free_tasks, task, m_next);
+        TAILQ_REMOVE(&manage->m_free_tasks, task, m_next_for_manage);
     }
     else {
         task = mem_alloc(manage->m_alloc, sizeof(struct net_dns_task));
@@ -25,7 +24,6 @@ net_dns_task_create(net_dns_manage_t manage, net_dns_entry_t entry, net_dns_quer
 
     task->m_manage = manage;
     task->m_query_type = query_type;
-    task->m_entry = entry;
     task->m_state = net_dns_task_state_init;
     task->m_step_current = NULL;
     task->m_begin_time_ms = 0;
@@ -33,12 +31,50 @@ net_dns_task_create(net_dns_manage_t manage, net_dns_entry_t entry, net_dns_quer
     TAILQ_INIT(&task->m_steps);
     TAILQ_INIT(&task->m_querys);
     
-    entry->m_task = task;
-
-    TAILQ_INSERT_TAIL(&manage->m_runing_tasks, task, m_next);
+    TAILQ_INSERT_TAIL(&manage->m_runing_tasks, task, m_next_for_manage);
     
+    return task;
+}
+
+net_dns_task_t
+net_dns_task_create_for_entry(net_dns_manage_t manage, net_dns_entry_t entry, net_dns_query_type_t query_type) {
+    assert(query_type != net_dns_query_domain);
+
+    net_dns_task_t task = net_dns_task_create_i(manage, query_type);
+    if (task == NULL) return NULL;
+
+    task->m_entry = entry;
+    TAILQ_INSERT_TAIL(&entry->m_tasks, task, m_next_for_entry);
+
     if (manage->m_debug >= 2) {
         CPE_INFO(manage->m_em, "dns-cli: query %s: start!", entry->m_hostname);
+    }
+    
+    return task;
+}
+
+net_dns_task_t
+net_dns_task_create_for_address(net_dns_manage_t manage, net_address_t address, net_dns_query_type_t query_type) {
+    assert(query_type == net_dns_query_domain);
+
+    net_address_t dup_address = net_address_copy(manage->m_schedule, address);
+    if (dup_address == NULL) {
+        CPE_ERROR(manage->m_em, "dns-cli: query dup address fail!");
+        return NULL;
+    }
+    
+    net_dns_task_t task = net_dns_task_create_i(manage, query_type);
+    if (task == NULL) {
+        net_address_free(dup_address);
+        return NULL;
+    }
+
+    task->m_address = dup_address;
+
+    if (manage->m_debug >= 2) {
+        CPE_INFO(
+            manage->m_em, "dns-cli: query %s: start!",
+            net_address_dump(net_dns_manage_tmp_buffer(manage), task->m_address));
     }
     
     return task;
@@ -51,8 +87,14 @@ void net_dns_task_free(net_dns_task_t task) {
         CPE_INFO(manage->m_em, "dns-cli: query %s: free!", task->m_entry->m_hostname);
     }
 
-    assert(task->m_entry->m_task == task);
-    task->m_entry->m_task = NULL;
+    if (task->m_query_type == net_dns_query_domain) {
+        assert(task->m_address);
+        net_address_free(task->m_address);
+        task->m_address = NULL;
+    }
+    else {
+        TAILQ_REMOVE(&task->m_entry->m_tasks, task, m_next_for_entry);
+    }
 
     while(!TAILQ_EMPTY(&task->m_steps)) {
         net_dns_task_step_free(TAILQ_FIRST(&task->m_steps));
@@ -63,19 +105,19 @@ void net_dns_task_free(net_dns_task_t task) {
     }
 
     if (net_dns_task_is_complete(task)) {
-        TAILQ_REMOVE(&manage->m_complete_tasks, task, m_next);
+        TAILQ_REMOVE(&manage->m_complete_tasks, task, m_next_for_manage);
     }
     else {
-        TAILQ_REMOVE(&manage->m_runing_tasks, task, m_next);
+        TAILQ_REMOVE(&manage->m_runing_tasks, task, m_next_for_manage);
     }
 
-    TAILQ_INSERT_TAIL(&manage->m_free_tasks, task, m_next);
+    TAILQ_INSERT_TAIL(&manage->m_free_tasks, task, m_next_for_manage);
 }
 
 void net_dns_task_real_free(net_dns_task_t task) {
     net_dns_manage_t manage = task->m_manage;
 
-    TAILQ_REMOVE(&manage->m_free_tasks, task, m_next);
+    TAILQ_REMOVE(&manage->m_free_tasks, task, m_next_for_manage);
     mem_free(manage->m_alloc, task);
 }
 
@@ -196,13 +238,13 @@ void net_dns_task_update_state(net_dns_task_t task, net_dns_task_state_t new_sta
         if (task->m_begin_time_ms == 0) {
             task->m_begin_time_ms = task->m_complete_time_ms;
         }
-        TAILQ_REMOVE(&manage->m_runing_tasks, task, m_next);
-        TAILQ_INSERT_TAIL(&manage->m_complete_tasks, task, m_next);
+        TAILQ_REMOVE(&manage->m_runing_tasks, task, m_next_for_manage);
+        TAILQ_INSERT_TAIL(&manage->m_complete_tasks, task, m_next_for_manage);
         net_dns_manage_active_delay_process(manage);
     }
     else {
-        TAILQ_REMOVE(&manage->m_complete_tasks, task, m_next);
-        TAILQ_INSERT_TAIL(&manage->m_runing_tasks, task, m_next);
+        TAILQ_REMOVE(&manage->m_complete_tasks, task, m_next_for_manage);
+        TAILQ_INSERT_TAIL(&manage->m_runing_tasks, task, m_next_for_manage);
     }
 }
 

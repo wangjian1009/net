@@ -22,6 +22,8 @@ void net_dns_entry_item_real_free(net_dns_entry_item_t entry_item);
 
 net_dns_entry_item_t net_dns_entry_item_find(net_dns_entry_t entry, net_address_t address);
 
+net_dns_entry_item_t net_dns_entry_item_find_by_ip(net_dns_manage_t manage, net_address_t address);
+
 uint32_t net_dns_entry_item_hash_by_ip(net_dns_entry_item_t o, void * user_data);
 int net_dns_entry_item_eq_by_ip(net_dns_entry_item_t l, net_dns_entry_item_t r, void * user_data);
 

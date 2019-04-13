@@ -85,6 +85,12 @@ net_dns_entry_item_find(net_dns_entry_t entry, net_address_t address) {
     return NULL;
 }
 
+net_dns_entry_item_t net_dns_entry_item_find_by_ip(net_dns_manage_t manage, net_address_t address) {
+    struct net_dns_entry_item key;
+    key.m_address = address;
+    return cpe_hash_table_find(&manage->m_items_by_ip, &key);
+}
+
 void net_dns_entry_item_real_free(net_dns_entry_item_t item) {
     net_dns_manage_t manage = (net_dns_manage_t)item->m_entry;
     TAILQ_REMOVE(&manage->m_free_entry_items, item, m_next_for_entry);
