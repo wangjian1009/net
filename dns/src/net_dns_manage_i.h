@@ -45,6 +45,7 @@ struct net_dns_manage {
     struct cpe_hash_table m_scopes;
     
     struct cpe_hash_table m_entries;
+    struct cpe_hash_table m_items_by_ip;
     net_dns_entry_list_t m_free_entries;
 
     net_timer_t m_delay_process;

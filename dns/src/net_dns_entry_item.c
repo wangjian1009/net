@@ -37,6 +37,16 @@ net_dns_entry_item_create(net_dns_entry_t entry, net_address_t address, uint8_t 
         }
     }
 
+    cpe_hash_entry_init(&item->m_hh_for_ip);
+    if (cpe_hash_table_insert(&manage->m_items_by_ip, item) != 0) {
+        CPE_ERROR(manage->m_em, "dns-cli: entry item: insert fail!");
+        if (!is_own) net_address_free(item->m_address);
+        item->m_entry = (net_dns_entry_t)entry->m_manage;
+        TAILQ_INSERT_TAIL(&entry->m_manage->m_free_entry_items, item, m_next_for_entry);
+        return NULL;
+    }
+    
+    
     TAILQ_INSERT_TAIL(&entry->m_items, item, m_next_for_entry);
 
     return item;
@@ -53,6 +63,8 @@ void net_dns_entry_item_free(net_dns_entry_item_t item) {
             net_address_host(net_dns_manage_tmp_buffer(manage), item->m_address));
     }
 
+    cpe_hash_table_remove_by_ins(&manage->m_items_by_ip, item);
+    
     net_address_free(item->m_address);
     item->m_address = NULL;
 
@@ -85,4 +97,12 @@ net_dns_entry_t net_dns_entry_item_entry(net_dns_entry_item_t item) {
 
 net_address_t net_dns_entry_item_address(net_dns_entry_item_t item) {
     return item->m_address;
+}
+
+uint32_t net_dns_entry_item_hash_by_ip(net_dns_entry_item_t o, void * user_data) {
+    return net_address_hash_without_port(o->m_address);
+}
+
+int net_dns_entry_item_eq_by_ip(net_dns_entry_item_t l, net_dns_entry_item_t r, void * user_data) {
+    return net_address_cmp_without_port(l->m_address, r->m_address);
 }

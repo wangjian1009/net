@@ -58,6 +58,8 @@ uint8_t net_schedule_is_domain_address_arpa(net_schedule_t schedule, const char 
             addr_data.u8[2] = atoi(p2 + 1);
             addr_data.u8[3] = atoi(p3 + 1);
             *address = net_address_create_ipv4_from_data(schedule, &addr_data, 0);
+
+            CPE_ERROR(schedule->m_em, "xxxxx: %s", net_address_dump(net_schedule_tmp_buffer(schedule), *address));
         }
         
         return 1;

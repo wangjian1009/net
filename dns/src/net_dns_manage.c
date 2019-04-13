@@ -84,10 +84,25 @@ net_dns_manage_t net_dns_manage_create(
         return NULL;
     }
 
+    if (cpe_hash_table_init(
+            &manage->m_items_by_ip,
+            alloc,
+            (cpe_hash_fun_t) net_dns_entry_item_hash_by_ip,
+            (cpe_hash_eq_t) net_dns_entry_item_eq_by_ip,
+            CPE_HASH_OBJ2ENTRY(net_dns_entry_item, m_hh_for_ip),
+            -1) != 0)
+    {
+        cpe_hash_table_fini(&manage->m_entries);
+        cpe_hash_table_fini(&manage->m_scopes);
+        mem_free(alloc, manage);
+        return NULL;
+    }
+    
     manage->m_protocol_dns_ns_cli = net_dns_ns_cli_protocol_create(manage);
     if (manage->m_protocol_dns_ns_cli == NULL) {
-        cpe_hash_table_fini(&manage->m_scopes);
+        cpe_hash_table_fini(&manage->m_items_by_ip);
         cpe_hash_table_fini(&manage->m_entries);
+        cpe_hash_table_fini(&manage->m_scopes);
         mem_free(alloc, manage);
         return NULL;
     }
@@ -95,6 +110,7 @@ net_dns_manage_t net_dns_manage_create(
     manage->m_builder_internal = net_dns_task_builder_internal_create(manage);
     if (manage->m_builder_internal == NULL) {
         net_dns_ns_cli_protocol_free(manage->m_protocol_dns_ns_cli);
+        cpe_hash_table_fini(&manage->m_items_by_ip);
         cpe_hash_table_fini(&manage->m_entries);
         cpe_hash_table_fini(&manage->m_scopes);
         mem_free(alloc, manage);
