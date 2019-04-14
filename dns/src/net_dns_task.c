@@ -328,6 +328,8 @@ const char * net_dns_task_dump(mem_buffer_t buffer, net_dns_task_t task) {
     mem_buffer_clear_data(buffer);
 
     net_dns_task_print((write_stream_t)&stream, task);
+
+    stream_putc((write_stream_t)&stream, 0);
     
     return mem_buffer_make_continuous(buffer, 0);
 }
