@@ -6,6 +6,8 @@
 #include "net_schedule_i.h"
 
 uint8_t net_schedule_is_domain_address_valid(net_schedule_t schedule, const char * str_address) {
+    assert(str_address);
+
     if (schedule->m_domain_address_rule == NULL) {
         schedule->m_domain_address_rule =
             net_address_rule_create(
