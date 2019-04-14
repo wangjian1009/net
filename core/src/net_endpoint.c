@@ -634,6 +634,12 @@ static int net_endpoint_common_buf_move(void * ctx, ringbuffer_t rb, ringbuffer_
     for(i = 0; i < CPE_ARRAY_SIZE(endpoint->m_bufs); ++i) {
         if (endpoint->m_bufs[i].m_buf == old_block) {
             endpoint->m_bufs[i].m_buf = new_block;
+
+            CPE_INFO(
+                schedule->m_em, "schedule: ringbuffer: gc: moved %s.%s",
+                net_endpoint_dump(&schedule->m_tmp_buffer, endpoint),
+                net_endpoint_buf_type_str((net_endpoint_buf_type_t)i));
+
             return 0;
         }
     }
