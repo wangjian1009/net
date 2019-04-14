@@ -38,7 +38,6 @@ struct net_schedule {
     net_local_ip_stack_t m_local_ip_stack;
 
     net_address_rule_t m_domain_address_rule;
-    net_address_rule_t m_domain_arpa_rule_ipv4;
     
     /*dns resolver*/
     void * m_dns_resolver_ctx;

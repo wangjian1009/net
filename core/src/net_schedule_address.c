@@ -58,12 +58,46 @@ uint8_t net_schedule_is_domain_address_arpa(net_schedule_t schedule, const char 
             addr_data.u8[1] = atoi(p2 + 1);
             addr_data.u8[0] = atoi(p3 + 1);
             *address = net_address_create_ipv4_from_data(schedule, &addr_data, 0);
+            CPE_ERROR(schedule->m_em, "xxxxx: %s", net_address_dump(net_schedule_tmp_buffer(schedule), *address));
         }
         
         return 1;
     }
     else if (end - p == 4 && memcmp(p, ".ip6", 4) == 0) {
-        if (address) *address = NULL;
+        uint8_t values[32];
+        int i;
+
+        for(i = 0; i < CPE_ARRAY_SIZE(values); i++) {
+            const char * p2 = cpe_str_rchr_range(str_address, p, '.');
+            if (p2 == NULL) return 0;
+            if (p2 - p != 2) return 0;
+
+            int set_pos = CPE_ARRAY_SIZE(values) - i - 1;
+            char c = p2[1];
+            if (c >= '0' && c <= '9') {
+                values[set_pos] = (uint8_t)(c - '0');
+            }
+            else if (c >= 'a' && c <= 'f') {
+                values[set_pos] = ((uint8_t)(c - 'a')) + 10;
+            }
+            else if (c >= 'A' && c <= 'F') {
+                values[set_pos] = ((uint8_t)(c - 'A')) + 10;
+            }
+            else {
+                return 0;
+            }
+        }
+
+        if (address) {
+            struct net_address_data_ipv6 addr_data;
+            for(i = 0; i < 16; ++i) {
+                addr_data.u8[i] = (values[i * 2] << 4) + values[i * 2 + 1];
+            }
+
+            *address = net_address_create_ipv6_from_data(schedule, &addr_data, 0);
+            CPE_ERROR(schedule->m_em, "xxxxx: %s", net_address_dump(net_schedule_tmp_buffer(schedule), *address));
+        }
+
         return 1;
     }
     else {
