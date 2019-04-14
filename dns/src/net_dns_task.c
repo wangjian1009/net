@@ -1,6 +1,8 @@
 #include "assert.h"
 #include "cpe/utils/time_utils.h"
+#include "cpe/utils/stream_buffer.h"
 #include "net_address.h"
+#include "net_dns_query.h"
 #include "net_dns_task_i.h"
 #include "net_dns_task_step_i.h"
 #include "net_dns_query_ex_i.h"
@@ -122,7 +124,12 @@ void net_dns_task_real_free(net_dns_task_t task) {
 }
 
 const char * net_dns_task_hostname(net_dns_task_t task) {
-    return task->m_entry->m_hostname;
+    if (task->m_query_type == net_dns_query_domain) {
+        return NULL;
+    }
+    else {
+        return task->m_entry->m_hostname;
+    }
 }
 
 net_dns_query_type_t net_dns_task_query_type(net_dns_task_t task) {
@@ -301,3 +308,26 @@ int64_t net_dns_task_complete_time_ms(net_dns_task_t task) {
     return task->m_complete_time_ms;
 }
 
+void net_dns_task_print(write_stream_t ws, net_dns_task_t task) {
+    switch(task->m_query_type) {
+    case net_dns_query_domain:
+        net_address_print(ws, task->m_address);
+        break;
+    case net_dns_query_ipv4:
+    case net_dns_query_ipv6:
+    case net_dns_query_ipv4v6:
+        stream_printf(ws, "%s", task->m_entry->m_hostname);
+        break;
+    }
+    stream_printf(ws, " %s", net_dns_query_type_str(task->m_query_type));
+}
+
+const char * net_dns_task_dump(mem_buffer_t buffer, net_dns_task_t task) {
+    struct write_stream_buffer stream = CPE_WRITE_STREAM_BUFFER_INITIALIZER(buffer);
+
+    mem_buffer_clear_data(buffer);
+
+    net_dns_task_print((write_stream_t)&stream, task);
+    
+    return mem_buffer_make_continuous(buffer, 0);
+}

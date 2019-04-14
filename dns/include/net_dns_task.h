@@ -1,5 +1,6 @@
 #ifndef NET_DNS_TASK_H_INCLEDED
 #define NET_DNS_TASK_H_INCLEDED
+#include "cpe/utils/utils_types.h"
 #include "net_dns_system.h"
 
 NET_BEGIN_DECL
@@ -19,6 +20,9 @@ int64_t net_dns_task_complete_time_ms(net_dns_task_t task);
 
 const char * net_dns_task_state_str(net_dns_task_state_t state);
 uint8_t net_dns_task_state_is_complete(net_dns_task_state_t state);
+
+void net_dns_task_print(write_stream_t ws, net_dns_task_t task);
+const char * net_dns_task_dump(mem_buffer_t buffer, net_dns_task_t task);
 
 NET_END_DECL
 
