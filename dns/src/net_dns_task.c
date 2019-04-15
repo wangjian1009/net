@@ -325,7 +325,7 @@ void net_dns_task_print(write_stream_t ws, net_dns_task_t task) {
     case net_dns_query_ipv4:
     case net_dns_query_ipv6:
     case net_dns_query_ipv4v6:
-        stream_printf(ws, "%s", task->m_entry->m_hostname);
+        stream_printf(ws, "%s", net_dns_task_hostname_str(task));
         break;
     }
     stream_printf(ws, " %s", net_dns_query_type_str(task->m_query_type));

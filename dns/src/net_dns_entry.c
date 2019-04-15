@@ -10,6 +10,8 @@
 
 net_dns_entry_t
 net_dns_entry_create(net_dns_manage_t manage, net_address_t hostname) {
+    assert(net_address_type(hostname) == net_address_domain);
+
     net_dns_entry_t entry = TAILQ_FIRST(&manage->m_free_entries);
     if (entry) {
         TAILQ_REMOVE(&manage->m_free_entries, entry, m_next);
@@ -23,9 +25,9 @@ net_dns_entry_create(net_dns_manage_t manage, net_address_t hostname) {
     }
 
     entry->m_manage = manage;
-    entry->m_hostname = net_address_copy(manage->m_schedule, hostname);
+    entry->m_hostname = net_address_create_domain(manage->m_schedule, (const char *)net_address_data(hostname), 0, NULL);
     if (entry->m_hostname == NULL) {
-        CPE_ERROR(manage->m_em, "dns-cli: copy hostname fail!");
+        CPE_ERROR(manage->m_em, "dns-cli: create hostname fail!");
         TAILQ_INSERT_TAIL(&manage->m_free_entries, entry, m_next);
         return NULL;
     }
@@ -344,9 +346,9 @@ void net_dns_entry_clear(net_dns_entry_t entry) {
 }
 
 uint32_t net_dns_entry_hash(net_dns_entry_t o, void * user_data) {
-    return net_address_hash(o->m_hostname);
+    return net_address_hash_without_port(o->m_hostname);
 }
 
 int net_dns_entry_eq(net_dns_entry_t l, net_dns_entry_t r, void * user_data) {
-    return net_address_cmp(l->m_hostname, r->m_hostname) == 0 ? 1 : 0;
+    return net_address_cmp_without_port(l->m_hostname, r->m_hostname) == 0 ? 1 : 0;
 }
