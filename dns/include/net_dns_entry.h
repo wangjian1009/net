@@ -10,13 +10,14 @@ struct net_dns_entry_it {
 };
 
 net_dns_entry_t
-net_dns_entry_create(net_dns_manage_t manage, const char * hostname);
+net_dns_entry_create(net_dns_manage_t manage, net_address_t hostname);
 
 void net_dns_entry_free(net_dns_entry_t entry);
 
-net_dns_entry_t net_dns_entry_find(net_dns_manage_t manage, const char * hostname);
+net_dns_entry_t net_dns_entry_find(net_dns_manage_t manage, net_address_t hostname);
 
-const char * net_dns_entry_hostname(net_dns_entry_t entry);
+net_address_t net_dns_entry_hostname(net_dns_entry_t entry);
+const char * net_dns_entry_hostname_str(net_dns_entry_t entry);
 
 uint8_t net_dns_entry_is_origin_of(net_dns_entry_t entry, net_dns_entry_t check_start);
 

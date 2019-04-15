@@ -45,7 +45,7 @@ static uint8_t net_debug_condition_cmp_address_r(net_schedule_t schedule, net_ad
         if (schedule->m_dns_local_query) {
             struct net_address_it resolved_it;
 
-            if (net_schedule_dns_local_query(schedule, (const char*)net_address_data(cur_check), &resolved_it, 0) ==0) {
+            if (net_schedule_dns_local_query(schedule, cur_check, &resolved_it, 0) ==0) {
                 net_address_t alias_address;
 
                 while((alias_address = net_address_it_next(&resolved_it))) {

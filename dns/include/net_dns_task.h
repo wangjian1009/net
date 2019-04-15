@@ -5,7 +5,8 @@
 
 NET_BEGIN_DECL
 
-const char * net_dns_task_hostname(net_dns_task_t task);
+net_address_t net_dns_task_hostname(net_dns_task_t task);
+const char * net_dns_task_hostname_str(net_dns_task_t task);
 net_dns_query_type_t net_dns_task_query_type(net_dns_task_t task);
 
 net_dns_task_state_t net_dns_task_state(net_dns_task_t task);

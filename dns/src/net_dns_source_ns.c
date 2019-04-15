@@ -351,16 +351,16 @@ int net_dns_source_ns_ctx_start(net_dns_source_t source, net_dns_task_ctx_t task
     switch(net_dns_task_query_type(task)) {
     case net_dns_query_ipv4:
         qdcount = 1;
-        p = net_dns_source_ns_ctx_append_query_one(p, task, net_dns_task_hostname(task), 1);
+        p = net_dns_source_ns_ctx_append_query_one(p, task, (const char *)net_address_data(net_dns_task_hostname(task)), 1);
         break;
     case net_dns_query_ipv6:
         qdcount = 1;
-        p = net_dns_source_ns_ctx_append_query_one(p, task, net_dns_task_hostname(task), 28);
+        p = net_dns_source_ns_ctx_append_query_one(p, task, (const char *)net_address_data(net_dns_task_hostname(task)), 28);
         break;
     case net_dns_query_ipv4v6:
         qdcount = 2;
-        p = net_dns_source_ns_ctx_append_query_one(p, task, net_dns_task_hostname(task), 1);
-        p = net_dns_source_ns_ctx_append_query_one(p, task, net_dns_task_hostname(task), 28);
+        p = net_dns_source_ns_ctx_append_query_one(p, task, (const char *)net_address_data(net_dns_task_hostname(task)), 1);
+        p = net_dns_source_ns_ctx_append_query_one(p, task, (const char *)net_address_data(net_dns_task_hostname(task)), 28);
         break;
     case net_dns_query_domain:
         qdcount = 1;

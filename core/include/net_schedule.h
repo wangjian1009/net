@@ -25,7 +25,7 @@ uint8_t net_schedule_is_domain_address_valid(net_schedule_t schedule, const char
 uint8_t net_schedule_is_domain_address_arpa(net_schedule_t schedule, const char * str_address, net_address_t * address);
 
 /*dns*/
-typedef int (*net_schedule_dns_local_query_fun_t)(void * ctx, const char * hostname, net_address_it_t resolved_it, uint8_t recursive);
+typedef int (*net_schedule_dns_local_query_fun_t)(void * ctx, net_address_t hostname, net_address_it_t resolved_it, uint8_t recursive);
 typedef int (*net_schedule_dns_query_init_fun_t)(
     void * ctx, net_dns_query_t query, net_address_t hostname, net_dns_query_type_t query_type, const char * policy);
 typedef void (*net_schedule_dns_query_fini_fun_t)(void * ctx, net_dns_query_t query);
@@ -43,7 +43,7 @@ void * net_schedule_dns_resolver(net_schedule_t schedule);
 
 int net_schedule_dns_local_query(
     net_schedule_t schedule,
-    const char * hostname, net_address_it_t resolved_it, uint8_t recursive);
+    net_address_t hostname, net_address_it_t resolved_it, uint8_t recursive);
 
 /*ipstack*/
 net_local_ip_stack_t net_schedule_local_ip_stack(net_schedule_t schedule);

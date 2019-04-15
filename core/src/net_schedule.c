@@ -221,7 +221,7 @@ void * net_schedule_dns_resolver(net_schedule_t schedule) {
 
 int net_schedule_dns_local_query(
     net_schedule_t schedule,
-    const char * hostname, net_address_it_t resolved_it, uint8_t recursive)
+    net_address_t hostname, net_address_it_t resolved_it, uint8_t recursive)
 {
     if (schedule->m_dns_local_query == NULL) {
         CPE_ERROR(schedule->m_em, "core: dns: not support local query!");

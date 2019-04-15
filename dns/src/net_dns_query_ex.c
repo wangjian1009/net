@@ -23,9 +23,9 @@ static int net_dns_query_ex_init_for_dns(
     const char * hostname = (const char *)net_address_data(address);
     assert(hostname);
 
-    entry = net_dns_entry_find(manage, hostname);
+    entry = net_dns_entry_find(manage, address);
     if (entry == NULL) {
-        entry = net_dns_entry_create(manage, hostname);
+        entry = net_dns_entry_create(manage, address);
         if (entry == NULL) return -1;
         is_entry_new = 1;
     }

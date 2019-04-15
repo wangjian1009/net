@@ -9,30 +9,13 @@
 #include "net_dns_task_i.h"
 
 net_dns_entry_t
-net_dns_entry_create(net_dns_manage_t manage, const char * hostname) {
-    size_t hostname_len = strlen(hostname) + 1;
-
-    uint8_t use_cache = hostname_len <= CPE_ENTRY_SIZE(net_dns_entry, m_hostname_buf);
-
-    net_dns_entry_t entry;
-
-    if (use_cache) {
-        entry = TAILQ_FIRST(&manage->m_free_entries);
-        if (entry) {
-            TAILQ_REMOVE(&manage->m_free_entries, entry, m_next);
-        }
-        else {
-            entry = mem_alloc(manage->m_alloc, sizeof(struct net_dns_entry));
-            if (entry == NULL) {
-                CPE_ERROR(manage->m_em, "dns-cli: entry alloc fail!");
-                return NULL;
-            }
-        }
+net_dns_entry_create(net_dns_manage_t manage, net_address_t hostname) {
+    net_dns_entry_t entry = TAILQ_FIRST(&manage->m_free_entries);
+    if (entry) {
+        TAILQ_REMOVE(&manage->m_free_entries, entry, m_next);
     }
     else {
-        entry = mem_alloc(
-            manage->m_alloc,
-            sizeof(struct net_dns_entry) + (hostname_len - CPE_TYPE_ARRAY_SIZE(struct net_dns_entry, m_hostname_buf)));
+        entry = mem_alloc(manage->m_alloc, sizeof(struct net_dns_entry));
         if (entry == NULL) {
             CPE_ERROR(manage->m_em, "dns-cli: entry alloc fail!");
             return NULL;
@@ -40,9 +23,14 @@ net_dns_entry_create(net_dns_manage_t manage, const char * hostname) {
     }
 
     entry->m_manage = manage;
-    entry->m_hostname = entry->m_hostname_buf;
+    entry->m_hostname = net_address_copy(manage->m_schedule, hostname);
+    if (entry->m_hostname == NULL) {
+        CPE_ERROR(manage->m_em, "dns-cli: copy hostname fail!");
+        TAILQ_INSERT_TAIL(&manage->m_free_entries, entry, m_next);
+        return NULL;
+    }
+    
     entry->m_expire_time_s = 0;
-    memcpy(entry->m_hostname_buf, hostname, hostname_len);
     TAILQ_INIT(&entry->m_tasks);
     TAILQ_INIT(&entry->m_origins);
     TAILQ_INIT(&entry->m_cnames);
@@ -51,12 +39,8 @@ net_dns_entry_create(net_dns_manage_t manage, const char * hostname) {
     cpe_hash_entry_init(&entry->m_hh);
     if (cpe_hash_table_insert_unique(&manage->m_entries, entry) != 0) {
         CPE_ERROR(manage->m_em, "dns-cli: entry duplicate!");
-        if (use_cache) {
-            TAILQ_INSERT_TAIL(&manage->m_free_entries, entry, m_next);
-        }
-        else {
-            mem_free(manage->m_alloc, entry);
-        }
+        net_address_free(entry->m_hostname);
+        TAILQ_INSERT_TAIL(&manage->m_free_entries, entry, m_next);
         return NULL;
     }
     
@@ -65,8 +49,6 @@ net_dns_entry_create(net_dns_manage_t manage, const char * hostname) {
 
 void net_dns_entry_free(net_dns_entry_t entry) {
     net_dns_manage_t manage = entry->m_manage;
-    size_t hostname_len = strlen(entry->m_hostname) + 1;
-    uint8_t use_cache = hostname_len <= CPE_ENTRY_SIZE(net_dns_entry, m_hostname_buf);
 
     while(!TAILQ_EMPTY(&entry->m_tasks)) {
         net_dns_task_free(TAILQ_FIRST(&entry->m_tasks));
@@ -86,12 +68,10 @@ void net_dns_entry_free(net_dns_entry_t entry) {
 
     cpe_hash_table_remove_by_ins(&manage->m_entries, entry);
 
-    if (use_cache) {
-        TAILQ_INSERT_TAIL(&manage->m_free_entries, entry, m_next);
-    }
-    else {
-        mem_free(manage->m_alloc, entry);
-    }
+    net_address_free(entry->m_hostname);
+    entry->m_hostname = NULL;
+    
+    TAILQ_INSERT_TAIL(&manage->m_free_entries, entry, m_next);
 }
 
 void net_dns_entry_real_free(net_dns_entry_t entry) {
@@ -114,8 +94,12 @@ void net_dns_entry_free_all(net_dns_manage_t manage) {
     }
 }
 
-const char * net_dns_entry_hostname(net_dns_entry_t entry) {
+net_address_t net_dns_entry_hostname(net_dns_entry_t entry) {
     return entry->m_hostname;
+}
+
+const char * net_dns_entry_hostname_str(net_dns_entry_t entry) {
+    return (const char *)net_address_data(entry->m_hostname);
 }
 
 uint8_t net_dns_entry_is_origin_of(net_dns_entry_t entry, net_dns_entry_t as) {
@@ -133,7 +117,7 @@ uint8_t net_dns_entry_is_origin_of(net_dns_entry_t entry, net_dns_entry_t as) {
 }
 
 net_dns_entry_t
-net_dns_entry_find(net_dns_manage_t manage, const char * hostname) {
+net_dns_entry_find(net_dns_manage_t manage, net_address_t hostname) {
     struct net_dns_entry key;
     key.m_hostname = hostname;
     return cpe_hash_table_find(&manage->m_entries, &key);
@@ -143,6 +127,8 @@ net_dns_entry_item_t
 net_dns_entry_select_item(net_dns_entry_t entry, net_dns_item_select_policy_t policy, net_dns_query_type_t query_type) {
     net_dns_entry_item_t item = NULL;
     net_dns_entry_item_t check, next;
+
+    assert(entry);
 
     struct net_dns_entry_item_it item_it;
     net_dns_entry_items(entry, &item_it, 1);
@@ -301,6 +287,8 @@ static net_dns_entry_item_t net_dns_entry_item_it_basic_next(net_dns_entry_item_
 }
 
 void net_dns_entry_items(net_dns_entry_t entry, net_dns_entry_item_it_t it, uint8_t recursive) {
+    assert(entry);
+
     if (recursive) {
         struct net_dns_entry_address_it_data * data = (struct net_dns_entry_address_it_data *)it->data;
 
@@ -356,9 +344,9 @@ void net_dns_entry_clear(net_dns_entry_t entry) {
 }
 
 uint32_t net_dns_entry_hash(net_dns_entry_t o, void * user_data) {
-    return cpe_hash_str(o->m_hostname, strlen(o->m_hostname));
+    return net_address_hash(o->m_hostname);
 }
 
 int net_dns_entry_eq(net_dns_entry_t l, net_dns_entry_t r, void * user_data) {
-    return strcmp(l->m_hostname, r->m_hostname) == 0 ? 1 : 0;
+    return net_address_cmp(l->m_hostname, r->m_hostname) == 0 ? 1 : 0;
 }

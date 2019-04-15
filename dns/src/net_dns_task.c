@@ -49,7 +49,7 @@ net_dns_task_create_for_entry(net_dns_manage_t manage, net_dns_entry_t entry, ne
     TAILQ_INSERT_TAIL(&entry->m_tasks, task, m_next_for_entry);
 
     if (manage->m_debug >= 2) {
-        CPE_INFO(manage->m_em, "dns-cli: query %s: start!", entry->m_hostname);
+        CPE_INFO(manage->m_em, "dns-cli: query %s: start!", (const char *)net_address_data(entry->m_hostname));
     }
     
     return task;
@@ -86,7 +86,7 @@ void net_dns_task_free(net_dns_task_t task) {
     net_dns_manage_t manage = task->m_manage;
 
     if (manage->m_debug >= 2) {
-        CPE_INFO(manage->m_em, "dns-cli: query %s: free!", task->m_entry->m_hostname);
+        CPE_INFO(manage->m_em, "dns-cli: query %s: free!", (const char *)net_address_data(task->m_entry->m_hostname));
     }
 
     if (task->m_query_type == net_dns_query_domain) {
@@ -123,12 +123,21 @@ void net_dns_task_real_free(net_dns_task_t task) {
     mem_free(manage->m_alloc, task);
 }
 
-const char * net_dns_task_hostname(net_dns_task_t task) {
+net_address_t net_dns_task_hostname(net_dns_task_t task) {
     if (task->m_query_type == net_dns_query_domain) {
         return NULL;
     }
     else {
         return task->m_entry->m_hostname;
+    }
+}
+
+const char * net_dns_task_hostname_str(net_dns_task_t task) {
+    if (task->m_query_type == net_dns_query_domain) {
+        return NULL;
+    }
+    else {
+        return (const char *)net_address_data(task->m_entry->m_hostname);
     }
 }
 
@@ -143,7 +152,7 @@ int net_dns_task_start(net_dns_task_t task) {
         CPE_ERROR(
             manage->m_em,
             "dns-cli: query %s: can`t start in state %s",
-            task->m_entry->m_hostname,
+            (const char *)net_address_data(task->m_entry->m_hostname),
             net_dns_task_state_str(task->m_state));
         return -1;
     }
@@ -154,7 +163,7 @@ int net_dns_task_start(net_dns_task_t task) {
     if (task->m_step_current == NULL) {
         if (manage->m_debug) {
             CPE_INFO(
-                manage->m_em, "dns-cli: query %s: no step", task->m_entry->m_hostname);
+                manage->m_em, "dns-cli: query %s: no step", (const char *)net_address_data(task->m_entry->m_hostname));
         }
         net_dns_task_update_state(task, net_dns_task_state_success);
         return 0;
@@ -167,7 +176,7 @@ int net_dns_task_start(net_dns_task_t task) {
         case net_dns_task_state_init:
             CPE_ERROR(
                 manage->m_em, "dns-cli: query %s: step start but still init",
-                task->m_entry->m_hostname);
+                (const char *)net_address_data(task->m_entry->m_hostname));
             net_dns_task_update_state(task, net_dns_task_state_error);
             return -1;
         case net_dns_task_state_runing:
@@ -225,7 +234,7 @@ void net_dns_task_update_state(net_dns_task_t task, net_dns_task_state_t new_sta
     if (manage->m_debug >= 2) {
         CPE_INFO(
             manage->m_em, "dns-cli: query %s: state %s ==> %s",
-            task->m_entry->m_hostname,
+            (const char *)net_address_data(task->m_entry->m_hostname),
             net_dns_task_state_str(task->m_state),
             net_dns_task_state_str(new_state));
     }

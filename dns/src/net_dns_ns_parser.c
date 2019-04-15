@@ -231,7 +231,15 @@ static int net_dns_ns_parser_read_an_record(
 
     assert(address);
 
-    net_dns_manage_add_record(manage, hostname, address);
+    net_address_t hostname_address = net_address_create_domain(manage->m_schedule, hostname, 0, NULL);
+    if (hostname_address == NULL) {
+        CPE_ERROR(manage->m_em, "dns-cli: udp <-- create domain address fail");
+        net_address_free(address);
+        return -1;
+    }
+    net_dns_manage_add_record(manage, hostname_address, address);
+    net_address_free(hostname_address);
+    
     net_address_free(address);
     
     return 0;

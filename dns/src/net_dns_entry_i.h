@@ -7,7 +7,7 @@ NET_BEGIN_DECL
 
 struct net_dns_entry {
     net_dns_manage_t m_manage;
-    const char * m_hostname;
+    net_address_t m_hostname;
     union {
         struct cpe_hash_entry m_hh;
         TAILQ_ENTRY(net_dns_entry) m_next;
@@ -17,7 +17,6 @@ struct net_dns_entry {
     net_dns_entry_alias_list_t m_origins;
     net_dns_entry_alias_list_t m_cnames;
     net_dns_entry_item_list_t m_items;
-    char m_hostname_buf[32]; /* 必须放在最后，可能需要延展 */
 };
 
 void net_dns_entry_real_free(net_dns_entry_t entry);
