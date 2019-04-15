@@ -19,7 +19,9 @@ static int net_dns_query_ex_init_for_dns(
     uint8_t is_task_new = 0;
 
     assert(net_address_type(address) == net_address_domain);
+
     const char * hostname = (const char *)net_address_data(address);
+    assert(hostname);
 
     entry = net_dns_entry_find(manage, hostname);
     if (entry == NULL) {
