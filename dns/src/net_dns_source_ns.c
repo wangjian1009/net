@@ -1,3 +1,4 @@
+#include <assert.h>
 #include "cpe/pal/pal_platform.h"
 #include "cpe/pal/pal_stdio.h"
 #include "cpe/utils/stream_buffer.h"
@@ -8,7 +9,7 @@
 #include "net_endpoint.h"
 #include "net_dgram.h"
 #include "net_timer.h"
-#include "net_dns_task.h"
+#include "net_dns_task_i.h"
 #include "net_dns_task_ctx.h"
 #include "net_dns_source_ns_i.h"
 #include "net_dns_source_i.h"
@@ -220,6 +221,75 @@ void net_dns_source_ns_ctx_fini(net_dns_source_t source, net_dns_task_ctx_t task
     }
 }
 
+static char * net_dns_source_ns_ctx_append_query_one(char * p, net_dns_task_t task, const char * hostname, uint16_t qtype) {
+    char * countp = p;  
+    *(p++) = 0;
+
+    const char * q;
+    for(q = hostname; *q != 0; q++) {
+        if(*q != '.') {
+            (*countp)++;
+            *(p++) = *q;
+        }
+        else if(*countp != 0) {
+            countp = p;
+            *(p++) = 0;
+        }
+    }
+
+    if (*countp != 0) {
+        *(p++) = 0;
+    }
+ 
+    CPE_COPY_HTON16(p, &qtype); p+=2;
+    
+    uint16_t qclass = 1;
+    CPE_COPY_HTON16(p, &qclass); p+=2;
+    
+    return p;
+}
+
+static char * net_dns_source_ns_ctx_append_query_rdns(char * p, net_dns_task_t task) {
+    net_address_t address = task->m_address;
+    char buf[128];
+
+    switch(net_address_type(address)) {
+    case net_address_ipv4: {
+        struct net_address_data_ipv4 const * addr_data = net_address_data(address);
+        snprintf(
+            buf, sizeof(buf), "%d.%d.%d.%d.in-addr.arpa",
+            addr_data->u8[3], addr_data->u8[2], addr_data->u8[1], addr_data->u8[0]);
+        return net_dns_source_ns_ctx_append_query_one(p, task, buf, 12);
+    }
+    case net_address_ipv6: {
+        const char * maps = "0123456789abcdef";
+        struct net_address_data_ipv6 const * addr_data = net_address_data(address);
+        snprintf(
+            buf, sizeof(buf), "%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.ip6.arpa",
+            maps[addr_data->u8[15] >> 4], maps[addr_data->u8[15] & 0x0F],
+            maps[addr_data->u8[14] >> 4], maps[addr_data->u8[14] & 0x0F],
+            maps[addr_data->u8[13] >> 4], maps[addr_data->u8[13] & 0x0F],
+            maps[addr_data->u8[12] >> 4], maps[addr_data->u8[12] & 0x0F],
+            maps[addr_data->u8[11] >> 4], maps[addr_data->u8[11] & 0x0F],
+            maps[addr_data->u8[10] >> 4], maps[addr_data->u8[10] & 0x0F],
+            maps[addr_data->u8[9] >> 4], maps[addr_data->u8[9] & 0x0F],
+            maps[addr_data->u8[8] >> 4], maps[addr_data->u8[8] & 0x0F],
+            maps[addr_data->u8[7] >> 4], maps[addr_data->u8[7] & 0x0F],
+            maps[addr_data->u8[6] >> 4], maps[addr_data->u8[6] & 0x0F],
+            maps[addr_data->u8[5] >> 4], maps[addr_data->u8[5] & 0x0F],
+            maps[addr_data->u8[4] >> 4], maps[addr_data->u8[4] & 0x0F],
+            maps[addr_data->u8[3] >> 4], maps[addr_data->u8[3] & 0x0F],
+            maps[addr_data->u8[2] >> 4], maps[addr_data->u8[2] & 0x0F],
+            maps[addr_data->u8[1] >> 4], maps[addr_data->u8[1] & 0x0F],
+            maps[addr_data->u8[0] >> 4], maps[addr_data->u8[0] & 0x0F]);
+        return net_dns_source_ns_ctx_append_query_one(p, task, buf, 12);
+    }
+    case net_address_domain:
+        assert(0);
+        return NULL;
+    }
+}
+
 int net_dns_source_ns_ctx_start(net_dns_source_t source, net_dns_task_ctx_t task_ctx) {
     net_dns_task_t task = net_dns_task_ctx_task(task_ctx);
     net_dns_manage_t manage = net_dns_task_ctx_manage(task_ctx);
@@ -264,8 +334,8 @@ int net_dns_source_ns_ctx_start(net_dns_source_t source, net_dns_task_ctx_t task
     uint16_t flag = 0x0100;
     CPE_COPY_HTON16(p, &flag); p+=2;
 
-    uint16_t qdcount = 1;
-    CPE_COPY_HTON16(p, &qdcount); p+=2;
+    void * qdcount_addr = p;
+    p+=2;
 
     uint16_t ancount = 0;
     CPE_COPY_HTON16(p, &ancount); p+=2;
@@ -277,31 +347,28 @@ int net_dns_source_ns_ctx_start(net_dns_source_t source, net_dns_task_ctx_t task
     CPE_COPY_HTON16(p, &arcount); p+=2;
     
     /* query */
-    char * countp = p;  
-    *(p++) = 0;
-
-    const char * q;
-    for(q = net_dns_task_hostname(task); *q != 0; q++) {
-        if(*q != '.') {
-            (*countp)++;
-            *(p++) = *q;
-        }
-        else if(*countp != 0) {
-            countp = p;
-            *(p++) = 0;
-        }
+    uint16_t qdcount = 0;
+    switch(net_dns_task_query_type(task)) {
+    case net_dns_query_ipv4:
+        qdcount = 1;
+        p = net_dns_source_ns_ctx_append_query_one(p, task, net_dns_task_hostname(task), 1);
+        break;
+    case net_dns_query_ipv6:
+        qdcount = 1;
+        p = net_dns_source_ns_ctx_append_query_one(p, task, net_dns_task_hostname(task), 28);
+        break;
+    case net_dns_query_ipv4v6:
+        qdcount = 2;
+        p = net_dns_source_ns_ctx_append_query_one(p, task, net_dns_task_hostname(task), 1);
+        p = net_dns_source_ns_ctx_append_query_one(p, task, net_dns_task_hostname(task), 28);
+        break;
+    case net_dns_query_domain:
+        qdcount = 1;
+        p = net_dns_source_ns_ctx_append_query_rdns(p, task);
+        break;
     }
-
-    if (*countp != 0) {
-        *(p++) = 0;
-    }
- 
-    uint16_t qtype = 1;
-    CPE_COPY_HTON16(p, &qtype); p+=2;
+    CPE_COPY_HTON16(qdcount_addr, &qdcount);
     
-    uint16_t qclass = 1;
-    CPE_COPY_HTON16(p, &qclass); p+=2;
-
     uint16_t msg_size = (uint16_t)(p - buf) - 2;
 
     switch(ns->m_trans_type) {
