@@ -182,18 +182,14 @@ uint32_t net_dns_svr_query_calc_response_size(net_dns_svr_query_t query) {
 
 #define net_dns_svr_query_append_name_check_capacity(__sz)              \
     if (left_capacity < (__sz)) {                                       \
-        CPE_ERROR(                                                      \
-            svr->m_em, "dns-svr: build response: append name: not enouth buf, capacity=%d", \
-            capacity);                                                  \
-        return NULL;                                                      \
+        CPE_ERROR(svr->m_em, "dns-svr: build response: append name: not enouth buf"); \
+        return NULL;                                                    \
     }                                                                   \
     else {                                                              \
         left_capacity -= (__sz);                                        \
     }
 
-static char * net_dns_svr_query_append_name(net_dns_svr_t svr, char * p, void * data, uint32_t capacity, const char * name) {
-    uint32_t left_capacity = capacity;
-
+static char * net_dns_svr_query_append_name(net_dns_svr_t svr, char * p, void * data, uint32_t left_capacity, const char * name) {
     net_dns_svr_query_append_name_check_capacity(1);
     char * countp = p++;
     *countp = 0;
@@ -220,7 +216,7 @@ static char * net_dns_svr_query_append_name(net_dns_svr_t svr, char * p, void * 
     return p;
 }
 
-static char * net_dns_svr_query_append_address(net_dns_svr_t svr, char * p, void * data, uint32_t capacity, net_address_t address) {
+static char * net_dns_svr_query_append_address(net_dns_svr_t svr, char * p, void * data, uint32_t left_capacity, net_address_t address) {
     const char * domain_name;
     char buf[128];
     
@@ -240,7 +236,7 @@ static char * net_dns_svr_query_append_address(net_dns_svr_t svr, char * p, void
         break;
     }
 
-    return net_dns_svr_query_append_name(svr, p, data, capacity, domain_name);
+    return net_dns_svr_query_append_name(svr, p, data, left_capacity, domain_name);
 }
     
 #define net_dns_svr_query_build_response_check_capacity(__sz)           \
@@ -352,7 +348,7 @@ int net_dns_svr_query_build_response(net_dns_svr_query_t query, void * data, uin
                 net_dns_svr_query_build_response_check_capacity(2);
                 char * rdlength_buf = p; p += 2;
                 
-                p = net_dns_svr_query_append_name(svr, p, data, capacity, (const char *)net_address_data(address));
+                p = net_dns_svr_query_append_name(svr, p, data, left_capacity, (const char *)net_address_data(address));
                 if (p == NULL) return -1;
 
                 rdlength = (uint16_t)((p - rdlength_buf) - 2);
