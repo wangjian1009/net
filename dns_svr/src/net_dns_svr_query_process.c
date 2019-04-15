@@ -117,10 +117,10 @@ static uint32_t net_dns_svr_query_calc_entry_query_size(net_dns_svr_query_entry_
     
     switch(net_address_type(query_entry->m_address)) {
     case net_address_ipv4:
-        sz += 4;
+        sz += 28;
         break;
     case net_address_ipv6:
-        sz += 16;
+        sz += 42;
         break;
     case net_address_domain:
         sz += (uint32_t)strlen(net_address_data(query_entry->m_address));
@@ -181,15 +181,15 @@ uint32_t net_dns_svr_query_calc_response_size(net_dns_svr_query_t query) {
 }
 
 #define net_dns_svr_query_append_name_check_capacity(__sz)              \
-    if (left_capacity < (__sz)) {                                       \
+    if (*left_capacity < (__sz)) {                                      \
         CPE_ERROR(svr->m_em, "dns-svr: build response: append name: not enouth buf"); \
         return NULL;                                                    \
     }                                                                   \
     else {                                                              \
-        left_capacity -= (__sz);                                        \
+        *left_capacity -= (__sz);                                       \
     }
 
-static char * net_dns_svr_query_append_name(net_dns_svr_t svr, char * p, void * data, uint32_t left_capacity, const char * name) {
+static char * net_dns_svr_query_append_name(net_dns_svr_t svr, char * p, void * data, uint32_t * left_capacity, const char * name) {
     net_dns_svr_query_append_name_check_capacity(1);
     char * countp = p++;
     *countp = 0;
@@ -216,7 +216,7 @@ static char * net_dns_svr_query_append_name(net_dns_svr_t svr, char * p, void * 
     return p;
 }
 
-static char * net_dns_svr_query_append_address(net_dns_svr_t svr, char * p, void * data, uint32_t left_capacity, net_address_t address) {
+static char * net_dns_svr_query_append_address(net_dns_svr_t svr, char * p, void * data, uint32_t * left_capacity, net_address_t address) {
     const char * domain_name;
     char buf[128];
     
@@ -226,14 +226,34 @@ static char * net_dns_svr_query_append_address(net_dns_svr_t svr, char * p, void
         break;
     case net_address_ipv4: {
         struct net_address_data_ipv4 * ipv4 = (struct net_address_data_ipv4 * )net_address_data(address);
-        snprintf(buf, sizeof(buf), "%d.%d.%d.%d.in-addr.arpa", ipv4->u8[0], ipv4->u8[1], ipv4->u8[2], ipv4->u8[3]);
+        snprintf(buf, sizeof(buf), "%d.%d.%d.%d.in-addr.arpa", ipv4->u8[3], ipv4->u8[2], ipv4->u8[1], ipv4->u8[0]);
         domain_name = buf;
         break;
     }
-    case net_address_ipv6:
-        assert(0);
-        domain_name = "not-support-ipv6";
+    case net_address_ipv6: {
+        const char * maps = "0123456789abcdef";
+        struct net_address_data_ipv6 const * addr_data = (struct net_address_data_ipv6 const *)net_address_data(address);
+        snprintf(
+            buf, sizeof(buf), "%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.%c.ip6.arpa",
+            maps[addr_data->u8[15] >> 4], maps[addr_data->u8[15] & 0x0F],
+            maps[addr_data->u8[14] >> 4], maps[addr_data->u8[14] & 0x0F],
+            maps[addr_data->u8[13] >> 4], maps[addr_data->u8[13] & 0x0F],
+            maps[addr_data->u8[12] >> 4], maps[addr_data->u8[12] & 0x0F],
+            maps[addr_data->u8[11] >> 4], maps[addr_data->u8[11] & 0x0F],
+            maps[addr_data->u8[10] >> 4], maps[addr_data->u8[10] & 0x0F],
+            maps[addr_data->u8[9] >> 4], maps[addr_data->u8[9] & 0x0F],
+            maps[addr_data->u8[8] >> 4], maps[addr_data->u8[8] & 0x0F],
+            maps[addr_data->u8[7] >> 4], maps[addr_data->u8[7] & 0x0F],
+            maps[addr_data->u8[6] >> 4], maps[addr_data->u8[6] & 0x0F],
+            maps[addr_data->u8[5] >> 4], maps[addr_data->u8[5] & 0x0F],
+            maps[addr_data->u8[4] >> 4], maps[addr_data->u8[4] & 0x0F],
+            maps[addr_data->u8[3] >> 4], maps[addr_data->u8[3] & 0x0F],
+            maps[addr_data->u8[2] >> 4], maps[addr_data->u8[2] & 0x0F],
+            maps[addr_data->u8[1] >> 4], maps[addr_data->u8[1] & 0x0F],
+            maps[addr_data->u8[0] >> 4], maps[addr_data->u8[0] & 0x0F]);
+        domain_name = buf;
         break;
+    }
     }
 
     return net_dns_svr_query_append_name(svr, p, data, left_capacity, domain_name);
@@ -290,7 +310,7 @@ int net_dns_svr_query_build_response(net_dns_svr_query_t query, void * data, uin
     /*query*/
     TAILQ_FOREACH(entry, &query->m_entries, m_next) {
         entry->m_cache_name_offset = (uint16_t)(p - (char*)data);
-        p = net_dns_svr_query_append_address(svr, p, data, capacity, entry->m_address);
+        p = net_dns_svr_query_append_address(svr, p, data, &left_capacity, entry->m_address);
         if (p == NULL) return -1;
         
         uint16_t qtype = net_dns_svr_query_entry_type_to_atype(entry->m_type);
@@ -348,7 +368,7 @@ int net_dns_svr_query_build_response(net_dns_svr_query_t query, void * data, uin
                 net_dns_svr_query_build_response_check_capacity(2);
                 char * rdlength_buf = p; p += 2;
                 
-                p = net_dns_svr_query_append_name(svr, p, data, left_capacity, (const char *)net_address_data(address));
+                p = net_dns_svr_query_append_name(svr, p, data, &left_capacity, (const char *)net_address_data(address));
                 if (p == NULL) return -1;
 
                 rdlength = (uint16_t)((p - rdlength_buf) - 2);
