@@ -23,8 +23,8 @@ int net_dns_manage_add_record(net_dns_manage_t manage, net_address_t hostname, n
                 manage->m_em, "dns-cli: add record %s ==> %s: entry create fail",
                 (const char *)net_address_data(hostname),
                 net_address_host(net_dns_manage_tmp_buffer(manage), address));
+            return -1;
         }
-        return -1;
     }
 
     uint32_t cur_time_s = (uint32_t)(cur_time_ms() / 1000);
