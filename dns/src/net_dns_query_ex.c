@@ -18,6 +18,7 @@ static int net_dns_query_ex_init_for_dns(
     uint8_t is_entry_new = 0;
     uint8_t is_task_new = 0;
 
+    assert(query_type != net_dns_query_domain);
     assert(net_address_type(address) == net_address_domain);
 
     const char * hostname = (const char *)net_address_data(address);
@@ -110,6 +111,7 @@ static int net_dns_query_ex_init_for_rdns(
     net_address_t address, net_dns_query_type_t query_type, const char * policy)
 {
     assert(net_address_type(address) == net_address_ipv4 || net_address_type(address) == net_address_ipv6);
+    assert(query_type == net_dns_query_domain);
 
     query_ex->m_manage = manage;
     query_ex->m_task = NULL;
@@ -124,6 +126,7 @@ static int net_dns_query_ex_init_for_rdns(
 
     net_dns_entry_item_t item = net_dns_entry_item_find_by_ip(manage, address);
     if (item != NULL) {
+        assert(query_ex->m_address);
         TAILQ_INSERT_TAIL(&manage->m_to_notify_querys, query_ex, m_next);
         net_dns_manage_active_delay_process(manage);
         return 0;
@@ -181,13 +184,12 @@ void net_dns_query_ex_fini(void * ctx, net_dns_query_t query) {
             query_ex->m_address = NULL;
         }
     }
+    
+    if (query_ex->m_task) {
+        TAILQ_REMOVE(&query_ex->m_task->m_querys, query_ex, m_next);
+    }
     else {
-        if (query_ex->m_task) {
-            TAILQ_REMOVE(&query_ex->m_task->m_querys, query_ex, m_next);
-        }
-        else {
-            TAILQ_REMOVE(&query_ex->m_manage->m_to_notify_querys, query_ex, m_next);
-        }
+        TAILQ_REMOVE(&query_ex->m_manage->m_to_notify_querys, query_ex, m_next);
     }
 }
 

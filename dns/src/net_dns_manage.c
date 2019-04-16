@@ -314,6 +314,8 @@ static void net_dns_manage_do_delay_process(net_timer_t timer, void * input_ctx)
         net_address_it_init(&address_it);
 
         if (query_ex->m_query_type == net_dns_query_domain) {
+            assert(query_ex->m_address);
+
             address = net_dns_hostname_by_ip(manage, query_ex->m_address);
             net_dns_hostnames_by_ip(&address_it, manage, query_ex->m_address);
             
