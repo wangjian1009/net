@@ -1,6 +1,7 @@
 #include "assert.h"
 #include "cpe/pal/pal_stdio.h"
 #include "cpe/utils/time_utils.h"
+#include "cpe/utils/string_utils.h"
 #include "net_timer.h"
 #include "net_dns_task_ctx_i.h"
 #include "net_dns_entry_i.h"
@@ -103,20 +104,22 @@ void net_dns_task_ctx_start(net_dns_task_ctx_t ctx) {
     net_dns_manage_t manage = source->m_manage;
 
     if (ctx->m_state != net_dns_task_state_init) {
+        char source_name[128];
+        cpe_str_dup(source_name, sizeof(source_name), net_dns_source_dump(net_dns_manage_tmp_buffer(manage), ctx->m_source));
         CPE_ERROR(
             manage->m_em, "dns-cli: query %s --> %s: already started",
-            net_dns_task_hostname_str(task),
-            net_dns_source_dump(net_dns_manage_tmp_buffer(manage), ctx->m_source));
+            net_dns_task_dump(net_dns_manage_tmp_buffer(manage), task), source_name);
         return;
     }
 
     net_dns_task_ctx_set_state_i(manage, task, ctx, net_dns_task_state_runing);
 
     if (source->m_task_ctx_start(source, ctx) != 0) {
+        char source_name[128];
+        cpe_str_dup(source_name, sizeof(source_name), net_dns_source_dump(net_dns_manage_tmp_buffer(manage), ctx->m_source));
         CPE_ERROR(
             manage->m_em, "dns-cli: query %s --> %s: start fail",
-            net_dns_task_hostname_str(task),
-            net_dns_source_dump(net_dns_manage_tmp_buffer(manage), ctx->m_source));
+            net_dns_task_dump(net_dns_manage_tmp_buffer(manage), task), source_name);
         net_dns_task_ctx_set_error(ctx);
     }
     else {
@@ -131,10 +134,11 @@ void net_dns_task_ctx_start(net_dns_task_ctx_t ctx) {
             }
 
             if (manage->m_debug >= 2) {
+                char source_name[128];
+                cpe_str_dup(source_name, sizeof(source_name), net_dns_source_dump(net_dns_manage_tmp_buffer(manage), ctx->m_source));
                 CPE_INFO(
                     manage->m_em, "dns-cli: query %s --> %s: start success",
-                    net_dns_task_hostname_str(task),
-                    net_dns_source_dump(net_dns_manage_tmp_buffer(manage), ctx->m_source));
+                    net_dns_task_dump(net_dns_manage_tmp_buffer(manage), task), source_name);
             }
         }
     }
@@ -167,10 +171,12 @@ static int net_dns_task_ctx_update_timeout(net_dns_task_ctx_t ctx) {
             ctx->m_timeout_timer = net_timer_auto_create(
                 manage->m_schedule, net_dns_task_ctx_do_timeout, ctx);
             if (ctx->m_timeout_timer == NULL) {
+                char source_name[128];
+                cpe_str_dup(source_name, sizeof(source_name), net_dns_source_dump(net_dns_manage_tmp_buffer(manage), ctx->m_source));
                 CPE_ERROR(
                     manage->m_em, "dns-cli: query %s --> %s: create timeout timer fail!",
-                    net_dns_task_hostname_str(task),
-                    net_dns_source_dump(net_dns_manage_tmp_buffer(manage), ctx->m_source));
+                    net_dns_task_dump(net_dns_manage_tmp_buffer(manage), task),
+                    source_name);
                 return -1;
             }
         }
@@ -194,10 +200,12 @@ static void net_dns_task_ctx_do_timeout(net_timer_t timer, void * input_ctx) {
         ctx->m_retry_count--;
 
         if (ctx->m_source->m_task_ctx_start(ctx->m_source, ctx) != 0) {
+            char source_name[128];
+            cpe_str_dup(source_name, sizeof(source_name), net_dns_source_dump(net_dns_manage_tmp_buffer(manage), ctx->m_source));
             CPE_ERROR(
                 manage->m_em, "dns-cli: query %s --> %s: %.2fs timeout, restart fail",
-                net_dns_task_hostname_str(task),
-                net_dns_source_dump(net_dns_manage_tmp_buffer(manage), ctx->m_source),
+                net_dns_task_dump(net_dns_manage_tmp_buffer(manage), task),
+                source_name,
                 (float)ctx->m_timeout_ms / 1000.0f);
             net_dns_task_ctx_set_error(ctx);
         }
@@ -213,20 +221,23 @@ static void net_dns_task_ctx_do_timeout(net_timer_t timer, void * input_ctx) {
                 }
             
                 if (manage->m_debug >= 2) {
+                    char source_name[128];
+                    cpe_str_dup(source_name, sizeof(source_name), net_dns_source_dump(net_dns_manage_tmp_buffer(manage), ctx->m_source));
                     CPE_INFO(
                         manage->m_em, "dns-cli: query %s --> %s: %.2fs timeout, restart success",
-                        net_dns_task_hostname_str(task),
-                        net_dns_source_dump(net_dns_manage_tmp_buffer(manage), ctx->m_source),
+                        net_dns_task_dump(net_dns_manage_tmp_buffer(manage), task),
+                        source_name,
                         (float)ctx->m_timeout_ms / 1000.0f);
                 }
             }
         }
     }
     else {
+        char source_name[128];
+        cpe_str_dup(source_name, sizeof(source_name), net_dns_source_dump(net_dns_manage_tmp_buffer(manage), ctx->m_source));
         CPE_ERROR(
             manage->m_em, "dns-cli: query %s --> %s: %.2fs timeout",
-            net_dns_task_hostname_str(task),
-            net_dns_source_dump(net_dns_manage_tmp_buffer(manage), ctx->m_source),
+            net_dns_task_dump(net_dns_manage_tmp_buffer(manage), task), source_name,
             (float)ctx->m_timeout_ms / 1000.0f);
 
         net_dns_task_ctx_set_error(ctx);
@@ -241,6 +252,9 @@ int net_dns_task_ctx_set_timeout(net_dns_task_ctx_t ctx, uint16_t timeout_ms) {
 static void net_dns_task_ctx_set_state_i(
     net_dns_manage_t manage, net_dns_task_t task, net_dns_task_ctx_t ctx, net_dns_task_state_t to_state)
 {
+    char source_name[128];
+    cpe_str_dup(source_name, sizeof(source_name), net_dns_source_dump(net_dns_manage_tmp_buffer(manage), ctx->m_source));
+
     switch(to_state) {
     case net_dns_task_state_init:
         break;
@@ -249,8 +263,8 @@ static void net_dns_task_ctx_set_state_i(
         if (manage->m_debug) {
             CPE_INFO(
                 manage->m_em, "dns-cli: query %s --> %s: state %s ==> %s",
-                net_dns_task_hostname_str(task),
-                net_dns_source_dump(net_dns_manage_tmp_buffer(manage), ctx->m_source),
+                net_dns_task_dump(net_dns_manage_tmp_buffer(manage), task),
+                source_name,
                 net_dns_task_state_str(ctx->m_state),
                 net_dns_task_state_str(to_state));
         }
@@ -261,8 +275,8 @@ static void net_dns_task_ctx_set_state_i(
         ctx->m_complete_time_ms = cur_time_ms();
         CPE_INFO(
             manage->m_em, "dns-cli: query %s --> %s: state %s ==> %s, %.2fs, (" FMT_UINT64_T " -- " FMT_UINT64_T ")",
-            net_dns_task_hostname_str(task),
-            net_dns_source_dump(net_dns_manage_tmp_buffer(manage), ctx->m_source),
+            net_dns_task_dump(net_dns_manage_tmp_buffer(manage), task),
+            source_name,
             net_dns_task_state_str(ctx->m_state),
             net_dns_task_state_str(to_state),
             ((float)(ctx->m_complete_time_ms - ctx->m_begin_time_ms) / 1000.0f),
@@ -281,7 +295,7 @@ static void net_dns_task_ctx_set_state_i(
         case net_dns_task_state_init:
             CPE_ERROR(
                 task->m_manage->m_em, "dns-cli: query %s: step start but still init",
-                net_dns_task_hostname_str(task));
+                net_dns_task_dump(net_dns_manage_tmp_buffer(manage), task));
             net_dns_task_update_state(task, net_dns_task_state_error);
             return;
         case net_dns_task_state_runing:

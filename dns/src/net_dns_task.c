@@ -86,7 +86,7 @@ void net_dns_task_free(net_dns_task_t task) {
     net_dns_manage_t manage = task->m_manage;
 
     if (manage->m_debug >= 2) {
-        CPE_INFO(manage->m_em, "dns-cli: query %s: free!", (const char *)net_address_data(task->m_entry->m_hostname));
+        CPE_INFO(manage->m_em, "dns-cli: query %s: free!", net_dns_task_dump(net_dns_manage_tmp_buffer(manage), task));
     }
 
     if (task->m_query_type == net_dns_query_domain) {
@@ -152,7 +152,7 @@ int net_dns_task_start(net_dns_task_t task) {
         CPE_ERROR(
             manage->m_em,
             "dns-cli: query %s: can`t start in state %s",
-            (const char *)net_address_data(task->m_entry->m_hostname),
+            net_dns_task_dump(net_dns_manage_tmp_buffer(manage), task),
             net_dns_task_state_str(task->m_state));
         return -1;
     }
@@ -163,7 +163,8 @@ int net_dns_task_start(net_dns_task_t task) {
     if (task->m_step_current == NULL) {
         if (manage->m_debug) {
             CPE_INFO(
-                manage->m_em, "dns-cli: query %s: no step", (const char *)net_address_data(task->m_entry->m_hostname));
+                manage->m_em, "dns-cli: query %s: no step",
+                net_dns_task_dump(net_dns_manage_tmp_buffer(manage), task));
         }
         net_dns_task_update_state(task, net_dns_task_state_success);
         return 0;
@@ -176,7 +177,7 @@ int net_dns_task_start(net_dns_task_t task) {
         case net_dns_task_state_init:
             CPE_ERROR(
                 manage->m_em, "dns-cli: query %s: step start but still init",
-                (const char *)net_address_data(task->m_entry->m_hostname));
+                net_dns_task_dump(net_dns_manage_tmp_buffer(manage), task));
             net_dns_task_update_state(task, net_dns_task_state_error);
             return -1;
         case net_dns_task_state_runing:
@@ -234,7 +235,7 @@ void net_dns_task_update_state(net_dns_task_t task, net_dns_task_state_t new_sta
     if (manage->m_debug >= 2) {
         CPE_INFO(
             manage->m_em, "dns-cli: query %s: state %s ==> %s",
-            (const char *)net_address_data(task->m_entry->m_hostname),
+            net_dns_task_dump(net_dns_manage_tmp_buffer(manage), task),
             net_dns_task_state_str(task->m_state),
             net_dns_task_state_str(new_state));
     }

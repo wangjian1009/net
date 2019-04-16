@@ -46,7 +46,6 @@ net_dns_entry_item_create(net_dns_entry_t entry, net_address_t address, uint8_t 
         return NULL;
     }
     
-    
     TAILQ_INSERT_TAIL(&entry->m_items, item, m_next_for_entry);
 
     return item;
@@ -136,5 +135,5 @@ uint32_t net_dns_entry_item_hash_by_ip(net_dns_entry_item_t o, void * user_data)
 }
 
 int net_dns_entry_item_eq_by_ip(net_dns_entry_item_t l, net_dns_entry_item_t r, void * user_data) {
-    return net_address_cmp_without_port(l->m_address, r->m_address);
+    return net_address_cmp_without_port(l->m_address, r->m_address) == 0 ? 1 : 0;
 }
