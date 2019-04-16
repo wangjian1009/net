@@ -274,14 +274,12 @@ static void net_dns_task_ctx_set_state_i(
     case net_dns_task_state_error:
         ctx->m_complete_time_ms = cur_time_ms();
         CPE_INFO(
-            manage->m_em, "dns-cli: query %s --> %s: state %s ==> %s, %.2fs, (" FMT_UINT64_T " -- " FMT_UINT64_T ")",
+            manage->m_em, "dns-cli: query %s --> %s: state %s ==> %s, %.2fs",
             net_dns_task_dump(net_dns_manage_tmp_buffer(manage), task),
             source_name,
             net_dns_task_state_str(ctx->m_state),
             net_dns_task_state_str(to_state),
-            ((float)(ctx->m_complete_time_ms - ctx->m_begin_time_ms) / 1000.0f),
-            ctx->m_begin_time_ms,
-            ctx->m_complete_time_ms);
+            ((float)(ctx->m_complete_time_ms - ctx->m_begin_time_ms) / 1000.0f));
         break;
     }
     
