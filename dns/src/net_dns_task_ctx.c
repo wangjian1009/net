@@ -282,7 +282,7 @@ static void net_dns_task_ctx_set_state_i(
             ((float)(ctx->m_complete_time_ms - ctx->m_begin_time_ms) / 1000.0f));
         break;
     }
-    
+
     ctx->m_state = to_state;
 
     if (task->m_step_current == ctx->m_step) {

@@ -290,7 +290,11 @@ static void net_dns_manage_do_delay_process(net_timer_t timer, void * input_ctx)
 
         while(!TAILQ_EMPTY(&task->m_querys)) {
             net_dns_query_ex_t query_ex = TAILQ_FIRST(&task->m_querys);
-            query_ex->m_entry = task->m_entry;
+            if (query_ex->m_query_type == net_dns_query_domain) {
+            }
+            else {
+                query_ex->m_entry = task->m_entry;
+            }
             net_dns_query_ex_set_task(query_ex, NULL);
         }
 

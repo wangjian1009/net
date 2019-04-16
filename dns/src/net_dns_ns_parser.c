@@ -237,7 +237,7 @@ static int net_dns_ns_parser_read_an_record(
         net_address_free(address);
         return -1;
     }
-    net_dns_manage_add_record(manage, hostname_address, address);
+    net_dns_manage_add_record(manage, hostname_address, address, manage->m_cfg_ttl_s);
     net_address_free(hostname_address);
     
     net_address_free(address);
