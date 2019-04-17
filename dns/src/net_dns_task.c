@@ -8,8 +8,8 @@
 #include "net_dns_query_ex_i.h"
 #include "net_dns_entry_i.h"
 
-static net_dns_task_t
-net_dns_task_create_i(net_dns_manage_t manage, net_dns_query_type_t query_type) {
+net_dns_task_t
+net_dns_task_create(net_dns_manage_t manage, net_address_t address, net_dns_query_type_t query_type) {
     net_dns_task_t task;
 
     task = TAILQ_FIRST(&manage->m_free_tasks);
@@ -32,51 +32,28 @@ net_dns_task_create_i(net_dns_manage_t manage, net_dns_query_type_t query_type) 
     task->m_complete_time_ms = 0;
     TAILQ_INIT(&task->m_steps);
     TAILQ_INIT(&task->m_querys);
+
+    task->m_address = net_address_copy(manage->m_schedule, address);
+    if (task->m_address == NULL) {
+        CPE_ERROR(manage->m_em, "dns-cli: query dup address fail!");
+        TAILQ_INSERT_TAIL(&manage->m_free_tasks, task, m_next_for_manage);
+        return NULL;
+    }
+    
+    cpe_hash_entry_init(&task->m_hh);
+    if (cpe_hash_table_insert_unique(&manage->m_tasks, task) != 0) {
+        CPE_ERROR(manage->m_em, "dns-cli: task duplicate!");
+        net_address_free(task->m_address);
+        TAILQ_INSERT_TAIL(&manage->m_free_tasks, task, m_next_for_manage);
+        return NULL;
+    }
     
     TAILQ_INSERT_TAIL(&manage->m_runing_tasks, task, m_next_for_manage);
-    
-    return task;
-}
-
-net_dns_task_t
-net_dns_task_create_for_entry(net_dns_manage_t manage, net_dns_entry_t entry, net_dns_query_type_t query_type) {
-    assert(query_type != net_dns_query_domain);
-
-    net_dns_task_t task = net_dns_task_create_i(manage, query_type);
-    if (task == NULL) return NULL;
-
-    task->m_entry = entry;
-    TAILQ_INSERT_TAIL(&entry->m_tasks, task, m_next_for_entry);
-
-    if (manage->m_debug >= 2) {
-        CPE_INFO(manage->m_em, "dns-cli: query %s: start!", (const char *)net_address_data(entry->m_hostname));
-    }
-    
-    return task;
-}
-
-net_dns_task_t
-net_dns_task_create_for_address(net_dns_manage_t manage, net_address_t address, net_dns_query_type_t query_type) {
-    assert(query_type == net_dns_query_domain);
-
-    net_address_t dup_address = net_address_copy(manage->m_schedule, address);
-    if (dup_address == NULL) {
-        CPE_ERROR(manage->m_em, "dns-cli: query dup address fail!");
-        return NULL;
-    }
-    
-    net_dns_task_t task = net_dns_task_create_i(manage, query_type);
-    if (task == NULL) {
-        net_address_free(dup_address);
-        return NULL;
-    }
-
-    task->m_address = dup_address;
 
     if (manage->m_debug >= 2) {
         CPE_INFO(
             manage->m_em, "dns-cli: query %s: start!",
-            net_address_dump(net_dns_manage_tmp_buffer(manage), task->m_address));
+            net_dns_task_dump(net_dns_manage_tmp_buffer(manage), task));
     }
     
     return task;
@@ -89,22 +66,19 @@ void net_dns_task_free(net_dns_task_t task) {
         CPE_INFO(manage->m_em, "dns-cli: query %s: free!", net_dns_task_dump(net_dns_manage_tmp_buffer(manage), task));
     }
 
-    if (task->m_query_type == net_dns_query_domain) {
-        assert(task->m_address);
-        net_address_free(task->m_address);
-        task->m_address = NULL;
-    }
-    else {
-        TAILQ_REMOVE(&task->m_entry->m_tasks, task, m_next_for_entry);
-    }
+    assert(task->m_address);
+    net_address_free(task->m_address);
+    task->m_address = NULL;
 
     while(!TAILQ_EMPTY(&task->m_steps)) {
         net_dns_task_step_free(TAILQ_FIRST(&task->m_steps));
     }
-    
-    while(!TAILQ_EMPTY(&task->m_querys)) {
-        net_dns_query_ex_set_task(TAILQ_FIRST(&task->m_querys), NULL);
-    }
+
+    /* while(!TAILQ_EMPTY(&task->m_querys)) { */
+    /*     net_dns_query_ex_set_task(TAILQ_FIRST(&task->m_querys), NULL); */
+    /* } */
+
+    cpe_hash_table_remove_by_ins(&manage->m_tasks, task);
 
     if (net_dns_task_is_complete(task)) {
         TAILQ_REMOVE(&manage->m_complete_tasks, task, m_next_for_manage);
@@ -128,7 +102,8 @@ net_address_t net_dns_task_hostname(net_dns_task_t task) {
         return NULL;
     }
     else {
-        return task->m_entry->m_hostname;
+        assert(net_address_type(task->m_address) == net_address_domain);
+        return task->m_address;
     }
 }
 
@@ -137,7 +112,8 @@ const char * net_dns_task_hostname_str(net_dns_task_t task) {
         return NULL;
     }
     else {
-        return (const char *)net_address_data(task->m_entry->m_hostname);
+        assert(net_address_type(task->m_address) == net_address_domain);
+        return (const char *)net_address_data(task->m_address);
     }
 }
 
@@ -317,6 +293,22 @@ int64_t net_dns_task_begin_time_ms(net_dns_task_t task) {
 
 int64_t net_dns_task_complete_time_ms(net_dns_task_t task) {
     return task->m_complete_time_ms;
+}
+
+uint32_t net_dns_task_hash(net_dns_task_t o, void * user_data) {
+    return net_address_hash_without_port(o->m_address);
+}
+
+net_dns_task_t
+net_dns_task_find(net_dns_manage_t manage, net_address_t address, net_dns_query_type_t query_type) {
+    struct net_dns_task key;
+    key.m_address = address;
+    key.m_query_type = query_type;
+    return cpe_hash_table_find(&manage->m_tasks, &key);
+}
+
+int net_dns_task_eq(net_dns_task_t l, net_dns_task_t r, void * user_data) {
+    return net_address_cmp_without_port(l->m_address, r->m_address) == 0 && l->m_query_type == r->m_query_type ? 1 : 0;
 }
 
 void net_dns_task_print(write_stream_t ws, net_dns_task_t task) {

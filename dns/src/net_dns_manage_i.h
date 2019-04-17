@@ -51,6 +51,7 @@ struct net_dns_manage {
     net_timer_t m_delay_process;
     
     uint32_t m_task_ctx_capacity;
+    struct cpe_hash_table m_tasks;
     net_dns_task_list_t m_runing_tasks;
     net_dns_task_list_t m_complete_tasks;
 

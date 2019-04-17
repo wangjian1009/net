@@ -6,7 +6,6 @@
 #include "net_dns_entry_i.h"
 #include "net_dns_entry_item_i.h"
 #include "net_dns_entry_alias_i.h"
-#include "net_dns_task_i.h"
 
 net_dns_entry_t
 net_dns_entry_create(net_dns_manage_t manage, net_address_t hostname) {
@@ -33,7 +32,6 @@ net_dns_entry_create(net_dns_manage_t manage, net_address_t hostname) {
     }
     
     entry->m_expire_time_s = 0;
-    TAILQ_INIT(&entry->m_tasks);
     TAILQ_INIT(&entry->m_origins);
     TAILQ_INIT(&entry->m_cnames);
     TAILQ_INIT(&entry->m_items);
@@ -51,10 +49,6 @@ net_dns_entry_create(net_dns_manage_t manage, net_address_t hostname) {
 
 void net_dns_entry_free(net_dns_entry_t entry) {
     net_dns_manage_t manage = entry->m_manage;
-
-    while(!TAILQ_EMPTY(&entry->m_tasks)) {
-        net_dns_task_free(TAILQ_FIRST(&entry->m_tasks));
-    }
 
     while(!TAILQ_EMPTY(&entry->m_origins)) {
         net_dns_entry_alias_free(TAILQ_FIRST(&entry->m_origins));

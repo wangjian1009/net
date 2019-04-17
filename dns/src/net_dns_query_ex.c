@@ -41,17 +41,14 @@ static int net_dns_query_ex_init_for_dns(
         ? 1 : 0;
     
     if (!have_response || expired) {
-        TAILQ_FOREACH(task, &entry->m_tasks, m_next_for_entry) {
-            if (task->m_query_type == query_ex->m_query_type) break;
-        }
-            
+        task = net_dns_task_find(manage, query_ex->m_address, query_ex->m_query_type); 
         if (task == NULL) {
             if (manage->m_builder_default == NULL) {
                 CPE_ERROR(manage->m_em, "dns-cli: query %s: no task builder!", hostname);
                 goto START_ERROR;
             }
 
-            task = net_dns_task_create_for_entry(manage, entry, query_ex->m_query_type);
+            task = net_dns_task_create(manage, query_ex->m_address, query_ex->m_query_type);
             if (task == NULL) {
                 goto START_ERROR;
             }
@@ -65,6 +62,11 @@ static int net_dns_query_ex_init_for_dns(
             if (net_dns_task_start(task) != 0) {
                 CPE_ERROR(manage->m_em, "dns-cli: query %s: start task fail!", hostname);
                 goto START_ERROR;
+            }
+
+            if (net_dns_task_is_complete(task)) {
+                net_dns_task_free(task);
+                task = NULL;
             }
         }
         else {
@@ -83,8 +85,7 @@ START_ERROR:
         net_dns_entry_free(entry);
     }
 
-    if (is_task_new) {
-        assert(task);
+    if (is_task_new && task) {
         net_dns_task_free(task);
     }
 
@@ -100,12 +101,10 @@ static int net_dns_query_ex_init_for_rdns(
 
     net_dns_entry_item_t item = net_dns_entry_item_find_by_ip(manage, query_ex->m_address);
     if (item != NULL) {
-        TAILQ_INSERT_TAIL(&manage->m_to_notify_querys, query_ex, m_next);
-        net_dns_manage_active_delay_process(manage);
         return 0;
     }
 
-    net_dns_task_t task = net_dns_task_create_for_address(manage, query_ex->m_address, query_ex->m_query_type);
+    net_dns_task_t task = net_dns_task_create(manage, query_ex->m_address, query_ex->m_query_type);
     if (task == NULL) {
         CPE_ERROR(
             manage->m_em, "dns-cli: query %s: create task fail!",
@@ -128,6 +127,11 @@ static int net_dns_query_ex_init_for_rdns(
         return -1;
     }
 
+    if (net_dns_task_is_complete(task)) {
+        net_dns_task_free(task);
+        task = NULL;
+    }
+    
     *r_task = task;
     return 0;
 }

@@ -86,6 +86,20 @@ net_dns_manage_t net_dns_manage_create(
     }
 
     if (cpe_hash_table_init(
+            &manage->m_tasks,
+            alloc,
+            (cpe_hash_fun_t) net_dns_task_hash,
+            (cpe_hash_eq_t) net_dns_task_eq,
+            CPE_HASH_OBJ2ENTRY(net_dns_task, m_hh),
+            -1) != 0)
+    {
+        cpe_hash_table_fini(&manage->m_entries);
+        cpe_hash_table_fini(&manage->m_scopes);
+        mem_free(alloc, manage);
+        return NULL;
+    }
+
+    if (cpe_hash_table_init(
             &manage->m_items_by_ip,
             alloc,
             (cpe_hash_fun_t) net_dns_entry_item_hash_by_ip,
@@ -93,6 +107,7 @@ net_dns_manage_t net_dns_manage_create(
             CPE_HASH_OBJ2ENTRY(net_dns_entry_item, m_hh_for_ip),
             -1) != 0)
     {
+        cpe_hash_table_fini(&manage->m_tasks);
         cpe_hash_table_fini(&manage->m_entries);
         cpe_hash_table_fini(&manage->m_scopes);
         mem_free(alloc, manage);
@@ -102,6 +117,7 @@ net_dns_manage_t net_dns_manage_create(
     manage->m_protocol_dns_ns_cli = net_dns_ns_cli_protocol_create(manage);
     if (manage->m_protocol_dns_ns_cli == NULL) {
         cpe_hash_table_fini(&manage->m_items_by_ip);
+        cpe_hash_table_fini(&manage->m_tasks);
         cpe_hash_table_fini(&manage->m_entries);
         cpe_hash_table_fini(&manage->m_scopes);
         mem_free(alloc, manage);
@@ -112,6 +128,7 @@ net_dns_manage_t net_dns_manage_create(
     if (manage->m_builder_internal == NULL) {
         net_dns_ns_cli_protocol_free(manage->m_protocol_dns_ns_cli);
         cpe_hash_table_fini(&manage->m_items_by_ip);
+        cpe_hash_table_fini(&manage->m_tasks);
         cpe_hash_table_fini(&manage->m_entries);
         cpe_hash_table_fini(&manage->m_scopes);
         mem_free(alloc, manage);
@@ -173,6 +190,7 @@ void net_dns_manage_free(net_dns_manage_t manage) {
         manage->m_protocol_dns_ns_cli = NULL;
     }
     
+    cpe_hash_table_fini(&manage->m_tasks);
     cpe_hash_table_fini(&manage->m_entries);
     cpe_hash_table_fini(&manage->m_scopes);
 

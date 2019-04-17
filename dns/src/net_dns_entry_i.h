@@ -13,7 +13,6 @@ struct net_dns_entry {
         TAILQ_ENTRY(net_dns_entry) m_next;
     };
     uint32_t m_expire_time_s;
-    net_dns_task_list_t m_tasks;
     net_dns_entry_alias_list_t m_origins;
     net_dns_entry_alias_list_t m_cnames;
     net_dns_entry_item_list_t m_items;
