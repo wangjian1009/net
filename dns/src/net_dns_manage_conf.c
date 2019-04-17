@@ -9,9 +9,11 @@
 #include "net_dns_source_ns.h"
 #include "net_dns_manage_i.h"
 
-static int net_dns_manage_load_ns(net_dns_manage_t manage, net_driver_t driver, net_dns_scope_t scope, net_address_t address);
+static int net_dns_manage_load_ns(
+    net_dns_manage_t manage, net_driver_t driver, net_dns_scope_t scope,
+    net_address_t address, uint16_t timeout_s, uint16_t retry_count);
 
-int net_dns_manage_auto_conf(net_dns_manage_t manage, net_driver_t driver, net_dns_scope_t scope, uint16_t timeout_s) {
+int net_dns_manage_auto_conf(net_dns_manage_t manage, net_driver_t driver, net_dns_scope_t scope, uint16_t timeout_s, uint16_t retry_count) {
     struct sockaddr_storage dnssevraddrs[10];
     uint8_t addr_count = CPE_ARRAY_SIZE(dnssevraddrs);
     if (getdnssvraddrs(dnssevraddrs, &addr_count, manage->m_em) != 0) return -1;
@@ -27,7 +29,7 @@ int net_dns_manage_auto_conf(net_dns_manage_t manage, net_driver_t driver, net_d
             continue;
         }
 
-        if (net_dns_manage_load_ns(manage, driver, scope, address) != 0) {
+        if (net_dns_manage_load_ns(manage, driver, scope, address, timeout_s, retry_count) != 0) {
             rv = -1;
             continue;
         }
@@ -36,7 +38,10 @@ int net_dns_manage_auto_conf(net_dns_manage_t manage, net_driver_t driver, net_d
     return rv;
 }
 
-static int net_dns_manage_load_ns(net_dns_manage_t manage, net_driver_t driver, net_dns_scope_t scope, net_address_t address) {
+static int net_dns_manage_load_ns(
+    net_dns_manage_t manage, net_driver_t driver, net_dns_scope_t scope,
+    net_address_t address, uint16_t timeout_s, uint16_t retry_count)
+{
     if (net_dns_source_ns_find(manage, address) != NULL) {
         if (manage->m_debug) {
             CPE_INFO(
@@ -47,7 +52,7 @@ static int net_dns_manage_load_ns(net_dns_manage_t manage, net_driver_t driver, 
         return 0;
     }
     
-    net_dns_source_ns_t ns = net_dns_source_ns_create(manage, driver, address, 1, net_dns_trans_udp, 3000);
+    net_dns_source_ns_t ns = net_dns_source_ns_create(manage, driver, address, 1, net_dns_trans_udp, timeout_s, retry_count);
     if (ns == NULL) {
         CPE_ERROR(manage->m_em, "dns-cli: load ns: create ns fail");
         net_address_free(address);

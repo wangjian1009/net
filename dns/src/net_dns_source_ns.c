@@ -33,7 +33,7 @@ net_dns_source_ns_t
 net_dns_source_ns_create(
     net_dns_manage_t manage, net_driver_t driver,
     net_address_t addr, uint8_t is_own,
-    net_dns_ns_trans_type_t trans, uint16_t timeout_ms)
+    net_dns_ns_trans_type_t trans, uint16_t timeout_ms, uint16_t retry_count)
 {
     net_dns_source_t source =
         net_dns_source_create(
@@ -54,6 +54,7 @@ net_dns_source_ns_create(
     ns->m_driver = driver;
     ns->m_trans_type = trans;
     ns->m_timeout_ms = timeout_ms;
+    ns->m_retry_count = retry_count;
     
     if (is_own) {
         ns->m_address = addr;
@@ -137,7 +138,7 @@ static int net_dns_source_ns_init(net_dns_source_t source) {
     ns->m_trans_type = net_dns_trans_udp;
     ns->m_tcp_connect = NULL;
     ns->m_tcp_connect_ctx = NULL;
-    ns->m_retry_count = 0;
+    ns->m_retry_count = 1;
     ns->m_timeout_ms = 2000;
     ns->m_max_transaction = 0;
     
