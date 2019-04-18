@@ -74,9 +74,9 @@ void net_dns_task_free(net_dns_task_t task) {
         net_dns_task_step_free(TAILQ_FIRST(&task->m_steps));
     }
 
-    /* while(!TAILQ_EMPTY(&task->m_querys)) { */
-    /*     net_dns_query_ex_set_task(TAILQ_FIRST(&task->m_querys), NULL); */
-    /* } */
+    while(!TAILQ_EMPTY(&task->m_querys)) {
+        net_dns_query_ex_set_task(TAILQ_FIRST(&task->m_querys), NULL);
+    }
 
     cpe_hash_table_remove_by_ins(&manage->m_tasks, task);
 
