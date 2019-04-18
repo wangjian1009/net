@@ -313,7 +313,7 @@ int net_dns_svr_query_build_response(net_dns_svr_query_t query, void * data, uin
         p = net_dns_svr_query_append_address(svr, p, data, &left_capacity, entry->m_address);
         if (p == NULL) return -1;
         
-        uint16_t qtype = net_dns_svr_query_entry_type_to_atype(entry->m_type);
+        uint16_t qtype = net_dns_svr_query_entry_type_to_qtype(entry->m_type);
         net_dns_svr_query_build_response_check_capacity(2);
         CPE_COPY_HTON16(p, &qtype); p+=2;
     
@@ -331,7 +331,7 @@ int net_dns_svr_query_build_response(net_dns_svr_query_t query, void * data, uin
             net_dns_svr_query_build_response_check_capacity(2);
             CPE_COPY_HTON16(p, &name_offset); p+=2;
 
-            uint16_t atype = net_dns_svr_query_entry_type_to_atype(entry->m_type);
+            uint16_t atype = net_dns_svr_query_entry_type_to_qtype(entry->m_type);
             net_dns_svr_query_build_response_check_capacity(2);
             CPE_COPY_HTON16(p, &atype); p+=2;
 

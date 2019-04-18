@@ -187,7 +187,7 @@ uint8_t net_dns_svr_query_entry_have_address(net_dns_svr_query_entry_t query_ent
     return 0;
 }
 
-uint16_t net_dns_svr_query_entry_type_to_atype(net_dns_svr_query_entry_type_t entry_type) {
+uint16_t net_dns_svr_query_entry_type_to_qtype(net_dns_svr_query_entry_type_t entry_type) {
     switch(entry_type) {
     case net_dns_svr_query_entry_type_ipv4:
         return 1;
