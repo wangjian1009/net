@@ -430,13 +430,13 @@ static void net_dns_svr_req_print(net_dns_svr_t svr, write_stream_t ws, char con
     uint16_t flags;
     CPE_COPY_NTOH16(&flags, p); p+=2;
     stream_printf(ws, ", flags=%#x", flags);
-    stream_printf(ws, ", qr=%u", flags >> 15);
+    if (flags >> 15) stream_printf(ws, ", qr");
     stream_printf(ws, ", opcode=%u", (flags >> 11) & 15);
-    stream_printf(ws, ", aa=%u", (flags >> 10) & 1);
-    stream_printf(ws, ", tc=%u", (flags >> 9) & 1);
-    stream_printf(ws, ", rd=%u", (flags >> 8) & 1);
-    stream_printf(ws, ", ra=%u", (flags >> 7) & 1);
-    stream_printf(ws, ", z=%u", (flags >> 4) & 7);
+    if ((flags >> 10) & 1) stream_printf(ws, ", aa");
+    if ((flags >> 9) & 1) stream_printf(ws, ", tc");
+    if ((flags >> 8) & 1) stream_printf(ws, ", rd");
+    if ((flags >> 7) & 1) stream_printf(ws, ", ra");
+    //stream_printf(ws, ", z=%u", (flags >> 4) & 7);
     stream_printf(ws, ", rcode=%u", flags & 15); 
 
     uint16_t qdcount;
