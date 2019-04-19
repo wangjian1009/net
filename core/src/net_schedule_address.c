@@ -69,20 +69,36 @@ uint8_t net_schedule_is_domain_address_arpa(net_schedule_t schedule, const char 
         int i;
     
         for(i = 0; i < CPE_ARRAY_SIZE(values); i++) {
+            char c;
             const char * p2 = cpe_str_rchr_range(str_address, p, '.');
             if (p2 == NULL) {
-                CPE_ERROR(schedule->m_em, "xxxxxx: 1");
-                return 0;
+                if (i + 1 == CPE_ARRAY_SIZE(values)) {
+                    if (p - str_address != 1) {
+                        CPE_ERROR(schedule->m_em, "xxxxxx: 4");
+                        return 0;
+                    }
+                    else {
+                        c = p[0];
+                    }
+                }
+                else {
+                    CPE_ERROR(schedule->m_em, "xxxxxx: 1");
+                    return 0;
+                }
             }
-            if (p - p2 != 2) {
-                CPE_ERROR(schedule->m_em, "xxxxxx: 2");
-                return 0;
+            else {
+                if (p - p2 != 2) {
+                    CPE_ERROR(schedule->m_em, "xxxxxx: 2");
+                    return 0;
+                }
+                else {
+                    c = p2[1];
+                    p = p2;
+                }
             }
 
-            p = p2;
             int set_pos = CPE_ARRAY_SIZE(values) - i - 1;
             assert(set_pos >= 0 && set_pos < CPE_ARRAY_SIZE(values));
-            char c = p2[1];
             if (c >= '0' && c <= '9') {
                 values[set_pos] = (uint8_t)(c - '0');
             }
