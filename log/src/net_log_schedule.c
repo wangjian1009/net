@@ -193,7 +193,7 @@ void net_log_schedule_free(net_log_schedule_t schedule) {
     }
 
     /**/
-    if (schedule->m_dump_timer == NULL) {
+    if (schedule->m_dump_timer) {
         net_timer_free(schedule->m_dump_timer);
         schedule->m_dump_timer = NULL;
     }
