@@ -103,8 +103,6 @@ void net_log_request_manage_process_cmd_send(
         cache = net_log_request_cache_create(mgr, mgr->m_cache_max_id + 1, net_log_request_cache_building);
         if (cache == NULL) {
             CPE_ERROR(schedule->m_em, "log: %s: manage: send: create cache fail", mgr->m_name);
-            net_log_category_add_fail_statistics(send_param->category, send_param->log_count);
-            net_log_request_param_free(send_param);
             goto SEND_FAIL;
         }
         mgr->m_cache_max_id++;
@@ -119,6 +117,7 @@ void net_log_request_manage_process_cmd_send(
         net_log_request_cache_close(cache);
     }
 
+    net_log_request_param_free(send_param);
     return;
     
 SEND_FAIL:
