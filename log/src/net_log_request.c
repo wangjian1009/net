@@ -518,6 +518,7 @@ net_log_request_param_create(
     net_log_category_t category, net_log_lz4_buf_t log_buf, uint32_t log_count, uint32_t builder_time)
 {
     net_log_request_param_t param = (net_log_request_param_t)malloc(sizeof(struct net_log_request_param));
+    assert(log_buf);
     param->category = category;
     param->log_buf = log_buf;
     param->log_count = log_count;

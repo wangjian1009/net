@@ -200,6 +200,7 @@ net_log_category_build_request(net_log_category_t category, net_log_builder_t bu
         CPE_ERROR(
             schedule->m_em, "log: category [%d]%s: build send params: create fail!",
             category->m_id, category->m_name);
+        free_log_lz4_buf(lz4_buf);
         return NULL;
     }
 
