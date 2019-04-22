@@ -240,7 +240,7 @@ int net_log_request_cache_load(net_log_request_cache_t cache) {
         if (sz == 0) {
             CPE_ERROR(schedule->m_em, "log: %s: cache %d: load: read body fail, no data", mgr->m_name, cache->m_id);
             rv = -1;
-            free_log_lz4_buf(buf);
+            free_lz4_log_buf(buf);
             break;
         }
         else if (sz < 0) {
@@ -248,7 +248,7 @@ int net_log_request_cache_load(net_log_request_cache_t cache) {
                 schedule->m_em, "log: %s: cache %d: load: read data fail, error=%d(%s)",
                 mgr->m_name, cache->m_id, errno, strerror(errno));
             rv = -1;
-            free_log_lz4_buf(buf);
+            free_lz4_log_buf(buf);
             break;
         }
         else if (sz != buf->length) {
@@ -256,7 +256,7 @@ int net_log_request_cache_load(net_log_request_cache_t cache) {
                 schedule->m_em, "log: %s: cache %d: load: read data not enough data, readed=%d, body-size=%d",
                 mgr->m_name, cache->m_id, (int)sz, buf->length);
             rv = -1;
-            free_log_lz4_buf(buf);
+            free_lz4_log_buf(buf);
             break;
         }
 
@@ -264,7 +264,7 @@ int net_log_request_cache_load(net_log_request_cache_t cache) {
         if (param == NULL) {
             CPE_ERROR(schedule->m_em, "log: %s: cache %d: load: create param fail", mgr->m_name, cache->m_id);
             rv = -1;
-            free_log_lz4_buf(buf);
+            free_lz4_log_buf(buf);
             break;
         }
 

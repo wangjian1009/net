@@ -803,11 +803,18 @@ static void net_log_request_rebuild_time(
     net_log_lz4_buf_t lz4_buf = request->m_send_param->log_buf;
     
     char * buf = (char *)malloc(lz4_buf->raw_length);
+    if (buf == NULL) {
+        CPE_ERROR(
+            schedule->m_em, "log: %s: category [%d]%s: request %d: alloc buf fail",
+            mgr->m_name, category->m_id, category->m_name, request->m_id);
+        return;
+    }
+
     if (LZ4_decompress_safe((const char* )lz4_buf->data, buf, lz4_buf->length, lz4_buf->raw_length) <= 0) {
-        free(buf);
         CPE_ERROR(
             schedule->m_em, "log: %s: category [%d]%s: request %d: LZ4_decompress_safe error",
             mgr->m_name, category->m_id, category->m_name, request->m_id);
+        free(buf);
         return;
     }
 
@@ -826,6 +833,16 @@ static void net_log_request_rebuild_time(
     }
 
     net_log_lz4_buf_t new_lz4_buf = (net_log_lz4_buf_t)malloc(sizeof(struct net_log_lz4_buf) + compressed_size);
+    if (new_lz4_buf == NULL) {
+        CPE_ERROR(
+            schedule->m_em, "log: %s: category [%d]%s: request %d: alloc new buf fail, sz=%d",
+            mgr->m_name, category->m_id, category->m_name, request->m_id,
+            (int)(sizeof(struct net_log_lz4_buf) + compressed_size));
+        free(buf);
+        free(compress_data);
+        return ;
+    }
+
     new_lz4_buf->length = compressed_size;
     new_lz4_buf->raw_length = lz4_buf->raw_length;
     memcpy(new_lz4_buf->data, compress_data, compressed_size);
