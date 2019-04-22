@@ -425,6 +425,23 @@ net_address_create_domain_with_len(
     return (net_address_t)address_domain;
 }
 
+net_address_t net_address_create_local(net_schedule_t schedule, const char * path) {
+    size_t path_len = strlen(path);
+
+    struct net_address_local * address_local = mem_alloc(schedule->m_alloc, sizeof(struct net_address_local) + path_len + 1);
+    if (address_local == NULL) {
+        CPE_ERROR(schedule->m_em, "net_address_create_local: alloc fail, path-len=%d!", (int)path_len);
+        return NULL;
+    }
+
+    address_local->m_schedule = schedule;
+    address_local->m_type = net_address_local;
+    memcpy(address_local->m_path, path, path_len);
+    address_local->m_path[path_len] = 0;
+    
+    return (net_address_t)address_local;
+}
+
 net_address_t net_address_copy(net_schedule_t schedule, net_address_t from) {
     if (from->m_type == net_address_domain) {
         struct net_address_domain * from_domain = (struct net_address_domain *)from;
