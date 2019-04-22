@@ -7,6 +7,7 @@
 #include "net_log_request_cache.h"
 #include "net_log_request.h"
 #include "net_log_category_i.h"
+#include "net_log_builder.h"
 
 net_log_request_cache_t
 net_log_request_cache_create(net_log_request_manage_t mgr, uint32_t id, net_log_request_cache_state_t state) {
@@ -214,16 +215,6 @@ int net_log_request_cache_load(net_log_request_cache_t cache) {
             break;
         }
 
-        if (head.category_id > schedule->m_category_count
-            || schedule->m_categories[head.category_id] == NULL)
-        {
-            CPE_ERROR(
-                schedule->m_em, "log: %s: cache %d: load: category %d not exist, ignore",
-                mgr->m_name, cache->m_id, head.category_id);
-            continue;
-        }
-        net_log_category_t category = schedule->m_categories[head.category_id];
-
         net_log_lz4_buf_t buf = malloc(sizeof(struct net_log_lz4_buf) + head.compressed_size);
         if (buf == NULL) {
             CPE_ERROR(
@@ -260,6 +251,15 @@ int net_log_request_cache_load(net_log_request_cache_t cache) {
             break;
         }
 
+        if (head.category_id > schedule->m_category_count || schedule->m_categories[head.category_id] == NULL) {
+            CPE_ERROR(
+                schedule->m_em, "log: %s: cache %d: load: category %d not exist, ignore",
+                mgr->m_name, cache->m_id, head.category_id);
+            free_lz4_log_buf(buf);
+            continue;
+        }
+
+        net_log_category_t category = schedule->m_categories[head.category_id];
         net_log_request_param_t param = net_log_request_param_create(category, buf, head.log_count, head.builder_time);
         if (param == NULL) {
             CPE_ERROR(schedule->m_em, "log: %s: cache %d: load: create param fail", mgr->m_name, cache->m_id);
