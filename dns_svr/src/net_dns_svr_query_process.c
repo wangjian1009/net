@@ -125,6 +125,9 @@ static uint32_t net_dns_svr_query_calc_entry_query_size(net_dns_svr_query_entry_
     case net_address_domain:
         sz += (uint32_t)strlen(net_address_data(query_entry->m_address));
         break;
+    case net_address_local:
+        assert(0);
+        break;
     }
     
     return sz
@@ -157,6 +160,9 @@ static uint32_t net_dns_svr_query_calc_entry_answer_size(net_dns_svr_query_entry
             break;
         case net_address_domain:
             one_sz += strlen((const char *)net_address_data(address)) + 2;
+            break;
+        case net_address_local:
+            assert(0);
             break;
         }
 
@@ -254,6 +260,9 @@ static char * net_dns_svr_query_append_address(net_dns_svr_t svr, char * p, void
         domain_name = buf;
         break;
     }
+    case net_address_local:
+        assert(0);
+        break;
     }
 
     return net_dns_svr_query_append_name(svr, p, data, left_capacity, domain_name);
@@ -377,6 +386,9 @@ int net_dns_svr_query_build_response(net_dns_svr_query_t query, void * data, uin
                 CPE_COPY_HTON16(rdlength_buf, &rdlength);
                 break;
             }
+            case net_address_local:
+                assert(0);
+                return -1;
             }
         }
     }

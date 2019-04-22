@@ -286,6 +286,7 @@ static char * net_dns_source_ns_ctx_append_query_rdns(char * p, net_dns_task_t t
         return net_dns_source_ns_ctx_append_query_one(p, task, buf, 12);
     }
     case net_address_domain:
+    case net_address_local:
         assert(0);
         return NULL;
     }

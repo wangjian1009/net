@@ -36,6 +36,7 @@ typedef enum net_address_type {
     net_address_ipv4,
     net_address_ipv6,
     net_address_domain,
+    net_address_local,
 } net_address_type_t;
 
 typedef enum net_endpoint_buf_type {

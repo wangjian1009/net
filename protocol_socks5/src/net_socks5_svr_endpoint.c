@@ -315,6 +315,12 @@ static int net_socks5_svr_send_socks5_connect_response(net_endpoint_t endpoint, 
             response->atyp = SOCKS5_ATYPE_DOMAIN;
             break;
         }
+        case net_address_local: {
+            CPE_ERROR(
+                net_schedule_em(schedule), "ss: %s: send response: not support address type local!",
+                net_endpoint_dump(net_schedule_tmp_buffer(schedule), endpoint));
+            return -1;
+        }
         }
 
         uint16_t port = htons(net_address_port(address));
@@ -368,10 +374,12 @@ static int net_socks5_svr_send_socks4_connect_response(net_endpoint_t endpoint, 
             net_endpoint_buf_release(endpoint);
             return -1;
         case net_address_domain:
+        case net_address_local:
             CPE_ERROR(
                 net_schedule_em(schedule),
-                "ss: %s: send socks4 connect response: not support domain address!",
-                net_endpoint_dump(net_schedule_tmp_buffer(schedule), endpoint));
+                "ss: %s: send socks4 connect response: not support %s address!",
+                net_endpoint_dump(net_schedule_tmp_buffer(schedule), endpoint),
+                net_address_type_str(net_address_type(address)));
             net_endpoint_buf_release(endpoint);
             return -1;
         }

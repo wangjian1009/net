@@ -28,6 +28,11 @@ struct net_address_domain {
     char m_url[0];
 };
 
+struct net_address_local {
+    NET_ADDRESS_HEAD
+    char m_path[0];
+};
+
 struct net_address_in_cache {
     net_schedule_t m_schedule;
     TAILQ_ENTRY(net_address_in_cache) m_next;

@@ -56,6 +56,8 @@ uint8_t net_address_matcher_match(net_address_matcher_t matcher, net_address_t a
         return net_ipset_contains_ipv6(matcher->m_ipset_ipv6, (net_address_data_ipv6_t)net_address_data(address));
     case net_address_domain:
         return net_address_rule_lookup(matcher, net_address_data(address)) ? 1 : 0;
+    case net_address_local:
+        return 0;
     }
 }
 
@@ -116,6 +118,11 @@ int net_address_matcher_add(net_address_matcher_t matcher, net_address_t address
         }
         return 0;
     }
+    case net_address_local:
+        CPE_ERROR(
+            matcher->m_schedule->m_em,
+            "net_address_matcher_add: not support local address!");
+        return -1;
     }
 }
 
@@ -134,9 +141,11 @@ int net_address_matcher_add_network(net_address_matcher_t matcher, net_address_t
             cidr)
             == 0 ? 0 : -1;
     case net_address_domain:
+    case net_address_local:
         CPE_ERROR(
             matcher->m_schedule->m_em,
-            "net_address_matcher_add_network: not support domain!");
+            "net_address_matcher_add_network: not support %s!",
+            net_address_type_str(net_address_type(address)));
         return -1;
     }
 }

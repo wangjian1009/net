@@ -1,6 +1,7 @@
 #ifdef __APPLE__
 #include <netdb.h>
 #endif
+#include "sys/un.h"
 #include "assert.h"
 #include "cpe/pal/pal_socket.h"
 #include "cpe/pal/pal_string.h"
@@ -87,6 +88,9 @@ net_address_t net_address_create_any(net_schedule_t schedule, net_address_type_t
         return net_address_create_ipv6_any(schedule, port);
     case net_address_domain:
         CPE_ERROR(schedule->m_em, "net_address_create_any: not support address type domain!");
+        return NULL;
+    case net_address_local:
+        CPE_ERROR(schedule->m_em, "net_address_create_any: not support address type local!");
         return NULL;
     }
 }
@@ -368,6 +372,29 @@ TO_SOCKADDR_TRY_AGAIN:
         
         return 0;
     }
+    case net_address_local: {
+        if (*addr_len < sizeof(struct sockaddr_un)) {
+            CPE_ERROR(
+                address->m_schedule->m_em, "net_address_to_sockaddr: add len too small, expect %d, but %d!",
+                (int)sizeof(struct sockaddr_un), (int)*addr_len);
+            return -1;
+        }
+
+        struct sockaddr_un *s = (struct sockaddr_un *)addr;
+        bzero(s, sizeof(*s));
+        s->sun_family = AF_LOCAL;
+        
+        const char * path = (const char *)net_address_data(address);
+        if (strlen(path) + 1 >= sizeof(s->sun_path)) {
+            CPE_ERROR(
+                address->m_schedule->m_em, "net_address_to_sockaddr: add len too small, expect %d, but %d!",
+                (int)sizeof(struct sockaddr_un), (int)*addr_len);
+            return -1;
+        }
+
+        cpe_str_dup(s->sun_path, sizeof(s->sun_path), path);
+        return 0;
+    }
     }
 }
 
@@ -484,6 +511,7 @@ uint8_t net_address_is_any(net_address_t address) {
         ipv4v6 = (struct net_address_ipv4v6 *)address;
         return (ipv4v6->m_ipv6.u64[0] == 0 && ipv4v6->m_ipv6.u64[1] == 0) ? 1 : 0;
     case net_address_domain:
+    case net_address_local:
         return 0;
     }
 }
@@ -496,6 +524,8 @@ void const * net_address_data(net_address_t address) {
         return &((struct net_address_ipv4v6 *)address)->m_ipv6;
     case net_address_domain:
         return ((struct net_address_domain *)address)->m_url;
+    case net_address_local:
+        return ((struct net_address_local *)address)->m_path;
     }
 }
 
@@ -515,6 +545,7 @@ int net_address_set_resolved(net_address_t address, net_address_t resolved, uint
     switch(address->m_type) {
     case net_address_ipv4:
     case net_address_ipv6:
+    case net_address_local:
         return -1;
     case net_address_domain: {
         if (resolved) {
@@ -555,6 +586,7 @@ net_address_t net_address_resolved(net_address_t address) {
     switch(address->m_type) {
     case net_address_ipv4:
     case net_address_ipv6:
+    case net_address_local:
         return address;
     case net_address_domain:
         return ((struct net_address_domain *)address)->m_resolved;
@@ -565,6 +597,7 @@ uint8_t net_address_domain_is_valid(net_address_t address) {
     switch(address->m_type) {
     case net_address_ipv4:
     case net_address_ipv6:
+    case net_address_local:
         return 0;
     case net_address_domain:
         return net_schedule_is_domain_address_valid(address->m_schedule, ((struct net_address_domain *)address)->m_url);
@@ -610,6 +643,11 @@ void net_address_print(write_stream_t ws, net_address_t address) {
         }
         break;
     }
+    case net_address_local: {
+        struct net_address_local * address_local = (struct net_address_local *)address;
+        stream_printf(ws, "%s", address_local->m_path);
+        break;
+    }
     }
 }
 
@@ -645,6 +683,8 @@ const char * net_address_host(mem_buffer_t buffer, net_address_t address) {
         return buf;
     case net_address_domain:
         return ((struct net_address_domain *)address)->m_url;
+    case net_address_local:
+        return ((struct net_address_local *)address)->m_path;
     }
 }
 
@@ -660,6 +700,8 @@ int net_address_cmp(net_address_t l, net_address_t r) {
     switch(l->m_type) {
     case net_address_domain:
         return strcmp(((struct net_address_domain *)l)->m_url, ((struct net_address_domain *)r)->m_url);
+    case net_address_local:
+        return strcmp(((struct net_address_local *)l)->m_path, ((struct net_address_local *)r)->m_path);
     case net_address_ipv4:
         return memcmp(
             &((struct net_address_ipv4v6 *)l)->m_ipv4,
@@ -681,6 +723,8 @@ int net_address_cmp_without_port(net_address_t l, net_address_t r) {
     switch(l->m_type) {
     case net_address_domain:
         return strcmp(((struct net_address_domain *)l)->m_url, ((struct net_address_domain *)r)->m_url);
+    case net_address_local:
+        return strcmp(((struct net_address_local *)l)->m_path, ((struct net_address_local *)r)->m_path);
     case net_address_ipv4:
         return memcmp(
             &((struct net_address_ipv4v6 *)l)->m_ipv4,
@@ -709,6 +753,9 @@ uint32_t net_address_hash(net_address_t address) {
     case net_address_domain:
         r = cpe_hash_str((const char *)net_address_data(address), strlen((const char *)net_address_data(address)));
         break;
+    case net_address_local:
+        r = cpe_hash_str((const char *)net_address_data(address), strlen((const char *)net_address_data(address)));
+        break;
     }
         
     return r;
@@ -726,6 +773,9 @@ uint32_t net_address_hash_without_port(net_address_t address) {
         r = 0;
         break;
     case net_address_domain:
+        r = cpe_hash_str((const char *)net_address_data(address), strlen((const char *)net_address_data(address)));
+        break;
+    case net_address_local:
         r = cpe_hash_str((const char *)net_address_data(address), strlen((const char *)net_address_data(address)));
         break;
     }
@@ -749,6 +799,8 @@ const char * net_address_type_str(net_address_type_t at) {
         return "ipv6";
     case net_address_domain:
         return "domain";
+    case net_address_local:
+        return "local";
     }
 }
 
@@ -811,6 +863,11 @@ net_address_t net_address_rand_same_network(net_address_t base_address, net_addr
             net_address_type_str(base_address->m_type));
         return NULL;
     case net_address_domain:
+        CPE_ERROR(
+            schedule->m_em, "net_address_rand_same_network: address type %s not support!",
+            net_address_type_str(base_address->m_type));
+        return NULL;
+    case net_address_local:
         CPE_ERROR(
             schedule->m_em, "net_address_rand_same_network: address type %s not support!",
             net_address_type_str(base_address->m_type));

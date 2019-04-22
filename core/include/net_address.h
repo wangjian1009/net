@@ -55,6 +55,8 @@ net_address_t net_address_create_domain(
 net_address_t net_address_create_domain_with_len(
     net_schedule_t schedule, const void * url, uint16_t url_len, uint16_t port, net_address_t resolved);
 
+net_address_t net_address_create_local(net_schedule_t schedule, const char * path);
+
 net_address_t net_address_copy(net_schedule_t schedule, net_address_t from);
 
 /*common*/

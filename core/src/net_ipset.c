@@ -48,6 +48,7 @@ uint8_t net_ipset_ip_add(net_ipset_t set, net_address_t address) {
     case net_address_ipv6:
         return net_ipset_ipv6_add(set, (net_address_data_ipv6_t)(net_address_data(address)));
     case net_address_domain:
+    case net_address_local:
         return 0;
     }
 }
@@ -59,6 +60,7 @@ uint8_t net_ipset_ip_add_network(net_ipset_t set, net_address_t address, uint8_t
     case net_address_ipv6:
         return net_ipset_ipv6_add_network(set, (net_address_data_ipv6_t)(net_address_data(address)), cidr_prefix);
     case net_address_domain:
+    case net_address_local:
         return 0;
     }
 }
@@ -70,6 +72,7 @@ uint8_t net_ipset_ip_remove(net_ipset_t set, net_address_t address) {
     case net_address_ipv6:
         return net_ipset_ipv6_remove(set, (net_address_data_ipv6_t)(net_address_data(address)));
     case net_address_domain:
+    case net_address_local:
         return 0;
     }
 }
@@ -81,6 +84,7 @@ uint8_t net_ipset_ip_remove_network(net_ipset_t set, net_address_t address, uint
     case net_address_ipv6:
         return net_ipset_ipv6_remove_network(set, (net_address_data_ipv6_t)net_address_data(address), cidr_prefix);
     case net_address_domain:
+    case net_address_local:
         return 0;
     }
 }
@@ -92,6 +96,7 @@ uint8_t net_ipset_contains_ip(net_ipset_t set, net_address_t address) {
     case net_address_ipv6:
         return net_ipset_contains_ipv6(set, (net_address_data_ipv6_t)net_address_data(address));
     case net_address_domain:
+    case net_address_local:
         return 0;
     }
 }
