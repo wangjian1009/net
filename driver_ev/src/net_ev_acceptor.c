@@ -1,5 +1,6 @@
 #include "cpe/pal/pal_socket.h"
 #include "cpe/pal/pal_string.h"
+#include "cpe/utils/file.h"
 #include "net_endpoint.h"
 #include "net_acceptor.h"
 #include "net_driver.h"
@@ -22,8 +23,11 @@ int net_ev_acceptor_init(net_acceptor_t base_acceptor) {
         CPE_ERROR(em, "ev: acceptor: add address fail!");
         return -1;
     }
-    
-    acceptor->m_fd = cpe_sock_open(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+    acceptor->m_fd =
+        net_address_type(address) == net_address_local
+        ? cpe_sock_open(AF_LOCAL, SOCK_STREAM, 0)
+        : cpe_sock_open(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (acceptor->m_fd == -1) {
         CPE_ERROR(
             em, "ev: acceptor: socket call fail, errno=%d (%s)!",
@@ -31,12 +35,26 @@ int net_ev_acceptor_init(net_acceptor_t base_acceptor) {
         return -1;
     }
 
-    if (cpe_sock_set_reuseaddr(acceptor->m_fd, 1) != 0) {
-        CPE_ERROR(
-            em, "ev: acceptor: set sock reuseaddr fail, errno=%d (%s)!",
-            cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-        cpe_sock_close(acceptor->m_fd);
-        return -1;
+    if (net_address_type(address) == net_address_local) {
+        const char * path = (const char *)net_address_data(address);
+        if (file_rm(path, NULL) != 0) {
+            if (errno != ENOENT) {
+                CPE_ERROR(
+                    driver->m_em, "dq: acceptor: rm '%s' fail, errno=%d (%s)!",
+                    path, cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+                cpe_sock_close(acceptor->m_fd);
+                return -1;
+            }
+        }
+    }
+    else {
+        if (cpe_sock_set_reuseaddr(acceptor->m_fd, 1) != 0) {
+            CPE_ERROR(
+                em, "ev: acceptor: set sock reuseaddr fail, errno=%d (%s)!",
+                cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+            cpe_sock_close(acceptor->m_fd);
+            return -1;
+        }
     }
 
     if(cpe_bind(acceptor->m_fd, (struct sockaddr *)&addr, addr_len) != 0) {

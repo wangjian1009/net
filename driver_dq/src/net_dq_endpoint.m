@@ -767,9 +767,10 @@ static int net_dq_endpoint_start_connect(
         domain = AF_INET6;
         break;
     case net_address_domain:
+    case net_address_local:
         CPE_ERROR(
-            driver->m_em, "dq: %s: connect not support domain address!",
-            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint));
+            driver->m_em, "dq: %s: connect not support %s",
+            net_endpoint_dump(net_dq_driver_tmp_buffer(driver), base_endpoint), net_address_type_str(net_address_type(remote_addr)));
         return -1;
     }
 

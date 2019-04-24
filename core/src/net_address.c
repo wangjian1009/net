@@ -391,8 +391,9 @@ TO_SOCKADDR_TRY_AGAIN:
                 (int)sizeof(struct sockaddr_un), (int)*addr_len);
             return -1;
         }
-
         cpe_str_dup(s->sun_path, sizeof(s->sun_path), path);
+
+        *addr_len = (socklen_t)SUN_LEN(s);
         return 0;
     }
     }
@@ -428,6 +429,13 @@ net_address_create_domain_with_len(
 net_address_t net_address_create_local(net_schedule_t schedule, const char * path) {
     size_t path_len = strlen(path);
 
+    if (path_len + 1 >= CPE_ENTRY_SIZE(sockaddr_un, sun_path)) {
+        CPE_ERROR(
+            schedule->m_em, "net_address_create_local: path len overflow, limit=%d, len=%d, path=%s!",
+            (int)(CPE_ENTRY_SIZE(sockaddr_un, sun_path)), (int)path_len, path);
+        return NULL;
+    }
+    
     struct net_address_local * address_local = mem_alloc(schedule->m_alloc, sizeof(struct net_address_local) + path_len + 1);
     if (address_local == NULL) {
         CPE_ERROR(schedule->m_em, "net_address_create_local: alloc fail, path-len=%d!", (int)path_len);
@@ -459,6 +467,10 @@ net_address_t net_address_copy(net_schedule_t schedule, net_address_t from) {
         }
 
         return dup;
+    }
+    else if (from->m_type == net_address_local) {
+        struct net_address_local * from_local = (struct net_address_local *)from;
+        return net_address_create_local(schedule, from_local->m_path);
     }
     else {
         struct net_address_ipv4v6 * from_ipv4v6 = (struct net_address_ipv4v6 *)from;
