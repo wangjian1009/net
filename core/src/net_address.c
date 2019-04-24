@@ -393,7 +393,7 @@ TO_SOCKADDR_TRY_AGAIN:
         }
         cpe_str_dup(s->sun_path, sizeof(s->sun_path), path);
 
-        *addr_len = (socklen_t)SUN_LEN(s);
+        *addr_len = (socklen_t)(strlen(s->sun_path) + 1 + sizeof(uint16_t));
         return 0;
     }
     }
