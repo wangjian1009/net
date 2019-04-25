@@ -313,6 +313,17 @@ net_address_create_from_sockaddr(net_schedule_t schedule, struct sockaddr * addr
         memcpy(&addr_ipv4v6->m_ipv6, &s->sin6_addr, sizeof(addr_ipv4v6->m_ipv6));
         return (net_address_t)addr_ipv4v6;
     }
+    else if (addr->sa_family == AF_LOCAL) {
+        if (addr_len < sizeof(uint16_t)) {
+            CPE_ERROR(
+                schedule->m_em, "net_address_from_sockaddr: add len too small, at least %d, but %d!",
+                (int)sizeof(uint16_t), (int)addr_len);
+            return NULL;
+        }
+
+        struct sockaddr_un *s = (struct sockaddr_un *)addr;
+        return net_address_create_local(schedule, s->sun_path);
+    }
     else { 
         CPE_ERROR(schedule->m_em, "net_address_from_sockaddr: not support family %d!", addr->sa_family);
         return NULL;
