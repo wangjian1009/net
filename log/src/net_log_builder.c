@@ -325,6 +325,11 @@ net_log_lz4_buf_t serialize_to_proto_buf_with_malloc_lz4(net_log_builder_t bder)
     pLogbuf->raw_length = length;
     memcpy(pLogbuf->data, compress_data, compressed_size);
     free(compress_data);
+
+    CPE_ERROR(
+        bder->m_category->m_schedule->m_em,
+        "log: xxxx: alloc buf %p, sz=%d(%d)", pLogbuf, (int)pLogbuf->length, (int)pLogbuf->raw_length);
+        
     return pLogbuf;
 }
 

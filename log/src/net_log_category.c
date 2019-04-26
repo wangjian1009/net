@@ -187,6 +187,7 @@ net_log_category_build_request(net_log_category_t category, net_log_builder_t bu
         lz4_buf = serialize_to_proto_buf_with_malloc_lz4(builder);
     }
     else {
+        assert(0);
         lz4_buf = serialize_to_proto_buf_with_malloc_no_lz4(builder);
     }
 
