@@ -221,9 +221,6 @@ static int net_log_request_send(net_log_request_t request) {
     net_log_request_param_t send_param = request->m_send_param;
     net_log_category_t category = request->m_category;
     net_log_schedule_t schedule = category->m_schedule;
-    net_log_lz4_buf_t buffer = send_param->log_buf;
-    
-    assert(buffer);
 
     time_t nowTime = (uint32_t)time(NULL);
     if (nowTime - send_param->builder_time > 600
@@ -232,6 +229,9 @@ static int net_log_request_send(net_log_request_t request) {
     {
         net_log_request_rebuild_time(schedule, category, request, (uint32_t)nowTime);
     }
+
+    net_log_lz4_buf_t buffer = send_param->log_buf;
+    assert(buffer);
     
     if (request->m_handler) {
         curl_easy_cleanup(request->m_handler);
