@@ -849,8 +849,6 @@ static void net_log_request_rebuild_time(
     free(buf);
     free(compress_data);
 
-    CPE_ERROR(schedule->m_em, "log: xxxx: rebuild buf %p, sz=%d(%d)", new_lz4_buf, (int)new_lz4_buf->length, (int)new_lz4_buf->raw_length);
-
     free_lz4_log_buf(request->m_send_param->log_buf);
     request->m_send_param->log_buf = new_lz4_buf;
     request->m_send_param->builder_time = nowTime;

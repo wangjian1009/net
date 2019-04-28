@@ -227,8 +227,6 @@ int net_log_request_cache_load(net_log_request_cache_t cache) {
         buf->length = head.compressed_size;
         buf->raw_length = head.raw_size;
 
-        CPE_ERROR(schedule->m_em, "log: xxxx: load buf %p, sz=%d(%d)", buf, (int)buf->length, (int)buf->raw_length);
-        
         sz = vfs_file_read(fp, buf->data, buf->length);
         if (sz == 0) {
             CPE_ERROR(schedule->m_em, "log: %s: cache %d: load: read body fail, no data", mgr->m_name, cache->m_id);
