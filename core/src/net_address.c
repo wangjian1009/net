@@ -440,12 +440,12 @@ net_address_create_domain_with_len(
 net_address_t net_address_create_local(net_schedule_t schedule, const char * path) {
     size_t path_len = strlen(path);
 
-    if (path_len + 1 >= CPE_ENTRY_SIZE(sockaddr_un, sun_path)) {
+    /*if (path_len + 1 >= CPE_ENTRY_SIZE(sockaddr_un, sun_path)) {
         CPE_ERROR(
             schedule->m_em, "net_address_create_local: path len overflow, limit=%d, len=%d, path=%s!",
             (int)(CPE_ENTRY_SIZE(sockaddr_un, sun_path)), (int)path_len, path);
         return NULL;
-    }
+    }*/
     
     struct net_address_local * address_local = mem_alloc(schedule->m_alloc, sizeof(struct net_address_local) + path_len + 1);
     if (address_local == NULL) {
