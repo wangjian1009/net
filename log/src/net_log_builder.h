@@ -33,7 +33,10 @@ typedef struct _log_buffer {
 extern log_buf serialize_to_proto_buf_with_malloc(net_log_builder_t bder);
 extern net_log_lz4_buf_t serialize_to_proto_buf_with_malloc_lz4(net_log_builder_t bder);
 extern net_log_lz4_buf_t serialize_to_proto_buf_with_malloc_no_lz4(net_log_builder_t bder);
-extern void free_lz4_log_buf(net_log_lz4_buf_t pBuf);
+
+extern void lz4_log_buf_free(net_log_lz4_buf_t pBuf);
+extern net_log_lz4_buf_t lz4_log_buf_create(net_log_schedule_t schedule, void const * data, uint32_t length, uint32_t raw_length);
+
 extern net_log_builder_t log_group_create(net_log_category_t category);
 extern void net_log_group_destroy(net_log_builder_t bder);
 extern void add_source(net_log_builder_t bder,const char* src,size_t len);

@@ -121,7 +121,7 @@ static void * net_log_flusher_thread(void * param) {
         }
         else {
             if (net_log_category_commit_request(category, send_param, 0) != 0) {
-                free(send_param);
+                net_log_request_param_free(send_param);
             }
         }
         

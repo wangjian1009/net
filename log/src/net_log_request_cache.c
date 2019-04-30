@@ -215,7 +215,7 @@ int net_log_request_cache_load(net_log_request_cache_t cache) {
             break;
         }
 
-        net_log_lz4_buf_t buf = malloc(sizeof(struct net_log_lz4_buf) + head.compressed_size);
+        net_log_lz4_buf_t buf = lz4_log_buf_create(schedule, NULL, head.compressed_size, head.raw_size);
         if (buf == NULL) {
             CPE_ERROR(
                 schedule->m_em, "log: %s: cache %d: load: alloc buf fail, size=%d",
@@ -224,14 +224,11 @@ int net_log_request_cache_load(net_log_request_cache_t cache) {
             break;
         }
 
-        buf->length = head.compressed_size;
-        buf->raw_length = head.raw_size;
-
         sz = vfs_file_read(fp, buf->data, buf->length);
         if (sz == 0) {
             CPE_ERROR(schedule->m_em, "log: %s: cache %d: load: read body fail, no data", mgr->m_name, cache->m_id);
             rv = -1;
-            free_lz4_log_buf(buf);
+            lz4_log_buf_free(buf);
             break;
         }
         else if (sz < 0) {
@@ -239,7 +236,7 @@ int net_log_request_cache_load(net_log_request_cache_t cache) {
                 schedule->m_em, "log: %s: cache %d: load: read data fail, error=%d(%s)",
                 mgr->m_name, cache->m_id, errno, strerror(errno));
             rv = -1;
-            free_lz4_log_buf(buf);
+            lz4_log_buf_free(buf);
             break;
         }
         else if (sz != buf->length) {
@@ -247,7 +244,7 @@ int net_log_request_cache_load(net_log_request_cache_t cache) {
                 schedule->m_em, "log: %s: cache %d: load: read data not enough data, readed=%d, body-size=%d",
                 mgr->m_name, cache->m_id, (int)sz, buf->length);
             rv = -1;
-            free_lz4_log_buf(buf);
+            lz4_log_buf_free(buf);
             break;
         }
 
@@ -255,7 +252,7 @@ int net_log_request_cache_load(net_log_request_cache_t cache) {
             CPE_ERROR(
                 schedule->m_em, "log: %s: cache %d: load: category %d not exist, ignore",
                 mgr->m_name, cache->m_id, head.category_id);
-            free_lz4_log_buf(buf);
+            lz4_log_buf_free(buf);
             continue;
         }
 
@@ -264,7 +261,7 @@ int net_log_request_cache_load(net_log_request_cache_t cache) {
         if (param == NULL) {
             CPE_ERROR(schedule->m_em, "log: %s: cache %d: load: create param fail", mgr->m_name, cache->m_id);
             rv = -1;
-            free_lz4_log_buf(buf);
+            lz4_log_buf_free(buf);
             break;
         }
 

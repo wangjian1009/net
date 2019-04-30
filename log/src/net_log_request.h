@@ -5,6 +5,7 @@
 #define LOG_PRODUCER_SEND_MAGIC_NUM 0x1B35487A
 
 struct net_log_lz4_buf {
+    net_log_schedule_t m_schedule;
     uint32_t length;
     uint32_t raw_length;
     unsigned char data[0];

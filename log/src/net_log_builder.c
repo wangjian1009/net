@@ -289,11 +289,7 @@ log_buf serialize_to_proto_buf_with_malloc(net_log_builder_t bder) {
 
 net_log_lz4_buf_t serialize_to_proto_buf_with_malloc_no_lz4(net_log_builder_t bder) {
     log_buf buf = serialize_to_proto_buf_with_malloc(bder);
-    net_log_lz4_buf_t pLogbuf = (net_log_lz4_buf_t)malloc(sizeof(struct net_log_lz4_buf) + buf.n_buffer);
-    pLogbuf->length = buf.n_buffer;
-    pLogbuf->raw_length = buf.n_buffer;
-    memcpy(pLogbuf->data, buf.buffer, buf.n_buffer);
-    return pLogbuf;
+    return lz4_log_buf_create(bder->m_category->m_schedule, buf.buffer, buf.n_buffer, buf.n_buffer);
 }
 
 net_log_lz4_buf_t serialize_to_proto_buf_with_malloc_lz4(net_log_builder_t bder) {
@@ -320,17 +316,32 @@ net_log_lz4_buf_t serialize_to_proto_buf_with_malloc_lz4(net_log_builder_t bder)
         return NULL;
     }
 
-    net_log_lz4_buf_t pLogbuf = (net_log_lz4_buf_t)malloc(sizeof(struct net_log_lz4_buf) + compressed_size);
-    pLogbuf->length = compressed_size;
-    pLogbuf->raw_length = length;
-    memcpy(pLogbuf->data, compress_data, compressed_size);
+    net_log_lz4_buf_t pLogbuf = lz4_log_buf_create(bder->m_category->m_schedule, compress_data, compressed_size, length);
     free(compress_data);
 
     return pLogbuf;
 }
 
-void free_lz4_log_buf(net_log_lz4_buf_t pBuf) {
+void lz4_log_buf_free(net_log_lz4_buf_t pBuf) {
+    CPE_ERROR(pBuf->m_schedule->m_em, "xxxxx: buf %p free", pBuf);
     free(pBuf);
+}
+
+net_log_lz4_buf_t lz4_log_buf_create(net_log_schedule_t schedule, void const * data, uint32_t length, uint32_t raw_length) {
+    net_log_lz4_buf_t buf = malloc(sizeof(struct net_log_lz4_buf) + length);
+    if (buf == NULL) return NULL;
+
+    buf->m_schedule = schedule;
+    buf->length = length;
+    buf->raw_length= raw_length;
+
+    if (data) {
+        memcpy(buf->data, data, length);
+    }
+
+    CPE_ERROR(schedule->m_em, "xxxxx: buf %p alloc, length=%d", buf, length);
+    
+    return buf;
 }
 
 void add_log_begin(net_log_builder_t bder) {
