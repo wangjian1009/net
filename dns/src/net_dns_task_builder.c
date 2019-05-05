@@ -63,7 +63,7 @@ static int net_dns_task_build_internal(net_dns_task_builder_t builder, net_dns_t
     net_dns_source_t source;
 
     TAILQ_FOREACH(source, &manage->m_sources, m_next) {
-        net_dns_task_step_t step = net_dns_task_step_create(task);
+        net_dns_task_step_t step = net_dns_task_step_create(task, net_dns_task_step_complete_all);
         if (step == NULL) {
             CPE_ERROR(manage->m_em, "dns-cli: builder: create step fail");
             return -1;

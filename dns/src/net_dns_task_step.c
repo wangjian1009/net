@@ -3,7 +3,7 @@
 #include "net_dns_task_ctx_i.h"
 
 net_dns_task_step_t
-net_dns_task_step_create(net_dns_task_t task) {
+net_dns_task_step_create(net_dns_task_t task, net_dns_task_step_complete_policy_t complete_policy) {
     net_dns_manage_t manage = task->m_manage;
     net_dns_task_step_t step;
 
@@ -20,6 +20,7 @@ net_dns_task_step_create(net_dns_task_t task) {
     }
 
     step->m_task = task;
+    step->m_complete_policy = complete_policy;
     TAILQ_INIT(&step->m_ctxs);
 
     TAILQ_INSERT_TAIL(&task->m_steps, step, m_next);

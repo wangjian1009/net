@@ -7,6 +7,7 @@ NET_BEGIN_DECL
 
 struct net_dns_task_step {
     net_dns_task_t m_task;
+    net_dns_task_step_complete_policy_t m_complete_policy;
     TAILQ_ENTRY(net_dns_task_step) m_next;
     net_dns_task_ctx_list_t m_ctxs;
 };

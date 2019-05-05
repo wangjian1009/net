@@ -23,6 +23,11 @@ typedef struct net_dns_source_it * net_dns_source_it_t;
 
 typedef struct net_dns_source_ns * net_dns_source_ns_t;
 
+typedef enum net_dns_task_step_complete_policy {
+    net_dns_task_step_complete_any,
+    net_dns_task_step_complete_all,
+} net_dns_task_step_complete_policy_t;
+
 typedef enum net_dns_entry_state {
     net_dns_entry_runing,
     net_dns_entry_done,

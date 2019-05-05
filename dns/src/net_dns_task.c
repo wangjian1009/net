@@ -234,6 +234,8 @@ void net_dns_task_update_state(net_dns_task_t task, net_dns_task_state_t new_sta
         TAILQ_REMOVE(&manage->m_runing_tasks, task, m_next_for_manage);
         TAILQ_INSERT_TAIL(&manage->m_complete_tasks, task, m_next_for_manage);
 
+        CPE_ERROR(manage->m_em, "dns-cli: task %p complete!", task);
+    
         net_dns_manage_active_delay_process(manage);
     }
     else {

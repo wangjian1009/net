@@ -9,7 +9,7 @@ struct net_dns_task_step_it {
     char m_data[64];
 };
 
-net_dns_task_step_t net_dns_task_step_create(net_dns_task_t task);
+net_dns_task_step_t net_dns_task_step_create(net_dns_task_t task, net_dns_task_step_complete_policy_t complete_policy);
 void net_dns_task_step_free(net_dns_task_step_t step);
 
 net_dns_task_state_t net_dns_task_step_state(net_dns_task_step_t step);

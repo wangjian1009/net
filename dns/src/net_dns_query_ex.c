@@ -164,10 +164,18 @@ int net_dns_query_ex_init(
     }
 
     if (task && task->m_state == net_dns_task_state_runing) {
+        CPE_ERROR(
+            manage->m_em, "dns-cli: query %s(%p): begin, task=%p!",
+            net_address_dump(net_dns_manage_tmp_buffer(manage), query_ex->m_address), query_ex, task);
+    
         query_ex->m_task = task;
         TAILQ_INSERT_TAIL(&query_ex->m_task->m_querys, query_ex, m_next);
     }
     else {
+        CPE_ERROR(
+            manage->m_em, "dns-cli: query %s(%p): begin!",
+            net_address_dump(net_dns_manage_tmp_buffer(manage), query_ex->m_address), query_ex);
+
         TAILQ_INSERT_TAIL(&query_ex->m_manage->m_to_notify_querys, query_ex, m_next);
         net_dns_manage_active_delay_process(manage);
     }
@@ -178,6 +186,10 @@ int net_dns_query_ex_init(
 void net_dns_query_ex_fini(void * ctx, net_dns_query_t query) {
     struct net_dns_query_ex * query_ex = net_dns_query_data(query);
 
+    CPE_ERROR(
+        query_ex->m_manage->m_em, "dns-cli: query %s(%p): free!",
+        net_address_dump(net_dns_manage_tmp_buffer(query_ex->m_manage), query_ex->m_address), query_ex);
+    
     assert(query_ex->m_address);
     net_address_free(query_ex->m_address);
     query_ex->m_address = NULL;
