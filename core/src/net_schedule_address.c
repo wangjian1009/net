@@ -109,7 +109,7 @@ uint8_t net_schedule_is_domain_address_arpa(net_schedule_t schedule, const char 
                 values[set_pos] = ((uint8_t)(c - 'A')) + 10;
             }
             else {
-                CPE_ERROR(schedule->m_em, "xxxxxx: 3");
+                CPE_ERROR(schedule->m_em, "xxxxxx: 3, i=%d, c=%c", i, c);
                 return 0;
             }
         }
