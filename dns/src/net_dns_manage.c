@@ -370,10 +370,6 @@ static void net_dns_manage_do_delay_process(net_timer_t timer, void * input_ctx)
                 address ? net_address_dump(net_dns_manage_tmp_buffer(manage), address) : "N/A");
         }
 
-        CPE_ERROR(
-            manage->m_em, "dns-cli: query %s(%p): notify!",
-            net_address_dump(net_dns_manage_tmp_buffer(manage), query_ex->m_address), query_ex);
-    
         net_dns_query_notify_result_and_free(query, address, &address_it);
     }
 }
