@@ -2,6 +2,7 @@
 #include "cpe/pal/pal_platform.h"
 #include "cpe/utils/time_utils.h"
 #include "net_address.h"
+#include "net_dns_source.h"
 #include "net_dns_ns_parser.h"
 #include "net_dns_ns_pro.h"
 
@@ -195,7 +196,9 @@ static int net_dns_ns_parser_read_an_record(
 
         address = net_address_create_domain(manage->m_schedule, cname, 0, NULL);
         if (address == NULL) {
-            CPE_ERROR(manage->m_em, "dns-cli: udp <-- create address ipv4 fail");
+            CPE_ERROR(
+                manage->m_em, "dns-cli: %s: udp <-- create address ipv4 fail",
+                net_dns_source_dump(net_dns_manage_tmp_buffer(manage), parser->m_source));
             return 0;
         }
 
@@ -210,13 +213,18 @@ static int net_dns_ns_parser_read_an_record(
             ipv4.u8[3] = p[3];
             address = net_address_create_ipv4_from_data(manage->m_schedule, &ipv4, 0);
             if (address == NULL) {
-                CPE_ERROR(manage->m_em, "dns-cli: udp <-- create address ipv4 fail");
+                CPE_ERROR(
+                    manage->m_em, "dns-cli: %s: udp <-- create address ipv4 fail",
+                    net_dns_source_dump(net_dns_manage_tmp_buffer(manage), parser->m_source));
                 return 0;
             }
         }
         else {
             if (manage->m_debug) {
-                CPE_INFO(manage->m_em, "dns-cli: udp <-- %s answer length %d unknown, ignore record", hostname, rdlength);
+                CPE_INFO(
+                    manage->m_em, "dns-cli: %s: udp <-- %s answer length %d unknown, ignore record",
+                    net_dns_source_dump(net_dns_manage_tmp_buffer(manage), parser->m_source),
+                    hostname, rdlength);
             }
             return 0;
         }
@@ -224,7 +232,10 @@ static int net_dns_ns_parser_read_an_record(
     }
     default:
         if (manage->m_debug) {
-            CPE_INFO(manage->m_em, "dns-cli: udp <-- %s type %d not support, ignore record", hostname, res_type);
+            CPE_INFO(
+                manage->m_em, "dns-cli: %s: udp <-- %s type %d not support, ignore record",
+                net_dns_source_dump(net_dns_manage_tmp_buffer(manage), parser->m_source),
+                hostname, res_type);
         }
         return 0;
     }
@@ -233,7 +244,9 @@ static int net_dns_ns_parser_read_an_record(
 
     net_address_t hostname_address = net_address_create_domain(manage->m_schedule, hostname, 0, NULL);
     if (hostname_address == NULL) {
-        CPE_ERROR(manage->m_em, "dns-cli: udp <-- create domain address fail");
+        CPE_ERROR(
+            manage->m_em, "dns-cli: %s: udp <-- create domain address fail",
+            net_dns_source_dump(net_dns_manage_tmp_buffer(manage), parser->m_source));
         net_address_free(address);
         return -1;
     }

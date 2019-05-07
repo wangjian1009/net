@@ -2,6 +2,7 @@
 #include "cpe/pal/pal_platform.h"
 #include "cpe/pal/pal_stdio.h"
 #include "cpe/utils/stream_buffer.h"
+#include "cpe/utils/string_utils.h"
 #include "cpe/utils/time_utils.h"
 #include "net_schedule.h"
 #include "net_address.h"
@@ -418,29 +419,43 @@ static void net_dns_source_ns_dgram_input(
     struct net_dns_ns_parser parser;
 
     if (net_dns_ns_parser_init(&parser, manage, source) != 0) {
-        CPE_ERROR(manage->m_em, "dns-cli: udp <-- init parser fail");
+        CPE_ERROR(
+            manage->m_em, "dns-cli: %s: udp <-- init parser fail",
+            net_dns_source_dump(net_dns_manage_tmp_buffer(manage), source));
         return;
     }
     
     if (net_protocol_debug(net_protocol_from_data(manage->m_protocol_dns_ns_cli)) >= 2
         || net_dgram_protocol_debug(ns_ctx->m_dgram, ns->m_address) >= 2)
     {
+        char ns_name_buf[128];
+        cpe_str_dup(ns_name_buf, sizeof(ns_name_buf), net_dns_source_dump(net_dns_manage_tmp_buffer(manage), source));
+        
         CPE_INFO(
-            manage->m_em, "dns-cli: udp <-- %s",
+            manage->m_em, "dns-cli: %s: udp <-- %s",
+            ns_name_buf,
             net_dns_ns_req_dump(manage, net_dns_manage_tmp_buffer(manage), data, (uint32_t)data_size));
     }
 
     int rv = net_dns_ns_parser_input(&parser, data, (uint32_t)data_size);
     if (rv < 0) {
-        CPE_ERROR(manage->m_em, "dns-cli: udp <-- parse data fail");
+        CPE_ERROR(
+            manage->m_em, "dns-cli: %s: udp <-- parse data fail",
+            net_dns_source_dump(net_dns_manage_tmp_buffer(manage), source));
         net_dns_task_ctx_set_error(task_ctx);
     }
     else if (rv == 0) {
-        CPE_ERROR(manage->m_em, "dns-cli: udp <-- not enough data, input=%d", (int)data_size);
+        CPE_ERROR(
+            manage->m_em, "dns-cli: %s: udp <-- not enough data, input=%d",
+            net_dns_source_dump(net_dns_manage_tmp_buffer(manage), source),
+            (int)data_size);
         net_dns_task_ctx_set_error(task_ctx);
     }
     else if (rv < data_size) {
-        CPE_ERROR(manage->m_em, "dns-cli: udp <-- read part data, used=%d, input=%d", rv, (int)data_size);
+        CPE_ERROR(
+            manage->m_em, "dns-cli: %s: udp <-- read part data, used=%d, input=%d",
+            net_dns_source_dump(net_dns_manage_tmp_buffer(manage), source),
+            rv, (int)data_size);
         net_dns_task_ctx_set_error(task_ctx);
     }
     else {
