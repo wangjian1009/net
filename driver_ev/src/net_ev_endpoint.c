@@ -240,16 +240,14 @@ void net_ev_endpoint_update_rw_watcher(
                 else {
                     CPE_INFO(
                         driver->m_em, "ev: %s: fd=%d: start wait read",
-                        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
-                        cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+                        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
                 }
             }
             else {
                 if (endpoint->m_expects & EV_READ) {
                     CPE_INFO(
                         driver->m_em, "ev: %s: fd=%d: stop wait read",
-                        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
-                        cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+                        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
                 }
                 else {
                 }
@@ -261,16 +259,14 @@ void net_ev_endpoint_update_rw_watcher(
                 else {
                     CPE_INFO(
                         driver->m_em, "ev: %s: fd=%d: start wait write",
-                        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
-                        cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+                        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
                 }
             }
             else {
                 if (endpoint->m_expects & EV_WRITE) {
                     CPE_INFO(
                         driver->m_em, "ev: %s: fd=%d: stop wait write",
-                        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
-                        cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+                        net_endpoint_dump(net_ev_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
                 }
                 else {
                 }
