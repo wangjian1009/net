@@ -323,7 +323,6 @@ net_log_lz4_buf_t serialize_to_proto_buf_with_malloc_lz4(net_log_builder_t bder)
 }
 
 void lz4_log_buf_free(net_log_lz4_buf_t pBuf) {
-    CPE_ERROR(pBuf->m_schedule->m_em, "xxxxx: buf %p free", pBuf);
     free(pBuf);
 }
 
@@ -338,8 +337,6 @@ net_log_lz4_buf_t lz4_log_buf_create(net_log_schedule_t schedule, void const * d
     if (data) {
         memcpy(buf->data, data, length);
     }
-
-    CPE_ERROR(schedule->m_em, "xxxxx: buf %p alloc, length=%d", buf, length);
     
     return buf;
 }
