@@ -1,5 +1,6 @@
 #ifndef NET_LOG_SCHEDULE_H_INCLEDED
 #define NET_LOG_SCHEDULE_H_INCLEDED
+#include "cpe/utils/utils_types.h"
 #include "cpe/vfs/vfs_types.h"
 #include "net_log_types.h"
 
@@ -15,6 +16,11 @@ void net_log_schedule_free(net_log_schedule_t log_schedule);
 uint8_t net_log_schedule_debug(net_log_schedule_t schedule);
 void net_log_schedule_set_debug(net_log_schedule_t schedule, uint8_t debug);
 
+const char * net_log_schedule_cfg_project(net_log_schedule_t schedule);
+const char * net_log_schedule_cfg_ep(net_log_schedule_t schedule);
+const char * net_log_schedule_cfg_access_id(net_log_schedule_t schedule);
+const char * net_log_schedule_cfg_access_key(net_log_schedule_t schedule);
+    
 int net_log_schedule_set_cache_dir(net_log_schedule_t schedule, const char * dir);
 void net_log_schedule_set_cache_mem_capacity(net_log_schedule_t schedule, uint32_t capacity);
 void net_log_schedule_set_cache_file_capacity(net_log_schedule_t schedule, uint32_t capacity);

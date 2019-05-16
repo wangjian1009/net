@@ -257,6 +257,22 @@ void net_log_schedule_set_debug(net_log_schedule_t schedule, uint8_t debug) {
     schedule->m_debug = debug;
 }
 
+const char * net_log_schedule_cfg_project(net_log_schedule_t schedule) {
+    return schedule->m_cfg_project;
+}
+
+const char * net_log_schedule_cfg_ep(net_log_schedule_t schedule) {
+    return schedule->m_cfg_ep;
+}
+
+const char * net_log_schedule_cfg_access_id(net_log_schedule_t schedule) {
+    return schedule->m_cfg_access_id;
+}
+
+const char * net_log_schedule_cfg_access_key(net_log_schedule_t schedule) {
+    return schedule->m_cfg_access_key;
+}
+
 int net_log_schedule_set_cache_dir(net_log_schedule_t schedule, const char * dir) {
     assert(net_log_schedule_state(schedule) == net_log_schedule_state_init);
     
