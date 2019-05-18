@@ -28,6 +28,8 @@ net_watcher_t net_watcher_create(net_driver_t driver, int fd, void * ctx, net_wa
     watcher->m_fd = fd;
     watcher->m_ctx = ctx;
     watcher->m_action = action;
+    watcher->m_expect_read = 0;
+    watcher->m_expect_write = 0;
     watcher->m_in_processing = 0;
     watcher->m_deleting = 0;
 
@@ -94,7 +96,11 @@ void net_watcher_notify(net_watcher_t watcher, uint8_t do_read, uint8_t do_write
 }
 
 void net_watcher_update(net_watcher_t watcher, uint8_t expect_read, uint8_t expect_write) {
+    expect_read = expect_read ? 1 : 0;
+    expect_write = expect_write ? 1 : 0;
+    
     if (watcher->m_deleting) return;
+    if (watcher->m_expect_read == expect_read && watcher->m_expect_write == expect_write) return;
 
     uint8_t tag_local = 0;
     if (watcher->m_in_processing == 0) {
@@ -102,8 +108,10 @@ void net_watcher_update(net_watcher_t watcher, uint8_t expect_read, uint8_t expe
         tag_local = 1;
     }
     
+    watcher->m_expect_read = expect_read;
+    watcher->m_expect_write = expect_write;
     watcher->m_driver->m_watcher_update(watcher, watcher->m_fd, expect_read, expect_write);
-
+    
     if (tag_local) {
         watcher->m_in_processing = 0;
 
@@ -111,6 +119,14 @@ void net_watcher_update(net_watcher_t watcher, uint8_t expect_read, uint8_t expe
             net_watcher_free(watcher);
         }
     }
+}
+
+uint8_t net_watcher_expect_read(net_watcher_t watcher) {
+    return watcher->m_expect_read;
+}
+
+uint8_t net_watcher_expect_write(net_watcher_t watcher) {
+    return watcher->m_expect_write;
 }
 
 void net_watcher_print(write_stream_t ws, net_watcher_t watcher) {

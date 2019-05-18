@@ -10,6 +10,8 @@ struct net_watcher {
     TAILQ_ENTRY(net_watcher) m_next_for_driver;
     int m_fd;
     void * m_ctx;
+    uint8_t m_expect_read;
+    uint8_t m_expect_write;
     uint8_t m_in_processing;
     uint8_t m_deleting;
     net_watcher_action_fun_t m_action;

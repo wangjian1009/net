@@ -6,9 +6,6 @@
 #include "net_schedule.h"
 #include "net_ev_driver.h"
 
-typedef struct net_ev_acceptor * net_ev_acceptor_t;
-typedef struct net_ev_endpoint * net_ev_endpoint_t;
-typedef struct net_ev_dgram * net_ev_dgram_t;
 typedef struct net_ev_watcher * net_ev_watcher_t;
 typedef struct net_ev_timer * net_ev_timer_t;
 
@@ -16,8 +13,6 @@ struct net_ev_driver {
     mem_allocrator_t m_alloc;
     error_monitor_t m_em;
     struct ev_loop * m_ev_loop;
-    net_ev_driver_sock_create_process_fun_t m_sock_process_fun;
-    void * m_sock_process_ctx;
 };
 
 net_schedule_t net_ev_driver_schedule(net_ev_driver_t driver);
