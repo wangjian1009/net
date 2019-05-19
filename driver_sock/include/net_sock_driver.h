@@ -39,13 +39,6 @@ void * net_sock_driver_data_from_base_driver(net_driver_t base_driver);
 
 net_sock_driver_t net_sock_driver_from_data(void * data);
 
-typedef int (*net_sock_driver_sock_create_process_fun_t)(
-    net_sock_driver_t driver, void * ctx, int fd, net_address_t remote_addr);
-
-void net_sock_driver_set_sock_create_processor(
-    net_sock_driver_t driver,
-    net_sock_driver_sock_create_process_fun_t process_fun, void * process_ctx);
-
 NET_END_DECL
 
 #endif

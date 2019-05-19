@@ -39,14 +39,6 @@ int net_sock_dgram_init(net_dgram_t base_dgram) {
         return -1;
     }
     
-    if (driver->m_sock_process_fun) {
-        if (driver->m_sock_process_fun(driver, driver->m_sock_process_ctx, dgram->m_fd, NULL) != 0) {
-            CPE_ERROR(driver->m_em, "sock: dgram: sock process fail");
-            cpe_sock_close(dgram->m_fd);
-            return -1;
-        }
-    }
-
     net_address_t address = net_dgram_address(base_dgram);
     if (address
         && (!net_address_is_any(address) || net_address_port(address) != 0))

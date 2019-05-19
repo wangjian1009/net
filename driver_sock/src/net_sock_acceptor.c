@@ -70,14 +70,6 @@ int net_sock_acceptor_init(net_acceptor_t base_acceptor) {
     uint32_t accept_queue_size = net_acceptor_queue_size(base_acceptor);
     if (accept_queue_size == 0) accept_queue_size = 512;
 
-    if (driver->m_sock_process_fun) {
-        if (driver->m_sock_process_fun(driver, driver->m_sock_process_ctx, acceptor->m_fd, NULL) != 0) {
-            CPE_ERROR(em, "sock: acceptor: sock process fail");
-            cpe_sock_close(acceptor->m_fd);
-            return -1;
-        }
-    }
-    
     if (cpe_listen(acceptor->m_fd, accept_queue_size) != 0) {
         CPE_ERROR(
             em, "sock: acceptor: listen error, errno=%d (%s)",
@@ -172,14 +164,6 @@ static void net_sock_acceptor_cb(void * ctx, int fd, uint8_t do_read, uint8_t do
     {
         net_endpoint_free(base_endpoint);
         return;
-    }
-
-    if (driver->m_sock_process_fun) {
-        if (driver->m_sock_process_fun(driver, driver->m_sock_process_ctx, new_fd, net_endpoint_remote_address(base_endpoint)) != 0) {
-            CPE_ERROR(em, "sock: accept: sock process fail");
-            net_endpoint_free(base_endpoint);
-            return;
-        }
     }
 
     if (net_acceptor_on_new_endpoint(base_acceptor, base_endpoint) != 0) {

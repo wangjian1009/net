@@ -15,8 +15,6 @@ struct net_sock_driver {
     error_monitor_t m_em;
     net_sock_driver_init_fun_t m_init;
     net_sock_driver_fini_fun_t m_fini;
-    net_sock_driver_sock_create_process_fun_t m_sock_process_fun;
-    void * m_sock_process_ctx;
 };
 
 net_schedule_t net_sock_driver_schedule(net_sock_driver_t driver);

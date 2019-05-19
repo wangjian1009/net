@@ -94,8 +94,6 @@ static int net_sock_driver_init(net_driver_t base_driver) {
     driver->m_em = net_schedule_em(schedule);
     driver->m_init = NULL;
     driver->m_fini = NULL;
-    driver->m_sock_process_fun = NULL;
-    driver->m_sock_process_ctx = NULL;
 
     return 0;
 }
@@ -128,15 +126,6 @@ net_sock_driver_t net_sock_driver_from_data(void * data) {
 
 net_driver_t net_sock_driver_base_driver(net_sock_driver_t sock_driver) {
     return net_driver_from_data(sock_driver);
-}
-
-void net_sock_driver_set_sock_create_processor(
-    net_sock_driver_t driver,
-    net_sock_driver_sock_create_process_fun_t process_fun,
-    void * process_ctx)
-{
-    driver->m_sock_process_fun = process_fun;
-    driver->m_sock_process_ctx = process_ctx;
 }
 
 net_schedule_t net_sock_driver_schedule(net_sock_driver_t driver) {
