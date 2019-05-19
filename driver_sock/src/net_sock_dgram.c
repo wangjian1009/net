@@ -124,7 +124,6 @@ int net_sock_dgram_init(net_dgram_t base_dgram) {
 
 void net_sock_dgram_fini(net_dgram_t base_dgram) {
     net_sock_dgram_t dgram = net_dgram_data(base_dgram);
-    net_sock_driver_t driver = net_driver_data(net_dgram_driver(base_dgram));
 
     assert(dgram->m_watcher);
     assert(dgram->m_fd != -1);

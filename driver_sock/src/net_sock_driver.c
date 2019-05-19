@@ -126,6 +126,10 @@ net_sock_driver_t net_sock_driver_from_data(void * data) {
     return ((net_sock_driver_t)data) - 1;
 }
 
+net_driver_t net_sock_driver_base_driver(net_sock_driver_t sock_driver) {
+    return net_driver_from_data(sock_driver);
+}
+
 void net_sock_driver_set_sock_create_processor(
     net_sock_driver_t driver,
     net_sock_driver_sock_create_process_fun_t process_fun,

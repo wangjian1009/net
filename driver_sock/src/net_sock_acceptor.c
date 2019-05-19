@@ -121,7 +121,6 @@ int net_sock_acceptor_init(net_acceptor_t base_acceptor) {
 
 void net_sock_acceptor_fini(net_acceptor_t base_acceptor) {
     net_sock_acceptor_t acceptor = net_acceptor_data(base_acceptor);
-    net_sock_driver_t driver = net_driver_data(net_acceptor_driver(base_acceptor));
 
     net_watcher_free(acceptor->m_watcher);
     cpe_sock_close(acceptor->m_fd);
