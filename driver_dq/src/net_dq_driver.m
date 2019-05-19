@@ -1,20 +1,18 @@
 #include "net_schedule.h"
 #include "net_driver.h"
+#include "net_sock_driver.h"
 #include "net_dq_driver_i.h"
-#include "net_dq_acceptor_i.h"
-#include "net_dq_endpoint.h"
-#include "net_dq_dgram.h"
 #include "net_dq_watcher.h"
 #include "net_dq_timer.h"
 
-static int net_dq_driver_init(net_driver_t driver);
-static void net_dq_driver_fini(net_driver_t driver);
+static int net_dq_driver_init(net_sock_driver_t sock_driver);
+static void net_dq_driver_fini(net_sock_driver_t sock_driver);
 
 net_dq_driver_t
 net_dq_driver_create(net_schedule_t schedule) {
-    net_driver_t base_driver;
+    net_sock_driver_t sock_driver;
 
-    base_driver = net_driver_create(
+    sock_driver = net_sock_driver_create(
         schedule,
         "apple_dq",
         /*driver*/
@@ -28,22 +26,6 @@ net_dq_driver_create(net_schedule_t schedule) {
         net_dq_timer_active,
         net_dq_timer_cancel,
         net_dq_timer_is_active,
-        /*acceptor*/
-        sizeof(struct net_dq_acceptor),
-        net_dq_acceptor_init,
-        net_dq_acceptor_fini,
-        /*endpoint*/
-        sizeof(struct net_dq_endpoint),
-        net_dq_endpoint_init,
-        net_dq_endpoint_fini,
-        net_dq_endpoint_connect,
-        net_dq_endpoint_close,
-        net_dq_endpoint_update,
-        /*dgram*/
-        sizeof(struct net_dq_dgram),
-        net_dq_dgram_init,
-        net_dq_dgram_fini,
-        net_dq_dgram_send,
         /*watcher*/
         sizeof(struct net_dq_watcher),
         net_dq_watcher_init,
@@ -51,16 +33,16 @@ net_dq_driver_create(net_schedule_t schedule) {
         net_dq_watcher_update);
 
 
-    if (base_driver == NULL) return NULL;
+    if (sock_driver == NULL) return NULL;
 
-    net_dq_driver_t driver = net_driver_data(base_driver);
+    net_dq_driver_t driver = net_sock_driver_data(sock_driver);
 
     return driver;
 }
 
-static int net_dq_driver_init(net_driver_t base_driver) {
-    net_dq_driver_t driver = net_driver_data(base_driver);
-    net_schedule_t schedule = net_driver_schedule(base_driver);
+static int net_dq_driver_init(net_sock_driver_t sock_driver) {
+    net_dq_driver_t driver = net_sock_driver_data(sock_driver);
+    net_schedule_t schedule = net_sock_driver_schedule(sock_driver);
 
     driver->m_alloc = net_schedule_allocrator(schedule);
     driver->m_em = net_schedule_em(schedule);
@@ -70,7 +52,7 @@ static int net_dq_driver_init(net_driver_t base_driver) {
     return 0;
 }
 
-static void net_dq_driver_fini(net_driver_t base_driver) {
+static void net_dq_driver_fini(net_sock_driver_t sock_driver) {
 }
 
 void net_dq_driver_free(net_dq_driver_t driver) {
