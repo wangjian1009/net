@@ -71,6 +71,10 @@ net_schedule_t net_dq_driver_schedule(net_dq_driver_t driver) {
     return net_driver_schedule(net_driver_from_data(driver));
 }
 
+net_driver_t net_dq_driver_base_driver(net_dq_driver_t driver) {
+    return net_driver_from_data(net_sock_driver_from_data(driver));
+}
+
 mem_buffer_t net_dq_driver_tmp_buffer(net_dq_driver_t driver) {
     return net_schedule_tmp_buffer(net_dq_driver_schedule(driver));
 }
