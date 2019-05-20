@@ -197,9 +197,11 @@ CONNECT_AGAIN:
                     net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
                     return 0;
                 }
+
+                return -1;
             }
 
-            net_watcher_update(endpoint->m_watcher, 1, 0);
+            net_watcher_update(endpoint->m_watcher, 1, 1);
             return net_endpoint_set_state(base_endpoint, net_endpoint_state_connecting);
         }
         else {
@@ -638,6 +640,8 @@ static void net_sock_endpoint_connect_cb(void * ctx, int fd, uint8_t do_read, ui
     net_sock_endpoint_t endpoint = ctx;
     net_endpoint_t base_endpoint = net_endpoint_from_data(endpoint);
     net_sock_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
+
+    assert(fd == endpoint->m_fd);
 
     int err = 0;
     socklen_t err_len = sizeof(err);
