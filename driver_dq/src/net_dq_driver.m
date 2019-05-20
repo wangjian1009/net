@@ -68,7 +68,7 @@ void net_dq_driver_set_data_monitor(
 }
 
 net_schedule_t net_dq_driver_schedule(net_dq_driver_t driver) {
-    return net_driver_schedule(net_driver_from_data(driver));
+    return net_driver_schedule(net_dq_driver_base_driver(driver));
 }
 
 net_driver_t net_dq_driver_base_driver(net_dq_driver_t driver) {
