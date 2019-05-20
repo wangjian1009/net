@@ -73,7 +73,7 @@ net_schedule_t net_ev_driver_schedule(net_ev_driver_t driver) {
 }
 
 net_driver_t net_ev_driver_base_driver(net_ev_driver_t driver) {
-    return net_driver_from_data(net_sock_driver_from_data(driver));
+    return net_sock_driver_base_driver(net_sock_driver_from_data(driver));
 }
 
 mem_buffer_t net_ev_driver_tmp_buffer(net_ev_driver_t driver) {
