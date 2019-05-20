@@ -109,6 +109,7 @@
 		C91E1F012105E4160080FAD8 /* net_ipset_node_cache.c in Sources */ = {isa = PBXBuildFile; fileRef = C91E1EE92105E4160080FAD8 /* net_ipset_node_cache.c */; };
 		C91E1F022105E4160080FAD8 /* net_address_rule.c in Sources */ = {isa = PBXBuildFile; fileRef = C91E1EEB2105E4160080FAD8 /* net_address_rule.c */; };
 		C92198492148AD4F000F276A /* net_trans_manage.c in Sources */ = {isa = PBXBuildFile; fileRef = C92198412148AD4E000F276A /* net_trans_manage.c */; };
+		C927F75322930E3700B2D19E /* net_endpoint_next.c in Sources */ = {isa = PBXBuildFile; fileRef = C927F75222930E3700B2D19E /* net_endpoint_next.c */; };
 		C930DEB521CE523200597387 /* net_statistics_backend.c in Sources */ = {isa = PBXBuildFile; fileRef = C930DEB021CE523100597387 /* net_statistics_backend.c */; };
 		C930DEB621CE523200597387 /* net_statistics_transaction.c in Sources */ = {isa = PBXBuildFile; fileRef = C930DEB321CE523200597387 /* net_statistics_transaction.c */; };
 		C930DEB721CE523200597387 /* net_statistics_transaction_backend.c in Sources */ = {isa = PBXBuildFile; fileRef = C930DEB421CE523200597387 /* net_statistics_transaction_backend.c */; };
@@ -655,6 +656,8 @@
 		C92198432148AD4E000F276A /* net_trans_manage_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_trans_manage_i.h; sourceTree = "<group>"; };
 		C92198452148AD4E000F276A /* net_trans_system.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_trans_system.h; sourceTree = "<group>"; };
 		C92198462148AD4E000F276A /* net_trans_manage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_trans_manage.h; sourceTree = "<group>"; };
+		C927F75122930E3700B2D19E /* net_endpoint_next_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_endpoint_next_i.h; sourceTree = "<group>"; };
+		C927F75222930E3700B2D19E /* net_endpoint_next.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_endpoint_next.c; sourceTree = "<group>"; };
 		C930DEAD21CE522100597387 /* net_statistics_transaction.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_statistics_transaction.h; sourceTree = "<group>"; };
 		C930DEAE21CE522100597387 /* net_statistics_backend.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_statistics_backend.h; sourceTree = "<group>"; };
 		C930DEAF21CE523100597387 /* net_statistics_backend_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_statistics_backend_i.h; sourceTree = "<group>"; };
@@ -1453,6 +1456,8 @@
 		C91E1EC32105E4160080FAD8 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				C927F75122930E3700B2D19E /* net_endpoint_next_i.h */,
+				C927F75222930E3700B2D19E /* net_endpoint_next.c */,
 				C9BD22D42262FAA300426F27 /* net_schedule_address.c */,
 				C91AE888223C6E3E00E4E007 /* net_endpoint_writer.c */,
 				C96D82DD221A779D001002B6 /* net_watcher_i.h */,
@@ -3024,6 +3029,7 @@
 				C91E1EFC2105E4160080FAD8 /* net_link.c in Sources */,
 				C91E1EFF2105E4160080FAD8 /* net_address_matcher.c in Sources */,
 				C96D82DF221A779E001002B6 /* net_watcher.c in Sources */,
+				C927F75322930E3700B2D19E /* net_endpoint_next.c in Sources */,
 				C91E1F002105E4160080FAD8 /* net_ipset_ipv6.c in Sources */,
 				C91E1EF02105E4160080FAD8 /* net_endpoint_monitor.c in Sources */,
 				C98F307A213D3CA700C64DC6 /* net_schedule_ipstack.c in Sources */,
