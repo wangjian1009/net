@@ -198,7 +198,8 @@ CONNECT_AGAIN:
                     return 0;
                 }
             }
-            
+
+            net_watcher_update(endpoint->m_watcher, 1, 0);
             return net_endpoint_set_state(base_endpoint, net_endpoint_state_connecting);
         }
         else {
