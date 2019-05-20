@@ -93,7 +93,7 @@ int net_sock_endpoint_connect(net_endpoint_t base_endpoint) {
     }
     remote_addr = net_address_resolved(remote_addr);
 
-    if (net_address_type(remote_addr) != net_address_ipv4 && net_address_type(remote_addr) != net_address_ipv6) {
+    if (net_address_type(remote_addr) == net_address_domain) {
         CPE_ERROR(
             driver->m_em, "sock: %s: fd=%d: connect not support domain address!",
             net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
@@ -102,63 +102,70 @@ int net_sock_endpoint_connect(net_endpoint_t base_endpoint) {
     
     int connect_rv;
 
-    net_local_ip_stack_t ip_stack = net_schedule_local_ip_stack(schedule);
-    switch(ip_stack) {
-    case net_local_ip_stack_none:
-        CPE_ERROR(
-            driver->m_em, "sock: %s: fd=%d: can`t connect in %s!",
-            net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
-            net_local_ip_stack_str(ip_stack));
-        return -1;
-    case net_local_ip_stack_ipv4:
-        if (net_address_type(remote_addr) == net_address_ipv6) {
-            if (net_address_ipv6_is_ipv4_map(remote_addr)) {
-                net_address_t remote_addr_ipv4 = net_address_create_ipv4_from_ipv6_map(net_endpoint_schedule(base_endpoint), remote_addr);
-                if (remote_addr_ipv4 == NULL) {
+    if (net_address_type(remote_addr) == net_address_local) {
+        connect_rv = net_sock_endpoint_start_connect(driver, endpoint, base_endpoint, remote_addr);
+    }
+    else {
+        assert(net_address_type(remote_addr) == net_address_ipv4 || net_address_type(remote_addr) == net_address_ipv6);
+
+        net_local_ip_stack_t ip_stack = net_schedule_local_ip_stack(schedule);
+        switch(ip_stack) {
+        case net_local_ip_stack_none:
+            CPE_ERROR(
+                driver->m_em, "sock: %s: fd=%d: can`t connect in %s!",
+                net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
+                net_local_ip_stack_str(ip_stack));
+            return -1;
+        case net_local_ip_stack_ipv4:
+            if (net_address_type(remote_addr) == net_address_ipv6) {
+                if (net_address_ipv6_is_ipv4_map(remote_addr)) {
+                    net_address_t remote_addr_ipv4 = net_address_create_ipv4_from_ipv6_map(net_endpoint_schedule(base_endpoint), remote_addr);
+                    if (remote_addr_ipv4 == NULL) {
+                        CPE_ERROR(
+                            driver->m_em, "sock: %s: fd=%d: convert ipv6 address to ipv4(map) fail",
+                            net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
+                        return -1;
+                    }
+
+                    connect_rv = net_sock_endpoint_start_connect(driver, endpoint, base_endpoint, remote_addr_ipv4);
+
+                    net_address_free(remote_addr_ipv4);
+                }
+                else {
                     CPE_ERROR(
-                        driver->m_em, "sock: %s: fd=%d: convert ipv6 address to ipv4(map) fail",
+                        driver->m_em, "sock: %s: fd=%d: can`t connect to ipv6 network in ipv4 network env!",
+                        net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
+                    return -1;
+                }
+            }
+            else {
+                connect_rv = net_sock_endpoint_start_connect(driver, endpoint, base_endpoint, remote_addr);
+            }
+            break;
+        case net_local_ip_stack_ipv6:
+            if (net_address_type(remote_addr) == net_address_ipv4) {
+                net_address_t remote_addr_ipv6 = net_address_create_ipv6_from_ipv4_nat(net_endpoint_schedule(base_endpoint), remote_addr);
+                if (remote_addr_ipv6 == NULL) {
+                    CPE_ERROR(
+                        driver->m_em, "sock: %s: fd=%d: convert ipv4 address to ipv6(nat) fail",
                         net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
                     return -1;
                 }
 
-                connect_rv = net_sock_endpoint_start_connect(driver, endpoint, base_endpoint, remote_addr_ipv4);
+                connect_rv = net_sock_endpoint_start_connect(driver, endpoint, base_endpoint, remote_addr_ipv6);
 
-                net_address_free(remote_addr_ipv4);
+                net_address_free(remote_addr_ipv6);
             }
             else {
-                CPE_ERROR(
-                    driver->m_em, "sock: %s: fd=%d: can`t connect to ipv6 network in ipv4 network env!",
-                    net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
-                return -1;
+                connect_rv = net_sock_endpoint_start_connect(driver, endpoint, base_endpoint, remote_addr);
             }
-        }
-        else {
+            break;
+        case net_local_ip_stack_dual:
             connect_rv = net_sock_endpoint_start_connect(driver, endpoint, base_endpoint, remote_addr);
+            break;
         }
-        break;
-    case net_local_ip_stack_ipv6:
-        if (net_address_type(remote_addr) == net_address_ipv4) {
-            net_address_t remote_addr_ipv6 = net_address_create_ipv6_from_ipv4_nat(net_endpoint_schedule(base_endpoint), remote_addr);
-            if (remote_addr_ipv6 == NULL) {
-                CPE_ERROR(
-                    driver->m_em, "sock: %s: fd=%d: convert ipv4 address to ipv6(nat) fail",
-                    net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
-                return -1;
-            }
-
-            connect_rv = net_sock_endpoint_start_connect(driver, endpoint, base_endpoint, remote_addr_ipv6);
-
-            net_address_free(remote_addr_ipv6);
-        }
-        else {
-            connect_rv = net_sock_endpoint_start_connect(driver, endpoint, base_endpoint, remote_addr);
-        }
-        break;
-    case net_local_ip_stack_dual:
-        connect_rv = net_sock_endpoint_start_connect(driver, endpoint, base_endpoint, remote_addr);
-        break;
     }
-    
+
     if (connect_rv != 0) {
         if (endpoint->m_fd == -1) {
             return -1;
@@ -750,24 +757,33 @@ static int net_sock_endpoint_start_connect(
 {
     struct sockaddr_storage remote_addr_sock;
     socklen_t remote_addr_sock_len = sizeof(remote_addr_sock);
-    if (net_address_to_sockaddr(remote_addr, (struct sockaddr *)&remote_addr_sock, &remote_addr_sock_len) != 0) {
-        char buf[128];
-        cpe_str_dup(buf, sizeof(buf), net_address_dump(net_sock_driver_tmp_buffer(driver), remote_addr));
-        
+    net_address_to_sockaddr(remote_addr, (struct sockaddr *)&remote_addr_sock, &remote_addr_sock_len);
+
+    int domain;
+    int protocol;
+    switch(net_address_type(remote_addr)) {
+    case net_address_ipv4:
+        domain = AF_INET;
+        protocol = IPPROTO_TCP;
+        break;
+    case net_address_ipv6:
+        domain = AF_INET6;
+        protocol = IPPROTO_TCP;
+        break;
+    case net_address_local:
+        domain = AF_LOCAL;
+        protocol = 0;
+        break;
+    case net_address_domain:
         CPE_ERROR(
-            driver->m_em, "sock: %s: fd=%d: start connect: %s to sock addr fail",
-            net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
-            buf);
-        
+            driver->m_em, "sock: %s: fd=%d: connect not support %s",
+            net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint),
+            endpoint->m_fd,
+            net_address_type_str(net_address_type(remote_addr)));
         return -1;
     }
 
-    assert(net_address_type(remote_addr) == net_address_ipv4 || net_address_type(remote_addr) == net_address_ipv6);
-    assert(endpoint->m_fd == -1);
-    
-    int domain = net_address_type(remote_addr) == net_address_ipv4 ? AF_INET : AF_INET6; 
-
-    endpoint->m_fd = cpe_sock_open(domain, SOCK_STREAM, IPPROTO_TCP);
+    endpoint->m_fd = cpe_sock_open(domain, SOCK_STREAM, protocol);
     if (endpoint->m_fd == -1) {
         CPE_ERROR(
             driver->m_em, "sock: %s: fd=%d: create socket fail, errno=%d (%s)",
