@@ -81,6 +81,9 @@ uint8_t net_endpoint_rbuf_is_full(net_endpoint_t endpoint);
 
 uint8_t net_endpoint_have_any_data(net_endpoint_t endpoint);
 
+/*    connect*/
+uint8_t net_endpoint_shift_address(net_endpoint_t endpoint);
+
 /*    write*/
 void * net_endpoint_buf_alloc(net_endpoint_t endpoint, uint32_t * inout_size);
 uint8_t net_endpoint_buf_validate(net_endpoint_t endpoint, void const * buf, uint32_t capacity);

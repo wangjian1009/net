@@ -77,6 +77,7 @@ int net_sock_endpoint_connect(net_endpoint_t base_endpoint) {
     net_sock_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     net_sock_driver_t driver = net_driver_data(base_driver);
 
+CONNECT_AGAIN:    
     if (endpoint->m_fd != -1) {
         CPE_ERROR(
             driver->m_em, "sock: %s: fd=%d: already connected!",
@@ -206,14 +207,19 @@ int net_sock_endpoint_connect(net_endpoint_t base_endpoint) {
                 net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
                 cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
 
-            net_endpoint_set_error(
-                base_endpoint, net_endpoint_error_source_network,
-                net_endpoint_network_errno_connect_error, cpe_sock_errstr(cpe_sock_errno()));
             net_sock_endpoint_close_sock(driver, endpoint);
 
-            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) return -1;
+            if (net_endpoint_shift_address(base_endpoint)) {
+                goto CONNECT_AGAIN;
+            }
+            else {
+                net_endpoint_set_error(
+                    base_endpoint, net_endpoint_error_source_network,
+                    net_endpoint_network_errno_connect_error, cpe_sock_errstr(cpe_sock_errno()));
 
-            return -1;
+                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) return -1;
+                return -1;
+            }
         }
     }
     else {
@@ -672,18 +678,25 @@ static void net_sock_endpoint_connect_cb(void * ctx, int fd, uint8_t do_read, ui
                 driver->m_em, "sock: %s: fd=%d: connect error(callback), errno=%d (%s)",
                 net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
                 err, cpe_sock_errstr(err));
-
-            net_endpoint_set_error(
-                base_endpoint, net_endpoint_error_source_network,
-                net_endpoint_network_errno_connect_error,
-                cpe_sock_errstr(err));
-            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
-                net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
-                return;
+            net_sock_endpoint_close_sock(driver, endpoint);
+            
+            if (net_endpoint_shift_address(base_endpoint)) {
+                if (net_sock_endpoint_connect(base_endpoint) != 0) {
+                    if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
+                        net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+                        return;
+                    }
+                }
             }
-
-            if (endpoint->m_fd != -1) {
-                net_sock_endpoint_close_sock(driver, endpoint);
+            else {
+                net_endpoint_set_error(
+                    base_endpoint, net_endpoint_error_source_network,
+                    net_endpoint_network_errno_connect_error,
+                    cpe_sock_errstr(err));
+                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
+                    net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+                    return;
+                }
             }
         }
         return;

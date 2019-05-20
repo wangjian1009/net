@@ -350,6 +350,7 @@ int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) 
     }
 
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
+    
     if (endpoint->m_protocol_debug || endpoint->m_driver_debug || schedule->m_debug >= 2) {
         CPE_INFO(
             schedule->m_em, "core: %s: state %s ==> %s",
@@ -914,11 +915,18 @@ static void net_endpoint_dns_query_callback(void * ctx, net_address_t address, n
             net_endpoint_dump(&schedule->m_tmp_buffer, endpoint), other_address_count);
     }
     
-    if (endpoint->m_driver->m_endpoint_connect(endpoint) != 0) {
-        if (net_endpoint_set_state(endpoint, net_endpoint_state_network_error) != 0) {
-            net_endpoint_free(endpoint);
+    while (endpoint->m_driver->m_endpoint_connect(endpoint) != 0) {
+        if (net_endpoint_shift_address(endpoint)) { /*有下一个地址，尝试连接下一个地址 */
+            continue;
         }
-        return;
+        else {
+            if (endpoint->m_state != net_endpoint_state_deleting) {
+                if (net_endpoint_set_state(endpoint, net_endpoint_state_network_error) != 0) {
+                    net_endpoint_set_state(endpoint, net_endpoint_state_deleting);
+                }
+            }
+            return;
+        }
     }
 }
 
@@ -931,6 +939,44 @@ void net_endpoint_clear_monitor_by_ctx(net_endpoint_t endpoint, void * ctx) {
         }
         monitor = next_monitor;
     }
+}
+
+uint8_t net_endpoint_shift_address(net_endpoint_t endpoint) {
+    assert(endpoint->m_state != net_endpoint_state_deleting);
+
+    if (endpoint->m_remote_address == NULL) return 0;
+
+    net_endpoint_next_t next;
+
+    while((next = TAILQ_FIRST(&endpoint->m_nexts))) {
+        net_address_t next_address = next->m_address;
+        assert(next_address);
+        next->m_address = NULL;
+        net_endpoint_next_free(next);
+
+        net_schedule_t schedule = endpoint->m_driver->m_schedule;
+
+        if (endpoint->m_driver_debug || schedule->m_debug >= 2) {
+            char address_buf[128];
+            cpe_str_dup(address_buf, sizeof(address_buf), net_address_host(&schedule->m_tmp_buffer, next_address));
+    
+            CPE_INFO(
+                schedule->m_em, "%s: shift address: use %s",
+                net_endpoint_dump(&schedule->m_tmp_buffer, endpoint), address_buf);
+        }
+
+        if (net_address_set_resolved(endpoint->m_remote_address, next_address, 1) != 0) {
+            CPE_ERROR(
+                schedule->m_em, "%s: shift address: set resolve result fail!",
+                net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
+            net_address_free(next_address);
+            continue;
+        }
+
+        return 1;
+    }
+
+    return 0;
 }
 
 static int net_endpoint_notify_state_changed(net_endpoint_t endpoint, net_endpoint_state_t old_state) {
