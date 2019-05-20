@@ -37,6 +37,7 @@ struct net_endpoint {
     net_endpoint_data_watch_fun_t m_data_watcher_fun;
     net_endpoint_data_watch_ctx_fini_fun_t m_data_watcher_fini;
     net_endpoint_monitor_list_t m_monitors;
+    net_endpoint_next_list_t m_nexts;
 };
 
 void net_endpoint_real_free(net_endpoint_t endpoint);

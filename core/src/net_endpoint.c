@@ -13,6 +13,7 @@
 #include "net_address_i.h"
 #include "net_link_i.h"
 #include "net_dns_query_i.h"
+#include "net_endpoint_next_i.h"
 
 static void net_endpoint_dns_query_callback(void * ctx, net_address_t main_address, net_address_it_t it);
 static int net_endpoint_notify_state_changed(net_endpoint_t endpoint, net_endpoint_state_t old_state);
@@ -69,6 +70,7 @@ net_endpoint_create(net_driver_t driver, net_protocol_t protocol) {
     endpoint->m_data_watcher_fini = NULL;
 
     TAILQ_INIT(&endpoint->m_monitors);
+    TAILQ_INIT(&endpoint->m_nexts);
 
     if (protocol->m_endpoint_init(endpoint) != 0) {
         TAILQ_INSERT_TAIL(&driver->m_free_endpoints, endpoint, m_next_for_driver);
@@ -172,6 +174,10 @@ void net_endpoint_free(net_endpoint_t endpoint) {
         net_endpoint_monitor_free(monitor);
     }
 
+    while(!TAILQ_EMPTY(&endpoint->m_nexts)) {
+        net_endpoint_next_free(TAILQ_FIRST(&endpoint->m_nexts));
+    }
+    
     if (endpoint->m_protocol_debug || endpoint->m_driver_debug || schedule->m_debug >= 2) {
         CPE_INFO(schedule->m_em, "core: %s free!", net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
     }
@@ -542,6 +548,10 @@ int net_endpoint_connect(net_endpoint_t endpoint) {
         return -1;
     }
 
+    while(!TAILQ_EMPTY(&endpoint->m_nexts)) {
+        net_endpoint_next_free(TAILQ_FIRST(&endpoint->m_nexts));
+    }
+    
     if (endpoint->m_prepare_connect) {
         uint8_t do_connect = 0;
         if (endpoint->m_prepare_connect(endpoint->m_prepare_connect_ctx, endpoint, &do_connect) != 0) {
@@ -885,10 +895,23 @@ static void net_endpoint_dns_query_callback(void * ctx, net_address_t address, n
         return;
     }
 
+    uint32_t other_address_count = 0;
+    net_address_t other_address;
+    while((other_address = net_address_it_next(all_address))) {
+        if (net_address_cmp_without_port(address, other_address) == 0) continue;
+
+        net_endpoint_next_t next = net_endpoint_next_create(endpoint, other_address);
+        if (next == NULL) {
+            CPE_ERROR(
+                schedule->m_em, "%s: resolve: resolve success, add next try address fail!",
+                net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
+        }
+    }
+    
     if (schedule->m_debug >= 2) {
         CPE_INFO(
-            schedule->m_em, "%s: resolve: success!",
-            net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
+            schedule->m_em, "%s: resolve: success, next-try-address=%d!",
+            net_endpoint_dump(&schedule->m_tmp_buffer, endpoint), other_address_count);
     }
     
     if (endpoint->m_driver->m_endpoint_connect(endpoint) != 0) {
