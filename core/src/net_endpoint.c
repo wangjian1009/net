@@ -610,7 +610,15 @@ int net_endpoint_connect(net_endpoint_t endpoint) {
             return -1;
         }
 
-        return net_endpoint_set_state(endpoint, net_endpoint_state_resolving);
+        if (net_endpoint_set_state(endpoint, net_endpoint_state_resolving) != 0) return -1;
+
+        if (endpoint->m_driver_debug || schedule->m_debug >= 2) {
+            CPE_INFO(
+                schedule->m_em, "%s: resolve: begin",
+                net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
+        }
+        
+        return 0;
     }
     else {
         return endpoint->m_driver->m_endpoint_connect(endpoint);
@@ -909,10 +917,15 @@ static void net_endpoint_dns_query_callback(void * ctx, net_address_t address, n
         }
     }
     
-    if (schedule->m_debug >= 2) {
+    if (endpoint->m_driver_debug || schedule->m_debug >= 2) {
+        char address_buf[128];
+        cpe_str_dup(address_buf, sizeof(address_buf), net_address_host(&schedule->m_tmp_buffer, address));
+        
         CPE_INFO(
-            schedule->m_em, "%s: resolve: success, next-try-address=%d!",
-            net_endpoint_dump(&schedule->m_tmp_buffer, endpoint), other_address_count);
+            schedule->m_em, "%s: resolve: success, use-address=%s, next-try-address=%d!",
+            net_endpoint_dump(&schedule->m_tmp_buffer, endpoint),
+            address_buf,
+            other_address_count);
     }
     
     while (endpoint->m_driver->m_endpoint_connect(endpoint) != 0) {
