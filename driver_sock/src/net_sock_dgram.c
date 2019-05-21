@@ -102,9 +102,7 @@ int net_sock_dgram_init(net_dgram_t base_dgram) {
 
     dgram->m_watcher = net_watcher_create(base_driver, dgram->m_fd, dgram, net_sock_dgram_receive_cb);
     if (dgram->m_watcher == NULL) {
-        CPE_ERROR(
-            driver->m_em, "sock: dgram: create watcher fail",
-            cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+        CPE_ERROR(driver->m_em, "sock: dgram: create watcher fail");
         cpe_sock_close(dgram->m_fd);
         return -1;
     }
