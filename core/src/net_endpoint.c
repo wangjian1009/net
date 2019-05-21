@@ -907,6 +907,8 @@ static void net_endpoint_dns_query_callback(void * ctx, net_address_t address, n
     uint32_t other_address_count = 0;
     net_address_t other_address;
     while((other_address = net_address_it_next(all_address))) {
+        if (net_address_type(other_address) != net_address_ipv4
+            && net_address_type(other_address) != net_address_ipv6) continue;
         if (net_address_cmp_without_port(address, other_address) == 0) continue;
 
         net_endpoint_next_t next = net_endpoint_next_create(endpoint, other_address);
