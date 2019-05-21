@@ -914,7 +914,10 @@ static void net_endpoint_dns_query_callback(void * ctx, net_address_t address, n
             CPE_ERROR(
                 schedule->m_em, "%s: resolve: resolve success, add next try address fail!",
                 net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
+            continue;
         }
+
+        other_address_count++;
     }
     
     if (endpoint->m_driver_debug || schedule->m_debug >= 2) {
