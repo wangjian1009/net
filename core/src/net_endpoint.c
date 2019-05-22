@@ -252,6 +252,10 @@ net_driver_t net_endpoint_driver(net_endpoint_t endpoint) {
     return endpoint->m_driver;
 }
 
+const char * net_endpoint_driver_name(net_endpoint_t endpoint) {
+    return endpoint->m_driver->m_name;
+}
+
 uint32_t net_endpoint_id(net_endpoint_t endpoint) {
     return endpoint->m_id;
 }
