@@ -134,6 +134,14 @@ void net_watcher_update(net_watcher_t watcher, uint8_t expect_read, uint8_t expe
     }
 }
 
+void net_watcher_update_read(net_watcher_t watcher, uint8_t expect_read) {
+    net_watcher_update(watcher, expect_read, watcher->m_expect_write);
+}
+
+void net_watcher_update_write(net_watcher_t watcher, uint8_t expect_write) {
+    net_watcher_update(watcher, expect_write, watcher->m_expect_write);
+}
+
 uint8_t net_watcher_expect_read(net_watcher_t watcher) {
     return watcher->m_expect_read;
 }
