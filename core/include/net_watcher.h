@@ -15,6 +15,10 @@ struct net_watcher_it {
 net_watcher_t net_watcher_create(net_driver_t driver, int fd, void * ctx, net_watcher_action_fun_t action);
 void net_watcher_free(net_watcher_t watcher);
 
+net_watcher_action_fun_t net_watcher_action(net_watcher_t watcher);
+void * net_watcher_action_ctx(net_watcher_t watcher);
+void net_watcher_set_action(net_watcher_t watcher, void * ctx, net_watcher_action_fun_t action);
+
 void net_watcher_update(net_watcher_t watcher, uint8_t expect_read, uint8_t expect_write);
 void net_watcher_notify(net_watcher_t watcher, uint8_t do_read, uint8_t do_write);
 

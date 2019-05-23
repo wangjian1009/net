@@ -65,6 +65,19 @@ void net_watcher_real_free(net_watcher_t watcher) {
     mem_free(driver->m_schedule->m_alloc, watcher);
 }
 
+net_watcher_action_fun_t net_watcher_action(net_watcher_t watcher) {
+    return watcher->m_action;
+}
+
+void * net_watcher_action_ctx(net_watcher_t watcher) {
+    return watcher->m_ctx;
+}
+
+void net_watcher_set_action(net_watcher_t watcher, void * ctx, net_watcher_action_fun_t action) {
+    watcher->m_ctx = ctx;
+    watcher->m_action = action;
+}
+
 void * net_watcher_data(net_watcher_t watcher) {
     return watcher + 1;
 }
