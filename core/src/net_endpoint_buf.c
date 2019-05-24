@@ -91,6 +91,16 @@ int net_endpoint_update_rbuf_is_full(net_endpoint_t endpoint) {
 
     endpoint->m_rb_is_full = rb_is_full;
 
+    if (net_endpoint_driver_debug(endpoint)) {
+        net_schedule_t schedule = endpoint->m_driver->m_schedule;
+        if (rb_is_full) {
+            CPE_INFO(schedule->m_em, "core: %s: rbuf is full", net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
+        }
+        else {
+            CPE_INFO(schedule->m_em, "core: %s: rbuf not full", net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
+        }
+    }
+    
     if (endpoint->m_state == net_endpoint_state_established) {
         return net_endpoint_driver_update(endpoint);
     }
