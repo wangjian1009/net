@@ -88,7 +88,7 @@ int net_sock_endpoint_update(net_endpoint_t base_endpoint) {
     }
 
     if (!net_endpoint_rbuf_is_full(base_endpoint) /*读取缓存不为空，可以读取数据 */
-        && endpoint->m_do_write == NULL /*没有等待执行的读取操作 */
+        && endpoint->m_do_read == NULL /*没有等待执行的读取操作 */
         && !net_watcher_expect_read(endpoint->m_watcher)) /*socket上没有等待读取的操作（当前有数据可以读取) */
     {
         /*启动读取操作 */
