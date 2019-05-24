@@ -6,7 +6,6 @@ struct net_sock_endpoint {
     int m_fd;
     net_watcher_t m_watcher;
     net_timer_t m_do_read;
-    net_timer_t m_do_write;
 };
 
 int net_sock_endpoint_init(net_endpoint_t base_endpoint);

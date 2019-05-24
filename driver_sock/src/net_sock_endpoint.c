@@ -17,8 +17,6 @@ static void net_sock_endpoint_connect_cb(void * ctx, int fd, uint8_t do_read, ui
 static uint8_t net_sock_endpoint_on_read(net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint);
 static uint8_t net_sock_endpoint_on_write(net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint);
 
-static int net_sock_endpoint_start_do_write(net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint);
-static void net_sock_endpoint_stop_do_write(net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint);
 static int net_sock_endpoint_start_do_read(net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint);
 static void net_sock_endpoint_stop_do_read(net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint);
 
@@ -38,7 +36,6 @@ int net_sock_endpoint_init(net_endpoint_t base_endpoint) {
     endpoint->m_fd = -1;
     endpoint->m_watcher = NULL;
     endpoint->m_do_read = NULL;
-    endpoint->m_do_write = NULL;
     return 0;
 }
 
@@ -55,11 +52,6 @@ void net_sock_endpoint_fini(net_endpoint_t base_endpoint) {
         net_timer_free(endpoint->m_do_read);
         endpoint->m_do_read = NULL;
     }
-
-    if (endpoint->m_do_write) {
-        net_timer_free(endpoint->m_do_write);
-        endpoint->m_do_write = NULL;
-    }
 }
 
 int net_sock_endpoint_update(net_endpoint_t base_endpoint) {
@@ -70,20 +62,11 @@ int net_sock_endpoint_update(net_endpoint_t base_endpoint) {
     assert(endpoint->m_watcher != NULL);
 
     if (!net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write) /*有数据等待写入 */
-        && endpoint->m_do_write == NULL /*没有等待执行的写入操作 */
         && !net_watcher_expect_write(endpoint->m_watcher)) /*socket没有等待可以写入的操作（当前可以写入数据到socket) */
     {
-        /*启动写入操作 */
-        if (net_sock_endpoint_start_do_write(driver, endpoint, base_endpoint) != 0) {
-            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_logic_error) != 0) {
-                if (net_endpoint_driver_debug(base_endpoint) >= 2) {
-                    CPE_INFO(
-                        driver->m_em, "sock: %s: fd=%d: free for start do write fail!",
-                        net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
-                }
-                net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
-                return -1;
-            }
+        if (net_sock_endpoint_on_write(driver, endpoint, base_endpoint) != 0) {
+            net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+            return -1;
         }
     }
 
@@ -369,7 +352,6 @@ int net_sock_endpoint_update_remote_address(net_sock_endpoint_t endpoint) {
 static uint8_t net_sock_endpoint_on_read(net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint) {
     while(
         net_endpoint_state(base_endpoint) == net_endpoint_state_established /*当前状态正确 */
-        && !net_watcher_expect_read(endpoint->m_watcher) /*socket上没有等待可以读取的处理（当前可以读取) */
         && !net_endpoint_rbuf_is_full(base_endpoint) /*读取缓存没有满 */
         )
     {
@@ -449,13 +431,15 @@ static uint8_t net_sock_endpoint_on_read(net_sock_driver_t driver, net_sock_endp
             net_endpoint_buf_release(base_endpoint);
 
             if (cpe_sock_errno() == EWOULDBLOCK || cpe_sock_errno() == EINPROGRESS) {
-                if (net_endpoint_driver_debug(base_endpoint) >= 3) {
-                    CPE_INFO(
-                        driver->m_em, "sock: %s: fd=%d: wait read begin!",
-                        net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
-                }
+                if (!net_watcher_expect_read(endpoint->m_watcher)) {
+                    if (net_endpoint_driver_debug(base_endpoint) >= 3) {
+                        CPE_INFO(
+                            driver->m_em, "sock: %s: fd=%d: wait read begin!",
+                            net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
+                    }
 
-                net_watcher_update_read(endpoint->m_watcher, 1);
+                    net_watcher_update_read(endpoint->m_watcher, 1);
+                }
                 break;
             }
             else if (cpe_sock_errno() == EINTR) {
@@ -484,7 +468,6 @@ static uint8_t net_sock_endpoint_on_read(net_sock_driver_t driver, net_sock_endp
 
 static uint8_t net_sock_endpoint_on_write(net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint) {
     while(net_endpoint_state(base_endpoint) == net_endpoint_state_established /*ep状态正确 */
-          && !net_watcher_expect_write(endpoint->m_watcher) /*socket没有等待（当前可以写入数据) */
           && !net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write) /*还有数据等待写入 */
         )
     {
@@ -521,12 +504,14 @@ static uint8_t net_sock_endpoint_on_write(net_sock_driver_t driver, net_sock_end
             assert(bytes == -1);
 
             if (err == EWOULDBLOCK || err == EINPROGRESS) {
-                if (net_endpoint_driver_debug(base_endpoint) >= 3) {
-                    CPE_INFO(
-                        driver->m_em, "sock: %s: fd=%d: wait write begin!",
-                        net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
+                if (!net_watcher_expect_write(endpoint->m_watcher)) {
+                    if (net_endpoint_driver_debug(base_endpoint) >= 3) {
+                        CPE_INFO(
+                            driver->m_em, "sock: %s: fd=%d: wait write begin!",
+                            net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
+                    }
+                    net_watcher_update_write(endpoint->m_watcher, 1);
                 }
-                net_watcher_update_write(endpoint->m_watcher, 1);
                 return 0;
             }
         
@@ -867,59 +852,6 @@ static void net_sock_endpoint_close_sock(net_sock_driver_t driver, net_sock_endp
 
         cpe_sock_close(endpoint->m_fd);
         endpoint->m_fd = -1;
-    }
-}
-
-static void net_sock_endpoint_do_write(net_timer_t timer, void * ctx) {
-    net_sock_endpoint_t endpoint = ctx;
-    net_endpoint_t base_endpoint = net_endpoint_from_data(endpoint);
-    net_sock_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
-
-    if (net_endpoint_driver_debug(base_endpoint) >= 3) {
-        CPE_INFO(
-            driver->m_em, "sock: %s: fd=%d: do write process",
-            net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
-    }
-    
-    net_sock_endpoint_stop_do_write(driver, endpoint, base_endpoint);
-    if (net_sock_endpoint_on_write(driver, endpoint, base_endpoint) != 0) {
-        net_endpoint_free(base_endpoint);
-        return;
-    }
-}
-
-static int net_sock_endpoint_start_do_write(net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint) {
-    assert(endpoint->m_do_write == NULL);
-
-    endpoint->m_do_write = net_timer_auto_create(net_endpoint_schedule(base_endpoint), net_sock_endpoint_do_write, endpoint);
-    if (endpoint->m_do_write == NULL) {
-        CPE_ERROR(
-            driver->m_em, "sock: %s: fd=%d: do write start: create time fail",
-            net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
-        return -1;
-    }
-
-    net_timer_active(endpoint->m_do_write, 0);
-
-    if (net_endpoint_driver_debug(base_endpoint) >= 3) {
-        CPE_INFO(
-            driver->m_em, "sock: %s: fd=%d: do write start",
-            net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
-    }
-    
-    return 0;
-}
-
-static void net_sock_endpoint_stop_do_write(net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint) {
-    assert(endpoint->m_do_write != NULL);
-
-    net_timer_free(endpoint->m_do_write);
-    endpoint->m_do_write = NULL;
-
-    if (net_endpoint_driver_debug(base_endpoint) >= 3) {
-        CPE_INFO(
-            driver->m_em, "sock: %s: fd=%d: do write stop",
-            net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
     }
 }
 
