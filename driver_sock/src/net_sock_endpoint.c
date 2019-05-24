@@ -351,8 +351,7 @@ static uint8_t net_sock_endpoint_on_read(net_sock_driver_t driver, net_sock_endp
             else {
                 CPE_ERROR(
                     driver->m_em, "sock: %s: fd=%d: on read: endpoint rbuf full!",
-                    net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
-                    cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+                    net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
 
                 if (net_endpoint_is_active(base_endpoint)) {
                     if (!net_endpoint_have_error(base_endpoint)) {
