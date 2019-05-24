@@ -6,6 +6,7 @@ add_library(net_trans STATIC ${net_trans_source})
 
 set_property(TARGET net_trans PROPERTY INCLUDE_DIRECTORIES
   ${CMAKE_CURRENT_LIST_DIR}/../../../cpe/include
+  ${CMAKE_CURRENT_LIST_DIR}/../../depends/curl/include
   ${CMAKE_CURRENT_LIST_DIR}/../../core/include
   ${CMAKE_CURRENT_LIST_DIR}/../../protocol_http/include
   ${net_trans_base}/include
