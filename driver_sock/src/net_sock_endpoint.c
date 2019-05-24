@@ -70,9 +70,10 @@ int net_sock_endpoint_update(net_endpoint_t base_endpoint) {
         }
     }
 
-    if (!net_endpoint_rbuf_is_full(base_endpoint) /*读取缓存不为空，可以读取数据 */
-        && endpoint->m_do_read == NULL /*没有等待执行的读取操作 */
-        && !net_watcher_expect_read(endpoint->m_watcher)) /*socket上没有等待读取的操作（当前有数据可以读取) */
+    if (endpoint->m_do_read == NULL /*没有等待执行的读取操作 */
+        && !net_watcher_expect_read(endpoint->m_watcher) /*socket上没有等待读取的操作（当前有数据可以读取) */
+        && !net_endpoint_rbuf_is_full(base_endpoint) /*读取缓存不为空，可以读取数据 */
+        )
     {
         /*启动读取操作 */
         if (net_sock_endpoint_start_do_read(driver, endpoint, base_endpoint)) {
@@ -554,24 +555,33 @@ static void net_sock_endpoint_rw_cb(void * ctx, int fd, uint8_t do_read, uint8_t
     if (do_read) {
         if (net_endpoint_driver_debug(base_endpoint) >= 3) {
             CPE_INFO(
-                driver->m_em, "sock: %s: fd=%d: wait read end (net can read)",
+                driver->m_em, "sock: %s: fd=%d: net can read",
                 net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
         }
         
-        net_watcher_update_read(endpoint->m_watcher, 0);
         if (net_sock_endpoint_on_read(driver, endpoint, base_endpoint) != 0) {
             net_endpoint_free(base_endpoint);
             return;
+        }
+
+        if (endpoint->m_watcher && net_endpoint_rbuf_is_full(base_endpoint)) {
+            if (net_endpoint_driver_debug(base_endpoint) >= 3) {
+                CPE_INFO(
+                    driver->m_em, "sock: %s: fd=%d: wait read stop(rbuf full) ",
+                    net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
+            }
+        
+            net_watcher_update_read(endpoint->m_watcher, 0);
         }
     }
 
     if (do_write) {
         if (net_endpoint_driver_debug(base_endpoint) >= 3) {
             CPE_INFO(
-                driver->m_em, "sock: %s: fd=%d: wait write end (net can write)",
+                driver->m_em, "sock: %s: fd=%d: net can write",
                 net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
         }
-        
+
         net_watcher_update_write(endpoint->m_watcher, 0);
         if (net_sock_endpoint_on_write(driver, endpoint, base_endpoint) != 0) {
             net_endpoint_free(base_endpoint);
