@@ -150,12 +150,6 @@ static void net_sock_acceptor_cb(void * ctx, int fd, uint8_t do_read, uint8_t do
 
     net_sock_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     endpoint->m_fd = new_fd;
-    net_sock_endpoint_update_rw_watcher(driver, base_endpoint, endpoint);
-
-    if (net_endpoint_set_state(base_endpoint, net_endpoint_state_established) != 0) {
-        net_endpoint_free(base_endpoint);
-        return;
-    }
 
     if (net_sock_endpoint_update_local_address(endpoint) != 0
         || net_sock_endpoint_update_remote_address(endpoint) != 0)
@@ -166,6 +160,11 @@ static void net_sock_acceptor_cb(void * ctx, int fd, uint8_t do_read, uint8_t do
 
     if (net_acceptor_on_new_endpoint(base_acceptor, base_endpoint) != 0) {
         CPE_ERROR(em, "sock: accept: on new endpoint fail");
+        net_endpoint_free(base_endpoint);
+        return;
+    }
+
+    if (net_sock_endpoint_set_established(driver, endpoint, base_endpoint) != 0) {
         net_endpoint_free(base_endpoint);
         return;
     }
