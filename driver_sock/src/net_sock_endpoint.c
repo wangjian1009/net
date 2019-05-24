@@ -291,7 +291,7 @@ int net_sock_endpoint_set_established(net_sock_driver_t driver, net_sock_endpoin
     assert(endpoint->m_watcher == NULL);
     assert(endpoint->m_fd != -1);
 
-    endpoint->m_watcher = net_watcher_create(net_endpoint_driver(base_endpoint), endpoint->m_fd, endpoint, net_sock_endpoint_connect_cb);
+    endpoint->m_watcher = net_watcher_create(net_endpoint_driver(base_endpoint), endpoint->m_fd, endpoint, net_sock_endpoint_rw_cb);
     if (endpoint->m_watcher == NULL) {
         CPE_ERROR(
             driver->m_em, "sock: %s: fd=%d: set established: create watcher fail",
