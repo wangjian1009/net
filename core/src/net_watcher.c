@@ -139,10 +139,12 @@ void net_watcher_update_read(net_watcher_t watcher, uint8_t expect_read) {
 }
 
 void net_watcher_update_write(net_watcher_t watcher, uint8_t expect_write) {
+    assert(watcher);
     net_watcher_update(watcher, watcher->m_expect_read, expect_write);
 }
 
 uint8_t net_watcher_expect_read(net_watcher_t watcher) {
+    assert(watcher);
     return watcher->m_expect_read;
 }
 
