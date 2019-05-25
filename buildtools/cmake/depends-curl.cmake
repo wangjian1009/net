@@ -31,6 +31,8 @@ set_property(TARGET curl PROPERTY COMPILE_DEFINITIONS ${curl_compile_definitions
 set_property(TARGET curl PROPERTY INCLUDE_DIRECTORIES
   ${curl_base}/include
   ${curl_base}/lib
+  ${curl_base}/../c-ares/include
+  ${curl_base}/../c-ares/include/${OS_NAME}
   ${curl_base}/../mbedtls/include
   ${curl_base}/../mbedtls/include/mbedtls
   )

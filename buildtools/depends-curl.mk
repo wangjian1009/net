@@ -2,7 +2,10 @@ curl_base:=$(call my-dir)/../depends/curl
 curl_output:=$(OUTPUT_PATH)/lib/libcurl.a
 curl_cpp_flags:=-I$(curl_base)/include \
                 -I$(curl_base)/lib \
-                -I$(call my-dir)/../depends/mbedtls/include -I$(call my-dir)/../depends/mbedtls/include/mbedtls \
+                -I$(call my-dir)/../depends/c-ares/include \
+                -I$(call my-dir)/../depends/c-ares/include/$(OS_NAME) \
+                -I$(call my-dir)/../depends/mbedtls/include \
+                -I$(call my-dir)/../depends/mbedtls/include/mbedtls \
                 -DHAVE_CONFIG_H \
                 -DBUILDING_LIBCURL
 

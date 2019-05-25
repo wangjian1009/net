@@ -940,7 +940,7 @@
 #define TIME_WITH_SYS_TIME 1
 
 /* Define to enable c-ares support */
-/* #undef USE_ARES */
+#define USE_ARES
 
 /* if CyaSSL/WolfSSL is enabled */
 /* #undef USE_CYASSL */
