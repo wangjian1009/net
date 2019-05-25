@@ -4,6 +4,8 @@
 #include "cpe/utils/md5.h"
 #include "cpe/utils/string_utils.h"
 #include "cpe/utils/stream_buffer.h"
+#include "cpe/utils_sock/sock_utils.h"
+#include "cpe/utils_sock/getdnssvraddrs.h"
 #include "net_watcher.h"
 #include "net_timer.h"
 #include "net_log_request.h"
@@ -269,6 +271,39 @@ static int net_log_request_send(net_log_request_t request) {
         curl_easy_setopt(request->m_handler, CURLOPT_CONNECT_TO, connect_to);
     }
 
+    struct sockaddr_storage dnssevraddrs[10];
+    uint8_t addr_count = CPE_ARRAY_SIZE(dnssevraddrs);
+    if (getdnssvraddrs(dnssevraddrs, &addr_count, schedule->m_em) != 0) {
+        CPE_ERROR(
+            schedule->m_em, "log: %s: category [%d]%s: request %d: get dns servers error!",
+            mgr->m_name, category->m_id, category->m_name, request->m_id);
+        return -1;
+    }
+
+    /*DNS*/
+    char dns_buf[512];
+    size_t dns_buf_sz = 0;
+    uint8_t i;
+    for(i = 0; i < addr_count; ++i) {
+        struct sockaddr_storage * sock_addr = &dnssevraddrs[i];
+        if (sock_addr->ss_family == AF_INET6 && sock_addr->ss_family != AF_INET) continue;
+
+        char one_buf[64];
+        char * one_address = sock_get_addr(one_buf, sizeof(one_buf), sock_addr, sizeof(*sock_addr), 0, schedule->m_em);
+        if (dns_buf_sz > 0) {
+            dns_buf_sz += snprintf(dns_buf, sizeof(dns_buf) - dns_buf_sz, ",%s", one_address);
+        }
+        else {
+            dns_buf_sz += snprintf(dns_buf, sizeof(dns_buf) - dns_buf_sz, "%s", one_address);
+        }
+    }
+
+    dns_buf[dns_buf_sz] = 0;
+    if (dns_buf_sz > 0) {
+        curl_easy_setopt(request->m_handler, CURLOPT_DNS_SERVERS, dns_buf);
+    }
+
+    /**/
     char nowTimeStr[64];
     struct tm * timeinfo = gmtime(&nowTime);
     strftime(nowTimeStr, sizeof(nowTimeStr), "%a, %d %b %Y %H:%M:%S GMT", timeinfo);
