@@ -3,18 +3,27 @@
 #include "cpe/pal/pal_stdio.h"
 #include "cpe/utils/string_utils.h"
 #include "cpe/utils/stream_buffer.h"
+#include "cpe/utils_sock/sock_utils.h"
+#include "cpe/utils_sock/getdnssvraddrs.h"
+#include "net_schedule.h"
 #include "net_address.h"
 #include "net_endpoint.h"
 #include "net_watcher.h"
 #include "net_trans_task_i.h"
 
 static size_t net_trans_task_write_cb(char *ptr, size_t size, size_t nmemb, void * userdata);
-static int net_tranks_task_prog_cb(void *p, double dltotal, double dlnow, double ult, double uln);
+static int net_trans_task_prog_cb(void *p, double dltotal, double dlnow, double ult, double uln);
+static int net_trans_task_init_dns(net_trans_manage_t mgr, net_trans_task_t task);
 
 net_trans_task_t
 net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const char * uri) {
     net_trans_task_t task = NULL;
 
+    if (net_schedule_local_ip_stack(mgr->m_schedule) == net_local_ip_stack_none) {
+        CPE_ERROR(mgr->m_em, "trans: task: ip stack non, can`t create task!");
+        return NULL;
+    }
+    
     task = TAILQ_FIRST(&mgr->m_free_tasks);
     if (task) {
         TAILQ_REMOVE(&mgr->m_free_tasks, task, m_next_for_mgr);
@@ -55,7 +64,7 @@ net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const c
 	curl_easy_setopt(task->m_handler, CURLOPT_WRITEDATA, task);
 
     curl_easy_setopt(task->m_handler, CURLOPT_NOPROGRESS, 0L);
-    curl_easy_setopt(task->m_handler, CURLOPT_PROGRESSFUNCTION, net_tranks_task_prog_cb);
+    curl_easy_setopt(task->m_handler, CURLOPT_PROGRESSFUNCTION, net_trans_task_prog_cb);
     curl_easy_setopt(task->m_handler, CURLOPT_PROGRESSDATA, task);
 
     curl_easy_setopt(task->m_handler, CURLOPT_URL, uri);
@@ -74,7 +83,9 @@ net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const c
     }
 
     mem_buffer_init(&task->m_buffer, mgr->m_alloc);
-    
+
+    if (net_trans_task_init_dns(mgr, task) != 0) goto CREATED_ERROR;
+
     cpe_hash_entry_init(&task->m_hh_for_mgr);
     if (cpe_hash_table_insert_unique(&mgr->m_tasks, task) != 0) {
         CPE_ERROR(mgr->m_em, "trans: task: id duplicate!");
@@ -553,7 +564,7 @@ static size_t net_trans_task_write_cb(char *ptr, size_t size, size_t nmemb, void
     return total_length;
 }
 
-static int net_tranks_task_prog_cb(void *p, double dltotal, double dlnow, double ult, double uln) {
+static int net_trans_task_prog_cb(void *p, double dltotal, double dlnow, double ult, double uln) {
     net_trans_task_t task = (net_trans_task_t)p;
     (void)ult;
     (void)uln;
@@ -624,5 +635,76 @@ int net_trans_task_set_done(net_trans_task_t task, net_trans_task_result_t resul
         net_trans_task_free(task);
     }
 
+    return 0;
+}
+
+static int net_trans_task_init_dns(net_trans_manage_t mgr, net_trans_task_t task) {
+    struct sockaddr_storage dnssevraddrs[10];
+    uint8_t addr_count = CPE_ARRAY_SIZE(dnssevraddrs);
+    if (getdnssvraddrs(dnssevraddrs, &addr_count, mgr->m_em) != 0) {
+        CPE_ERROR(mgr->m_em, "trans: task: init dns: get dns servers error!");
+        return -1;
+    }
+
+    char dns_buf[512];
+    size_t dns_buf_sz = 0;
+
+    net_local_ip_stack_t ip_stack = net_schedule_local_ip_stack(mgr->m_schedule);
+
+    uint8_t i;
+    for(i = 0; i < addr_count; ++i) {
+        struct sockaddr_storage * sock_addr = &dnssevraddrs[i];
+        if (sock_addr->ss_family == AF_INET6) {
+            if (ip_stack != net_local_ip_stack_ipv6 && ip_stack != net_local_ip_stack_dual) {
+                if (mgr->m_debug) {
+                    CPE_INFO(
+                        mgr->m_em, "trans: task %d: init dns: ignore ipv4 address for stack %s",
+                        task->m_id, net_local_ip_stack_str(ip_stack));
+                }
+                continue;
+            }
+        }
+        else if (sock_addr->ss_family == AF_INET) {
+            if (ip_stack != net_local_ip_stack_ipv4 && ip_stack != net_local_ip_stack_dual) {
+                if (mgr->m_debug) {
+                    CPE_INFO(
+                        mgr->m_em, "trans: task %d: init dns: ignore ipv4 address for stack %s",
+                        task->m_id, net_local_ip_stack_str(ip_stack));
+                }
+                continue;
+            }
+        }
+        else {
+            if (mgr->m_debug) {
+                CPE_INFO(
+                    mgr->m_em, "trans: task %d: init dns: ignore address for not support family %d",
+                    task->m_id, sock_addr->ss_family);
+            }
+            continue;
+        }
+
+        char one_buf[64];
+        char * one_address = sock_get_addr(one_buf, sizeof(one_buf), sock_addr, sizeof(*sock_addr), 0, mgr->m_em);
+        if (dns_buf_sz > 0) {
+            dns_buf_sz += snprintf(dns_buf, sizeof(dns_buf) - dns_buf_sz, ",%s", one_address);
+        }
+        else {
+            dns_buf_sz += snprintf(dns_buf, sizeof(dns_buf) - dns_buf_sz, "%s", one_address);
+        }
+    }
+
+    dns_buf[dns_buf_sz] = 0;
+
+    if (dns_buf_sz == 0) {
+        CPE_ERROR(mgr->m_em, "trans: task: init dns: no dns server!");
+        return -1;
+    }
+
+    curl_easy_setopt(task->m_handler, CURLOPT_DNS_SERVERS, dns_buf);
+
+    if (mgr->m_debug) {
+        CPE_INFO(mgr->m_em, "trans: task: init dns: using %s!", dns_buf);
+    }
+    
     return 0;
 }
