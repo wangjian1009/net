@@ -4,7 +4,7 @@
 
 NET_BEGIN_DECL
 
-net_trans_task_t net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const char * url);
+net_trans_task_t net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const char * url, uint8_t is_debug);
 
 void net_trans_task_free(net_trans_task_t task);
 

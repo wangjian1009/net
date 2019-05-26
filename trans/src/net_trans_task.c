@@ -17,7 +17,7 @@ static size_t net_trans_task_header_cb(void *ptr, size_t size, size_t nmemb, voi
 static int net_trans_task_init_dns(net_trans_manage_t mgr, net_trans_task_t task);
 
 net_trans_task_t
-net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const char * uri) {
+net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const char * uri, uint8_t is_debug) {
     net_trans_task_t task = NULL;
 
     if (net_schedule_local_ip_stack(mgr->m_schedule) == net_local_ip_stack_none) {
@@ -67,6 +67,8 @@ net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const c
     task->m_ctx = NULL;
     task->m_ctx_free = NULL;
 
+    net_trans_task_set_debug(task, is_debug);
+    
 	curl_easy_setopt(task->m_handler, CURLOPT_WRITEFUNCTION, net_trans_task_write_cb);
 	curl_easy_setopt(task->m_handler, CURLOPT_WRITEDATA, task);
 
@@ -126,7 +128,7 @@ void net_trans_task_free(net_trans_task_t task) {
         return;
     }
 
-    if (mgr->m_debug) {
+    if (mgr->m_debug || task->m_debug) {
         CPE_INFO(mgr->m_em, "trans: task %d: free!", task->m_id);
     }
 
@@ -221,7 +223,7 @@ int net_trans_task_set_skip_data(net_trans_task_t task, ssize_t skip_length) {
         return -1;
     }
 
-    if (mgr->m_debug) {
+    if (task->m_debug) {
         CPE_INFO(mgr->m_em, "trans: task %d: set skip data %d!", task->m_id, (int)skip_length);
     }
 
@@ -238,7 +240,7 @@ int net_trans_task_set_timeout_ms(net_trans_task_t task, uint64_t timeout_ms) {
         return -1;
     }
 
-    if (mgr->m_debug) {
+    if (task->m_debug) {
         CPE_INFO(
             mgr->m_em, "trans: task %d: set timeout " FMT_UINT64_T "ms!",
             task->m_id, timeout_ms);
@@ -257,7 +259,7 @@ int net_trans_task_set_connection_timeout_ms(net_trans_task_t task, uint64_t tim
         return -1;
     }
 
-    if (mgr->m_debug) {
+    if (task->m_debug) {
         CPE_INFO(
             mgr->m_em, "trans: task %d: set connection-timeout " FMT_UINT64_T "ms!",
             task->m_id, timeout_ms);
@@ -276,10 +278,8 @@ int net_trans_task_set_useragent(net_trans_task_t task, const char * agent) {
         return -1;
     }
 
-    if (mgr->m_debug) {
-        CPE_INFO(
-            mgr->m_em, "trans: task %d: set useragent %s!",
-            task->m_id, agent);
+    if (task->m_debug) {
+        CPE_INFO(mgr->m_em, "trans: task %d: set useragent %s!", task->m_id, agent);
     }
 
     return 0;
@@ -317,7 +317,7 @@ int net_trans_task_append_header_line(net_trans_task_t task, const char * header
         }
     }
 
-    if (mgr->m_debug) {
+    if (task->m_debug) {
         CPE_INFO(mgr->m_em, "trans: task %d: append header %s!", task->m_id, header_one);
     }
 
@@ -434,7 +434,6 @@ static int net_trans_task_trace(CURL *handle, curl_infotype type, char *data, si
  
 void net_trans_task_set_debug(net_trans_task_t task, uint8_t is_debug) {
     task->m_debug = is_debug;
-
     if (is_debug) {
         curl_easy_setopt(task->m_handler, CURLOPT_VERBOSE, 1L);
         curl_easy_setopt(task->m_handler, CURLOPT_DEBUGFUNCTION, net_trans_task_trace);
@@ -772,7 +771,7 @@ static int net_trans_task_init_dns(net_trans_manage_t mgr, net_trans_task_t task
     struct sockaddr_storage dnssevraddrs[10];
     uint8_t addr_count = CPE_ARRAY_SIZE(dnssevraddrs);
     if (getdnssvraddrs(dnssevraddrs, &addr_count, mgr->m_em) != 0) {
-        CPE_ERROR(mgr->m_em, "trans: task: init dns: get dns servers error!");
+        CPE_ERROR(mgr->m_em, "trans: task %d: dns: get dns servers error!", task->m_id);
         return -1;
     }
 
@@ -788,7 +787,7 @@ static int net_trans_task_init_dns(net_trans_manage_t mgr, net_trans_task_t task
             if (ip_stack != net_local_ip_stack_ipv6 && ip_stack != net_local_ip_stack_dual) {
                 if (mgr->m_debug) {
                     CPE_INFO(
-                        mgr->m_em, "trans: task %d: init dns: ignore ipv4 address for stack %s",
+                        mgr->m_em, "trans: task %d: dns: ignore ipv4 address for stack %s",
                         task->m_id, net_local_ip_stack_str(ip_stack));
                 }
                 continue;
@@ -798,7 +797,7 @@ static int net_trans_task_init_dns(net_trans_manage_t mgr, net_trans_task_t task
             if (ip_stack != net_local_ip_stack_ipv4 && ip_stack != net_local_ip_stack_dual) {
                 if (mgr->m_debug) {
                     CPE_INFO(
-                        mgr->m_em, "trans: task %d: init dns: ignore ipv4 address for stack %s",
+                        mgr->m_em, "trans: task %d: dns: ignore ipv4 address for stack %s",
                         task->m_id, net_local_ip_stack_str(ip_stack));
                 }
                 continue;
@@ -807,7 +806,7 @@ static int net_trans_task_init_dns(net_trans_manage_t mgr, net_trans_task_t task
         else {
             if (mgr->m_debug) {
                 CPE_INFO(
-                    mgr->m_em, "trans: task %d: init dns: ignore address for not support family %d",
+                    mgr->m_em, "trans: task %d: dns: ignore address for not support family %d",
                     task->m_id, sock_addr->ss_family);
             }
             continue;
@@ -816,24 +815,24 @@ static int net_trans_task_init_dns(net_trans_manage_t mgr, net_trans_task_t task
         char one_buf[64];
         char * one_address = sock_get_addr(one_buf, sizeof(one_buf), sock_addr, sizeof(*sock_addr), 0, mgr->m_em);
         if (dns_buf_sz > 0) {
-            dns_buf_sz += snprintf(dns_buf, sizeof(dns_buf) - dns_buf_sz, ",%s", one_address);
+            dns_buf_sz += snprintf(dns_buf + dns_buf_sz, sizeof(dns_buf) - dns_buf_sz, ",%s", one_address);
         }
         else {
-            dns_buf_sz += snprintf(dns_buf, sizeof(dns_buf) - dns_buf_sz, "%s", one_address);
+            dns_buf_sz += snprintf(dns_buf + dns_buf_sz, sizeof(dns_buf) - dns_buf_sz, "%s", one_address);
         }
     }
 
     dns_buf[dns_buf_sz] = 0;
 
     if (dns_buf_sz == 0) {
-        CPE_ERROR(mgr->m_em, "trans: task: init dns: no dns server!");
+        CPE_ERROR(mgr->m_em, "trans: task %d: dns: no dns server!", task->m_id);
         return -1;
     }
 
     curl_easy_setopt(task->m_handler, CURLOPT_DNS_SERVERS, dns_buf);
 
-    if (mgr->m_debug) {
-        CPE_INFO(mgr->m_em, "trans: task: init dns: using %s!", dns_buf);
+    if (task->m_debug) {
+        CPE_INFO(mgr->m_em, "trans: task %d: dns: using %s!", task->m_id, dns_buf);
     }
     
     return 0;
