@@ -599,39 +599,33 @@ int net_trans_task_eq(net_trans_task_t l, net_trans_task_t r, void * user_data) 
 }
 
 static size_t net_trans_task_header_cb(void *ptr, size_t size, size_t nmemb, void *stream) {
-    char * head_line = (char*)ptr;
+    net_trans_task_t task = stream;
     size_t total_length = size * nmemb;
+    net_trans_manage_t mgr = task->m_mgr;
 
-    char * sep = strchr(ptr, ':');
+    if (task->m_head_op == NULL) return total_length;
+    
+    char * head_line = (char*)ptr;
+
+    char * sep = strchr(head_line, ':');
     if (sep == NULL) return total_length;
 
-    net_trans_task_t task = stream;
-    net_trans_manage_t mgr = task->m_mgr;
-    
     char * name_last = cpe_str_trim_tail(sep, head_line);
     char name_keep = *name_last;
     *name_last = 0;
 
     const char * value = cpe_str_trim_head(sep + 1);
 
-    if (task->m_debug) {
-        CPE_INFO(
-            mgr->m_em, "trans: task %d: head: %s=%s",
-            task->m_id, head_line, value);
+    uint8_t tag_local = 0;
+    if (task->m_in_callback == 0) {
+        task->m_in_callback = 1;
+        tag_local = 1;
     }
-
-    if (task->m_head_op) {
-        uint8_t tag_local = 0;
-        if (task->m_in_callback == 0) {
-            task->m_in_callback = 1;
-            tag_local = 1;
-        }
         
-        task->m_head_op(task, task->m_ctx, head_line, value);
+    task->m_head_op(task, task->m_ctx, head_line, value);
 
-        if (tag_local) {
-            task->m_in_callback = 0;
-        }
+    if (tag_local) {
+        task->m_in_callback = 0;
     }
 
     *name_last = name_keep;
