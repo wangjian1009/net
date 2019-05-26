@@ -193,6 +193,9 @@ static void net_log_request_commit(net_trans_task_t task, void * ctx, void * dat
     net_log_schedule_t schedule = mgr->m_schedule;
     assert(category);
 
+    assert(request->m_task == task);
+    request->m_task = NULL;
+
     net_log_request_send_result_t send_result = net_log_request_calc_result(schedule, request);
     net_log_request_process_result(schedule, category, mgr, request, send_result);
 }

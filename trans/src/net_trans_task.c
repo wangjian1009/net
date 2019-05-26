@@ -612,7 +612,7 @@ static size_t net_trans_task_on_header(void *ptr, size_t size, size_t nmemb, voi
     if (task->m_debug) {
         CPE_INFO(
             mgr->m_em, "trans: task %d: head: %s=%s",
-            task->m_id, head_line, head_line, value);
+            task->m_id, head_line, value);
     }
 
     if (task->m_head_op) {
