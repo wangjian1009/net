@@ -13,6 +13,7 @@
 
 static size_t net_trans_task_write_cb(char *ptr, size_t size, size_t nmemb, void * userdata);
 static int net_trans_task_prog_cb(void *p, double dltotal, double dlnow, double ult, double uln);
+static size_t net_trans_task_header_cb(void *ptr, size_t size, size_t nmemb, void *stream);
 static int net_trans_task_init_dns(net_trans_manage_t mgr, net_trans_task_t task);
 
 net_trans_task_t
@@ -528,6 +529,11 @@ int net_trans_task_start(net_trans_task_t task) {
         task->m_handler = new_handler;
     }
 
+    if (task->m_head_op) {
+        curl_easy_setopt(task->m_handler, CURLOPT_HEADERFUNCTION, net_trans_task_header_cb);
+        curl_easy_setopt(task->m_handler, CURLOPT_HEADERDATA, task);
+    }
+
     rc = curl_multi_add_handle(mgr->m_multi_handle, task->m_handler);
     if (rc != 0) {
         CPE_ERROR(mgr->m_em, "trans: task %d: curl_multi_add_handle error, rc=%d", task->m_id, rc);
@@ -593,7 +599,7 @@ int net_trans_task_eq(net_trans_task_t l, net_trans_task_t r, void * user_data) 
     return l->m_id == r->m_id;
 }
 
-static size_t net_trans_task_on_header(void *ptr, size_t size, size_t nmemb, void *stream) {
+static size_t net_trans_task_header_cb(void *ptr, size_t size, size_t nmemb, void *stream) {
     char * head_line = (char*)ptr;
     size_t total_length = size * nmemb;
 

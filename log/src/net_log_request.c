@@ -28,14 +28,13 @@ static int net_log_request_send(net_log_request_t request);
 static void net_log_request_delay_commit(net_timer_t timer, void * ctx);
 static void net_log_request_rebuild_time(net_log_schedule_t schedule, net_log_category_t category, net_log_request_t request, uint32_t nowTime);
 
-static net_log_request_send_result_t net_log_request_calc_result(net_log_schedule_t schedule, net_log_request_t request);
+static net_log_request_send_result_t net_log_request_calc_result(net_log_schedule_t schedule, net_log_request_t request, net_trans_task_t task);
+
 static int32_t net_log_request_check_result(
     net_log_schedule_t schedule, net_log_category_t category, net_log_request_t request, net_log_request_send_result_t send_result);
 static void net_log_request_process_result(
     net_log_schedule_t schedule, net_log_category_t category, net_log_request_manage_t mgr,
     net_log_request_t request, net_log_request_send_result_t send_result);
-
-static net_log_request_send_result_t net_log_request_calc_result(net_log_schedule_t schedule, net_log_request_t request);
 
 net_log_request_t
 net_log_request_create(net_log_request_manage_t mgr, net_log_request_param_t send_param) {
@@ -194,9 +193,12 @@ static void net_log_request_commit(net_trans_task_t task, void * ctx, void * dat
     assert(category);
 
     assert(request->m_task == task);
+
+    net_log_request_send_result_t send_result = net_log_request_calc_result(schedule, request, task);
+
+    net_trans_task_free(task);
     request->m_task = NULL;
 
-    net_log_request_send_result_t send_result = net_log_request_calc_result(schedule, request);
     net_log_request_process_result(schedule, category, mgr, request, send_result);
 }
 
@@ -486,12 +488,11 @@ void net_log_request_param_free(net_log_request_param_t send_param) {
 }
 
 static net_log_request_send_result_t
-net_log_request_calc_result(net_log_schedule_t schedule, net_log_request_t request) {
+net_log_request_calc_result(net_log_schedule_t schedule, net_log_request_t request, net_trans_task_t task) {
     net_log_category_t category = request->m_category;
     net_log_request_manage_t mgr = request->m_mgr;
-    assert(request->m_task);
 
-    switch(net_trans_task_state(request->m_task)) {
+    switch(net_trans_task_state(task)) {
     case net_trans_task_init:
     case net_trans_task_working:
         CPE_ERROR(
@@ -502,7 +503,7 @@ net_log_request_calc_result(net_log_schedule_t schedule, net_log_request_t reque
         break;
     }
 
-    switch(net_trans_task_result(request->m_task)) {
+    switch(net_trans_task_result(task)) {
     case net_trans_result_unknown:
         CPE_ERROR(
             schedule->m_em, "log: %s: category [%d]%s: request %d: transfer result unknown!",
@@ -514,7 +515,7 @@ net_log_request_calc_result(net_log_schedule_t schedule, net_log_request_t reque
         CPE_ERROR(
             schedule->m_em, "log: %s: category [%d]%s: request %d: transfer error, %s",
             mgr->m_name, category->m_id, category->m_name, request->m_id,
-            net_trans_task_error_str(net_trans_task_error(request->m_task)));
+            net_trans_task_error_str(net_trans_task_error(task)));
         return net_log_request_send_network_error;
     case net_trans_result_cancel:
         CPE_ERROR(
@@ -523,7 +524,7 @@ net_log_request_calc_result(net_log_schedule_t schedule, net_log_request_t reque
         return net_log_request_send_network_error;
     }
 
-    int16_t http_code = net_trans_task_res_code(request->m_task);
+    int16_t http_code = net_trans_task_res_code(task);
     if (http_code == 0) {
         CPE_ERROR(
             schedule->m_em, "log: %s: category [%d]%s: request %d: transfer get server response fail",
