@@ -163,7 +163,15 @@ static void * net_log_sender_thread(void * param) {
     net_ev_driver_t ev_driver = NULL;
     net_log_request_manage_t request_mgr = NULL;
 
-    ev_loop = ev_loop_new(EVFLAG_AUTO);
+    unsigned int ev_loop_flags = EVFLAG_AUTO;
+#if defined CPE_OS_LINUX || defined CPE_OS_ANDROID
+    ev_loop_flags |= EVBACKEND_EPOLL;
+#else
+#if defined CPE_OS_MAC
+    ev_loop_flags |= EVBACKEND_KQUEUE;
+#endif        
+#endif
+    ev_loop = ev_loop_new(ev_loop_flags);
     if (ev_loop == NULL) {
         CPE_ERROR(schedule->m_em, "log: %s: sender: create ev loop fail", sender->m_name);
         goto THREAD_COMPLETED;
