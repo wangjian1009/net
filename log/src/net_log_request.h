@@ -26,12 +26,6 @@ typedef enum net_log_request_send_result {
     net_log_request_send_time_error = 6,
 } net_log_request_send_result_t;
 
-typedef enum net_log_request_complete_state {
-    net_log_request_complete_done,
-    net_log_request_complete_cancel,
-    net_log_request_complete_timeout,
-} net_log_request_complete_state_t;
-
 struct net_log_request_param {
     net_log_category_t category;
     net_log_lz4_buf_t log_buf;
@@ -46,8 +40,7 @@ struct net_log_request {
     uint32_t m_id;
     net_log_category_t m_category;
     net_log_request_state_t m_state;
-    CURL * m_handler;
-    net_watcher_t m_watcher;
+    net_trans_task_t m_task;
     net_timer_t m_delay_process;
 
     /*result*/
@@ -63,13 +56,9 @@ void net_log_request_free(net_log_request_t request);
 
 void net_log_request_real_free(net_log_request_t request);
 
-void net_log_request_complete(
-    net_log_schedule_t schedule, net_log_request_t request, net_log_request_complete_state_t complete_state);
-
 void net_log_request_active(net_log_request_t request);
 void net_log_request_set_state(net_log_request_t request, net_log_request_state_t state);
 
-const char * net_log_request_complete_state_str(net_log_request_complete_state_t state);
 const char * net_log_request_send_result_str(net_log_request_send_result_t result);
 const char * net_log_request_state_str(net_log_request_state_t state);
 

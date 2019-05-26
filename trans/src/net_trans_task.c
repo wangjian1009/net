@@ -54,11 +54,14 @@ net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const c
     curl_easy_setopt(task->m_handler, CURLOPT_PRIVATE, task);
 
     curl_easy_setopt(task->m_handler, CURLOPT_NOSIGNAL, 1);
+    curl_easy_setopt(task->m_handler, CURLOPT_TCP_NODELAY, 1);
+    curl_easy_setopt(task->m_handler, CURLOPT_NETRC, CURL_NETRC_IGNORED);
     
     task->m_in_callback = 0;
     task->m_is_free = 0;
     task->m_commit_op = NULL;
     task->m_write_op = NULL;
+    task->m_head_op = NULL;
     task->m_progress_op = NULL;
     task->m_ctx = NULL;
     task->m_ctx_free = NULL;
@@ -224,19 +227,38 @@ int net_trans_task_set_skip_data(net_trans_task_t task, ssize_t skip_length) {
     return 0;
 }
 
-int net_trans_task_set_timeout(net_trans_task_t task, uint64_t timeout_ms) {
+int net_trans_task_set_timeout_ms(net_trans_task_t task, uint64_t timeout_ms) {
     net_trans_manage_t mgr = task->m_mgr;
 
 	if (curl_easy_setopt(task->m_handler, CURLOPT_TIMEOUT_MS, timeout_ms) != (int)CURLM_OK) {
         CPE_ERROR(
-            mgr->m_em, "trans: task %d: set timeout " FMT_UINT64_T " error!",
+            mgr->m_em, "trans: task %d: set timeout " FMT_UINT64_T "ms error!",
             task->m_id, timeout_ms);
         return -1;
     }
 
     if (mgr->m_debug) {
         CPE_INFO(
-            mgr->m_em, "trans: task %d: set timeout " FMT_UINT64_T "!",
+            mgr->m_em, "trans: task %d: set timeout " FMT_UINT64_T "ms!",
+            task->m_id, timeout_ms);
+    }
+
+    return 0;
+}
+
+int net_trans_task_set_connection_timeout_ms(net_trans_task_t task, uint64_t timeout_ms) {
+    net_trans_manage_t mgr = task->m_mgr;
+
+	if (curl_easy_setopt(task->m_handler, CURLOPT_CONNECTTIMEOUT_MS, timeout_ms) != (int)CURLM_OK) {
+        CPE_ERROR(
+            mgr->m_em, "trans: task %d: set connection-timeout " FMT_UINT64_T "ms error!",
+            task->m_id, timeout_ms);
+        return -1;
+    }
+
+    if (mgr->m_debug) {
+        CPE_INFO(
+            mgr->m_em, "trans: task %d: set connection-timeout " FMT_UINT64_T "ms!",
             task->m_id, timeout_ms);
     }
 
@@ -264,7 +286,7 @@ int net_trans_task_set_useragent(net_trans_task_t task, const char * agent) {
 
 int net_trans_task_append_header(net_trans_task_t task, const char * name, const char * value) {
     char buf[256];
-    snprintf(buf, sizeof(buf), "%s: %s", name, value);
+    snprintf(buf, sizeof(buf), "%s:%s", name, value);
     return net_trans_task_append_header_line(task, buf);
 }
 
@@ -428,6 +450,7 @@ void net_trans_task_set_callback(
     net_trans_task_commit_op_t commit,
     net_trans_task_progress_op_t progress,
     net_trans_task_write_op_t write,
+    net_trans_task_head_op_t head,
     void * ctx, void (*ctx_free)(void *))
 {
     if (task->m_ctx_free) {
@@ -437,6 +460,7 @@ void net_trans_task_set_callback(
     task->m_commit_op = commit;
     task->m_write_op = write;
     task->m_progress_op = progress;
+    task->m_head_op = head;
     task->m_ctx = ctx;
     task->m_ctx_free = ctx_free;
 }
@@ -450,6 +474,28 @@ int net_trans_task_set_body(net_trans_task_t task, void const * data, uint32_t d
         CPE_ERROR(
             mgr->m_em, "trans: task %d: set post %d data fail!",
             task->m_id, (int)data_size);
+        return -1;
+    }
+
+    return 0;
+}
+
+int net_trans_task_set_user_agent(net_trans_task_t task, const char * user_agent) {
+    net_trans_manage_t mgr = task->m_mgr;
+
+    if (curl_easy_setopt(task->m_handler, CURLOPT_USERAGENT, user_agent) != (int)CURLM_OK) {
+        CPE_ERROR(mgr->m_em, "trans: task %d: set user-agent %s fail!", task->m_id, user_agent);
+        return -1;
+    }
+
+    return 0;
+}
+
+int net_trans_task_set_net_interface(net_trans_task_t task, const char * net_interface) {
+    net_trans_manage_t mgr = task->m_mgr;
+
+    if (curl_easy_setopt(task->m_handler, CURLOPT_INTERFACE, net_interface) != (int)CURLM_OK) {
+        CPE_ERROR(mgr->m_em, "trans: task %d: set net-interface %s fail!", task->m_id, net_interface);
         return -1;
     }
 
@@ -545,6 +591,52 @@ uint32_t net_trans_task_hash(net_trans_task_t o, void * user_data) {
 
 int net_trans_task_eq(net_trans_task_t l, net_trans_task_t r, void * user_data) {
     return l->m_id == r->m_id;
+}
+
+static size_t net_trans_task_on_header(void *ptr, size_t size, size_t nmemb, void *stream) {
+    char * head_line = (char*)ptr;
+    size_t total_length = size * nmemb;
+
+    char * sep = strchr(ptr, ':');
+    if (sep == NULL) return total_length;
+
+    net_trans_task_t task = stream;
+    net_trans_manage_t mgr = task->m_mgr;
+    
+    char * name_last = cpe_str_trim_tail(sep, head_line);
+    char name_keep = *name_last;
+    *name_last = 0;
+
+    const char * value = cpe_str_trim_head(sep + 1);
+
+    if (task->m_debug) {
+        CPE_INFO(
+            mgr->m_em, "trans: task %d: head: %s=%s",
+            task->m_id, head_line, head_line, value);
+    }
+
+    if (task->m_head_op) {
+        uint8_t tag_local = 0;
+        if (task->m_in_callback == 0) {
+            task->m_in_callback = 1;
+            tag_local = 1;
+        }
+        
+        task->m_head_op(task, task->m_ctx, head_line, value);
+
+        if (tag_local) {
+            task->m_in_callback = 0;
+        }
+    }
+
+    *name_last = name_keep;
+
+    if (!task->m_in_callback && task->m_is_free) {
+        task->m_is_free = 0;
+        net_trans_task_free(task);
+    }
+
+    return total_length;
 }
 
 static size_t net_trans_task_write_cb(char *ptr, size_t size, size_t nmemb, void * userdata) {

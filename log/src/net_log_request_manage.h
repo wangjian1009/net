@@ -1,6 +1,5 @@
 #ifndef NET_LOG_REQUEST_MANAGE_H_INCLEDED
 #define NET_LOG_REQUEST_MANAGE_H_INCLEDED
-#include "curl/curl.h"
 #include "net_log_schedule_i.h"
 
 typedef enum net_log_request_manage_state {
@@ -14,6 +13,7 @@ struct net_log_request_manage {
     net_log_schedule_t m_schedule;
     net_schedule_t m_net_schedule;
     net_driver_t m_net_driver;
+    net_trans_manage_t m_trans_mgr;
     void (*m_stop_fun)(void * ctx);
     void * m_stop_ctx;
     net_log_request_manage_state_t m_state;
@@ -27,9 +27,6 @@ struct net_log_request_manage {
     net_log_request_list_t m_waiting_requests;
     net_log_request_list_t m_active_requests;
     net_log_request_list_t m_free_requests;
-    net_timer_t m_timer_event;
-	CURLM * m_multi_handle;
-    int m_still_running;
     const char * m_name;
     mem_buffer_t m_tmp_buffer;
 };
@@ -47,10 +44,6 @@ void net_log_request_manage_process_cmd_pause(net_log_request_manage_t mgr);
 void net_log_request_manage_process_cmd_resume(net_log_request_manage_t mgr);
 void net_log_request_manage_process_cmd_stop_begin(net_log_request_manage_t mgr);
 void net_log_request_manage_process_cmd_stop_complete(net_log_request_manage_t mgr);
-
-int net_log_request_manage_sock_cb(CURL *e, curl_socket_t s, int what, void *cbp, void *sockp);
-int net_log_request_manage_timer_cb(CURLM *multi, long timeout_ms, net_log_request_manage_t mgr);
-void net_log_request_manage_do_timeout(net_timer_t timer, void * ctx);
 
 const char * net_log_request_manage_cache_dir(net_log_request_manage_t mgr, mem_buffer_t tmp_buffer);
 const char * net_log_request_manage_cache_file(net_log_request_manage_t mgr, uint32_t id, mem_buffer_t tmp_buffer);

@@ -7,6 +7,7 @@
 #include "cpe/utils/error.h"
 #include "cpe/utils/buffer.h"
 #include "cpe/fsm/fsm_ins.h"
+#include "net_trans_system.h"
 #include "net_log_schedule.h"
 
 NET_BEGIN_DECL

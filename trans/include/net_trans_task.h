@@ -15,16 +15,20 @@ net_trans_manage_t net_trans_task_manage(net_trans_task_t task);
 void net_trans_task_set_debug(net_trans_task_t task, uint8_t is_debug);
 
 /*req*/
-int net_trans_task_set_timeout(net_trans_task_t task, uint64_t timeout_ms);
+int net_trans_task_set_timeout_ms(net_trans_task_t task, uint64_t timeout_ms);
+int net_trans_task_set_connection_timeout_ms(net_trans_task_t task, uint64_t timeout_ms);
 int net_trans_task_append_header(net_trans_task_t task, const char * name, const char * value);
 int net_trans_task_append_header_line(net_trans_task_t task, const char * head_one);
 int net_trans_task_set_body(net_trans_task_t task, void const * data, uint32_t data_size);
+int net_trans_task_set_user_agent(net_trans_task_t task, const char * user_agent);
+int net_trans_task_set_net_interface(net_trans_task_t task, const char * net_interface);
 
 void net_trans_task_set_callback(
     net_trans_task_t task,
     net_trans_task_commit_op_t commit,
     net_trans_task_progress_op_t progress,
     net_trans_task_write_op_t write,
+    net_trans_task_head_op_t head,
     void * ctx, void (*ctx_free)(void *));
 
 int net_trans_task_start(net_trans_task_t task);

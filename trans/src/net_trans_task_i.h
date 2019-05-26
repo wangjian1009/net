@@ -28,6 +28,7 @@ struct net_trans_task {
     net_trans_task_commit_op_t m_commit_op;
     net_trans_task_write_op_t m_write_op;
     net_trans_task_progress_op_t m_progress_op;
+    net_trans_task_head_op_t m_head_op;
     void * m_ctx;
     void (*m_ctx_free)(void *);
 };

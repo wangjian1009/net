@@ -6,8 +6,8 @@
 #include "cpe/utils/stream_buffer.h"
 #include "cpe/utils_sock/sock_utils.h"
 #include "cpe/utils_sock/getdnssvraddrs.h"
-#include "net_watcher.h"
 #include "net_timer.h"
+#include "net_trans_task.h"
 #include "net_log_request.h"
 #include "net_log_category_i.h"
 #include "net_log_util.h"
@@ -25,7 +25,6 @@
 #define DROP_FAIL_DATA_TIME_SECOND (3600 * 6)
 
 static int net_log_request_send(net_log_request_t request);
-static int net_log_request_trace(CURL *handle, curl_infotype type, char *data, size_t size, void *userp);
 static void net_log_request_delay_commit(net_timer_t timer, void * ctx);
 static void net_log_request_rebuild_time(net_log_schedule_t schedule, net_log_category_t category, net_log_request_t request, uint32_t nowTime);
 
@@ -35,6 +34,8 @@ static int32_t net_log_request_check_result(
 static void net_log_request_process_result(
     net_log_schedule_t schedule, net_log_category_t category, net_log_request_manage_t mgr,
     net_log_request_t request, net_log_request_send_result_t send_result);
+
+static net_log_request_send_result_t net_log_request_calc_result(net_log_schedule_t schedule, net_log_request_t request);
 
 net_log_request_t
 net_log_request_create(net_log_request_manage_t mgr, net_log_request_param_t send_param) {
@@ -56,8 +57,7 @@ net_log_request_create(net_log_request_manage_t mgr, net_log_request_param_t sen
     }
 
     request->m_mgr = mgr;
-    request->m_handler = NULL;
-    request->m_watcher = NULL;
+    request->m_task = NULL;
     request->m_category = category;
     request->m_state = net_log_request_state_waiting;
     request->m_id = ++mgr->m_request_max_id;
@@ -115,14 +115,9 @@ void net_log_request_free(net_log_request_t request) {
         request->m_delay_process = NULL;
     }
 
-    if (request->m_watcher) {
-        net_watcher_free(request->m_watcher);
-        request->m_watcher = NULL;
-    }
-    
-    if (request->m_handler) {
-        curl_easy_cleanup(request->m_handler);
-        request->m_handler = NULL;
+    if (request->m_task) {
+        net_trans_task_free(request->m_task);
+        request->m_task = NULL;
     }
 
     if (request->m_send_param) {
@@ -191,22 +186,24 @@ void net_log_request_set_state(net_log_request_t request, net_log_request_state_
     }
 }
 
-static size_t net_log_request_on_data(void *ptr, size_t size, size_t nmemb, void *stream) {
-    /* net_log_request_t request = stream; */
-    /* net_log_category_t category = request->m_category; */
-    /* net_log_request_manage_t mgr = request->m_mgr; */
-    /* net_log_schedule_t schedule = mgr->m_schedule; */
-    
-    return size * nmemb;
+static void net_log_request_commit(net_trans_task_t task, void * ctx, void * data, size_t data_size) {
+    net_log_request_t request = ctx;
+    net_log_category_t category = request->m_category;
+    net_log_request_manage_t mgr = request->m_mgr;
+    net_log_schedule_t schedule = mgr->m_schedule;
+    assert(category);
+
+    net_log_request_send_result_t send_result = net_log_request_calc_result(schedule, request);
+    net_log_request_process_result(schedule, category, mgr, request, send_result);
 }
 
-static size_t net_log_request_on_header(void *ptr, size_t size, size_t nmemb, void *stream) {
-    net_log_request_t request = stream;
+static void net_log_request_on_header(net_trans_task_t task, void * ctx, const char * name, const char * value) {
+    net_log_request_t request = ctx;
     net_log_request_manage_t mgr = request->m_mgr;
     net_log_category_t category = request->m_category;
     net_log_schedule_t schedule = mgr->m_schedule;
 
-    if (cpe_str_start_with((const char *)ptr, "x-log-requestid:")) {
+    if (strcmp(name, "x-log-requestid:") == 0) {
         request->m_response_have_request_id = 1;
         if (schedule->m_debug) {
             CPE_INFO(
@@ -214,8 +211,6 @@ static size_t net_log_request_on_header(void *ptr, size_t size, size_t nmemb, vo
                 mgr->m_name, category->m_id, category->m_name, request->m_id);
         }
     }
-
-    return size * nmemb;
 }
 
 static int net_log_request_send(net_log_request_t request) {
@@ -235,21 +230,12 @@ static int net_log_request_send(net_log_request_t request) {
     net_log_lz4_buf_t buffer = send_param->log_buf;
     assert(buffer);
     
-    if (request->m_handler) {
-        curl_easy_cleanup(request->m_handler);
-        request->m_handler = NULL;
+    if (request->m_task) {
+        net_trans_task_free(request->m_task);
+        request->m_task = NULL;
     }
 
     request->m_response_have_request_id = 0;
-    
-    request->m_handler = curl_easy_init();
-    if (request->m_handler == NULL) {
-        CPE_ERROR(
-            schedule->m_em, "log: %s: category [%d]%s: request %d: curl_easy_init fail",
-            mgr->m_name, category->m_id, category->m_name, request->m_id);
-        return -1;
-    }
-    curl_easy_setopt(request->m_handler, CURLOPT_PRIVATE, request);
 
     char buf[512];
     size_t sz;
@@ -261,47 +247,22 @@ static int net_log_request_send(net_log_request_t request) {
         schedule->m_cfg_project,
         schedule->m_cfg_ep,
         category->m_name);
-    curl_easy_setopt(request->m_handler, CURLOPT_URL, buf);
     
-    struct curl_slist *connect_to = NULL;
-    if (schedule->m_cfg_remote_address != NULL) {
-        // example.com::192.168.1.5:
-        snprintf(buf, sizeof(buf), "%s.%s::%s:", schedule->m_cfg_project, schedule->m_cfg_ep, schedule->m_cfg_remote_address);
-        connect_to = curl_slist_append(connect_to, buf);
-        curl_easy_setopt(request->m_handler, CURLOPT_CONNECT_TO, connect_to);
-    }
-
-    struct sockaddr_storage dnssevraddrs[10];
-    uint8_t addr_count = CPE_ARRAY_SIZE(dnssevraddrs);
-    if (getdnssvraddrs(dnssevraddrs, &addr_count, schedule->m_em) != 0) {
+    request->m_task = net_trans_task_create(mgr->m_trans_mgr, net_trans_method_post, buf);
+    if (request->m_task == NULL) {
         CPE_ERROR(
-            schedule->m_em, "log: %s: category [%d]%s: request %d: get dns servers error!",
+            schedule->m_em, "log: %s: category [%d]%s: request %d: create trans task fail",
             mgr->m_name, category->m_id, category->m_name, request->m_id);
         return -1;
     }
-
-    /*DNS*/
-    char dns_buf[512];
-    size_t dns_buf_sz = 0;
-    uint8_t i;
-    for(i = 0; i < addr_count; ++i) {
-        struct sockaddr_storage * sock_addr = &dnssevraddrs[i];
-        if (sock_addr->ss_family == AF_INET6 && sock_addr->ss_family != AF_INET) continue;
-
-        char one_buf[64];
-        char * one_address = sock_get_addr(one_buf, sizeof(one_buf), sock_addr, sizeof(*sock_addr), 0, schedule->m_em);
-        if (dns_buf_sz > 0) {
-            dns_buf_sz += snprintf(dns_buf, sizeof(dns_buf) - dns_buf_sz, ",%s", one_address);
-        }
-        else {
-            dns_buf_sz += snprintf(dns_buf, sizeof(dns_buf) - dns_buf_sz, "%s", one_address);
-        }
-    }
-
-    dns_buf[dns_buf_sz] = 0;
-    if (dns_buf_sz > 0) {
-        curl_easy_setopt(request->m_handler, CURLOPT_DNS_SERVERS, dns_buf);
-    }
+    
+    /* struct curl_slist *connect_to = NULL; */
+    /* if (schedule->m_cfg_remote_address != NULL) { */
+    /*     // example.com::192.168.1.5: */
+    /*     snprintf(buf, sizeof(buf), "%s.%s::%s:", schedule->m_cfg_project, schedule->m_cfg_ep, schedule->m_cfg_remote_address); */
+    /*     connect_to = curl_slist_append(connect_to, buf); */
+    /*     curl_easy_setopt(request->m_handler, CURLOPT_CONNECT_TO, connect_to); */
+    /* } */
 
     /**/
     char nowTimeStr[64];
@@ -314,36 +275,33 @@ static int net_log_request_send(net_log_request_t request) {
     
     int lz4Flag = schedule->m_cfg_compress == net_log_compress_lz4;
     
-    struct curl_slist * headers = NULL;
-
-    headers = curl_slist_append(headers, "Content-Type:application/x-protobuf");
-    headers = curl_slist_append(headers, "x-log-apiversion:0.6.0");
+    net_trans_task_append_header_line(request->m_task, "Content-Type:application/x-protobuf");
+    net_trans_task_append_header_line(request->m_task, "x-log-apiversion:0.6.0");
     if (lz4Flag) {
-        headers = curl_slist_append(headers, "x-log-compresstype:lz4");
+        net_trans_task_append_header_line(request->m_task, "x-log-compresstype:lz4");
     }
 
-    headers = curl_slist_append(headers, "x-log-signaturemethod:hmac-sha1");
+    net_trans_task_append_header_line(request->m_task, "x-log-signaturemethod:hmac-sha1");
 
     /**/
-    snprintf(buf, sizeof(buf), "Date:%s", nowTimeStr);
-    headers = curl_slist_append(headers, buf);
+    net_trans_task_append_header(request->m_task, "Date", nowTimeStr);
 
     /**/
-    snprintf(buf, sizeof(buf), "Content-MD5:%s", md5Buf);
-    headers = curl_slist_append(headers, buf);
+    net_trans_task_append_header(request->m_task, "Content-MD5", md5Buf);
 
     /**/
     snprintf(buf, sizeof(buf), "Content-Length:%d", (int)buffer->length);
-    headers = curl_slist_append(headers, buf);
+    net_trans_task_append_header_line(request->m_task, buf);
 
     /**/
     snprintf(buf, sizeof(buf), "x-log-bodyrawsize:%d", (int)buffer->raw_length);
-    headers = curl_slist_append(headers, buf);
+    net_trans_task_append_header_line(request->m_task, buf);
 
     /**/
     snprintf(buf, sizeof(buf), "Host:%s.%s", schedule->m_cfg_project, schedule->m_cfg_ep);
-    headers = curl_slist_append(headers, buf);
+    net_trans_task_append_header_line(request->m_task, buf);
 
+    /*签名 */
     if (lz4Flag) {
         sz = snprintf(
             buf, sizeof(buf),
@@ -377,55 +335,45 @@ static int net_log_request_send(net_log_request_t request) {
     sha1Buf[sha1Len] = 0;
 
     snprintf(buf, sizeof(buf),  "Authorization:LOG %s:%s", schedule->m_cfg_access_id, sha1Buf);
-    headers = curl_slist_append(headers, buf);
+    net_trans_task_append_header_line(request->m_task, buf);
 
-    curl_easy_setopt(request->m_handler, CURLOPT_HTTPHEADER, headers);
-    curl_easy_setopt(request->m_handler, CURLOPT_POST, 1);
-
-    curl_easy_setopt(request->m_handler, CURLOPT_POSTFIELDS, (void *)buffer->data);
-    curl_easy_setopt(request->m_handler, CURLOPT_POSTFIELDSIZE, buffer->length);
-
-    curl_easy_setopt(request->m_handler, CURLOPT_FILETIME, 1);
-    curl_easy_setopt(request->m_handler, CURLOPT_NOSIGNAL, 1);
-    curl_easy_setopt(request->m_handler, CURLOPT_NOPROGRESS, 1);
-    curl_easy_setopt(request->m_handler, CURLOPT_TCP_NODELAY, 1);
-    curl_easy_setopt(request->m_handler, CURLOPT_NETRC, CURL_NETRC_IGNORED);
-
-    curl_easy_setopt(request->m_handler, CURLOPT_SSL_VERIFYPEER, 0);
-    curl_easy_setopt(request->m_handler, CURLOPT_USERAGENT, "log-c-lite_0.1.0");
+    net_trans_task_set_body(request->m_task, (void *)buffer->data, (uint32_t)buffer->length);
+    
+    //curl_easy_setopt(request->m_handler, CURLOPT_FILETIME, 1);
+    net_trans_task_set_user_agent(request->m_task, "log-c-lite_0.1.0");
 
     if (schedule->m_cfg_net_interface != NULL) {
-        curl_easy_setopt(request->m_handler, CURLOPT_INTERFACE, schedule->m_cfg_net_interface);
+        net_trans_task_set_net_interface(request->m_task, schedule->m_cfg_net_interface);
     }
-    
-    curl_easy_setopt(request->m_handler, CURLOPT_TIMEOUT, schedule->m_cfg_send_timeout_s > 0 ? schedule->m_cfg_send_timeout_s : 15);
+
+    net_trans_task_set_timeout_ms(request->m_task, (schedule->m_cfg_send_timeout_s > 0 ? schedule->m_cfg_send_timeout_s : 15) * 1000);
     
     if (schedule->m_cfg_connect_timeout_s > 0) {
-        curl_easy_setopt(request->m_handler, CURLOPT_CONNECTTIMEOUT, schedule->m_cfg_connect_timeout_s);
+        net_trans_task_set_connection_timeout_ms(request->m_task, schedule->m_cfg_connect_timeout_s * 1000);
     }
 
-    curl_easy_setopt(request->m_handler, CURLOPT_HEADERFUNCTION, net_log_request_on_header);
-    curl_easy_setopt(request->m_handler, CURLOPT_HEADERDATA, request);
-
-    curl_easy_setopt(request->m_handler, CURLOPT_WRITEFUNCTION, net_log_request_on_data);
-    curl_easy_setopt(request->m_handler, CURLOPT_WRITEDATA, request);
+    net_trans_task_set_callback(
+        request->m_task,
+        net_log_request_commit,
+        NULL,
+        NULL,
+        net_log_request_on_header,
+        request,
+        NULL);
 
     /*打印调试信息 */
     if (schedule->m_debug >= 2) {
-        curl_easy_setopt(request->m_handler, CURLOPT_VERBOSE, 1);
-        curl_easy_setopt(request->m_handler, CURLOPT_DEBUGFUNCTION, net_log_request_trace);
-        curl_easy_setopt(request->m_handler, CURLOPT_DEBUGDATA, request);
+        net_trans_task_set_debug(request->m_task, schedule->m_debug - 1);
     }
 
-    CURLMcode rc = curl_multi_add_handle(request->m_mgr->m_multi_handle, request->m_handler);
-    if (rc != 0) {
+    if (net_trans_task_start(request->m_task) != 0) {
         CPE_ERROR(
             schedule->m_em, "log: %s: category [%d]%s: request %d: start fail",
             mgr->m_name, category->m_id, category->m_name, request->m_id);
+        net_trans_task_free(request->m_task);
+        request->m_task = NULL;
         return -1;
     }
-
-    request->m_mgr->m_still_running = 1;
 
     if (schedule->m_debug) {
         CPE_INFO(
@@ -487,39 +435,6 @@ static void net_log_request_process_result(
     }
 }
 
-void net_log_request_complete(net_log_schedule_t schedule, net_log_request_t request, net_log_request_complete_state_t complete_state) {
-    net_log_category_t category = request->m_category;
-    net_log_request_manage_t mgr = request->m_mgr;
-    assert(category);
-
-    net_log_request_send_result_t send_result;
-
-    switch(complete_state) {
-    case net_log_request_complete_done:
-        send_result = net_log_request_calc_result(schedule, request);
-        break;
-    case net_log_request_complete_cancel:
-        send_result = net_log_request_send_network_error;
-        break;
-    case net_log_request_complete_timeout:
-        send_result = net_log_request_send_network_error;
-        break;
-    }
-
-    net_log_request_process_result(schedule, category, mgr, request, send_result);
-}
-
-const char * net_log_request_complete_state_str(net_log_request_complete_state_t state) {
-    switch(state) {
-    case net_log_request_complete_done:
-        return "done";
-    case net_log_request_complete_cancel:
-        return "cancel";
-    case net_log_request_complete_timeout:
-        return "timeout";
-    }
-}
-
 const char * net_log_request_send_result_str(net_log_request_send_result_t result) {
     switch(result) {
     case net_log_request_send_ok:
@@ -567,32 +482,69 @@ void net_log_request_param_free(net_log_request_param_t send_param) {
     free(send_param);
 }
 
-static net_log_request_send_result_t net_log_request_calc_result(net_log_schedule_t schedule, net_log_request_t request) {
-    long http_code = 0;    
-    CURLcode res = curl_easy_getinfo(request->m_handler, CURLINFO_RESPONSE_CODE, &http_code);
-    if (res != CURLE_OK) {
-        CPE_ERROR(schedule->m_em, "log: request: get curl response code fail: %s", curl_easy_strerror(res));
+static net_log_request_send_result_t
+net_log_request_calc_result(net_log_schedule_t schedule, net_log_request_t request) {
+    net_log_category_t category = request->m_category;
+    net_log_request_manage_t mgr = request->m_mgr;
+    assert(request->m_task);
+
+    switch(net_trans_task_state(request->m_task)) {
+    case net_trans_task_init:
+    case net_trans_task_working:
+        CPE_ERROR(
+            schedule->m_em, "log: %s: category [%d]%s: request %d: transfer not complete",
+            mgr->m_name, category->m_id, category->m_name, request->m_id);
+        return net_log_request_send_network_error;
+    case net_trans_task_done:
+        break;
+    }
+
+    switch(net_trans_task_result(request->m_task)) {
+    case net_trans_result_unknown:
+        CPE_ERROR(
+            schedule->m_em, "log: %s: category [%d]%s: request %d: transfer result unknown!",
+            mgr->m_name, category->m_id, category->m_name, request->m_id);
+        return net_log_request_send_network_error;
+    case net_trans_result_complete:
+        break;
+    case net_trans_result_error:
+        CPE_ERROR(
+            schedule->m_em, "log: %s: category [%d]%s: request %d: transfer error, %s",
+            mgr->m_name, category->m_id, category->m_name, request->m_id,
+            net_trans_task_error_str(net_trans_task_error(request->m_task)));
+        return net_log_request_send_network_error;
+    case net_trans_result_cancel:
+        CPE_ERROR(
+            schedule->m_em, "log: %s: category [%d]%s: request %d: transfer canceled",
+            mgr->m_name, category->m_id, category->m_name, request->m_id);
         return net_log_request_send_network_error;
     }
+
+    int16_t http_code = net_trans_task_res_code(request->m_task);
+    if (http_code == 0) {
+        CPE_ERROR(
+            schedule->m_em, "log: %s: category [%d]%s: request %d: transfer get server response fail",
+            mgr->m_name, category->m_id, category->m_name, request->m_id);
+        return net_log_request_send_network_error;
+    }
+
+    if (http_code / 100 == 2) {
+        return net_log_request_send_ok;
+    }
+    else if (http_code >= 500 || !request->m_response_have_request_id) {
+        return net_log_request_send_server_error;
+    }
+    else if (http_code == 403) {
+        return net_log_request_send_quota_exceed;
+    }
+    else if (http_code == 401 || http_code == 404) {
+        return net_log_request_send_unauthorized;
+    }
+    /* else if (result->errorMessage != NULL && strstr(result->errorMessage, LOGE_TIME_EXPIRED) != NULL) { */
+    /*     return net_log_request_send_time_error; */
+    /* } */
     else {
-        if (http_code / 100 == 2) {
-            return net_log_request_send_ok;
-        }
-        else if (http_code >= 500 || !request->m_response_have_request_id) {
-            return net_log_request_send_server_error;
-        }
-        else if (http_code == 403) {
-            return net_log_request_send_quota_exceed;
-        }
-        else if (http_code == 401 || http_code == 404) {
-            return net_log_request_send_unauthorized;
-        }
-        /* else if (result->errorMessage != NULL && strstr(result->errorMessage, LOGE_TIME_EXPIRED) != NULL) { */
-        /*     return net_log_request_send_time_error; */
-        /* } */
-        else {
-            return net_log_request_send_discard_error;
-        }
+        return net_log_request_send_discard_error;
     }
 }
 
@@ -741,76 +693,6 @@ static const char * net_log_request_dump(
     stream_putc((write_stream_t)&ws, 0);
 
     return (const char *)mem_buffer_make_continuous(buffer, 0);
-}
-
-static int net_log_request_trace(CURL *handle, curl_infotype type, char *data, size_t size, void *userp) {
-    net_log_request_t request = userp;
-    net_log_request_manage_t mgr = request->m_mgr;
-    net_log_schedule_t schedule = mgr->m_schedule;
-    net_log_category_t category = request->m_category;
-
-    switch(type) {
-    case CURLINFO_TEXT: {
-        char * end = data + size;
-        char * p = cpe_str_trim_tail(end, data);
-        char keep = 0;
-        if (p < end) {
-            keep = *p;
-            *p = 0;
-        }
-
-        CPE_INFO(
-            schedule->m_em, "log: %s: category [%d]%s: request %d: == Info %s",
-            mgr->m_name, category->m_id, category->m_name, request->m_id,
-            data);
-        
-        if (p < end) {
-            *p = keep;
-        }
-
-        break;
-    }
-    case CURLINFO_HEADER_OUT:
-        CPE_INFO(
-            schedule->m_em, "log: %s: category [%d]%s: request %d: => header: %s",
-            mgr->m_name, category->m_id, category->m_name, request->m_id,
-            net_log_request_dump(schedule, mgr, data, size, 1));
-        break;
-    case CURLINFO_DATA_OUT:
-        CPE_INFO(
-            schedule->m_em, "log: %s: category [%d]%s: request %d: => data(%d): %s",
-            mgr->m_name, category->m_id, category->m_name, request->m_id,
-            (int)size, net_log_request_dump(schedule, mgr, data, size, 1));
-        break;
-    case CURLINFO_SSL_DATA_OUT:
-        CPE_INFO(
-            schedule->m_em, "log: %s: category [%d]%s: request %d: => SSL data(%d): %s",
-            mgr->m_name, category->m_id, category->m_name, request->m_id,
-            (int)size, net_log_request_dump(schedule, mgr, data, size, 1));
-        break;
-    case CURLINFO_HEADER_IN:
-        CPE_INFO(
-            schedule->m_em, "log: %s: category [%d]%s: request %d: <= header: %s",
-            mgr->m_name, category->m_id, category->m_name, request->m_id,
-            net_log_request_dump(schedule, mgr, data, size, 1));
-        break;
-    case CURLINFO_DATA_IN:
-        CPE_INFO(
-            schedule->m_em, "log: %s: category [%d]%s: request %d: <= data(%d): %s",
-            mgr->m_name, category->m_id, category->m_name, request->m_id,
-            (int)size, net_log_request_dump(schedule, mgr, data, size, 1));
-        break;
-    case CURLINFO_SSL_DATA_IN:
-        CPE_INFO(
-            schedule->m_em, "log: %s: category [%d]%s: request %d: <= SSL data(%d): %s",
-            mgr->m_name, category->m_id, category->m_name, request->m_id,
-            (int)size, net_log_request_dump(schedule, mgr, data, size, 1));
-        break;
-    default:
-        break;
-    }
- 
-    return 0;
 }
 
 static void net_log_request_delay_commit(net_timer_t timer, void * ctx) {

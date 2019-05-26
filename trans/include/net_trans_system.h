@@ -36,6 +36,7 @@ typedef struct net_trans_task * net_trans_task_t;
 typedef void (*net_trans_task_commit_op_t)(net_trans_task_t task, void * ctx, void * data, size_t data_size);
 typedef void (*net_trans_task_progress_op_t)(net_trans_task_t task, void * ctx, double dltotal, double dlnow);
 typedef void (*net_trans_task_write_op_t)(net_trans_task_t task, void * ctx, void * data, size_t data_size);
+typedef void (*net_trans_task_head_op_t)(net_trans_task_t task, void * ctx, const char * name, const char * value);
 
 NET_END_DECL
 

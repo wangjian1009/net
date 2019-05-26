@@ -25,16 +25,9 @@ net_log_schedule_create(
     net_schedule_t net_schedule, net_driver_t net_driver, vfs_mgr_t vfs,
     const char * cfg_project, const char * cfg_ep, const char * cfg_access_id, const char * cfg_access_key)
 {
-    CURLcode ecode;
-    if ((ecode = curl_global_init(0)) != CURLE_OK) {
-        CPE_ERROR(em, "log: schedule: curl_global_init failure, code:%d %s.\n", ecode, curl_easy_strerror(ecode));
-        return NULL;
-    }
-    
     net_log_schedule_t schedule = mem_alloc(alloc, sizeof(struct net_log_schedule));
     if (schedule == NULL) {
         CPE_ERROR(em, "log: schedule alloc fail");
-        curl_global_cleanup();
         return NULL;
     }
 
@@ -123,7 +116,6 @@ CREATE_ERROR:
     if (schedule->m_cfg_ep) mem_free(alloc, schedule->m_cfg_ep);
     
     mem_free(alloc, schedule);
-    curl_global_cleanup();
     return NULL;
 }
 
@@ -243,8 +235,6 @@ void net_log_schedule_free(net_log_schedule_t schedule) {
         mem_free(schedule->m_alloc, schedule->m_cfg_cache_dir);
         schedule->m_cfg_cache_dir = NULL;
     }
-    
-    curl_global_cleanup();
     
     mem_free(schedule->m_alloc, schedule);
 }

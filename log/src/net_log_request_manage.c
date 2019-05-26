@@ -7,6 +7,7 @@
 #include "cpe/vfs/vfs_dir.h"
 #include "cpe/vfs/vfs_entry_info.h"
 #include "net_timer.h"
+#include "net_trans_manage.h"
 #include "net_log_request_manage.h"
 #include "net_log_request.h"
 #include "net_log_pipe_cmd.h"
@@ -24,6 +25,14 @@ net_log_request_manage_create(
     mgr->m_schedule = schedule;
     mgr->m_net_schedule = net_schedule;
     mgr->m_net_driver = net_driver;
+
+    mgr->m_trans_mgr = net_trans_manage_create(schedule->m_alloc, schedule->m_em, net_schedule, net_driver);
+    if (mgr->m_trans_mgr == NULL) {
+        CPE_ERROR(schedule->m_em, "log: %s: manage: create: create trans mgr fail", name);
+        mem_free(schedule->m_alloc, mgr);
+        return NULL;
+    }
+
     mgr->m_state =
         net_log_schedule_state(schedule) == net_log_schedule_state_pause
         ? net_log_request_manage_state_pause
@@ -31,10 +40,7 @@ net_log_request_manage_create(
     mgr->m_cfg_active_request_count = max_active_request_count;
     mgr->m_stop_fun = stop_fun;
     mgr->m_stop_ctx = stop_ctx;
-    mgr->m_timer_event = net_timer_auto_create(net_schedule, net_log_request_manage_do_timeout, mgr);
 
-	mgr->m_multi_handle = curl_multi_init();
-    mgr->m_still_running = 0;
     mgr->m_request_max_id = 0;
     mgr->m_request_count = 0;
     mgr->m_request_buf_size = 0;
@@ -47,11 +53,6 @@ net_log_request_manage_create(
     TAILQ_INIT(&mgr->m_waiting_requests);
     TAILQ_INIT(&mgr->m_active_requests);
     TAILQ_INIT(&mgr->m_free_requests);
-
-    curl_multi_setopt(mgr->m_multi_handle, CURLMOPT_SOCKETFUNCTION, net_log_request_manage_sock_cb);
-    curl_multi_setopt(mgr->m_multi_handle, CURLMOPT_SOCKETDATA, mgr);
-    curl_multi_setopt(mgr->m_multi_handle, CURLMOPT_TIMERFUNCTION, net_log_request_manage_timer_cb);
-    curl_multi_setopt(mgr->m_multi_handle, CURLMOPT_TIMERDATA, mgr);
     
     return mgr;
 }
@@ -74,6 +75,10 @@ void net_log_request_manage_free(net_log_request_manage_t mgr) {
     while(!TAILQ_EMPTY(&mgr->m_caches)) {
         net_log_request_cache_free(TAILQ_FIRST(&mgr->m_caches));
     }
+
+    assert(mgr->m_trans_mgr);
+    net_trans_manage_free(mgr->m_trans_mgr);
+    mgr->m_trans_mgr = NULL;
 
     mem_free(schedule->m_alloc, mgr);
 }
