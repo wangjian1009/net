@@ -39,6 +39,26 @@ net_ev_driver_create(net_schedule_t schedule, struct ev_loop * ev_loop) {
     net_ev_driver_t driver = net_sock_driver_data(sock_driver);
     driver->m_ev_loop = ev_loop;
 
+    const char * backend_name = "unknown";
+    switch(ev_backend(ev_loop)) {
+    case EVBACKEND_SELECT:
+        backend_name = "select";
+        break;
+    case EVBACKEND_POLL:
+        backend_name = "poll";
+        break;
+    case EVBACKEND_EPOLL:
+        backend_name = "epoll";
+        break;
+    case EVBACKEND_KQUEUE:
+        backend_name = "kqueue";
+        break;
+    default:
+        break;
+    }
+
+    CPE_INFO(net_schedule_em(schedule), "ev: driver create, backend=%s", backend_name);
+    
     return driver;
 }
 

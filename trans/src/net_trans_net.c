@@ -112,7 +112,7 @@ void net_trans_check_multi_info(net_trans_manage_t mgr) {
             }
             else {
                 net_trans_task_error_t err = net_trans_task_cvt_error(res);
-                if (res != net_trans_task_error_internal) {
+                if (err != net_trans_task_error_internal) {
                     CPE_ERROR(
                         mgr->m_em, "trans: task %d: check_multi_info done: error=%s!",
                         task->m_id, net_trans_task_error_str(err));
