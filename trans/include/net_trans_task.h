@@ -32,6 +32,7 @@ int net_trans_task_start(net_trans_task_t task);
 /*res*/
 net_trans_task_state_t net_trans_task_state(net_trans_task_t task);
 net_trans_task_result_t net_trans_task_result(net_trans_task_t task);
+net_trans_task_error_t net_trans_task_error(net_trans_task_t task);
 
 int16_t net_trans_task_res_code(net_trans_task_t task);
 const char * net_trans_task_res_mine(net_trans_task_t task);
@@ -39,6 +40,7 @@ const char * net_trans_task_res_charset(net_trans_task_t task);
 
 const char * net_trans_task_state_str(net_trans_task_state_t state);
 const char * net_trans_task_result_str(net_trans_task_result_t result);
+const char * net_trans_task_error_str(net_trans_task_error_t err);
 
 NET_END_DECL
 

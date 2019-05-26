@@ -18,6 +18,7 @@ struct net_trans_task {
     uint32_t m_id;
     net_trans_task_state_t m_state;
     net_trans_task_result_t m_result;
+    net_trans_task_error_t m_error;
     struct curl_slist * m_header;
     struct mem_buffer m_buffer;
     

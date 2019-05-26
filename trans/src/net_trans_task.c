@@ -40,6 +40,9 @@ net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const c
     task->m_watcher = NULL;
     task->m_id = mgr->m_max_task_id + 1;
     task->m_state = net_trans_task_init;
+    task->m_result = net_trans_result_unknown;
+    task->m_error = net_trans_task_error_none;
+
     task->m_header = NULL;
     task->m_debug = 0;
 
@@ -115,7 +118,7 @@ void net_trans_task_free(net_trans_task_t task) {
 
     if (task->m_state != net_trans_task_done) {
         task->m_is_free = 1;
-        net_trans_task_set_done(task, net_trans_result_cancel, -1);
+        net_trans_task_set_done(task, net_trans_result_cancel, net_trans_task_error_internal);
         return;
     }
 
@@ -191,6 +194,10 @@ net_trans_task_state_t net_trans_task_state(net_trans_task_t task) {
 
 net_trans_task_result_t net_trans_task_result(net_trans_task_t task) {
     return task->m_result;
+}
+
+net_trans_task_error_t net_trans_task_error(net_trans_task_t task) {
+    return task->m_error;
 }
 
 int16_t net_trans_task_res_code(net_trans_task_t task) {
@@ -508,11 +515,28 @@ const char * net_trans_task_result_str(net_trans_task_result_t result) {
         return "trans-task-result-unknown";
     case net_trans_result_complete:
         return "trans-task-result-complete";
-    case net_trans_result_timeout:
-        return "trans-task-result-timeout";
+    case net_trans_result_error:
+        return "trans-task-result-error";
     case net_trans_result_cancel:
         return "trans-task-result-cancel";
     }
+}
+
+const char * net_trans_task_error_str(net_trans_task_error_t err) {
+    switch(err) {
+    case net_trans_task_error_none:
+        return "none";
+    case net_trans_task_error_dns_resolve_fail:
+        return "dns-resolve-fail";
+    case net_trans_task_error_timeout:
+        return "timeout";
+    case net_trans_task_error_connect:
+        return "connect";
+    case net_trans_task_error_internal:
+        return "internal";
+    }
+
+    return "unknown";
 }
 
 uint32_t net_trans_task_hash(net_trans_task_t o, void * user_data) {
@@ -591,7 +615,7 @@ static int net_trans_task_prog_cb(void *p, double dltotal, double dlnow, double 
     return 0;
 }
 
-int net_trans_task_set_done(net_trans_task_t task, net_trans_task_result_t result, int err) {
+int net_trans_task_set_done(net_trans_task_t task, net_trans_task_result_t result, net_trans_task_error_t err) {
     net_trans_manage_t mgr = task->m_mgr;
 
     if (task->m_state != net_trans_task_working) {
@@ -605,12 +629,20 @@ int net_trans_task_set_done(net_trans_task_t task, net_trans_task_result_t resul
     curl_multi_remove_handle(mgr->m_multi_handle, task->m_handler);
 
     task->m_result = result;
+    task->m_error = err;
     task->m_state = net_trans_task_done;
 
     if (mgr->m_debug) {
-        CPE_INFO(
-            mgr->m_em, "trans: task %d: done, result is %s!",
-            task->m_id, net_trans_task_result_str(task->m_result));
+        if (result == net_trans_result_error) {
+            CPE_INFO(
+                mgr->m_em, "trans: task %d: done, result is %s, error=%s!",
+                task->m_id, net_trans_task_result_str(task->m_result), net_trans_task_error_str(err));
+        }
+        else {
+            CPE_INFO(
+                mgr->m_em, "trans: task %d: done, result is %s!",
+                task->m_id, net_trans_task_result_str(task->m_result));
+        }
     }
 
     if (task->m_commit_op) {

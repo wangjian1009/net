@@ -74,6 +74,21 @@ void net_watcher_event_cb(void * ctx, int fd, uint8_t do_read, uint8_t do_write)
     }
 }
 
+static net_trans_task_error_t net_trans_task_cvt_error(CURLcode code) {
+    switch(code) {
+    case CURLE_OK:
+        return net_trans_task_error_none;
+    case CURLE_OPERATION_TIMEDOUT:
+        return net_trans_task_error_timeout;
+    case CURLE_COULDNT_RESOLVE_HOST:
+        return net_trans_task_error_dns_resolve_fail;
+    case CURLE_COULDNT_CONNECT:
+        return net_trans_task_error_connect;
+    default:
+        return net_trans_task_error_internal;
+    }
+}
+
 void net_trans_check_multi_info(net_trans_manage_t mgr) {
     CURLMsg *msg;
     int msgs_left;
@@ -92,17 +107,22 @@ void net_trans_check_multi_info(net_trans_manage_t mgr) {
 
         switch(msg->msg) {
         case CURLMSG_DONE: {
-            switch(res) {
-            case CURLE_OK:
-                net_trans_task_set_done(task, net_trans_result_complete, 0);
-                break;
-            case CURLE_OPERATION_TIMEDOUT:
-                net_trans_task_set_done(task, net_trans_result_timeout, -1);
-                break;
-            default:
-                CPE_ERROR(mgr->m_em, "trans: task %d: check_multi_info done: res=%d!", task->m_id, res);
-                net_trans_task_set_done(task, net_trans_result_cancel, res);
-                break;
+            if (res == CURLE_OK) {
+                net_trans_task_set_done(task, net_trans_result_complete, net_trans_task_error_none);
+            }
+            else {
+                net_trans_task_error_t err = net_trans_task_cvt_error(res);
+                if (res != net_trans_task_error_internal) {
+                    CPE_ERROR(
+                        mgr->m_em, "trans: task %d: check_multi_info done: error=%s!",
+                        task->m_id, net_trans_task_error_str(err));
+                }
+                else {
+                    CPE_ERROR(
+                        mgr->m_em, "trans: task %d: check_multi_info done: error=%s (CURLcode=%d)!",
+                        task->m_id, net_trans_task_error_str(err), res);
+                }
+                net_trans_task_set_done(task, net_trans_result_error, err);
             }
             break;
         }
@@ -116,10 +136,6 @@ void net_trans_check_multi_info(net_trans_manage_t mgr) {
 void net_trans_do_timeout(net_timer_t timer, void * ctx) {
     net_trans_manage_t mgr = ctx;
     CURLMcode rc;
-
-    if (mgr->m_debug) {
-        CPE_INFO(mgr->m_em, "trans: curl_multi_socket_action(timeout)");
-    }
 
     rc = curl_multi_socket_action(mgr->m_multi_handle, CURL_SOCKET_TIMEOUT, 0, &mgr->m_still_running);
     if (rc != CURLM_OK) {
