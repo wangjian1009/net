@@ -601,7 +601,6 @@ int net_trans_task_eq(net_trans_task_t l, net_trans_task_t r, void * user_data) 
 static size_t net_trans_task_header_cb(void *ptr, size_t size, size_t nmemb, void *stream) {
     net_trans_task_t task = stream;
     size_t total_length = size * nmemb;
-    net_trans_manage_t mgr = task->m_mgr;
 
     if (task->m_head_op == NULL) return total_length;
     
