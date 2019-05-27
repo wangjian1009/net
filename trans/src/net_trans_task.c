@@ -117,13 +117,11 @@ void net_trans_task_free(net_trans_task_t task) {
     net_trans_manage_t mgr = task->m_mgr;
 
     if (task->m_in_callback) {
-        task->m_state = net_trans_task_done;
         task->m_is_free = 1;
         return;
     }
 
     if (task->m_state != net_trans_task_done) {
-        task->m_is_free = 1;
         net_trans_task_set_done(task, net_trans_result_cancel, net_trans_task_error_internal);
         return;
     }
@@ -603,7 +601,8 @@ static size_t net_trans_task_header_cb(void *ptr, size_t size, size_t nmemb, voi
     size_t total_length = size * nmemb;
 
     if (task->m_head_op == NULL) return total_length;
-    
+    if (task->m_is_free) return total_length;
+
     char * head_line = (char*)ptr;
 
     char * sep = strchr(head_line, ':');
@@ -625,14 +624,13 @@ static size_t net_trans_task_header_cb(void *ptr, size_t size, size_t nmemb, voi
 
     if (tag_local) {
         task->m_in_callback = 0;
+
+        if (task->m_is_free) {
+            task->m_commit_op = NULL;
+        }
     }
 
     *name_last = name_keep;
-
-    if (!task->m_in_callback && task->m_is_free) {
-        task->m_is_free = 0;
-        net_trans_task_free(task);
-    }
 
     return total_length;
 }
@@ -643,6 +641,8 @@ static size_t net_trans_task_write_cb(char *ptr, size_t size, size_t nmemb, void
 	size_t total_length = size * nmemb;
     ssize_t write_size;
 
+    if (task->m_is_free) return total_length;
+    
     if (task->m_write_op) {
         uint8_t tag_local = 0;
         if (task->m_in_callback == 0) {
@@ -656,8 +656,7 @@ static size_t net_trans_task_write_cb(char *ptr, size_t size, size_t nmemb, void
             task->m_in_callback = 0;
 
             if (task->m_is_free) {
-                task->m_is_free = 0;
-                net_trans_task_free(task);
+                task->m_commit_op = NULL;
             }
         }
     }
@@ -683,6 +682,8 @@ static int net_trans_task_prog_cb(void *p, double dltotal, double dlnow, double 
     (void)ult;
     (void)uln;
 
+    if (task->m_is_free) return 0;
+    
     if (task->m_progress_op) {
         uint8_t tag_local = 0;
         if (task->m_in_callback == 0) {
@@ -696,8 +697,7 @@ static int net_trans_task_prog_cb(void *p, double dltotal, double dlnow, double 
             task->m_in_callback = 0;
 
             if (task->m_is_free) {
-                task->m_is_free = 0;
-                net_trans_task_free(task);
+                task->m_commit_op = NULL;
             }
         }
     }
@@ -712,6 +712,7 @@ int net_trans_task_set_done(net_trans_task_t task, net_trans_task_result_t resul
         CPE_ERROR(
             mgr->m_em, "trans: task %d: can`t done in state %s!",
             task->m_id, net_trans_task_state_str(task->m_state));
+        assert(0);
         return -1;
     }
 
@@ -736,25 +737,26 @@ int net_trans_task_set_done(net_trans_task_t task, net_trans_task_result_t resul
     }
 
     if (task->m_commit_op) {
+        net_trans_task_commit_op_t commit_op = task->m_commit_op;
+        task->m_commit_op = NULL;
+
         uint8_t tag_local = 0;
         if (task->m_in_callback == 0) {
             task->m_in_callback = 1;
             tag_local = 1;
         }
 
-        task->m_commit_op(task, task->m_ctx, mem_buffer_make_continuous(&task->m_buffer, 0), mem_buffer_size(&task->m_buffer));
+        commit_op(task, task->m_ctx, mem_buffer_make_continuous(&task->m_buffer, 0), mem_buffer_size(&task->m_buffer));
 
         if (tag_local) {
             task->m_in_callback = 0;
-
-            if (task->m_is_free || task->m_state == net_trans_task_done) {
-                task->m_is_free = 0;
-                net_trans_task_free(task);
-            }
+            net_trans_task_free(task);
         }
     }
     else {
-        net_trans_task_free(task);
+        if (task->m_in_callback == 0) {
+            net_trans_task_free(task);
+        }
     }
 
     return 0;

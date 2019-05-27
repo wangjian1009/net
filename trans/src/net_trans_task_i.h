@@ -13,7 +13,6 @@ struct net_trans_task {
     };
     CURL * m_handler;
     net_watcher_t m_watcher;
-    TAILQ_ENTRY(net_trans_task) m_next_for_watcher;
     uint8_t m_debug;
     uint32_t m_id;
     net_trans_task_state_t m_state;
