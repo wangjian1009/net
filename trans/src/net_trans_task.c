@@ -566,10 +566,25 @@ int net_trans_task_start(net_trans_task_t task) {
     else {
         curl_easy_setopt(task->m_handler, CURLOPT_VERBOSE, 0L);
     }
+
+    switch(net_schedule_local_ip_stack(mgr->m_schedule)) {
+    case net_local_ip_stack_none:
+        CPE_ERROR(mgr->m_em, "trans: %s-%d: start: ip stack non, can`t start!", mgr->m_name, task->m_id);
+        return -1;
+    case net_local_ip_stack_dual:
+        curl_easy_setopt(task->m_handler, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_WHATEVER);
+        break;
+    case net_local_ip_stack_ipv4:
+        curl_easy_setopt(task->m_handler, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+        break;
+    case net_local_ip_stack_ipv6:
+        curl_easy_setopt(task->m_handler, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V6);
+        break;
+    }
     
     CURLcode rc = curl_multi_add_handle(mgr->m_multi_handle, task->m_handler);
     if (rc != 0) {
-        CPE_ERROR(mgr->m_em, "trans: %s-%d: curl_multi_add_handle error, rc=%d (%s)", mgr->m_name, task->m_id, rc, curl_easy_strerror(rc));
+        CPE_ERROR(mgr->m_em, "trans: %s-%d: start: curl_multi_add_handle error, rc=%d (%s)", mgr->m_name, task->m_id, rc, curl_easy_strerror(rc));
         return -1;
     }
     task->m_state = net_trans_task_working;

@@ -6,12 +6,15 @@ file(GLOB curl_source
     ${curl_base}/lib/vtls/*.c
     )
 
-
 set(curl_compile_definitions
   ${curl_compile_definitions}
   HAVE_CONFIG_H
   BUILDING_LIBCURL
   )
+
+if (CMAKE_BUILD_TYPE STREQUAL Debug)
+    set(curl_compile_definitions ${curl_compile_definitions} DEBUGBUILD)
+endif ()
 
 if (MSVC)
 set(curl_compile_options
