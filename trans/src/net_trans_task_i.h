@@ -20,7 +20,11 @@ struct net_trans_task {
     net_trans_task_error_t m_error;
     struct curl_slist * m_header;
     struct mem_buffer m_buffer;
-    
+
+    /*trace*/
+    int64_t m_trace_begin_time_ms;
+    int64_t m_trace_last_time_ms;
+
     /*callback*/
     uint8_t m_in_callback;
     uint8_t m_is_free;

@@ -3,6 +3,7 @@
 #include "cpe/pal/pal_strings.h"
 #include "cpe/pal/pal_stdio.h"
 #include "cpe/utils/string_utils.h"
+#include "cpe/utils/time_utils.h"
 #include "cpe/utils/stream_buffer.h"
 #include "cpe/utils_sock/sock_utils.h"
 #include "cpe/utils_sock/getdnssvraddrs.h"
@@ -58,6 +59,9 @@ net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const c
     curl_easy_setopt(task->m_handler, CURLOPT_NOSIGNAL, 1);
     curl_easy_setopt(task->m_handler, CURLOPT_TCP_NODELAY, 1);
     curl_easy_setopt(task->m_handler, CURLOPT_NETRC, CURL_NETRC_IGNORED);
+
+    task->m_trace_begin_time_ms = 0;
+    task->m_trace_last_time_ms = 0;
     
     task->m_in_callback = 0;
     task->m_is_free = 0;
@@ -390,6 +394,13 @@ static int net_trans_task_trace(CURL *handle, curl_infotype type, char *data, si
     net_trans_task_t task = userp;
     net_trans_manage_t mgr = task->m_mgr;
 
+    int64_t cur_ms = cur_time_ms();
+    int64_t pre_ms = task->m_trace_last_time_ms == 0 ? task->m_trace_begin_time_ms : task->m_trace_last_time_ms;
+    task->m_trace_last_time_ms = cur_ms;
+    
+    int32_t cost_from_begin = (int32_t)(cur_ms - task->m_trace_begin_time_ms);
+    int32_t cost_from_pre = (int32_t)(cur_ms - pre_ms);
+
     switch(type) {
     case CURLINFO_TEXT: {
         char * end = data + size;
@@ -400,7 +411,10 @@ static int net_trans_task_trace(CURL *handle, curl_infotype type, char *data, si
             *p = 0;
         }
 
-        CPE_INFO(mgr->m_em, "trans: %s-%d: == Info %s", mgr->m_name, task->m_id, data);
+        CPE_INFO(
+            mgr->m_em, "trans: %s-%d: %0.5d(+%0.5d) == Info %s",
+            mgr->m_name, task->m_id, cost_from_begin, cost_from_pre,
+            data);
         
         if (p < end) {
             *p = keep;
@@ -409,30 +423,40 @@ static int net_trans_task_trace(CURL *handle, curl_infotype type, char *data, si
         break;
     }
     case CURLINFO_HEADER_OUT:
-        CPE_INFO(mgr->m_em, "trans: %s-%d: => header: %s", mgr->m_name, task->m_id, net_trans_task_dump(mgr, data, size, 1));
+        CPE_INFO(
+            mgr->m_em, "trans: %s-%d: %0.5d(+%0.5d) => header: %s",
+            mgr->m_name, task->m_id, cost_from_begin, cost_from_pre,
+            net_trans_task_dump(mgr, data, size, 1));
         break;
     case CURLINFO_DATA_OUT:
         CPE_INFO(
-            mgr->m_em, "trans: %s-%d: => data(%d): %s",
-            mgr->m_name, task->m_id, (int)size, net_trans_task_dump(mgr, data, size, 1));
+            mgr->m_em, "trans: %s-%d: %0.5d(+%0.5d) => data(%d): %s",
+            mgr->m_name, task->m_id, cost_from_begin, cost_from_pre,
+            (int)size, net_trans_task_dump(mgr, data, size, 1));
         break;
     case CURLINFO_SSL_DATA_OUT:
         CPE_INFO(
-            mgr->m_em, "trans: %s-%d: => SSL data(%d): %s",
-            mgr->m_name, task->m_id, (int)size, net_trans_task_dump(mgr, data, size, 1));
+            mgr->m_em, "trans: %s-%d: %0.5d(+%0.5d) => SSL data(%d): %s",
+            mgr->m_name, task->m_id, cost_from_begin, cost_from_pre,
+            (int)size, net_trans_task_dump(mgr, data, size, 1));
         break;
     case CURLINFO_HEADER_IN:
-        CPE_INFO(mgr->m_em, "trans: %s-%d: <= header: %s", mgr->m_name, task->m_id, net_trans_task_dump(mgr, data, size, 1));
+        CPE_INFO(
+            mgr->m_em, "trans: %s-%d: %0.5d(+%0.5d) <= header: %s",
+            mgr->m_name, task->m_id, cost_from_begin, cost_from_pre,
+            net_trans_task_dump(mgr, data, size, 1));
         break;
     case CURLINFO_DATA_IN:
         CPE_INFO(
-            mgr->m_em, "trans: %s-%d: <= data(%d): %s",
-            mgr->m_name, task->m_id, (int)size, net_trans_task_dump(mgr, data, size, 1));
+            mgr->m_em, "trans: %s-%d: %0.5d(+%0.5d) <= data(%d): %s",
+            mgr->m_name, task->m_id,cost_from_begin, cost_from_pre,
+            (int)size, net_trans_task_dump(mgr, data, size, 1));
         break;
     case CURLINFO_SSL_DATA_IN:
         CPE_INFO(
-            mgr->m_em, "trans: %s-%d: <= SSL data(%d): %s",
-            mgr->m_name, task->m_id, (int)size, net_trans_task_dump(mgr, data, size, 1));
+            mgr->m_em, "trans: %s-%d: %0.5d(+%0.5d) <= SSL data(%d): %s",
+            mgr->m_name, task->m_id, cost_from_begin, cost_from_pre,
+            (int)size, net_trans_task_dump(mgr, data, size, 1));
         break;
     default:
         break;
@@ -443,15 +467,6 @@ static int net_trans_task_trace(CURL *handle, curl_infotype type, char *data, si
  
 void net_trans_task_set_debug(net_trans_task_t task, uint8_t is_debug) {
     task->m_debug = is_debug;
-    if (is_debug) {
-        curl_easy_setopt(task->m_handler, CURLOPT_VERBOSE, 1L);
-        curl_easy_setopt(task->m_handler, CURLOPT_DEBUGFUNCTION, net_trans_task_trace);
-        curl_easy_setopt(task->m_handler, CURLOPT_DEBUGDATA, task);
-        curl_easy_setopt(task->m_handler, CURLOPT_STDERR, stderr);
-    }
-    else {
-        curl_easy_setopt(task->m_handler, CURLOPT_VERBOSE, 0L);
-    }
 }
 
 void net_trans_task_set_callback(
@@ -541,6 +556,17 @@ int net_trans_task_start(net_trans_task_t task) {
         curl_easy_setopt(task->m_handler, CURLOPT_HEADERDATA, task);
     }
 
+    if (task->m_debug) {
+        task->m_trace_begin_time_ms = cur_time_ms();
+        curl_easy_setopt(task->m_handler, CURLOPT_VERBOSE, 1L);
+        curl_easy_setopt(task->m_handler, CURLOPT_DEBUGFUNCTION, net_trans_task_trace);
+        curl_easy_setopt(task->m_handler, CURLOPT_DEBUGDATA, task);
+        curl_easy_setopt(task->m_handler, CURLOPT_STDERR, stderr);
+    }
+    else {
+        curl_easy_setopt(task->m_handler, CURLOPT_VERBOSE, 0L);
+    }
+    
     CURLcode rc = curl_multi_add_handle(mgr->m_multi_handle, task->m_handler);
     if (rc != 0) {
         CPE_ERROR(mgr->m_em, "trans: %s-%d: curl_multi_add_handle error, rc=%d (%s)", mgr->m_name, task->m_id, rc, curl_easy_strerror(rc));
@@ -550,7 +576,7 @@ int net_trans_task_start(net_trans_task_t task) {
 
     mgr->m_still_running = 1;
 
-    if (mgr->m_debug) {
+    if (task->m_debug) {
         CPE_INFO(mgr->m_em, "trans: %s-%d: start!", mgr->m_name, task->m_id);
     }
 
