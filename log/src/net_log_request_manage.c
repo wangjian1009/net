@@ -26,7 +26,7 @@ net_log_request_manage_create(
     mgr->m_net_schedule = net_schedule;
     mgr->m_net_driver = net_driver;
 
-    mgr->m_trans_mgr = net_trans_manage_create(schedule->m_alloc, schedule->m_em, net_schedule, net_driver);
+    mgr->m_trans_mgr = net_trans_manage_create(schedule->m_alloc, schedule->m_em, net_schedule, net_driver, "log");
     if (mgr->m_trans_mgr == NULL) {
         CPE_ERROR(schedule->m_em, "log: %s: manage: create: create trans mgr fail", name);
         mem_free(schedule->m_alloc, mgr);

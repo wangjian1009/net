@@ -19,7 +19,7 @@ int net_trans_sock_cb(CURL *e, curl_socket_t s, int what, void *cbp, void *sockp
 
     if (mgr->m_debug >= 2) {
         static char * what_msgs[] = { "NONE", "IN", "OUT", "INOUT", "REMOVE" };
-        CPE_INFO(mgr->m_em, "trans: task %d: expect %s, fd=%d!", task->m_id, what_msgs[what], s);
+        CPE_INFO(mgr->m_em, "trans: %s-%d: expect %s, fd=%d!", mgr->m_name, task->m_id, what_msgs[what], s);
     }
 
     if (what == CURL_POLL_REMOVE) {
@@ -32,7 +32,7 @@ int net_trans_sock_cb(CURL *e, curl_socket_t s, int what, void *cbp, void *sockp
         if (task->m_watcher == NULL) {
             task->m_watcher = net_watcher_create(mgr->m_driver, s, task, net_watcher_event_cb);
             if (task->m_watcher == NULL) {
-                CPE_ERROR(mgr->m_em, "trans: sock_cb: task %d update watcher fail!", task->m_id);
+                CPE_ERROR(mgr->m_em, "trans: sock_cb: %s-%d update watcher fail!", mgr->m_name, task->m_id);
                 return -1;
             }
         }
@@ -50,7 +50,7 @@ void net_watcher_event_cb(void * ctx, int fd, uint8_t do_read, uint8_t do_write)
     int rc;
 
     if (mgr->m_debug >= 2) {
-        CPE_INFO(mgr->m_em, "trans: task %d: action%s%s", task->m_id, (do_read ? " read" : ""), (do_write ? " write" : ""));
+        CPE_INFO(mgr->m_em, "trans: %s-%d: action%s%s", mgr->m_name, task->m_id, (do_read ? " read" : ""), (do_write ? " write" : ""));
     }
 
     action = (do_read ? CURL_POLL_IN : 0) | (do_write ? CURL_POLL_OUT : 0);
@@ -93,12 +93,12 @@ void net_trans_check_multi_info(net_trans_manage_t mgr) {
     CURLMsg *msg;
     int msgs_left;
     CURL * handler;
-    CURLcode res;
     net_trans_task_t task;
 
     while ((msg = curl_multi_info_read(mgr->m_multi_handle, &msgs_left))) {
         handler = msg->easy_handle;
-        res = msg->data.result;
+
+        CURLcode rc = msg->data.result;
         
         task = NULL;
         curl_easy_getinfo(handler, CURLINFO_PRIVATE, &task);
@@ -107,27 +107,22 @@ void net_trans_check_multi_info(net_trans_manage_t mgr) {
 
         switch(msg->msg) {
         case CURLMSG_DONE: {
-            if (res == CURLE_OK) {
+            if (rc == CURLE_OK) {
                 net_trans_task_set_done(task, net_trans_result_complete, net_trans_task_error_none);
             }
             else {
-                net_trans_task_error_t err = net_trans_task_cvt_error(res);
-                if (err != net_trans_task_error_internal) {
-                    CPE_ERROR(
-                        mgr->m_em, "trans: task %d: check_multi_info done: error=%s!",
-                        task->m_id, net_trans_task_error_str(err));
-                }
-                else {
-                    CPE_ERROR(
-                        mgr->m_em, "trans: task %d: check_multi_info done: error=%s (CURLcode=%d)!",
-                        task->m_id, net_trans_task_error_str(err), res);
+                net_trans_task_error_t err = net_trans_task_cvt_error(rc);
+                if (err == net_trans_task_error_internal) {
+                    CPE_INFO(
+                        mgr->m_em, "trans: %s-%d: check_multi_info: not processed CURLcode %d (%s)!",
+                        mgr->m_name, task->m_id, rc, curl_easy_strerror(rc));
                 }
                 net_trans_task_set_done(task, net_trans_result_error, err);
             }
             break;
         }
         default:
-            CPE_INFO(mgr->m_em, "trans: task %d: check_multi_info recv msg %d!", task->m_id, msg->msg);
+            CPE_INFO(mgr->m_em, "trans: %s-%d: check_multi_info recv msg %d!", mgr->m_name, task->m_id, msg->msg);
             break;
         }
     }

@@ -1,5 +1,6 @@
 #include "assert.h"
 #include "cpe/pal/pal_string.h"
+#include "cpe/pal/pal_strings.h"
 #include "cpe/pal/pal_stdio.h"
 #include "cpe/utils/string_utils.h"
 #include "cpe/utils/stream_buffer.h"
@@ -21,7 +22,7 @@ net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const c
     net_trans_task_t task = NULL;
 
     if (net_schedule_local_ip_stack(mgr->m_schedule) == net_local_ip_stack_none) {
-        CPE_ERROR(mgr->m_em, "trans: task: ip stack non, can`t create task!");
+        CPE_ERROR(mgr->m_em, "trans: %s-: ip stack non, can`t create task!", mgr->m_name);
         return NULL;
     }
     
@@ -32,7 +33,7 @@ net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const c
     else {
         task = mem_alloc(mgr->m_alloc, sizeof(struct net_trans_task));
         if (task == NULL) {
-            CPE_ERROR(mgr->m_em, "trans: task: alloc fail");
+            CPE_ERROR(mgr->m_em, "trans: %s-: alloc fail", mgr->m_name);
             goto CREATED_ERROR;
         }
     }
@@ -49,7 +50,7 @@ net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const c
 
     task->m_handler = curl_easy_init();
     if (task->m_handler == NULL) {
-        CPE_ERROR(mgr->m_em, "trans: task: curl_easy_init fail!");
+        CPE_ERROR(mgr->m_em, "trans: %s-: curl_easy_init fail!", mgr->m_name);
         goto CREATED_ERROR;
     }
     curl_easy_setopt(task->m_handler, CURLOPT_PRIVATE, task);
@@ -93,11 +94,15 @@ net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const c
 
     mem_buffer_init(&task->m_buffer, mgr->m_alloc);
 
+    if (task->m_debug) {
+        CPE_INFO(mgr->m_em, "trans: %s-%d: url: %s", mgr->m_name, task->m_id, uri);
+    }
+    
     if (net_trans_task_init_dns(mgr, task) != 0) goto CREATED_ERROR;
 
     cpe_hash_entry_init(&task->m_hh_for_mgr);
     if (cpe_hash_table_insert_unique(&mgr->m_tasks, task) != 0) {
-        CPE_ERROR(mgr->m_em, "trans: task: id duplicate!");
+        CPE_ERROR(mgr->m_em, "trans: %s-%d: id duplicate!", mgr->m_name, task->m_id);
         goto CREATED_ERROR;
     }
 
@@ -127,7 +132,7 @@ void net_trans_task_free(net_trans_task_t task) {
     }
 
     if (mgr->m_debug || task->m_debug) {
-        CPE_INFO(mgr->m_em, "trans: task %d: free!", task->m_id);
+        CPE_INFO(mgr->m_em, "trans: %s-%d: free!", mgr->m_name, task->m_id);
     }
 
     curl_easy_cleanup(task->m_handler);
@@ -206,9 +211,15 @@ net_trans_task_error_t net_trans_task_error(net_trans_task_t task) {
 
 int16_t net_trans_task_res_code(net_trans_task_t task) {
     long http_code = 0;
-    return curl_easy_getinfo(task->m_handler, CURLINFO_RESPONSE_CODE, &http_code) ==  CURLE_OK
-        ? (int16_t)http_code
-        : 0;
+    CURLcode rc = curl_easy_getinfo(task->m_handler, CURLINFO_RESPONSE_CODE, &http_code);
+    if (rc != CURLE_OK) {
+        CPE_ERROR(
+            task->m_mgr->m_em, "trans: %s-%d: get res code: error, rc=%d (%s)!",
+            task->m_mgr->m_name, task->m_id, rc, curl_easy_strerror(rc));
+        return -1;
+    }
+    
+    return (int16_t)http_code;
 }
 
 int net_trans_task_set_skip_data(net_trans_task_t task, ssize_t skip_length) {
@@ -216,13 +227,13 @@ int net_trans_task_set_skip_data(net_trans_task_t task, ssize_t skip_length) {
 
     if (curl_easy_setopt(task->m_handler, CURLOPT_RESUME_FROM_LARGE, skip_length > 0 ? (curl_off_t)skip_length : (curl_off_t)0) != (int)CURLM_OK) {
         CPE_ERROR(
-            mgr->m_em, "trans: task %d: set skip data %d error!",
-            task->m_id, (int)skip_length);
+            mgr->m_em, "trans: %s-%d: set skip data %d error!",
+            mgr->m_name, task->m_id, (int)skip_length);
         return -1;
     }
 
     if (task->m_debug) {
-        CPE_INFO(mgr->m_em, "trans: task %d: set skip data %d!", task->m_id, (int)skip_length);
+        CPE_INFO(mgr->m_em, "trans: %s-%d: set skip data %d!", mgr->m_name, task->m_id, (int)skip_length);
     }
 
     return 0;
@@ -233,15 +244,15 @@ int net_trans_task_set_timeout_ms(net_trans_task_t task, uint64_t timeout_ms) {
 
 	if (curl_easy_setopt(task->m_handler, CURLOPT_TIMEOUT_MS, timeout_ms) != (int)CURLM_OK) {
         CPE_ERROR(
-            mgr->m_em, "trans: task %d: set timeout " FMT_UINT64_T "ms error!",
-            task->m_id, timeout_ms);
+            mgr->m_em, "trans: %s-%d: set timeout " FMT_UINT64_T "ms error!",
+            mgr->m_name, task->m_id, timeout_ms);
         return -1;
     }
 
     if (task->m_debug) {
         CPE_INFO(
-            mgr->m_em, "trans: task %d: set timeout " FMT_UINT64_T "ms!",
-            task->m_id, timeout_ms);
+            mgr->m_em, "trans: %s-%d: set timeout " FMT_UINT64_T "ms!",
+            mgr->m_name, task->m_id, timeout_ms);
     }
 
     return 0;
@@ -252,15 +263,15 @@ int net_trans_task_set_connection_timeout_ms(net_trans_task_t task, uint64_t tim
 
 	if (curl_easy_setopt(task->m_handler, CURLOPT_CONNECTTIMEOUT_MS, timeout_ms) != (int)CURLM_OK) {
         CPE_ERROR(
-            mgr->m_em, "trans: task %d: set connection-timeout " FMT_UINT64_T "ms error!",
-            task->m_id, timeout_ms);
+            mgr->m_em, "trans: %s-%d: set connection-timeout " FMT_UINT64_T "ms error!",
+            mgr->m_name, task->m_id, timeout_ms);
         return -1;
     }
 
     if (task->m_debug) {
         CPE_INFO(
-            mgr->m_em, "trans: task %d: set connection-timeout " FMT_UINT64_T "ms!",
-            task->m_id, timeout_ms);
+            mgr->m_em, "trans: %s-%d: set connection-timeout " FMT_UINT64_T "ms!",
+            mgr->m_name, task->m_id, timeout_ms);
     }
 
     return 0;
@@ -271,13 +282,13 @@ int net_trans_task_set_useragent(net_trans_task_t task, const char * agent) {
 
 	if (curl_easy_setopt(task->m_handler, CURLOPT_USERAGENT, agent) != (int)CURLM_OK) {
         CPE_ERROR(
-            mgr->m_em, "trans: task %d: set useragent %s error!",
-            task->m_id, agent);
+            mgr->m_em, "trans: %s-%d: set useragent %s error!",
+            mgr->m_name, task->m_id, agent);
         return -1;
     }
 
     if (task->m_debug) {
-        CPE_INFO(mgr->m_em, "trans: task %d: set useragent %s!", task->m_id, agent);
+        CPE_INFO(mgr->m_em, "trans: %s-%d: set useragent %s!", mgr->m_name, task->m_id, agent);
     }
 
     return 0;
@@ -297,26 +308,26 @@ int net_trans_task_append_header_line(net_trans_task_t task, const char * header
 
         if (task->m_header == NULL) {
             CPE_ERROR(
-                mgr->m_em, "trans: task %d: append header %s create slist fail!",
-                task->m_id, header_one);
+                mgr->m_em, "trans: %s-%d: append header %s create slist fail!",
+                mgr->m_name, task->m_id, header_one);
             return -1;
         }
 
         if (curl_easy_setopt(task->m_handler, CURLOPT_HTTPHEADER, task->m_header) != (int)CURLM_OK) {
             CPE_ERROR(
-                mgr->m_em, "trans: task %d: append header %s set opt fail!", task->m_id, header_one);
+                mgr->m_em, "trans: %s-%d: append header %s set opt fail!", mgr->m_name, task->m_id, header_one);
             return -1;
         }
     }
     else {
         if (curl_slist_append(task->m_header, header_one) == NULL) {
-            CPE_ERROR(mgr->m_em, "trans: task %d: append header %s add to slist fail!", task->m_id, header_one);
+            CPE_ERROR(mgr->m_em, "trans: %s-%d: append header %s add to slist fail!", mgr->m_name, task->m_id, header_one);
             return -1;
         }
     }
 
     if (task->m_debug) {
-        CPE_INFO(mgr->m_em, "trans: task %d: append header %s!", task->m_id, header_one);
+        CPE_INFO(mgr->m_em, "trans: %s-%d: append header %s!", mgr->m_name, task->m_id, header_one);
     }
 
     return 0;
@@ -389,7 +400,7 @@ static int net_trans_task_trace(CURL *handle, curl_infotype type, char *data, si
             *p = 0;
         }
 
-        CPE_INFO(mgr->m_em, "trans: task %d: == Info %s", task->m_id, data);
+        CPE_INFO(mgr->m_em, "trans: %s-%d: == Info %s", mgr->m_name, task->m_id, data);
         
         if (p < end) {
             *p = keep;
@@ -398,30 +409,30 @@ static int net_trans_task_trace(CURL *handle, curl_infotype type, char *data, si
         break;
     }
     case CURLINFO_HEADER_OUT:
-        CPE_INFO(mgr->m_em, "trans: task %d: => header: %s", task->m_id, net_trans_task_dump(mgr, data, size, 1));
+        CPE_INFO(mgr->m_em, "trans: %s-%d: => header: %s", mgr->m_name, task->m_id, net_trans_task_dump(mgr, data, size, 1));
         break;
     case CURLINFO_DATA_OUT:
         CPE_INFO(
-            mgr->m_em, "trans: task %d: => data(%d): %s",
-            task->m_id, (int)size, net_trans_task_dump(mgr, data, size, 1));
+            mgr->m_em, "trans: %s-%d: => data(%d): %s",
+            mgr->m_name, task->m_id, (int)size, net_trans_task_dump(mgr, data, size, 1));
         break;
     case CURLINFO_SSL_DATA_OUT:
         CPE_INFO(
-            mgr->m_em, "trans: task %d: => SSL data(%d): %s",
-            task->m_id, (int)size, net_trans_task_dump(mgr, data, size, 1));
+            mgr->m_em, "trans: %s-%d: => SSL data(%d): %s",
+            mgr->m_name, task->m_id, (int)size, net_trans_task_dump(mgr, data, size, 1));
         break;
     case CURLINFO_HEADER_IN:
-        CPE_INFO(mgr->m_em, "trans: task %d: <= header: %s", task->m_id, net_trans_task_dump(mgr, data, size, 1));
+        CPE_INFO(mgr->m_em, "trans: %s-%d: <= header: %s", mgr->m_name, task->m_id, net_trans_task_dump(mgr, data, size, 1));
         break;
     case CURLINFO_DATA_IN:
         CPE_INFO(
-            mgr->m_em, "trans: task %d: <= data(%d): %s",
-            task->m_id, (int)size, net_trans_task_dump(mgr, data, size, 1));
+            mgr->m_em, "trans: %s-%d: <= data(%d): %s",
+            mgr->m_name, task->m_id, (int)size, net_trans_task_dump(mgr, data, size, 1));
         break;
     case CURLINFO_SSL_DATA_IN:
         CPE_INFO(
-            mgr->m_em, "trans: task %d: <= SSL data(%d): %s",
-            task->m_id, (int)size, net_trans_task_dump(mgr, data, size, 1));
+            mgr->m_em, "trans: %s-%d: <= SSL data(%d): %s",
+            mgr->m_name, task->m_id, (int)size, net_trans_task_dump(mgr, data, size, 1));
         break;
     default:
         break;
@@ -470,8 +481,8 @@ int net_trans_task_set_body(net_trans_task_t task, void const * data, uint32_t d
         || curl_easy_setopt(task->m_handler, CURLOPT_COPYPOSTFIELDS, data) != (int)CURLM_OK)
     {
         CPE_ERROR(
-            mgr->m_em, "trans: task %d: set post %d data fail!",
-            task->m_id, (int)data_size);
+            mgr->m_em, "trans: %s-%d: set post %d data fail!",
+            mgr->m_name, task->m_id, (int)data_size);
         return -1;
     }
 
@@ -482,7 +493,7 @@ int net_trans_task_set_user_agent(net_trans_task_t task, const char * user_agent
     net_trans_manage_t mgr = task->m_mgr;
 
     if (curl_easy_setopt(task->m_handler, CURLOPT_USERAGENT, user_agent) != (int)CURLM_OK) {
-        CPE_ERROR(mgr->m_em, "trans: task %d: set user-agent %s fail!", task->m_id, user_agent);
+        CPE_ERROR(mgr->m_em, "trans: %s-%d: set user-agent %s fail!", mgr->m_name, task->m_id, user_agent);
         return -1;
     }
 
@@ -493,7 +504,7 @@ int net_trans_task_set_net_interface(net_trans_task_t task, const char * net_int
     net_trans_manage_t mgr = task->m_mgr;
 
     if (curl_easy_setopt(task->m_handler, CURLOPT_INTERFACE, net_interface) != (int)CURLM_OK) {
-        CPE_ERROR(mgr->m_em, "trans: task %d: set net-interface %s fail!", task->m_id, net_interface);
+        CPE_ERROR(mgr->m_em, "trans: %s-%d: set net-interface %s fail!", mgr->m_name, task->m_id, net_interface);
         return -1;
     }
 
@@ -502,24 +513,23 @@ int net_trans_task_set_net_interface(net_trans_task_t task, const char * net_int
 
 int net_trans_task_start(net_trans_task_t task) {
     net_trans_manage_t mgr = task->m_mgr;
-    int rc;
 
     assert(!task->m_is_free);
 
     if (task->m_state == net_trans_task_working) {
-        CPE_ERROR(mgr->m_em, "trans: task %d: can`t start in state %s!", task->m_id, net_trans_task_state_str(task->m_state));
+        CPE_ERROR(mgr->m_em, "trans: %s-%d: can`t start in state %s!", mgr->m_name, task->m_id, net_trans_task_state_str(task->m_state));
         return -1;
     }
 
     if (task->m_state == net_trans_task_done) {
         CURL * new_handler = curl_easy_duphandle(task->m_handler);
         if (new_handler == NULL) {
-            CPE_ERROR(mgr->m_em, "trans: task %d: duphandler fail!", task->m_id);
+            CPE_ERROR(mgr->m_em, "trans: %s-%d: duphandler fail!", mgr->m_name, task->m_id);
             return -1;
         }
 
         if (mgr->m_debug) {
-            CPE_INFO(mgr->m_em, "trans: task %d: duphandler!", task->m_id);
+            CPE_INFO(mgr->m_em, "trans: %s-%d: duphandler!", mgr->m_name, task->m_id);
         }
 
         curl_easy_cleanup(task->m_handler);
@@ -531,9 +541,9 @@ int net_trans_task_start(net_trans_task_t task) {
         curl_easy_setopt(task->m_handler, CURLOPT_HEADERDATA, task);
     }
 
-    rc = curl_multi_add_handle(mgr->m_multi_handle, task->m_handler);
+    CURLcode rc = curl_multi_add_handle(mgr->m_multi_handle, task->m_handler);
     if (rc != 0) {
-        CPE_ERROR(mgr->m_em, "trans: task %d: curl_multi_add_handle error, rc=%d", task->m_id, rc);
+        CPE_ERROR(mgr->m_em, "trans: %s-%d: curl_multi_add_handle error, rc=%d (%s)", mgr->m_name, task->m_id, rc, curl_easy_strerror(rc));
         return -1;
     }
     task->m_state = net_trans_task_working;
@@ -541,8 +551,33 @@ int net_trans_task_start(net_trans_task_t task) {
     mgr->m_still_running = 1;
 
     if (mgr->m_debug) {
-        CPE_INFO(mgr->m_em, "trans: task %d: start!", task->m_id);
+        CPE_INFO(mgr->m_em, "trans: %s-%d: start!", mgr->m_name, task->m_id);
     }
+
+    return 0;
+}
+
+#define _net_trans_task_cost_info_one(__entry, __tag)               \
+    if ((rc = curl_easy_getinfo(task->m_handler, __tag, &buf)) != CURLE_OK) { \
+        CPE_ERROR(                                                      \
+            mgr->m_em, "trans: %s-%d: get cost info: get " #__tag  " fail, rc=%d (%s)", \
+            mgr->m_name, task->m_id, rc, curl_easy_strerror(rc));        \
+        return -1;                                                      \
+    }                                                                   \
+    cost_info->__entry = (int32_t)buf
+
+int net_trans_task_cost_info(net_trans_task_t task, net_trans_task_cost_info_t cost_info) {
+    net_trans_manage_t mgr = task->m_mgr;
+    CURLcode rc;
+    curl_off_t buf;
+
+    _net_trans_task_cost_info_one(dns_ms, CURLINFO_NAMELOOKUP_TIME_T);
+    _net_trans_task_cost_info_one(connect_ms, CURLINFO_CONNECT_TIME_T);
+    _net_trans_task_cost_info_one(app_connect_ms, CURLINFO_APPCONNECT_TIME_T);
+    _net_trans_task_cost_info_one(pre_transfer_ms, CURLINFO_PRETRANSFER_TIME_T);
+    _net_trans_task_cost_info_one(start_transfer_ms, CURLINFO_STARTTRANSFER_TIME_T);
+    _net_trans_task_cost_info_one(total_ms, CURLINFO_TOTAL_TIME_T);
+    _net_trans_task_cost_info_one(redirect_ms, CURLINFO_REDIRECT_TIME_T);
 
     return 0;
 }
@@ -664,12 +699,12 @@ static size_t net_trans_task_write_cb(char *ptr, size_t size, size_t nmemb, void
         write_size = mem_buffer_append(&task->m_buffer, ptr, total_length);
         if (write_size != (ssize_t)total_length) {
             CPE_ERROR(
-                mgr->m_em, "trans: task %d): append %d data fail, return %d!",
-                task->m_id, (int)total_length, (int)write_size);
+                mgr->m_em, "trans: %s-%d): append %d data fail, return %d!",
+                mgr->m_name, task->m_id, (int)total_length, (int)write_size);
         }
         else {
             if (mgr->m_debug) {
-                CPE_INFO(mgr->m_em, "trans: task %d: receive %d data!", task->m_id, (int)total_length);
+                CPE_INFO(mgr->m_em, "trans: %s-%d: receive %d data!", mgr->m_name, task->m_id, (int)total_length);
             }
         }
     }
@@ -710,8 +745,8 @@ int net_trans_task_set_done(net_trans_task_t task, net_trans_task_result_t resul
 
     if (task->m_state != net_trans_task_working) {
         CPE_ERROR(
-            mgr->m_em, "trans: task %d: can`t done in state %s!",
-            task->m_id, net_trans_task_state_str(task->m_state));
+            mgr->m_em, "trans: %s-%d: can`t done in state %s!",
+            mgr->m_name, task->m_id, net_trans_task_state_str(task->m_state));
         assert(0);
         return -1;
     }
@@ -724,15 +759,37 @@ int net_trans_task_set_done(net_trans_task_t task, net_trans_task_result_t resul
     task->m_state = net_trans_task_done;
 
     if (mgr->m_debug) {
+        struct net_trans_task_cost_info cost_info;
+        bzero(&cost_info, sizeof(cost_info));
+        net_trans_task_cost_info(task, &cost_info);
+
         if (result == net_trans_result_error) {
             CPE_INFO(
-                mgr->m_em, "trans: task %d: done, result is %s, error=%s!",
-                task->m_id, net_trans_task_result_str(task->m_result), net_trans_task_error_str(err));
+                mgr->m_em, "trans: %s-%d: done, result is %s, error=%s"
+                " | cost: dns %.2f --> connect %.2f --> app-connect %.2f --> pre-transfer %.2f"
+                " --> start-transfer %.2f --> total %.2f --> redirect %.2f",
+                mgr->m_name, task->m_id, net_trans_task_result_str(task->m_result), net_trans_task_error_str(err),
+                (float)cost_info.dns_ms / 1000.0f,
+                (float)cost_info.connect_ms / 1000.0f,
+                (float)cost_info.app_connect_ms / 1000.0f,
+                (float)cost_info.pre_transfer_ms / 1000.0f,
+                (float)cost_info.start_transfer_ms / 1000.0f,
+                (float)cost_info.total_ms / 1000.0f,
+                (float)cost_info.redirect_ms / 1000.0f);
         }
         else {
             CPE_INFO(
-                mgr->m_em, "trans: task %d: done, result is %s!",
-                task->m_id, net_trans_task_result_str(task->m_result));
+                mgr->m_em, "trans: %s-%d: done, result is %s"
+                " | cost: dns %.2f --> connect %.2f --> app-connect %.2f --> pre-transfer %.2f"
+                " --> start-transfer %.2f --> total %.2f --> redirect %.2f",
+                mgr->m_name, task->m_id, net_trans_task_result_str(task->m_result),
+                (float)cost_info.dns_ms / 1000.0f,
+                (float)cost_info.connect_ms / 1000.0f,
+                (float)cost_info.app_connect_ms / 1000.0f,
+                (float)cost_info.pre_transfer_ms / 1000.0f,
+                (float)cost_info.start_transfer_ms / 1000.0f,
+                (float)cost_info.total_ms / 1000.0f,
+                (float)cost_info.redirect_ms / 1000.0f);
         }
     }
 
@@ -766,7 +823,7 @@ static int net_trans_task_init_dns(net_trans_manage_t mgr, net_trans_task_t task
     struct sockaddr_storage dnssevraddrs[10];
     uint8_t addr_count = CPE_ARRAY_SIZE(dnssevraddrs);
     if (getdnssvraddrs(dnssevraddrs, &addr_count, mgr->m_em) != 0) {
-        CPE_ERROR(mgr->m_em, "trans: task %d: dns: get dns servers error!", task->m_id);
+        CPE_ERROR(mgr->m_em, "trans: %s-%d: dns: get dns servers error!", mgr->m_name, task->m_id);
         return -1;
     }
 
@@ -782,8 +839,8 @@ static int net_trans_task_init_dns(net_trans_manage_t mgr, net_trans_task_t task
             if (ip_stack != net_local_ip_stack_ipv6 && ip_stack != net_local_ip_stack_dual) {
                 if (mgr->m_debug) {
                     CPE_INFO(
-                        mgr->m_em, "trans: task %d: dns: ignore ipv4 address for stack %s",
-                        task->m_id, net_local_ip_stack_str(ip_stack));
+                        mgr->m_em, "trans: %s-%d: dns: ignore ipv4 address for stack %s",
+                        mgr->m_name, task->m_id, net_local_ip_stack_str(ip_stack));
                 }
                 continue;
             }
@@ -792,8 +849,8 @@ static int net_trans_task_init_dns(net_trans_manage_t mgr, net_trans_task_t task
             if (ip_stack != net_local_ip_stack_ipv4 && ip_stack != net_local_ip_stack_dual) {
                 if (mgr->m_debug) {
                     CPE_INFO(
-                        mgr->m_em, "trans: task %d: dns: ignore ipv4 address for stack %s",
-                        task->m_id, net_local_ip_stack_str(ip_stack));
+                        mgr->m_em, "trans: %s-%d: dns: ignore ipv4 address for stack %s",
+                        mgr->m_name, task->m_id, net_local_ip_stack_str(ip_stack));
                 }
                 continue;
             }
@@ -801,8 +858,8 @@ static int net_trans_task_init_dns(net_trans_manage_t mgr, net_trans_task_t task
         else {
             if (mgr->m_debug) {
                 CPE_INFO(
-                    mgr->m_em, "trans: task %d: dns: ignore address for not support family %d",
-                    task->m_id, sock_addr->ss_family);
+                    mgr->m_em, "trans: %s-%d: dns: ignore address for not support family %d",
+                    mgr->m_name, task->m_id, sock_addr->ss_family);
             }
             continue;
         }
@@ -820,14 +877,14 @@ static int net_trans_task_init_dns(net_trans_manage_t mgr, net_trans_task_t task
     dns_buf[dns_buf_sz] = 0;
 
     if (dns_buf_sz == 0) {
-        CPE_ERROR(mgr->m_em, "trans: task %d: dns: no dns server!", task->m_id);
+        CPE_ERROR(mgr->m_em, "trans: %s-%d: dns: no dns server!", mgr->m_name, task->m_id);
         return -1;
     }
 
     curl_easy_setopt(task->m_handler, CURLOPT_DNS_SERVERS, dns_buf);
 
     if (task->m_debug) {
-        CPE_INFO(mgr->m_em, "trans: task %d: dns: using %s!", task->m_id, dns_buf);
+        CPE_INFO(mgr->m_em, "trans: %s-%d: dns: using %s!", mgr->m_name, task->m_id, dns_buf);
     }
     
     return 0;

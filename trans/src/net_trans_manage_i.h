@@ -24,6 +24,7 @@ struct net_trans_manage {
     uint8_t m_debug;
     net_schedule_t m_schedule;
     net_driver_t m_driver;
+    char m_name[32];
     void * m_watcher_ctx;
     net_endpoint_data_watch_fun_t m_watcher_fun;
     

@@ -42,6 +42,31 @@ int16_t net_trans_task_res_code(net_trans_task_t task);
 const char * net_trans_task_res_mine(net_trans_task_t task);
 const char * net_trans_task_res_charset(net_trans_task_t task);
 
+/*statistics*/
+
+/*cost
+    begin
+    |
+    |--NAMELOOKUP
+    |--|--CONNECT
+    |--|--|--APPCONNECT
+    |--|--|--|--PRETRANSFER
+    |--|--|--|--|--STARTTRANSFER
+    |--|--|--|--|--|--TOTAL
+    |--|--|--|--|--|--REDIRECT
+*/
+struct net_trans_task_cost_info {
+    int32_t dns_ms;
+    int32_t connect_ms;
+    int32_t app_connect_ms;
+    int32_t pre_transfer_ms;
+    int32_t start_transfer_ms;
+    int32_t total_ms;
+    int32_t redirect_ms;
+};
+int net_trans_task_cost_info(net_trans_task_t task, net_trans_task_cost_info_t cost_info);
+
+/*utils*/
 const char * net_trans_task_state_str(net_trans_task_state_t state);
 const char * net_trans_task_result_str(net_trans_task_result_t result);
 const char * net_trans_task_error_str(net_trans_task_error_t err);
