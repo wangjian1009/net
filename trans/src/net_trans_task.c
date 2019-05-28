@@ -848,7 +848,7 @@ int net_trans_task_set_done(net_trans_task_t task, net_trans_task_result_t resul
 static int net_trans_task_init_dns(net_trans_manage_t mgr, net_trans_task_t task) {
     struct sockaddr_storage dnssevraddrs[10];
     uint8_t addr_count = CPE_ARRAY_SIZE(dnssevraddrs);
-    if (getdnssvraddrs(dnssevraddrs, &addr_count, mgr->m_em) != 0) {
+    if (getdnssvraddrs(dnssevraddrs, &addr_count, NULL) != 0) {
         CPE_ERROR(mgr->m_em, "trans: %s-%d: dns: get dns servers error!", mgr->m_name, task->m_id);
         return -1;
     }
