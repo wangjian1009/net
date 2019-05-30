@@ -949,10 +949,10 @@ static int net_trans_task_sock_config_cb(void * p, curl_socket_t curlfd, curlsoc
     net_trans_manage_t mgr = task->m_mgr;
 
     if (purpose == CURLSOCKTYPE_IPCXN && task->m_cfg_protect_vpn) {
-        if (sock_protect_vpn(curlfd, mgr->m_em) != 0) {
-            CPE_INFO(mgr->m_em, "trans: %s-%d: protect vpn fail!", mgr->m_name, task->m_id);
-            return -1;
-        }
+        /* if (sock_protect_vpn(curlfd, mgr->m_em) != 0) { */
+        /*     CPE_INFO(mgr->m_em, "trans: %s-%d: protect vpn fail!", mgr->m_name, task->m_id); */
+        /*     return -1; */
+        /* } */
     }
 
     return 0;
