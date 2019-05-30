@@ -940,7 +940,10 @@
 #define TIME_WITH_SYS_TIME 1
 
 /* Define to enable c-ares support */
-/* #undef USE_ARES */
+#if defined ANDROID
+#else
+#define USE_ARES 1
+#endif
 
 /* if CyaSSL/WolfSSL is enabled */
 /* #undef USE_CYASSL */
