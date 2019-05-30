@@ -130,6 +130,15 @@ static void Curl_ares_sock_state_cb(void *data, ares_socket_t socket_fd,
   }
 }
 
+static int Curl_ares_sock_config_cb(ares_socket_t socket_fd, int type, void *data) {
+    struct Curl_easy *easy = data;
+    if (easy->set.fsockopt) {
+        int error = easy->set.fsockopt(easy->set.sockopt_client, socket_fd, CURLSOCKTYPE_IPCXN);
+        if (error) return -1;
+    }
+    return 0;
+}
+
 /*
  * Curl_resolver_init()
  *
@@ -151,6 +160,7 @@ CURLcode Curl_resolver_init(struct Curl_easy *easy, void **resolver)
     else
       return CURLE_FAILED_INIT;
   }
+  ares_set_socket_configure_callback(*(ares_channel*)resolver, Curl_ares_sock_config_cb, easy);
   return CURLE_OK;
   /* make sure that all other returns from this function should destroy the
      ares channel before returning error! */
