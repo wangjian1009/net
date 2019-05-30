@@ -16,6 +16,8 @@
 static size_t net_trans_task_write_cb(char *ptr, size_t size, size_t nmemb, void * userdata);
 static int net_trans_task_prog_cb(void *p, double dltotal, double dlnow, double ult, double uln);
 static size_t net_trans_task_header_cb(void *ptr, size_t size, size_t nmemb, void *stream);
+static int net_trans_task_sock_config_cb(void *p, curl_socket_t curlfd, curlsocktype purpose);
+
 static int net_trans_task_init_dns(net_trans_manage_t mgr, net_trans_task_t task);
 
 net_trans_task_t
@@ -47,6 +49,7 @@ net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const c
     task->m_error = net_trans_task_error_none;
 
     task->m_header = NULL;
+    task->m_cfg_protect_vpn = mgr->m_cfg_protect_vpn;
     task->m_debug = 0;
 
     task->m_handler = curl_easy_init();
@@ -526,6 +529,11 @@ int net_trans_task_set_net_interface(net_trans_task_t task, const char * net_int
     return 0;
 }
 
+int net_trans_task_set_protect_vpn(net_trans_task_t task, uint8_t protect_vpn) {
+    task->m_cfg_protect_vpn = protect_vpn;
+    return 0;
+}
+
 int net_trans_task_start(net_trans_task_t task) {
     net_trans_manage_t mgr = task->m_mgr;
 
@@ -565,6 +573,11 @@ int net_trans_task_start(net_trans_task_t task) {
     }
     else {
         curl_easy_setopt(task->m_handler, CURLOPT_VERBOSE, 0L);
+    }
+
+    if (task->m_cfg_protect_vpn) {
+        curl_easy_setopt(task->m_handler, CURLOPT_SOCKOPTFUNCTION, net_trans_task_sock_config_cb);
+        curl_easy_setopt(task->m_handler, CURLOPT_SOCKOPTDATA, task);
     }
 
     switch(net_schedule_local_ip_stack(mgr->m_schedule)) {
@@ -880,7 +893,7 @@ static int net_trans_task_init_dns(net_trans_manage_t mgr, net_trans_task_t task
             if (ip_stack != net_local_ip_stack_ipv6 && ip_stack != net_local_ip_stack_dual) {
                 if (mgr->m_debug) {
                     CPE_INFO(
-                        mgr->m_em, "trans: %s-%d: dns: ignore ipv4 address for stack %s",
+                        mgr->m_em, "trans: %s-%d: dns: protect ipv4 address for stack %s",
                         mgr->m_name, task->m_id, net_local_ip_stack_str(ip_stack));
                 }
                 continue;
@@ -890,7 +903,7 @@ static int net_trans_task_init_dns(net_trans_manage_t mgr, net_trans_task_t task
             if (ip_stack != net_local_ip_stack_ipv4 && ip_stack != net_local_ip_stack_dual) {
                 if (mgr->m_debug) {
                     CPE_INFO(
-                        mgr->m_em, "trans: %s-%d: dns: ignore ipv4 address for stack %s",
+                        mgr->m_em, "trans: %s-%d: dns: protect ipv4 address for stack %s",
                         mgr->m_name, task->m_id, net_local_ip_stack_str(ip_stack));
                 }
                 continue;
@@ -899,7 +912,7 @@ static int net_trans_task_init_dns(net_trans_manage_t mgr, net_trans_task_t task
         else {
             if (mgr->m_debug) {
                 CPE_INFO(
-                    mgr->m_em, "trans: %s-%d: dns: ignore address for not support family %d",
+                    mgr->m_em, "trans: %s-%d: dns: protect address for not support family %d",
                     mgr->m_name, task->m_id, sock_addr->ss_family);
             }
             continue;
@@ -928,5 +941,19 @@ static int net_trans_task_init_dns(net_trans_manage_t mgr, net_trans_task_t task
         CPE_INFO(mgr->m_em, "trans: %s-%d: dns: using %s!", mgr->m_name, task->m_id, dns_buf);
     }
     
+    return 0;
+}
+
+static int net_trans_task_sock_config_cb(void * p, curl_socket_t curlfd, curlsocktype purpose) {
+    net_trans_task_t task = (net_trans_task_t)p;
+    net_trans_manage_t mgr = task->m_mgr;
+
+    if (purpose == CURLSOCKTYPE_IPCXN && task->m_cfg_protect_vpn) {
+        if (sock_protect_vpn(curlfd, mgr->m_em) != 0) {
+            CPE_INFO(mgr->m_em, "trans: %s-%d: protect vpn fail!", mgr->m_name, task->m_id);
+            return -1;
+        }
+    }
+
     return 0;
 }
