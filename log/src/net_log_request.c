@@ -253,7 +253,7 @@ static int net_log_request_send(net_log_request_t request) {
         schedule->m_cfg_ep,
         category->m_name);
     
-    request->m_task = net_trans_task_create(mgr->m_trans_mgr, net_trans_method_post, buf, 1);
+    request->m_task = net_trans_task_create(mgr->m_trans_mgr, net_trans_method_post, buf, schedule->m_debug);
     if (request->m_task == NULL) {
         CPE_ERROR(
             schedule->m_em, "log: %s: category [%d]%s: request %d: create trans task fail",
