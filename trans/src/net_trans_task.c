@@ -18,7 +18,8 @@ static int net_trans_task_prog_cb(void *p, double dltotal, double dlnow, double 
 static size_t net_trans_task_header_cb(void *ptr, size_t size, size_t nmemb, void *stream);
 static int net_trans_task_sock_config_cb(void *p, curl_socket_t curlfd, curlsocktype purpose);
 
-//static int net_trans_task_init_dns(net_trans_manage_t mgr, net_trans_task_t task);
+static int net_trans_task_setup_host(net_trans_manage_t mgr, net_trans_task_t task);
+static int net_trans_task_setup_dns(net_trans_manage_t mgr, net_trans_task_t task, net_local_ip_stack_t ip_stack);
 
 net_trans_task_t
 net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const char * uri, uint8_t is_debug) {
@@ -28,7 +29,34 @@ net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const c
         CPE_ERROR(mgr->m_em, "trans: %s-: ip stack non, can`t create task!", mgr->m_name);
         return NULL;
     }
+
+    const char * host_begin = strstr(uri, "://");
+    if (host_begin == NULL) {
+        CPE_ERROR(mgr->m_em, "trans: %s-: url '%s' format error!", mgr->m_name, uri);
+        return NULL;
+    }
+    host_begin += 3;
     
+    const char * host_end = host_begin;
+    for(; *host_end != 0; host_end++) {
+        char c = *host_end;
+        if (c ==  '@') {
+            host_begin = host_end + 1;
+        }
+        else if (c == '/') {
+            break;
+        }
+    }
+
+    char buf[128];
+    cpe_str_dup_range(buf, sizeof(buf), host_begin, host_end);
+
+    net_address_t target_host = net_address_create_auto(mgr->m_schedule, buf);
+    if (target_host == NULL) {
+        CPE_ERROR(mgr->m_em, "trans: %s-: create host address from %s fail, uri=%s", mgr->m_name, buf, uri);
+        return NULL;
+    }
+
     task = TAILQ_FIRST(&mgr->m_free_tasks);
     if (task) {
         TAILQ_REMOVE(&mgr->m_free_tasks, task, m_next_for_mgr);
@@ -50,6 +78,10 @@ net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const c
 
     task->m_header = NULL;
     task->m_cfg_protect_vpn = mgr->m_cfg_protect_vpn;
+    task->m_cfg_explicit_dns = 0;
+#if TARGET_OS_IPHONE
+    task->m_cfg_explicit_dns = 1;
+#endif    
     task->m_debug = 0;
 
     task->m_handler = curl_easy_init();
@@ -101,12 +133,12 @@ net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const c
 
     mem_buffer_init(&task->m_buffer, mgr->m_alloc);
 
+    task->m_target_address = target_host;
+
     if (task->m_debug) {
         CPE_INFO(mgr->m_em, "trans: %s-%d: url: %s", mgr->m_name, task->m_id, uri);
     }
     
-    //if (net_trans_task_init_dns(mgr, task) != 0) goto CREATED_ERROR;
-
     cpe_hash_entry_init(&task->m_hh_for_mgr);
     if (cpe_hash_table_insert_unique(&mgr->m_tasks, task) != 0) {
         CPE_ERROR(mgr->m_em, "trans: %s-%d: id duplicate!", mgr->m_name, task->m_id);
@@ -117,6 +149,9 @@ net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const c
     return task;
 
 CREATED_ERROR:
+    assert(target_host);
+    net_address_free(target_host);
+    
     if (task) {
         TAILQ_INSERT_TAIL(&mgr->m_free_tasks, task, m_next_for_mgr);
         task = NULL;
@@ -154,6 +189,11 @@ void net_trans_task_free(net_trans_task_t task) {
         task->m_ctx_free(task->m_ctx);
         task->m_ctx = NULL;
         task->m_ctx_free = NULL;
+    }
+
+    if (task->m_target_address) {
+        net_address_free(task->m_target_address);
+        task->m_target_address = NULL;
     }
 
     mem_buffer_clear(&task->m_buffer);
@@ -202,6 +242,10 @@ net_trans_task_t net_trans_task_find(net_trans_manage_t mgr, uint32_t task_id) {
 
 net_trans_manage_t net_trans_task_manage(net_trans_task_t task) {
     return task->m_mgr;
+}
+
+net_address_t net_trans_task_target_address(net_trans_task_t task) {
+    return task->m_target_address;
 }
 
 net_trans_task_state_t net_trans_task_state(net_trans_task_t task) {
@@ -580,6 +624,8 @@ int net_trans_task_start(net_trans_task_t task) {
         curl_easy_setopt(task->m_handler, CURLOPT_SOCKOPTDATA, task);
     }
 
+    if (net_trans_task_setup_host(mgr, task) != 0) return -1;
+        
     switch(net_schedule_local_ip_stack(mgr->m_schedule)) {
     case net_local_ip_stack_none:
         CPE_ERROR(mgr->m_em, "trans: %s-%d: start: ip stack non, can`t start!", mgr->m_name, task->m_id);
@@ -603,7 +649,7 @@ int net_trans_task_start(net_trans_task_t task) {
     task->m_state = net_trans_task_working;
 
     mgr->m_still_running = 1;
-
+    
     if (task->m_debug) {
         CPE_INFO(mgr->m_em, "trans: %s-%d: start!", mgr->m_name, task->m_id);
     }
@@ -873,76 +919,121 @@ int net_trans_task_set_done(net_trans_task_t task, net_trans_task_result_t resul
     return 0;
 }
 
-/* static int net_trans_task_init_dns(net_trans_manage_t mgr, net_trans_task_t task) { */
-/*     struct sockaddr_storage dnssevraddrs[10]; */
-/*     uint8_t addr_count = CPE_ARRAY_SIZE(dnssevraddrs); */
-/*     if (getdnssvraddrs(dnssevraddrs, &addr_count, NULL) != 0) { */
-/*         CPE_ERROR(mgr->m_em, "trans: %s-%d: dns: get dns servers error!", mgr->m_name, task->m_id); */
-/*         return -1; */
-/*     } */
-
-/*     char dns_buf[512]; */
-/*     size_t dns_buf_sz = 0; */
-
-/*     net_local_ip_stack_t ip_stack = net_schedule_local_ip_stack(mgr->m_schedule); */
-
-/*     uint8_t i; */
-/*     for(i = 0; i < addr_count; ++i) { */
-/*         struct sockaddr_storage * sock_addr = &dnssevraddrs[i]; */
-/*         if (sock_addr->ss_family == AF_INET6) { */
-/*             if (ip_stack != net_local_ip_stack_ipv6 && ip_stack != net_local_ip_stack_dual) { */
-/*                 if (mgr->m_debug) { */
-/*                     CPE_INFO( */
-/*                         mgr->m_em, "trans: %s-%d: dns: protect ipv4 address for stack %s", */
-/*                         mgr->m_name, task->m_id, net_local_ip_stack_str(ip_stack)); */
-/*                 } */
-/*                 continue; */
-/*             } */
-/*         } */
-/*         else if (sock_addr->ss_family == AF_INET) { */
-/*             if (ip_stack != net_local_ip_stack_ipv4 && ip_stack != net_local_ip_stack_dual) { */
-/*                 if (mgr->m_debug) { */
-/*                     CPE_INFO( */
-/*                         mgr->m_em, "trans: %s-%d: dns: protect ipv4 address for stack %s", */
-/*                         mgr->m_name, task->m_id, net_local_ip_stack_str(ip_stack)); */
-/*                 } */
-/*                 continue; */
-/*             } */
-/*         } */
-/*         else { */
-/*             if (mgr->m_debug) { */
-/*                 CPE_INFO( */
-/*                     mgr->m_em, "trans: %s-%d: dns: protect address for not support family %d", */
-/*                     mgr->m_name, task->m_id, sock_addr->ss_family); */
-/*             } */
-/*             continue; */
-/*         } */
-
-/*         char one_buf[64]; */
-/*         char * one_address = sock_get_addr(one_buf, sizeof(one_buf), sock_addr, sizeof(*sock_addr), 0, mgr->m_em); */
-/*         if (dns_buf_sz > 0) { */
-/*             dns_buf_sz += snprintf(dns_buf + dns_buf_sz, sizeof(dns_buf) - dns_buf_sz, ",%s", one_address); */
-/*         } */
-/*         else { */
-/*             dns_buf_sz += snprintf(dns_buf + dns_buf_sz, sizeof(dns_buf) - dns_buf_sz, "%s", one_address); */
-/*         } */
-/*     } */
-
-/*     dns_buf[dns_buf_sz] = 0; */
-
-/*     if (dns_buf_sz == 0) { */
-/*         CPE_ERROR(mgr->m_em, "trans: %s-%d: dns: no dns server!", mgr->m_name, task->m_id); */
-/*         return -1; */
-/*     } */
-
-/*     curl_easy_setopt(task->m_handler, CURLOPT_DNS_SERVERS, dns_buf); */
-
-/*     if (task->m_debug) { */
-/*         CPE_INFO(mgr->m_em, "trans: %s-%d: dns: using %s!", mgr->m_name, task->m_id, dns_buf); */
-/*     } */
+static int net_trans_task_setup_host(net_trans_manage_t mgr, net_trans_task_t task) {
+    net_local_ip_stack_t ip_stack = net_schedule_local_ip_stack(mgr->m_schedule);
     
-/*     return 0; */
-/* } */
+    switch(net_address_type(task->m_target_address)) {
+    case net_address_ipv4:
+        if (ip_stack == net_local_ip_stack_none) {
+            CPE_ERROR(mgr->m_em, "trans: %s-%d: setup-host: ip stack non, can`t start!", mgr->m_name, task->m_id);
+            return -1;
+        }
+        else if (ip_stack == net_local_ip_stack_ipv6) {
+            net_address_t addr_ipv6 = net_address_create_ipv6_from_ipv4_nat(mgr->m_schedule, task->m_target_address);
+            if (addr_ipv6 == NULL) {
+                CPE_ERROR(
+                    mgr->m_em, "trans: %s-%d: setup-host: create ipv6 map addr from %s fail!",
+                    mgr->m_name, task->m_id, net_address_host(net_trans_manage_tmp_buffer(mgr), task->m_target_address));
+                return -1;
+            }
+
+            char buf[256];
+            int sz = 0;
+            sz += snprintf(buf + sz, sizeof(buf) - sz, "%s:", net_address_host(net_trans_manage_tmp_buffer(mgr), task->m_target_address));
+            sz += snprintf(buf + sz, sizeof(buf) - sz, ":%s::", net_address_host(net_trans_manage_tmp_buffer(mgr), addr_ipv6));
+            if (task->m_debug) {
+                CPE_INFO(mgr->m_em, "trans: %s-%d: setup-host: connect-to: %s", mgr->m_name, task->m_id, buf);
+            }
+
+            struct curl_slist * connect_to = curl_slist_append(NULL, buf);
+            curl_easy_setopt(task->m_handler, CURLOPT_CONNECT_TO, connect_to);
+            curl_slist_free_all(connect_to);
+
+            net_address_free(addr_ipv6);
+        }
+        break;
+    case net_address_ipv6:
+        break;
+    case net_address_domain:
+        if (task->m_cfg_explicit_dns) {
+            if (net_trans_task_setup_dns(mgr, task, ip_stack) != 0) return -1;
+        }
+        break;
+    case net_address_local:
+        break;
+    }
+
+    return 0;
+}
+
+static int net_trans_task_setup_dns(net_trans_manage_t mgr, net_trans_task_t task, net_local_ip_stack_t ip_stack) {
+    struct sockaddr_storage dnssevraddrs[10];
+    uint8_t addr_count = CPE_ARRAY_SIZE(dnssevraddrs);
+    if (getdnssvraddrs(dnssevraddrs, &addr_count, NULL) != 0) {
+        CPE_ERROR(mgr->m_em, "trans: %s-%d: dns: get dns servers error!", mgr->m_name, task->m_id);
+        return -1;
+    }
+
+    char dns_buf[512];
+    size_t dns_buf_sz = 0;
+
+    uint8_t i;
+    for(i = 0; i < addr_count; ++i) {
+        struct sockaddr_storage * sock_addr = &dnssevraddrs[i];
+        if (sock_addr->ss_family == AF_INET6) {
+            if (ip_stack != net_local_ip_stack_ipv6 && ip_stack != net_local_ip_stack_dual) {
+                if (mgr->m_debug) {
+                    CPE_INFO(
+                        mgr->m_em, "trans: %s-%d: dns: protect ipv4 address for stack %s",
+                        mgr->m_name, task->m_id, net_local_ip_stack_str(ip_stack));
+                }
+                continue;
+            }
+        }
+        else if (sock_addr->ss_family == AF_INET) {
+            if (ip_stack != net_local_ip_stack_ipv4 && ip_stack != net_local_ip_stack_dual) {
+                if (mgr->m_debug) {
+                    CPE_INFO(
+                        mgr->m_em, "trans: %s-%d: dns: protect ipv4 address for stack %s",
+                        mgr->m_name, task->m_id, net_local_ip_stack_str(ip_stack));
+                }
+                continue;
+            }
+        }
+        else {
+            if (mgr->m_debug) {
+                CPE_INFO(
+                    mgr->m_em, "trans: %s-%d: dns: protect address for not support family %d",
+                    mgr->m_name, task->m_id, sock_addr->ss_family);
+            }
+            continue;
+        }
+
+        char one_buf[64];
+        char * one_address = sock_get_addr(one_buf, sizeof(one_buf), sock_addr, sizeof(*sock_addr), 0, mgr->m_em);
+        if (dns_buf_sz > 0) {
+            dns_buf_sz += snprintf(dns_buf + dns_buf_sz, sizeof(dns_buf) - dns_buf_sz, ",%s", one_address);
+        }
+        else {
+            dns_buf_sz += snprintf(dns_buf + dns_buf_sz, sizeof(dns_buf) - dns_buf_sz, "%s", one_address);
+        }
+    }
+
+    dns_buf[dns_buf_sz] = 0;
+
+    if (dns_buf_sz == 0) {
+        CPE_ERROR(mgr->m_em, "trans: %s-%d: dns: no dns server!", mgr->m_name, task->m_id);
+        return -1;
+    }
+
+    curl_easy_setopt(task->m_handler, CURLOPT_DNS_SERVERS, dns_buf);
+
+    if (task->m_debug) {
+        CPE_INFO(mgr->m_em, "trans: %s-%d: dns: using %s!", mgr->m_name, task->m_id, dns_buf);
+    }
+    
+    return 0;
+}
 
 static int net_trans_task_sock_config_cb(void * p, curl_socket_t curlfd, curlsocktype purpose) {
     net_trans_task_t task = (net_trans_task_t)p;

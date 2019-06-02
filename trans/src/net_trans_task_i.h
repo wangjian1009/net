@@ -15,12 +15,14 @@ struct net_trans_task {
     net_watcher_t m_watcher;
     uint8_t m_debug;
     uint8_t m_cfg_protect_vpn;
+    uint8_t m_cfg_explicit_dns;
     uint32_t m_id;
     net_trans_task_state_t m_state;
     net_trans_task_result_t m_result;
     net_trans_task_error_t m_error;
     struct curl_slist * m_header;
     struct mem_buffer m_buffer;
+    net_address_t m_target_address;
 
     /*trace*/
     int64_t m_trace_begin_time_ms;
