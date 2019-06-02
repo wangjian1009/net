@@ -946,7 +946,7 @@ int net_trans_task_set_done(net_trans_task_t task, net_trans_task_result_t resul
 
 static int net_trans_task_sock_config_cb(void * p, curl_socket_t curlfd, curlsocktype purpose) {
     net_trans_task_t task = (net_trans_task_t)p;
-    net_trans_manage_t mgr = task->m_mgr;
+    //net_trans_manage_t mgr = task->m_mgr;
 
     if (purpose == CURLSOCKTYPE_IPCXN && task->m_cfg_protect_vpn) {
         /* if (sock_protect_vpn(curlfd, mgr->m_em) != 0) { */
