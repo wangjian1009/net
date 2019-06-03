@@ -709,7 +709,11 @@ static void net_log_request_rebuild_time(
         return;
     }
 
+    assert(mgr->m_request_buf_size >= request->m_send_param->log_buf->length);
+    mgr->m_request_buf_size -= request->m_send_param->log_buf->length;
     lz4_log_buf_free(request->m_send_param->log_buf);
+
     request->m_send_param->log_buf = new_lz4_buf;
     request->m_send_param->builder_time = nowTime;
+    mgr->m_request_buf_size += request->m_send_param->log_buf->length;
 }
