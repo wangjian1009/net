@@ -1,6 +1,7 @@
 #include "assert.h"
 #include "cpe/pal/pal_string.h"
 #include "cpe/pal/pal_strings.h"
+#include "cpe/pal/pal_platform.h"
 #include "cpe/pal/pal_stdio.h"
 #include "cpe/utils/string_utils.h"
 #include "cpe/utils/time_utils.h"
@@ -18,7 +19,7 @@ static int net_trans_task_prog_cb(void *p, double dltotal, double dlnow, double 
 static size_t net_trans_task_header_cb(void *ptr, size_t size, size_t nmemb, void *stream);
 static int net_trans_task_sock_config_cb(void *p, curl_socket_t curlfd, curlsocktype purpose);
 
-static int net_trans_task_setup_host(net_trans_manage_t mgr, net_trans_task_t task);
+static int net_trans_task_setup_host(net_trans_manage_t mgr, net_trans_task_t task, net_local_ip_stack_t ip_stack);
 static int net_trans_task_setup_dns(net_trans_manage_t mgr, net_trans_task_t task, net_local_ip_stack_t ip_stack);
 
 net_trans_task_t
@@ -81,7 +82,7 @@ net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const c
     task->m_cfg_explicit_dns = 0;
 #if TARGET_OS_IPHONE
     task->m_cfg_explicit_dns = 1;
-#endif    
+#endif
     task->m_debug = 0;
 
     task->m_handler = curl_easy_init();
@@ -588,6 +589,16 @@ int net_trans_task_start(net_trans_task_t task) {
         return -1;
     }
 
+    net_local_ip_stack_t ip_stack = net_schedule_local_ip_stack(mgr->m_schedule);
+    if (ip_stack == net_trans_task_error_none) {
+        CPE_ERROR(mgr->m_em, "trans: %s-%d: start: ip stack non, can`t start!", mgr->m_name, task->m_id);
+        return -1;
+    }
+
+    if (task->m_debug) {
+        CPE_INFO(mgr->m_em, "trans: %s-%d: current ip stack %s!", mgr->m_name, task->m_id, net_local_ip_stack_str(ip_stack));
+    }
+    
     if (task->m_state == net_trans_task_done) {
         CURL * new_handler = curl_easy_duphandle(task->m_handler);
         if (new_handler == NULL) {
@@ -623,24 +634,9 @@ int net_trans_task_start(net_trans_task_t task) {
         curl_easy_setopt(task->m_handler, CURLOPT_SOCKOPTFUNCTION, net_trans_task_sock_config_cb);
         curl_easy_setopt(task->m_handler, CURLOPT_SOCKOPTDATA, task);
     }
-
-    if (net_trans_task_setup_host(mgr, task) != 0) return -1;
-        
-    switch(net_schedule_local_ip_stack(mgr->m_schedule)) {
-    case net_local_ip_stack_none:
-        CPE_ERROR(mgr->m_em, "trans: %s-%d: start: ip stack non, can`t start!", mgr->m_name, task->m_id);
-        return -1;
-    case net_local_ip_stack_dual:
-        curl_easy_setopt(task->m_handler, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_WHATEVER);
-        break;
-    case net_local_ip_stack_ipv4:
-        curl_easy_setopt(task->m_handler, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
-        break;
-    case net_local_ip_stack_ipv6:
-        curl_easy_setopt(task->m_handler, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V6);
-        break;
-    }
     
+    if (net_trans_task_setup_host(mgr, task, ip_stack) != 0) return -1;
+        
     CURLcode rc = curl_multi_add_handle(mgr->m_multi_handle, task->m_handler);
     if (rc != 0) {
         CPE_ERROR(mgr->m_em, "trans: %s-%d: start: curl_multi_add_handle error, rc=%d (%s)", mgr->m_name, task->m_id, rc, curl_easy_strerror(rc));
@@ -919,16 +915,11 @@ int net_trans_task_set_done(net_trans_task_t task, net_trans_task_result_t resul
     return 0;
 }
 
-static int net_trans_task_setup_host(net_trans_manage_t mgr, net_trans_task_t task) {
-    net_local_ip_stack_t ip_stack = net_schedule_local_ip_stack(mgr->m_schedule);
-    
+static int net_trans_task_setup_host(net_trans_manage_t mgr, net_trans_task_t task, net_local_ip_stack_t ip_stack) {
     switch(net_address_type(task->m_target_address)) {
     case net_address_ipv4:
-        if (ip_stack == net_local_ip_stack_none) {
-            CPE_ERROR(mgr->m_em, "trans: %s-%d: setup-host: ip stack non, can`t start!", mgr->m_name, task->m_id);
-            return -1;
-        }
-        else if (ip_stack == net_local_ip_stack_ipv6) {
+        assert(ip_stack != net_local_ip_stack_none);
+        if (ip_stack == net_local_ip_stack_ipv6) {
             net_address_t addr_ipv6 = net_address_create_ipv6_from_ipv4_nat(mgr->m_schedule, task->m_target_address);
             if (addr_ipv6 == NULL) {
                 CPE_ERROR(
@@ -958,6 +949,22 @@ static int net_trans_task_setup_host(net_trans_manage_t mgr, net_trans_task_t ta
         if (task->m_cfg_explicit_dns) {
             if (net_trans_task_setup_dns(mgr, task, ip_stack) != 0) return -1;
         }
+
+        switch(ip_stack) {
+        case net_local_ip_stack_none:
+            assert(0);
+            return -1;
+        case net_local_ip_stack_dual:
+            curl_easy_setopt(task->m_handler, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_WHATEVER);
+            break;
+        case net_local_ip_stack_ipv4:
+            curl_easy_setopt(task->m_handler, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+            break;
+        case net_local_ip_stack_ipv6:
+            curl_easy_setopt(task->m_handler, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V6);
+            break;
+        }
+    
         break;
     case net_address_local:
         break;
