@@ -991,7 +991,7 @@ static int net_trans_task_setup_dns(net_trans_manage_t mgr, net_trans_task_t tas
             if (ip_stack != net_local_ip_stack_ipv6 && ip_stack != net_local_ip_stack_dual) {
                 if (mgr->m_debug) {
                     CPE_INFO(
-                        mgr->m_em, "trans: %s-%d: dns: protect ipv4 address for stack %s",
+                        mgr->m_em, "trans: %s-%d: dns: protect ipv6 address for stack %s",
                         mgr->m_name, task->m_id, net_local_ip_stack_str(ip_stack));
                 }
                 continue;
