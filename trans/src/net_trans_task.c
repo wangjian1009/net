@@ -653,11 +653,13 @@ int net_trans_task_start(net_trans_task_t task) {
     return 0;
 }
 
-#define _net_trans_task_cost_info_one(__entry, __tag)               \
+#define _net_trans_task_cost_info_one(__entry, __tag)                   \
+    buf = 0;                                                            \
     if ((rc = curl_easy_getinfo(task->m_handler, __tag, &buf)) != CURLE_OK) { \
+        cost_info->__entry = -1;                                        \
         CPE_ERROR(                                                      \
             mgr->m_em, "trans: %s-%d: get cost info: get " #__tag  " fail, rc=%d (%s)", \
-            mgr->m_name, task->m_id, rc, curl_easy_strerror(rc));        \
+            mgr->m_name, task->m_id, rc, curl_easy_strerror(rc));       \
         return -1;                                                      \
     }                                                                   \
     cost_info->__entry = (int32_t)buf
