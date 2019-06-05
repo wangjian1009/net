@@ -57,7 +57,9 @@ void net_timer_free(net_timer_t timer) {
     net_driver_t driver = timer->m_driver;
 
     driver->m_timer_fini(timer);
-
+    timer->m_process_fun = NULL;
+    timer->m_process_ctx = NULL;
+    
     TAILQ_REMOVE(&driver->m_timers, timer, m_next_for_driver);
     TAILQ_INSERT_TAIL(&driver->m_free_timers, timer, m_next_for_driver);
 }
