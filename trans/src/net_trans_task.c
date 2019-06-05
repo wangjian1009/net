@@ -660,14 +660,17 @@ int net_trans_task_start(net_trans_task_t task) {
         CPE_ERROR(                                                      \
             mgr->m_em, "trans: %s-%d: get cost info: get " #__tag  " fail, rc=%d (%s)", \
             mgr->m_name, task->m_id, rc, curl_easy_strerror(rc));       \
-        return -1;                                                      \
+        rv = -1;                                                        \
     }                                                                   \
-    cost_info->__entry = (int32_t)buf
+    else {                                                              \
+        cost_info->__entry = (int32_t)buf;                              \
+    }
 
 int net_trans_task_cost_info(net_trans_task_t task, net_trans_task_cost_info_t cost_info) {
     net_trans_manage_t mgr = task->m_mgr;
     CURLcode rc;
     curl_off_t buf;
+    int rv = 0;
 
     _net_trans_task_cost_info_one(dns_ms, CURLINFO_NAMELOOKUP_TIME_T);
     _net_trans_task_cost_info_one(connect_ms, CURLINFO_CONNECT_TIME_T);
@@ -677,7 +680,7 @@ int net_trans_task_cost_info(net_trans_task_t task, net_trans_task_cost_info_t c
     _net_trans_task_cost_info_one(total_ms, CURLINFO_TOTAL_TIME_T);
     _net_trans_task_cost_info_one(redirect_ms, CURLINFO_REDIRECT_TIME_T);
 
-    return 0;
+    return rv;
 }
 
 const char * net_trans_task_state_str(net_trans_task_state_t state) {
