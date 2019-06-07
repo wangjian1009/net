@@ -129,7 +129,8 @@ net_dns_entry_select_item(net_dns_entry_t entry, net_dns_item_select_policy_t po
     struct net_dns_entry_item_it item_it;
     net_dns_entry_items(entry, &item_it, 1);
 
-    for(check = net_dns_entry_item_it_next(&item_it); check; check = next) {
+    uint8_t protect = 0; 
+    for(check = net_dns_entry_item_it_next(&item_it); check && protect < 100; check = next, protect++) {
         next = net_dns_entry_item_it_next(&item_it);
         assert(next != check);
 
