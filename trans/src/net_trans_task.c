@@ -169,7 +169,7 @@ void net_trans_task_free(net_trans_task_t task) {
         return;
     }
 
-    if (task->m_state != net_trans_task_done) {
+    if (task->m_state == net_trans_task_working) {
         net_trans_task_set_done(task, net_trans_result_cancel, net_trans_task_error_internal);
         return;
     }
