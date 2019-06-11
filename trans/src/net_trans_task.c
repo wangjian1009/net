@@ -663,7 +663,7 @@ int net_trans_task_start(net_trans_task_t task) {
         rv = -1;                                                        \
     }                                                                   \
     else {                                                              \
-        cost_info->__entry = (int32_t)buf;                              \
+        cost_info->__entry = (int32_t)(buf / 1000);                     \
     }
 
 int net_trans_task_cost_info(net_trans_task_t task, net_trans_task_cost_info_t cost_info) {
