@@ -9,7 +9,7 @@ struct net_ev_timer {
 
 int net_ev_timer_init(net_timer_t base_timer);
 void net_ev_timer_fini(net_timer_t base_timer);
-void net_ev_timer_active(net_timer_t base_timer, uint32_t delay_ms);
+void net_ev_timer_active(net_timer_t base_timer, uint64_t delay_milliseconds);
 void net_ev_timer_cancel(net_timer_t base_timer);
 uint8_t net_ev_timer_is_active(net_timer_t base_timer);
 

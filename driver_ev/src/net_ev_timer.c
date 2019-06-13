@@ -21,12 +21,12 @@ void net_ev_timer_fini(net_timer_t base_timer) {
     ev_timer_stop(driver->m_ev_loop, &timer->m_watcher);
 }
 
-void net_ev_timer_active(net_timer_t base_timer, uint32_t delay_ms) {
+void net_ev_timer_active(net_timer_t base_timer, uint64_t delay_milliseconds) {
     net_ev_timer_t timer = net_timer_data(base_timer);
     net_ev_driver_t driver = net_sock_driver_data_from_base_driver(net_timer_driver(base_timer));
 
     ev_timer_stop(driver->m_ev_loop, &timer->m_watcher);
-    ev_timer_init(&timer->m_watcher, net_ev_timer_cb, ((double)delay_ms / 1000.0), 0.0f);
+    ev_timer_init(&timer->m_watcher, net_ev_timer_cb, ((double)delay_milliseconds / 1000000.0), 0.0f);
     ev_timer_start(driver->m_ev_loop, &timer->m_watcher);
 }
 

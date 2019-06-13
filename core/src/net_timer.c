@@ -92,8 +92,12 @@ uint8_t net_timer_is_active(net_timer_t timer) {
     return timer->m_driver->m_timer_is_active(timer);
 }
 
-void net_timer_active(net_timer_t timer, int32_t delay_ms) {
-    timer->m_driver->m_timer_schedule(timer, delay_ms);
+void net_timer_active(net_timer_t timer, uint32_t delay_ms) {
+    timer->m_driver->m_timer_schedule(timer, ((uint64_t)delay_ms) * 1000u);
+}
+
+void net_timer_active_milli(net_timer_t timer, uint64_t delay_milliseconds) {
+    timer->m_driver->m_timer_schedule(timer, delay_milliseconds);
 }
 
 void net_timer_cancel(net_timer_t timer) {

@@ -9,7 +9,7 @@ typedef void (*net_driver_fini_fun_t)(net_driver_t driver);
 
 typedef int (*net_timer_init_fun_t)(net_timer_t timer);
 typedef void (*net_timer_fini_fun_t)(net_timer_t timer);
-typedef void (*net_timer_schedule_fun_t)(net_timer_t timer, uint32_t delay_ms);
+typedef void (*net_timer_schedule_fun_t)(net_timer_t timer, uint64_t delay_milliseconds);
 typedef void (*net_timer_cancel_fun_t)(net_timer_t timer);
 typedef uint8_t (*net_timer_is_active_fun_t)(net_timer_t timer);
 

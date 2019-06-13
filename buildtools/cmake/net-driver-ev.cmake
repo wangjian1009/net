@@ -5,6 +5,7 @@ file(GLOB net_driver_ev_source ${net_driver_ev_base}/src/*.c)
 add_library(net_driver_ev STATIC ${net_driver_ev_source})
 
 set_property(TARGET net_driver_ev PROPERTY INCLUDE_DIRECTORIES
+  ${CMAKE_CURRENT_LIST_DIR}/../../depends/libev/include
   ${CMAKE_CURRENT_LIST_DIR}/../../../cpe/include
   ${CMAKE_CURRENT_LIST_DIR}/../../../cpe/depends/libev/include
   ${CMAKE_CURRENT_LIST_DIR}/../../core/include

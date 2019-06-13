@@ -24,7 +24,8 @@ void * net_timer_data(net_timer_t timer);
 net_timer_t net_timer_from_data(void * data);
 
 uint8_t net_timer_is_active(net_timer_t timer);
-void net_timer_active(net_timer_t timer, int32_t delay_ms);
+void net_timer_active(net_timer_t timer, uint32_t delay_ms);
+void net_timer_active_milli(net_timer_t timer, uint64_t delay_milliseconds);
 void net_timer_cancel(net_timer_t timer);
 
 net_timer_process_fun_t net_timer_process_fun(net_timer_t timer);

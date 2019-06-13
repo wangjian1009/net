@@ -16,6 +16,13 @@ set(c_ares_compile_definitions
   HAVE_CONFIG_H
   )
 
+if (MSVC)
+elseif (CMAKE_C_COMPILER_ID MATCHES "Clang" OR CMAKE_C_COMPILER_IS_GNUCC)
+set(c_ares_compile_options
+  -Wno-implicit-function-declaration
+  )
+endif ()
+
 add_library(c-ares STATIC ${c_ares_source})
 set_property(TARGET c-ares PROPERTY COMPILE_OPTIONS ${c_ares_compile_options})
 set_property(TARGET c-ares PROPERTY COMPILE_DEFINITIONS ${c_ares_compile_definitions})
