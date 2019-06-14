@@ -27,6 +27,9 @@ typedef struct net_log_pipe_cmd * net_log_pipe_cmd_t;
 typedef struct net_log_request_param * net_log_request_param_t;
 typedef struct net_log_queue * net_log_queue_t;
 typedef struct net_log_builder * net_log_builder_t;
+typedef struct net_log_group * net_log_group_t;
+typedef struct net_log_tag * net_log_tag_t;
+typedef struct net_log_buf * net_log_buf_t;
 typedef struct net_log_category_cfg_tag * net_log_category_cfg_tag_t;
 typedef struct net_log_lz4_buf * net_log_lz4_buf_t;
 

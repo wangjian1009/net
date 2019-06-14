@@ -339,6 +339,8 @@ void net_log_category_log_begin(net_log_category_t category) {
 
     if (category->m_builder == NULL) {
         category->m_builder = log_group_create(category);
+        if (category->m_builder == NULL) return;
+
         net_timer_active(category->m_commit_timer, schedule->m_cfg_timeout_ms);
     }
 

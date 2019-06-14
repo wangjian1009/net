@@ -2,35 +2,35 @@
 #define NET_LOG_BUILDER_H_INCLEDED
 #include "net_log_schedule_i.h"
 
-typedef struct _log_tag {
+struct net_log_tag {
     char * buffer;
     char * now_buffer;
     uint32_t max_buffer_len;
     uint32_t now_buffer_len;
-} log_tag;
+};
 
-typedef struct _log_group {
+struct net_log_group {
     char * source;
     char * topic;
-    log_tag tags;
-    log_tag logs;
+    struct net_log_tag tags;
+    struct net_log_tag logs;
     uint32_t n_logs;
     char * log_now_buffer;
-}log_group;
+};
 
 struct net_log_builder {
     net_log_category_t m_category;
-    log_group* grp;
+    net_log_group_t grp;
     size_t loggroup_size;
     uint32_t builder_time;
 };
 
-typedef struct _log_buffer {
+struct net_log_buf {
     char * buffer;
     uint32_t n_buffer;
-} log_buf;
+};
 
-extern log_buf serialize_to_proto_buf_with_malloc(net_log_builder_t bder);
+extern struct net_log_buf serialize_to_proto_buf_with_malloc(net_log_builder_t bder);
 extern net_log_lz4_buf_t serialize_to_proto_buf_with_malloc_lz4(net_log_builder_t bder);
 extern net_log_lz4_buf_t serialize_to_proto_buf_with_malloc_no_lz4(net_log_builder_t bder);
 
