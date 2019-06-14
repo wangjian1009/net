@@ -27,6 +27,7 @@ struct net_log_category {
     uint16_t m_cfg_tag_capacity;
     uint32_t m_cfg_count_per_package;
     uint32_t m_cfg_bytes_per_package;
+    uint32_t m_cfg_timeout_ms;
     
     /*runtime*/
     net_timer_t m_commit_timer;

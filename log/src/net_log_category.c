@@ -66,6 +66,7 @@ net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, 
     category->m_cfg_tag_capacity = 0;
     category->m_cfg_bytes_per_package = 3 * 1024 * 1024;
     category->m_cfg_count_per_package = 2048;
+    category->m_cfg_timeout_ms = 0;
 
     category->m_commit_timer = net_timer_create(schedule->m_net_driver, net_log_category_commit_timer, category);
     if (category->m_commit_timer == NULL) {
@@ -334,6 +335,16 @@ void net_log_category_set_count_per_package(net_log_category_t category, uint32_
     category->m_cfg_count_per_package = count;
 }
 
+uint32_t net_log_category_timeout_ms(net_log_category_t category) {
+    return category->m_cfg_timeout_ms
+        ? category->m_cfg_timeout_ms
+        : category->m_schedule->m_cfg_timeout_ms;
+}
+
+void net_log_category_set_timeout_ms(net_log_category_t category, uint32_t timeout_ms) {
+    category->m_cfg_timeout_ms = timeout_ms;
+}
+
 void net_log_category_log_begin(net_log_category_t category) {
     net_log_schedule_t schedule = category->m_schedule;
 
@@ -341,7 +352,7 @@ void net_log_category_log_begin(net_log_category_t category) {
         category->m_builder = log_group_create(category);
         if (category->m_builder == NULL) return;
 
-        net_timer_active(category->m_commit_timer, schedule->m_cfg_timeout_ms);
+        net_timer_active(category->m_commit_timer, net_log_category_timeout_ms(category));
     }
 
     add_log_begin(category->m_builder);

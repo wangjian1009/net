@@ -14,6 +14,9 @@ void net_log_category_set_bytes_per_package(net_log_category_t category, uint32_
 void net_log_category_set_count_per_package(net_log_category_t category, uint32_t count);
 int net_log_category_add_global_tag(net_log_category_t category, const char * key, const char * value);
 
+uint32_t net_log_category_timeout_ms(net_log_category_t category);
+void net_log_category_set_timeout_ms(net_log_category_t category, uint32_t timeout_ms);
+
 NET_END_DECL
 
 #endif
