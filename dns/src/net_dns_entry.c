@@ -158,7 +158,39 @@ net_dns_entry_select_item(net_dns_entry_t entry, net_dns_item_select_policy_t po
             break;
         }
     }
-    assert(protect < protect_limit);
+
+    if (protect >= protect_limit) {
+        net_dns_manage_t manage = entry->m_manage;
+        struct cpe_hash_it dump_entry_it;
+        net_dns_entry_t dump_entry;
+
+        CPE_INFO(
+            manage->m_em, "net: dns: select entry of %s: item limit protected, dump cache!",
+            (const char *)net_address_data(entry->m_hostname));
+        
+        cpe_hash_it_init(&dump_entry_it, &manage->m_entries);
+        while((dump_entry = cpe_hash_it_next(&dump_entry_it))) {
+            CPE_INFO(
+                manage->m_em, "            entry %s(%p)",
+                (const char *)net_address_data(dump_entry->m_hostname), dump_entry);
+
+            net_dns_entry_alias_t alias;
+            TAILQ_FOREACH(alias, &dump_entry->m_cnames, m_next_for_origin) {
+                CPE_INFO(
+                    manage->m_em, "                cname %s(%p)",
+                    (const char *)net_address_data(alias->m_as->m_hostname), alias->m_as);
+            }
+
+            net_dns_entry_item_t item;
+            TAILQ_FOREACH(item, &dump_entry->m_items, m_next_for_entry) {
+                CPE_INFO(
+                    manage->m_em, "                %s",
+                    net_address_host(net_dns_manage_tmp_buffer(manage), item->m_address));
+            }
+        }
+        
+        assert(protect < protect_limit);
+    }
 
     return item;
 }
