@@ -346,7 +346,7 @@ void net_log_category_set_timeout_ms(net_log_category_t category, uint32_t timeo
 }
 
 void net_log_category_log_begin(net_log_category_t category) {
-    net_log_schedule_t schedule = category->m_schedule;
+    //net_log_schedule_t schedule = category->m_schedule;
 
     if (category->m_builder == NULL) {
         category->m_builder = log_group_create(category);
