@@ -21,6 +21,7 @@ struct net_trans_task {
     net_trans_task_result_t m_result;
     net_trans_task_error_t m_error;
     struct curl_slist * m_header;
+    struct curl_slist * m_connect_to;
     struct mem_buffer m_buffer;
     net_address_t m_target_address;
 

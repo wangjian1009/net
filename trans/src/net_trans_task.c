@@ -19,23 +19,34 @@ static int net_trans_task_prog_cb(void *p, double dltotal, double dlnow, double 
 static size_t net_trans_task_header_cb(void *ptr, size_t size, size_t nmemb, void *stream);
 static int net_trans_task_sock_config_cb(void *p, curl_socket_t curlfd, curlsocktype purpose);
 
-static int net_trans_task_setup_host(net_trans_manage_t mgr, net_trans_task_t task, net_local_ip_stack_t ip_stack);
+static int net_trans_task_setup_url_origin(net_trans_manage_t mgr, net_trans_task_t task, const char * uri);
+static int net_trans_task_setup_url_ipv6(
+    net_trans_manage_t mgr, net_trans_task_t task, const char * uri,
+    const char * protocol, net_address_t host, const char * uri_left);
+static int net_trans_task_setup_url_ipv4(
+    net_trans_manage_t mgr, net_trans_task_t task, const char * uri,
+    const char * protocol, net_address_t host, const char * uri_left);
 static int net_trans_task_setup_dns(net_trans_manage_t mgr, net_trans_task_t task, net_local_ip_stack_t ip_stack);
 
 net_trans_task_t
 net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const char * uri, uint8_t is_debug) {
     net_trans_task_t task = NULL;
+    net_address_t target_host = NULL;
 
-    if (net_schedule_local_ip_stack(mgr->m_schedule) == net_local_ip_stack_none) {
+    net_local_ip_stack_t ip_stack = net_schedule_local_ip_stack(mgr->m_schedule);
+    if (ip_stack == net_local_ip_stack_none) {
         CPE_ERROR(mgr->m_em, "trans: %s-: ip stack non, can`t create task!", mgr->m_name);
         return NULL;
     }
 
+    char protocol[32];
     const char * host_begin = strstr(uri, "://");
     if (host_begin == NULL) {
         CPE_ERROR(mgr->m_em, "trans: %s-: url '%s' format error!", mgr->m_name, uri);
         return NULL;
     }
+    cpe_str_dup_range(protocol, sizeof(protocol), uri, host_begin);
+
     host_begin += 3;
     
     const char * host_end = host_begin;
@@ -44,7 +55,7 @@ net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const c
         if (c ==  '@') {
             host_begin = host_end + 1;
         }
-        else if (c == '/') {
+        else if (c == '/' || c == ':') {
             break;
         }
     }
@@ -52,7 +63,7 @@ net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const c
     char buf[128];
     cpe_str_dup_range(buf, sizeof(buf), host_begin, host_end);
 
-    net_address_t target_host = net_address_create_auto(mgr->m_schedule, buf);
+    target_host = net_address_create_auto(mgr->m_schedule, buf);
     if (target_host == NULL) {
         CPE_ERROR(mgr->m_em, "trans: %s-: create host address from %s fail, uri=%s", mgr->m_name, buf, uri);
         return NULL;
@@ -72,12 +83,13 @@ net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const c
 
     task->m_mgr = mgr;
     task->m_watcher = NULL;
-    task->m_id = mgr->m_max_task_id + 1;
+    task->m_id = ++mgr->m_max_task_id;
     task->m_state = net_trans_task_init;
     task->m_result = net_trans_result_unknown;
     task->m_error = net_trans_task_error_none;
 
     task->m_header = NULL;
+    task->m_connect_to = NULL;
     task->m_cfg_protect_vpn = mgr->m_cfg_protect_vpn;
     task->m_cfg_explicit_dns = 0;
 #if TARGET_OS_IPHONE
@@ -87,14 +99,9 @@ net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const c
 
     task->m_handler = curl_easy_init();
     if (task->m_handler == NULL) {
-        CPE_ERROR(mgr->m_em, "trans: %s-: curl_easy_init fail!", mgr->m_name);
+        CPE_ERROR(mgr->m_em, "trans: %s-%d: curl_easy_init fail!", mgr->m_name, task->m_id);
         goto CREATED_ERROR;
     }
-    curl_easy_setopt(task->m_handler, CURLOPT_PRIVATE, task);
-
-    curl_easy_setopt(task->m_handler, CURLOPT_NOSIGNAL, 1);
-    curl_easy_setopt(task->m_handler, CURLOPT_TCP_NODELAY, 1);
-    curl_easy_setopt(task->m_handler, CURLOPT_NETRC, CURL_NETRC_IGNORED);
 
     task->m_trace_begin_time_ms = 0;
     task->m_trace_last_time_ms = 0;
@@ -109,51 +116,94 @@ net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const c
     task->m_ctx_free = NULL;
 
     net_trans_task_set_debug(task, is_debug);
-    
-	curl_easy_setopt(task->m_handler, CURLOPT_WRITEFUNCTION, net_trans_task_write_cb);
-	curl_easy_setopt(task->m_handler, CURLOPT_WRITEDATA, task);
 
-    curl_easy_setopt(task->m_handler, CURLOPT_NOPROGRESS, 0L);
-    curl_easy_setopt(task->m_handler, CURLOPT_PROGRESSFUNCTION, net_trans_task_prog_cb);
-    curl_easy_setopt(task->m_handler, CURLOPT_PROGRESSDATA, task);
+    if (curl_easy_setopt(task->m_handler, CURLOPT_PRIVATE, task) != CURLE_OK
+        || curl_easy_setopt(task->m_handler, CURLOPT_NOSIGNAL, 1) != CURLE_OK
+        || curl_easy_setopt(task->m_handler, CURLOPT_TCP_NODELAY, 1) != CURLE_OK
+        || curl_easy_setopt(task->m_handler, CURLOPT_NETRC, CURL_NETRC_IGNORED) != CURLE_OK
+        || curl_easy_setopt(task->m_handler, CURLOPT_WRITEFUNCTION, net_trans_task_write_cb) != CURLE_OK
+        || curl_easy_setopt(task->m_handler, CURLOPT_WRITEDATA, task) != CURLE_OK
+        || curl_easy_setopt(task->m_handler, CURLOPT_NOPROGRESS, 0L) != CURLE_OK
+        || curl_easy_setopt(task->m_handler, CURLOPT_PROGRESSFUNCTION, net_trans_task_prog_cb) != CURLE_OK
+        || curl_easy_setopt(task->m_handler, CURLOPT_PROGRESSDATA, task) != CURLE_OK
+        )
+    {
+        goto CREATED_ERROR;
+    }
 
-    curl_easy_setopt(task->m_handler, CURLOPT_URL, uri);
-    
+    switch(net_address_type(target_host)) {
+    case net_address_ipv4:
+        assert(ip_stack != net_local_ip_stack_none);
+        if (ip_stack == net_local_ip_stack_ipv6) {
+            if (net_trans_task_setup_url_ipv6(mgr, task, uri, protocol, target_host, host_end) != 0) goto CREATED_ERROR;
+        }
+        else {
+            if (net_trans_task_setup_url_origin(mgr, task, uri) != 0) goto CREATED_ERROR;
+        }
+        break;
+    case net_address_ipv6:
+        if (ip_stack == net_local_ip_stack_ipv4) {
+            if (net_trans_task_setup_url_ipv4(mgr, task, uri, protocol, target_host, host_end) != 0) goto CREATED_ERROR;
+        }
+        else {
+            if (net_trans_task_setup_url_origin(mgr, task, uri) != 0) goto CREATED_ERROR;
+        }
+        break;
+    case net_address_domain:
+        if (net_trans_task_setup_url_origin(mgr, task, uri) != 0) goto CREATED_ERROR;
+
+        if (ip_stack == net_local_ip_stack_dual) {
+            if (curl_easy_setopt(task->m_handler, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_WHATEVER) != (int)CURLE_OK) goto CREATED_ERROR;
+        }
+        else if (ip_stack ==  net_local_ip_stack_ipv4) {
+            if (curl_easy_setopt(task->m_handler, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4) != (int)CURLE_OK) goto CREATED_ERROR;
+        }
+        else if (ip_stack == net_local_ip_stack_ipv6) {
+            if (curl_easy_setopt(task->m_handler, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V6) != (int)CURLE_OK) goto CREATED_ERROR;
+        }
+        break;
+    case net_address_local:
+        break;
+    }
+
     switch(method) {
     case net_trans_method_get:
         break;
     case net_trans_method_post:
-        curl_easy_setopt(task->m_handler, CURLOPT_POST, 1L);
+        if (curl_easy_setopt(task->m_handler, CURLOPT_POST, 1L) != (int)CURLE_OK) goto CREATED_ERROR;
         break;
     }
 
-    if (cpe_str_start_with(uri, "https")) {
-        curl_easy_setopt(task->m_handler, CURLOPT_SSL_VERIFYPEER, 0);
-        curl_easy_setopt(task->m_handler, CURLOPT_SSL_VERIFYHOST, 0);
+    if (strcasecmp(protocol, "https") == 0) {
+        if (curl_easy_setopt(task->m_handler, CURLOPT_SSL_VERIFYPEER, 0)
+            || curl_easy_setopt(task->m_handler, CURLOPT_SSL_VERIFYHOST, 0))
+        {
+            goto CREATED_ERROR;
+        }
     }
 
-    mem_buffer_init(&task->m_buffer, mgr->m_alloc);
-
-    task->m_target_address = target_host;
-
-    if (task->m_debug) {
-        CPE_INFO(mgr->m_em, "trans: %s-%d: url: %s", mgr->m_name, task->m_id, uri);
-    }
-    
     cpe_hash_entry_init(&task->m_hh_for_mgr);
     if (cpe_hash_table_insert_unique(&mgr->m_tasks, task) != 0) {
         CPE_ERROR(mgr->m_em, "trans: %s-%d: id duplicate!", mgr->m_name, task->m_id);
         goto CREATED_ERROR;
     }
 
-    mgr->m_max_task_id++;
+    mem_buffer_init(&task->m_buffer, mgr->m_alloc);
+    task->m_target_address = target_host;
+
     return task;
 
 CREATED_ERROR:
-    assert(target_host);
-    net_address_free(target_host);
+    if (target_host) {
+        net_address_free(target_host);
+    }
     
     if (task) {
+        if (task->m_handler) {
+            curl_easy_cleanup(task->m_handler);
+            task->m_handler = NULL;
+        }
+
         TAILQ_INSERT_TAIL(&mgr->m_free_tasks, task, m_next_for_mgr);
         task = NULL;
     }
@@ -202,6 +252,11 @@ void net_trans_task_free(net_trans_task_t task) {
     if (task->m_header) {
         curl_slist_free_all(task->m_header);
         task->m_header = NULL;
+    }
+    
+    if (task->m_connect_to) {
+        curl_slist_free_all(task->m_connect_to);
+        task->m_connect_to = NULL;
     }
     
     cpe_hash_table_remove_by_ins(&mgr->m_tasks, task);
@@ -277,7 +332,7 @@ int16_t net_trans_task_res_code(net_trans_task_t task) {
 int net_trans_task_set_skip_data(net_trans_task_t task, ssize_t skip_length) {
     net_trans_manage_t mgr = task->m_mgr;
 
-    if (curl_easy_setopt(task->m_handler, CURLOPT_RESUME_FROM_LARGE, skip_length > 0 ? (curl_off_t)skip_length : (curl_off_t)0) != (int)CURLM_OK) {
+    if (curl_easy_setopt(task->m_handler, CURLOPT_RESUME_FROM_LARGE, skip_length > 0 ? (curl_off_t)skip_length : (curl_off_t)0) != CURLE_OK) {
         CPE_ERROR(
             mgr->m_em, "trans: %s-%d: set skip data %d error!",
             mgr->m_name, task->m_id, (int)skip_length);
@@ -294,7 +349,7 @@ int net_trans_task_set_skip_data(net_trans_task_t task, ssize_t skip_length) {
 int net_trans_task_set_timeout_ms(net_trans_task_t task, uint64_t timeout_ms) {
     net_trans_manage_t mgr = task->m_mgr;
 
-	if (curl_easy_setopt(task->m_handler, CURLOPT_TIMEOUT_MS, timeout_ms) != (int)CURLM_OK) {
+	if (curl_easy_setopt(task->m_handler, CURLOPT_TIMEOUT_MS, timeout_ms) != CURLE_OK) {
         CPE_ERROR(
             mgr->m_em, "trans: %s-%d: set timeout " FMT_UINT64_T "ms error!",
             mgr->m_name, task->m_id, timeout_ms);
@@ -313,7 +368,7 @@ int net_trans_task_set_timeout_ms(net_trans_task_t task, uint64_t timeout_ms) {
 int net_trans_task_set_connection_timeout_ms(net_trans_task_t task, uint64_t timeout_ms) {
     net_trans_manage_t mgr = task->m_mgr;
 
-	if (curl_easy_setopt(task->m_handler, CURLOPT_CONNECTTIMEOUT_MS, timeout_ms) != (int)CURLM_OK) {
+	if (curl_easy_setopt(task->m_handler, CURLOPT_CONNECTTIMEOUT_MS, timeout_ms) != CURLE_OK) {
         CPE_ERROR(
             mgr->m_em, "trans: %s-%d: set connection-timeout " FMT_UINT64_T "ms error!",
             mgr->m_name, task->m_id, timeout_ms);
@@ -332,7 +387,7 @@ int net_trans_task_set_connection_timeout_ms(net_trans_task_t task, uint64_t tim
 int net_trans_task_set_useragent(net_trans_task_t task, const char * agent) {
     net_trans_manage_t mgr = task->m_mgr;
 
-	if (curl_easy_setopt(task->m_handler, CURLOPT_USERAGENT, agent) != (int)CURLM_OK) {
+	if (curl_easy_setopt(task->m_handler, CURLOPT_USERAGENT, agent) != CURLE_OK) {
         CPE_ERROR(
             mgr->m_em, "trans: %s-%d: set useragent %s error!",
             mgr->m_name, task->m_id, agent);
@@ -365,7 +420,7 @@ int net_trans_task_append_header_line(net_trans_task_t task, const char * header
             return -1;
         }
 
-        if (curl_easy_setopt(task->m_handler, CURLOPT_HTTPHEADER, task->m_header) != (int)CURLM_OK) {
+        if (curl_easy_setopt(task->m_handler, CURLOPT_HTTPHEADER, task->m_header) != CURLE_OK) {
             CPE_ERROR(
                 mgr->m_em, "trans: %s-%d: append header %s set opt fail!", mgr->m_name, task->m_id, header_one);
             return -1;
@@ -540,8 +595,8 @@ void net_trans_task_set_callback(
 int net_trans_task_set_body(net_trans_task_t task, void const * data, uint32_t data_size) {
     net_trans_manage_t mgr = task->m_mgr;
 
-    if (curl_easy_setopt(task->m_handler, CURLOPT_POSTFIELDSIZE, (int)data_size) != (int)CURLM_OK
-        || curl_easy_setopt(task->m_handler, CURLOPT_COPYPOSTFIELDS, data) != (int)CURLM_OK)
+    if (curl_easy_setopt(task->m_handler, CURLOPT_POSTFIELDSIZE, (int)data_size) != CURLE_OK
+        || curl_easy_setopt(task->m_handler, CURLOPT_COPYPOSTFIELDS, data) != CURLE_OK)
     {
         CPE_ERROR(
             mgr->m_em, "trans: %s-%d: set post %d data fail!",
@@ -555,7 +610,7 @@ int net_trans_task_set_body(net_trans_task_t task, void const * data, uint32_t d
 int net_trans_task_set_user_agent(net_trans_task_t task, const char * user_agent) {
     net_trans_manage_t mgr = task->m_mgr;
 
-    if (curl_easy_setopt(task->m_handler, CURLOPT_USERAGENT, user_agent) != (int)CURLM_OK) {
+    if (curl_easy_setopt(task->m_handler, CURLOPT_USERAGENT, user_agent) != CURLE_OK) {
         CPE_ERROR(mgr->m_em, "trans: %s-%d: set user-agent %s fail!", mgr->m_name, task->m_id, user_agent);
         return -1;
     }
@@ -566,7 +621,7 @@ int net_trans_task_set_user_agent(net_trans_task_t task, const char * user_agent
 int net_trans_task_set_net_interface(net_trans_task_t task, const char * net_interface) {
     net_trans_manage_t mgr = task->m_mgr;
 
-    if (curl_easy_setopt(task->m_handler, CURLOPT_INTERFACE, net_interface) != (int)CURLM_OK) {
+    if (curl_easy_setopt(task->m_handler, CURLOPT_INTERFACE, net_interface) != CURLE_OK) {
         CPE_ERROR(mgr->m_em, "trans: %s-%d: set net-interface %s fail!", mgr->m_name, task->m_id, net_interface);
         return -1;
     }
@@ -634,9 +689,13 @@ int net_trans_task_start(net_trans_task_t task) {
         curl_easy_setopt(task->m_handler, CURLOPT_SOCKOPTFUNCTION, net_trans_task_sock_config_cb);
         curl_easy_setopt(task->m_handler, CURLOPT_SOCKOPTDATA, task);
     }
-    
-    if (net_trans_task_setup_host(mgr, task, ip_stack) != 0) return -1;
-        
+
+    if (net_address_type(task->m_target_address) == net_address_domain) {
+        if (task->m_cfg_explicit_dns) {
+            if (net_trans_task_setup_dns(mgr, task, ip_stack) != 0) return -1;
+        }
+    }
+
     CURLcode rc = curl_multi_add_handle(mgr->m_multi_handle, task->m_handler);
     if (rc != 0) {
         CPE_ERROR(mgr->m_em, "trans: %s-%d: start: curl_multi_add_handle error, rc=%d (%s)", mgr->m_name, task->m_id, rc, curl_easy_strerror(rc));
@@ -920,59 +979,77 @@ int net_trans_task_set_done(net_trans_task_t task, net_trans_task_result_t resul
     return 0;
 }
 
-static int net_trans_task_setup_host(net_trans_manage_t mgr, net_trans_task_t task, net_local_ip_stack_t ip_stack) {
-    switch(net_address_type(task->m_target_address)) {
-    case net_address_ipv4:
-        assert(ip_stack != net_local_ip_stack_none);
-        if (ip_stack == net_local_ip_stack_ipv6) {
-            net_address_t addr_ipv6 = net_address_create_ipv6_from_ipv4_nat(mgr->m_schedule, task->m_target_address);
-            if (addr_ipv6 == NULL) {
-                CPE_ERROR(
-                    mgr->m_em, "trans: %s-%d: setup-host: create ipv6 map addr from %s fail!",
-                    mgr->m_name, task->m_id, net_address_host(net_trans_manage_tmp_buffer(mgr), task->m_target_address));
-                return -1;
-            }
+static int net_trans_task_setup_url_origin(net_trans_manage_t mgr, net_trans_task_t task, const char * uri) {
+    if (curl_easy_setopt(task->m_handler, CURLOPT_URL, uri) != (int)CURLE_OK) return -1;
 
-            char buf[256];
-            int sz = 0;
-            sz += snprintf(buf + sz, sizeof(buf) - sz, "%s:", net_address_host(net_trans_manage_tmp_buffer(mgr), task->m_target_address));
-            sz += snprintf(buf + sz, sizeof(buf) - sz, ":%s::", net_address_host(net_trans_manage_tmp_buffer(mgr), addr_ipv6));
-            if (task->m_debug) {
-                CPE_INFO(mgr->m_em, "trans: %s-%d: setup-host: connect-to: %s", mgr->m_name, task->m_id, buf);
-            }
-
-            struct curl_slist * connect_to = curl_slist_append(NULL, buf);
-            curl_easy_setopt(task->m_handler, CURLOPT_CONNECT_TO, connect_to);
-            curl_slist_free_all(connect_to);
-
-            net_address_free(addr_ipv6);
-        }
-        break;
-    case net_address_ipv6:
-        break;
-    case net_address_domain:
-        if (task->m_cfg_explicit_dns) {
-            if (net_trans_task_setup_dns(mgr, task, ip_stack) != 0) return -1;
-        }
-
-        switch(ip_stack) {
-        case net_local_ip_stack_none:
-            assert(0);
-            return -1;
-        case net_local_ip_stack_dual:
-            curl_easy_setopt(task->m_handler, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_WHATEVER);
-            break;
-        case net_local_ip_stack_ipv4:
-            curl_easy_setopt(task->m_handler, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
-            break;
-        case net_local_ip_stack_ipv6:
-            curl_easy_setopt(task->m_handler, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V6);
-            break;
-        }
+    if (task->m_debug) {
+        CPE_INFO(mgr->m_em, "trans: %s-%d: url: %s", mgr->m_name, task->m_id, uri);
+    }
     
-        break;
-    case net_address_local:
-        break;
+    return 0;
+}
+
+static int net_trans_task_setup_url_ipv6(
+    net_trans_manage_t mgr, net_trans_task_t task,
+    const char * uri, const char * protocol, net_address_t host, const char * uri_left)
+{
+    net_address_t addr_ipv6 = net_address_create_ipv6_from_ipv4_nat(mgr->m_schedule, host);
+    if (addr_ipv6 == NULL) {
+        CPE_ERROR(
+            mgr->m_em, "trans: %s-: setup-url: create ipv6 map addr from %s fail!",
+            mgr->m_name, net_address_host(net_trans_manage_tmp_buffer(mgr), host));
+        return -1;
+    }
+
+    mem_buffer_t tmp_buffer = net_trans_manage_tmp_buffer(mgr);
+    mem_buffer_clear_data(tmp_buffer);
+    struct write_stream_buffer ws = CPE_WRITE_STREAM_BUFFER_INITIALIZER(tmp_buffer);
+
+    stream_printf((write_stream_t)&ws, "%s://[", protocol);
+    net_address_print((write_stream_t)&ws, addr_ipv6);
+    stream_printf((write_stream_t)&ws, "]%s", uri_left);
+    stream_putc((write_stream_t)&ws, 0);
+    
+    net_address_free(addr_ipv6);
+
+    const char * alert_uri = mem_buffer_make_continuous(tmp_buffer, 0);
+    if (curl_easy_setopt(task->m_handler, CURLOPT_URL, alert_uri) != (int)CURLE_OK) return -1;
+
+    if (task->m_debug) {
+        CPE_INFO(mgr->m_em, "trans: %s-%d: url: %s(%s)", mgr->m_name, task->m_id, alert_uri, uri);
+    }
+
+    return 0;
+}
+
+static int net_trans_task_setup_url_ipv4(
+    net_trans_manage_t mgr, net_trans_task_t task,
+    const char * uri, const char * protocol, net_address_t host, const char * uri_left)
+{
+    net_address_t addr_ipv4 = net_address_create_ipv4_from_ipv6_map(mgr->m_schedule, host);
+    if (addr_ipv4 == NULL) {
+        CPE_ERROR(
+            mgr->m_em, "trans: %s-: setup-url: create ipv4 map addr from %s fail!",
+            mgr->m_name, net_address_host(net_trans_manage_tmp_buffer(mgr), host));
+        return -1;
+    }
+
+    mem_buffer_t tmp_buffer = net_trans_manage_tmp_buffer(mgr);
+    mem_buffer_clear_data(tmp_buffer);
+    struct write_stream_buffer ws = CPE_WRITE_STREAM_BUFFER_INITIALIZER(tmp_buffer);
+
+    stream_printf((write_stream_t)&ws, "%s://", protocol);
+    net_address_print((write_stream_t)&ws, addr_ipv4);
+    stream_printf((write_stream_t)&ws, "%s", uri_left);
+    stream_putc((write_stream_t)&ws, 0);
+    
+    net_address_free(addr_ipv4);
+
+    const char * alert_uri = mem_buffer_make_continuous(tmp_buffer, 0);
+    if (curl_easy_setopt(task->m_handler, CURLOPT_URL, alert_uri) != (int)CURLE_OK) return -1;
+
+    if (task->m_debug) {
+        CPE_INFO(mgr->m_em, "trans: %s-%d: url: %s(%s)", mgr->m_name, task->m_id, alert_uri, uri);
     }
 
     return 0;
