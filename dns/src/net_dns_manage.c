@@ -193,6 +193,7 @@ void net_dns_manage_free(net_dns_manage_t manage) {
     cpe_hash_table_fini(&manage->m_tasks);
     cpe_hash_table_fini(&manage->m_entries);
     cpe_hash_table_fini(&manage->m_scopes);
+    cpe_hash_table_fini(&manage->m_items_by_ip);
 
     while(!TAILQ_EMPTY(&manage->m_free_entries)) {
         net_dns_entry_real_free(TAILQ_FIRST(&manage->m_free_entries));
