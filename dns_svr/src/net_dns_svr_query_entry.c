@@ -68,7 +68,8 @@ void net_dns_svr_query_entry_real_free(net_dns_svr_query_entry_t query_entry) {
 }
 
 int net_dns_svr_query_entry_start(net_dns_svr_query_entry_t query_entry) {
-    net_dns_svr_t svr = query_entry->m_query->m_itf->m_svr;
+    net_dns_svr_itf_t itf = query_entry->m_query->m_itf;
+    net_dns_svr_t svr = itf->m_svr;
     
     assert(query_entry->m_local_query == NULL);
 
@@ -90,7 +91,7 @@ int net_dns_svr_query_entry_start(net_dns_svr_query_entry_t query_entry) {
         net_dns_query_create(
             svr->m_schedule,
             query_entry->m_address, query_type,
-            svr->m_query_policy,
+            itf->m_query_policy,
             net_dns_svr_query_entry_callback, NULL, query_entry);
     if (query_entry->m_local_query == NULL) {
         CPE_ERROR(svr->m_em, "dns-svr: start local query fail!");

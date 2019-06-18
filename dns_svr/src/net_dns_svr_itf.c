@@ -62,12 +62,19 @@ net_dns_svr_itf_create(net_dns_svr_t dns_svr, net_dns_svr_itf_type_t type, net_a
 void net_dns_svr_itf_free(net_dns_svr_itf_t dns_itf) {
     net_dns_svr_t dns_svr = dns_itf->m_svr;
 
+    if (dns_svr->m_debug) {
+        CPE_INFO(
+            dns_svr->m_em, "dns-svr: itf %s %s free",
+            net_dns_svr_itf_type_str(dns_itf->m_type),
+            net_address_dump(net_dns_svr_tmp_buffer(dns_svr), net_dns_itf_address(dns_itf)));
+    }
+    
     while(!TAILQ_EMPTY(&dns_itf->m_querys)) {
         net_dns_svr_query_free(TAILQ_FIRST(&dns_itf->m_querys));
     }
 
     if (dns_itf->m_query_policy) {
-        mem_free(dns_svr->m_alloc, dns_svr->m_query_policy);
+        mem_free(dns_svr->m_alloc, dns_itf->m_query_policy);
         dns_itf->m_query_policy = NULL;
     }
 
@@ -128,13 +135,13 @@ int net_dns_itf_set_query_policy(net_dns_svr_itf_t dns_itf, const char * policy)
         }
     }
 
-    if (dns_svr->m_query_policy) {
-        mem_free(dns_svr->m_alloc, dns_svr->m_query_policy);
+    if (dns_itf->m_query_policy) {
+        mem_free(dns_svr->m_alloc, dns_itf->m_query_policy);
     }
-    dns_svr->m_query_policy = new_query_policy;
+    dns_itf->m_query_policy = new_query_policy;
 
     if (dns_svr->m_debug) {
-        CPE_INFO(dns_svr->m_em, "dns-svr: policy ==> %s", dns_svr->m_query_policy ? dns_svr->m_query_policy : "N/A");
+        CPE_INFO(dns_svr->m_em, "dns-svr: policy ==> %s", dns_itf->m_query_policy ? dns_itf->m_query_policy : "N/A");
     }
     
     return 0;

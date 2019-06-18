@@ -26,8 +26,6 @@ struct net_dns_svr {
     net_dns_svr_monitor_list_t m_monitors;
     net_dns_svr_itf_list_t m_itfs;
 
-    char * m_query_policy;
-    
     struct mem_buffer m_data_buffer;
     
     net_dns_svr_query_list_t m_free_querys;
