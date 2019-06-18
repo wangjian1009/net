@@ -113,7 +113,6 @@ static void * net_log_flusher_thread(void * param) {
         net_log_category_t category = builder->m_category;
 
         net_log_request_param_t send_param = net_log_category_build_request(category, builder);
-
         net_log_group_destroy(builder);
         
         if (send_param == NULL) {

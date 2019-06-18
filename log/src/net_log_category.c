@@ -429,10 +429,11 @@ void net_log_category_commit(net_log_category_t category) {
     }
     else { /*同步flush */
         net_log_request_param_t send_param = net_log_category_build_request(category, builder);
+        net_log_group_destroy(builder);
+
         if (send_param == NULL) {
             CPE_ERROR(schedule->m_em, "log: category [%d]%s: commit: build request fail", category->m_id, category->m_name);
             net_log_category_add_fail_statistics(category, builder->grp->n_logs);
-            net_log_group_destroy(builder);
         }
         else {        
             if (net_log_category_commit_request(category, send_param, 1) != 0) {
