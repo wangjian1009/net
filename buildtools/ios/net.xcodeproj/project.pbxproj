@@ -3825,7 +3825,9 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				HEADER_SEARCH_PATHS = (
-					../../../cpe/include,
+					../../../cpe/pal/include,
+					../../../cpe/utils/include,
+					../../../cpe/utils_sock/include,
 					../../core/include,
 					../../depends/curl/include,
 				);
@@ -3840,7 +3842,9 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				HEADER_SEARCH_PATHS = (
-					../../../cpe/include,
+					../../../cpe/pal/include,
+					../../../cpe/utils/include,
+					../../../cpe/utils_sock/include,
 					../../core/include,
 					../../depends/curl/include,
 				);
@@ -3969,7 +3973,9 @@
 					"PCRE2_CODE_UNIT_WIDTH=8",
 				);
 				HEADER_SEARCH_PATHS = (
-					../../../cpe/include,
+					../../../cpe/pal/include,
+					../../../cpe/utils/include,
+					../../../cpe/utils_sock/include,
 					../../../cpe/depends/pcre2/include,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -3987,7 +3993,9 @@
 					"PCRE2_CODE_UNIT_WIDTH=8",
 				);
 				HEADER_SEARCH_PATHS = (
-					../../../cpe/include,
+					../../../cpe/pal/include,
+					../../../cpe/utils/include,
+					../../../cpe/utils_sock/include,
 					../../../cpe/depends/pcre2/include,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -4001,7 +4009,8 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				HEADER_SEARCH_PATHS = (
-					../../../cpe/include,
+					../../../cpe/pal/include,
+					../../../cpe/utils/include,
 					../../net_core/include,
 					../../dns_svr/include,
 				);
@@ -4016,7 +4025,8 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				HEADER_SEARCH_PATHS = (
-					../../../cpe/include,
+					../../../cpe/pal/include,
+					../../../cpe/utils/include,
 					../../net_core/include,
 					../../dns_svr/include,
 				);
@@ -4032,7 +4042,8 @@
 				CLANG_ENABLE_OBJC_ARC = NO;
 				CODE_SIGN_STYLE = Automatic;
 				HEADER_SEARCH_PATHS = (
-					../../../cpe/include,
+					../../../cpe/pal/include,
+					../../../cpe/utils/include,
 					../../driver_sock/include,
 				);
 				OTHER_LDFLAGS = "-ObjC";
@@ -4048,7 +4059,8 @@
 				CLANG_ENABLE_OBJC_ARC = NO;
 				CODE_SIGN_STYLE = Automatic;
 				HEADER_SEARCH_PATHS = (
-					../../../cpe/include,
+					../../../cpe/pal/include,
+					../../../cpe/utils/include,
 					../../driver_sock/include,
 				);
 				OTHER_LDFLAGS = "-ObjC";
@@ -4142,7 +4154,8 @@
 				CLANG_ENABLE_OBJC_ARC = NO;
 				CODE_SIGN_STYLE = Automatic;
 				HEADER_SEARCH_PATHS = (
-					../../../cpe/include,
+					../../../cpe/pal/include,
+					../../../cpe/utils/include,
 					../../depends/libev/include,
 					../../driver_sock/include,
 				);
@@ -4159,7 +4172,8 @@
 				CLANG_ENABLE_OBJC_ARC = NO;
 				CODE_SIGN_STYLE = Automatic;
 				HEADER_SEARCH_PATHS = (
-					../../../cpe/include,
+					../../../cpe/pal/include,
+					../../../cpe/utils/include,
 					../../depends/libev/include,
 					../../driver_sock/include,
 				);
@@ -4176,7 +4190,9 @@
 				CLANG_ENABLE_OBJC_ARC = NO;
 				CODE_SIGN_STYLE = Automatic;
 				HEADER_SEARCH_PATHS = (
-					../../../cpe/include,
+					../../../cpe/pal/include,
+					../../../cpe/utils/include,
+					../../../cpe/utils_sock/include,
 					../../core/include,
 				);
 				OTHER_LDFLAGS = "-ObjC";
@@ -4192,7 +4208,9 @@
 				CLANG_ENABLE_OBJC_ARC = NO;
 				CODE_SIGN_STYLE = Automatic;
 				HEADER_SEARCH_PATHS = (
-					../../../cpe/include,
+					../../../cpe/pal/include,
+					../../../cpe/utils/include,
+					../../../cpe/utils_sock/include,
 					../../core/include,
 				);
 				OTHER_LDFLAGS = "-ObjC";
@@ -4207,7 +4225,11 @@
 			buildSettings = {
 				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
 				HEADER_SEARCH_PATHS = (
-					../../../cpe/include,
+					../../../cpe/pal/include,
+					../../../cpe/utils/include,
+					../../../cpe/utils_sock/include,
+					../../../cpe/fsm/include,
+					../../../cpe/vfs/include,
 					../../depends/curl/include,
 					../../depends/mbedtls/include/mbedtls,
 					../../depends/libev/include,
@@ -4226,7 +4248,11 @@
 			buildSettings = {
 				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
 				HEADER_SEARCH_PATHS = (
-					../../../cpe/include,
+					../../../cpe/pal/include,
+					../../../cpe/utils/include,
+					../../../cpe/utils_sock/include,
+					../../../cpe/fsm/include,
+					../../../cpe/vfs/include,
 					../../depends/curl/include,
 					../../depends/mbedtls/include/mbedtls,
 					../../depends/libev/include,
@@ -4290,7 +4316,8 @@
 				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
 				CODE_SIGN_STYLE = Automatic;
 				HEADER_SEARCH_PATHS = (
-					../../../cpe/include,
+					../../../cpe/pal/include,
+					../../../cpe/utils/include,
 					../../core/include,
 					../../depends/mbedtls/include,
 					../../protocol_http/include,
@@ -4307,7 +4334,8 @@
 				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
 				CODE_SIGN_STYLE = Automatic;
 				HEADER_SEARCH_PATHS = (
-					../../../cpe/include,
+					../../../cpe/pal/include,
+					../../../cpe/utils/include,
 					../../core/include,
 					../../depends/mbedtls/include,
 					../../protocol_http/include,
@@ -4323,7 +4351,8 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				HEADER_SEARCH_PATHS = (
-					../../../cpe/include,
+					../../../cpe/pal/include,
+					../../../cpe/utils/include,
 					../../core/include,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -4337,7 +4366,8 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				HEADER_SEARCH_PATHS = (
-					../../../cpe/include,
+					../../../cpe/pal/include,
+					../../../cpe/utils/include,
 					../../core/include,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -4350,7 +4380,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				HEADER_SEARCH_PATHS = ../../../cpe/include;
+				HEADER_SEARCH_PATHS = (
+					../../../cpe/pal/include,
+					../../../cpe/utils/include,
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -4361,7 +4394,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				HEADER_SEARCH_PATHS = ../../../cpe/include;
+				HEADER_SEARCH_PATHS = (
+					../../../cpe/pal/include,
+					../../../cpe/utils/include,
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -4373,7 +4409,9 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				HEADER_SEARCH_PATHS = (
-					../../../cpe/include,
+					../../../cpe/pal/include,
+					../../../cpe/utils/include,
+					../../../cpe/utils_sock/include,
 					../../dns/include,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -4387,7 +4425,9 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				HEADER_SEARCH_PATHS = (
-					../../../cpe/include,
+					../../../cpe/pal/include,
+					../../../cpe/utils/include,
+					../../../cpe/utils_sock/include,
 					../../dns/include,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -4401,7 +4441,8 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				HEADER_SEARCH_PATHS = (
-					../../../cpe/include,
+					../../../cpe/pal/include,
+					../../../cpe/utils/include,
 					../../protocol_socks5/include,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -4415,7 +4456,8 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				HEADER_SEARCH_PATHS = (
-					../../../cpe/include,
+					../../../cpe/pal/include,
+					../../../cpe/utils/include,
 					../../protocol_socks5/include,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -4429,7 +4471,8 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				HEADER_SEARCH_PATHS = (
-					../../../cpe/include,
+					../../../cpe/pal/include,
+					../../../cpe/utils/include,
 					../../router/include,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -4443,7 +4486,8 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				HEADER_SEARCH_PATHS = (
-					../../../cpe/include,
+					../../../cpe/pal/include,
+					../../../cpe/utils/include,
 					../../router/include,
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -4486,7 +4530,8 @@
 				CODE_SIGN_STYLE = Automatic;
 				HEADER_SEARCH_PATHS = (
 					../../depends/wslay/include,
-					../../../cpe/include,
+					../../../cpe/pal/include,
+					../../../cpe/utils/include,
 					../../core/include,
 					../../protocol_http/include,
 				);
@@ -4502,7 +4547,8 @@
 				CODE_SIGN_STYLE = Automatic;
 				HEADER_SEARCH_PATHS = (
 					../../depends/wslay/include,
-					../../../cpe/include,
+					../../../cpe/pal/include,
+					../../../cpe/utils/include,
 					../../core/include,
 					../../protocol_http/include,
 				);
