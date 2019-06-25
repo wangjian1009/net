@@ -4,7 +4,7 @@
 #include "net_dq_driver_i.h"
 
 struct net_dq_timer {
-    __unsafe_unretained dispatch_source_t m_timer;
+    dispatch_source_t m_timer;
 };
 
 int net_dq_timer_init(net_timer_t base_timer);

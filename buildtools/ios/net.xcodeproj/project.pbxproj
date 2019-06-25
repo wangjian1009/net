@@ -4039,7 +4039,6 @@
 		C96A82DE21100505000CB30D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CLANG_ENABLE_OBJC_ARC = NO;
 				CODE_SIGN_STYLE = Automatic;
 				HEADER_SEARCH_PATHS = (
 					../../../cpe/pal/include,
@@ -4056,7 +4055,6 @@
 		C96A82DF21100505000CB30D /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CLANG_ENABLE_OBJC_ARC = NO;
 				CODE_SIGN_STYLE = Automatic;
 				HEADER_SEARCH_PATHS = (
 					../../../cpe/pal/include,

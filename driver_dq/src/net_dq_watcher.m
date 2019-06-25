@@ -1,5 +1,6 @@
 #include "assert.h"
 #include "cpe/pal/pal_socket.h"
+#include "cpe/pal/pal_strings.h"
 #include "net_watcher.h"
 #include "net_driver.h"
 #include "net_dq_watcher.h"
@@ -11,10 +12,7 @@ static void net_dq_watcher_stop_r(net_dq_driver_t driver, net_dq_watcher_t watch
 
 int net_dq_watcher_init(net_watcher_t base_watcher) {
     net_dq_watcher_t watcher = net_watcher_data(base_watcher);
-
-    watcher->m_source_r = nil;
-    watcher->m_source_w = nil;
-
+    bzero((void*)watcher, sizeof(*watcher));
     return 0;
 }
 
@@ -67,13 +65,12 @@ static void net_dq_watcher_start_w(net_dq_driver_t driver, int fd, net_dq_watche
         });
     dispatch_resume(watcher->m_source_w);
 }
-    
+
 static void net_dq_watcher_stop_w(net_dq_driver_t driver, net_dq_watcher_t watcher, net_watcher_t base_watcher) {
     assert(watcher->m_source_w != NULL);
 
     dispatch_source_set_event_handler(watcher->m_source_w, nil);
     dispatch_source_cancel(watcher->m_source_w);
-    dispatch_release(watcher->m_source_w);
     watcher->m_source_w = nil;
 }
 
@@ -91,6 +88,5 @@ static void net_dq_watcher_stop_r(net_dq_driver_t driver, net_dq_watcher_t watch
     assert(watcher->m_source_r != NULL);
     
     dispatch_source_cancel(watcher->m_source_r);
-    dispatch_release(watcher->m_source_r);
     watcher->m_source_r = nil;
 }

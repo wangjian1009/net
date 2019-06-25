@@ -4,8 +4,8 @@
 #include "net_dq_driver_i.h"
 
 struct net_dq_watcher {
-    __unsafe_unretained dispatch_source_t m_source_r;
-    __unsafe_unretained dispatch_source_t m_source_w;
+    dispatch_source_t m_source_r;
+    dispatch_source_t m_source_w;
 };
 
 int net_dq_watcher_init(net_watcher_t base_watcher);

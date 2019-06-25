@@ -7,9 +7,7 @@
 
 int net_dq_timer_init(net_timer_t base_timer) {
     net_dq_timer_t timer = net_timer_data(base_timer);
-
-    timer->m_timer = nil;
-
+    bzero((void*)timer, sizeof(*timer));
     return 0;
 }
 
@@ -19,7 +17,6 @@ void net_dq_timer_fini(net_timer_t base_timer) {
     if (timer->m_timer) {
         dispatch_source_set_event_handler(timer->m_timer, nil);
         dispatch_source_cancel(timer->m_timer);
-        dispatch_release(timer->m_timer);
         timer->m_timer = nil;
     }
 }
@@ -33,7 +30,6 @@ void net_dq_timer_active(net_timer_t base_timer, uint64_t delay_milliseconds) {
     if (timer->m_timer) {
         dispatch_source_set_event_handler(timer->m_timer, nil);
         dispatch_source_cancel(timer->m_timer);
-        dispatch_release(timer->m_timer);
         timer->m_timer = nil;
     }
 
@@ -46,7 +42,6 @@ void net_dq_timer_active(net_timer_t base_timer, uint64_t delay_milliseconds) {
 
             dispatch_source_set_event_handler(cur_timer, nil);
             dispatch_source_cancel(cur_timer);
-            dispatch_release(cur_timer);
             timer->m_timer = nil;
 
             net_timer_process(base_timer);
@@ -63,7 +58,6 @@ void net_dq_timer_cancel(net_timer_t base_timer) {
     if (timer->m_timer) {
         dispatch_source_set_event_handler(timer->m_timer, nil);
         dispatch_source_cancel(timer->m_timer);
-        dispatch_release(timer->m_timer);
         timer->m_timer = nil;
     }
 }
