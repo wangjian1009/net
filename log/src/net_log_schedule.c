@@ -443,8 +443,10 @@ void net_log_append_uint64(net_log_schedule_t schedule, const char * name, uint6
 }
 
 void net_log_append_str(net_log_schedule_t schedule, const char * name, const char * value) {
-    assert(schedule->m_current_category);
-    net_log_category_log_apppend(schedule->m_current_category, name, value);
+    if (value) {
+        assert(schedule->m_current_category);
+        net_log_category_log_apppend(schedule->m_current_category, name, value);
+    }
 }
 
 void net_log_append_md5(net_log_schedule_t schedule, const char * name, cpe_md5_value_t value) {
