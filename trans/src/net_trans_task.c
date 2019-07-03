@@ -629,6 +629,17 @@ int net_trans_task_set_net_interface(net_trans_task_t task, const char * net_int
     return 0;
 }
 
+int net_trans_task_set_follow_location(net_trans_task_t task, uint8_t enable) {
+    net_trans_manage_t mgr = task->m_mgr;
+
+    if (curl_easy_setopt(task->m_handler, CURLOPT_FOLLOWLOCATION, (long)enable) != CURLE_OK) {
+        CPE_ERROR(mgr->m_em, "trans: %s-%d: set follow-location fail!", mgr->m_name, task->m_id);
+        return -1;
+    }
+
+    return 0;
+}
+
 int net_trans_task_set_protect_vpn(net_trans_task_t task, uint8_t protect_vpn) {
     task->m_cfg_protect_vpn = protect_vpn;
     return 0;
