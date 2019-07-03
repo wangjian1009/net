@@ -7,14 +7,14 @@
 
 static void net_ev_watcher_cb(EV_P_ ev_io *watcher, int revents);
 
-int net_ev_watcher_init(net_watcher_t base_watcher) {
+int net_ev_watcher_init(net_watcher_t base_watcher, int fd) {
     net_ev_watcher_t watcher = net_watcher_data(base_watcher);
     bzero(&watcher->m_watcher, sizeof(watcher->m_watcher));
     watcher->m_watcher.data = watcher;
     return 0;
 }
 
-void net_ev_watcher_fini(net_watcher_t base_watcher) {
+void net_ev_watcher_fini(net_watcher_t base_watcher, int fd) {
     net_ev_watcher_t watcher = net_watcher_data(base_watcher);
     net_ev_driver_t driver = net_sock_driver_data_from_base_driver(net_watcher_driver(base_watcher));
     ev_io_stop(driver->m_ev_loop, &watcher->m_watcher);

@@ -33,7 +33,7 @@ net_watcher_t net_watcher_create(net_driver_t driver, int fd, void * ctx, net_wa
     watcher->m_in_processing = 0;
     watcher->m_deleting = 0;
 
-    if (driver->m_watcher_init(watcher) != 0) {
+    if (driver->m_watcher_init(watcher, fd) != 0) {
         TAILQ_INSERT_TAIL(&driver->m_free_watchers, watcher, m_next_for_driver);
         return NULL;
     }
@@ -52,7 +52,7 @@ void net_watcher_free(net_watcher_t watcher) {
         return;
     }
 
-    driver->m_watcher_fini(watcher);
+    driver->m_watcher_fini(watcher, watcher->m_fd);
 
     TAILQ_REMOVE(&driver->m_watchers, watcher, m_next_for_driver);
     TAILQ_INSERT_TAIL(&driver->m_free_watchers, watcher, m_next_for_driver);

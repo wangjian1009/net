@@ -7,8 +7,8 @@ struct net_ev_watcher {
     struct ev_io m_watcher;
 };
 
-int net_ev_watcher_init(net_watcher_t base_watcher);
-void net_ev_watcher_fini(net_watcher_t base_watcher);
+int net_ev_watcher_init(net_watcher_t base_watcher, int fd);
+void net_ev_watcher_fini(net_watcher_t base_watcher, int fd);
 void net_ev_watcher_update(net_watcher_t base_watcher, int fd, uint8_t expect_read, uint8_t expect_write);
 
 #endif

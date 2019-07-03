@@ -10,13 +10,13 @@ static void net_dq_watcher_stop_w(net_dq_driver_t driver, net_dq_watcher_t watch
 static void net_dq_watcher_start_r(net_dq_driver_t driver, int fd, net_dq_watcher_t watcher, net_watcher_t base_watcher);
 static void net_dq_watcher_stop_r(net_dq_driver_t driver, net_dq_watcher_t watcher, net_watcher_t base_watcher);
 
-int net_dq_watcher_init(net_watcher_t base_watcher) {
+int net_dq_watcher_init(net_watcher_t base_watcher, int fd) {
     net_dq_watcher_t watcher = net_watcher_data(base_watcher);
     bzero((void*)watcher, sizeof(*watcher));
     return 0;
 }
 
-void net_dq_watcher_fini(net_watcher_t base_watcher) {
+void net_dq_watcher_fini(net_watcher_t base_watcher, int fd) {
     net_dq_watcher_t watcher = net_watcher_data(base_watcher);
     net_dq_driver_t driver = net_driver_data(net_watcher_driver(base_watcher));
 
