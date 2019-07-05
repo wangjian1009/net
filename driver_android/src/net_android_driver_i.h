@@ -1,5 +1,6 @@
 #ifndef NET_ANDROID_DRIVER_I_H_INCLEDED
 #define NET_ANDROID_DRIVER_I_H_INCLEDED
+#include "ev.h"
 #include <android/looper.h>
 #include "cpe/pal/pal_queue.h"
 #include "cpe/utils/memory.h"
@@ -13,6 +14,7 @@ typedef struct net_android_timer * net_android_timer_t;
 struct net_android_driver {
     mem_allocrator_t m_alloc;
     error_monitor_t m_em;
+    struct ev_loop * m_ev_loop;
     ALooper* m_looper;
 };
 

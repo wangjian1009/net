@@ -4,6 +4,7 @@
 #include "net_android_driver_i.h"
 
 struct net_android_timer {
+    struct ev_timer m_watcher;
 };
 
 int net_android_timer_init(net_timer_t base_timer);

@@ -9,7 +9,7 @@ static int net_android_driver_init(net_sock_driver_t sock_driver);
 static void net_android_driver_fini(net_sock_driver_t sock_driver);
 
 net_android_driver_t
-net_android_driver_create(net_schedule_t schedule) {
+net_android_driver_create(net_schedule_t schedule, struct ev_loop * ev_loop) {
     net_sock_driver_t sock_driver;
 
     sock_driver = net_sock_driver_create(
@@ -36,7 +36,28 @@ net_android_driver_create(net_schedule_t schedule) {
     if (sock_driver == NULL) return NULL;
 
     net_android_driver_t driver = net_sock_driver_data(sock_driver);
+    driver->m_ev_loop = ev_loop;
 
+    const char * backend_name = "unknown";
+    switch(ev_backend(ev_loop)) {
+    case EVBACKEND_SELECT:
+        backend_name = "select";
+        break;
+    case EVBACKEND_POLL:
+        backend_name = "poll";
+        break;
+    case EVBACKEND_EPOLL:
+        backend_name = "epoll";
+        break;
+    case EVBACKEND_KQUEUE:
+        backend_name = "kqueue";
+        break;
+    default:
+        break;
+    }
+
+    CPE_INFO(net_schedule_em(schedule), "ev: driver create, backend=%s", backend_name);
+    
     return driver;
 }
 
@@ -46,6 +67,8 @@ static int net_android_driver_init(net_sock_driver_t sock_driver) {
 
     driver->m_alloc = net_schedule_allocrator(schedule);
     driver->m_em = net_schedule_em(schedule);
+    driver->m_ev_loop = NULL;
+
     driver->m_looper = ALooper_forThread();
     if (driver->m_looper == NULL) {
         CPE_ERROR(net_schedule_em(schedule), "android: driver create, no loop for current thread");
@@ -56,6 +79,9 @@ static int net_android_driver_init(net_sock_driver_t sock_driver) {
 }
 
 static void net_android_driver_fini(net_sock_driver_t sock_driver) {
+    net_android_driver_t driver = net_sock_driver_data(sock_driver);
+    driver->m_ev_loop = NULL;
+    driver->m_looper = NULL;
 }
 
 void net_android_driver_free(net_android_driver_t driver) {

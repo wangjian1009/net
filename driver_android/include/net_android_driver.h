@@ -5,7 +5,8 @@
 
 NET_BEGIN_DECL
 
-net_android_driver_t net_android_driver_create(net_schedule_t schedule);
+struct ev_loop;
+net_android_driver_t net_android_driver_create(net_schedule_t schedule, struct ev_loop * ev_loop);
 
 void net_android_driver_free(net_android_driver_t driver);
 
