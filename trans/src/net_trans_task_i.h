@@ -20,6 +20,7 @@ struct net_trans_task {
     net_trans_task_state_t m_state;
     net_trans_task_result_t m_result;
     net_trans_task_error_t m_error;
+    char * m_error_addition;
     struct curl_slist * m_header;
     struct curl_slist * m_connect_to;
     struct mem_buffer m_buffer;
@@ -45,7 +46,7 @@ int net_trans_sock_cb(CURL *e, curl_socket_t s, int what, void *cbp, void *sockp
 int net_trans_timer_cb(CURLM *multi, long timeout_ms, net_trans_manage_t mgr);
 
 /*task ops*/
-int net_trans_task_set_done(net_trans_task_t task, net_trans_task_result_t result, int err);
+int net_trans_task_set_done(net_trans_task_t task, net_trans_task_result_t result, int err, const char * err_addition);
 
 void net_trans_task_free_all(net_trans_manage_t mgr);
 void net_trans_task_real_free(net_trans_task_t task);

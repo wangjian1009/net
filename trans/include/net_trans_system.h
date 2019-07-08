@@ -21,6 +21,10 @@ typedef enum net_trans_task_error {
     net_trans_task_error_none
     , net_trans_task_error_timeout
     , net_trans_task_error_dns_resolve_fail
+    , net_trans_task_error_remote_reset
+    , net_trans_task_error_net_unreachable
+    , net_trans_task_error_net_down
+    , net_trans_task_error_host_unreachable
     , net_trans_task_error_connect
     , net_trans_task_error_internal = -1
 } net_trans_task_error_t;

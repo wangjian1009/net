@@ -87,6 +87,7 @@ net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const c
     task->m_state = net_trans_task_init;
     task->m_result = net_trans_result_unknown;
     task->m_error = net_trans_task_error_none;
+    task->m_error_addition = NULL;
 
     task->m_header = NULL;
     task->m_connect_to = NULL;
@@ -220,7 +221,7 @@ void net_trans_task_free(net_trans_task_t task) {
     }
 
     if (task->m_state == net_trans_task_working) {
-        net_trans_task_set_done(task, net_trans_result_cancel, net_trans_task_error_internal);
+        net_trans_task_set_done(task, net_trans_result_cancel, net_trans_task_error_internal, "cancel-in-working");
         return;
     }
 
@@ -258,7 +259,12 @@ void net_trans_task_free(net_trans_task_t task) {
         curl_slist_free_all(task->m_connect_to);
         task->m_connect_to = NULL;
     }
-    
+
+    if (task->m_error_addition) {
+        mem_free(mgr->m_alloc,  task->m_error_addition);
+        task->m_error_addition = NULL;
+    }
+
     cpe_hash_table_remove_by_ins(&mgr->m_tasks, task);
 
     TAILQ_INSERT_TAIL(&mgr->m_free_tasks, task, m_next_for_mgr);
@@ -785,6 +791,14 @@ const char * net_trans_task_error_str(net_trans_task_error_t err) {
         return "dns-resolve-fail";
     case net_trans_task_error_timeout:
         return "timeout";
+    case net_trans_task_error_remote_reset:
+        return "remote-reset";
+    case net_trans_task_error_net_unreachable:
+        return "net-unreachable";
+    case net_trans_task_error_net_down:
+        return "net-down";
+    case net_trans_task_error_host_unreachable:
+        return "host-unreachable";
     case net_trans_task_error_connect:
         return "connect";
     case net_trans_task_error_internal:
@@ -911,7 +925,7 @@ static int net_trans_task_prog_cb(void *p, double dltotal, double dlnow, double 
     return 0;
 }
 
-int net_trans_task_set_done(net_trans_task_t task, net_trans_task_result_t result, net_trans_task_error_t err) {
+int net_trans_task_set_done(net_trans_task_t task, net_trans_task_result_t result, net_trans_task_error_t err, const char * err_addition) {
     net_trans_manage_t mgr = task->m_mgr;
 
     if (task->m_state != net_trans_task_working) {
@@ -929,6 +943,14 @@ int net_trans_task_set_done(net_trans_task_t task, net_trans_task_result_t resul
     task->m_error = err;
     task->m_state = net_trans_task_done;
 
+    if (task->m_error_addition) {
+        mem_free(mgr->m_alloc, task->m_error_addition);
+        task->m_error_addition = NULL;
+    }
+    if (err_addition) {
+        task->m_error_addition = cpe_str_mem_dup(mgr->m_alloc, err_addition);
+    }
+
     if (mgr->m_debug) {
         struct net_trans_task_cost_info cost_info;
         bzero(&cost_info, sizeof(cost_info));
@@ -936,10 +958,11 @@ int net_trans_task_set_done(net_trans_task_t task, net_trans_task_result_t resul
 
         if (result == net_trans_result_error) {
             CPE_INFO(
-                mgr->m_em, "trans: %s-%d: done, result is %s, error=%s"
+                mgr->m_em, "trans: %s-%d: done, result is %s, error=%s(%s)"
                 " | cost: dns %.2f --> connect %.2f --> app-connect %.2f --> pre-transfer %.2f"
                 " --> start-transfer %.2f --> total %.2f --> redirect %.2f",
-                mgr->m_name, task->m_id, net_trans_task_result_str(task->m_result), net_trans_task_error_str(err),
+                mgr->m_name, task->m_id, net_trans_task_result_str(task->m_result),
+                net_trans_task_error_str(err), err_addition ? err_addition : "",
                 (float)cost_info.dns_ms / 1000.0f,
                 (float)cost_info.connect_ms / 1000.0f,
                 (float)cost_info.app_connect_ms / 1000.0f,

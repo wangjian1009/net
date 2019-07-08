@@ -1,5 +1,6 @@
 #include <assert.h>
 #include "cpe/pal/pal_socket.h"
+#include "cpe/pal/pal_string.h"
 #include "net_timer.h"
 #include "net_watcher.h"
 #include "net_trans_manage_i.h"
@@ -58,7 +59,7 @@ void net_watcher_event_cb(void * ctx, int fd, uint8_t do_read, uint8_t do_write)
     rc = curl_multi_socket_action(mgr->m_multi_handle, fd, action, &mgr->m_still_running);
     if (rc != CURLM_OK) {
         CPE_ERROR(mgr->m_em, "trans: event_cb: curl_multi_socket_action return error %d!", rc);
-        net_trans_task_set_done(task, net_trans_result_cancel, -1);
+        net_trans_task_set_done(task, net_trans_result_cancel, -1, "curl_multi_socket_action");
         return;
     }
 
@@ -71,21 +72,6 @@ void net_watcher_event_cb(void * ctx, int fd, uint8_t do_read, uint8_t do_write)
         if (task->m_watcher) {
             net_watcher_update(task->m_watcher, 0, 0);
         }
-    }
-}
-
-static net_trans_task_error_t net_trans_task_cvt_error(CURLcode code) {
-    switch(code) {
-    case CURLE_OK:
-        return net_trans_task_error_none;
-    case CURLE_OPERATION_TIMEDOUT:
-        return net_trans_task_error_timeout;
-    case CURLE_COULDNT_RESOLVE_HOST:
-        return net_trans_task_error_dns_resolve_fail;
-    case CURLE_COULDNT_CONNECT:
-        return net_trans_task_error_connect;
-    default:
-        return net_trans_task_error_internal;
     }
 }
 
@@ -108,16 +94,59 @@ void net_trans_check_multi_info(net_trans_manage_t mgr) {
         switch(msg->msg) {
         case CURLMSG_DONE: {
             if (rc == CURLE_OK) {
-                net_trans_task_set_done(task, net_trans_result_complete, net_trans_task_error_none);
+                net_trans_task_set_done(task, net_trans_result_complete, net_trans_task_error_none, NULL);
             }
             else {
-                net_trans_task_error_t err = net_trans_task_cvt_error(rc);
-                if (err == net_trans_task_error_internal) {
+                net_trans_task_error_t err = net_trans_task_error_internal;
+                const char * addition_msg = NULL;
+                switch (rc) {
+                case CURLE_OPERATION_TIMEDOUT:
+                    err = net_trans_task_error_timeout;
+                    break;
+                case CURLE_COULDNT_RESOLVE_HOST:
+                    err = net_trans_task_error_dns_resolve_fail;
+                    break;
+                case CURLE_COULDNT_CONNECT: {
+                    long os_error = 0;
+                    if (curl_easy_getinfo(handler, CURLINFO_OS_ERRNO, &os_error) == CURLE_OK
+                        && os_error != 0)
+                    {
+                        addition_msg = strerror(os_error);
+                        switch(os_error) {
+                        case ECONNRESET:
+                            err = net_trans_task_error_remote_reset;
+                            break;
+                        case ETIMEDOUT:
+                            err = net_trans_task_error_timeout;
+                            break;
+                        case ENETUNREACH:
+                            err = net_trans_task_error_net_unreachable;
+                            break;
+                        case EHOSTUNREACH:
+                            err = net_trans_task_error_host_unreachable;
+                            break;
+                        case ENETDOWN:
+                            err = net_trans_task_error_net_down;
+                            break;
+                        default:
+                            err = net_trans_task_error_connect;
+                            break;
+                        }
+                    }
+                    else {
+                        err = net_trans_task_error_connect;
+                    }
+                    break;
+                }
+                default:
+                    addition_msg = curl_easy_strerror(rc);
                     CPE_INFO(
                         mgr->m_em, "trans: %s-%d: check_multi_info: not processed CURLcode %d (%s)!",
                         mgr->m_name, task->m_id, rc, curl_easy_strerror(rc));
+                    break;
                 }
-                net_trans_task_set_done(task, net_trans_result_error, err);
+
+                net_trans_task_set_done(task, net_trans_result_error, err, addition_msg);
             }
             break;
         }
