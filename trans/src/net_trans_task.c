@@ -322,6 +322,10 @@ net_trans_task_error_t net_trans_task_error(net_trans_task_t task) {
     return task->m_error;
 }
 
+const char * net_trans_task_error_addition(net_trans_task_t task) {
+    return task->m_error_addition;
+}
+
 int16_t net_trans_task_res_code(net_trans_task_t task) {
     long http_code = 0;
     CURLcode rc = curl_easy_getinfo(task->m_handler, CURLINFO_RESPONSE_CODE, &http_code);
