@@ -111,7 +111,7 @@ void net_trans_check_multi_info(net_trans_manage_t mgr) {
                     if (curl_easy_getinfo(handler, CURLINFO_OS_ERRNO, &os_error) == CURLE_OK
                         && os_error != 0)
                     {
-                        addition_msg = strerror(os_error);
+                        addition_msg = strerror((int)os_error);
                         switch(os_error) {
                         case ECONNRESET:
                             err = net_trans_task_error_remote_reset;
