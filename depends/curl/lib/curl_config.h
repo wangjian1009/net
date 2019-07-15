@@ -1,3 +1,6 @@
+#if _MSC_VER
+#include "config-win32.h"
+#else
 /* lib/curl_config.h.  Generated from curl_config.h.in by configure.  */
 /* lib/curl_config.h.in.  Generated from configure.ac by autoheader.  */
 
@@ -1067,3 +1070,4 @@
 
 /* the signed version of size_t */
 /* #undef ssize_t */
+#endif
