@@ -725,8 +725,16 @@ static int net_sock_endpoint_start_connect(
         protocol = IPPROTO_TCP;
         break;
     case net_address_local:
+#if _MSC_VER
+        CPE_ERROR(
+            driver->m_em, "sock: %s: fd=%d: connect win32 not support AF_LOCAL",
+            net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint),
+            endpoint->m_fd);
+        return -1;
+#else        
         domain = AF_LOCAL;
         protocol = 0;
+#endif        
         break;
     case net_address_domain:
         CPE_ERROR(

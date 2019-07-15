@@ -26,10 +26,18 @@ int net_sock_acceptor_init(net_acceptor_t base_acceptor) {
         return -1;
     }
 
-    acceptor->m_fd =
-        net_address_type(address) == net_address_local
-        ? cpe_sock_open(AF_LOCAL, SOCK_STREAM, 0)
-        : cpe_sock_open(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (net_address_type(address) == net_address_local) {
+#if _MSC_VER
+        CPE_ERROR(em, "sock: acceptor: win32 not support AF_LOCAL!");
+        return -1;
+#else
+        acceptor->m_fd = cpe_sock_open(AF_LOCAL, SOCK_STREAM, 0);
+#endif
+    }
+    else {
+        acceptor->m_fd = cpe_sock_open(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    }
+
     if (acceptor->m_fd == -1) {
         CPE_ERROR(
             em, "sock: acceptor: socket call fail, errno=%d (%s)!",

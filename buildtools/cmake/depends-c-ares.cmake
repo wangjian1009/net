@@ -12,8 +12,9 @@ set(c_ares_source
     )
 
 set(c_ares_compile_definitions
-  ${c_ares_compile_definitions}
-  HAVE_CONFIG_H
+    ${c_ares_compile_definitions}
+    CARES_STATICLIB
+    HAVE_CONFIG_H
   )
 
 if (MSVC)
@@ -30,5 +31,6 @@ set_property(TARGET c-ares PROPERTY COMPILE_DEFINITIONS ${c_ares_compile_definit
 set_property(TARGET c-ares PROPERTY INCLUDE_DIRECTORIES
   ${c_ares_base}/include
   ${c_ares_base}/include/${OS_NAME}
+  ${c_ares_base}/src
   ${c_ares_base}/src/${OS_NAME}
   )
