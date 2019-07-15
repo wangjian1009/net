@@ -7,7 +7,10 @@ NET_BEGIN_DECL
 struct net_log_pipe {
     net_log_schedule_t m_schedule;
     const char * m_name;
+
+#if NET_LOG_MULTI_THREAD
     pthread_mutex_t m_mutex;
+#endif
     int m_pipe_fd[2];
     char m_pipe_r_buf[64];
     uint16_t m_pipe_r_size;

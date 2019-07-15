@@ -12,9 +12,11 @@ struct net_log_flusher {
     char m_name[64];
     uint8_t m_is_runing;
     net_log_queue_t m_queue;
+#if NET_LOG_MULTI_THREAD
     pthread_t * m_thread;
     pthread_mutex_t m_mutex;
     pthread_cond_t m_cond;
+#endif
 };
 
 int net_log_flusher_queue(net_log_flusher_t flusher, net_log_builder_t builder);

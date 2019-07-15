@@ -1,6 +1,8 @@
 #include <assert.h>
+#include "cpe/pal/pal_socket.h"
 #include "cpe/pal/pal_string.h"
 #include "cpe/pal/pal_stdlib.h"
+#include "cpe/pal/pal_stdio.h"
 #include "cpe/utils/md5.h"
 #include "cpe/utils/string_utils.h"
 #include "cpe/utils/stream_buffer.h"

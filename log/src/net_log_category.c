@@ -88,7 +88,9 @@ net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, 
     category->m_statistics_package_count = 0;
     cpe_traffic_bps_init(&category->m_statistics_input_bps);
 
+#if NET_LOG_MULTI_THREAD
     pthread_mutex_init(&category->m_statistics_mutex, NULL);
+#endif
     category->m_statistics_fail_log_count = 0;
     category->m_statistics_fail_package_count = 0;
 
@@ -120,8 +122,10 @@ void net_log_category_free(net_log_category_t category) {
     assert(net_log_schedule_state(schedule) == net_log_schedule_state_init);
     assert(schedule->m_categories[category->m_id] == category);
 
+#if NET_LOG_MULTI_THREAD
     pthread_mutex_destroy(&category->m_statistics_mutex);
-    
+#endif
+
     if (schedule->m_current_category == category) {
         schedule->m_current_category = NULL;
     }
@@ -451,10 +455,14 @@ static void net_log_category_commit_timer(net_timer_t timer, void * ctx) {
 }
 
 void net_log_category_add_fail_statistics(net_log_category_t category, uint32_t log_count) {
+#if NET_LOG_MULTI_THREAD
     pthread_mutex_lock(&category->m_statistics_mutex);
+#endif
 
     category->m_statistics_fail_log_count += log_count;
     category->m_statistics_fail_package_count++;
 
+#if NET_LOG_MULTI_THREAD
     pthread_mutex_unlock(&category->m_statistics_mutex);
+#endif
 }

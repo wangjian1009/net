@@ -13,6 +13,8 @@
 #include "net_log_pipe.h"
 #include "net_log_pipe_cmd.h"
 
+#if NET_LOG_MULTI_THREAD
+
 static void * net_log_flusher_thread(void * param);
 
 net_log_flusher_t
@@ -217,3 +219,16 @@ void net_log_flusher_wait_stop(net_log_flusher_t flusher) {
     net_log_schedule_check_stop_complete(schedule);
 }
 
+#else
+
+net_log_flusher_t
+net_log_flusher_create(net_log_schedule_t schedule, const char * name) {
+    CPE_ERROR(schedule->m_em, "log: flusher %s: not support multi thread, can`t create flusher!", name);
+    return NULL;
+}
+
+void net_log_flusher_free(net_log_flusher_t flusher) {
+    assert(0);
+}
+
+#endif

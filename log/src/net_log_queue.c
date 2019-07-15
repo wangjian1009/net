@@ -14,7 +14,7 @@ net_log_queue_t net_log_queue_create(int32_t size) {
     void * buffer = malloc(sizeof(void *) * size + sizeof(struct net_log_queue));
     memset(buffer, 0, sizeof(void *) * size + sizeof(struct net_log_queue));
     net_log_queue_t queue = (net_log_queue_t)buffer;
-    queue->data = (void **)(buffer + sizeof(struct net_log_queue));
+    queue->data = (void **)(((char *)buffer) + sizeof(struct net_log_queue));
     queue->size = size;
     return queue;
 }

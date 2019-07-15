@@ -1,6 +1,8 @@
 #ifndef NET_LOG_SCHEDULE_I_H_INCLEDED
 #define NET_LOG_SCHEDULE_I_H_INCLEDED
+#if NET_LOG_MULTI_THREAD
 #include "pthread.h"
+#endif
 #include "cpe/pal/pal_queue.h"
 #include "cpe/utils/hash.h"
 #include "cpe/utils/memory.h"

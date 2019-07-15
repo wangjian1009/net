@@ -12,7 +12,9 @@ struct net_log_sender {
     char m_name[64];
     uint16_t m_cfg_active_request_count;
     net_log_pipe_t m_pipe;
+#if NET_LOG_MULTI_THREAD
     pthread_t * m_thread;
+#endif
 };
 
 int net_log_sender_start(net_log_sender_t sender);

@@ -88,6 +88,7 @@ int net_log_schedule_start_threads(net_log_schedule_t schedule) {
 }
 
 uint8_t net_log_schedule_notify_stop_threads(net_log_schedule_t schedule) {
+#if NET_LOG_MULTI_THREAD
     net_log_flusher_t flusher;
     net_log_sender_t sender;
 
@@ -109,9 +110,13 @@ uint8_t net_log_schedule_notify_stop_threads(net_log_schedule_t schedule) {
     }
 
     return have_runing_thread;
+#else
+    return 0;
+#endif
 }
 
 void net_log_schedule_wait_stop_threads(net_log_schedule_t schedule) {
+#if NET_LOG_MULTI_THREAD
     net_log_flusher_t flusher;
     net_log_sender_t sender;
 
@@ -122,6 +127,7 @@ void net_log_schedule_wait_stop_threads(net_log_schedule_t schedule) {
     TAILQ_FOREACH(sender, &schedule->m_senders, m_next) {
         if (sender->m_thread) net_log_sender_wait_stop(sender);
     }
+#endif
 }
 
 void net_log_schedule_pause_senders(net_log_schedule_t schedule) {

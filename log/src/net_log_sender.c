@@ -14,6 +14,8 @@
 #include "net_log_queue.h"
 #include "net_log_state_i.h"
 
+#if NET_LOG_MULTI_THREAD
+
 static void * net_log_sender_thread(void * param);
 static void net_log_send_stop(void* ctx);
 
@@ -264,3 +266,17 @@ static void net_log_send_stop(void* ctx) {
     struct ev_loop * ev_loop = ctx;
     ev_break(ev_loop, EVBREAK_ALL);
 }
+
+#else
+
+net_log_sender_t
+net_log_sender_create(net_log_schedule_t schedule, const char * name, uint16_t active_request_count) {
+    CPE_ERROR(schedule->m_em, "log: %s: sender: not support multi thread, can`t create sender", name);
+    return NULL;
+}
+
+void net_log_sender_free(net_log_sender_t sender) {
+    assert(0);
+}
+
+#endif

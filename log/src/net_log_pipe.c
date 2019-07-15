@@ -11,6 +11,8 @@
 #include "net_log_category_i.h"
 #include "net_log_request.h"
 
+#if NET_LOG_MULTI_THREAD
+
 static void net_log_pipe_action(void * ctx, int fd, uint8_t do_read, uint8_t do_write);
 
 net_log_pipe_t net_log_pipe_create(net_log_schedule_t schedule, const char * name) {
@@ -255,3 +257,7 @@ static void net_log_pipe_action(void * ctx, int fd, uint8_t do_read, uint8_t do_
         }
     }
 }
+
+#else
+
+#endif

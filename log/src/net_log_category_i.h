@@ -40,7 +40,9 @@ struct net_log_category {
     uint32_t m_statistics_package_count;
     struct cpe_traffic_bps m_statistics_input_bps;
 
+#if NET_LOG_MULTI_THREAD
     pthread_mutex_t m_statistics_mutex;
+#endif    
     uint32_t m_statistics_fail_log_count;    
     uint32_t m_statistics_fail_package_count;    
 };
