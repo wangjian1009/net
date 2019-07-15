@@ -1,4 +1,5 @@
 #include "assert.h"
+#include "cpe/pal/pal_limits.h"
 #include "cpe/pal/pal_platform.h"
 #include "cpe/pal/pal_errno.h"
 #include "cpe/pal/pal_string.h"
