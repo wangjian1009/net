@@ -842,9 +842,9 @@ static int net_sock_endpoint_start_connect(
     return cpe_connect(endpoint->m_fd, (struct sockaddr *)&remote_addr_sock, remote_addr_sock_len);
 }
 
-#if WIN32
-extern void sock_changes_remove(EV_P_ int fd);
-#endif
+//#if WIN32
+//extern void sock_changes_remove(EV_P_ int fd);
+//#endif
 
 static void net_sock_endpoint_close_sock(net_sock_driver_t driver, net_sock_endpoint_t endpoint) {
     if (endpoint->m_watcher) {
@@ -854,7 +854,7 @@ static void net_sock_endpoint_close_sock(net_sock_driver_t driver, net_sock_endp
 
     if (endpoint->m_fd != -1) {
 #if WIN32
-        sock_changes_remove(driver->m_sock_loop, endpoint->m_fd);
+        //sock_changes_remove(driver->m_sock_loop, endpoint->m_fd);
 #endif
 
         cpe_sock_close(endpoint->m_fd);

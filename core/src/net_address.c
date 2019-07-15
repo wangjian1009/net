@@ -1,7 +1,10 @@
 #ifdef __APPLE__
 #include <netdb.h>
 #endif
+#if _MSC_VER
+#else
 #include "sys/un.h"
+#endif
 #include "assert.h"
 #include "cpe/pal/pal_socket.h"
 #include "cpe/pal/pal_string.h"
@@ -313,6 +316,7 @@ net_address_create_from_sockaddr(net_schedule_t schedule, struct sockaddr * addr
         memcpy(&addr_ipv4v6->m_ipv6, &s->sin6_addr, sizeof(addr_ipv4v6->m_ipv6));
         return (net_address_t)addr_ipv4v6;
     }
+# if defined AF_LOCAL
     else if (addr->sa_family == AF_LOCAL) {
         if (addr_len < sizeof(uint16_t)) {
             CPE_ERROR(
@@ -324,6 +328,7 @@ net_address_create_from_sockaddr(net_schedule_t schedule, struct sockaddr * addr
         struct sockaddr_un *s = (struct sockaddr_un *)addr;
         return net_address_create_local(schedule, s->sun_path);
     }
+#endif
     else { 
         CPE_ERROR(schedule->m_em, "net_address_from_sockaddr: not support family %d!", addr->sa_family);
         return NULL;
@@ -384,6 +389,10 @@ TO_SOCKADDR_TRY_AGAIN:
         return 0;
     }
     case net_address_local: {
+# if ! defined AF_LOCAL
+        CPE_ERROR(address->m_schedule->m_em, "net_address_to_sockaddr: not support local");
+        return -1;
+#else
         if (*addr_len < sizeof(struct sockaddr_un)) {
             CPE_ERROR(
                 address->m_schedule->m_em, "net_address_to_sockaddr: add len too small, expect %d, but %d!",
@@ -406,6 +415,7 @@ TO_SOCKADDR_TRY_AGAIN:
 
         *addr_len = (socklen_t)(strlen(s->sun_path) + 1 + sizeof(uint16_t));
         return 0;
+#endif
     }
     }
 }
