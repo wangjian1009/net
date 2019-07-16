@@ -260,4 +260,37 @@ static void net_log_pipe_action(void * ctx, int fd, uint8_t do_read, uint8_t do_
 
 #else
 
+net_log_pipe_t net_log_pipe_create(net_log_schedule_t schedule, const char * name) {
+    CPE_ERROR(schedule->m_em, "log: pipe %s: not support multi thread, can`t create pipe!");
+    return NULL;
+}
+
+void net_log_pipe_free(net_log_pipe_t pipe) {
+    assert(0);
+}
+
+void net_log_pipe_stop_process(net_log_pipe_t pipe) {
+    assert(0);
+}
+
+uint8_t net_log_pipe_is_processing(net_log_pipe_t pipe) {
+    assert(0);
+    return 0;
+}
+
+int net_log_pipe_begin_process(net_log_pipe_t pipe, net_driver_t net_driver) {
+    assert(0);
+    return -1;
+}
+
+int net_log_pipe_queue(net_log_pipe_t pipe, net_log_request_param_t send_param) {
+    assert(0);
+    return -1;
+}
+
+int net_log_pipe_send_cmd(net_log_pipe_t pipe, net_log_pipe_cmd_t cmd) {
+    assert(0);
+    return -1;
+}
+
 #endif

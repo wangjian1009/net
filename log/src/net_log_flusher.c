@@ -231,4 +231,18 @@ void net_log_flusher_free(net_log_flusher_t flusher) {
     assert(0);
 }
 
+int net_log_flusher_start(net_log_flusher_t flusher) {
+    assert(0);
+    return -1;
+}
+
+void net_log_flusher_wait_stop(net_log_flusher_t flusher) {
+    assert(0);
+}
+
+int net_log_flusher_queue(net_log_flusher_t flusher, net_log_builder_t builder) {
+    assert(0);
+    return -1;
+}
+
 #endif
