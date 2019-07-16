@@ -261,7 +261,7 @@ static void net_log_pipe_action(void * ctx, int fd, uint8_t do_read, uint8_t do_
 #else
 
 net_log_pipe_t net_log_pipe_create(net_log_schedule_t schedule, const char * name) {
-    CPE_ERROR(schedule->m_em, "log: pipe %s: not support multi thread, can`t create pipe!");
+    CPE_ERROR(schedule->m_em, "log: pipe not support multi thread, can`t create pipe!");
     return NULL;
 }
 
