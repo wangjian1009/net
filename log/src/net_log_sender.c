@@ -279,7 +279,7 @@ void net_log_sender_free(net_log_sender_t sender) {
     assert(0);
 }
 
-int net_log_sender_start(net_log_flusher_t flusher) {
+int net_log_sender_start(net_log_sender_t sender) {
     assert(0);
     return -1;
 }
