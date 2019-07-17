@@ -6,7 +6,7 @@
 NET_BEGIN_DECL
 
 struct sockaddr;
-#if defined CPE_OS_MAC
+#if defined CPE_OS_MAC || defined CPE_OS_IOS
 typedef __darwin_socklen_t socklen_t;
 #else
 #if defined CPE_OS_LINUX || defined CPE_OS_CYGWIN
