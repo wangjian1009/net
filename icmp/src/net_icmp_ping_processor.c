@@ -31,29 +31,11 @@ net_icmp_ping_processor_create(net_icmp_ping_task_t task, net_address_t target, 
     processor->m_ping_index = 0;
     processor->m_ping_count = ping_count;
     processor->m_fd = -1;
-
+    processor->m_watcher = NULL;
+    
     processor->m_target = net_address_copy(mgr->m_schedule, target);
     if (processor->m_target == NULL) {
         CPE_ERROR(mgr->m_em, "icmp: ping: processor: dup target address fail!");
-        processor->m_task = (net_icmp_ping_task_t)mgr;
-        TAILQ_INSERT_TAIL(&mgr->m_free_ping_processors, processor, m_next);
-        return NULL;
-    }
-
-    processor->m_fd = socket(PF_INET, SOCK_RAW, IPPROTO_ICMP);
-    if (processor->m_fd < 0) {
-        CPE_ERROR(mgr->m_em, "icmp: ping: processor: create raw sock fail, error=%d (%s)!", errno, strerror(errno));
-        net_address_free(processor->m_target);
-        processor->m_task = (net_icmp_ping_task_t)mgr;
-        TAILQ_INSERT_TAIL(&mgr->m_free_ping_processors, processor, m_next);
-        return NULL;
-    }
-
-    processor->m_watcher = net_watcher_create(mgr->m_driver, processor->m_fd, processor, net_icmp_ping_processor_rw_cb);
-    if (processor->m_watcher == NULL) {
-        CPE_ERROR(mgr->m_em, "icmp: ping: processor: create watcher fail!");
-        cpe_sock_close(processor->m_fd);
-        net_address_free(processor->m_target);
         processor->m_task = (net_icmp_ping_task_t)mgr;
         TAILQ_INSERT_TAIL(&mgr->m_free_ping_processors, processor, m_next);
         return NULL;
@@ -92,6 +74,57 @@ void net_icmp_ping_processor_real_free(net_icmp_ping_processor_t processor) {
     mem_free(mgr->m_alloc, processor);
 }
 
+int net_icmp_ping_processor_start(net_icmp_ping_processor_t processor) {
+    net_icmp_mgr_t mgr = processor->m_task->m_mgr;
+
+    int af = 0;
+
+    switch(net_address_type(processor->m_target)) {
+    case net_address_ipv4:
+        af = PF_INET;
+        break;
+    case net_address_ipv6:
+    case net_address_domain:
+    case net_address_local:
+        CPE_ERROR(
+            mgr->m_em, "icmp: ping: %s: start: not support address type %s!", 
+            net_address_dump(net_icmp_mgr_tmp_buffer(mgr), processor->m_target),
+            net_address_type_str(net_address_type(processor->m_target)));
+        return -1;
+    }
+    
+    processor->m_fd = socket(af, SOCK_RAW, IPPROTO_ICMP);
+    if (processor->m_fd < 0) {
+        CPE_ERROR(
+            mgr->m_em, "icmp: ping: %s: start: create raw sock fail, error=%d (%s)!", 
+            net_address_dump(net_icmp_mgr_tmp_buffer(mgr), processor->m_target),
+            errno, strerror(errno));
+        return -1;
+    }
+
+    processor->m_watcher = net_watcher_create(mgr->m_driver, processor->m_fd, processor, net_icmp_ping_processor_rw_cb);
+    if (processor->m_watcher == NULL) {
+        CPE_ERROR(
+            mgr->m_em, "icmp: ping: %s: start: create watcher fail!",
+            net_address_dump(net_icmp_mgr_tmp_buffer(mgr), processor->m_target));
+        cpe_sock_close(processor->m_fd);
+        processor->m_fd = -1;
+        return -1;
+    }
+    
+    if (net_icmp_ping_processor_send(processor, "hello") != 0) {
+        net_watcher_free(processor->m_watcher);
+        processor->m_watcher = NULL;
+        cpe_sock_close(processor->m_fd);
+        processor->m_fd = -1;
+        return -1;
+    }
+
+    net_watcher_update_read(processor->m_watcher, 1);
+
+    return 0;
+}
+
 static int net_icmp_ping_processor_send(net_icmp_ping_processor_t processor, const char * msg) {
     net_icmp_mgr_t mgr = processor->m_task->m_mgr;
     
@@ -122,24 +155,25 @@ static int net_icmp_ping_processor_send(net_icmp_ping_processor_t processor, con
 
     if (net_address_to_sockaddr(processor->m_target, (struct sockaddr *)&addr, &addr_len) != 0) {
         CPE_ERROR(
-            mgr->m_em, "icmp: %d.%d: ==> %s: to socket addr fail",
-            processor->m_ping_id, processor->m_ping_index,
-            net_address_dump(net_icmp_mgr_tmp_buffer(mgr), processor->m_target));
+            mgr->m_em, "icmp: ping: %s: %d.%d: ==> to socket addr fail",
+            net_address_dump(net_icmp_mgr_tmp_buffer(mgr), processor->m_target),
+            processor->m_ping_id, processor->m_ping_index);
         return -1;
     }
 
     if (sendto(processor->m_fd, sendbuf, len, 0, (struct sockaddr *)&addr, addr_len) != 0) {
         CPE_ERROR(
-            mgr->m_em, "icmp: %d.%d: ==> %s: socket send fail, error=%d (%s)",
+            mgr->m_em, "icmp: ping: %s: %d.%d: ==> socket send fail, error=%d (%s)",
+            net_address_dump(net_icmp_mgr_tmp_buffer(mgr), processor->m_target),
             processor->m_ping_id, processor->m_ping_index,
-            net_address_dump(net_icmp_mgr_tmp_buffer(mgr), processor->m_target), errno, strerror(errno));
+            errno, strerror(errno));
         return -1;
     }
     
     CPE_INFO(
-        mgr->m_em, "icmp: %d.%d: ==> %s: msg=%s, len=%d, checksum=:0x%x", 
-        processor->m_ping_id, processor->m_ping_index,
+        mgr->m_em, "icmp: ping: %s: %d.%d: ==> msg=%s, len=%d, checksum=:0x%x", 
         net_address_dump(net_icmp_mgr_tmp_buffer(mgr), processor->m_target),
+        processor->m_ping_id, processor->m_ping_index,
         msg, (int)len, icmp_hdr->checksum);
 
     return 0;

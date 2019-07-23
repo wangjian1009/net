@@ -18,5 +18,7 @@ net_icmp_ping_processor_create(net_icmp_ping_task_t task, net_address_t target, 
 void net_icmp_ping_processor_free(net_icmp_ping_processor_t processor);
 void net_icmp_ping_processor_real_free(net_icmp_ping_processor_t processor);
 
+int net_icmp_ping_processor_start(net_icmp_ping_processor_t processor);
+
 #endif
 
