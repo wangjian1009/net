@@ -18,7 +18,7 @@ net_ping_mgr_t net_ping_mgr_create(
     mgr->m_schedule = schedule;
     mgr->m_driver = driver;
 
-    mgr->m_ping_id_max = 0;
+    mgr->m_icmp_ping_id_max = 0;
     TAILQ_INIT(&mgr->m_tasks);
 
     TAILQ_INIT(&mgr->m_free_tasks);

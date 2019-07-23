@@ -18,7 +18,7 @@ struct net_ping_mgr {
     net_driver_t m_driver;
 
     /*runtime*/
-    uint16_t m_ping_id_max;
+    uint16_t m_icmp_ping_id_max;
     net_ping_task_list_t m_tasks;
     
     /*free */

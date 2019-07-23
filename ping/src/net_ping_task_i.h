@@ -6,6 +6,12 @@
 struct net_ping_task {
     net_ping_mgr_t m_mgr;
     TAILQ_ENTRY(net_ping_task) m_next;
+    net_ping_type_t m_type;
+    union {
+        struct {
+            char * m_path;
+        } m_http;
+    };
     net_ping_task_state_t m_state;
     net_address_t m_target;
     net_ping_record_list_t m_records;

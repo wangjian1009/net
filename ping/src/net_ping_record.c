@@ -13,7 +13,7 @@ net_ping_record_t net_ping_record_create(net_ping_task_t task) {
         if (record == NULL) {
             CPE_ERROR(
                 mgr->m_em, "ping: %s: record: alloc fail!", 
-                net_address_dump(net_ping_mgr_tmp_buffer(mgr), task->m_target));
+                net_ping_task_dump(net_ping_mgr_tmp_buffer(mgr), task));
             return NULL;
         }
     }

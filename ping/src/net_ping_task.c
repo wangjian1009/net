@@ -1,11 +1,13 @@
 #include <assert.h>
+#include "cpe/utils/stream_buffer.h"
+#include "cpe/utils/string_utils.h"
 #include "net_schedule.h"
 #include "net_address.h"
 #include "net_ping_task_i.h"
 #include "net_ping_record_i.h"
 #include "net_ping_processor_i.h"
 
-net_ping_task_t net_ping_task_create(net_ping_mgr_t mgr, net_address_t target) {
+static net_ping_task_t net_ping_task_create_i(net_ping_mgr_t mgr, net_address_t target) {
     net_ping_task_t task = TAILQ_FIRST(&mgr->m_free_tasks);
     if (task) {
         TAILQ_REMOVE(&mgr->m_free_tasks, task, m_next);
@@ -33,6 +35,29 @@ net_ping_task_t net_ping_task_create(net_ping_mgr_t mgr, net_address_t target) {
     return task;
 }
 
+net_ping_task_t net_ping_task_create_icmp(net_ping_mgr_t mgr, net_address_t target) {
+    net_ping_task_t task = net_ping_task_create_i(mgr, target);
+    task->m_type = net_ping_type_icmp;
+    return task;
+}
+
+net_ping_task_t net_ping_task_create_tcp_connect(net_ping_mgr_t mgr, net_address_t target) {
+    net_ping_task_t task = net_ping_task_create_i(mgr, target);
+    task->m_type = net_ping_type_tcp_connect;
+    return task;
+}
+
+net_ping_task_t net_ping_task_create_http(net_ping_mgr_t mgr, net_address_t target, const char * path) {
+    net_ping_task_t task = net_ping_task_create_i(mgr, target);
+    task->m_type = net_ping_type_http;
+
+    task->m_http.m_path = cpe_str_mem_dup(mgr->m_alloc, path);
+    if (task->m_http.m_path == NULL) {
+    }
+    
+    return task;
+}
+
 void net_ping_task_free(net_ping_task_t task) {
     net_ping_mgr_t mgr = task->m_mgr;
 
@@ -45,6 +70,17 @@ void net_ping_task_free(net_ping_task_t task) {
         task->m_processor = NULL;
     }
 
+    switch(task->m_type) {
+    case net_ping_type_http:
+        if (task->m_http.m_path) {
+            mem_free(mgr->m_alloc, task->m_http.m_path);
+            task->m_http.m_path = NULL;
+        }
+        break;
+    default:
+        break;
+    }
+    
     TAILQ_INSERT_TAIL(&mgr->m_free_tasks, task, m_next);
 }
 
@@ -96,7 +132,19 @@ int net_ping_task_start(net_ping_task_t task, uint16_t ping_count) {
         return -1;
     }
 
-    if (net_ping_processor_start(task->m_processor)) {
+    int rv = 0;
+    
+    switch(task->m_type) {
+    case net_ping_type_icmp:
+        rv = net_ping_processor_start_icmp(task->m_processor);
+        break;
+    case net_ping_type_tcp_connect:
+        break;
+    case net_ping_type_http:
+        break;
+    }
+
+    if (rv != 0) {
         net_ping_processor_free(task->m_processor);
         task->m_processor = NULL;
         net_ping_task_set_state(task, net_ping_task_state_error);
@@ -143,6 +191,21 @@ uint32_t net_ping_task_ping_avg(net_ping_task_t task) {
     }
     
     return count > 0 ? (uint32_t)(total_ping / count) : 0;
+}
+
+
+void net_ping_task_print(write_stream_t ws, net_ping_task_t task) {
+    net_address_print(ws, task->m_target);
+}
+
+const char * net_ping_task_dump(mem_buffer_t buffer, net_ping_task_t task) {
+    struct write_stream_buffer stream = CPE_WRITE_STREAM_BUFFER_INITIALIZER(buffer);
+
+    mem_buffer_clear_data(buffer);
+    net_ping_task_print((write_stream_t)&stream, task);
+    stream_putc((write_stream_t)&stream, 0);
+
+    return mem_buffer_make_continuous(buffer, 0);
 }
 
 void net_ping_task_set_state(net_ping_task_t task, net_ping_task_state_t state) {
