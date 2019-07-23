@@ -6,7 +6,9 @@
 struct net_icmp_ping_record {
     net_icmp_ping_task_t m_task;
     TAILQ_ENTRY(net_icmp_ping_record) m_next;
+    uint32_t m_bytes;
     uint32_t m_value;
+    uint16_t m_ttl;
 };
 
 net_icmp_ping_record_t net_icmp_ping_record_create(net_icmp_ping_task_t task);

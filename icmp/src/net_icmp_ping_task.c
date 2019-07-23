@@ -1,7 +1,7 @@
-#include "net_address.h"
 #include "net_schedule.h"
 #include "net_icmp_ping_task_i.h"
 #include "net_icmp_ping_record_i.h"
+#include "net_icmp_ping_processor_i.h"
 
 net_icmp_ping_task_t net_icmp_ping_task_create(net_schedule_t schedule) {
     mem_allocrator_t alloc = net_schedule_allocrator(schedule);
@@ -17,8 +17,7 @@ net_icmp_ping_task_t net_icmp_ping_task_create(net_schedule_t schedule) {
     task->m_em = em;
     task->m_schedule = schedule;
     task->m_state = net_icmp_ping_task_state_init;
-    task->m_target = NULL;
-    task->m_ping_count = 0;
+    task->m_processor = NULL;
     TAILQ_INIT(&task->m_records);
     
     return task;
@@ -29,9 +28,9 @@ void net_icmp_ping_task_free(net_icmp_ping_task_t task) {
         net_icmp_ping_record_free(TAILQ_FIRST(&task->m_records));
     }
     
-    if (task->m_target) {
-        net_address_free(task->m_target);
-        task->m_target = NULL;
+    if (task->m_processor) {
+        net_icmp_ping_processor_free(task->m_processor);
+        task->m_processor = NULL;
     }
     
     mem_free(task->m_alloc, task);
@@ -46,10 +45,6 @@ void net_icmp_ping_task_records(net_icmp_ping_task_t task, net_icmp_ping_record_
 
 int net_icmp_ping_task_start(net_icmp_ping_task_t task, net_address_t target, uint16_t ping_count) {
     return 0;
-}
-
-net_address_t net_icmp_ping_task_target(net_icmp_ping_task_t task) {
-    return task->m_target;
 }
 
 uint32_t net_icmp_ping_task_ping_max(net_icmp_ping_task_t task) {

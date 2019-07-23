@@ -19,8 +19,6 @@ void net_icmp_ping_task_records(net_icmp_ping_task_t task, net_icmp_ping_record_
 
 int net_icmp_ping_task_start(net_icmp_ping_task_t task, net_address_t target, uint16_t ping_count);
 
-net_address_t net_icmp_ping_task_target(net_icmp_ping_task_t task);
-
 uint32_t net_icmp_ping_task_ping_max(net_icmp_ping_task_t task);
 uint32_t net_icmp_ping_task_ping_min(net_icmp_ping_task_t task);
 uint32_t net_icmp_ping_task_ping_avg(net_icmp_ping_task_t task);
