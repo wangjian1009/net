@@ -10,9 +10,9 @@ net_icmp_ping_task_t net_icmp_ping_task_create(net_icmp_mgr_t mgr) {
         TAILQ_REMOVE(&mgr->m_free_ping_tasks, task, m_next);
     }
     else {
-        mem_alloc(mgr->m_alloc, sizeof(struct net_icmp_ping_task));
+        task = mem_alloc(mgr->m_alloc, sizeof(struct net_icmp_ping_task));
         if (task == NULL) {
-            CPE_ERROR(mgr->m_em, "icmp: ping: allock fail!");
+            CPE_ERROR(mgr->m_em, "icmp: ping: task: alloc fail!");
             return NULL;
         }
     }
@@ -81,13 +81,11 @@ int net_icmp_ping_task_start(net_icmp_ping_task_t task, net_address_t target, ui
     
     task->m_processor = net_icmp_ping_processor_create(task, target, ping_count);
     if (task->m_processor == NULL) {
-        CPE_ERROR(mgr->m_em, "icmp: ping: create processor fail!");
         net_icmp_ping_task_set_state(task, net_icmp_ping_task_state_error);
         return -1;
     }
 
     if (net_icmp_ping_processor_start(task->m_processor)) {
-        CPE_ERROR(mgr->m_em, "icmp: ping: start processor fail!");
         net_icmp_ping_processor_free(task->m_processor);
         task->m_processor = NULL;
         net_icmp_ping_task_set_state(task, net_icmp_ping_task_state_error);

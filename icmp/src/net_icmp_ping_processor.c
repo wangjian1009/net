@@ -21,7 +21,7 @@ net_icmp_ping_processor_create(net_icmp_ping_task_t task, net_address_t target, 
     else {
         processor = mem_alloc(mgr->m_alloc, sizeof(struct net_icmp_ping_processor));
         if (processor == NULL) {
-            CPE_ERROR(mgr->m_em, "icmp: ping: processor: alloc fail!");
+            CPE_ERROR(mgr->m_em, "icmp: ping: %s: processor: alloc fail!", net_address_dump(net_icmp_mgr_tmp_buffer(mgr), target));
             return NULL;
         }
     }
@@ -35,7 +35,7 @@ net_icmp_ping_processor_create(net_icmp_ping_task_t task, net_address_t target, 
     
     processor->m_target = net_address_copy(mgr->m_schedule, target);
     if (processor->m_target == NULL) {
-        CPE_ERROR(mgr->m_em, "icmp: ping: processor: dup target address fail!");
+        CPE_ERROR(mgr->m_em, "icmp: ping: %s: processor: dup target address fail!", net_address_dump(net_icmp_mgr_tmp_buffer(mgr), target));
         processor->m_task = (net_icmp_ping_task_t)mgr;
         TAILQ_INSERT_TAIL(&mgr->m_free_ping_processors, processor, m_next);
         return NULL;
@@ -155,7 +155,7 @@ static int net_icmp_ping_processor_send(net_icmp_ping_processor_t processor, con
 
     if (net_address_to_sockaddr(processor->m_target, (struct sockaddr *)&addr, &addr_len) != 0) {
         CPE_ERROR(
-            mgr->m_em, "icmp: ping: %s: %d.%d: ==> to socket addr fail",
+            mgr->m_em, "icmp: ping: %s: send: %d.%d: ==> to socket addr fail",
             net_address_dump(net_icmp_mgr_tmp_buffer(mgr), processor->m_target),
             processor->m_ping_id, processor->m_ping_index);
         return -1;
@@ -163,7 +163,7 @@ static int net_icmp_ping_processor_send(net_icmp_ping_processor_t processor, con
 
     if (sendto(processor->m_fd, sendbuf, len, 0, (struct sockaddr *)&addr, addr_len) != 0) {
         CPE_ERROR(
-            mgr->m_em, "icmp: ping: %s: %d.%d: ==> socket send fail, error=%d (%s)",
+            mgr->m_em, "icmp: ping: %s: send: %d.%d: ==> socket send fail, error=%d (%s)",
             net_address_dump(net_icmp_mgr_tmp_buffer(mgr), processor->m_target),
             processor->m_ping_id, processor->m_ping_index,
             errno, strerror(errno));
@@ -171,7 +171,7 @@ static int net_icmp_ping_processor_send(net_icmp_ping_processor_t processor, con
     }
     
     CPE_INFO(
-        mgr->m_em, "icmp: ping: %s: %d.%d: ==> msg=%s, len=%d, checksum=:0x%x", 
+        mgr->m_em, "icmp: ping: %s: send: %d.%d: ==> msg=%s, len=%d, checksum=:0x%x", 
         net_address_dump(net_icmp_mgr_tmp_buffer(mgr), processor->m_target),
         processor->m_ping_id, processor->m_ping_index,
         msg, (int)len, icmp_hdr->checksum);
@@ -180,6 +180,10 @@ static int net_icmp_ping_processor_send(net_icmp_ping_processor_t processor, con
 }
 
 static void net_icmp_ping_processor_rw_cb(void * ctx, int fd, uint8_t do_read, uint8_t do_write) {
+    if (do_read) {
+        uint8_t recvbuf[256];
+        
+    }
 }
 
 static uint16_t net_icmp_checksum(uint8_t const * buf, uint32_t len) {
