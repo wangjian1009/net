@@ -3,7 +3,9 @@
 #include "net_icmp_ping_record_i.h"
 #include "net_icmp_ping_processor_i.h"
 
-net_icmp_mgr_t net_icmp_mgr_create(mem_allocrator_t alloc, error_monitor_t em, net_schedule_t schedule) {
+net_icmp_mgr_t net_icmp_mgr_create(
+    mem_allocrator_t alloc, error_monitor_t em, net_schedule_t schedule, net_driver_t driver)
+{
     net_icmp_mgr_t mgr = mem_alloc(alloc, sizeof(struct net_icmp_mgr));
     if (mgr == NULL) {
         CPE_ERROR(em, "icmp: mgr: alloc fail!");
@@ -13,7 +15,8 @@ net_icmp_mgr_t net_icmp_mgr_create(mem_allocrator_t alloc, error_monitor_t em, n
     mgr->m_alloc = alloc;
     mgr->m_em = em;
     mgr->m_schedule = schedule;
-    
+    mgr->m_driver = driver;
+
     TAILQ_INIT(&mgr->m_ping_tasks);
 
     TAILQ_INIT(&mgr->m_free_ping_tasks);

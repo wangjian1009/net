@@ -1,9 +1,11 @@
 #include "cpe/pal/pal_socket.h"
 #include "net_address.h"
+#include "net_watcher.h"
 #include "net_icmp_ping_processor_i.h"
 #include "net_icmp_pro.h"
 
 static void net_icmp_ping_processor_send(net_icmp_ping_processor_t processor);
+static void net_icmp_ping_processor_rw_cb(void * ctx, int fd, uint8_t do_read, uint8_t do_write);
 
 net_icmp_ping_processor_t
 net_icmp_ping_processor_create(net_icmp_ping_task_t task, net_address_t target, uint16_t ping_count) {
@@ -33,12 +35,26 @@ net_icmp_ping_processor_create(net_icmp_ping_task_t task, net_address_t target, 
         return NULL;
     }
 
+    processor->m_watcher = net_watcher_create(mgr->m_driver, processor->m_fd, processor, net_icmp_ping_processor_rw_cb);
+    if (processor->m_watcher == NULL) {
+        CPE_ERROR(mgr->m_em, "icmp: ping: processor: create watcher fail!");
+        net_address_free(processor->m_target);
+        processor->m_task = (net_icmp_ping_task_t)mgr;
+        TAILQ_INSERT_TAIL(&mgr->m_free_ping_processors, processor, m_next);
+        return NULL;
+    }
+
     return processor;
 }
 
 void net_icmp_ping_processor_free(net_icmp_ping_processor_t processor) {
     net_icmp_mgr_t mgr = processor->m_task->m_mgr;
     
+    if (processor->m_watcher) {
+        net_watcher_free(processor->m_watcher);
+        processor->m_watcher = NULL;
+    }
+
     if (processor->m_fd != -1) {
         cpe_sock_close(processor->m_fd);
         processor->m_fd = -1;
@@ -89,4 +105,7 @@ static void net_icmp_ping_processor_send(net_icmp_ping_processor_t processor) {
     
     /* printf("The send pack checksum is:0x%x\n",icmp_hdr->checksum); */
     /* sendto(sockfd,sendbuf,len,0,(struct sockaddr *)&dest,sizeof (dest)); //经socket传送数据 */
+}
+
+static void net_icmp_ping_processor_rw_cb(void * ctx, int fd, uint8_t do_read, uint8_t do_write) {
 }

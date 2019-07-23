@@ -15,6 +15,7 @@ struct net_icmp_mgr {
     mem_allocrator_t m_alloc;
     error_monitor_t m_em;
     net_schedule_t m_schedule;
+    net_driver_t m_driver;
 
     /*runtime*/
     net_icmp_ping_task_list_t m_ping_tasks;
