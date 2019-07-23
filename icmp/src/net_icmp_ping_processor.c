@@ -1,4 +1,5 @@
 #include "cpe/pal/pal_socket.h"
+#include "cpe/pal/pal_strings.h"
 #include "net_address.h"
 #include "net_watcher.h"
 #include "net_icmp_ping_processor_i.h"
@@ -35,9 +36,19 @@ net_icmp_ping_processor_create(net_icmp_ping_task_t task, net_address_t target, 
         return NULL;
     }
 
+    processor->m_fd = socket(PF_INET, SOCK_RAW, IPPROTO_ICMP);
+    if (processor->m_fd < 0) {
+        CPE_ERROR(mgr->m_em, "icmp: ping: processor: create raw sock fail, error=%d (%s)!", errno, strerror(errno));
+        net_address_free(processor->m_target);
+        processor->m_task = (net_icmp_ping_task_t)mgr;
+        TAILQ_INSERT_TAIL(&mgr->m_free_ping_processors, processor, m_next);
+        return NULL;
+    }
+
     processor->m_watcher = net_watcher_create(mgr->m_driver, processor->m_fd, processor, net_icmp_ping_processor_rw_cb);
     if (processor->m_watcher == NULL) {
         CPE_ERROR(mgr->m_em, "icmp: ping: processor: create watcher fail!");
+        cpe_sock_close(processor->m_fd);
         net_address_free(processor->m_target);
         processor->m_task = (net_icmp_ping_task_t)mgr;
         TAILQ_INSERT_TAIL(&mgr->m_free_ping_processors, processor, m_next);
