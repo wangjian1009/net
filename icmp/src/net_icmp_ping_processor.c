@@ -6,7 +6,7 @@
 #include "net_icmp_ping_processor_i.h"
 #include "net_icmp_pro.h"
 
-static void net_icmp_ping_processor_send(net_icmp_ping_processor_t processor, const char * msg);
+static int net_icmp_ping_processor_send(net_icmp_ping_processor_t processor, const char * msg);
 static void net_icmp_ping_processor_rw_cb(void * ctx, int fd, uint8_t do_read, uint8_t do_write);
 static uint16_t net_icmp_checksum(uint8_t const * buf, uint32_t len);
 
@@ -92,7 +92,7 @@ void net_icmp_ping_processor_real_free(net_icmp_ping_processor_t processor) {
     mem_free(mgr->m_alloc, processor);
 }
 
-static void net_icmp_ping_processor_send(net_icmp_ping_processor_t processor, const char * msg) {
+static int net_icmp_ping_processor_send(net_icmp_ping_processor_t processor, const char * msg) {
     net_icmp_mgr_t mgr = processor->m_task->m_mgr;
     
     uint8_t sendbuf[256];
@@ -117,13 +117,32 @@ static void net_icmp_ping_processor_send(net_icmp_ping_processor_t processor, co
     
     icmp_hdr->checksum = net_icmp_checksum(sendbuf, len);  //计算校验和 */
     
+    struct sockaddr_storage addr;
+    socklen_t addr_len = sizeof(addr);
+
+    if (net_address_to_sockaddr(processor->m_target, (struct sockaddr *)&addr, &addr_len) != 0) {
+        CPE_ERROR(
+            mgr->m_em, "icmp: %d.%d: ==> %s: to socket addr fail",
+            processor->m_ping_id, processor->m_ping_index,
+            net_address_dump(net_icmp_mgr_tmp_buffer(mgr), processor->m_target));
+        return -1;
+    }
+
+    if (sendto(processor->m_fd, sendbuf, len, 0, (struct sockaddr *)&addr, addr_len) != 0) {
+        CPE_ERROR(
+            mgr->m_em, "icmp: %d.%d: ==> %s: socket send fail, error=%d (%s)",
+            processor->m_ping_id, processor->m_ping_index,
+            net_address_dump(net_icmp_mgr_tmp_buffer(mgr), processor->m_target), errno, strerror(errno));
+        return -1;
+    }
+    
     CPE_INFO(
         mgr->m_em, "icmp: %d.%d: ==> %s: msg=%s, len=%d, checksum=:0x%x", 
         processor->m_ping_id, processor->m_ping_index,
         net_address_dump(net_icmp_mgr_tmp_buffer(mgr), processor->m_target),
         msg, (int)len, icmp_hdr->checksum);
 
-    //sendto(processor->m_fd, sendbuf, len,0 ,(struct sockaddr *)&dest,sizeof (dest)); //经socket传送数据 */
+    return 0;
 }
 
 static void net_icmp_ping_processor_rw_cb(void * ctx, int fd, uint8_t do_read, uint8_t do_write) {

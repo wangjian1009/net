@@ -12,6 +12,7 @@ struct net_icmp_ping_task {
 };
 
 void net_icmp_ping_task_real_free(net_icmp_ping_task_t task);
+void net_icmp_ping_task_set_state(net_icmp_ping_task_t task, net_icmp_ping_task_state_t state);
 
 #endif
 

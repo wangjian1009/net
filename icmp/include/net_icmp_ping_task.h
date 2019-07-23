@@ -8,6 +8,7 @@ enum net_icmp_ping_task_state {
     net_icmp_ping_task_state_init,
     net_icmp_ping_task_state_processing,
     net_icmp_ping_task_state_done,
+    net_icmp_ping_task_state_error,
 };
 
 net_icmp_ping_task_t net_icmp_ping_task_create(net_icmp_mgr_t mgr);

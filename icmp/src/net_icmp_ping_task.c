@@ -49,10 +49,32 @@ net_icmp_ping_task_state_t net_icmp_ping_task_state(net_icmp_ping_task_t task) {
     return task->m_state;
 }
 
+static net_icmp_ping_record_t net_icmp_ping_task_record_next(net_icmp_ping_record_it_t it) {
+    net_icmp_ping_record_t * data = (net_icmp_ping_record_t *)it->data;
+
+    net_icmp_ping_record_t r = *data;
+
+    if (r) {
+        *data = TAILQ_NEXT(r, m_next);
+    }
+
+    return r;
+}
+
 void net_icmp_ping_task_records(net_icmp_ping_task_t task, net_icmp_ping_record_it_t record_it) {
+    *(net_icmp_ping_record_t *)record_it->data = TAILQ_FIRST(&task->m_records);
+    record_it->next = net_icmp_ping_task_record_next;
 }
 
 int net_icmp_ping_task_start(net_icmp_ping_task_t task, net_address_t target, uint16_t ping_count) {
+    net_icmp_mgr_t mgr = task->m_mgr;
+    
+    net_icmp_ping_processor_t processor = net_icmp_ping_processor_create(task, target, ping_count);
+    if (processor == NULL) {
+        CPE_ERROR(mgr->m_em, "icmp: ping: create processor fail!");
+        return -1;
+    }
+
     return 0;
 }
 
@@ -95,6 +117,16 @@ uint32_t net_icmp_ping_task_ping_avg(net_icmp_ping_task_t task) {
     return count > 0 ? (uint32_t)(total_ping / count) : 0;
 }
 
+void net_icmp_ping_task_set_state(net_icmp_ping_task_t task, net_icmp_ping_task_state_t state) {
+    if (task->m_state == state) return;
+
+    net_icmp_mgr_t mgr = task->m_mgr;
+    
+    CPE_INFO(
+        mgr->m_em, "icmp: task: state %s ==> %s", 
+        net_icmp_ping_task_state_str(task->m_state), net_icmp_ping_task_state_str(state));
+}
+
 const char * net_icmp_ping_task_state_str(net_icmp_ping_task_state_t state) {
     switch(state) {
     case net_icmp_ping_task_state_init:
@@ -103,5 +135,7 @@ const char * net_icmp_ping_task_state_str(net_icmp_ping_task_state_t state) {
         return "processing";
     case net_icmp_ping_task_state_done:
         return "done";
+    case net_icmp_ping_task_state_error:
+        return "error";
     }
 }
