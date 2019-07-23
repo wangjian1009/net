@@ -4,6 +4,7 @@
 
 NET_BEGIN_DECL
 
+typedef struct net_icmp_mgr * net_icmp_mgr_t;
 typedef struct net_icmp_ping_task * net_icmp_ping_task_t;
 typedef struct net_icmp_ping_record * net_icmp_ping_record_t;
 typedef struct net_icmp_ping_record_it * net_icmp_ping_record_it_t;

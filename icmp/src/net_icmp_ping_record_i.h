@@ -13,6 +13,7 @@ struct net_icmp_ping_record {
 
 net_icmp_ping_record_t net_icmp_ping_record_create(net_icmp_ping_task_t task);
 void net_icmp_ping_record_free(net_icmp_ping_record_t record);
+void net_icmp_ping_record_real_free(net_icmp_ping_record_t record);
 
 #endif
 

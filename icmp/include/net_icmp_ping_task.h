@@ -1,6 +1,5 @@
 #ifndef NET_ICMP_PING_TASK_H_INCLEDED
 #define NET_ICMP_PING_TASK_H_INCLEDED
-#include "cpe/pal/pal_queue.h" 
 #include "net_icmp_types.h"
 
 NET_BEGIN_DECL
@@ -11,7 +10,7 @@ enum net_icmp_ping_task_state {
     net_icmp_ping_task_state_done,
 };
 
-net_icmp_ping_task_t net_icmp_ping_task_create(net_schedule_t schedule);
+net_icmp_ping_task_t net_icmp_ping_task_create(net_icmp_mgr_t mgr);
 void net_icmp_ping_task_free(net_icmp_ping_task_t task);
 
 net_icmp_ping_task_state_t net_icmp_ping_task_state(net_icmp_ping_task_t task);

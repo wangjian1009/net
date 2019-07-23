@@ -3,19 +3,20 @@
 #include "net_icmp_ping_record_i.h"
 #include "net_icmp_ping_processor_i.h"
 
-net_icmp_ping_task_t net_icmp_ping_task_create(net_schedule_t schedule) {
-    mem_allocrator_t alloc = net_schedule_allocrator(schedule);
-    error_monitor_t em = net_schedule_em(schedule);
-    
-    net_icmp_ping_task_t task = mem_alloc(alloc, sizeof(struct net_icmp_ping_task));
-    if (task == NULL) {
-        CPE_ERROR(em, "icmp: ping: allock fail!");
-        return NULL;
+net_icmp_ping_task_t net_icmp_ping_task_create(net_icmp_mgr_t mgr) {
+    net_icmp_ping_task_t task = TAILQ_FIRST(&mgr->m_free_ping_tasks);
+    if (task) {
+        TAILQ_REMOVE(&mgr->m_free_ping_tasks, task, m_next);
+    }
+    else {
+        mem_alloc(mgr->m_alloc, sizeof(struct net_icmp_ping_task));
+        if (task == NULL) {
+            CPE_ERROR(mgr->m_em, "icmp: ping: allock fail!");
+            return NULL;
+        }
     }
 
-    task->m_alloc = alloc;
-    task->m_em = em;
-    task->m_schedule = schedule;
+    task->m_mgr = mgr;
     task->m_state = net_icmp_ping_task_state_init;
     task->m_processor = NULL;
     TAILQ_INIT(&task->m_records);
@@ -24,6 +25,8 @@ net_icmp_ping_task_t net_icmp_ping_task_create(net_schedule_t schedule) {
 }
 
 void net_icmp_ping_task_free(net_icmp_ping_task_t task) {
+    net_icmp_mgr_t mgr = task->m_mgr;
+
     while(!TAILQ_EMPTY(&task->m_records)) {
         net_icmp_ping_record_free(TAILQ_FIRST(&task->m_records));
     }
@@ -32,8 +35,14 @@ void net_icmp_ping_task_free(net_icmp_ping_task_t task) {
         net_icmp_ping_processor_free(task->m_processor);
         task->m_processor = NULL;
     }
-    
-    mem_free(task->m_alloc, task);
+
+    TAILQ_INSERT_TAIL(&mgr->m_free_ping_tasks, task, m_next);
+}
+
+void net_icmp_ping_task_real_free(net_icmp_ping_task_t task) {
+    net_icmp_mgr_t mgr = task->m_mgr;
+    TAILQ_REMOVE(&mgr->m_free_ping_tasks, task, m_next);
+    mem_free(mgr->m_alloc, task);
 }
 
 net_icmp_ping_task_state_t net_icmp_ping_task_state(net_icmp_ping_task_t task) {
