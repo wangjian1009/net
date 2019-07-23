@@ -1,18 +1,19 @@
 #include <assert.h>
 #include "net_schedule.h"
+#include "net_address.h"
 #include "net_ping_task_i.h"
 #include "net_ping_record_i.h"
 #include "net_ping_processor_i.h"
 
-net_ping_task_t net_ping_task_create(net_ping_mgr_t mgr) {
-    net_ping_task_t task = TAILQ_FIRST(&mgr->m_free_ping_tasks);
+net_ping_task_t net_ping_task_create(net_ping_mgr_t mgr, net_address_t target) {
+    net_ping_task_t task = TAILQ_FIRST(&mgr->m_free_tasks);
     if (task) {
-        TAILQ_REMOVE(&mgr->m_free_ping_tasks, task, m_next);
+        TAILQ_REMOVE(&mgr->m_free_tasks, task, m_next);
     }
     else {
         task = mem_alloc(mgr->m_alloc, sizeof(struct net_ping_task));
         if (task == NULL) {
-            CPE_ERROR(mgr->m_em, "ping: ping: task: alloc fail!");
+            CPE_ERROR(mgr->m_em, "ping: %s: alloc fail!", net_address_dump(net_ping_mgr_tmp_buffer(mgr), target));
             return NULL;
         }
     }
@@ -21,6 +22,13 @@ net_ping_task_t net_ping_task_create(net_ping_mgr_t mgr) {
     task->m_state = net_ping_task_state_init;
     task->m_processor = NULL;
     TAILQ_INIT(&task->m_records);
+
+    task->m_target = net_address_copy(mgr->m_schedule, target);
+    if (task->m_target == NULL) {
+        CPE_ERROR(mgr->m_em, "ping: %s: dup target address fail!", net_address_dump(net_ping_mgr_tmp_buffer(mgr), target));
+        TAILQ_INSERT_TAIL(&mgr->m_free_tasks, task, m_next);
+        return NULL;
+    }
     
     return task;
 }
@@ -37,13 +45,17 @@ void net_ping_task_free(net_ping_task_t task) {
         task->m_processor = NULL;
     }
 
-    TAILQ_INSERT_TAIL(&mgr->m_free_ping_tasks, task, m_next);
+    TAILQ_INSERT_TAIL(&mgr->m_free_tasks, task, m_next);
 }
 
 void net_ping_task_real_free(net_ping_task_t task) {
     net_ping_mgr_t mgr = task->m_mgr;
-    TAILQ_REMOVE(&mgr->m_free_ping_tasks, task, m_next);
+    TAILQ_REMOVE(&mgr->m_free_tasks, task, m_next);
     mem_free(mgr->m_alloc, task);
+}
+
+net_address_t net_ping_task_target(net_ping_task_t task) {
+    return task->m_target;
 }
 
 net_ping_task_state_t net_ping_task_state(net_ping_task_t task) {
@@ -67,9 +79,8 @@ void net_ping_task_records(net_ping_task_t task, net_ping_record_it_t record_it)
     record_it->next = net_ping_task_record_next;
 }
 
-int net_ping_task_start(net_ping_task_t task, net_address_t target, uint16_t ping_count) {
+int net_ping_task_start(net_ping_task_t task, uint16_t ping_count) {
     net_ping_mgr_t mgr = task->m_mgr;
-    assert(target);
     assert(ping_count > 0);
 
     if (task->m_processor) {
@@ -79,7 +90,7 @@ int net_ping_task_start(net_ping_task_t task, net_address_t target, uint16_t pin
 
     net_ping_task_set_state(task, net_ping_task_state_processing);
     
-    task->m_processor = net_ping_processor_create(task, target, ping_count);
+    task->m_processor = net_ping_processor_create(task, ping_count);
     if (task->m_processor == NULL) {
         net_ping_task_set_state(task, net_ping_task_state_error);
         return -1;

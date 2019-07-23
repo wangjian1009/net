@@ -19,31 +19,31 @@ net_ping_mgr_t net_ping_mgr_create(
     mgr->m_driver = driver;
 
     mgr->m_ping_id_max = 0;
-    TAILQ_INIT(&mgr->m_ping_tasks);
+    TAILQ_INIT(&mgr->m_tasks);
 
-    TAILQ_INIT(&mgr->m_free_ping_tasks);
-    TAILQ_INIT(&mgr->m_free_ping_records);
-    TAILQ_INIT(&mgr->m_free_ping_processors);
+    TAILQ_INIT(&mgr->m_free_tasks);
+    TAILQ_INIT(&mgr->m_free_records);
+    TAILQ_INIT(&mgr->m_free_processors);
 
     return mgr;
 }
 
 void net_ping_mgr_free(net_ping_mgr_t mgr) {
     
-    while(!TAILQ_EMPTY(&mgr->m_ping_tasks)) {
-        net_ping_task_free(TAILQ_FIRST(&mgr->m_ping_tasks));
+    while(!TAILQ_EMPTY(&mgr->m_tasks)) {
+        net_ping_task_free(TAILQ_FIRST(&mgr->m_tasks));
     }
 
-    while(!TAILQ_EMPTY(&mgr->m_free_ping_tasks)) {
-        net_ping_task_real_free(TAILQ_FIRST(&mgr->m_free_ping_tasks));
+    while(!TAILQ_EMPTY(&mgr->m_free_tasks)) {
+        net_ping_task_real_free(TAILQ_FIRST(&mgr->m_free_tasks));
     }
 
-    while(!TAILQ_EMPTY(&mgr->m_free_ping_records)) {
-        net_ping_record_real_free(TAILQ_FIRST(&mgr->m_free_ping_records));
+    while(!TAILQ_EMPTY(&mgr->m_free_records)) {
+        net_ping_record_real_free(TAILQ_FIRST(&mgr->m_free_records));
     }
 
-    while(!TAILQ_EMPTY(&mgr->m_free_ping_processors)) {
-        net_ping_processor_real_free(TAILQ_FIRST(&mgr->m_free_ping_processors));
+    while(!TAILQ_EMPTY(&mgr->m_free_processors)) {
+        net_ping_processor_real_free(TAILQ_FIRST(&mgr->m_free_processors));
     }
     
     mem_free(mgr->m_alloc, mgr);

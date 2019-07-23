@@ -7,6 +7,7 @@ struct net_ping_task {
     net_ping_mgr_t m_mgr;
     TAILQ_ENTRY(net_ping_task) m_next;
     net_ping_task_state_t m_state;
+    net_address_t m_target;
     net_ping_record_list_t m_records;
     net_ping_processor_t m_processor;
 };

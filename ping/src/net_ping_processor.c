@@ -4,24 +4,26 @@
 #include "net_address.h"
 #include "net_watcher.h"
 #include "net_ping_processor_i.h"
-#include "net_ping_pro.h"
+#include "net_ping_icmp_pro.h"
 
 static int net_ping_processor_send(net_ping_processor_t processor, const char * msg);
 static void net_ping_processor_rw_cb(void * ctx, int fd, uint8_t do_read, uint8_t do_write);
 static uint16_t net_ping_checksum(uint8_t const * buf, uint32_t len);
 
 net_ping_processor_t
-net_ping_processor_create(net_ping_task_t task, net_address_t target, uint16_t ping_count) {
+net_ping_processor_create(net_ping_task_t task, uint16_t ping_count) {
     net_ping_mgr_t mgr = task->m_mgr;
     
-    net_ping_processor_t processor = TAILQ_FIRST(&mgr->m_free_ping_processors);
+    net_ping_processor_t processor = TAILQ_FIRST(&mgr->m_free_processors);
     if (processor) {
-        TAILQ_REMOVE(&mgr->m_free_ping_processors, processor, m_next);
+        TAILQ_REMOVE(&mgr->m_free_processors, processor, m_next);
     }
     else {
         processor = mem_alloc(mgr->m_alloc, sizeof(struct net_ping_processor));
         if (processor == NULL) {
-            CPE_ERROR(mgr->m_em, "ping: ping: %s: processor: alloc fail!", net_address_dump(net_ping_mgr_tmp_buffer(mgr), target));
+            CPE_ERROR(
+                mgr->m_em, "ping: %s: processor: alloc fail!", 
+                net_address_dump(net_ping_mgr_tmp_buffer(mgr), task->m_target));
             return NULL;
         }
     }
@@ -33,14 +35,6 @@ net_ping_processor_create(net_ping_task_t task, net_address_t target, uint16_t p
     processor->m_fd = -1;
     processor->m_watcher = NULL;
     
-    processor->m_target = net_address_copy(mgr->m_schedule, target);
-    if (processor->m_target == NULL) {
-        CPE_ERROR(mgr->m_em, "ping: ping: %s: processor: dup target address fail!", net_address_dump(net_ping_mgr_tmp_buffer(mgr), target));
-        processor->m_task = (net_ping_task_t)mgr;
-        TAILQ_INSERT_TAIL(&mgr->m_free_ping_processors, processor, m_next);
-        return NULL;
-    }
-
     return processor;
 }
 
@@ -57,29 +51,25 @@ void net_ping_processor_free(net_ping_processor_t processor) {
         processor->m_fd = -1;
     }
     
-    if (processor->m_target) {
-        net_address_free(processor->m_target);
-        processor->m_target = NULL;
-    }
-    
     processor->m_task = (net_ping_task_t)mgr;
-    TAILQ_INSERT_TAIL(&mgr->m_free_ping_processors, processor, m_next);
+    TAILQ_INSERT_TAIL(&mgr->m_free_processors, processor, m_next);
 }
 
 void net_ping_processor_real_free(net_ping_processor_t processor) {
     net_ping_mgr_t mgr = (net_ping_mgr_t)processor->m_task;
 
-    TAILQ_REMOVE(&mgr->m_free_ping_processors, processor, m_next);
+    TAILQ_REMOVE(&mgr->m_free_processors, processor, m_next);
     
     mem_free(mgr->m_alloc, processor);
 }
 
 int net_ping_processor_start(net_ping_processor_t processor) {
-    net_ping_mgr_t mgr = processor->m_task->m_mgr;
+    net_ping_task_t task = processor->m_task;
+    net_ping_mgr_t mgr = task->m_mgr;
 
     int af = 0;
 
-    switch(net_address_type(processor->m_target)) {
+    switch(net_address_type(task->m_target)) {
     case net_address_ipv4:
         af = PF_INET;
         break;
@@ -87,17 +77,17 @@ int net_ping_processor_start(net_ping_processor_t processor) {
     case net_address_domain:
     case net_address_local:
         CPE_ERROR(
-            mgr->m_em, "ping: ping: %s: start: not support address type %s!", 
-            net_address_dump(net_ping_mgr_tmp_buffer(mgr), processor->m_target),
-            net_address_type_str(net_address_type(processor->m_target)));
+            mgr->m_em, "ping: %s: start: not support address type %s!", 
+            net_address_dump(net_ping_mgr_tmp_buffer(mgr), task->m_target),
+            net_address_type_str(net_address_type(task->m_target)));
         return -1;
     }
     
     processor->m_fd = socket(af, SOCK_RAW, IPPROTO_ICMP);
     if (processor->m_fd < 0) {
         CPE_ERROR(
-            mgr->m_em, "ping: ping: %s: start: create raw sock fail, error=%d (%s)!", 
-            net_address_dump(net_ping_mgr_tmp_buffer(mgr), processor->m_target),
+            mgr->m_em, "ping: %s: start: create raw sock fail, error=%d (%s)!", 
+            net_address_dump(net_ping_mgr_tmp_buffer(mgr), task->m_target),
             errno, strerror(errno));
         return -1;
     }
@@ -105,8 +95,8 @@ int net_ping_processor_start(net_ping_processor_t processor) {
     processor->m_watcher = net_watcher_create(mgr->m_driver, processor->m_fd, processor, net_ping_processor_rw_cb);
     if (processor->m_watcher == NULL) {
         CPE_ERROR(
-            mgr->m_em, "ping: ping: %s: start: create watcher fail!",
-            net_address_dump(net_ping_mgr_tmp_buffer(mgr), processor->m_target));
+            mgr->m_em, "ping: %s: start: create watcher fail!",
+            net_address_dump(net_ping_mgr_tmp_buffer(mgr), task->m_target));
         cpe_sock_close(processor->m_fd);
         processor->m_fd = -1;
         return -1;
@@ -126,20 +116,21 @@ int net_ping_processor_start(net_ping_processor_t processor) {
 }
 
 static int net_ping_processor_send(net_ping_processor_t processor, const char * msg) {
-    net_ping_mgr_t mgr = processor->m_task->m_mgr;
+    net_ping_task_t task = processor->m_task;
+    net_ping_mgr_t mgr = task->m_mgr;
     
     uint8_t sendbuf[256];
     
-    struct net_ping_hdr * ping_hdr = (struct net_ping_hdr *)sendbuf;
-    uint16_t len = sizeof(*ping_hdr);
+    struct net_icmp_hdr * icmp_hdr = (struct net_icmp_hdr *)sendbuf;
+    uint16_t len = sizeof(*icmp_hdr);
 
-    bzero(ping_hdr, len);
+    bzero(icmp_hdr, len);
     
-    ping_hdr->type = NET_ICMP_ECHO;
-    CPE_COPY_HTON16(&ping_hdr->un.echo.id, &processor->m_ping_id);
+    icmp_hdr->type = NET_ICMP_ECHO;
+    CPE_COPY_HTON16(&icmp_hdr->un.echo.id, &processor->m_ping_id);
 
     processor->m_ping_index++;
-    CPE_COPY_HTON16(&ping_hdr->un.echo.sequence, &processor->m_ping_index);
+    CPE_COPY_HTON16(&icmp_hdr->un.echo.sequence, &processor->m_ping_index);
 
     gettimeofday((struct timeval *)(sendbuf + len), NULL);
     len += sizeof(struct timeval);
@@ -148,33 +139,33 @@ static int net_ping_processor_send(net_ping_processor_t processor, const char * 
     memcpy((sendbuf + len), msg, msg_len);
     len += msg_len;
     
-    ping_hdr->checksum = net_ping_checksum(sendbuf, len);  //计算校验和 */
+    icmp_hdr->checksum = net_ping_checksum(sendbuf, len);  //计算校验和 */
     
     struct sockaddr_storage addr;
     socklen_t addr_len = sizeof(addr);
 
-    if (net_address_to_sockaddr(processor->m_target, (struct sockaddr *)&addr, &addr_len) != 0) {
+    if (net_address_to_sockaddr(task->m_target, (struct sockaddr *)&addr, &addr_len) != 0) {
         CPE_ERROR(
-            mgr->m_em, "ping: ping: %s: send: %d.%d: ==> to socket addr fail",
-            net_address_dump(net_ping_mgr_tmp_buffer(mgr), processor->m_target),
+            mgr->m_em, "ping: %s: send: %d.%d: ==> to socket addr fail",
+            net_address_dump(net_ping_mgr_tmp_buffer(mgr), task->m_target),
             processor->m_ping_id, processor->m_ping_index);
         return -1;
     }
 
     if (sendto(processor->m_fd, sendbuf, len, 0, (struct sockaddr *)&addr, addr_len) != 0) {
         CPE_ERROR(
-            mgr->m_em, "ping: ping: %s: send: %d.%d: ==> socket send fail, error=%d (%s)",
-            net_address_dump(net_ping_mgr_tmp_buffer(mgr), processor->m_target),
+            mgr->m_em, "ping: %s: send: %d.%d: ==> socket send fail, error=%d (%s)",
+            net_address_dump(net_ping_mgr_tmp_buffer(mgr), task->m_target),
             processor->m_ping_id, processor->m_ping_index,
             errno, strerror(errno));
         return -1;
     }
     
     CPE_INFO(
-        mgr->m_em, "ping: ping: %s: send: %d.%d: ==> msg=%s, len=%d, checksum=:0x%x", 
-        net_address_dump(net_ping_mgr_tmp_buffer(mgr), processor->m_target),
+        mgr->m_em, "ping: %s: send: %d.%d: ==> msg=%s, len=%d, checksum=:0x%x", 
+        net_address_dump(net_ping_mgr_tmp_buffer(mgr), task->m_target),
         processor->m_ping_id, processor->m_ping_index,
-        msg, (int)len, ping_hdr->checksum);
+        msg, (int)len, icmp_hdr->checksum);
 
     return 0;
 }

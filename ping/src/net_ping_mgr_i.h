@@ -19,12 +19,12 @@ struct net_ping_mgr {
 
     /*runtime*/
     uint16_t m_ping_id_max;
-    net_ping_task_list_t m_ping_tasks;
+    net_ping_task_list_t m_tasks;
     
     /*free */
-    net_ping_task_list_t m_free_ping_tasks;
-    net_ping_record_list_t m_free_ping_records;
-    net_ping_processor_list_t m_free_ping_processors;
+    net_ping_task_list_t m_free_tasks;
+    net_ping_record_list_t m_free_records;
+    net_ping_processor_list_t m_free_processors;
 };
 
 mem_buffer_t net_ping_mgr_tmp_buffer(net_ping_mgr_t mgr);
