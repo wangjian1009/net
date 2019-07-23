@@ -1,3 +1,4 @@
+#include "net_schedule.h"
 #include "net_icmp_mgr_i.h"
 #include "net_icmp_ping_task_i.h"
 #include "net_icmp_ping_record_i.h"
@@ -17,6 +18,7 @@ net_icmp_mgr_t net_icmp_mgr_create(
     mgr->m_schedule = schedule;
     mgr->m_driver = driver;
 
+    mgr->m_ping_id_max = 0;
     TAILQ_INIT(&mgr->m_ping_tasks);
 
     TAILQ_INIT(&mgr->m_free_ping_tasks);
@@ -45,4 +47,8 @@ void net_icmp_mgr_free(net_icmp_mgr_t mgr) {
     }
     
     mem_free(mgr->m_alloc, mgr);
+}
+
+mem_buffer_t net_icmp_mgr_tmp_buffer(net_icmp_mgr_t mgr) {
+    return net_schedule_tmp_buffer(mgr->m_schedule);
 }

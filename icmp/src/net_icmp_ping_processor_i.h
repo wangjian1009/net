@@ -6,9 +6,11 @@ struct net_icmp_ping_processor {
     net_icmp_ping_task_t m_task;
     TAILQ_ENTRY(net_icmp_ping_processor) m_next;
     net_address_t m_target;
-    uint16_t m_ping_count;
     int m_fd;
     net_watcher_t m_watcher;
+    uint16_t m_ping_id;
+    uint16_t m_ping_index;
+    uint16_t m_ping_count;
 };
 
 net_icmp_ping_processor_t

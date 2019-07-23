@@ -1,12 +1,14 @@
 #include "cpe/pal/pal_socket.h"
 #include "cpe/pal/pal_strings.h"
+#include "cpe/pal/pal_string.h"
 #include "net_address.h"
 #include "net_watcher.h"
 #include "net_icmp_ping_processor_i.h"
 #include "net_icmp_pro.h"
 
-static void net_icmp_ping_processor_send(net_icmp_ping_processor_t processor);
+static void net_icmp_ping_processor_send(net_icmp_ping_processor_t processor, const char * msg);
 static void net_icmp_ping_processor_rw_cb(void * ctx, int fd, uint8_t do_read, uint8_t do_write);
+static uint16_t net_icmp_checksum(uint8_t const * buf, uint32_t len);
 
 net_icmp_ping_processor_t
 net_icmp_ping_processor_create(net_icmp_ping_task_t task, net_address_t target, uint16_t ping_count) {
@@ -25,6 +27,8 @@ net_icmp_ping_processor_create(net_icmp_ping_task_t task, net_address_t target, 
     }
 
     processor->m_task = task;
+    processor->m_ping_id = ++mgr->m_ping_id_max;
+    processor->m_ping_index = 0;
     processor->m_ping_count = ping_count;
     processor->m_fd = -1;
 
@@ -88,35 +92,60 @@ void net_icmp_ping_processor_real_free(net_icmp_ping_processor_t processor) {
     mem_free(mgr->m_alloc, processor);
 }
 
-static void net_icmp_ping_processor_send(net_icmp_ping_processor_t processor) {
+static void net_icmp_ping_processor_send(net_icmp_ping_processor_t processor, const char * msg) {
+    net_icmp_mgr_t mgr = processor->m_task->m_mgr;
     
-    //struct ip *ip_hdr;   //iphdr为IP头部结构体
-    int len;
-    int len1;
-
-    char sendbuf[256];
+    uint8_t sendbuf[256];
     
-    /*icmphdr为ICMP头部结构体 */
     struct net_icmp_hdr * icmp_hdr = (struct net_icmp_hdr *)sendbuf;
+    uint16_t len = sizeof(*icmp_hdr);
 
-    icmp_hdr->type = NET_ICMP_ECHO;//初始化ICMP消息类型type
-    icmp_hdr->code = 0;    //初始化消息代码code
-    /* icmp_hdr->un.echo.id = pid;   //把进程标识码初始给icmp_id */
-    /* icmp_hdr->un.echo.sequence = nsent++;  //发送的ICMP消息序号赋值给icmp序号 */
+    bzero(icmp_hdr, len);
     
+    icmp_hdr->type = NET_ICMP_ECHO;
+    CPE_COPY_HTON16(&icmp_hdr->un.echo.id, &processor->m_ping_id);
+
+    processor->m_ping_index++;
+    CPE_COPY_HTON16(&icmp_hdr->un.echo.sequence, &processor->m_ping_index);
+
+    gettimeofday((struct timeval *)(sendbuf + len), NULL);
+    len += sizeof(struct timeval);
+
+    uint16_t msg_len = strlen(msg);
+    memcpy((sendbuf + len), msg, msg_len);
+    len += msg_len;
     
-    /* icmp_data=(struct icmp_filter*)(sendbuf+ICMP_HSIZE); */
-    /* gettimeofday((struct timeval *)icmp_data,NULL); // 获取当前时间 */
-    /* icmp_data=(struct icmp_filter*)(sendbuf+ICMP_HSIZE+sizeof(timeval)); //真正数据地方 */
-    /* memcpy(icmp_data, hello, strlen(hello)); */
-    /* icmp_data=(struct icmp_filter*)(sendbuf+ICMP_HSIZE); //恢复数据指针 */
-    /* len=ICMP_HSIZE+sizeof(icmp_filter)+strlen(hello); */
-    /* icmp_hdr->checksum=0;    //初始化 */
-    /* icmp_hdr->checksum=checksum((u8 *)icmp_hdr,len);  //计算校验和 */
+    icmp_hdr->checksum = net_icmp_checksum(sendbuf, len);  //计算校验和 */
     
-    /* printf("The send pack checksum is:0x%x\n",icmp_hdr->checksum); */
-    /* sendto(sockfd,sendbuf,len,0,(struct sockaddr *)&dest,sizeof (dest)); //经socket传送数据 */
+    CPE_INFO(
+        mgr->m_em, "icmp: %d.%d: ==> %s: msg=%s, len=%d, checksum=:0x%x", 
+        processor->m_ping_id, processor->m_ping_index,
+        net_address_dump(net_icmp_mgr_tmp_buffer(mgr), processor->m_target),
+        msg, (int)len, icmp_hdr->checksum);
+
+    //sendto(processor->m_fd, sendbuf, len,0 ,(struct sockaddr *)&dest,sizeof (dest)); //经socket传送数据 */
 }
 
 static void net_icmp_ping_processor_rw_cb(void * ctx, int fd, uint8_t do_read, uint8_t do_write) {
+}
+
+static uint16_t net_icmp_checksum(uint8_t const * buf, uint32_t len) {
+    uint32_t sum = 0;
+    uint16_t const * cbuf;
+    
+    cbuf = (uint16_t const *)buf;
+    
+    while(len > 1) {
+        sum += *cbuf++;
+        len -= 2;
+    }
+    
+    if(len) {
+        sum += *(uint8_t const *)cbuf;
+    }
+    
+    sum = (sum >> 16) + (sum & 0xFFFF);
+    sum += (sum >> 16);
+    
+    return ~sum;
 }

@@ -18,6 +18,7 @@ struct net_icmp_mgr {
     net_driver_t m_driver;
 
     /*runtime*/
+    uint16_t m_ping_id_max;
     net_icmp_ping_task_list_t m_ping_tasks;
     
     /*free */
@@ -25,6 +26,8 @@ struct net_icmp_mgr {
     net_icmp_ping_record_list_t m_free_ping_records;
     net_icmp_ping_processor_list_t m_free_ping_processors;
 };
+
+mem_buffer_t net_icmp_mgr_tmp_buffer(net_icmp_mgr_t mgr);
 
 #endif
 

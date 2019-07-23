@@ -26,6 +26,10 @@ struct net_icmp_hdr {
 #define net_icmp_seq un.echo.sequence
 };
 
+struct net_icmp_filter {
+    uint32_t data;
+};
+
 struct net_ip_hdr {
 #if defined CPE_LITTLE_ENDIAN
     uint8_t hlen: 4, ver: 4;
