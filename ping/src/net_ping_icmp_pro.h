@@ -1,5 +1,5 @@
-#ifndef NET_ICMP_PROTOCOL_I_H_INCLEDED
-#define NET_ICMP_PROTOCOL_I_H_INCLEDED
+#ifndef NET_PING_ICMP_PROTOCOL_I_H_INCLEDED
+#define NET_PING_ICMP_PROTOCOL_I_H_INCLEDED
 #include "cpe/pal/pal_platform.h"
 #include "cpe/pal/pal_types.h"
 
