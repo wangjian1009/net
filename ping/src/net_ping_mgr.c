@@ -5,7 +5,7 @@
 #include "net_ping_processor_i.h"
 
 net_ping_mgr_t net_ping_mgr_create(
-    mem_allocrator_t alloc, error_monitor_t em, net_schedule_t schedule, net_driver_t driver)
+    mem_allocrator_t alloc, error_monitor_t em, net_schedule_t schedule, net_driver_t driver, net_trans_manage_t trans_mgr)
 {
     net_ping_mgr_t mgr = mem_alloc(alloc, sizeof(struct net_ping_mgr));
     if (mgr == NULL) {
@@ -17,6 +17,7 @@ net_ping_mgr_t net_ping_mgr_create(
     mgr->m_em = em;
     mgr->m_schedule = schedule;
     mgr->m_driver = driver;
+    mgr->m_trans_mgr = trans_mgr;
 
     mgr->m_icmp_ping_id_max = 0;
     TAILQ_INIT(&mgr->m_tasks);

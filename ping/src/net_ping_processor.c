@@ -2,6 +2,7 @@
 #include "cpe/pal/pal_strings.h"
 #include "cpe/pal/pal_string.h"
 #include "net_watcher.h"
+#include "net_trans_task.h"
 #include "net_ping_processor_i.h"
 
 net_ping_processor_t
@@ -33,6 +34,7 @@ net_ping_processor_create(net_ping_task_t task, uint16_t ping_count) {
     case net_ping_type_tcp_connect:
         break;
     case net_ping_type_http:
+        processor->m_http.m_task = NULL;
         break;
     }
     
@@ -61,6 +63,10 @@ void net_ping_processor_free(net_ping_processor_t processor) {
     case net_ping_type_tcp_connect:
         break;
     case net_ping_type_http:
+        if (processor->m_http.m_task) {
+            net_trans_task_free(processor->m_http.m_task);
+            processor->m_http.m_task = NULL;
+        }
         break;
     }
     

@@ -26,6 +26,8 @@ void net_ping_processor_free(net_ping_processor_t processor);
 void net_ping_processor_real_free(net_ping_processor_t processor);
 
 int net_ping_processor_start_icmp(net_ping_processor_t processor);
+int net_ping_processor_start_tcp_connect(net_ping_processor_t processor);
+int net_ping_processor_start_http(net_ping_processor_t processor);
 
 #endif
 

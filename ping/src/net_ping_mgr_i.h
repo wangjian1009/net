@@ -16,6 +16,7 @@ struct net_ping_mgr {
     error_monitor_t m_em;
     net_schedule_t m_schedule;
     net_driver_t m_driver;
+    net_trans_manage_t m_trans_mgr;
 
     /*runtime*/
     uint16_t m_icmp_ping_id_max;

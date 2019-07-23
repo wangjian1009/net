@@ -139,8 +139,10 @@ int net_ping_task_start(net_ping_task_t task, uint16_t ping_count) {
         rv = net_ping_processor_start_icmp(task->m_processor);
         break;
     case net_ping_type_tcp_connect:
+        rv = net_ping_processor_start_tcp_connect(task->m_processor);
         break;
     case net_ping_type_http:
+        rv = net_ping_processor_start_http(task->m_processor);
         break;
     }
 
