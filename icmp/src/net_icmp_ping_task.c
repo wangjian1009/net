@@ -48,11 +48,11 @@ int net_icmp_ping_task_start(net_icmp_ping_task_t task, net_address_t target, ui
     return 0;
 }
 
-net_address_t net_icmp_pint_task_target(net_icmp_ping_task_t task) {
+net_address_t net_icmp_ping_task_target(net_icmp_ping_task_t task) {
     return task->m_target;
 }
 
-uint32_t net_icmp_pint_task_ping_max(net_icmp_ping_task_t task) {
+uint32_t net_icmp_ping_task_ping_max(net_icmp_ping_task_t task) {
     uint32_t max_ping = 0;
 
     net_icmp_ping_record_t record;
@@ -65,7 +65,7 @@ uint32_t net_icmp_pint_task_ping_max(net_icmp_ping_task_t task) {
     return max_ping;
 }
 
-uint32_t net_icmp_pint_task_ping_min(net_icmp_ping_task_t task) {
+uint32_t net_icmp_ping_task_ping_min(net_icmp_ping_task_t task) {
     uint32_t min_ping = 0;
 
     net_icmp_ping_record_t record;
@@ -78,7 +78,7 @@ uint32_t net_icmp_pint_task_ping_min(net_icmp_ping_task_t task) {
     return min_ping;
 }
 
-uint32_t net_icmp_pint_task_ping_avg(net_icmp_ping_task_t task) {
+uint32_t net_icmp_ping_task_ping_avg(net_icmp_ping_task_t task) {
     uint32_t total_ping = 0;
     uint32_t count = 0;
 
