@@ -105,7 +105,7 @@ int net_sock_acceptor_init(net_acceptor_t base_acceptor) {
         }
     }
 
-    acceptor->m_watcher = net_watcher_create(base_driver, acceptor->m_fd, acceptor, net_sock_acceptor_cb);
+    acceptor->m_watcher = net_watcher_create(base_driver, _to_watcher_fd(acceptor->m_fd), acceptor, net_sock_acceptor_cb);
     if (acceptor->m_watcher == NULL) {
         CPE_ERROR(driver->m_em, "sock: acceptor: create watcher fail");
         cpe_sock_close(acceptor->m_fd);
