@@ -9,6 +9,13 @@ typedef struct net_ping_task * net_ping_task_t;
 typedef struct net_ping_record * net_ping_record_t;
 typedef struct net_ping_record_it * net_ping_record_it_t;
 
+typedef enum net_ping_error {
+    net_ping_error_none,
+    net_ping_error_no_network,
+    net_ping_error_no_right,
+    net_ping_error_internal,
+} net_ping_error_t;
+
 typedef enum net_ping_task_state net_ping_task_state_t;
 typedef enum net_ping_type net_ping_type_t;
 

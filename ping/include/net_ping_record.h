@@ -9,6 +9,9 @@ struct net_ping_record_it {
     char data[64];
 };
 
+net_ping_error_t net_ping_record_error(net_ping_record_t record);
+uint32_t net_ping_record_value(net_ping_record_t record);
+
 #define net_ping_record_it_next(__it) ((__it)->next(__it))
 
 NET_END_DECL

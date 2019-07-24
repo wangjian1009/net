@@ -76,8 +76,8 @@ static int net_ping_processor_icmp_send(net_ping_processor_t processor, const ch
     icmp_hdr->type = NET_ICMP_ECHO;
     CPE_COPY_HTON16(&icmp_hdr->un.echo.id, &processor->m_icmp.m_ping_id);
 
-    processor->m_ping_index++;
-    CPE_COPY_HTON16(&icmp_hdr->un.echo.sequence, &processor->m_ping_index);
+    uint16_t ping_index = (uint16_t)task->m_record_count;
+    CPE_COPY_HTON16(&icmp_hdr->un.echo.sequence, &ping_index);
 
     gettimeofday((struct timeval *)(sendbuf + len), NULL);
     len += sizeof(struct timeval);
@@ -95,7 +95,7 @@ static int net_ping_processor_icmp_send(net_ping_processor_t processor, const ch
         CPE_ERROR(
             mgr->m_em, "ping: %s: send: %d.%d: ==> to socket addr fail",
             net_ping_task_dump(net_ping_mgr_tmp_buffer(mgr), task),
-            processor->m_icmp.m_ping_id, processor->m_ping_index);
+            processor->m_icmp.m_ping_id, ping_index);
         return -1;
     }
 
@@ -103,7 +103,7 @@ static int net_ping_processor_icmp_send(net_ping_processor_t processor, const ch
         CPE_ERROR(
             mgr->m_em, "ping: %s: send: %d.%d: ==> socket send fail, error=%d (%s)",
             net_ping_task_dump(net_ping_mgr_tmp_buffer(mgr), task),
-            processor->m_icmp.m_ping_id, processor->m_ping_index,
+            processor->m_icmp.m_ping_id, ping_index,
             errno, strerror(errno));
         return -1;
     }
@@ -111,7 +111,7 @@ static int net_ping_processor_icmp_send(net_ping_processor_t processor, const ch
     CPE_INFO(
         mgr->m_em, "ping: %s: send: %d.%d: ==> msg=%s, len=%d, checksum=:0x%x", 
         net_ping_task_dump(net_ping_mgr_tmp_buffer(mgr), task),
-        processor->m_icmp.m_ping_id, processor->m_ping_index,
+        processor->m_icmp.m_ping_id, ping_index,
         msg, (int)len, icmp_hdr->checksum);
 
     return 0;

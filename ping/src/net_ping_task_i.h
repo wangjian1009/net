@@ -9,11 +9,13 @@ struct net_ping_task {
     net_ping_type_t m_type;
     union {
         struct {
+            uint8_t m_is_https;
             char * m_path;
         } m_http;
     };
     net_ping_task_state_t m_state;
     net_address_t m_target;
+    uint16_t m_record_count;
     net_ping_record_list_t m_records;
     net_ping_processor_t m_processor;
 };

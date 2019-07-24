@@ -20,13 +20,14 @@ enum net_ping_type {
 
 net_ping_task_t net_ping_task_create_icmp(net_ping_mgr_t mgr, net_address_t target);
 net_ping_task_t net_ping_task_create_tcp_connect(net_ping_mgr_t mgr, net_address_t target);
-net_ping_task_t net_ping_task_create_http(net_ping_mgr_t mgr, net_address_t target, const char * path);
+net_ping_task_t net_ping_task_create_http(net_ping_mgr_t mgr, net_address_t target, uint8_t is_https, const char * path);
 
 void net_ping_task_free(net_ping_task_t task);
 
 net_ping_type_t net_pint_task_type(net_ping_task_t task);
 net_address_t net_ping_task_target(net_ping_task_t task);
 net_ping_task_state_t net_ping_task_state(net_ping_task_t task);
+net_ping_error_t net_ping_task_error(net_ping_task_t task);
 void net_ping_task_records(net_ping_task_t task, net_ping_record_it_t record_it);
 
 int net_ping_task_start(net_ping_task_t task, uint16_t ping_count);

@@ -23,6 +23,7 @@ static net_ping_task_t net_ping_task_create_i(net_ping_mgr_t mgr, net_address_t 
     task->m_mgr = mgr;
     task->m_state = net_ping_task_state_init;
     task->m_processor = NULL;
+    task->m_record_count = 0;
     TAILQ_INIT(&task->m_records);
 
     task->m_target = net_address_copy(mgr->m_schedule, target);
@@ -47,12 +48,16 @@ net_ping_task_t net_ping_task_create_tcp_connect(net_ping_mgr_t mgr, net_address
     return task;
 }
 
-net_ping_task_t net_ping_task_create_http(net_ping_mgr_t mgr, net_address_t target, const char * path) {
+net_ping_task_t net_ping_task_create_http(net_ping_mgr_t mgr, net_address_t target, uint8_t is_https, const char * path) {
     net_ping_task_t task = net_ping_task_create_i(mgr, target);
     task->m_type = net_ping_type_http;
 
+    task->m_http.m_is_https = is_https;
     task->m_http.m_path = cpe_str_mem_dup(mgr->m_alloc, path);
     if (task->m_http.m_path == NULL) {
+        CPE_ERROR(mgr->m_em, "ping: %s: dup target address fail!", net_address_dump(net_ping_mgr_tmp_buffer(mgr), target));
+        net_ping_task_free(task);
+        return NULL;
     }
     
     return task;
@@ -98,6 +103,11 @@ net_ping_task_state_t net_ping_task_state(net_ping_task_t task) {
     return task->m_state;
 }
 
+net_ping_error_t net_ping_task_error(net_ping_task_t task) {
+    net_ping_record_t record = TAILQ_FIRST(&task->m_records);
+    return record ? record->m_error : net_ping_error_none;
+}
+
 static net_ping_record_t net_ping_task_record_next(net_ping_record_it_t it) {
     net_ping_record_t * data = (net_ping_record_t *)it->data;
 
@@ -124,6 +134,10 @@ int net_ping_task_start(net_ping_task_t task, uint16_t ping_count) {
         task->m_processor = NULL;
     }
 
+    while(!TAILQ_EMPTY(&task->m_records)) {
+        net_ping_record_free(TAILQ_FIRST(&task->m_records));
+    }
+    
     net_ping_task_set_state(task, net_ping_task_state_processing);
     
     task->m_processor = net_ping_processor_create(task, ping_count);
@@ -132,20 +146,7 @@ int net_ping_task_start(net_ping_task_t task, uint16_t ping_count) {
         return -1;
     }
 
-    int rv = 0;
-    
-    switch(task->m_type) {
-    case net_ping_type_icmp:
-        rv = net_ping_processor_start_icmp(task->m_processor);
-        break;
-    case net_ping_type_tcp_connect:
-        rv = net_ping_processor_start_tcp_connect(task->m_processor);
-        break;
-    case net_ping_type_http:
-        rv = net_ping_processor_start_http(task->m_processor);
-        break;
-    }
-
+    int rv = net_ping_processor_start(task->m_processor);
     if (rv != 0) {
         net_ping_processor_free(task->m_processor);
         task->m_processor = NULL;
@@ -198,6 +199,20 @@ uint32_t net_ping_task_ping_avg(net_ping_task_t task) {
 
 void net_ping_task_print(write_stream_t ws, net_ping_task_t task) {
     net_address_print(ws, task->m_target);
+    
+    stream_printf(ws, " use ");
+    
+    switch(task->m_type) {
+    case net_ping_type_icmp:
+        stream_printf(ws, "icmp");
+        break;
+    case net_ping_type_tcp_connect:
+        stream_printf(ws, "tcp-connect");
+        break;
+    case net_ping_type_http:
+        stream_printf(ws, "tcp-connect");
+        break;
+    }
 }
 
 const char * net_ping_task_dump(mem_buffer_t buffer, net_ping_task_t task) {
