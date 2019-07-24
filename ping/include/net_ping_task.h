@@ -43,6 +43,7 @@ void net_ping_task_print(write_stream_t ws, net_ping_task_t task);
 const char * net_ping_task_dump(mem_buffer_t buffer, net_ping_task_t task);
 
 const char * net_ping_task_state_str(net_ping_task_state_t state);
+const char * net_ping_error_str(net_ping_error_t error);
 
 NET_END_DECL
 

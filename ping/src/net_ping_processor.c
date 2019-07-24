@@ -135,7 +135,8 @@ int net_ping_processor_start(net_ping_processor_t processor) {
 }
 
 void net_point_processor_set_result_one(
-    net_ping_processor_t processor, net_ping_error_t error, uint8_t need_retry,
+    net_ping_processor_t processor, 
+    net_ping_error_t error, const char * error_msg, uint8_t need_retry,
     uint32_t bytes, uint32_t ttl, uint32_t value)
 {
     net_ping_task_t task = processor->m_task;
@@ -145,7 +146,7 @@ void net_point_processor_set_result_one(
         value = ct_ms > processor->m_start_time_ms ? (uint32_t)(ct_ms - processor->m_start_time_ms) : 0;
     }
     
-    net_ping_record_t record = net_ping_record_create(task, error, bytes, ttl, value);
+    net_ping_record_t record = net_ping_record_create(task, error, error_msg, bytes, ttl, value);
     if (record == NULL) {
         net_ping_task_set_state(task, net_ping_task_state_error);
         return;
@@ -180,7 +181,7 @@ static void net_ping_processor_timeout(net_timer_t timer, void * ctx) {
     int rv = net_ping_processor_start(task->m_processor);
     if (rv != 0) {
         if (task->m_record_count == record_count) {
-            net_point_processor_set_result_one(task->m_processor, net_ping_error_internal, 0, 0, 0, 0);
+            net_point_processor_set_result_one(task->m_processor, net_ping_error_internal, "retry-start-fail", 0, 0, 0, 0);
             assert(task->m_state == net_ping_task_state_error);
         }
     }

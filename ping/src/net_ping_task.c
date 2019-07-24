@@ -249,7 +249,7 @@ void net_ping_task_start(net_ping_task_t task, uint32_t ping_span_ms, uint16_t p
     int rv = net_ping_processor_start(task->m_processor);
     if (rv != 0) {
         if (task->m_record_count == 0) {
-            net_point_processor_set_result_one(task->m_processor, net_ping_error_internal, 0, 0, 0, 0);
+            net_point_processor_set_result_one(task->m_processor, net_ping_error_internal, "start-fail", 0, 0, 0, 0);
             assert(task->m_state == net_ping_task_state_error);
         }
     }
@@ -357,5 +357,18 @@ const char * net_ping_task_state_str(net_ping_task_state_t state) {
         return "done";
     case net_ping_task_state_error:
         return "error";
+    }
+}
+
+const char * net_ping_error_str(net_ping_error_t err) {
+    switch(err) {
+    case net_ping_error_none:
+        return "none";
+    case net_ping_error_no_network:
+        return "no-network";
+    case net_ping_error_no_right:
+        return "no-right";
+    case net_ping_error_internal:
+        return "internal";
     }
 }

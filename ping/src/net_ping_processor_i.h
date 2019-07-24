@@ -37,7 +37,8 @@ int net_ping_processor_start_tcp_connect(net_ping_processor_t processor);
 int net_ping_processor_start_http(net_ping_processor_t processor);
 
 void net_point_processor_set_result_one(
-    net_ping_processor_t processor, net_ping_error_t error, uint8_t need_retry,
+    net_ping_processor_t processor, 
+    net_ping_error_t error, const char * error_msg, uint8_t need_retry,
     uint32_t bytes, uint32_t ttl, uint32_t value);
 
 #endif

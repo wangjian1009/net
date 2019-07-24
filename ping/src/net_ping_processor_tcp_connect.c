@@ -123,7 +123,7 @@ int net_ping_processor_start_tcp_connect(net_ping_processor_t processor) {
     else {
         /*连接成功 */
         net_ping_processor_tcp_connect_close(processor);
-        net_point_processor_set_result_one(processor, net_ping_error_none, 0, 0, 0, 0);
+        net_point_processor_set_result_one(processor, net_ping_error_none, NULL, 0, 0, 0, 0);
         return 0;
     }
 }
@@ -167,7 +167,7 @@ static int net_ping_processor_tcp_connect_connect(net_ping_mgr_t mgr, net_ping_t
             mgr->m_em, "ping: %s: start: create socket fail, errno=%d (%s)",
             net_ping_task_dump(net_ping_mgr_tmp_buffer(mgr), task),
             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-        net_point_processor_set_result_one(processor, net_ping_error_internal, 1, 0, 0, 0);
+        net_point_processor_set_result_one(processor, net_ping_error_internal, cpe_sock_errstr(cpe_sock_errno()), 1, 0, 0, 0);
         return -1;
     }
 
@@ -177,7 +177,7 @@ static int net_ping_processor_tcp_connect_connect(net_ping_mgr_t mgr, net_ping_t
             net_ping_task_dump(net_ping_mgr_tmp_buffer(mgr), task),
             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
         net_ping_processor_tcp_connect_close(processor);
-        net_point_processor_set_result_one(processor, net_ping_error_internal, 1, 0, 0, 0);
+        net_point_processor_set_result_one(processor, net_ping_error_internal, cpe_sock_errstr(cpe_sock_errno()), 1, 0, 0, 0);
         return -1;
     }
 
@@ -187,7 +187,7 @@ static int net_ping_processor_tcp_connect_connect(net_ping_mgr_t mgr, net_ping_t
             net_ping_task_dump(net_ping_mgr_tmp_buffer(mgr), task),
             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
         net_ping_processor_tcp_connect_close(processor);
-        net_point_processor_set_result_one(processor, net_ping_error_internal, 1, 0, 0, 0);
+        net_point_processor_set_result_one(processor, net_ping_error_internal, cpe_sock_errstr(cpe_sock_errno()), 1, 0, 0, 0);
         return -1;
     }
 
@@ -209,7 +209,7 @@ static void net_ping_processor_tcp_connect_cb(void * ctx, int fd, uint8_t do_rea
             net_ping_task_dump(net_ping_mgr_tmp_buffer(mgr), task),
             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
         net_ping_processor_tcp_connect_close(processor);
-        net_point_processor_set_result_one(processor, net_ping_error_internal, 1, 0, 0, 0);
+        net_point_processor_set_result_one(processor, net_ping_error_internal, cpe_sock_errstr(cpe_sock_errno()), 1, 0, 0, 0);
         return;
     }
 
@@ -224,13 +224,13 @@ static void net_ping_processor_tcp_connect_cb(void * ctx, int fd, uint8_t do_rea
                 net_ping_task_dump(net_ping_mgr_tmp_buffer(mgr), task),
                 cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
             net_ping_processor_tcp_connect_close(processor);
-            net_point_processor_set_result_one(processor, net_ping_error_internal, 1, 0, 0, 0);
+            net_point_processor_set_result_one(processor, net_ping_error_internal, cpe_sock_errstr(cpe_sock_errno()), 1, 0, 0, 0);
         }
         return;
     }
 
     net_ping_processor_tcp_connect_close(processor);
-    net_point_processor_set_result_one(processor, net_ping_error_none, 0, 0, 0, 0);
+    net_point_processor_set_result_one(processor, net_ping_error_none, NULL, 0, 0, 0, 0);
 }
 
 static void net_ping_processor_tcp_connect_close(net_ping_processor_t processor) {
