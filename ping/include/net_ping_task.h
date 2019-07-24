@@ -5,13 +5,6 @@
 
 NET_BEGIN_DECL
 
-enum net_ping_task_state {
-    net_ping_task_state_init,
-    net_ping_task_state_processing,
-    net_ping_task_state_done,
-    net_ping_task_state_error,
-};
-
 enum net_ping_type {
     net_ping_type_icmp,
     net_ping_type_tcp_connect,

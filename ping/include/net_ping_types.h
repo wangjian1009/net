@@ -16,7 +16,13 @@ typedef enum net_ping_error {
     net_ping_error_internal,
 } net_ping_error_t;
 
-typedef enum net_ping_task_state net_ping_task_state_t;
+typedef enum net_ping_task_state {
+    net_ping_task_state_init,
+    net_ping_task_state_processing,
+    net_ping_task_state_done,
+    net_ping_task_state_error,
+} net_ping_task_state_t;
+
 typedef enum net_ping_type net_ping_type_t;
 
 NET_END_DECL
