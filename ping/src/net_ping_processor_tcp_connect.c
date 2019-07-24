@@ -6,6 +6,7 @@
 #include "net_watcher.h"
 #include "net_ping_processor_i.h"
 
+static void net_ping_processor_tcp_connect_close(net_ping_processor_t processor);
 static int net_ping_processor_tcp_connect_connect(net_ping_mgr_t mgr, net_ping_task_t task, net_ping_processor_t processor, net_address_t remote_addr);
 static void net_ping_processor_tcp_connect_cb(void * ctx, int fd, uint8_t do_read, uint8_t do_write);
 
@@ -21,10 +22,9 @@ int net_ping_processor_start_tcp_connect(net_ping_processor_t processor) {
             mgr->m_em, "ping: %s: start: not support address type %s!", 
             net_ping_task_dump(net_ping_mgr_tmp_buffer(mgr), task),
             net_address_type_str(net_address_type(task->m_target)));
-        net_point_processor_set_result_one(processor, net_ping_error_no_network, 0, 0, 0, 0);
         return -1;
     }
-    
+
     int connect_rv;
 
     if (net_address_type(remote_addr) == net_address_local) {
@@ -92,6 +92,7 @@ int net_ping_processor_start_tcp_connect(net_ping_processor_t processor) {
 
     if (connect_rv != 0) {
         if (processor->m_tcp_connect.m_fd == -1) {
+            assert(processor->m_tcp_connect.m_watcher == NULL);
             return -1;
         }
         
@@ -103,8 +104,7 @@ int net_ping_processor_start_tcp_connect(net_ping_processor_t processor) {
                 CPE_ERROR(
                     mgr->m_em, "ping: %s: start: create watcher fail",
                     net_ping_task_dump(net_ping_mgr_tmp_buffer(mgr), task));
-                cpe_sock_close(processor->m_icmp.m_fd);
-                processor->m_icmp.m_fd = -1;
+                net_ping_processor_tcp_connect_close(processor);
                 return -1;
             }
 
@@ -116,15 +116,13 @@ int net_ping_processor_start_tcp_connect(net_ping_processor_t processor) {
                 mgr->m_em, "ping: %s: start: connect error(first), errno=%d (%s)",
                 net_ping_task_dump(net_ping_mgr_tmp_buffer(mgr), task),
                 cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-
-            cpe_sock_close(processor->m_icmp.m_fd);
-            processor->m_icmp.m_fd = -1;
-            net_point_processor_set_result_one(processor, net_ping_error_internal, 1, 0, 0, 0);
+            net_ping_processor_tcp_connect_close(processor);
             return -1;
         }
     }
     else {
         /*连接成功 */
+        net_ping_processor_tcp_connect_close(processor);
         net_point_processor_set_result_one(processor, net_ping_error_none, 0, 0, 0, 0);
         return 0;
     }
@@ -178,8 +176,7 @@ static int net_ping_processor_tcp_connect_connect(net_ping_mgr_t mgr, net_ping_t
             mgr->m_em, "ping: %s: start: set non-block fail, errno=%d (%s)",
             net_ping_task_dump(net_ping_mgr_tmp_buffer(mgr), task),
             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-        cpe_sock_close(processor->m_icmp.m_fd);
-        processor->m_icmp.m_fd = -1;
+        net_ping_processor_tcp_connect_close(processor);
         net_point_processor_set_result_one(processor, net_ping_error_internal, 1, 0, 0, 0);
         return -1;
     }
@@ -189,8 +186,7 @@ static int net_ping_processor_tcp_connect_connect(net_ping_mgr_t mgr, net_ping_t
             mgr->m_em, "ping: %s: start: set no-sig-pipe fail, errno=%d (%s)",
             net_ping_task_dump(net_ping_mgr_tmp_buffer(mgr), task),
             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-        cpe_sock_close(processor->m_icmp.m_fd);
-        processor->m_icmp.m_fd = -1;
+        net_ping_processor_tcp_connect_close(processor);
         net_point_processor_set_result_one(processor, net_ping_error_internal, 1, 0, 0, 0);
         return -1;
     }
@@ -199,5 +195,52 @@ static int net_ping_processor_tcp_connect_connect(net_ping_mgr_t mgr, net_ping_t
 }
 
 static void net_ping_processor_tcp_connect_cb(void * ctx, int fd, uint8_t do_read, uint8_t do_write) {
+    net_ping_processor_t processor = ctx;
+    net_ping_task_t task = processor->m_task;
+    net_ping_mgr_t mgr = task->m_mgr;
     
+    assert(fd == processor->m_tcp_connect.m_fd);
+
+    int err = 0;
+    socklen_t err_len = sizeof(err);
+    if (cpe_getsockopt(processor->m_tcp_connect.m_fd, SOL_SOCKET, SO_ERROR, (void*)&err, &err_len) == -1) {
+        CPE_ERROR(
+            mgr->m_em, "ping: %s: start: get socket error fail, errno=%d (%s)",
+            net_ping_task_dump(net_ping_mgr_tmp_buffer(mgr), task),
+            cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+        net_ping_processor_tcp_connect_close(processor);
+        net_point_processor_set_result_one(processor, net_ping_error_internal, 1, 0, 0, 0);
+        return;
+    }
+
+    if (err != 0) {
+        if (err == EINPROGRESS || err == EWOULDBLOCK) {
+            assert(processor->m_tcp_connect.m_watcher);
+            assert(net_watcher_expect_read(processor->m_tcp_connect.m_watcher) && net_watcher_expect_write(processor->m_tcp_connect.m_watcher));
+        }
+        else {
+            CPE_ERROR(
+                mgr->m_em, "ping: %s: start: connect error(callback), errno=%d (%s)",
+                net_ping_task_dump(net_ping_mgr_tmp_buffer(mgr), task),
+                cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+            net_ping_processor_tcp_connect_close(processor);
+            net_point_processor_set_result_one(processor, net_ping_error_internal, 1, 0, 0, 0);
+        }
+        return;
+    }
+
+    net_ping_processor_tcp_connect_close(processor);
+    net_point_processor_set_result_one(processor, net_ping_error_none, 0, 0, 0, 0);
+}
+
+static void net_ping_processor_tcp_connect_close(net_ping_processor_t processor) {
+    if (processor->m_tcp_connect.m_watcher) {
+        net_watcher_free(processor->m_tcp_connect.m_watcher);
+        processor->m_tcp_connect.m_watcher = NULL;
+    }
+
+    if (processor->m_tcp_connect.m_fd != -1) {
+        cpe_sock_close(processor->m_tcp_connect.m_fd);
+        processor->m_tcp_connect.m_fd = -1;
+    }
 }

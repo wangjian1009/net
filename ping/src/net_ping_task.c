@@ -243,14 +243,23 @@ void net_ping_task_start(net_ping_task_t task, uint32_t ping_span_ms, uint16_t p
     task->m_processor = net_ping_processor_create(task, ping_span_ms, ping_count);
     if (task->m_processor == NULL) {
         net_ping_task_set_state(task, net_ping_task_state_error);
-        //return -1;
+        return;
     }
 
     int rv = net_ping_processor_start(task->m_processor);
     if (rv != 0) {
-        if (task->m_state == net_ping_task_state_processing) {
-            net_ping_task_set_state(task, net_ping_task_state_error);
+        if (task->m_record_count == 0) {
+            net_point_processor_set_result_one(task->m_processor, net_ping_error_internal, 0, 0, 0, 0);
+            assert(task->m_state == net_ping_task_state_error);
         }
+    }
+    
+    if (task->m_state == net_ping_task_state_error
+        || task->m_state == net_ping_task_state_done)
+    {
+        assert(task->m_processor);
+        net_ping_processor_free(task->m_processor);
+        task->m_processor = NULL;
     }
 }
 
@@ -330,6 +339,8 @@ void net_ping_task_set_state(net_ping_task_t task, net_ping_task_state_t state) 
         mgr->m_em, "ping: task: state %s ==> %s", 
         net_ping_task_state_str(task->m_state), net_ping_task_state_str(state));
     
+    task->m_state = state;
+
     if (state == net_ping_task_state_error || state == net_ping_task_state_done) {
         /*进入结束状态触发一次最终回调 */
         net_ping_task_set_to_notify(task, 1);

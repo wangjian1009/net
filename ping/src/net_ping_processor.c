@@ -1,3 +1,4 @@
+#include <assert.h>
 #include "cpe/pal/pal_socket.h"
 #include "cpe/pal/pal_strings.h"
 #include "cpe/pal/pal_string.h"
@@ -157,11 +158,7 @@ void net_point_processor_set_result_one(
             net_timer_active(processor->m_timer, processor->m_ping_span_ms - used_duration);
         }
         else {
-            if (net_ping_processor_start(processor) != 0) {
-                if (task->m_state == net_ping_task_state_processing) {
-                    net_ping_task_set_state(task, net_ping_task_state_error);
-                }
-            }
+            net_timer_active(processor->m_timer, 0);
         }
     }
     else {
@@ -176,4 +173,23 @@ void net_point_processor_set_result_one(
 }
 
 static void net_ping_processor_timeout(net_timer_t timer, void * ctx) {
+    net_ping_processor_t processor = ctx;
+    net_ping_task_t task = processor->m_task;
+
+    uint16_t record_count = task->m_record_count;
+    int rv = net_ping_processor_start(task->m_processor);
+    if (rv != 0) {
+        if (task->m_record_count == record_count) {
+            net_point_processor_set_result_one(task->m_processor, net_ping_error_internal, 0, 0, 0, 0);
+            assert(task->m_state == net_ping_task_state_error);
+        }
+    }
+    
+    if (task->m_state == net_ping_task_state_error
+        || task->m_state == net_ping_task_state_done)
+    {
+        assert(task->m_processor);
+        net_ping_processor_free(task->m_processor);
+        task->m_processor = NULL;
+    }
 }
