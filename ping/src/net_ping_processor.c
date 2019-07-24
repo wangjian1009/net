@@ -133,7 +133,7 @@ int net_ping_processor_start(net_ping_processor_t processor) {
 }
 
 void net_point_processor_set_result_one(
-    net_ping_processor_t processor, net_ping_error_t error, uint8_t error_go_on,
+    net_ping_processor_t processor, net_ping_error_t error, uint8_t need_retry,
     uint32_t bytes, uint32_t ttl, uint32_t value)
 {
     net_ping_task_t task = processor->m_task;
@@ -148,13 +148,29 @@ void net_point_processor_set_result_one(
         net_ping_task_set_state(task, net_ping_task_state_error);
         return;
     }
-    
-    if (error != net_ping_error_none && !error_go_on) {
-        net_ping_task_set_state(task, net_ping_task_state_error);
-        return;
+
+    if (need_retry && task->m_record_count < processor->m_ping_count) {
+        /*需要下一次执行 */
+        uint32_t used_duration = ct_ms > processor->m_start_time_ms ? (uint32_t)(ct_ms - processor->m_start_time_ms) : 0;
+        if (used_duration < processor->m_ping_span_ms) {
+            net_timer_active(processor->m_timer, processor->m_ping_span_ms - used_duration);
+        }
+        else {
+            if (net_ping_processor_start(processor) != 0) {
+                if (task->m_state == net_ping_task_state_processing) {
+                    net_ping_task_set_state(task, net_ping_task_state_error);
+                }
+            }
+        }
     }
-    
-    if (task->m_record_count >= processor->m_ping_count) {
+    else {
+        /*计算最终结果 */
+        uint8_t success_count = 0;
+        TAILQ_FOREACH(record, &task->m_records, m_next) {
+            if (record->m_error == net_ping_error_no_network) success_count++;
+        }
+        
+        net_ping_task_set_state(task, success_count ? net_ping_task_state_done : net_ping_task_state_error);
     }
 }
 

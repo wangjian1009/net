@@ -22,12 +22,14 @@ net_ping_record_create(net_ping_task_t task, net_ping_error_t error, uint32_t by
 
     record->m_task = task;
     record->m_error = error;
+    record->m_to_notify = 1;
     record->m_bytes = bytes;
     record->m_ttl = ttl;
     record->m_value = value;
 
     task->m_record_count++;
     TAILQ_INSERT_TAIL(&task->m_records, record, m_next);
+    net_ping_task_set_to_notify(task, 1);
 
     return record;
 }

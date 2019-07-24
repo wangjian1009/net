@@ -24,6 +24,12 @@ static net_ping_task_t net_ping_task_create_i(net_ping_mgr_t mgr, net_address_t 
     task->m_state = net_ping_task_state_init;
     task->m_processor = NULL;
     task->m_record_count = 0;
+    task->m_to_notify = 0;
+    task->m_is_processing = 0;
+    task->m_is_free = 0;
+    task->m_cb_ctx = NULL;
+    task->m_cb_fun = NULL;
+    
     TAILQ_INIT(&task->m_records);
 
     task->m_target = net_address_copy(mgr->m_schedule, target);
@@ -32,6 +38,8 @@ static net_ping_task_t net_ping_task_create_i(net_ping_mgr_t mgr, net_address_t 
         TAILQ_INSERT_TAIL(&mgr->m_free_tasks, task, m_next);
         return NULL;
     }
+
+    TAILQ_INSERT_TAIL(&mgr->m_tasks_no_notify, task, m_next);
     
     return task;
 }
@@ -66,6 +74,11 @@ net_ping_task_t net_ping_task_create_http(net_ping_mgr_t mgr, net_address_t targ
 void net_ping_task_free(net_ping_task_t task) {
     net_ping_mgr_t mgr = task->m_mgr;
 
+    if (task->m_is_processing) {
+        task->m_is_free = 1;
+        return;
+    }
+    
     while(!TAILQ_EMPTY(&task->m_records)) {
         net_ping_record_free(TAILQ_FIRST(&task->m_records));
     }
@@ -84,6 +97,13 @@ void net_ping_task_free(net_ping_task_t task) {
         break;
     default:
         break;
+    }
+
+    if (task->m_to_notify) {
+        TAILQ_REMOVE(&mgr->m_tasks_to_notify, task, m_next);
+    }
+    else {
+        TAILQ_REMOVE(&mgr->m_tasks_no_notify, task, m_next);
     }
     
     TAILQ_INSERT_TAIL(&mgr->m_free_tasks, task, m_next);
@@ -104,8 +124,13 @@ net_ping_task_state_t net_ping_task_state(net_ping_task_t task) {
 }
 
 net_ping_error_t net_ping_task_error(net_ping_task_t task) {
-    net_ping_record_t record = TAILQ_FIRST(&task->m_records);
-    return record ? record->m_error : net_ping_error_none;
+    net_ping_record_t record;
+    TAILQ_FOREACH_REVERSE(record, &task->m_records, net_ping_record_list, m_next) {
+        if (record->m_error != net_ping_error_no_network) {
+            return record->m_error;
+        }
+    }
+    return net_ping_error_none;
 }
 
 static net_ping_record_t net_ping_task_record_next(net_ping_record_it_t it) {
@@ -125,7 +150,82 @@ void net_ping_task_records(net_ping_task_t task, net_ping_record_it_t record_it)
     record_it->next = net_ping_task_record_next;
 }
 
-int net_ping_task_start(net_ping_task_t task, uint16_t ping_count) {
+void net_ping_task_set_cb(net_ping_task_t task, void * cb_ctx, net_ping_task_cb_fun_t cb_fun) {
+    task->m_cb_ctx = cb_ctx;
+    task->m_cb_fun = cb_fun;
+}
+
+void net_ping_task_set_to_notify(net_ping_task_t task, uint8_t to_notify) {
+    if (task->m_to_notify == to_notify) return;
+
+    net_ping_mgr_t mgr = task->m_mgr;
+    
+    if (task->m_to_notify) {
+        TAILQ_REMOVE(&mgr->m_tasks_to_notify, task, m_next);
+    }
+    else {
+        TAILQ_REMOVE(&mgr->m_tasks_no_notify, task, m_next);
+    }
+    
+    task->m_to_notify = to_notify;
+
+    if (task->m_to_notify) {
+        if (TAILQ_EMPTY(&mgr->m-m_tasks_to_notify)) {
+            net_ping_mgr_active_delay_process(mgr);
+        }
+        TAILQ_INSERT_TAIL(&mgr->m_tasks_to_notify, task, m_next);
+    }
+    else {
+        TAILQ_INSERT_TAIL(&mgr->m_tasks_no_notify, task, m_next);
+    }
+}
+
+void net_ping_task_do_notify(net_ping_task_t task) {
+    assert(!task->m_is_free);
+    assert(!task->m_is_processing);
+    
+    task->m_is_processing = 1;
+    
+    net_ping_record_t to_notify_record = TAILQ_LAST(&mgr->m_records, net_ping_record_list);
+    if (to_notify_record->m_to_notify) {
+        net_ping_record_t pre_record;
+        while((pre_record = TAILQ_PREV(to_notify_record, net_ping_record_list, m_next)) != NULL
+              && pre_record->m_to_notify)
+        {
+            to_notify_record = pre_record;
+        }
+    }
+    else {
+        to_notify_record = NULL;
+    }
+    
+    while(!task->m_is_free && to_notify_record) {
+        to_notify_record->m_to_notify = 0;
+        net_ping_record_t cur_reocrd = to_notify_record;
+        to_notify_record = TAILQ_NEXT(to_notify_record, m_next);
+
+        if (task->m_cb_fun) {
+            task->m_cb_fun(task->m_cb_ctx, task, cur_reocrd);
+        }
+    }
+
+    if (!task->m_is_free
+        && (task->m_state == net_ping_task_state_error || task->m_state == net_ping_task_state_done)
+        )
+    {
+        if (task->m_cb_fun) {
+            task->m_cb_fun(task->m_cb_ctx, task, NULL);
+        }
+    }
+
+    task->m_is_processing = 0;
+    if (task->m_is_free) {
+        net_ping_task_free(task);
+        return;
+    }
+}
+
+void net_ping_task_start(net_ping_task_t task, uint16_t ping_count) {
     net_ping_mgr_t mgr = task->m_mgr;
     assert(ping_count > 0);
 
@@ -143,18 +243,15 @@ int net_ping_task_start(net_ping_task_t task, uint16_t ping_count) {
     task->m_processor = net_ping_processor_create(task, ping_count);
     if (task->m_processor == NULL) {
         net_ping_task_set_state(task, net_ping_task_state_error);
-        return -1;
+        //return -1;
     }
 
     int rv = net_ping_processor_start(task->m_processor);
     if (rv != 0) {
-        net_ping_processor_free(task->m_processor);
-        task->m_processor = NULL;
-        net_ping_task_set_state(task, net_ping_task_state_error);
-        return -1;
+        if (task->m_state == net_ping_task_state_processing) {
+            net_ping_task_set_state(task, net_ping_task_state_error);
+        }
     }
-
-    return 0;
 }
 
 uint32_t net_ping_task_ping_max(net_ping_task_t task) {
@@ -196,7 +293,6 @@ uint32_t net_ping_task_ping_avg(net_ping_task_t task) {
     return count > 0 ? (uint32_t)(total_ping / count) : 0;
 }
 
-
 void net_ping_task_print(write_stream_t ws, net_ping_task_t task) {
     net_address_print(ws, task->m_target);
     
@@ -233,6 +329,11 @@ void net_ping_task_set_state(net_ping_task_t task, net_ping_task_state_t state) 
     CPE_INFO(
         mgr->m_em, "ping: task: state %s ==> %s", 
         net_ping_task_state_str(task->m_state), net_ping_task_state_str(state));
+    
+    if (state == net_ping_task_state_error || state == net_ping_task_state_done) {
+        /*进入结束状态触发一次最终回调 */
+        net_ping_task_set_to_notify(task, 1);
+    }
 }
 
 const char * net_ping_task_state_str(net_ping_task_state_t state) {

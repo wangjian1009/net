@@ -18,6 +18,8 @@ enum net_ping_type {
     net_ping_type_http,
 };
 
+typedef void (*net_ping_task_cb_fun_t)(void * ctx, net_ping_task_t task, net_ping_record_t record);
+
 net_ping_task_t net_ping_task_create_icmp(net_ping_mgr_t mgr, net_address_t target);
 net_ping_task_t net_ping_task_create_tcp_connect(net_ping_mgr_t mgr, net_address_t target);
 net_ping_task_t net_ping_task_create_http(net_ping_mgr_t mgr, net_address_t target, uint8_t is_https, const char * path);
@@ -29,8 +31,9 @@ net_address_t net_ping_task_target(net_ping_task_t task);
 net_ping_task_state_t net_ping_task_state(net_ping_task_t task);
 net_ping_error_t net_ping_task_error(net_ping_task_t task);
 void net_ping_task_records(net_ping_task_t task, net_ping_record_it_t record_it);
+void net_ping_task_set_cb(net_ping_task_t task, void * cb_ctx, net_ping_task_cb_fun_t cb_fun);
 
-int net_ping_task_start(net_ping_task_t task, uint16_t ping_count);
+void net_ping_task_start(net_ping_task_t task, uint16_t ping_count);
 
 uint32_t net_ping_task_ping_max(net_ping_task_t task);
 uint32_t net_ping_task_ping_min(net_ping_task_t task);

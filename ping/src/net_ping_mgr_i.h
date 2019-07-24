@@ -20,13 +20,17 @@ struct net_ping_mgr {
 
     /*runtime*/
     uint16_t m_icmp_ping_id_max;
-    net_ping_task_list_t m_tasks;
+    net_ping_task_list_t m_tasks_no_notify;
+    net_ping_task_list_t m_tasks_to_notify;
+    net_timer_t m_delay_process;
     
     /*free */
     net_ping_task_list_t m_free_tasks;
     net_ping_record_list_t m_free_records;
     net_ping_processor_list_t m_free_processors;
 };
+
+void net_ping_mgr_active_delay_process(net_ping_mgr_t mgr);
 
 mem_buffer_t net_ping_mgr_tmp_buffer(net_ping_mgr_t mgr);
 
