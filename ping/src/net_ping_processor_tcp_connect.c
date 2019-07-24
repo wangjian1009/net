@@ -21,6 +21,7 @@ int net_ping_processor_start_tcp_connect(net_ping_processor_t processor) {
             mgr->m_em, "ping: %s: start: not support address type %s!", 
             net_ping_task_dump(net_ping_mgr_tmp_buffer(mgr), task),
             net_address_type_str(net_address_type(task->m_target)));
+        net_point_processor_set_result_one(processor, net_ping_error_no_network, 0, 0, 0, 0);
         return -1;
     }
     
@@ -118,11 +119,13 @@ int net_ping_processor_start_tcp_connect(net_ping_processor_t processor) {
 
             cpe_sock_close(processor->m_icmp.m_fd);
             processor->m_icmp.m_fd = -1;
+            net_point_processor_set_result_one(processor, net_ping_error_internal, 1, 0, 0, 0);
             return -1;
         }
     }
     else {
         /*连接成功 */
+        net_point_processor_set_result_one(processor, net_ping_error_none, 0, 0, 0, 0);
         return 0;
     }
 }
@@ -166,6 +169,7 @@ static int net_ping_processor_tcp_connect_connect(net_ping_mgr_t mgr, net_ping_t
             mgr->m_em, "ping: %s: start: create socket fail, errno=%d (%s)",
             net_ping_task_dump(net_ping_mgr_tmp_buffer(mgr), task),
             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+        net_point_processor_set_result_one(processor, net_ping_error_internal, 1, 0, 0, 0);
         return -1;
     }
 
@@ -176,6 +180,7 @@ static int net_ping_processor_tcp_connect_connect(net_ping_mgr_t mgr, net_ping_t
             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
         cpe_sock_close(processor->m_icmp.m_fd);
         processor->m_icmp.m_fd = -1;
+        net_point_processor_set_result_one(processor, net_ping_error_internal, 1, 0, 0, 0);
         return -1;
     }
 
@@ -186,6 +191,7 @@ static int net_ping_processor_tcp_connect_connect(net_ping_mgr_t mgr, net_ping_t
             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
         cpe_sock_close(processor->m_icmp.m_fd);
         processor->m_icmp.m_fd = -1;
+        net_point_processor_set_result_one(processor, net_ping_error_internal, 1, 0, 0, 0);
         return -1;
     }
 

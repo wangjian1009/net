@@ -6,6 +6,7 @@
 struct net_ping_record {
     net_ping_task_t m_task;
     TAILQ_ENTRY(net_ping_record) m_next;
+    uint8_t m_to_notify;
     net_ping_error_t m_error;
     uint32_t m_bytes;
     uint32_t m_value;
