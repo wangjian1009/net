@@ -11,7 +11,7 @@
 static void net_ping_processor_timeout(net_timer_t timer, void * ctx);
 
 net_ping_processor_t
-net_ping_processor_create(net_ping_task_t task, uint16_t ping_count) {
+net_ping_processor_create(net_ping_task_t task, uint32_t ping_span_ms, uint16_t ping_count) {
     net_ping_mgr_t mgr = task->m_mgr;
     
     net_ping_processor_t processor = TAILQ_FIRST(&mgr->m_free_processors);
@@ -54,6 +54,7 @@ net_ping_processor_create(net_ping_task_t task, uint16_t ping_count) {
         break;
     }
     processor->m_start_time_ms = 0;
+    processor->m_ping_span_ms = ping_span_ms;
     processor->m_ping_count = ping_count;
     
     return processor;

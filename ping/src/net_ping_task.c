@@ -170,7 +170,7 @@ void net_ping_task_set_to_notify(net_ping_task_t task, uint8_t to_notify) {
     task->m_to_notify = to_notify;
 
     if (task->m_to_notify) {
-        if (TAILQ_EMPTY(&mgr->m-m_tasks_to_notify)) {
+        if (TAILQ_EMPTY(&mgr->m_tasks_to_notify)) {
             net_ping_mgr_active_delay_process(mgr);
         }
         TAILQ_INSERT_TAIL(&mgr->m_tasks_to_notify, task, m_next);
@@ -186,7 +186,7 @@ void net_ping_task_do_notify(net_ping_task_t task) {
     
     task->m_is_processing = 1;
     
-    net_ping_record_t to_notify_record = TAILQ_LAST(&mgr->m_records, net_ping_record_list);
+    net_ping_record_t to_notify_record = TAILQ_LAST(&task->m_records, net_ping_record_list);
     if (to_notify_record->m_to_notify) {
         net_ping_record_t pre_record;
         while((pre_record = TAILQ_PREV(to_notify_record, net_ping_record_list, m_next)) != NULL
@@ -225,7 +225,7 @@ void net_ping_task_do_notify(net_ping_task_t task) {
     }
 }
 
-void net_ping_task_start(net_ping_task_t task, uint16_t ping_count) {
+void net_ping_task_start(net_ping_task_t task, uint32_t ping_span_ms, uint16_t ping_count) {
     net_ping_mgr_t mgr = task->m_mgr;
     assert(ping_count > 0);
 
@@ -240,7 +240,7 @@ void net_ping_task_start(net_ping_task_t task, uint16_t ping_count) {
     
     net_ping_task_set_state(task, net_ping_task_state_processing);
     
-    task->m_processor = net_ping_processor_create(task, ping_count);
+    task->m_processor = net_ping_processor_create(task, ping_span_ms, ping_count);
     if (task->m_processor == NULL) {
         net_ping_task_set_state(task, net_ping_task_state_error);
         //return -1;

@@ -33,7 +33,7 @@ net_ping_error_t net_ping_task_error(net_ping_task_t task);
 void net_ping_task_records(net_ping_task_t task, net_ping_record_it_t record_it);
 void net_ping_task_set_cb(net_ping_task_t task, void * cb_ctx, net_ping_task_cb_fun_t cb_fun);
 
-void net_ping_task_start(net_ping_task_t task, uint16_t ping_count);
+void net_ping_task_start(net_ping_task_t task, uint32_t ping_span_ms, uint16_t ping_count);
 
 uint32_t net_ping_task_ping_max(net_ping_task_t task);
 uint32_t net_ping_task_ping_min(net_ping_task_t task);
