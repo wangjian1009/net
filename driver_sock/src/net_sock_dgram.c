@@ -100,7 +100,11 @@ int net_sock_dgram_init(net_dgram_t base_dgram) {
         /* net_dgram_set_address(base_dgram, address); */
     }
 
+#ifdef _WIN32
+    dgram->m_watcher = net_watcher_create(base_driver, _get_osfhandle(dgram->m_fd), dgram, net_sock_dgram_receive_cb);
+#else
     dgram->m_watcher = net_watcher_create(base_driver, dgram->m_fd, dgram, net_sock_dgram_receive_cb);
+#endif
     if (dgram->m_watcher == NULL) {
         CPE_ERROR(driver->m_em, "sock: dgram: create watcher fail");
         cpe_sock_close(dgram->m_fd);
