@@ -338,7 +338,8 @@ void net_ping_task_set_state(net_ping_task_t task, net_ping_task_state_t state) 
     net_ping_mgr_t mgr = task->m_mgr;
     
     CPE_INFO(
-        mgr->m_em, "ping: task: state %s ==> %s", 
+        mgr->m_em, "ping: %s: state %s ==> %s", 
+        net_ping_task_dump(net_ping_mgr_tmp_buffer(mgr), task),
         net_ping_task_state_str(task->m_state), net_ping_task_state_str(state));
     
     task->m_state = state;

@@ -166,7 +166,7 @@ void net_point_processor_set_result_one(
         /*计算最终结果 */
         uint8_t success_count = 0;
         TAILQ_FOREACH(record, &task->m_records, m_next) {
-            if (record->m_error == net_ping_error_no_network) success_count++;
+            if (record->m_error == net_ping_error_none) success_count++;
         }
         
         net_ping_task_set_state(task, success_count ? net_ping_task_state_done : net_ping_task_state_error);

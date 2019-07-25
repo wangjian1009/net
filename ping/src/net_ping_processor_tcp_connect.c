@@ -122,6 +122,8 @@ int net_ping_processor_start_tcp_connect(net_ping_processor_t processor) {
     }
     else {
         /*连接成功 */
+        CPE_INFO(mgr->m_em, "ping: %s: start: connect success", net_ping_task_dump(net_ping_mgr_tmp_buffer(mgr), task));
+
         net_ping_processor_tcp_connect_close(processor);
         net_point_processor_set_result_one(processor, net_ping_error_none, NULL, 0, 0, 0, 0);
         return 0;
@@ -205,7 +207,7 @@ static void net_ping_processor_tcp_connect_cb(void * ctx, int fd, uint8_t do_rea
     socklen_t err_len = sizeof(err);
     if (cpe_getsockopt(processor->m_tcp_connect.m_fd, SOL_SOCKET, SO_ERROR, (void*)&err, &err_len) == -1) {
         CPE_ERROR(
-            mgr->m_em, "ping: %s: start: get socket error fail, errno=%d (%s)",
+            mgr->m_em, "ping: %s: connect-cb: get socket error fail, errno=%d (%s)",
             net_ping_task_dump(net_ping_mgr_tmp_buffer(mgr), task),
             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
         net_ping_processor_tcp_connect_close(processor);
@@ -220,7 +222,7 @@ static void net_ping_processor_tcp_connect_cb(void * ctx, int fd, uint8_t do_rea
         }
         else {
             CPE_ERROR(
-                mgr->m_em, "ping: %s: start: connect error(callback), errno=%d (%s)",
+                mgr->m_em, "ping: %s: connect-cb: connect error(callback), errno=%d (%s)",
                 net_ping_task_dump(net_ping_mgr_tmp_buffer(mgr), task),
                 cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
             net_ping_processor_tcp_connect_close(processor);
@@ -228,6 +230,8 @@ static void net_ping_processor_tcp_connect_cb(void * ctx, int fd, uint8_t do_rea
         }
         return;
     }
+
+    CPE_INFO(mgr->m_em, "ping: %s: connect-cb: connect success", net_ping_task_dump(net_ping_mgr_tmp_buffer(mgr), task));
 
     net_ping_processor_tcp_connect_close(processor);
     net_point_processor_set_result_one(processor, net_ping_error_none, NULL, 0, 0, 0, 0);
