@@ -125,7 +125,7 @@ int net_ping_processor_start_tcp_connect(net_ping_processor_t processor) {
         CPE_INFO(mgr->m_em, "ping: %s: start: connect success", net_ping_task_dump(net_ping_mgr_tmp_buffer(mgr), task));
 
         net_ping_processor_tcp_connect_close(processor);
-        net_point_processor_set_result_one(processor, net_ping_error_none, NULL, 0, 0, 0, 0);
+        net_point_processor_set_result_one(processor, net_ping_error_none, NULL, 1, 0, 0, 0);
         return 0;
     }
 }
@@ -234,7 +234,7 @@ static void net_ping_processor_tcp_connect_cb(void * ctx, int fd, uint8_t do_rea
     CPE_INFO(mgr->m_em, "ping: %s: connect-cb: connect success", net_ping_task_dump(net_ping_mgr_tmp_buffer(mgr), task));
 
     net_ping_processor_tcp_connect_close(processor);
-    net_point_processor_set_result_one(processor, net_ping_error_none, NULL, 0, 0, 0, 0);
+    net_point_processor_set_result_one(processor, net_ping_error_none, NULL, 1, 0, 0, 0);
 }
 
 static void net_ping_processor_tcp_connect_close(net_ping_processor_t processor) {

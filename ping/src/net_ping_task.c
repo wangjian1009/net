@@ -268,6 +268,7 @@ uint32_t net_ping_task_ping_max(net_ping_task_t task) {
 
     net_ping_record_t record;
     TAILQ_FOREACH(record, &task->m_records, m_next) {
+        if (record->m_error != net_ping_error_none) continue;
         if (record->m_value > max_ping) {
             max_ping = record->m_value;
         }
@@ -281,6 +282,7 @@ uint32_t net_ping_task_ping_min(net_ping_task_t task) {
 
     net_ping_record_t record;
     TAILQ_FOREACH(record, &task->m_records, m_next) {
+        if (record->m_error != net_ping_error_none) continue;
         if (record->m_value < min_ping) {
             min_ping = record->m_value;
         }
@@ -295,10 +297,9 @@ uint32_t net_ping_task_ping_avg(net_ping_task_t task) {
 
     net_ping_record_t record;
     TAILQ_FOREACH(record, &task->m_records, m_next) {
-        if (record->m_error == net_ping_error_no_network) {
-            total_ping += record->m_value;
-            count++;
-        }
+        if (record->m_error != net_ping_error_none) continue;
+        total_ping += record->m_value;
+        count++;
     }
     
     return count > 0 ? (uint32_t)(total_ping / count) : 0;
