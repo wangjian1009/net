@@ -25,12 +25,14 @@ net_ebb_service_create(mem_allocrator_t alloc, error_monitor_t em, net_schedule_
             NULL,
             net_ebb_connection_on_state_change);
     if (protocol == NULL) {
+        CPE_ERROR(em, "ebb: %s: create protocol fail!", protocol_name);
         return NULL;
     }
 
     net_ebb_service_t service = net_protocol_data(protocol);
     service->m_alloc = alloc;
     service->m_em = em;
+    
     return service;
 }
 
