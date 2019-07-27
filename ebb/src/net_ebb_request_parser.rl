@@ -25,10 +25,11 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
  */
-#include "net_ebb_request_parser.h"
-
-#include <stdio.h>
 #include <assert.h>
+#include "cpe/pal/pal_stdio.h"
+#include "net_ebb_request_parser.h"
+#include "net_ebb_request_i.h"
+
 
 static int unhex[] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
                      ,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1

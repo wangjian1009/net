@@ -9,7 +9,7 @@ struct net_ebb_connection {
     net_endpoint_t m_endpoint;
     net_timer_t m_timeout;
     //net_ebb_after_write_cb after_write_cb; /* ro */
-    net_ebb_request_parser parser; /* private */
+    struct net_ebb_request_parser parser; /* private */
 
     /* Public */
     net_ebb_request_t (*new_request)(net_ebb_connection_t);

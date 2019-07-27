@@ -7,10 +7,7 @@ static int net_ebb_service_init(net_protocol_t protocol);
 static void net_ebb_service_fini(net_protocol_t protocol);
 
 net_ebb_service_t
-net_ebb_service_create(mem_allocrator_t alloc, error_monitor_t em, net_schedule_t schedule, const char * name) {
-    char protocol_name[64];
-    snprintf(protocol_name, sizeof(protocol_name), "http-net_ebb/%s", name);
-    
+net_ebb_service_create(mem_allocrator_t alloc, error_monitor_t em, net_schedule_t schedule, const char * protocol_name) {
     net_protocol_t protocol =
         net_protocol_create(
             schedule,
@@ -35,6 +32,14 @@ net_ebb_service_create(mem_allocrator_t alloc, error_monitor_t em, net_schedule_
     service->m_alloc = alloc;
     service->m_em = em;
     return service;
+}
+
+void net_ebb_service_free(net_ebb_service_t service) {
+    net_protocol_free(net_protocol_from_data(service));
+}
+
+net_protocol_t net_ebb_service_to_protocol(net_ebb_service_t service) {
+    return net_protocol_from_data(service);
 }
 
 static int net_ebb_service_init(net_protocol_t protocol) {
