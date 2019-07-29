@@ -1,3 +1,4 @@
+#include "net_endpoint.h"
 #include "net_ebb_request_i.h"
 
 static void net_ebb_request_on_path(net_ebb_request_t, const char* at, size_t length);
@@ -5,7 +6,24 @@ static void net_ebb_request_on_query_string(net_ebb_request_t, const char* at, s
 static void net_ebb_request_on_uri(net_ebb_request_t, const char* at, size_t length);
 static void net_ebb_request_on_fragment(net_ebb_request_t, const char* at, size_t length);
 
-void net_ebb_request_init(net_ebb_request_t request) {
+net_ebb_request_t net_ebb_request_create(net_ebb_connection_t connection) {
+    net_ebb_service_t service = net_ebb_connection_service(connection);
+
+    net_ebb_request_t request = TAILQ_FIRST(&service->m_free_requests);
+    if (request) {
+        TAILQ_REMOVE(&service->m_free_requests, request, m_next);
+    }
+    else {
+        request = mem_alloc(service->m_alloc, sizeof(struct net_ebb_request));
+        if (request == NULL) {
+            CPE_ERROR(
+                service->m_em, "ebb: %s: request: alloc fail!",
+                net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)));
+            return NULL;
+        }
+    }
+
+    request->m_connection = connection;
     request->m_expect_continue = 0;
     request->m_body_read = 0;
     request->m_content_length = 0;
@@ -24,6 +42,28 @@ void net_ebb_request_init(net_ebb_request_t request) {
     request->on_fragment = net_ebb_request_on_fragment;
     request->on_path = net_ebb_request_on_path;
     request->on_query_string = net_ebb_request_on_query_string;
+    
+    TAILQ_INSERT_TAIL(&connection->m_requests, request, m_next);
+    
+    return request;
+}
+
+void net_ebb_request_free(net_ebb_request_t request) {
+    net_ebb_connection_t connection = request->m_connection;
+    net_ebb_service_t service = net_ebb_connection_service(connection);
+    
+    TAILQ_REMOVE(&connection->m_requests, request, m_next);
+    
+    request->m_connection = (net_ebb_connection_t)service;
+    TAILQ_INSERT_TAIL(&service->m_free_requests, request, m_next);
+}
+
+void net_ebb_request_real_free(net_ebb_request_t request) {
+    net_ebb_service_t service = (net_ebb_service_t)request->m_connection;
+    
+    TAILQ_REMOVE(&service->m_free_requests, request, m_next);
+    
+    mem_free(service->m_alloc, request);
 }
 
 uint32_t net_ebb_request_method(net_ebb_request_t request) {

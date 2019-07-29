@@ -2,6 +2,7 @@
 #include "net_protocol.h"
 #include "net_endpoint.h"
 #include "net_ebb_connection_i.h"
+#include "net_ebb_request_i.h"
 
 static net_ebb_request_t net_ebb_connection_new_request(void *data);
 static void net_ebb_connection_timeout(net_timer_t timer, void * ctx);
@@ -25,8 +26,8 @@ int net_ebb_connection_init(net_endpoint_t base_endpoint) {
     connection->parser.data = connection;
     connection->parser.new_request = net_ebb_connection_new_request;
 
-    connection->new_request = NULL;
-    connection->on_close = NULL;
+    TAILQ_INIT(&connection->m_requests);
+    
     net_ebb_connection_reset_timeout(service, connection);
 
     return 0;
@@ -35,7 +36,11 @@ int net_ebb_connection_init(net_endpoint_t base_endpoint) {
 void net_ebb_connection_fini(net_endpoint_t base_endpoint) {
     net_ebb_service_t service = net_protocol_data(net_endpoint_protocol(base_endpoint));
     net_ebb_connection_t connection = net_endpoint_data(base_endpoint);
-    
+
+    while(TAILQ_EMPTY(&connection->m_requests)) {
+        net_ebb_request_free(TAILQ_FIRST(&connection->m_requests));
+    }
+
     net_timer_free(connection->m_timeout);
     connection->m_timeout = NULL;
 }
@@ -65,11 +70,14 @@ int net_ebb_connection_input(net_endpoint_t base_endpoint) {
     } while (1);
 }
 
+net_ebb_service_t net_ebb_connection_service(net_ebb_connection_t connection) {
+    net_endpoint_t base_endpoint = net_endpoint_from_data(connection);
+    return net_protocol_data(net_endpoint_protocol(base_endpoint));
+}
+
 static net_ebb_request_t net_ebb_connection_new_request(void *data) {
     net_ebb_connection_t connection = data;
-    if(connection->new_request)
-        return connection->new_request(connection);
-    return NULL;
+    return net_ebb_request_create(connection);;
 }
 
 static void net_ebb_connection_timeout(net_timer_t timer, void * ctx) {

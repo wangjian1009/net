@@ -18,7 +18,6 @@ struct net_ebb_request_parser {
     const char* uri_mark;
     const char* fragment_mark;
 
-    /* Public */
     net_ebb_request_t (*new_request)(void*);
     void* data;
 };

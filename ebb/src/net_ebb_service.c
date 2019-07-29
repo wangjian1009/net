@@ -3,6 +3,7 @@
 #include "net_schedule.h"
 #include "net_ebb_service_i.h"
 #include "net_ebb_connection_i.h"
+#include "net_ebb_request_i.h"
 
 static int net_ebb_service_init(net_protocol_t protocol);
 static void net_ebb_service_fini(net_protocol_t protocol);
@@ -58,6 +59,8 @@ static int net_ebb_service_init(net_protocol_t protocol) {
     service->m_alloc = NULL;
     service->m_cfg_connection_timeout_ms = 30 * 1000;
     TAILQ_INIT(&service->m_connections);
+
+    TAILQ_INIT(&service->m_free_requests);
     
     return 0;
 }
@@ -65,6 +68,10 @@ static int net_ebb_service_init(net_protocol_t protocol) {
 static void net_ebb_service_fini(net_protocol_t protocol) {
     net_ebb_service_t service = net_protocol_data(protocol);
     assert(TAILQ_EMPTY(&service->m_connections));
+
+    while(!TAILQ_EMPTY(&service->m_free_requests)) {
+        net_ebb_request_real_free(TAILQ_FIRST(&service->m_free_requests));
+    }
 }
 
 static int net_ebb_service_acceptor_on_new_endpoint(void * ctx, net_endpoint_t endpoint) {
