@@ -14,14 +14,11 @@ struct net_ebb_connection {
     /* Public */
     net_ebb_request_t (*new_request)(net_ebb_connection_t);
 
-    /* Returns EBB_STOP or EBB_AGAIN. NULL by default.  */
-    int (*on_timeout)(net_ebb_connection_t);
     void (*on_close)(net_ebb_connection_t);
 };
 
 int net_ebb_connection_init(net_endpoint_t endpoint);
 void net_ebb_connection_fini(net_endpoint_t endpoint);
 int net_ebb_connection_input(net_endpoint_t endpoint);
-int net_ebb_connection_on_state_change(net_endpoint_t endpoint, net_endpoint_state_t from_state);
 
 #endif
