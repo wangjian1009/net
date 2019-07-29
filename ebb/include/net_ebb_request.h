@@ -26,9 +26,6 @@ typedef enum net_ebb_request_transfer_encoding {
     net_ebb_request_transfer_encoding_chunked = 0x00000002,
 } net_ebb_request_transfer_encoding_t;
 
-typedef void (*net_ebb_header_cb)(net_ebb_request_t, const char* at, size_t length, int header_index);
-typedef void (*net_ebb_element_cb)(net_ebb_request_t, const char* at, size_t length);
-
 uint32_t net_ebb_request_method(net_ebb_request_t request);
 net_ebb_request_transfer_encoding_t net_ebb_request_transfer_encoding(net_ebb_request_t request);
 uint8_t net_ebb_request_expect_continue(net_ebb_request_t request);

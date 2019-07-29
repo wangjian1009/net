@@ -3,6 +3,9 @@
 #include "net_ebb_request.h"
 #include "net_ebb_connection_i.h"
 
+typedef void (*net_ebb_header_cb)(net_ebb_request_t, const char* at, size_t length, int header_index);
+typedef void (*net_ebb_element_cb)(net_ebb_request_t, const char* at, size_t length);
+
 struct net_ebb_request {
     uint32_t m_method;
     net_ebb_request_transfer_encoding_t m_transfer_encoding; /* ro */

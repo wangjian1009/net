@@ -300,89 +300,84 @@ static int unhex[] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
 %% write data;
 
 static void
-skip_body(const char **p, net_ebb_request_parser *parser, size_t nskip) {
-  if(CURRENT && CURRENT->on_body && nskip > 0) {
-    CURRENT->on_body(CURRENT, *p, nskip);
-  }
-  if(CURRENT) CURRENT->m_body_read += nskip;
-  parser->chunk_size -= nskip;
-  *p += nskip;
-  if(0 == parser->chunk_size) {
-    parser->eating = FALSE;
-    if(CURRENT && CURRENT->m_transfer_encoding == net_ebb_request_transfer_encoding_identity) {
-      END_REQUEST;
+skip_body(const char** p, net_ebb_request_parser* parser, size_t nskip) {
+    if (CURRENT && CURRENT->on_body && nskip > 0) {
+        CURRENT->on_body(CURRENT, *p, nskip);
     }
-  } else {
-    parser->eating = TRUE;
-  }
+    if (CURRENT) CURRENT->m_body_read += nskip;
+    parser->chunk_size -= nskip;
+    *p += nskip;
+    if (0 == parser->chunk_size) {
+        parser->eating = FALSE;
+        if (CURRENT && CURRENT->m_transfer_encoding == net_ebb_request_transfer_encoding_identity) {
+            END_REQUEST;
+        }
+    } else {
+        parser->eating = TRUE;
+    }
 }
 
-void net_ebb_request_parser_init(net_ebb_request_parser *parser) 
-{
-  int cs = 0;
-  %% write init;
-  parser->cs = cs;
+void net_ebb_request_parser_init(net_ebb_request_parser* parser) {
+    int cs = 0;
+    %% write init;
+    parser->cs = cs;
 
-  parser->chunk_size = 0;
-  parser->eating = 0;
-  
-  parser->current_request = NULL;
-
-  parser->header_field_mark = parser->header_value_mark   = 
-  parser->query_string_mark = parser->path_mark           = 
-  parser->uri_mark          = parser->fragment_mark       = NULL;
-
-  parser->new_request = NULL;
+    parser->chunk_size = 0;
+    parser->eating = 0;
+    parser->current_request = NULL;
+    parser->header_field_mark = NULL;
+    parser->header_value_mark = NULL;
+    parser->query_string_mark = NULL;
+    parser->path_mark = NULL;
+    parser->uri_mark = NULL;
+    parser->fragment_mark = NULL;
+    parser->new_request = NULL;
 }
-
 
 /** exec **/
-size_t net_ebb_request_parser_execute(net_ebb_request_parser *parser, const char *buffer, size_t len)
-{
-  const char *p, *pe;
-  int cs = parser->cs;
+size_t net_ebb_request_parser_execute(net_ebb_request_parser* parser, const char* buffer, size_t len) {
+    const char *p, *pe;
+    int cs = parser->cs;
 
-  assert(parser->new_request && "undefined callback");
+    assert(parser->new_request && "undefined callback");
 
-  p = buffer;
-  pe = buffer+len;
+    p = buffer;
+    pe = buffer + len;
 
-  if(0 < parser->chunk_size && parser->eating) {
-    /* eat body */
-    size_t eat = MIN(len, parser->chunk_size);
-    skip_body(&p, parser, eat);
-  } 
+    if (0 < parser->chunk_size && parser->eating) {
+        /* eat body */
+        size_t eat = MIN(len, parser->chunk_size);
+        skip_body(&p, parser, eat);
+    }
 
-  if(parser->header_field_mark)   parser->header_field_mark   = buffer;
-  if(parser->header_value_mark)   parser->header_value_mark   = buffer;
-  if(parser->fragment_mark)       parser->fragment_mark       = buffer;
-  if(parser->query_string_mark)   parser->query_string_mark   = buffer;
-  if(parser->path_mark)           parser->path_mark           = buffer;
-  if(parser->uri_mark)            parser->uri_mark            = buffer;
+    if (parser->header_field_mark) parser->header_field_mark = buffer;
+    if (parser->header_value_mark) parser->header_value_mark = buffer;
+    if (parser->fragment_mark) parser->fragment_mark = buffer;
+    if (parser->query_string_mark) parser->query_string_mark = buffer;
+    if (parser->path_mark) parser->path_mark = buffer;
+    if (parser->uri_mark) parser->uri_mark = buffer;
 
-  %% write exec;
+    %% write exec;
 
-  parser->cs = cs;
+    parser->cs = cs;
 
-  HEADER_CALLBACK(header_field);
-  HEADER_CALLBACK(header_value);
-  CALLBACK(fragment);
-  CALLBACK(query_string);
-  CALLBACK(path);
-  CALLBACK(uri);
+    HEADER_CALLBACK(header_field);
+    HEADER_CALLBACK(header_value);
+    CALLBACK(fragment);
+    CALLBACK(query_string);
+    CALLBACK(path);
+    CALLBACK(uri);
 
-  assert(p <= pe && "buffer overflow after parsing execute");
+    assert(p <= pe && "buffer overflow after parsing execute");
 
-  return(p - buffer);
+    return (p - buffer);
 }
 
-int net_ebb_request_parser_has_error(net_ebb_request_parser *parser) 
-{
-  return parser->cs == net_ebb_request_parser_error;
+int net_ebb_request_parser_has_error(net_ebb_request_parser *parser) {
+    return parser->cs == net_ebb_request_parser_error;
 }
 
-int net_ebb_request_parser_is_finished(net_ebb_request_parser *parser) 
-{
-  return parser->cs == net_ebb_request_parser_first_final;
+int net_ebb_request_parser_is_finished(net_ebb_request_parser *parser) {
+    return parser->cs == net_ebb_request_parser_first_final;
 }
 

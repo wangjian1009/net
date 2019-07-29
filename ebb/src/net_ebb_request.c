@@ -1,5 +1,10 @@
 #include "net_ebb_request_i.h"
 
+static void net_ebb_request_on_path(net_ebb_request_t, const char* at, size_t length);
+static void net_ebb_request_on_query_string(net_ebb_request_t, const char* at, size_t length);
+static void net_ebb_request_on_uri(net_ebb_request_t, const char* at, size_t length);
+static void net_ebb_request_on_fragment(net_ebb_request_t, const char* at, size_t length);
+
 void net_ebb_request_init(net_ebb_request_t request) {
     request->m_expect_continue = 0;
     request->m_body_read = 0;
@@ -15,10 +20,10 @@ void net_ebb_request_init(net_ebb_request_t request) {
     request->on_body = NULL;
     request->on_header_field = NULL;
     request->on_header_value = NULL;
-    request->on_uri = NULL;
-    request->on_fragment = NULL;
-    request->on_path = NULL;
-    request->on_query_string = NULL;
+    request->on_uri = net_ebb_request_on_uri;
+    request->on_fragment = net_ebb_request_on_fragment;
+    request->on_path = net_ebb_request_on_path;
+    request->on_query_string = net_ebb_request_on_query_string;
 }
 
 uint32_t net_ebb_request_method(net_ebb_request_t request) {
@@ -57,3 +62,16 @@ uint8_t net_ebb_request_should_keep_alive(net_ebb_request_t request) {
         return request->m_keep_alive;
     }
 }
+
+static void net_ebb_request_on_path(net_ebb_request_t request, const char* at, size_t length) {
+}
+
+static void net_ebb_request_on_query_string(net_ebb_request_t request, const char* at, size_t length) {
+}
+
+static void net_ebb_request_on_uri(net_ebb_request_t request, const char* at, size_t length) {
+}
+
+static void net_ebb_request_on_fragment(net_ebb_request_t request, const char* at, size_t length) {
+}
+
