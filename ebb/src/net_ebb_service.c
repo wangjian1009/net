@@ -1,5 +1,6 @@
 #include <assert.h>
 #include "net_protocol.h"
+#include "net_schedule.h"
 #include "net_ebb_service_i.h"
 #include "net_ebb_connection_i.h"
 
@@ -28,6 +29,7 @@ net_ebb_service_create(mem_allocrator_t alloc, error_monitor_t em, net_schedule_
         CPE_ERROR(em, "ebb: %s: create protocol fail!", protocol_name);
         return NULL;
     }
+    net_protocol_set_debug(protocol, 2);
 
     net_ebb_service_t service = net_protocol_data(protocol);
     service->m_alloc = alloc;
@@ -44,11 +46,17 @@ net_protocol_t net_ebb_service_to_protocol(net_ebb_service_t service) {
     return net_protocol_from_data(service);
 }
 
+mem_buffer_t net_ebb_service_tmp_buffer(net_ebb_service_t service) {
+    net_protocol_t protocol = net_ebb_service_to_protocol(service);
+    return net_schedule_tmp_buffer(net_protocol_schedule(protocol));
+}
+
 static int net_ebb_service_init(net_protocol_t protocol) {
     net_ebb_service_t service = net_protocol_data(protocol);
 
     service->m_em = NULL;
     service->m_alloc = NULL;
+    service->m_cfg_connection_timeout_ms = 30 * 1000;
     TAILQ_INIT(&service->m_connections);
     
     return 0;
