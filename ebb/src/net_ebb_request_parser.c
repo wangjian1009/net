@@ -61,7 +61,7 @@ static int unhex[] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
     CURRENT->on_##FOR( CURRENT                      \
                 , parser->FOR##_mark                \
                 , p - parser->FOR##_mark            \
-                , CURRENT->number_of_headers        \
+                , CURRENT->m_number_of_headers        \
                 );                                  \
  }
 #define END_REQUEST                        \
@@ -567,12 +567,12 @@ skip_body(const char **p, net_ebb_request_parser *parser, size_t nskip) {
   if(CURRENT && CURRENT->on_body && nskip > 0) {
     CURRENT->on_body(CURRENT, *p, nskip);
   }
-  if(CURRENT) CURRENT->body_read += nskip;
+  if(CURRENT) CURRENT->m_body_read += nskip;
   parser->chunk_size -= nskip;
   *p += nskip;
   if(0 == parser->chunk_size) {
     parser->eating = FALSE;
-    if(CURRENT && CURRENT->transfer_encoding == EBB_IDENTITY) {
+    if(CURRENT && CURRENT->m_transfer_encoding == net_ebb_request_transfer_encoding_identity) {
       END_REQUEST;
     }
   } else {
@@ -774,33 +774,33 @@ _match:
 #line 111 "net_ebb_request_parser.rl"
 	{
     if(CURRENT){
-      CURRENT->content_length *= 10;
-      CURRENT->content_length += *p - '0';
+      CURRENT->m_content_length *= 10;
+      CURRENT->m_content_length += *p - '0';
     }
   }
 	break;
 	case 13:
 #line 118 "net_ebb_request_parser.rl"
-	{ if(CURRENT) CURRENT->transfer_encoding = EBB_IDENTITY; }
+	{ if(CURRENT) CURRENT->m_transfer_encoding = net_ebb_request_transfer_encoding_identity; }
 	break;
 	case 14:
 #line 119 "net_ebb_request_parser.rl"
-	{ if(CURRENT) CURRENT->transfer_encoding = EBB_CHUNKED; }
+	{ if(CURRENT) CURRENT->m_transfer_encoding = net_ebb_request_transfer_encoding_chunked; }
 	break;
 	case 15:
 #line 121 "net_ebb_request_parser.rl"
-	{ if(CURRENT) CURRENT->keep_alive = TRUE; }
+	{ if(CURRENT) CURRENT->m_keep_alive = TRUE; }
 	break;
 	case 16:
 #line 122 "net_ebb_request_parser.rl"
-	{ if(CURRENT) CURRENT->keep_alive = FALSE; }
+	{ if(CURRENT) CURRENT->m_keep_alive = FALSE; }
 	break;
 	case 17:
 #line 132 "net_ebb_request_parser.rl"
 	{
     if(CURRENT) {
-      CURRENT->version_major *= 10;
-      CURRENT->version_major += *p - '0';
+      CURRENT->m_version_major *= 10;
+      CURRENT->m_version_major += *p - '0';
     }
   }
 	break;
@@ -808,15 +808,15 @@ _match:
 #line 139 "net_ebb_request_parser.rl"
 	{
   	if(CURRENT) {
-      CURRENT->version_minor *= 10;
-      CURRENT->version_minor += *p - '0';
+      CURRENT->m_version_minor *= 10;
+      CURRENT->m_version_minor += *p - '0';
     }
   }
 	break;
 	case 19:
 #line 146 "net_ebb_request_parser.rl"
 	{
-    if(CURRENT) CURRENT->number_of_headers++;
+    if(CURRENT) CURRENT->m_number_of_headers++;
   }
 	break;
 	case 20:
@@ -863,13 +863,13 @@ _match:
 #line 180 "net_ebb_request_parser.rl"
 	{
     if(CURRENT) { 
-      if(CURRENT->transfer_encoding == EBB_CHUNKED) {
+      if(CURRENT->m_transfer_encoding == net_ebb_request_transfer_encoding_chunked) {
         cs = 165;
       } else {
         /* this is pretty stupid. i'd prefer to combine this with skip_chunk_data */
-        parser->chunk_size = CURRENT->content_length;
+        parser->chunk_size = CURRENT->m_content_length;
         p += 1;  
-        skip_body(&p, parser, MIN(REMAINING, CURRENT->content_length));
+        skip_body(&p, parser, MIN(REMAINING, CURRENT->m_content_length));
         p--;
         if(parser->chunk_size > REMAINING) {
           {p++; goto _out; }
@@ -880,59 +880,59 @@ _match:
 	break;
 	case 26:
 #line 229 "net_ebb_request_parser.rl"
-	{ if(CURRENT) CURRENT->method = EBB_COPY;      }
+	{ if(CURRENT) CURRENT->m_method = EBB_COPY;      }
 	break;
 	case 27:
 #line 230 "net_ebb_request_parser.rl"
-	{ if(CURRENT) CURRENT->method = EBB_DELETE;    }
+	{ if(CURRENT) CURRENT->m_method = EBB_DELETE;    }
 	break;
 	case 28:
 #line 231 "net_ebb_request_parser.rl"
-	{ if(CURRENT) CURRENT->method = EBB_GET;       }
+	{ if(CURRENT) CURRENT->m_method = EBB_GET;       }
 	break;
 	case 29:
 #line 232 "net_ebb_request_parser.rl"
-	{ if(CURRENT) CURRENT->method = EBB_HEAD;      }
+	{ if(CURRENT) CURRENT->m_method = EBB_HEAD;      }
 	break;
 	case 30:
 #line 233 "net_ebb_request_parser.rl"
-	{ if(CURRENT) CURRENT->method = EBB_LOCK;      }
+	{ if(CURRENT) CURRENT->m_method = EBB_LOCK;      }
 	break;
 	case 31:
 #line 234 "net_ebb_request_parser.rl"
-	{ if(CURRENT) CURRENT->method = EBB_MKCOL;     }
+	{ if(CURRENT) CURRENT->m_method = EBB_MKCOL;     }
 	break;
 	case 32:
 #line 235 "net_ebb_request_parser.rl"
-	{ if(CURRENT) CURRENT->method = EBB_MOVE;      }
+	{ if(CURRENT) CURRENT->m_method = EBB_MOVE;      }
 	break;
 	case 33:
 #line 236 "net_ebb_request_parser.rl"
-	{ if(CURRENT) CURRENT->method = EBB_OPTIONS;   }
+	{ if(CURRENT) CURRENT->m_method = EBB_OPTIONS;   }
 	break;
 	case 34:
 #line 237 "net_ebb_request_parser.rl"
-	{ if(CURRENT) CURRENT->method = EBB_POST;      }
+	{ if(CURRENT) CURRENT->m_method = EBB_POST;      }
 	break;
 	case 35:
 #line 238 "net_ebb_request_parser.rl"
-	{ if(CURRENT) CURRENT->method = EBB_PROPFIND;  }
+	{ if(CURRENT) CURRENT->m_method = EBB_PROPFIND;  }
 	break;
 	case 36:
 #line 239 "net_ebb_request_parser.rl"
-	{ if(CURRENT) CURRENT->method = EBB_PROPPATCH; }
+	{ if(CURRENT) CURRENT->m_method = EBB_PROPPATCH; }
 	break;
 	case 37:
 #line 240 "net_ebb_request_parser.rl"
-	{ if(CURRENT) CURRENT->method = EBB_PUT;       }
+	{ if(CURRENT) CURRENT->m_method = EBB_PUT;       }
 	break;
 	case 38:
 #line 241 "net_ebb_request_parser.rl"
-	{ if(CURRENT) CURRENT->method = EBB_TRACE;     }
+	{ if(CURRENT) CURRENT->m_method = EBB_TRACE;     }
 	break;
 	case 39:
 #line 242 "net_ebb_request_parser.rl"
-	{ if(CURRENT) CURRENT->method = EBB_UNLOCK;    }
+	{ if(CURRENT) CURRENT->m_method = EBB_UNLOCK;    }
 	break;
 #line 938 "net_ebb_request_parser.c"
 		}

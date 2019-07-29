@@ -4,15 +4,15 @@
 #include "net_ebb_connection_i.h"
 
 struct net_ebb_request {
-    int method;
-    int transfer_encoding; /* ro */
-    int expect_continue; /* ro */
-    unsigned int version_major; /* ro */
-    unsigned int version_minor; /* ro */
-    int number_of_headers; /* ro */
-    int keep_alive; /* private - use net_ebb_request_should_keep_alive */
-    size_t content_length; /* ro - 0 if unknown */
-    size_t body_read; /* ro */
+    uint32_t m_method;
+    net_ebb_request_transfer_encoding_t m_transfer_encoding; /* ro */
+    uint8_t m_expect_continue; /* ro */
+    uint16_t m_version_major; /* ro */
+    uint16_t m_version_minor; /* ro */
+    uint16_t m_number_of_headers; /* ro */
+    int8_t m_keep_alive; /* private - use net_ebb_request_should_keep_alive */
+    size_t m_content_length; /* ro - 0 if unknown */
+    size_t m_body_read; /* ro */
 
     /* Public  - ordered list of callbacks */
     net_ebb_element_cb on_path;

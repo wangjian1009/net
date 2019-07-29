@@ -1,14 +1,14 @@
 #include "net_ebb_request_i.h"
 
 void net_ebb_request_init(net_ebb_request_t request) {
-    request->expect_continue = 0;
-    request->body_read = 0;
-    request->content_length = 0;
-    request->version_major = 0;
-    request->version_minor = 0;
-    request->number_of_headers = 0;
-    request->transfer_encoding = EBB_IDENTITY;
-    request->keep_alive = -1;
+    request->m_expect_continue = 0;
+    request->m_body_read = 0;
+    request->m_content_length = 0;
+    request->m_version_major = 0;
+    request->m_version_minor = 0;
+    request->m_number_of_headers = 0;
+    request->m_transfer_encoding = net_ebb_request_transfer_encoding_identity;
+    request->m_keep_alive = -1;
 
     request->on_complete = NULL;
     request->on_headers_complete = NULL;
@@ -21,12 +21,32 @@ void net_ebb_request_init(net_ebb_request_t request) {
     request->on_query_string = NULL;
 }
 
+uint32_t net_ebb_request_method(net_ebb_request_t request) {
+    return request->m_method;
+}
+
+net_ebb_request_transfer_encoding_t net_ebb_request_transfer_encoding(net_ebb_request_t request) {
+    return request->m_transfer_encoding;
+}
+
+uint8_t net_ebb_request_expect_continue(net_ebb_request_t request) {
+    return request->m_expect_continue;
+}
+
+uint16_t net_ebb_request_version_major(net_ebb_request_t request) {
+    return request->m_version_major;
+}
+
+uint16_t net_ebb_request_version_minor(net_ebb_request_t request) {
+    return request->m_version_minor;
+}
+
 uint8_t net_ebb_request_should_keep_alive(net_ebb_request_t request) {
-    if (request->keep_alive == -1) {
-        if (request->version_major == 1) {
-            return (request->version_minor != 0);
+    if (request->m_keep_alive == -1) {
+        if (request->m_version_major == 1) {
+            return (request->m_version_minor != 0);
         }
-        else if (request->version_major == 0) {
+        else if (request->m_version_major == 0) {
             return 0;
         }
         else {
@@ -34,6 +54,6 @@ uint8_t net_ebb_request_should_keep_alive(net_ebb_request_t request) {
         }
     }
     else {
-        return request->keep_alive;
+        return request->m_keep_alive;
     }
 }

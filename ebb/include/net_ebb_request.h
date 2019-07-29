@@ -21,11 +21,19 @@ NET_BEGIN_DECL
 #define EBB_UNLOCK 0x00002000
 
 /* Transfer Encodings */
-#define EBB_IDENTITY 0x00000001
-#define EBB_CHUNKED 0x00000002
+typedef enum net_ebb_request_transfer_encoding {
+    net_ebb_request_transfer_encoding_identity = 0x00000001,
+    net_ebb_request_transfer_encoding_chunked = 0x00000002,
+} net_ebb_request_transfer_encoding_t;
 
 typedef void (*net_ebb_header_cb)(net_ebb_request_t, const char* at, size_t length, int header_index);
 typedef void (*net_ebb_element_cb)(net_ebb_request_t, const char* at, size_t length);
+
+uint32_t net_ebb_request_method(net_ebb_request_t request);
+net_ebb_request_transfer_encoding_t net_ebb_request_transfer_encoding(net_ebb_request_t request);
+uint8_t net_ebb_request_expect_continue(net_ebb_request_t request);
+uint16_t net_ebb_request_version_major(net_ebb_request_t request);
+uint16_t net_ebb_request_version_minor(net_ebb_request_t request);
 
 NET_END_DECL
 
