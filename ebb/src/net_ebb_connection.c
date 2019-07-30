@@ -8,7 +8,6 @@ static net_ebb_request_t net_ebb_connection_new_request(void *data);
 static void net_ebb_connection_timeout_cb(net_timer_t timer, void * ctx);
 static void net_ebb_connection_timeout_reset(net_ebb_service_t service, net_ebb_connection_t connection);
 static void net_ebb_connection_close_cb(net_timer_t timer, void * ctx);
-static void net_ebb_connection_close_schedule(net_ebb_connection_t connection);
 
 int net_ebb_connection_init(net_endpoint_t base_endpoint) {
     net_ebb_service_t service = net_protocol_data(net_endpoint_protocol(base_endpoint));
@@ -123,6 +122,6 @@ static void net_ebb_connection_close_cb(net_timer_t timer, void * ctx) {
     net_endpoint_set_state(base_endpoint, net_endpoint_state_disable);
 }
 
-static void net_ebb_connection_close_schedule(net_ebb_connection_t connection) {
+void net_ebb_connection_close_schedule(net_ebb_connection_t connection) {
     net_timer_active(connection->m_timer_close, 0);
 }

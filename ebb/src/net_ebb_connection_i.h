@@ -18,4 +18,6 @@ int net_ebb_connection_init(net_endpoint_t endpoint);
 void net_ebb_connection_fini(net_endpoint_t endpoint);
 int net_ebb_connection_input(net_endpoint_t endpoint);
 
+void net_ebb_connection_close_schedule(net_ebb_connection_t connection);
+
 #endif

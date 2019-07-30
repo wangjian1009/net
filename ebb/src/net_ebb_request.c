@@ -62,10 +62,8 @@ void net_ebb_request_free(net_ebb_request_t request) {
     net_ebb_connection_t connection = request->m_connection;
     net_ebb_service_t service = net_ebb_connection_service(connection);
 
-    if (request->m_processor) {
-        TAILQ_REMOVE(&request->m_processor->m_requests, request, m_next_for_processor);
-        request->m_processor = NULL;
-    }
+    net_ebb_request_set_processor(request, NULL);
+    assert(request->m_processor == NULL);
 
     if (request->m_path) {
         mem_free(service->m_alloc, request->m_path);
@@ -123,6 +121,18 @@ uint8_t net_ebb_request_should_keep_alive(net_ebb_request_t request) {
     }
 }
 
+void net_ebb_request_set_processor(net_ebb_request_t request, net_ebb_processor_t processor) {
+    if (request->m_processor) {
+        TAILQ_REMOVE(&request->m_processor->m_requests, request, m_next_for_processor);
+    }
+
+    request->m_processor = processor;
+
+    if (request->m_processor) {
+        TAILQ_INSERT_TAIL(&request->m_processor->m_requests, request, m_next_for_processor);
+    }
+}
+
 void net_ebb_request_print(write_stream_t ws, net_ebb_request_t request) {
     stream_printf(ws, "%s %d.%d", net_ebb_request_method_str(request->m_method), request->m_version_major, request->m_version_minor);
 }
@@ -149,9 +159,28 @@ static void net_ebb_request_on_path(net_ebb_request_t request, const char* at, s
     assert(request->m_path == NULL);
     
     request->m_path = cpe_str_mem_dup_len(service->m_alloc, at, length);
+    if (request->m_path == NULL) {
+        CPE_ERROR(
+            service->m_em, "ebb: %s: on path: dup path %.*s fail!", 
+            net_endpoint_dump(net_ebb_service_tmp_buffer(service), connection->m_endpoint),
+            (int)length, at);
+        net_ebb_connection_close_schedule(connection);
+        return;
+    }
     
-    //net_ebb_mount_point_t mp = net_ebb_mount_point_find_by_path(service, const char * * path);
-    
+    request->m_path_to_processor = request->m_path;
+
+    net_ebb_mount_point_t mp = net_ebb_mount_point_find_by_path(service, &request->m_path_to_processor);
+    if (mp == NULL) {
+        CPE_ERROR(
+            service->m_em, "ebb: %s: on path: find processor at  path %s fail!", 
+            net_endpoint_dump(net_ebb_service_tmp_buffer(service), connection->m_endpoint),
+            request->m_path);
+        net_ebb_connection_close_schedule(connection);
+        return;
+    }
+
+    net_ebb_request_set_processor(request, mp->m_processor);
 }
 
 static void net_ebb_request_on_query_string(net_ebb_request_t request, const char* at, size_t length) {

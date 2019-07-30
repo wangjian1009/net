@@ -9,4 +9,6 @@ void net_ebb_service_free(net_ebb_service_t service);
 
 net_protocol_t net_ebb_service_to_protocol(net_ebb_service_t service);
 
+net_ebb_mount_point_t net_ebb_service_root(net_ebb_service_t service);
+
 #endif

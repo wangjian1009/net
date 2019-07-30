@@ -1,4 +1,5 @@
 #include <assert.h>
+#include "cpe/pal/pal_string.h"
 #include "net_protocol.h"
 #include "net_schedule.h"
 #include "net_ebb_service_i.h"
@@ -49,6 +50,10 @@ net_protocol_t net_ebb_service_to_protocol(net_ebb_service_t service) {
     return net_protocol_from_data(service);
 }
 
+net_ebb_mount_point_t net_ebb_service_root(net_ebb_service_t service) {
+    return service->m_root;
+}
+
 mem_buffer_t net_ebb_service_tmp_buffer(net_ebb_service_t service) {
     net_protocol_t protocol = net_ebb_service_to_protocol(service);
     return net_schedule_tmp_buffer(net_protocol_schedule(protocol));
@@ -69,6 +74,16 @@ static int net_ebb_service_init(net_protocol_t protocol) {
     TAILQ_INIT(&service->m_free_mount_points);
 
     mem_buffer_init(&service->m_search_path_buffer, NULL);
+
+    net_ebb_processor_t dft_processor = net_ebb_processor_create_dft(service);
+    if (dft_processor == NULL) return -1;
+    
+    const char * root_mp_name = "root";
+    service->m_root = net_ebb_mount_point_create(
+        service, root_mp_name, root_mp_name + strlen(root_mp_name), NULL, NULL, dft_processor);
+    if (service->m_root == NULL) {
+        
+    }
     
     return 0;
 }
@@ -77,10 +92,14 @@ static void net_ebb_service_fini(net_protocol_t protocol) {
     net_ebb_service_t service = net_protocol_data(protocol);
     assert(TAILQ_EMPTY(&service->m_connections));
 
-    while(!TAILQ_EMPTY(&service->m_processors)) {
-        
+    if (service->m_root) {
+        net_ebb_mount_point_free(service->m_root);
+        service->m_root = NULL;
     }
-    assert(service->m_root == NULL);
+    
+    while(!TAILQ_EMPTY(&service->m_processors)) {
+        net_ebb_processor_free(TAILQ_FIRST(&service->m_processors));
+    }
     
     while(!TAILQ_EMPTY(&service->m_free_requests)) {
         net_ebb_request_real_free(TAILQ_FIRST(&service->m_free_requests));
