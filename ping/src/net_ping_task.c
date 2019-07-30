@@ -187,7 +187,7 @@ void net_ping_task_do_notify(net_ping_task_t task) {
     task->m_is_processing = 1;
     
     net_ping_record_t to_notify_record = TAILQ_LAST(&task->m_records, net_ping_record_list);
-    if (to_notify_record->m_to_notify) {
+    if (to_notify_record && to_notify_record->m_to_notify) {
         net_ping_record_t pre_record;
         while((pre_record = TAILQ_PREV(to_notify_record, net_ping_record_list, m_next)) != NULL
               && pre_record->m_to_notify)
