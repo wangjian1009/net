@@ -2,6 +2,7 @@
 #include "cpe/utils/string_utils.h"
 #include "net_ebb_processor_i.h"
 #include "net_ebb_mount_point_i.h"
+#include "net_ebb_request_i.h"
 
 net_ebb_processor_t
 net_ebb_processor_create(
@@ -24,10 +25,12 @@ net_ebb_processor_create(
 
     processor->m_service = service;
     cpe_str_dup(processor->m_name, sizeof(processor->m_name), name);
-    TAILQ_INIT(&processor->m_mount_points);
     processor->m_ctx = ctx;
     processor->m_env_clear = env_clear;
 
+    TAILQ_INIT(&processor->m_requests);
+    TAILQ_INIT(&processor->m_mount_points);
+    
     TAILQ_INSERT_TAIL(&service->m_processors, processor, m_next);
     
     return processor;
@@ -35,6 +38,10 @@ net_ebb_processor_create(
 
 void net_ebb_processor_free(net_ebb_processor_t processor) {
     net_ebb_service_t service = processor->m_service;
+
+    while(!TAILQ_EMPTY(&processor->m_requests)) {
+        net_ebb_request_free(TAILQ_FIRST(&processor->m_requests));
+    }
 
     while(!TAILQ_EMPTY(&processor->m_mount_points)) {
         net_ebb_mount_point_free(TAILQ_FIRST(&processor->m_mount_points));

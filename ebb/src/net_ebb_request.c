@@ -1,6 +1,10 @@
+#include <assert.h>
 #include "cpe/utils/stream_buffer.h"
+#include "cpe/utils/string_utils.h"
 #include "net_endpoint.h"
 #include "net_ebb_request_i.h"
+#include "net_ebb_mount_point_i.h"
+#include "net_ebb_processor_i.h"
 
 static void net_ebb_request_on_path(net_ebb_request_t, const char* at, size_t length);
 static void net_ebb_request_on_query_string(net_ebb_request_t, const char* at, size_t length);
@@ -14,7 +18,7 @@ net_ebb_request_t net_ebb_request_create(net_ebb_connection_t connection) {
 
     net_ebb_request_t request = TAILQ_FIRST(&service->m_free_requests);
     if (request) {
-        TAILQ_REMOVE(&service->m_free_requests, request, m_next);
+        TAILQ_REMOVE(&service->m_free_requests, request, m_next_for_connection);
     }
     else {
         request = mem_alloc(service->m_alloc, sizeof(struct net_ebb_request));
@@ -27,6 +31,7 @@ net_ebb_request_t net_ebb_request_create(net_ebb_connection_t connection) {
     }
 
     request->m_connection = connection;
+    request->m_processor = NULL;
     request->m_method = net_ebb_request_method_unknown;
     request->m_expect_continue = 0;
     request->m_body_read = 0;
@@ -36,6 +41,7 @@ net_ebb_request_t net_ebb_request_create(net_ebb_connection_t connection) {
     request->m_number_of_headers = 0;
     request->m_transfer_encoding = net_ebb_request_transfer_encoding_identity;
     request->m_keep_alive = -1;
+    request->m_path = NULL;
 
     request->on_complete = NULL;
     request->on_headers_complete = NULL;
@@ -47,7 +53,7 @@ net_ebb_request_t net_ebb_request_create(net_ebb_connection_t connection) {
     request->on_path = net_ebb_request_on_path;
     request->on_query_string = net_ebb_request_on_query_string;
     
-    TAILQ_INSERT_TAIL(&connection->m_requests, request, m_next);
+    TAILQ_INSERT_TAIL(&connection->m_requests, request, m_next_for_connection);
     
     return request;
 }
@@ -55,17 +61,27 @@ net_ebb_request_t net_ebb_request_create(net_ebb_connection_t connection) {
 void net_ebb_request_free(net_ebb_request_t request) {
     net_ebb_connection_t connection = request->m_connection;
     net_ebb_service_t service = net_ebb_connection_service(connection);
-    
-    TAILQ_REMOVE(&connection->m_requests, request, m_next);
+
+    if (request->m_processor) {
+        TAILQ_REMOVE(&request->m_processor->m_requests, request, m_next_for_processor);
+        request->m_processor = NULL;
+    }
+
+    if (request->m_path) {
+        mem_free(service->m_alloc, request->m_path);
+        request->m_path = NULL;
+    }
+
+    TAILQ_REMOVE(&connection->m_requests, request, m_next_for_connection);
     
     request->m_connection = (net_ebb_connection_t)service;
-    TAILQ_INSERT_TAIL(&service->m_free_requests, request, m_next);
+    TAILQ_INSERT_TAIL(&service->m_free_requests, request, m_next_for_connection);
 }
 
 void net_ebb_request_real_free(net_ebb_request_t request) {
     net_ebb_service_t service = (net_ebb_service_t)request->m_connection;
     
-    TAILQ_REMOVE(&service->m_free_requests, request, m_next);
+    TAILQ_REMOVE(&service->m_free_requests, request, m_next_for_connection);
     
     mem_free(service->m_alloc, request);
 }
@@ -129,6 +145,13 @@ static void net_ebb_request_on_path(net_ebb_request_t request, const char* at, s
             net_endpoint_dump(net_ebb_service_tmp_buffer(service), connection->m_endpoint),
             (int)length, at);
     }
+    
+    assert(request->m_path == NULL);
+    
+    request->m_path = cpe_str_mem_dup_len(service->m_alloc, at, length);
+    
+    //net_ebb_mount_point_t mp = net_ebb_mount_point_find_by_path(service, const char * * path);
+    
 }
 
 static void net_ebb_request_on_query_string(net_ebb_request_t request, const char* at, size_t length) {

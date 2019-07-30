@@ -7,7 +7,8 @@
 struct net_ebb_connection {
     TAILQ_ENTRY(net_ebb_connection) m_next;
     net_endpoint_t m_endpoint;
-    net_timer_t m_timeout;
+    net_timer_t m_timer_timeout;
+    net_timer_t m_timer_close;
     //net_ebb_after_write_cb after_write_cb; /* ro */
     struct net_ebb_request_parser parser; /* private */
     net_ebb_request_list_t m_requests;

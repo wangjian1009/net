@@ -10,6 +10,8 @@ struct net_ebb_processor {
     net_ebb_mount_point_list_t m_mount_points;
     void * m_ctx;
     net_ebb_processor_env_clear_fun_t m_env_clear;
+
+    net_ebb_request_list_t m_requests;
 };
 
 #endif

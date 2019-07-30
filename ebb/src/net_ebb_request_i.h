@@ -8,18 +8,20 @@ typedef void (*net_ebb_element_cb)(net_ebb_request_t, const char* at, size_t len
 
 struct net_ebb_request {
     net_ebb_connection_t m_connection;
-    TAILQ_ENTRY(net_ebb_request) m_next;
-    
+    TAILQ_ENTRY(net_ebb_request) m_next_for_connection;
+    net_ebb_processor_t m_processor;
+    TAILQ_ENTRY(net_ebb_request) m_next_for_processor;
     net_ebb_request_method_t m_method;
-    net_ebb_request_transfer_encoding_t m_transfer_encoding; /* ro */
-    uint8_t m_expect_continue; /* ro */
-    uint16_t m_version_major; /* ro */
-    uint16_t m_version_minor; /* ro */
-    uint16_t m_number_of_headers; /* ro */
-    int8_t m_keep_alive; /* private - use net_ebb_request_should_keep_alive */
-    size_t m_content_length; /* ro - 0 if unknown */
-    size_t m_body_read; /* ro */
-
+    net_ebb_request_transfer_encoding_t m_transfer_encoding;
+    uint8_t m_expect_continue;
+    uint16_t m_version_major;
+    uint16_t m_version_minor;
+    uint16_t m_number_of_headers;
+    char * m_path;
+    int8_t m_keep_alive;
+    size_t m_content_length;
+    size_t m_body_read;
+    
     /* Public  - ordered list of callbacks */
     net_ebb_element_cb on_path;
     net_ebb_element_cb on_query_string;
