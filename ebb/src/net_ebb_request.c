@@ -149,13 +149,6 @@ static void net_ebb_request_on_path(net_ebb_request_t request, const char* at, s
     net_ebb_connection_t connection = request->m_connection;
     net_ebb_service_t service = net_ebb_connection_service(request->m_connection);
     
-    if (net_endpoint_protocol_debug(connection->m_endpoint)) {
-        CPE_INFO(
-            service->m_em, "ebb: %s: on path: %.*s",
-            net_endpoint_dump(net_ebb_service_tmp_buffer(service), connection->m_endpoint),
-            (int)length, at);
-    }
-    
     assert(request->m_path == NULL);
     
     request->m_path = cpe_str_mem_dup_len(service->m_alloc, at, length);
@@ -181,6 +174,13 @@ static void net_ebb_request_on_path(net_ebb_request_t request, const char* at, s
     }
 
     net_ebb_request_set_processor(request, mp->m_processor);
+    
+    if (net_endpoint_protocol_debug(connection->m_endpoint)) {
+        CPE_INFO(
+            service->m_em, "ebb: %s: on path: bind to processor %s[%s] (full-path=%s)",
+            net_endpoint_dump(net_ebb_service_tmp_buffer(service), connection->m_endpoint),
+            request->m_processor->m_name, request->m_path_to_processor, request->m_path);
+    }
 }
 
 static void net_ebb_request_on_query_string(net_ebb_request_t request, const char* at, size_t length) {
