@@ -4,6 +4,8 @@
 #include "net_ebb_service_i.h"
 #include "net_ebb_connection_i.h"
 #include "net_ebb_request_i.h"
+#include "net_ebb_mount_point_i.h"
+#include "net_ebb_processor_i.h"
 
 static int net_ebb_service_init(net_protocol_t protocol);
 static void net_ebb_service_fini(net_protocol_t protocol);
@@ -58,9 +60,15 @@ static int net_ebb_service_init(net_protocol_t protocol) {
     service->m_em = NULL;
     service->m_alloc = NULL;
     service->m_cfg_connection_timeout_ms = 30 * 1000;
+
+    TAILQ_INIT(&service->m_processors);
+    service->m_root = NULL;
     TAILQ_INIT(&service->m_connections);
 
     TAILQ_INIT(&service->m_free_requests);
+    TAILQ_INIT(&service->m_free_mount_points);
+
+    mem_buffer_init(&service->m_search_path_buffer, NULL);
     
     return 0;
 }
@@ -69,9 +77,16 @@ static void net_ebb_service_fini(net_protocol_t protocol) {
     net_ebb_service_t service = net_protocol_data(protocol);
     assert(TAILQ_EMPTY(&service->m_connections));
 
+    while(!TAILQ_EMPTY(&service->m_processors)) {
+        
+    }
+    assert(service->m_root == NULL);
+    
     while(!TAILQ_EMPTY(&service->m_free_requests)) {
         net_ebb_request_real_free(TAILQ_FIRST(&service->m_free_requests));
     }
+    
+    mem_buffer_clear(&service->m_search_path_buffer);
 }
 
 static int net_ebb_service_acceptor_on_new_endpoint(void * ctx, net_endpoint_t endpoint) {

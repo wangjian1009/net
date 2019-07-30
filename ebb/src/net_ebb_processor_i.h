@@ -9,7 +9,7 @@ struct net_ebb_processor {
     char m_name[32];
     net_ebb_mount_point_list_t m_mount_points;
     void * m_ctx;
-    net_ebb_backend_env_clear_fun_t m_env_clear;
+    net_ebb_processor_env_clear_fun_t m_env_clear;
 };
 
 #endif
