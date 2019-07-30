@@ -1,36 +1,45 @@
 #ifndef NET_EBB_REQUEST_H
 #define NET_EBB_REQUEST_H
+#include "cpe/utils/utils_types.h"
 #include "net_ebb_system.h"
 
 NET_BEGIN_DECL
 
 /* HTTP Methods */
-#define EBB_COPY 0x00000001
-#define EBB_DELETE 0x00000002
-#define EBB_GET 0x00000004
-#define EBB_HEAD 0x00000008
-#define EBB_LOCK 0x00000010
-#define EBB_MKCOL 0x00000020
-#define EBB_MOVE 0x00000040
-#define EBB_OPTIONS 0x00000080
-#define EBB_POST 0x00000100
-#define EBB_PROPFIND 0x00000200
-#define EBB_PROPPATCH 0x00000400
-#define EBB_PUT 0x00000800
-#define EBB_TRACE 0x00001000
-#define EBB_UNLOCK 0x00002000
-
+typedef enum net_ebb_request_method {
+    net_ebb_request_method_unknown,
+    net_ebb_request_method_copy,
+    net_ebb_request_method_delete,
+    net_ebb_request_method_get,
+    net_ebb_request_method_head,
+    net_ebb_request_method_lock,
+    net_ebb_request_method_mkcol,
+    net_ebb_request_method_move,
+    net_ebb_request_method_options,
+    net_ebb_request_method_post,
+    net_ebb_request_method_propfind,
+    net_ebb_request_method_proppatch,
+    net_ebb_request_method_put,
+    net_ebb_request_method_trace,
+    net_ebb_request_method_unlock,
+} net_ebb_request_method_t;
+    
 /* Transfer Encodings */
 typedef enum net_ebb_request_transfer_encoding {
     net_ebb_request_transfer_encoding_identity = 0x00000001,
     net_ebb_request_transfer_encoding_chunked = 0x00000002,
 } net_ebb_request_transfer_encoding_t;
 
-uint32_t net_ebb_request_method(net_ebb_request_t request);
+net_ebb_request_method_t net_ebb_request_method(net_ebb_request_t request);
 net_ebb_request_transfer_encoding_t net_ebb_request_transfer_encoding(net_ebb_request_t request);
 uint8_t net_ebb_request_expect_continue(net_ebb_request_t request);
 uint16_t net_ebb_request_version_major(net_ebb_request_t request);
 uint16_t net_ebb_request_version_minor(net_ebb_request_t request);
+
+void net_ebb_request_print(write_stream_t ws, net_ebb_request_t request);
+const char * net_ebb_request_dump(mem_buffer_t buffer, net_ebb_request_t request);
+
+const char * net_ebb_request_method_str(net_ebb_request_method_t method);
 
 NET_END_DECL
 

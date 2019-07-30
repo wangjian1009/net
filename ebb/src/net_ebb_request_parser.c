@@ -563,47 +563,45 @@ static const int net_ebb_request_parser_en_main = 183;
 #line 301 "src/net_ebb_request_parser.rl"
 
 static void
-skip_body(const char **p, net_ebb_request_parser *parser, size_t nskip) {
-  if(CURRENT && CURRENT->on_body && nskip > 0) {
-    CURRENT->on_body(CURRENT, *p, nskip);
-  }
-  if(CURRENT) CURRENT->m_body_read += nskip;
-  parser->chunk_size -= nskip;
-  *p += nskip;
-  if(0 == parser->chunk_size) {
-    parser->eating = FALSE;
-    if(CURRENT && CURRENT->m_transfer_encoding == net_ebb_request_transfer_encoding_identity) {
-      END_REQUEST;
+skip_body(const char** p, net_ebb_request_parser* parser, size_t nskip) {
+    if (CURRENT && CURRENT->on_body && nskip > 0) {
+        CURRENT->on_body(CURRENT, *p, nskip);
     }
-  } else {
-    parser->eating = TRUE;
-  }
+    if (CURRENT) CURRENT->m_body_read += nskip;
+    parser->chunk_size -= nskip;
+    *p += nskip;
+    if (0 == parser->chunk_size) {
+        parser->eating = FALSE;
+        if (CURRENT && CURRENT->m_transfer_encoding == net_ebb_request_transfer_encoding_identity) {
+            END_REQUEST;
+        }
+    } else {
+        parser->eating = TRUE;
+    }
 }
 
-void net_ebb_request_parser_init(net_ebb_request_parser *parser) 
-{
-  int cs = 0;
-  
-#line 588 "src/net_ebb_request_parser.c"
+void net_ebb_request_parser_init(net_ebb_request_parser* parser) {
+    int cs = 0;
+    
+#line 587 "src/net_ebb_request_parser.c"
 	{
 	cs = net_ebb_request_parser_start;
 	}
 
-#line 324 "src/net_ebb_request_parser.rl"
-  parser->cs = cs;
+#line 323 "src/net_ebb_request_parser.rl"
+    parser->cs = cs;
 
-  parser->chunk_size = 0;
-  parser->eating = 0;
-  
-  parser->current_request = NULL;
-
-  parser->header_field_mark = parser->header_value_mark   = 
-  parser->query_string_mark = parser->path_mark           = 
-  parser->uri_mark          = parser->fragment_mark       = NULL;
-
-  parser->new_request = NULL;
+    parser->chunk_size = 0;
+    parser->eating = 0;
+    parser->current_request = NULL;
+    parser->header_field_mark = NULL;
+    parser->header_value_mark = NULL;
+    parser->query_string_mark = NULL;
+    parser->path_mark = NULL;
+    parser->uri_mark = NULL;
+    parser->fragment_mark = NULL;
+    parser->new_request = NULL;
 }
-
 
 /** exec **/
 size_t net_ebb_request_parser_execute(net_ebb_request_parser* parser, const char* buffer, size_t len) {
@@ -629,7 +627,7 @@ size_t net_ebb_request_parser_execute(net_ebb_request_parser* parser, const char
     if (parser->uri_mark) parser->uri_mark = buffer;
 
     
-#line 633 "src/net_ebb_request_parser.c"
+#line 631 "src/net_ebb_request_parser.c"
 	{
 	int _klen;
 	unsigned int _trans;
@@ -879,61 +877,61 @@ _match:
 	break;
 	case 26:
 #line 229 "src/net_ebb_request_parser.rl"
-	{ if(CURRENT) CURRENT->m_method = EBB_COPY;      }
+	{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_copy;      }
 	break;
 	case 27:
 #line 230 "src/net_ebb_request_parser.rl"
-	{ if(CURRENT) CURRENT->m_method = EBB_DELETE;    }
+	{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_delete;    }
 	break;
 	case 28:
 #line 231 "src/net_ebb_request_parser.rl"
-	{ if(CURRENT) CURRENT->m_method = EBB_GET;       }
+	{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_get;       }
 	break;
 	case 29:
 #line 232 "src/net_ebb_request_parser.rl"
-	{ if(CURRENT) CURRENT->m_method = EBB_HEAD;      }
+	{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_head;      }
 	break;
 	case 30:
 #line 233 "src/net_ebb_request_parser.rl"
-	{ if(CURRENT) CURRENT->m_method = EBB_LOCK;      }
+	{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_lock;      }
 	break;
 	case 31:
 #line 234 "src/net_ebb_request_parser.rl"
-	{ if(CURRENT) CURRENT->m_method = EBB_MKCOL;     }
+	{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_mkcol;     }
 	break;
 	case 32:
 #line 235 "src/net_ebb_request_parser.rl"
-	{ if(CURRENT) CURRENT->m_method = EBB_MOVE;      }
+	{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_move;      }
 	break;
 	case 33:
 #line 236 "src/net_ebb_request_parser.rl"
-	{ if(CURRENT) CURRENT->m_method = EBB_OPTIONS;   }
+	{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_options;   }
 	break;
 	case 34:
 #line 237 "src/net_ebb_request_parser.rl"
-	{ if(CURRENT) CURRENT->m_method = EBB_POST;      }
+	{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_post;      }
 	break;
 	case 35:
 #line 238 "src/net_ebb_request_parser.rl"
-	{ if(CURRENT) CURRENT->m_method = EBB_PROPFIND;  }
+	{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_propfind;  }
 	break;
 	case 36:
 #line 239 "src/net_ebb_request_parser.rl"
-	{ if(CURRENT) CURRENT->m_method = EBB_PROPPATCH; }
+	{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_proppatch; }
 	break;
 	case 37:
 #line 240 "src/net_ebb_request_parser.rl"
-	{ if(CURRENT) CURRENT->m_method = EBB_PUT;       }
+	{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_put;       }
 	break;
 	case 38:
 #line 241 "src/net_ebb_request_parser.rl"
-	{ if(CURRENT) CURRENT->m_method = EBB_TRACE;     }
+	{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_trace;     }
 	break;
 	case 39:
 #line 242 "src/net_ebb_request_parser.rl"
-	{ if(CURRENT) CURRENT->m_method = EBB_UNLOCK;    }
+	{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_unlock;    }
 	break;
-#line 937 "src/net_ebb_request_parser.c"
+#line 935 "src/net_ebb_request_parser.c"
 		}
 	}
 
@@ -946,7 +944,7 @@ _again:
 	_out: {}
 	}
 
-#line 363 "src/net_ebb_request_parser.rl"
+#line 361 "src/net_ebb_request_parser.rl"
 
     parser->cs = cs;
 

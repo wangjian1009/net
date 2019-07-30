@@ -10,7 +10,7 @@ struct net_ebb_request {
     net_ebb_connection_t m_connection;
     TAILQ_ENTRY(net_ebb_request) m_next;
     
-    uint32_t m_method;
+    net_ebb_request_method_t m_method;
     net_ebb_request_transfer_encoding_t m_transfer_encoding; /* ro */
     uint8_t m_expect_continue; /* ro */
     uint16_t m_version_major; /* ro */

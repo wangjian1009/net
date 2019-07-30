@@ -226,20 +226,20 @@ static int unhex[] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
 
 #  headers
 
-  Method = ( "COPY"      %{ if(CURRENT) CURRENT->m_method = EBB_COPY;      }
-           | "DELETE"    %{ if(CURRENT) CURRENT->m_method = EBB_DELETE;    }
-           | "GET"       %{ if(CURRENT) CURRENT->m_method = EBB_GET;       }
-           | "HEAD"      %{ if(CURRENT) CURRENT->m_method = EBB_HEAD;      }
-           | "LOCK"      %{ if(CURRENT) CURRENT->m_method = EBB_LOCK;      }
-           | "MKCOL"     %{ if(CURRENT) CURRENT->m_method = EBB_MKCOL;     }
-           | "MOVE"      %{ if(CURRENT) CURRENT->m_method = EBB_MOVE;      }
-           | "OPTIONS"   %{ if(CURRENT) CURRENT->m_method = EBB_OPTIONS;   }
-           | "POST"      %{ if(CURRENT) CURRENT->m_method = EBB_POST;      }
-           | "PROPFIND"  %{ if(CURRENT) CURRENT->m_method = EBB_PROPFIND;  }
-           | "PROPPATCH" %{ if(CURRENT) CURRENT->m_method = EBB_PROPPATCH; }
-           | "PUT"       %{ if(CURRENT) CURRENT->m_method = EBB_PUT;       }
-           | "TRACE"     %{ if(CURRENT) CURRENT->m_method = EBB_TRACE;     }
-           | "UNLOCK"    %{ if(CURRENT) CURRENT->m_method = EBB_UNLOCK;    }
+  Method = ( "COPY"      %{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_copy;      }
+           | "DELETE"    %{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_delete;    }
+           | "GET"       %{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_get;       }
+           | "HEAD"      %{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_head;      }
+           | "LOCK"      %{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_lock;      }
+           | "MKCOL"     %{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_mkcol;     }
+           | "MOVE"      %{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_move;      }
+           | "OPTIONS"   %{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_options;   }
+           | "POST"      %{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_post;      }
+           | "PROPFIND"  %{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_propfind;  }
+           | "PROPPATCH" %{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_proppatch; }
+           | "PUT"       %{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_put;       }
+           | "TRACE"     %{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_trace;     }
+           | "UNLOCK"    %{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_unlock;    }
            ); # Not allowing extension methods
 
   HTTP_Version = "HTTP/" digit+ $version_major "." digit+ $version_minor;
