@@ -8,6 +8,7 @@
 #include "net_ebb_request_header_i.h"
 #include "net_ebb_mount_point_i.h"
 #include "net_ebb_processor_i.h"
+#include "net_ebb_response_i.h"
 
 static int net_ebb_service_init(net_protocol_t protocol);
 static void net_ebb_service_fini(net_protocol_t protocol);
@@ -73,6 +74,7 @@ static int net_ebb_service_init(net_protocol_t protocol) {
     TAILQ_INIT(&service->m_free_requests);
     TAILQ_INIT(&service->m_free_request_headers);
     TAILQ_INIT(&service->m_free_mount_points);
+    TAILQ_INIT(&service->m_free_responses);
 
     mem_buffer_init(&service->m_search_path_buffer, NULL);
 
@@ -115,6 +117,10 @@ static void net_ebb_service_fini(net_protocol_t protocol) {
         net_ebb_request_header_real_free(TAILQ_FIRST(&service->m_free_request_headers));
     }
 
+    while(!TAILQ_EMPTY(&service->m_free_responses)) {
+        net_ebb_response_real_free(TAILQ_FIRST(&service->m_free_responses));
+    }
+    
     while (!TAILQ_EMPTY(&service->m_free_mount_points)) {
         net_ebb_mount_point_real_free(TAILQ_FIRST(&service->m_free_mount_points));
     }

@@ -9,6 +9,7 @@
 typedef TAILQ_HEAD(net_ebb_connection_list, net_ebb_connection) net_ebb_connection_list_t;
 typedef TAILQ_HEAD(net_ebb_request_list, net_ebb_request) net_ebb_request_list_t;
 typedef TAILQ_HEAD(net_ebb_request_header_list, net_ebb_request_header) net_ebb_request_header_list_t;
+typedef TAILQ_HEAD(net_ebb_response_list, net_ebb_response) net_ebb_response_list_t;
 typedef TAILQ_HEAD(net_ebb_processor_list, net_ebb_processor) net_ebb_processor_list_t;
 typedef TAILQ_HEAD(net_ebb_mount_point_list, net_ebb_mount_point) net_ebb_mount_point_list_t;
 
@@ -27,6 +28,7 @@ struct net_ebb_service {
     
     net_ebb_request_list_t m_free_requests;
     net_ebb_request_header_list_t m_free_request_headers;
+    net_ebb_response_list_t m_free_responses;
     net_ebb_mount_point_list_t m_free_mount_points;
 };
 

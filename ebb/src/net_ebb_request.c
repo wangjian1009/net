@@ -6,6 +6,7 @@
 #include "net_ebb_request_header_i.h"
 #include "net_ebb_mount_point_i.h"
 #include "net_ebb_processor_i.h"
+#include "net_ebb_response_i.h"
 
 net_ebb_request_t net_ebb_request_create(net_ebb_connection_t connection) {
     net_ebb_service_t service = net_ebb_connection_service(connection);
@@ -36,6 +37,8 @@ net_ebb_request_t net_ebb_request_create(net_ebb_connection_t connection) {
     request->m_transfer_encoding = net_ebb_request_transfer_encoding_identity;
     request->m_keep_alive = -1;
     request->m_path = NULL;
+    request->m_state = net_ebb_request_state_processing;
+    request->m_response = NULL;
     TAILQ_INIT(&request->m_headers);
 
     TAILQ_INSERT_TAIL(&connection->m_requests, request, m_next_for_connection);
@@ -49,6 +52,11 @@ void net_ebb_request_free(net_ebb_request_t request) {
 
     net_ebb_request_set_processor(request, NULL);
     assert(request->m_processor == NULL);
+
+    if (request->m_response) {
+        net_ebb_response_free(request->m_response);
+        request->m_response = NULL;
+    }
 
     if (request->m_path) {
         mem_free(service->m_alloc, request->m_path);

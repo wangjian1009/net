@@ -22,8 +22,10 @@ struct net_ebb_request {
     char * m_path;
     const char * m_path_to_processor;
     net_ebb_request_header_list_t m_headers;
+    net_ebb_request_state_t m_state;
     size_t m_content_length;
     size_t m_body_read;
+    net_ebb_response_t m_response;
 };
 
 net_ebb_request_t net_ebb_request_create(net_ebb_connection_t connection);

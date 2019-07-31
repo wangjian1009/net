@@ -5,8 +5,7 @@
 
 NET_BEGIN_DECL
 
-/* HTTP Methods */
-typedef enum net_ebb_request_method {
+enum net_ebb_request_method {
     net_ebb_request_method_unknown,
     net_ebb_request_method_copy,
     net_ebb_request_method_delete,
@@ -22,13 +21,17 @@ typedef enum net_ebb_request_method {
     net_ebb_request_method_put,
     net_ebb_request_method_trace,
     net_ebb_request_method_unlock,
-} net_ebb_request_method_t;
+};
     
-/* Transfer Encodings */
-typedef enum net_ebb_request_transfer_encoding {
-    net_ebb_request_transfer_encoding_identity = 0x00000001,
-    net_ebb_request_transfer_encoding_chunked = 0x00000002,
-} net_ebb_request_transfer_encoding_t;
+enum net_ebb_request_transfer_encoding {
+    net_ebb_request_transfer_encoding_identity,
+    net_ebb_request_transfer_encoding_chunked,
+};
+
+enum net_ebb_request_state {
+    net_ebb_request_state_processing,
+    net_ebb_request_state_complete,
+};
 
 net_ebb_request_method_t net_ebb_request_method(net_ebb_request_t request);
 net_ebb_request_transfer_encoding_t net_ebb_request_transfer_encoding(net_ebb_request_t request);
@@ -38,6 +41,8 @@ uint16_t net_ebb_request_version_minor(net_ebb_request_t request);
 
 const char * net_ebb_request_full_path(net_ebb_request_t request);
 const char * net_ebb_request_relative_path(net_ebb_request_t request);
+
+net_ebb_request_state_t net_ebb_request_state(net_ebb_request_t request);
 
 void net_ebb_request_print(write_stream_t ws, net_ebb_request_t request);
 const char * net_ebb_request_dump(mem_buffer_t buffer, net_ebb_request_t request);
