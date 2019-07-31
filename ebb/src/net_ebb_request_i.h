@@ -21,6 +21,7 @@ struct net_ebb_request {
     int8_t m_keep_alive;
     char * m_path;
     const char * m_path_to_processor;
+    net_ebb_request_header_list_t m_headers;
     size_t m_content_length;
     size_t m_body_read;
 };

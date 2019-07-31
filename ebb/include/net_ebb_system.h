@@ -7,6 +7,8 @@ NET_BEGIN_DECL
 typedef struct net_ebb_service * net_ebb_service_t;
 typedef struct net_ebb_connection * net_ebb_connection_t;
 typedef struct net_ebb_request * net_ebb_request_t;
+typedef struct net_ebb_request_header * net_ebb_request_header_t;
+typedef struct net_ebb_request_header_it * net_ebb_request_header_it_t;
 typedef struct net_ebb_mount_point * net_ebb_mount_point_t;
 typedef struct net_ebb_processor * net_ebb_processor_t;
 

@@ -42,6 +42,7 @@ const char * net_ebb_request_relative_path(net_ebb_request_t request);
 void net_ebb_request_print(write_stream_t ws, net_ebb_request_t request);
 const char * net_ebb_request_dump(mem_buffer_t buffer, net_ebb_request_t request);
 
+/**/
 const char * net_ebb_request_method_str(net_ebb_request_method_t method);
 
 NET_END_DECL
