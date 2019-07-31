@@ -1,3 +1,4 @@
+#include <assert.h>
 #include "cpe/pal/pal_string.h"
 #include "cpe/utils/string_utils.h"
 #include "net_ebb_processor_i.h"
@@ -8,10 +9,21 @@ net_ebb_processor_t
 net_ebb_processor_create(
     net_ebb_service_t service, const char * name, void * ctx,
     /*env*/
-    net_ebb_processor_env_clear_fun_t env_clear)
+    net_ebb_processor_env_clear_fun_t env_clear,
+    /*request*/
+    uint16_t request_sz,
+    net_ebb_processor_request_init_fun_t request_init,
+    net_ebb_processor_request_fini_fun_t request_fini,
+    net_ebb_processor_request_on_head_complete_fun_t request_on_head_complete,
+    net_ebb_processor_request_on_complete_fun_t request_on_complete)
 {
     net_ebb_processor_t processor;
 
+    TAILQ_FOREACH(processor, &service->m_processors, m_next) {
+        assert(TAILQ_EMPTY(&processor->m_requests));
+    }
+    assert(TAILQ_EMPTY(&service->m_free_requests));
+    
     if (net_ebb_processor_find_by_name(service, name) != NULL) {
         CPE_ERROR(service->m_em, "ebb: processor: name %s duplicate!", name);
         return NULL;
@@ -27,6 +39,15 @@ net_ebb_processor_create(
     cpe_str_dup(processor->m_name, sizeof(processor->m_name), name);
     processor->m_ctx = ctx;
     processor->m_env_clear = env_clear;
+    processor->m_request_sz = request_sz;
+    processor->m_request_init = request_init;
+    processor->m_request_fini = request_fini;
+    processor->m_request_on_head_complete = request_on_head_complete;
+    processor->m_request_on_complete = request_on_head_complete;
+    
+    if (processor->m_request_sz > service->m_request_sz) {
+        service->m_request_sz = processor->m_request_sz;
+    }
 
     TAILQ_INIT(&processor->m_requests);
     TAILQ_INIT(&processor->m_mount_points);

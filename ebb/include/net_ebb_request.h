@@ -36,6 +36,9 @@ uint8_t net_ebb_request_expect_continue(net_ebb_request_t request);
 uint16_t net_ebb_request_version_major(net_ebb_request_t request);
 uint16_t net_ebb_request_version_minor(net_ebb_request_t request);
 
+const char * net_ebb_request_full_path(net_ebb_request_t request);
+const char * net_ebb_request_relative_path(net_ebb_request_t request);
+
 void net_ebb_request_print(write_stream_t ws, net_ebb_request_t request);
 const char * net_ebb_request_dump(mem_buffer_t buffer, net_ebb_request_t request);
 

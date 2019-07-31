@@ -11,6 +11,7 @@ struct net_ebb_request {
     TAILQ_ENTRY(net_ebb_request) m_next_for_connection;
     net_ebb_processor_t m_processor;
     TAILQ_ENTRY(net_ebb_request) m_next_for_processor;
+    void * m_processor_request;
     net_ebb_request_method_t m_method;
     net_ebb_request_transfer_encoding_t m_transfer_encoding;
     uint8_t m_expect_continue;
@@ -22,18 +23,6 @@ struct net_ebb_request {
     const char * m_path_to_processor;
     size_t m_content_length;
     size_t m_body_read;
-    
-    /* Public  - ordered list of callbacks */
-    net_ebb_element_cb on_path;
-    net_ebb_element_cb on_query_string;
-    net_ebb_element_cb on_uri;
-    net_ebb_element_cb on_fragment;
-    net_ebb_header_cb on_header_field;
-    net_ebb_header_cb on_header_value;
-    void (*on_headers_complete)(net_ebb_request_t);
-    net_ebb_element_cb on_body;
-    void (*on_complete)(net_ebb_request_t);
-    void* data;
 };
 
 net_ebb_request_t net_ebb_request_create(net_ebb_connection_t connection);
@@ -42,7 +31,17 @@ void net_ebb_request_real_free(net_ebb_request_t request);
 
 uint8_t net_ebb_request_should_keep_alive(net_ebb_request_t request);
 
-void net_ebb_request_set_processor(net_ebb_request_t request, net_ebb_processor_t processor);
+void net_ebb_request_on_path(net_ebb_request_t request, const char* at, size_t length);
+void net_ebb_request_on_query_string(net_ebb_request_t request, const char* at, size_t length);
+void net_ebb_request_on_uri(net_ebb_request_t request, const char* at, size_t length);
+void net_ebb_request_on_fragment(net_ebb_request_t request, const char* at, size_t length);
+void net_ebb_request_on_header_field(net_ebb_request_t request, const char* at, size_t length, int header_index);
+void net_ebb_request_on_header_value(net_ebb_request_t request, const char* at, size_t length, int header_index);
+void net_ebb_request_on_body(net_ebb_request_t request, const char* at, size_t length);
+void net_ebb_request_on_head_complete(net_ebb_request_t request);
+void net_ebb_request_on_complete(net_ebb_request_t request);
+
+void net_ebb_request_set_processor(net_ebb_request_t request, net_ebb_mount_point_t mp);
 
 #define net_ebb_request_has_body(request)                               \
     (request->transfer_encoding == EBB_CHUNKED || request->content_length > 0)

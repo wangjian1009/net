@@ -12,7 +12,7 @@ static int net_ebb_service_init(net_protocol_t protocol);
 static void net_ebb_service_fini(net_protocol_t protocol);
 
 net_ebb_service_t
-net_ebb_service_create(mem_allocrator_t alloc, error_monitor_t em, net_schedule_t schedule, const char * protocol_name) {
+net_ebb_service_create(net_schedule_t schedule, const char * protocol_name) {
     net_protocol_t protocol =
         net_protocol_create(
             schedule,
@@ -30,14 +30,12 @@ net_ebb_service_create(mem_allocrator_t alloc, error_monitor_t em, net_schedule_
             NULL,
             NULL);
     if (protocol == NULL) {
-        CPE_ERROR(em, "ebb: %s: create protocol fail!", protocol_name);
+        CPE_ERROR(net_schedule_em(schedule), "ebb: %s: create protocol fail!", protocol_name);
         return NULL;
     }
     net_protocol_set_debug(protocol, 2);
 
     net_ebb_service_t service = net_protocol_data(protocol);
-    service->m_alloc = alloc;
-    service->m_em = em;
     
     return service;
 }
@@ -62,27 +60,33 @@ mem_buffer_t net_ebb_service_tmp_buffer(net_ebb_service_t service) {
 static int net_ebb_service_init(net_protocol_t protocol) {
     net_ebb_service_t service = net_protocol_data(protocol);
 
-    service->m_em = NULL;
-    service->m_alloc = NULL;
+    service->m_em = net_schedule_em(net_protocol_schedule(protocol));
+    service->m_alloc = net_schedule_allocrator(net_protocol_schedule(protocol));
     service->m_cfg_connection_timeout_ms = 30 * 1000;
 
     TAILQ_INIT(&service->m_processors);
     service->m_root = NULL;
     TAILQ_INIT(&service->m_connections);
-
+    service->m_request_sz = 0;
+    
     TAILQ_INIT(&service->m_free_requests);
     TAILQ_INIT(&service->m_free_mount_points);
 
     mem_buffer_init(&service->m_search_path_buffer, NULL);
 
     net_ebb_processor_t dft_processor = net_ebb_processor_create_dft(service);
-    if (dft_processor == NULL) return -1;
+    if (dft_processor == NULL) {
+        CPE_ERROR(service->m_em, "ebb: %s: create dft processor fail!", net_protocol_name(protocol));
+        return -1;
+    }
     
     const char * root_mp_name = "root";
     service->m_root = net_ebb_mount_point_create(
         service, root_mp_name, root_mp_name + strlen(root_mp_name), NULL, NULL, dft_processor);
     if (service->m_root == NULL) {
-        
+        CPE_ERROR(service->m_em, "ebb: %s: create root mount point fail!", net_protocol_name(protocol));
+        net_ebb_processor_free(dft_processor);
+        return -1;
     }
     
     return 0;

@@ -18,7 +18,8 @@ struct net_ebb_service {
 
     net_ebb_processor_list_t m_processors;
     net_ebb_mount_point_t m_root;
-
+    uint32_t m_request_sz;
+    
     net_ebb_connection_list_t m_connections;
 
     struct mem_buffer m_search_path_buffer;

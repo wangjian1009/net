@@ -47,26 +47,18 @@ static int unhex[] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
 #define REMAINING (pe - p)
 #define CURRENT (parser->current_request)
 #define CONTENT_LENGTH (parser->current_request->content_length)
-#define CALLBACK(FOR)                               \
-  if(CURRENT && parser->FOR##_mark && CURRENT->on_##FOR) {     \
-    CURRENT->on_##FOR( CURRENT                      \
-                , parser->FOR##_mark                \
-                , p - parser->FOR##_mark            \
-                );                                  \
- }
-#define HEADER_CALLBACK(FOR)                        \
-  if(CURRENT && parser->FOR##_mark && CURRENT->on_##FOR) {     \
-    CURRENT->on_##FOR( CURRENT                      \
-                , parser->FOR##_mark                \
-                , p - parser->FOR##_mark            \
-                , CURRENT->m_number_of_headers        \
-                );                                  \
- }
-#define END_REQUEST                        \
-    if(CURRENT && CURRENT->on_complete)               \
-      CURRENT->on_complete(CURRENT);       \
+#define CALLBACK(FOR)                                                                  \
+    if (CURRENT && parser->FOR##_mark) {                                               \
+        net_ebb_request_on_##FOR(CURRENT, parser->FOR##_mark, p - parser->FOR##_mark); \
+    }
+#define HEADER_CALLBACK(FOR)                                                                                         \
+    if (CURRENT && parser->FOR##_mark) {                                                                             \
+        net_ebb_request_on_##FOR(CURRENT, parser->FOR##_mark, p - parser->FOR##_mark, CURRENT->m_number_of_headers); \
+    }
+#define END_REQUEST                           \
+    if (CURRENT)                              \
+        net_ebb_request_on_complete(CURRENT); \
     CURRENT = NULL;
-
 
 %%{
   machine net_ebb_request_parser;
@@ -148,8 +140,8 @@ static int unhex[] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
   }
 
   action end_headers {
-    if(CURRENT && CURRENT->on_headers_complete)
-      CURRENT->on_headers_complete(CURRENT);
+    if(CURRENT)
+        net_ebb_request_on_head_complete(CURRENT);
   }
 
   action add_to_chunk_size {
@@ -301,8 +293,8 @@ static int unhex[] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
 
 static void
 skip_body(const char** p, net_ebb_request_parser* parser, size_t nskip) {
-    if (CURRENT && CURRENT->on_body && nskip > 0) {
-        CURRENT->on_body(CURRENT, *p, nskip);
+    if (CURRENT  && nskip > 0) {
+        net_ebb_request_on_body(CURRENT, *p, nskip);
     }
     if (CURRENT) CURRENT->m_body_read += nskip;
     parser->chunk_size -= nskip;
