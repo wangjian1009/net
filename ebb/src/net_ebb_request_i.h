@@ -29,7 +29,6 @@ struct net_ebb_request {
 };
 
 net_ebb_request_t net_ebb_request_create(net_ebb_connection_t connection);
-void net_ebb_request_free(net_ebb_request_t request);
 void net_ebb_request_real_free(net_ebb_request_t request);
 
 uint8_t net_ebb_request_should_keep_alive(net_ebb_request_t request);

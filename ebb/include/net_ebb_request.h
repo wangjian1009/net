@@ -33,6 +33,8 @@ enum net_ebb_request_state {
     net_ebb_request_state_complete,
 };
 
+void net_ebb_request_free(net_ebb_request_t request);
+
 net_ebb_request_method_t net_ebb_request_method(net_ebb_request_t request);
 net_ebb_request_transfer_encoding_t net_ebb_request_transfer_encoding(net_ebb_request_t request);
 uint8_t net_ebb_request_expect_continue(net_ebb_request_t request);
@@ -46,6 +48,9 @@ net_ebb_request_state_t net_ebb_request_state(net_ebb_request_t request);
 
 void net_ebb_request_print(write_stream_t ws, net_ebb_request_t request);
 const char * net_ebb_request_dump(mem_buffer_t buffer, net_ebb_request_t request);
+
+void * net_ebb_request_data(net_ebb_request_t request);
+net_ebb_request_t net_ebb_request_from_data(void * data);
 
 /**/
 const char * net_ebb_request_method_str(net_ebb_request_method_t method);

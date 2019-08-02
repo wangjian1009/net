@@ -126,6 +126,14 @@ uint8_t net_ebb_request_should_keep_alive(net_ebb_request_t request) {
     }
 }
 
+void * net_ebb_request_data(net_ebb_request_t request) {
+    return request + 1;
+}
+
+net_ebb_request_t net_ebb_request_from_data(void * data) {
+    return ((net_ebb_request_t)data) - 1;
+}
+
 void net_ebb_request_set_processor(net_ebb_request_t request, net_ebb_mount_point_t mp) {
     if (request->m_processor) {
         if (request->m_processor->m_request_fini) {
