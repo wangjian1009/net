@@ -16,6 +16,7 @@ typedef struct net_ebb_processor * net_ebb_processor_t;
 typedef enum net_ebb_request_method net_ebb_request_method_t;
 typedef enum net_ebb_request_transfer_encoding net_ebb_request_transfer_encoding_t;
 typedef enum net_ebb_request_state net_ebb_request_state_t;
+typedef enum net_ebb_response_state net_ebb_response_state_t;
 
 NET_END_DECL
 

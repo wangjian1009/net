@@ -34,7 +34,7 @@ net_ebb_request_t net_ebb_request_create(net_ebb_connection_t connection) {
     request->m_version_major = 0;
     request->m_version_minor = 0;
     request->m_number_of_headers = 0;
-    request->m_transfer_encoding = net_ebb_request_transfer_encoding_identity;
+    request->m_transfer_encoding = net_ebb_request_transfer_encoding_unknown;
     request->m_keep_alive = -1;
     request->m_path = NULL;
     request->m_state = net_ebb_request_state_processing;
@@ -109,6 +109,14 @@ const char * net_ebb_request_relative_path(net_ebb_request_t request) {
     return request->m_path_to_processor;
 }
 
+net_ebb_request_state_t net_ebb_request_state(net_ebb_request_t request) {
+    return request->m_state;
+}
+
+void net_ebb_request_schedule_close_connection(net_ebb_request_t request) {
+    net_ebb_connection_schedule_close(request->m_connection);
+}
+
 uint8_t net_ebb_request_should_keep_alive(net_ebb_request_t request) {
     if (request->m_keep_alive == -1) {
         if (request->m_version_major == 1) {
@@ -152,6 +160,23 @@ void net_ebb_request_set_processor(net_ebb_request_t request, net_ebb_mount_poin
     }
 }
 
+void net_ebb_request_set_state(net_ebb_request_t request, net_ebb_request_state_t state) {
+    if (request->m_state == state) return;
+
+    if (net_endpoint_protocol_debug(request->m_connection->m_endpoint)) {
+        net_ebb_connection_t connection = request->m_connection;
+        net_ebb_service_t service = net_ebb_connection_service(connection);
+
+        CPE_INFO(
+            service->m_em, "ebb: %s: state %s ==> %s",
+            net_endpoint_dump(net_ebb_service_tmp_buffer(service), connection->m_endpoint),
+            net_ebb_request_state_str(request->m_state), 
+            net_ebb_request_state_str(state));
+    }
+
+    request->m_state = state;
+}
+
 void net_ebb_request_print(write_stream_t ws, net_ebb_request_t request) {
     stream_printf(
         ws, "%s %d.%d", 
@@ -192,7 +217,7 @@ void net_ebb_request_on_path(net_ebb_request_t request, const char* at, size_t l
             service->m_em, "ebb: %s: on path: dup path %.*s fail!", 
             net_endpoint_dump(net_ebb_service_tmp_buffer(service), connection->m_endpoint),
             (int)length, at);
-        net_ebb_connection_close_schedule(connection);
+        net_ebb_connection_schedule_close(connection);
         return;
     }
     
@@ -204,7 +229,7 @@ void net_ebb_request_on_path(net_ebb_request_t request, const char* at, size_t l
             service->m_em, "ebb: %s: on path: find processor at  path %s fail!", 
             net_endpoint_dump(net_ebb_service_tmp_buffer(service), connection->m_endpoint),
             request->m_path);
-        net_ebb_connection_close_schedule(connection);
+        net_ebb_connection_schedule_close(connection);
         return;
     }
 
@@ -278,7 +303,7 @@ void net_ebb_request_on_header_value(net_ebb_request_t request, const char* at, 
     net_ebb_connection_t connection = request->m_connection;
     net_ebb_service_t service = net_ebb_connection_service(request->m_connection);
 
-    if (net_endpoint_protocol_debug(connection->m_endpoint)) {
+    if (net_endpoint_protocol_debug(connection->m_endpoint) >= 2) {
         CPE_INFO(
             service->m_em, "ebb: %s: on header value %d: %.*s",
             net_endpoint_dump(net_ebb_service_tmp_buffer(service), connection->m_endpoint),
@@ -324,9 +349,12 @@ void net_ebb_request_on_head_complete(net_ebb_request_t request) {
             net_endpoint_dump(net_ebb_service_tmp_buffer(service), connection->m_endpoint));
     }
 
-    CPE_INFO(
-        service->m_em, "ebb: xxx %s",
-        net_ebb_request_dump(net_ebb_service_tmp_buffer(service), request));
+    if (request->m_state != net_ebb_request_state_processing) return;
+    
+    net_ebb_processor_t processor = request->m_processor;
+    if (processor && processor->m_request_on_head_complete) {
+        processor->m_request_on_head_complete(processor->m_ctx, request);
+    }
 }
 
 void net_ebb_request_on_complete(net_ebb_request_t request) {
@@ -334,10 +362,23 @@ void net_ebb_request_on_complete(net_ebb_request_t request) {
     net_ebb_service_t service = net_ebb_connection_service(request->m_connection);
 
     if (net_endpoint_protocol_debug(connection->m_endpoint)) {
+        char ep_buf[128];
+        cpe_str_dup(ep_buf, sizeof(ep_buf), net_endpoint_dump(net_ebb_service_tmp_buffer(service), connection->m_endpoint));
+        
         CPE_INFO(
-            service->m_em, "ebb: %s: on request complete",
-            net_endpoint_dump(net_ebb_service_tmp_buffer(service), connection->m_endpoint));
+            service->m_em, "ebb: %s: on request complete\n%s",
+            ep_buf,
+            net_ebb_request_dump(net_ebb_service_tmp_buffer(service), request));
     }
+    
+    if (request->m_state == net_ebb_request_state_processing) {
+        net_ebb_processor_t processor = request->m_processor;
+        if (processor && processor->m_request_on_head_complete) {
+            processor->m_request_on_head_complete(processor->m_ctx, request);
+        }
+    }
+    
+    net_ebb_connection_check_remove_done_requests(connection);
 }
 
 const char * net_ebb_request_method_str(net_ebb_request_method_t method) {
@@ -372,5 +413,14 @@ const char * net_ebb_request_method_str(net_ebb_request_method_t method) {
         return "trace";
     case net_ebb_request_method_unlock:
         return "unlock";
+    }
+}
+
+const char * net_ebb_request_state_str(net_ebb_request_state_t state) {
+    switch(state) {
+    case net_ebb_request_state_processing:
+        return "processing";
+    case net_ebb_request_state_complete:
+        return "complete";
     }
 }

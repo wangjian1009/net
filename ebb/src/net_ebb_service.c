@@ -35,7 +35,7 @@ net_ebb_service_create(net_schedule_t schedule, const char * protocol_name) {
         CPE_ERROR(net_schedule_em(schedule), "ebb: %s: create protocol fail!", protocol_name);
         return NULL;
     }
-    net_protocol_set_debug(protocol, 2);
+    net_protocol_set_debug(protocol, 1);
 
     net_ebb_service_t service = net_protocol_data(protocol);
     

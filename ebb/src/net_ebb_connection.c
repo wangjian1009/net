@@ -122,6 +122,19 @@ static void net_ebb_connection_close_cb(net_timer_t timer, void * ctx) {
     net_endpoint_set_state(base_endpoint, net_endpoint_state_disable);
 }
 
-void net_ebb_connection_close_schedule(net_ebb_connection_t connection) {
+void net_ebb_connection_schedule_close(net_ebb_connection_t connection) {
     net_timer_active(connection->m_timer_close, 0);
+}
+
+void net_ebb_connection_check_remove_done_requests(net_ebb_connection_t connection) {
+    net_ebb_request_t request = TAILQ_FIRST(&connection->m_requests);
+
+    while(request && request->m_state == net_ebb_request_state_complete) {
+        net_ebb_request_free(request);
+
+        request = TAILQ_FIRST(&connection->m_requests);
+        if (request) {
+            //TODO: copy data to ep
+        }
+    }
 }

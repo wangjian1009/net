@@ -44,6 +44,7 @@ void net_ebb_request_on_head_complete(net_ebb_request_t request);
 void net_ebb_request_on_complete(net_ebb_request_t request);
 
 void net_ebb_request_set_processor(net_ebb_request_t request, net_ebb_mount_point_t mp);
+void net_ebb_request_set_state(net_ebb_request_t request, net_ebb_request_state_t state);
 
 #define net_ebb_request_has_body(request)                               \
     (request->transfer_encoding == EBB_CHUNKED || request->content_length > 0)
