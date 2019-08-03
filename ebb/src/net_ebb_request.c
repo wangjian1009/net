@@ -426,3 +426,14 @@ const char * net_ebb_request_state_str(net_ebb_request_state_t state) {
         return "complete";
     }
 }
+
+const char * net_ebb_request_transfer_encoding_str(net_ebb_request_transfer_encoding_t transfer_encoding) {
+    switch(transfer_encoding) {
+    case net_ebb_request_transfer_encoding_unknown:
+        return "unknown";
+    case net_ebb_request_transfer_encoding_identity:
+        return "identity";
+    case net_ebb_request_transfer_encoding_chunked:
+        return "chunked";
+    }
+}

@@ -59,6 +59,7 @@ net_ebb_request_t net_ebb_request_from_data(void * data);
 /**/
 const char * net_ebb_request_method_str(net_ebb_request_method_t method);
 const char * net_ebb_request_state_str(net_ebb_request_state_t state);
+const char * net_ebb_request_transfer_encoding_str(net_ebb_request_transfer_encoding_t transfer_encoding);
 
 NET_END_DECL
 

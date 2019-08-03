@@ -233,7 +233,7 @@ int net_ebb_response_append_body_identity_data(net_ebb_response_t response, void
     return 0;
 }
 
-int net_ebb_response_append_body_identity_data_from_stream(net_ebb_response_t response, read_stream_t rs) {
+int net_ebb_response_append_body_identity_from_stream(net_ebb_response_t response, read_stream_t rs) {
     net_ebb_request_t request = response->m_request;
     net_ebb_connection_t connection = request->m_connection;
     net_ebb_service_t service = net_ebb_connection_service(connection);
@@ -241,6 +241,8 @@ int net_ebb_response_append_body_identity_data_from_stream(net_ebb_response_t re
 
     if (request->m_state == net_ebb_request_state_complete) return -1;
 
+    net_ebb_connection_timeout_reset(connection);
+    
     if (response->m_state != net_ebb_response_state_body) {
         CPE_ERROR(
             service->m_em, "ebb: %s: response: append body: current state is %s, can`t body!",
@@ -249,10 +251,50 @@ int net_ebb_response_append_body_identity_data_from_stream(net_ebb_response_t re
         net_ebb_request_schedule_close_connection(request);
         return -1;
     }
-    
-    net_ebb_connection_timeout_reset(connection);
 
-    return 0;
+    if (response->m_transfer_encoding != net_ebb_request_transfer_encoding_identity) {
+        CPE_ERROR(
+            service->m_em, "ebb: %s: response: append body: current encoding is %s, can`t append identity!",
+            net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
+            net_ebb_request_transfer_encoding_str(response->m_transfer_encoding));
+        net_ebb_request_schedule_close_connection(request);
+        return -1;
+    }
+
+    while (net_endpoint_state(endpoint) == net_endpoint_state_established) {
+        uint32_t buf_size = 0;
+        void* buf = net_endpoint_buf_alloc(endpoint, &buf_size);
+        if (buf == NULL) {
+            CPE_ERROR(
+                service->m_em, "ebb: %s: response: append body: alloc ep buf fail!",
+                net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)));
+            net_ebb_request_schedule_close_connection(request);
+            return -1;
+        }
+        
+        int read_sz = stream_read(rs, buf, buf_size);
+        if (read_sz < 0) {
+            CPE_ERROR(
+                service->m_em, "ebb: %s: response: append body: read stream fail!",
+                net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)));
+            net_ebb_request_schedule_close_connection(request);
+            return -1;
+        }
+        else if (read_sz == 0) {
+            return 0;
+        }
+        else {
+            if (net_endpoint_buf_supply(endpoint, net_ep_buf_write, (uint32_t)read_sz) != 0) {
+                CPE_ERROR(
+                    service->m_em, "ebb: %s: response: append body: supply ep buf fail fail!",
+                    net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)));
+                net_ebb_request_schedule_close_connection(request);
+                return -1;
+            }
+        }
+    }
+
+    return -1;
 }
 
 int net_ebb_response_append_body_chunked_begin(net_ebb_response_t response) {
