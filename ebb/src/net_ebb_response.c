@@ -233,6 +233,28 @@ int net_ebb_response_append_body_identity_data(net_ebb_response_t response, void
     return 0;
 }
 
+int net_ebb_response_append_body_identity_data_from_stream(net_ebb_response_t response, read_stream_t rs) {
+    net_ebb_request_t request = response->m_request;
+    net_ebb_connection_t connection = request->m_connection;
+    net_ebb_service_t service = net_ebb_connection_service(connection);
+    net_endpoint_t endpoint = net_endpoint_from_data(connection);
+
+    if (request->m_state == net_ebb_request_state_complete) return -1;
+
+    if (response->m_state != net_ebb_response_state_body) {
+        CPE_ERROR(
+            service->m_em, "ebb: %s: response: append body: current state is %s, can`t body!",
+            net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
+            net_ebb_response_state_str(response->m_state));
+        net_ebb_request_schedule_close_connection(request);
+        return -1;
+    }
+    
+    net_ebb_connection_timeout_reset(connection);
+
+    return 0;
+}
+
 int net_ebb_response_append_body_chunked_begin(net_ebb_response_t response) {
     net_ebb_request_t request = response->m_request;
     net_ebb_connection_t connection = request->m_connection;
@@ -295,6 +317,12 @@ int net_ebb_response_append_complete(net_ebb_response_t response) {
         break;
     }
 
+    if (net_endpoint_protocol_debug(endpoint)) {
+        CPE_INFO(
+            service->m_em, "ebb: %s: req %d: => \\n\\n", 
+            net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)), request->m_request_id);
+    }
+    
     response->m_state = net_ebb_response_state_done;
     net_ebb_request_set_state(request, net_ebb_request_state_complete);
     
@@ -328,6 +356,7 @@ const char * net_ebb_response_state_str(net_ebb_response_state_t state) {
 static int net_ebb_response_append_head_last(net_ebb_response_t response) {
     net_ebb_request_t request = response->m_request;
     net_ebb_connection_t connection = request->m_connection;
+    net_ebb_service_t service = net_ebb_connection_service(connection);
     net_endpoint_t endpoint = net_endpoint_from_data(connection);
     
     if (request->m_version_major == 1 && request->m_version_minor == 1) {
@@ -340,6 +369,13 @@ static int net_ebb_response_append_head_last(net_ebb_response_t response) {
         }
     }
 
+    if (net_endpoint_protocol_debug(endpoint)) {
+        CPE_INFO(
+            service->m_em, "ebb: %s: req %d: header %d: => ", 
+            net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
+            request->m_request_id, response->m_header_count);
+    }
+    
     const char * head_end = "\n";
     return net_ebb_response_append(response, head_end, strlen(head_end));
 }

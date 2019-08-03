@@ -82,6 +82,10 @@ void net_ebb_request_real_free(net_ebb_request_t request) {
     mem_free(service->m_alloc, request);
 }
 
+uint32_t net_ebb_request_id(net_ebb_request_t request) {
+    return request->m_request_id;
+}
+
 net_ebb_request_method_t net_ebb_request_method(net_ebb_request_t request) {
     return request->m_method;
 }

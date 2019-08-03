@@ -1,5 +1,6 @@
 #ifndef NET_EBB_RESPONSE_H
 #define NET_EBB_RESPONSE_H
+#include "cpe/utils/utils_types.h"
 #include "net_ebb_system.h"
 
 NET_BEGIN_DECL
@@ -23,6 +24,7 @@ int net_ebb_response_append_head_line(net_ebb_response_t response, const char * 
 
 int net_ebb_response_append_body_identity_begin(net_ebb_response_t response, uint32_t size);
 int net_ebb_response_append_body_identity_data(net_ebb_response_t response, void const * data, size_t data_size);
+int net_ebb_response_append_body_identity_data_from_stream(net_ebb_response_t response, read_stream_t rs);
 
 int net_ebb_response_append_body_chunked_begin(net_ebb_response_t response);
 int net_ebb_response_append_body_chunked_block(net_ebb_response_t response, void const * data, size_t data_size);
