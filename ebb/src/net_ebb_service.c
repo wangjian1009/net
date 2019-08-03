@@ -35,7 +35,7 @@ net_ebb_service_create(net_schedule_t schedule, const char * protocol_name) {
         CPE_ERROR(net_schedule_em(schedule), "ebb: %s: create protocol fail!", protocol_name);
         return NULL;
     }
-    net_protocol_set_debug(protocol, 1);
+    net_protocol_set_debug(protocol, 2);
 
     net_ebb_service_t service = net_protocol_data(protocol);
     
@@ -71,11 +71,13 @@ static int net_ebb_service_init(net_protocol_t protocol) {
     TAILQ_INIT(&service->m_connections);
     service->m_request_sz = 0;
     
+    service->m_max_request_id = 0;
     TAILQ_INIT(&service->m_free_requests);
     TAILQ_INIT(&service->m_free_request_headers);
     TAILQ_INIT(&service->m_free_mount_points);
     TAILQ_INIT(&service->m_free_responses);
 
+    mem_buffer_init(&service->m_data_buffer, NULL);
     mem_buffer_init(&service->m_search_path_buffer, NULL);
 
     net_ebb_processor_t dft_processor = net_ebb_processor_create_dft(service);
@@ -125,6 +127,7 @@ static void net_ebb_service_fini(net_protocol_t protocol) {
         net_ebb_mount_point_real_free(TAILQ_FIRST(&service->m_free_mount_points));
     }
 
+    mem_buffer_clear(&service->m_data_buffer);
     mem_buffer_clear(&service->m_search_path_buffer);
 }
 

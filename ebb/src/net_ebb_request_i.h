@@ -11,6 +11,7 @@ struct net_ebb_request {
     TAILQ_ENTRY(net_ebb_request) m_next_for_connection;
     net_ebb_processor_t m_processor;
     TAILQ_ENTRY(net_ebb_request) m_next_for_processor;
+    uint32_t m_request_id;
     void * m_processor_request;
     net_ebb_request_method_t m_method;
     net_ebb_request_transfer_encoding_t m_transfer_encoding;

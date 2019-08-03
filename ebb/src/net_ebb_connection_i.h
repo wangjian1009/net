@@ -18,6 +18,7 @@ int net_ebb_connection_init(net_endpoint_t endpoint);
 void net_ebb_connection_fini(net_endpoint_t endpoint);
 int net_ebb_connection_input(net_endpoint_t endpoint);
 
+void net_ebb_connection_timeout_reset(net_ebb_connection_t connection);
 void net_ebb_connection_schedule_close(net_ebb_connection_t connection);
 void net_ebb_connection_check_remove_done_requests(net_ebb_connection_t connection);
 

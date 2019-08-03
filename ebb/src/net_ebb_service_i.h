@@ -22,8 +22,10 @@ struct net_ebb_service {
     net_ebb_mount_point_t m_root;
     uint32_t m_request_sz;
     
+    uint32_t m_max_request_id;
     net_ebb_connection_list_t m_connections;
 
+    struct mem_buffer m_data_buffer; 
     struct mem_buffer m_search_path_buffer;
     
     net_ebb_request_list_t m_free_requests;

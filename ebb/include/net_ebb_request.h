@@ -30,6 +30,7 @@ enum net_ebb_request_transfer_encoding {
 };
 
 enum net_ebb_request_state {
+    net_ebb_request_state_reading,
     net_ebb_request_state_processing,
     net_ebb_request_state_complete,
 };

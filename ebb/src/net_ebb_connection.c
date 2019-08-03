@@ -6,7 +6,6 @@
 
 static net_ebb_request_t net_ebb_connection_new_request(void *data);
 static void net_ebb_connection_timeout_cb(net_timer_t timer, void * ctx);
-static void net_ebb_connection_timeout_reset(net_ebb_service_t service, net_ebb_connection_t connection);
 static void net_ebb_connection_close_cb(net_timer_t timer, void * ctx);
 
 int net_ebb_connection_init(net_endpoint_t base_endpoint) {
@@ -14,7 +13,7 @@ int net_ebb_connection_init(net_endpoint_t base_endpoint) {
     net_ebb_connection_t connection = net_endpoint_data(base_endpoint);
 
     connection->m_endpoint = base_endpoint;
-
+    
     connection->m_timer_timeout = net_timer_auto_create(net_endpoint_schedule(base_endpoint), net_ebb_connection_timeout_cb, connection);
     if (connection->m_timer_timeout == NULL) {
         CPE_ERROR(
@@ -38,7 +37,7 @@ int net_ebb_connection_init(net_endpoint_t base_endpoint) {
 
     TAILQ_INIT(&connection->m_requests);
     
-    net_ebb_connection_timeout_reset(service, connection);
+    net_ebb_connection_timeout_reset(connection);
 
     return 0;
 }
@@ -59,7 +58,7 @@ int net_ebb_connection_input(net_endpoint_t base_endpoint) {
     net_ebb_service_t service = net_protocol_data(net_endpoint_protocol(base_endpoint));
     net_ebb_connection_t connection = net_endpoint_data(base_endpoint);
 
-    net_ebb_connection_timeout_reset(service, connection);
+    net_ebb_connection_timeout_reset(connection);
 
     do {
         uint32_t data_size = 0;
@@ -67,7 +66,8 @@ int net_ebb_connection_input(net_endpoint_t base_endpoint) {
         if (data == NULL || data_size == 0) return 0;
 
         net_ebb_request_parser_execute(&connection->parser, data, data_size);
-
+        net_endpoint_buf_consume(base_endpoint, net_ep_buf_read, data_size);
+        
         /* parse error? just drop the client. screw the 400 response */
         if (net_ebb_request_parser_has_error(&connection->parser)) {
             CPE_ERROR(
@@ -75,8 +75,6 @@ int net_ebb_connection_input(net_endpoint_t base_endpoint) {
                 net_endpoint_dump(net_ebb_service_tmp_buffer(service), base_endpoint));
             return -1;
         }
-        
-        net_endpoint_buf_consume(base_endpoint, net_ep_buf_read, data_size);
     } while (1);
 }
 
@@ -104,7 +102,8 @@ static void net_ebb_connection_timeout_cb(net_timer_t timer, void * ctx) {
     net_endpoint_set_state(base_endpoint, net_endpoint_state_disable);
 }
 
-void net_ebb_connection_timeout_reset(net_ebb_service_t service, net_ebb_connection_t connection) {
+void net_ebb_connection_timeout_reset(net_ebb_connection_t connection) {
+    net_ebb_service_t service = net_ebb_connection_service(connection);
     net_timer_active(connection->m_timer_timeout, service->m_cfg_connection_timeout_ms);
 }
 
