@@ -43,7 +43,7 @@ net_ebb_processor_create(
     processor->m_request_init = request_init;
     processor->m_request_fini = request_fini;
     processor->m_request_on_head_complete = request_on_head_complete;
-    processor->m_request_on_complete = request_on_head_complete;
+    processor->m_request_on_complete = request_on_complete;
     
     if (processor->m_request_sz > service->m_request_sz) {
         service->m_request_sz = processor->m_request_sz;

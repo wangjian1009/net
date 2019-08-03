@@ -365,8 +365,8 @@ void net_ebb_request_on_complete(net_ebb_request_t request) {
     
     if (request->m_state != net_ebb_request_state_complete) {
         net_ebb_processor_t processor = request->m_processor;
-        if (processor && processor->m_request_on_head_complete) {
-            processor->m_request_on_head_complete(processor->m_ctx, request);
+        if (processor && processor->m_request_on_complete) {
+            processor->m_request_on_complete(processor->m_ctx, request);
         }
     }
 
