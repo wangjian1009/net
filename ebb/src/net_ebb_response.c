@@ -5,6 +5,7 @@
 #include "net_ebb_response_i.h"
 
 static int net_ebb_response_append_head_last(net_ebb_response_t response);
+static int net_ebb_response_append(net_ebb_response_t response, void const * data, uint32_t data_size);
 
 net_ebb_response_t
 net_ebb_response_create(net_ebb_request_t request) {
@@ -71,7 +72,7 @@ int net_ebb_response_append_code(net_ebb_response_t response, int http_code, con
     net_ebb_request_t request = response->m_request;
     net_ebb_connection_t connection = request->m_connection;
     net_ebb_service_t service = net_ebb_connection_service(connection);
-    net_endpoint_t endpoint = connection->m_endpoint;
+    net_endpoint_t endpoint = net_endpoint_from_data(connection);
 
     if (request->m_state == net_ebb_request_state_complete) return -1;
     
@@ -105,19 +106,17 @@ int net_ebb_response_append_code(net_ebb_response_t response, int http_code, con
 
     mem_buffer_append_char(buffer, '\n');
     
-    net_endpoint_buf_append(endpoint, net_ep_buf_write, mem_buffer_make_continuous(buffer, 0), mem_buffer_size(buffer));
-
     response->m_header_count++;
     response->m_state = net_ebb_response_state_head;
 
-    return 0;
+    return net_ebb_response_append(response, mem_buffer_make_continuous(buffer, 0), mem_buffer_size(buffer));
 }
 
 int net_ebb_response_append_head(net_ebb_response_t response, const char * name, const char * value) {
     net_ebb_request_t request = response->m_request;
     net_ebb_connection_t connection = request->m_connection;
     net_ebb_service_t service = net_ebb_connection_service(connection);
-    net_endpoint_t endpoint = connection->m_endpoint;
+    net_endpoint_t endpoint = net_endpoint_from_data(connection);
 
     if (request->m_state == net_ebb_request_state_complete) return -1;
     
@@ -146,18 +145,16 @@ int net_ebb_response_append_head(net_ebb_response_t response, const char * name,
 
     mem_buffer_append_char(buffer, '\n');
     
-    net_endpoint_buf_append(endpoint, net_ep_buf_write, mem_buffer_make_continuous(buffer, 0), mem_buffer_size(buffer));
-    
     response->m_header_count++;
     
-    return 0;
+    return net_ebb_response_append(response, mem_buffer_make_continuous(buffer, 0), mem_buffer_size(buffer));
 }
 
 int net_ebb_response_append_head_line(net_ebb_response_t response, const char * head_line) {
     net_ebb_request_t request = response->m_request;
     net_ebb_connection_t connection = request->m_connection;
     net_ebb_service_t service = net_ebb_connection_service(connection);
-    net_endpoint_t endpoint = connection->m_endpoint;
+    net_endpoint_t endpoint = net_endpoint_from_data(connection);
 
     if (request->m_state == net_ebb_request_state_complete) return -1;
     
@@ -186,18 +183,16 @@ int net_ebb_response_append_head_line(net_ebb_response_t response, const char * 
 
     mem_buffer_append_char(buffer, '\n');
     
-    net_endpoint_buf_append(endpoint, net_ep_buf_write, mem_buffer_make_continuous(buffer, 0), mem_buffer_size(buffer));
-
     response->m_header_count++;
     
-    return 0;
+    return net_ebb_response_append(response, mem_buffer_make_continuous(buffer, 0), mem_buffer_size(buffer));
 }
 
 int net_ebb_response_append_body_identity_begin(net_ebb_response_t response, uint32_t size) {
     net_ebb_request_t request = response->m_request;
     net_ebb_connection_t connection = request->m_connection;
     net_ebb_service_t service = net_ebb_connection_service(connection);
-    net_endpoint_t endpoint = connection->m_endpoint;
+    net_endpoint_t endpoint = net_endpoint_from_data(connection);
 
     if (request->m_state == net_ebb_request_state_complete) return -1;
     
@@ -229,7 +224,7 @@ int net_ebb_response_append_body_identity_data(net_ebb_response_t response, void
     net_ebb_request_t request = response->m_request;
     net_ebb_connection_t connection = request->m_connection;
     net_ebb_service_t service = net_ebb_connection_service(connection);
-    net_endpoint_t endpoint = connection->m_endpoint;
+    net_endpoint_t endpoint = net_endpoint_from_data(connection);
 
     if (request->m_state == net_ebb_request_state_complete) return -1;
     
@@ -242,7 +237,7 @@ int net_ebb_response_append_body_chunked_begin(net_ebb_response_t response) {
     net_ebb_request_t request = response->m_request;
     net_ebb_connection_t connection = request->m_connection;
     net_ebb_service_t service = net_ebb_connection_service(connection);
-    net_endpoint_t endpoint = connection->m_endpoint;
+    net_endpoint_t endpoint = net_endpoint_from_data(connection);
 
     if (request->m_state == net_ebb_request_state_complete) return -1;
 
@@ -255,7 +250,7 @@ int net_ebb_response_append_body_chunked_block(net_ebb_response_t response, void
     net_ebb_request_t request = response->m_request;
     net_ebb_connection_t connection = request->m_connection;
     net_ebb_service_t service = net_ebb_connection_service(connection);
-    net_endpoint_t endpoint = connection->m_endpoint;
+    net_endpoint_t endpoint = net_endpoint_from_data(connection);
 
     if (request->m_state == net_ebb_request_state_complete) return -1;
     
@@ -268,7 +263,7 @@ int net_ebb_response_append_complete(net_ebb_response_t response) {
     net_ebb_request_t request = response->m_request;
     net_ebb_connection_t connection = request->m_connection;
     net_ebb_service_t service = net_ebb_connection_service(connection);
-    net_endpoint_t endpoint = connection->m_endpoint;
+    net_endpoint_t endpoint = net_endpoint_from_data(connection);
 
     if (request->m_state == net_ebb_request_state_complete) return -1;
     
@@ -303,9 +298,7 @@ int net_ebb_response_append_complete(net_ebb_response_t response) {
     response->m_state = net_ebb_response_state_done;
     net_ebb_request_set_state(request, net_ebb_request_state_complete);
     
-    net_endpoint_buf_append(endpoint, net_ep_buf_write, "\n\n", 2);
-    
-    return 0;
+    return net_ebb_response_append(response, "\n\n", 2);
 }
 
 /*utils*/
@@ -335,7 +328,7 @@ const char * net_ebb_response_state_str(net_ebb_response_state_t state) {
 static int net_ebb_response_append_head_last(net_ebb_response_t response) {
     net_ebb_request_t request = response->m_request;
     net_ebb_connection_t connection = request->m_connection;
-    net_endpoint_t endpoint = connection->m_endpoint;
+    net_endpoint_t endpoint = net_endpoint_from_data(connection);
     
     if (request->m_version_major == 1 && request->m_version_minor == 1) {
         if (!response->m_head_connection_setted) {
@@ -348,7 +341,22 @@ static int net_ebb_response_append_head_last(net_ebb_response_t response) {
     }
 
     const char * head_end = "\n";
-    net_endpoint_buf_append(endpoint, net_ep_buf_write, head_end, strlen(head_end));
+    return net_ebb_response_append(response, head_end, strlen(head_end));
+}
+
+static int net_ebb_response_append(net_ebb_response_t response, void const * data, uint32_t data_size) {
+    net_ebb_request_t request = response->m_request;
+    net_ebb_connection_t connection = request->m_connection;
+    net_ebb_service_t service = net_ebb_connection_service(connection);
+    net_endpoint_t endpoint = net_endpoint_from_data(connection);
+    
+    if (net_endpoint_buf_append(endpoint, net_ep_buf_write, data, data_size) != 0) {
+        CPE_ERROR(
+            service->m_em, "ebb: %s: response: write response fail!",
+            net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)));
+        net_ebb_request_schedule_close_connection(request);
+        return -1;
+    }
     
     return 0;
 }
