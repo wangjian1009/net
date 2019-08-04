@@ -14,8 +14,9 @@ net_ebb_response_create(net_ebb_request_t request) {
 
     if (request->m_response != NULL) {
         CPE_ERROR(
-            service->m_em, "ebb: %s: response: request already have response!",
-            net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)));
+            service->m_em, "ebb: %s: req %d: request already have response!",
+            net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
+            request->m_request_id);
         net_ebb_request_schedule_close_connection(request);
         return NULL;
     }
@@ -28,8 +29,9 @@ net_ebb_response_create(net_ebb_request_t request) {
         response = mem_alloc(service->m_alloc, sizeof(struct net_ebb_response));
         if (response == NULL) {
             CPE_ERROR(
-                service->m_em, "ebb: %s: response: alloc fail!",
-                net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)));
+                service->m_em, "ebb: %s: req %d: alloc fail!",
+                net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
+                request->m_request_id);
             net_ebb_request_schedule_close_connection(request);
             return NULL;
         }
@@ -80,9 +82,9 @@ int net_ebb_response_append_code(net_ebb_response_t response, int http_code, con
     
     if (response->m_state != net_ebb_response_state_init) {
         CPE_ERROR(
-            service->m_em, "ebb: %s: response: append code: current state is %s, can`t append code!",
+            service->m_em, "ebb: %s: req %d: append code: current state is %s, can`t append code!",
             net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
-            net_ebb_response_state_str(response->m_state));
+            request->m_request_id, net_ebb_response_state_str(response->m_state));
         net_ebb_request_schedule_close_connection(request);
         return -1;
     }
@@ -124,9 +126,9 @@ int net_ebb_response_append_head(net_ebb_response_t response, const char * name,
     
     if (response->m_state != net_ebb_response_state_head) {
         CPE_ERROR(
-            service->m_em, "ebb: %s: response: append head: %s: %s: current state is %s, can`t append head!",
+            service->m_em, "ebb: %s: req %d: append head: %s: %s: current state is %s, can`t append head!",
             net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
-            name, value, net_ebb_response_state_str(response->m_state));
+            request->m_request_id, name, value, net_ebb_response_state_str(response->m_state));
         net_ebb_request_schedule_close_connection(request);
         return -1;
     }
@@ -162,9 +164,9 @@ int net_ebb_response_append_head_line(net_ebb_response_t response, const char * 
     
     if (response->m_state != net_ebb_response_state_head) {
         CPE_ERROR(
-            service->m_em, "ebb: %s: response: append head: %s: current state is %s, can`t append head!",
+            service->m_em, "ebb: %s: req %d: append head: %s: current state is %s, can`t append head!",
             net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
-            head_line, net_ebb_response_state_str(response->m_state));
+            request->m_request_id, head_line, net_ebb_response_state_str(response->m_state));
         net_ebb_request_schedule_close_connection(request);
         return -1;
     }
@@ -200,9 +202,9 @@ int net_ebb_response_append_body_identity_begin(net_ebb_response_t response, uin
     
     if (response->m_state != net_ebb_response_state_head) {
         CPE_ERROR(
-            service->m_em, "ebb: %s: response: append identity begin: current state is %s, can`t append identity begin!",
+            service->m_em, "ebb: %s: req %d: append identity begin: current state is %s, can`t append identity begin!",
             net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
-            net_ebb_response_state_str(response->m_state));
+            request->m_request_id, net_ebb_response_state_str(response->m_state));
         net_ebb_request_schedule_close_connection(request);
         return -1;
     }
@@ -220,7 +222,7 @@ int net_ebb_response_append_body_identity_begin(net_ebb_response_t response, uin
     return 0;
 }
 
-int net_ebb_response_append_body_identity_data(net_ebb_response_t response, void const * data, size_t data_size) {
+int net_ebb_response_append_body_identity_data(net_ebb_response_t response, void const * data, uint32_t data_size) {
     net_ebb_request_t request = response->m_request;
     net_ebb_connection_t connection = request->m_connection;
     net_ebb_service_t service = net_ebb_connection_service(connection);
@@ -232,29 +234,46 @@ int net_ebb_response_append_body_identity_data(net_ebb_response_t response, void
 
     if (response->m_state != net_ebb_response_state_body) {
         CPE_ERROR(
-            service->m_em, "ebb: %s: response: append body: current state is %s, can`t body!",
+            service->m_em, "ebb: %s: req %d: append body: current state is %s, can`t body!",
             net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
-            net_ebb_response_state_str(response->m_state));
+            request->m_request_id, net_ebb_response_state_str(response->m_state));
         net_ebb_request_schedule_close_connection(request);
         return -1;
     }
 
     if (response->m_transfer_encoding != net_ebb_request_transfer_encoding_identity) {
         CPE_ERROR(
-            service->m_em, "ebb: %s: response: append body: current encoding is %s, can`t append identity!",
+            service->m_em, "ebb: %s: req %d: append body: current encoding is %s, can`t append identity!",
             net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
-            net_ebb_request_transfer_encoding_str(response->m_transfer_encoding));
+            request->m_request_id, net_ebb_request_transfer_encoding_str(response->m_transfer_encoding));
         net_ebb_request_schedule_close_connection(request);
         return -1;
     }
 
-    /* if (net_endpoint_buf_append(endpoint, net_ep_buf_write, data, data_size) != 0) { */
-    /*     CPE_ERROR( */
-    /*         service->m_em, "ebb: %s: response: write response fail!", */
-    /*         net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection))); */
-    /*     net_ebb_request_schedule_close_connection(request); */
-    /*     return -1; */
-    /* } */
+    if ((response->m_identity.m_writed_size + data_size) > response->m_identity.m_tota_size) {
+        CPE_ERROR(
+            service->m_em, "ebb: %s: req %d: append body: total-size=%d, curent-size=%d, append %d data overflow!",
+            net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
+            request->m_request_id, response->m_identity.m_tota_size, response->m_identity.m_writed_size, data_size);
+        net_ebb_request_schedule_close_connection(request);
+        return -1;
+    }
+
+    if (net_endpoint_protocol_debug(endpoint)) {
+        CPE_INFO(
+            service->m_em, "ebb: %s: req %d: body: => %d data", 
+            net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
+            request->m_request_id, data_size);
+    }
+    
+    if (net_endpoint_buf_append(endpoint, net_ep_buf_write, data, data_size) != 0) {
+        CPE_ERROR(
+            service->m_em, "ebb: %s: req %d: append body: write %d data fail!",
+            net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
+            request->m_request_id, data_size);
+        net_ebb_request_schedule_close_connection(request);
+        return -1;
+    }
     
     return 0;
 }
@@ -271,18 +290,18 @@ int net_ebb_response_append_body_identity_from_stream(net_ebb_response_t respons
     
     if (response->m_state != net_ebb_response_state_body) {
         CPE_ERROR(
-            service->m_em, "ebb: %s: response: append body: current state is %s, can`t body!",
+            service->m_em, "ebb: %s: req %d: append body: current state is %s, can`t body!",
             net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
-            net_ebb_response_state_str(response->m_state));
+            request->m_request_id, net_ebb_response_state_str(response->m_state));
         net_ebb_request_schedule_close_connection(request);
         return -1;
     }
 
     if (response->m_transfer_encoding != net_ebb_request_transfer_encoding_identity) {
         CPE_ERROR(
-            service->m_em, "ebb: %s: response: append body: current encoding is %s, can`t append identity!",
+            service->m_em, "ebb: %s: req %d: append body: current encoding is %s, can`t append identity!",
             net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
-            net_ebb_request_transfer_encoding_str(response->m_transfer_encoding));
+            request->m_request_id, net_ebb_request_transfer_encoding_str(response->m_transfer_encoding));
         net_ebb_request_schedule_close_connection(request);
         return -1;
     }
@@ -292,8 +311,9 @@ int net_ebb_response_append_body_identity_from_stream(net_ebb_response_t respons
         void* buf = net_endpoint_buf_alloc(endpoint, &buf_size);
         if (buf == NULL) {
             CPE_ERROR(
-                service->m_em, "ebb: %s: response: append body: alloc ep buf fail!",
-                net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)));
+                service->m_em, "ebb: %s: req %d: append body: alloc ep buf fail!",
+                net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
+                request->m_request_id);
             net_ebb_request_schedule_close_connection(request);
             return -1;
         }
@@ -301,8 +321,9 @@ int net_ebb_response_append_body_identity_from_stream(net_ebb_response_t respons
         int read_sz = stream_read(rs, buf, buf_size);
         if (read_sz < 0) {
             CPE_ERROR(
-                service->m_em, "ebb: %s: response: append body: read stream fail!",
-                net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)));
+                service->m_em, "ebb: %s: req %d: append body: read stream fail!",
+                net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
+                request->m_request_id);
             net_endpoint_buf_release(endpoint);
             net_ebb_request_schedule_close_connection(request);
             return -1;
@@ -314,10 +335,18 @@ int net_ebb_response_append_body_identity_from_stream(net_ebb_response_t respons
         else {
             if (net_endpoint_buf_supply(endpoint, net_ep_buf_write, (uint32_t)read_sz) != 0) {
                 CPE_ERROR(
-                    service->m_em, "ebb: %s: response: append body: supply ep buf fail fail!",
-                    net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)));
+                    service->m_em, "ebb: %s: req %d: append body: supply ep buf fail fail!",
+                    net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
+                    request->m_request_id);
                 net_ebb_request_schedule_close_connection(request);
                 return -1;
+            }
+
+            if (net_endpoint_protocol_debug(endpoint)) {
+                CPE_INFO(
+                    service->m_em, "ebb: %s: req %d: body: => %d data",
+                    net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
+                    request->m_request_id, (uint32_t)read_sz);
             }
         }
     }
@@ -335,10 +364,26 @@ int net_ebb_response_append_body_chunked_begin(net_ebb_response_t response) {
 
     net_ebb_connection_timeout_reset(connection);
 
+    if (response->m_state != net_ebb_response_state_head) {
+        CPE_ERROR(
+            service->m_em, "ebb: %s: req %d: append identity begin: current state is %s, can`t append identity begin!",
+            net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
+            request->m_request_id, net_ebb_response_state_str(response->m_state));
+        net_ebb_request_schedule_close_connection(request);
+        return -1;
+    }
+
+    if (net_ebb_response_append_head_line(response, "Transfer-Encoding: chunked") != 0) return -1;
+    if (net_ebb_response_append_head_last(response) != 0) return -1;
+
+    response->m_state = net_ebb_response_state_body;
+    response->m_transfer_encoding = net_ebb_request_transfer_encoding_chunked;
+    response->m_chunked.m_trunk_count = 0;
+
     return 0;
 }
 
-int net_ebb_response_append_body_chunked_block(net_ebb_response_t response, void const * data, size_t data_size) {
+int net_ebb_response_append_body_chunked_block(net_ebb_response_t response, void const * data, uint32_t data_size) {
     net_ebb_request_t request = response->m_request;
     net_ebb_connection_t connection = request->m_connection;
     net_ebb_service_t service = net_ebb_connection_service(connection);
@@ -347,6 +392,47 @@ int net_ebb_response_append_body_chunked_block(net_ebb_response_t response, void
     if (request->m_state == net_ebb_request_state_complete) return -1;
     
     net_ebb_connection_timeout_reset(connection);
+
+    if (response->m_state != net_ebb_response_state_body) {
+        CPE_ERROR(
+            service->m_em, "ebb: %s: req %d: append body: current state is %s, can`t body!",
+            net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
+            request->m_request_id, net_ebb_response_state_str(response->m_state));
+        net_ebb_request_schedule_close_connection(request);
+        return -1;
+    }
+
+    if (response->m_transfer_encoding != net_ebb_request_transfer_encoding_chunked) {
+        CPE_ERROR(
+            service->m_em, "ebb: %s: req %d: append body: current encoding is %s, can`t append chunked!",
+            net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
+            request->m_request_id, net_ebb_request_transfer_encoding_str(response->m_transfer_encoding));
+        net_ebb_request_schedule_close_connection(request);
+        return -1;
+    }
+
+    if (net_endpoint_protocol_debug(endpoint)) {
+        CPE_INFO(
+            service->m_em, "ebb: %s: req %d: trunked %d: => %d data", 
+            net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
+            request->m_request_id, response->m_chunked.m_trunk_count, data_size);
+    }
+
+    char size_buf[64];
+    snprintf(size_buf, sizeof(size_buf), "%d\n", data_size);
+    if (net_endpoint_buf_append(endpoint, net_ep_buf_write, data, data_size) != 0
+        || net_endpoint_buf_append(endpoint, net_ep_buf_write, data, data_size) != 0
+        || net_endpoint_buf_append(endpoint, net_ep_buf_write, "\n", 1) != 0)
+    {
+        CPE_ERROR(
+            service->m_em, "ebb: %s: req %d: trunked %d: qppend trunked data!",
+            net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
+            request->m_request_id, response->m_chunked.m_trunk_count);
+        net_ebb_request_schedule_close_connection(request);
+        return -1;
+    }
+
+    response->m_chunked.m_trunk_count++;
     
     return 0;
 }
@@ -365,9 +451,9 @@ int net_ebb_response_append_complete(net_ebb_response_t response) {
     case net_ebb_response_state_init:
     case net_ebb_response_state_done:
         CPE_ERROR(
-            service->m_em, "ebb: %s: response: append complete: current state is %s, can`t complete!",
+            service->m_em, "ebb: %s: req %d: append complete: current state is %s, can`t complete!",
             net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
-            net_ebb_response_state_str(response->m_state));
+            request->m_request_id, net_ebb_response_state_str(response->m_state));
         net_ebb_request_schedule_close_connection(request);
         return -1;
     case net_ebb_response_state_head:
@@ -382,14 +468,22 @@ int net_ebb_response_append_complete(net_ebb_response_t response) {
         case net_ebb_request_transfer_encoding_identity:
             if (response->m_identity.m_tota_size != response->m_identity.m_writed_size) {
                 CPE_ERROR(
-                    service->m_em, "ebb: %s: response: append complete: identity body expect %d, but send %d size!",
+                    service->m_em, "ebb: %s: req %d: append complete: identity body expect %d, but send %d size!",
                     net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
-                    response->m_identity.m_tota_size, response->m_identity.m_writed_size);
+                    request->m_request_id, response->m_identity.m_tota_size, response->m_identity.m_writed_size);
                 net_ebb_request_schedule_close_connection(request);
                 return -1;
             }
             break;
         case net_ebb_request_transfer_encoding_chunked:
+            if (net_endpoint_buf_append(endpoint, net_ep_buf_write, "0\n\n", 3) != 0) {
+                CPE_ERROR(
+                    service->m_em, "ebb: %s: req %d: append complete: trunked append last trunk fail!",
+                    net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
+                    request->m_request_id);
+                net_ebb_request_schedule_close_connection(request);
+                return -1;
+            }
             break;
         }
         break;
@@ -460,8 +554,9 @@ static int net_ebb_response_append(net_ebb_response_t response, void const * dat
     
     if (net_endpoint_buf_append(endpoint, net_ep_buf_write, data, data_size) != 0) {
         CPE_ERROR(
-            service->m_em, "ebb: %s: response: write response fail!",
-            net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)));
+            service->m_em, "ebb: %s: req %d: write response fail!",
+            net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
+            request->m_request_id);
         net_ebb_request_schedule_close_connection(request);
         return -1;
     }

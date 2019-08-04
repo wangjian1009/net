@@ -18,8 +18,7 @@ struct net_ebb_response {
                     uint32_t m_writed_size;
                 } m_identity;
                 struct {
-                    uint32_t m_cur_block_total_size;
-                    uint32_t m_cur_block_writed_size;
+                    uint32_t m_trunk_count;
                 } m_chunked;
             };
         };
