@@ -10,4 +10,6 @@ net_protocol_t net_ebb_service_to_protocol(net_ebb_service_t service);
 
 net_ebb_mount_point_t net_ebb_service_root(net_ebb_service_t service);
 
+const char * net_ebb_service_mine_from_postfix(net_ebb_service_t service, const char * postfix);
+
 #endif

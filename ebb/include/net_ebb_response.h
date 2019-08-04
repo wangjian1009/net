@@ -21,6 +21,7 @@ net_ebb_response_state_t net_ebb_response_state(net_ebb_response_t response);
 int net_ebb_response_append_code(net_ebb_response_t response, int http_code, const char * http_code_msg);
 int net_ebb_response_append_head(net_ebb_response_t response, const char * name, const char * value);
 int net_ebb_response_append_head_line(net_ebb_response_t response, const char * head_line);
+int net_ebb_response_append_head_minetype_by_postfix(net_ebb_response_t response, const char * postfix, uint8_t * is_added);
 
 int net_ebb_response_append_body_identity_begin(net_ebb_response_t response, uint32_t size);
 int net_ebb_response_append_body_identity_data(net_ebb_response_t response, void const * data, uint32_t data_size);

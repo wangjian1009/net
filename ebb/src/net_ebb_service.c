@@ -131,6 +131,62 @@ static void net_ebb_service_fini(net_protocol_t protocol) {
     mem_buffer_clear(&service->m_search_path_buffer);
 }
 
-static int net_ebb_service_acceptor_on_new_endpoint(void * ctx, net_endpoint_t endpoint) {
-    return 0;
+struct {
+    const char * m_mine_type;
+    const char * m_postfix;
+} s_common_mine_type_defs[] = {
+    { "application/msword", "doc" }
+    , { "application/pdf", "pdf" }
+    , { "application/rtf", "rtf" }
+    , { "application/vnd.ms-excel", "xls" }
+    , { "application/vnd.ms-powerpoint", "ppt" }
+    , { "application/x-rar-compressed", "rar" }
+    , { "application/x-shockwave-flash", "swf" }
+    , { "application/zip", "zip" }
+    , { "audio/midi", "mid" }     //midi kar
+    , { "audio/mpeg", "mp3" }
+    , { "audio/ogg", "ogg" }
+    , { "audio/x-m4a", "m4a" }
+    , { "audio/x-realaudio", "ra" }
+    , { "image/gif", "gif" }
+    , { "image/jpeg", "jpeg" }
+    , { "image/jpeg", "jpg" }
+    , { "image/png", "png" }
+    , { "image/tiff", "tif" }
+    , { "image/tiff", "tiff" }
+    , { "image/vnd.wap.wbmp", "wbmp" }
+    , { "image/x-icon", "ico" }
+    , { "image/x-jng", "jng" }
+    , { "image/x-ms-bmp", "bmp" }
+    , { "image/svg+xml", "svg" }
+    , { "image/svg+xml", "svgz" }
+    , { "image/webp", "webp" }
+    , { "text/css", "css" }
+    , { "text/html", "html" }
+    , { "text/html", "tml" }
+    , { "text/html", "shtml" }
+    , { "text/plain", "txt" }
+    , { "text/xml", "xml" }
+    , { "video/3gpp", "3gpp" }
+    , { "video/3gpp", "3gp" }
+    , { "video/mp4", "mp4" }
+    , { "video/mpeg", "mpeg" }
+    , { "video/mpeg", "mpg" }
+    , { "video/quicktime", "mov" }
+    , { "video/webm", "webm" }
+    , { "video/x-flv", "flv" }
+    , { "video/x-m4v", "m4v" }
+    , { "video/x-ms-wmv", "wmv" }
+    , { "video/x-msvideo", "avi" }
+};
+
+const char * net_ebb_service_mine_from_postfix(net_ebb_service_t service, const char * postfix) {
+    uint16_t i;
+    for(i = 0; i < CPE_ARRAY_SIZE(s_common_mine_type_defs); ++i) {
+        if (strcasecmp(postfix, s_common_mine_type_defs[i].m_postfix) == 0) {
+            return s_common_mine_type_defs[i].m_mine_type;
+        }
+    }
+    
+    return NULL;
 }

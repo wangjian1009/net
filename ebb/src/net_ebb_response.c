@@ -190,6 +190,26 @@ int net_ebb_response_append_head_line(net_ebb_response_t response, const char * 
     return net_ebb_response_append(response, mem_buffer_make_continuous(buffer, 0), mem_buffer_size(buffer));
 }
 
+int net_ebb_response_append_head_minetype_by_postfix(net_ebb_response_t response, const char * postfix, uint8_t * is_added) {
+    net_ebb_request_t request = response->m_request;
+    net_ebb_connection_t connection = request->m_connection;
+    net_ebb_service_t service = net_ebb_connection_service(connection);
+    
+    if (postfix == NULL) {
+        if (is_added) *is_added = 0;
+        return 0;
+    }
+
+    const char * minetype = net_ebb_service_mine_from_postfix(service, postfix);
+    if (minetype == NULL) {
+        if (is_added) *is_added = 0;
+        return 0;
+    }
+    
+    if (is_added) *is_added = 1;
+    return net_ebb_response_append_head(response, "Content-Type", minetype);
+}
+
 int net_ebb_response_append_body_identity_begin(net_ebb_response_t response, uint32_t size) {
     net_ebb_request_t request = response->m_request;
     net_ebb_connection_t connection = request->m_connection;
@@ -554,8 +574,16 @@ static int net_ebb_response_append_head_last(net_ebb_response_t response) {
             request->m_request_id, response->m_header_count);
     }
     
-    const char * head_end = "\n";
-    return net_ebb_response_append(response, head_end, strlen(head_end));
+    if (net_endpoint_buf_append(endpoint, net_ep_buf_write, "\n", 1) != 0) {
+        CPE_ERROR(
+            service->m_em, "ebb: %s: req %d: head %d: write head end fail!",
+            net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
+            request->m_request_id, response->m_header_count);
+        net_ebb_request_schedule_close_connection(request);
+        return -1;
+    }
+    
+    return 0;
 }
 
 static int net_ebb_response_append(net_ebb_response_t response, void const * data, uint32_t data_size) {
