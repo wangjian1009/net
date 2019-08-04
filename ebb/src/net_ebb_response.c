@@ -229,6 +229,32 @@ int net_ebb_response_append_body_identity_data(net_ebb_response_t response, void
     if (request->m_state == net_ebb_request_state_complete) return -1;
     
     net_ebb_connection_timeout_reset(connection);
+
+    if (response->m_state != net_ebb_response_state_body) {
+        CPE_ERROR(
+            service->m_em, "ebb: %s: response: append body: current state is %s, can`t body!",
+            net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
+            net_ebb_response_state_str(response->m_state));
+        net_ebb_request_schedule_close_connection(request);
+        return -1;
+    }
+
+    if (response->m_transfer_encoding != net_ebb_request_transfer_encoding_identity) {
+        CPE_ERROR(
+            service->m_em, "ebb: %s: response: append body: current encoding is %s, can`t append identity!",
+            net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
+            net_ebb_request_transfer_encoding_str(response->m_transfer_encoding));
+        net_ebb_request_schedule_close_connection(request);
+        return -1;
+    }
+
+    /* if (net_endpoint_buf_append(endpoint, net_ep_buf_write, data, data_size) != 0) { */
+    /*     CPE_ERROR( */
+    /*         service->m_em, "ebb: %s: response: write response fail!", */
+    /*         net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection))); */
+    /*     net_ebb_request_schedule_close_connection(request); */
+    /*     return -1; */
+    /* } */
     
     return 0;
 }
@@ -277,10 +303,12 @@ int net_ebb_response_append_body_identity_from_stream(net_ebb_response_t respons
             CPE_ERROR(
                 service->m_em, "ebb: %s: response: append body: read stream fail!",
                 net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)));
+            net_endpoint_buf_release(endpoint);
             net_ebb_request_schedule_close_connection(request);
             return -1;
         }
         else if (read_sz == 0) {
+            net_endpoint_buf_release(endpoint);
             return 0;
         }
         else {
@@ -352,6 +380,14 @@ int net_ebb_response_append_complete(net_ebb_response_t response) {
             assert(0);
             break;
         case net_ebb_request_transfer_encoding_identity:
+            if (response->m_identity.m_tota_size != response->m_identity.m_writed_size) {
+                CPE_ERROR(
+                    service->m_em, "ebb: %s: response: append complete: identity body expect %d, but send %d size!",
+                    net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
+                    response->m_identity.m_tota_size, response->m_identity.m_writed_size);
+                net_ebb_request_schedule_close_connection(request);
+                return -1;
+            }
             break;
         case net_ebb_request_transfer_encoding_chunked:
             break;
@@ -359,16 +395,10 @@ int net_ebb_response_append_complete(net_ebb_response_t response) {
         break;
     }
 
-    if (net_endpoint_protocol_debug(endpoint)) {
-        CPE_INFO(
-            service->m_em, "ebb: %s: req %d: => \\n\\n", 
-            net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)), request->m_request_id);
-    }
-    
     response->m_state = net_ebb_response_state_done;
     net_ebb_request_set_state(request, net_ebb_request_state_complete);
-    
-    return net_ebb_response_append(response, "\n\n", 2);
+
+    return 0;
 }
 
 /*utils*/
