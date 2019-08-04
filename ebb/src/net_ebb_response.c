@@ -274,6 +274,8 @@ int net_ebb_response_append_body_identity_data(net_ebb_response_t response, void
         net_ebb_request_schedule_close_connection(request);
         return -1;
     }
+
+    response->m_identity.m_writed_size += data_size;
     
     return 0;
 }
@@ -306,7 +308,10 @@ int net_ebb_response_append_body_identity_from_stream(net_ebb_response_t respons
         return -1;
     }
 
-    while (net_endpoint_state(endpoint) == net_endpoint_state_established) {
+    assert(response->m_identity.m_tota_size >= response->m_identity.m_writed_size);
+    uint32_t left_sz = response->m_identity.m_tota_size - response->m_identity.m_writed_size;
+    
+    while(left_sz > 0 && net_endpoint_state(endpoint) == net_endpoint_state_established) {
         uint32_t buf_size = 0;
         void* buf = net_endpoint_buf_alloc(endpoint, &buf_size);
         if (buf == NULL) {
@@ -317,6 +322,8 @@ int net_ebb_response_append_body_identity_from_stream(net_ebb_response_t respons
             net_ebb_request_schedule_close_connection(request);
             return -1;
         }
+
+        if (buf_size > left_sz) buf_size = left_sz;
         
         int read_sz = stream_read(rs, buf, buf_size);
         if (read_sz < 0) {
@@ -348,6 +355,11 @@ int net_ebb_response_append_body_identity_from_stream(net_ebb_response_t respons
                     net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
                     request->m_request_id, (uint32_t)read_sz);
             }
+            
+            assert(left_sz >= (uint32_t)read_sz);
+            response->m_identity.m_writed_size += (uint32_t)read_sz;
+            left_sz -= (uint32_t)read_sz;
+            if (left_sz == 0) return 0;
         }
     }
 
