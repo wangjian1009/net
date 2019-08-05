@@ -1,6 +1,7 @@
 #include <assert.h>
 #include "cpe/pal/pal_string.h"
 #include "cpe/fsm/fsm_def.h"
+#include "net_schedule.h"
 #include "net_log_state_i.h"
 
 static void net_log_state_fsm_pause_enter(fsm_machine_t fsm, fsm_def_state_t state, void * event) {
@@ -26,8 +27,22 @@ static uint32_t net_log_state_fsm_pause_trans(fsm_machine_t fsm, fsm_def_state_t
     case net_log_state_fsm_evt_stop_complete:
         return net_log_schedule_state_init;
     case net_log_state_fsm_evt_resume:
-        net_log_schedule_resume_senders(schedule);
-        return net_log_schedule_state_runing;
+        if (schedule->m_cfg_ep == NULL) {
+            if (schedule->m_debug) {
+                CPE_INFO(schedule->m_em, "log: schedule: state-fsm: pause: no cfg-ep, can`t resume!");
+            }
+            return FSM_KEEP_STATE;
+        }
+        else if (net_schedule_local_ip_stack(schedule->m_net_schedule) == net_local_ip_stack_none) {
+            if (schedule->m_debug) {
+                CPE_INFO(schedule->m_em, "log: schedule: state-fsm: pause: no active network, can`t resume!");
+            }
+            return FSM_KEEP_STATE;
+        }
+        else {
+            net_log_schedule_resume_senders(schedule);
+            return net_log_schedule_state_runing;
+        }
     case net_log_state_fsm_evt_start:
     case net_log_state_fsm_evt_pause:
         return FSM_KEEP_STATE;

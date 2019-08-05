@@ -9,7 +9,7 @@ NET_BEGIN_DECL
 net_log_schedule_t net_log_schedule_create(
     mem_allocrator_t alloc, error_monitor_t em, uint8_t debug,
     net_schedule_t schedule, net_driver_t driver, vfs_mgr_t vfs,
-    const char * cfg_project, const char * cfg_ep, const char * cfg_access_id, const char * cfg_access_key);
+    const char * cfg_project, const char * cfg_access_id, const char * cfg_access_key);
 
 void net_log_schedule_free(net_log_schedule_t log_schedule);
 
@@ -18,6 +18,7 @@ void net_log_schedule_set_debug(net_log_schedule_t schedule, uint8_t debug);
 
 const char * net_log_schedule_cfg_project(net_log_schedule_t schedule);
 const char * net_log_schedule_cfg_ep(net_log_schedule_t schedule);
+int net_log_schedule_cfg_set_ep(net_log_schedule_t schedule, const char * ep);
 const char * net_log_schedule_cfg_access_id(net_log_schedule_t schedule);
 const char * net_log_schedule_cfg_access_key(net_log_schedule_t schedule);
     

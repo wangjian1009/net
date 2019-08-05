@@ -23,7 +23,7 @@ net_log_schedule_t
 net_log_schedule_create(
     mem_allocrator_t alloc, error_monitor_t em, uint8_t debug,
     net_schedule_t net_schedule, net_driver_t net_driver, vfs_mgr_t vfs,
-    const char * cfg_project, const char * cfg_ep, const char * cfg_access_id, const char * cfg_access_key)
+    const char * cfg_project, const char * cfg_access_id, const char * cfg_access_key)
 {
     net_log_schedule_t schedule = mem_alloc(alloc, sizeof(struct net_log_schedule));
     if (schedule == NULL) {
@@ -49,6 +49,8 @@ net_log_schedule_create(
     schedule->m_cfg_active_request_count = 1;
     schedule->m_cfg_dump_span_ms = 0;
     schedule->m_cfg_cache_dir = NULL;
+    schedule->m_cfg_ep = NULL;
+    schedule->m_cfg_using_https = 0;
     schedule->m_dump_timer = NULL;
     schedule->m_cfg_dump_span_ms = 0;
     schedule->m_cfg_stop_wait_ms = 3000;
@@ -73,23 +75,6 @@ net_log_schedule_create(
         goto CREATE_ERROR;
     }
     
-    if (cpe_str_start_with(cfg_ep, "http://")) {
-        schedule->m_cfg_using_https = 0;
-        schedule->m_cfg_ep = cpe_str_mem_dup(alloc, cfg_ep + 7);
-    }
-    else if (cpe_str_start_with(cfg_ep, "https://")) {
-        schedule->m_cfg_using_https = 1;
-        schedule->m_cfg_ep = cpe_str_mem_dup(alloc, cfg_ep + 8);
-    }
-    else {
-        CPE_ERROR(em, "log: schedule: endpoint %s format error", cfg_ep);
-        goto CREATE_ERROR;
-    }
-    if (schedule->m_cfg_ep == NULL) {
-        CPE_ERROR(schedule->m_em, "log: schedule: dup endpoint fail!");
-        goto CREATE_ERROR;
-    }
-
     schedule->m_state_fsm_def = net_log_create_fsm_def(schedule);
     if (schedule->m_state_fsm_def == NULL) {
         CPE_ERROR(schedule->m_em, "log: schedule: create state fsm def fail!");
@@ -253,6 +238,61 @@ const char * net_log_schedule_cfg_project(net_log_schedule_t schedule) {
 
 const char * net_log_schedule_cfg_ep(net_log_schedule_t schedule) {
     return schedule->m_cfg_ep;
+}
+
+int net_log_schedule_cfg_set_ep(net_log_schedule_t schedule, const char * cfg_ep) {
+    uint8_t new_using_https = 0;
+    
+    if (cfg_ep) {
+        if (cpe_str_start_with(cfg_ep, "http://")) {
+            new_using_https = 0;
+            cfg_ep += 7;
+        } else if (cpe_str_start_with(cfg_ep, "https://")) {
+            new_using_https = 1;
+            cfg_ep += 8;
+        } else {
+            CPE_ERROR(schedule->m_em, "log: schedule: endpoint %s format error", cfg_ep);
+            return -1;
+        }
+    }
+
+    if (new_using_https == schedule->m_cfg_using_https && cpe_str_cmp_opt(schedule->m_cfg_ep, cfg_ep) == 0) {
+        return 0;
+    }
+    
+    char * new_ep = NULL;
+    if (cfg_ep) {
+        new_ep = cpe_str_mem_dup(schedule->m_alloc, cfg_ep);
+        if (new_ep == NULL) {
+            CPE_ERROR(schedule->m_em, "log: schedule: dup endpoint fail!");
+            return -1;
+        }
+    }
+
+    if (schedule->m_debug) {
+        CPE_INFO(
+            schedule->m_em, "log: schedule: ep %s%s ==> %s%s", 
+            schedule->m_cfg_ep ? (schedule->m_cfg_using_https ? "https://" : "http://") : "",
+            schedule->m_cfg_ep ? schedule->m_cfg_ep : "N/A",
+            new_ep ? (new_using_https ? "https://" : "http://") : "",
+            new_ep ? new_ep : "N/A");
+    }
+    
+    if (schedule->m_cfg_ep) {
+        mem_free(schedule->m_alloc, schedule->m_cfg_ep);
+    }
+    
+    schedule->m_cfg_ep = new_ep;
+    schedule->m_cfg_using_https = new_using_https;
+    
+    if (schedule->m_cfg_ep == NULL) {
+        if (schedule->m_debug) {
+            CPE_INFO(schedule->m_em, "log: schedule: no ep, auto-pause!");
+        }
+        net_log_state_fsm_apply_evt(schedule, net_log_state_fsm_evt_pause);
+    }
+    
+    return 0;
 }
 
 const char * net_log_schedule_cfg_access_id(net_log_schedule_t schedule) {

@@ -57,4 +57,6 @@ int net_log_request_mgr_init_cache_dir(net_log_request_manage_t mgr);
 
 uint8_t net_log_request_mgr_is_empty(net_log_request_manage_t mgr);
 
+const char * net_log_request_manage_state_str(net_log_request_manage_state_t state);
+
 #endif

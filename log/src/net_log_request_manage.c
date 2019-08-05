@@ -14,6 +14,8 @@
 #include "net_log_category_i.h"
 #include "net_log_request_cache.h"
 
+static void net_log_request_manage_set_state(net_log_request_manage_t mgr, net_log_request_manage_state_t state);
+
 net_log_request_manage_t
 net_log_request_manage_create(
     net_log_schedule_t schedule, net_schedule_t net_schedule, net_driver_t net_driver,
@@ -53,6 +55,10 @@ net_log_request_manage_create(
     TAILQ_INIT(&mgr->m_waiting_requests);
     TAILQ_INIT(&mgr->m_active_requests);
     TAILQ_INIT(&mgr->m_free_requests);
+
+    if (schedule->m_debug) {
+        CPE_INFO(schedule->m_em, "log: %s: manage: create: state=%s", mgr->m_name, net_log_request_manage_state_str(mgr->m_state));
+    }
     
     return mgr;
 }
@@ -139,11 +145,8 @@ void net_log_request_manage_process_cmd_pause(net_log_request_manage_t mgr) {
         }
         return;
     }
-
-    mgr->m_state = net_log_request_manage_state_pause;
-    if (schedule->m_debug) {
-        CPE_INFO(schedule->m_em, "log: %s: manage: pause", mgr->m_name);
-    }
+    
+    net_log_request_manage_set_state(mgr, net_log_request_manage_state_pause);
 }
 
 void net_log_request_manage_process_cmd_resume(net_log_request_manage_t mgr) {
@@ -156,10 +159,7 @@ void net_log_request_manage_process_cmd_resume(net_log_request_manage_t mgr) {
         return;
     }
 
-    mgr->m_state = net_log_request_manage_state_runing;
-    if (schedule->m_debug) {
-        CPE_INFO(schedule->m_em, "log: %s: manage: running", mgr->m_name);
-    }
+    net_log_request_manage_set_state(mgr, net_log_request_manage_state_runing);
 
     net_log_request_mgr_check_active_requests(mgr);    
 }
@@ -171,7 +171,7 @@ void net_log_request_manage_process_cmd_stop_begin(net_log_request_manage_t mgr)
         net_log_request_manage_process_cmd_stop_complete(mgr);
     }
     else {
-        mgr->m_state = net_log_request_manage_state_stoping;
+        net_log_request_manage_set_state(mgr, net_log_request_manage_state_stoping);
         if (schedule->m_debug) {
             CPE_INFO(schedule->m_em, "log: %s: manage: stoping: wait all request done", mgr->m_name);
         }
@@ -183,7 +183,7 @@ void net_log_request_manage_process_cmd_stop_complete(net_log_request_manage_t m
 
     if (mgr->m_state == net_log_request_manage_state_stoped) return;
     
-    mgr->m_state = net_log_request_manage_state_stoped;
+    net_log_request_manage_set_state(mgr, net_log_request_manage_state_stoped);
     if (mgr->m_stop_fun) {
         mgr->m_stop_fun(mgr->m_stop_ctx);
     }
@@ -410,3 +410,29 @@ uint8_t net_log_request_mgr_is_empty(net_log_request_manage_t mgr) {
         : 0;
 }
 
+static void net_log_request_manage_set_state(net_log_request_manage_t mgr, net_log_request_manage_state_t state) {
+    if (mgr->m_state == state) return;
+    
+    net_log_schedule_t schedule = mgr->m_schedule;
+    
+    if (schedule->m_debug) {
+        CPE_INFO(
+            schedule->m_em, "log: %s: manage: state %s ==> %s", mgr->m_name,
+            net_log_request_manage_state_str(mgr->m_state), net_log_request_manage_state_str(state));
+    }
+    
+    mgr->m_state = state;
+}
+
+const char * net_log_request_manage_state_str(net_log_request_manage_state_t state) {
+    switch(state) {
+    case net_log_request_manage_state_runing:
+        return "runing";
+    case net_log_request_manage_state_pause:
+        return "pause";
+    case net_log_request_manage_state_stoping:
+        return "stoping";
+    case net_log_request_manage_state_stoped:
+        return "stoped";
+    }
+}

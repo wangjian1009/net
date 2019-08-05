@@ -1,6 +1,7 @@
 #include <assert.h>
 #include "cpe/pal/pal_string.h"
 #include "cpe/fsm/fsm_def.h"
+#include "net_schedule.h"
 #include "net_log_state_i.h"
 
 static void net_log_state_fsm_init_enter(fsm_machine_t fsm, fsm_def_state_t state, void * event) {
@@ -20,11 +21,23 @@ static uint32_t net_log_state_fsm_init_trans(fsm_machine_t fsm, fsm_def_state_t 
     switch(evt->m_type) {
     case net_log_state_fsm_evt_start:
         if (net_log_schedule_start_main(schedule) != 0
-            || net_log_schedule_start_threads(schedule) != 0)
-        {
+            || net_log_schedule_start_threads(schedule) != 0) {
             return net_log_schedule_state_error;
         }
-        return net_log_schedule_state_runing;
+
+        if (schedule->m_cfg_ep == NULL) {
+            if (schedule->m_debug) {
+                CPE_INFO(schedule->m_em, "log: schedule: state-fsm: init: no cfg-ep, auto pause!");
+            }
+            return net_log_schedule_state_pause;
+        } else if (net_schedule_local_ip_stack(schedule->m_net_schedule) == net_local_ip_stack_none) {
+            if (schedule->m_debug) {
+                CPE_INFO(schedule->m_em, "log: schedule: state-fsm: init: no active network, auto pause!");
+            }
+            return net_log_schedule_state_pause;
+        } else {
+            return net_log_schedule_state_runing;
+        }
     case net_log_state_fsm_evt_stop_begin:
     case net_log_state_fsm_evt_stop_complete:
     case net_log_state_fsm_evt_pause:
