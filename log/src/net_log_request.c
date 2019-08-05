@@ -226,6 +226,9 @@ static int net_log_request_send(net_log_request_t request) {
     net_log_category_t category = request->m_category;
     net_log_schedule_t schedule = category->m_schedule;
 
+    if (schedule->m_cfg_ep == NULL) {
+    }
+    
     time_t nowTime = (uint32_t)time(NULL);
     if (nowTime - send_param->builder_time > 600
         || send_param->builder_time > (uint32_t)nowTime
@@ -249,9 +252,7 @@ static int net_log_request_send(net_log_request_t request) {
     
     // url
     snprintf(
-        buf, sizeof(buf), "%s://%s.%s/logstores/%s/shards/lb", 
-        schedule->m_cfg_using_https ? "https" : "http",
-        schedule->m_cfg_project,
+        buf, sizeof(buf), "%s/logstores/%s/shards/lb", 
         schedule->m_cfg_ep,
         category->m_name);
     

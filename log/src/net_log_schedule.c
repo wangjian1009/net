@@ -50,7 +50,6 @@ net_log_schedule_create(
     schedule->m_cfg_dump_span_ms = 0;
     schedule->m_cfg_cache_dir = NULL;
     schedule->m_cfg_ep = NULL;
-    schedule->m_cfg_using_https = 0;
     schedule->m_dump_timer = NULL;
     schedule->m_cfg_dump_span_ms = 0;
     schedule->m_cfg_stop_wait_ms = 3000;
@@ -241,22 +240,7 @@ const char * net_log_schedule_cfg_ep(net_log_schedule_t schedule) {
 }
 
 int net_log_schedule_set_cfg_ep(net_log_schedule_t schedule, const char * cfg_ep) {
-    uint8_t new_using_https = 0;
-    
-    if (cfg_ep) {
-        if (cpe_str_start_with(cfg_ep, "http://")) {
-            new_using_https = 0;
-            cfg_ep += 7;
-        } else if (cpe_str_start_with(cfg_ep, "https://")) {
-            new_using_https = 1;
-            cfg_ep += 8;
-        } else {
-            CPE_ERROR(schedule->m_em, "log: schedule: endpoint %s format error", cfg_ep);
-            return -1;
-        }
-    }
-
-    if (new_using_https == schedule->m_cfg_using_https && cpe_str_cmp_opt(schedule->m_cfg_ep, cfg_ep) == 0) {
+    if (cpe_str_cmp_opt(schedule->m_cfg_ep, cfg_ep) == 0) {
         return 0;
     }
     
@@ -271,10 +255,8 @@ int net_log_schedule_set_cfg_ep(net_log_schedule_t schedule, const char * cfg_ep
 
     if (schedule->m_debug) {
         CPE_INFO(
-            schedule->m_em, "log: schedule: ep %s%s ==> %s%s", 
-            schedule->m_cfg_ep ? (schedule->m_cfg_using_https ? "https://" : "http://") : "",
+            schedule->m_em, "log: schedule: ep %s ==> %s", 
             schedule->m_cfg_ep ? schedule->m_cfg_ep : "N/A",
-            new_ep ? (new_using_https ? "https://" : "http://") : "",
             new_ep ? new_ep : "N/A");
     }
     
@@ -283,7 +265,6 @@ int net_log_schedule_set_cfg_ep(net_log_schedule_t schedule, const char * cfg_ep
     }
     
     schedule->m_cfg_ep = new_ep;
-    schedule->m_cfg_using_https = new_using_https;
     
     if (schedule->m_cfg_ep == NULL) {
         if (net_log_schedule_state(schedule) == net_log_schedule_state_runing) {
