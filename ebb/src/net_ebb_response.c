@@ -106,7 +106,7 @@ int net_ebb_response_append_code(net_ebb_response_t response, int http_code, con
             request->m_request_id, response->m_header_count, (int)mem_buffer_size(buffer), mem_buffer_make_continuous(buffer, 0));
     }
 
-    mem_buffer_append_char(buffer, '\n');
+    stream_printf((write_stream_t)&ws, "\r\n");
     
     response->m_header_count++;
     response->m_state = net_ebb_response_state_head;
@@ -145,7 +145,7 @@ int net_ebb_response_append_head(net_ebb_response_t response, const char * name,
             request->m_request_id, response->m_header_count, (int)mem_buffer_size(buffer), mem_buffer_make_continuous(buffer, 0));
     }
 
-    mem_buffer_append_char(buffer, '\n');
+    stream_printf((write_stream_t)&ws, "\r\n");
     
     response->m_header_count++;
     
@@ -183,7 +183,7 @@ int net_ebb_response_append_head_line(net_ebb_response_t response, const char * 
             request->m_request_id, response->m_header_count, (int)mem_buffer_size(buffer), mem_buffer_make_continuous(buffer, 0));
     }
 
-    mem_buffer_append_char(buffer, '\n');
+    stream_printf((write_stream_t)&ws, "\r\n");
     
     response->m_header_count++;
     
@@ -451,10 +451,10 @@ int net_ebb_response_append_body_chunked_block(net_ebb_response_t response, void
     }
 
     char size_buf[64];
-    snprintf(size_buf, sizeof(size_buf), "%d\n", data_size);
+    snprintf(size_buf, sizeof(size_buf), "%d\r\n", data_size);
     if (net_endpoint_buf_append(endpoint, net_ep_buf_write, data, data_size) != 0
         || net_endpoint_buf_append(endpoint, net_ep_buf_write, data, data_size) != 0
-        || net_endpoint_buf_append(endpoint, net_ep_buf_write, "\n", 1) != 0)
+        || net_endpoint_buf_append(endpoint, net_ep_buf_write, "\r\n", 2) != 0)
     {
         CPE_ERROR(
             service->m_em, "ebb: %s: req %d: trunked %d: qppend trunked data!",
@@ -508,7 +508,14 @@ int net_ebb_response_append_complete(net_ebb_response_t response) {
             }
             break;
         case net_ebb_request_transfer_encoding_chunked:
-            if (net_endpoint_buf_append(endpoint, net_ep_buf_write, "0\n\n", 3) != 0) {
+            if (net_endpoint_protocol_debug(endpoint)) {
+                CPE_INFO(
+                    service->m_em, "ebb: %s: req %d: trunked %d: => 0 data",
+                    net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
+                    request->m_request_id, response->m_chunked.m_trunk_count);
+            }
+
+            if (net_endpoint_buf_append(endpoint, net_ep_buf_write, "0\r\n\r\n", 5) != 0) {
                 CPE_ERROR(
                     service->m_em, "ebb: %s: req %d: append complete: trunked append last trunk fail!",
                     net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
@@ -574,7 +581,7 @@ static int net_ebb_response_append_head_last(net_ebb_response_t response) {
             request->m_request_id, response->m_header_count);
     }
     
-    if (net_endpoint_buf_append(endpoint, net_ep_buf_write, "\n", 1) != 0) {
+    if (net_endpoint_buf_append(endpoint, net_ep_buf_write, "\r\n", 2) != 0) {
         CPE_ERROR(
             service->m_em, "ebb: %s: req %d: head %d: write head end fail!",
             net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
