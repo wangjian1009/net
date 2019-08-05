@@ -452,7 +452,7 @@ int net_ebb_response_append_body_chunked_block(net_ebb_response_t response, void
 
     char size_buf[64];
     snprintf(size_buf, sizeof(size_buf), "%d\r\n", data_size);
-    if (net_endpoint_buf_append(endpoint, net_ep_buf_write, data, data_size) != 0
+    if (net_endpoint_buf_append(endpoint, net_ep_buf_write, size_buf, strlen(size_buf)) != 0
         || net_endpoint_buf_append(endpoint, net_ep_buf_write, data, data_size) != 0
         || net_endpoint_buf_append(endpoint, net_ep_buf_write, "\r\n", 2) != 0)
     {
