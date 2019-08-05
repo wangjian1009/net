@@ -227,8 +227,12 @@ static int net_log_request_send(net_log_request_t request) {
     net_log_schedule_t schedule = category->m_schedule;
 
     if (schedule->m_cfg_ep == NULL) {
+        CPE_ERROR(
+            schedule->m_em, "log: %s: category [%d]%s: request %d: entry-point not configured",
+            mgr->m_name, category->m_id, category->m_name, request->m_id);
+        return -1;
     }
-    
+
     time_t nowTime = (uint32_t)time(NULL);
     if (nowTime - send_param->builder_time > 600
         || send_param->builder_time > (uint32_t)nowTime
@@ -303,10 +307,6 @@ static int net_log_request_send(net_log_request_t request) {
 
     /**/
     snprintf(buf, sizeof(buf), "x-log-bodyrawsize:%d", (int)buffer->raw_length);
-    net_trans_task_append_header_line(request->m_task, buf);
-
-    /**/
-    snprintf(buf, sizeof(buf), "Host:%s.%s", schedule->m_cfg_project, schedule->m_cfg_ep);
     net_trans_task_append_header_line(request->m_task, buf);
 
     /*签名 */

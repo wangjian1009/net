@@ -36,6 +36,7 @@ static uint32_t net_log_state_fsm_init_trans(fsm_machine_t fsm, fsm_def_state_t 
             }
             return net_log_schedule_state_pause;
         } else {
+            net_log_schedule_resume_senders(schedule);
             return net_log_schedule_state_runing;
         }
     case net_log_state_fsm_evt_stop_begin:

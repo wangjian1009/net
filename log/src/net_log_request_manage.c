@@ -35,10 +35,7 @@ net_log_request_manage_create(
         return NULL;
     }
 
-    mgr->m_state =
-        net_log_schedule_state(schedule) == net_log_schedule_state_runing
-        ? net_log_request_manage_state_runing
-        : net_log_request_manage_state_pause;
+    mgr->m_state = net_log_request_manage_state_pause;
     mgr->m_cfg_active_request_count = max_active_request_count;
     mgr->m_stop_fun = stop_fun;
     mgr->m_stop_ctx = stop_ctx;
