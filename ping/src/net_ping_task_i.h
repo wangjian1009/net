@@ -14,8 +14,7 @@ struct net_ping_task {
     net_ping_task_cb_fun_t m_cb_fun;
     union {
         struct {
-            uint8_t m_is_https;
-            char * m_path;
+            char * m_url;
         } m_http;
     };
     net_ping_task_state_t m_state;

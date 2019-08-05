@@ -1,4 +1,5 @@
 #include <assert.h>
+#include "cpe/pal/pal_string.h"
 #include "cpe/utils/stream_buffer.h"
 #include "cpe/utils/string_utils.h"
 #include "net_schedule.h"
@@ -56,24 +57,64 @@ net_ping_task_t net_ping_task_create_tcp_connect(net_ping_mgr_t mgr, net_address
     return task;
 }
 
-net_ping_task_t net_ping_task_create_http(net_ping_mgr_t mgr, net_address_t target, uint8_t is_https, const char * path) {
-    net_ping_task_t task = net_ping_task_create_i(mgr, target);
-    task->m_type = net_ping_type_http;
+net_ping_task_t net_ping_task_create_http(net_ping_mgr_t mgr, const char * url) {
+    uint8_t is_https = 0;
 
-    task->m_http.m_is_https = is_https;
-    task->m_http.m_path = cpe_str_mem_dup(mgr->m_alloc, path);
-    if (task->m_http.m_path == NULL) {
-        CPE_ERROR(mgr->m_em, "ping: %s: dup target address fail!", net_address_dump(net_ping_mgr_tmp_buffer(mgr), target));
+    const char * str_address_begin = strstr(url, "://");
+    if (str_address_begin == NULL) {
+        CPE_ERROR(mgr->m_em, "ping %s: url format error!", url);
+        return NULL;
+    }
+    str_address_begin += 3;
+
+    
+    net_address_t address = NULL;
+
+    const char * str_address_end = strchr(str_address_begin, '/');
+    if (str_address_end == NULL) {
+        address = net_address_create_auto(mgr->m_schedule, str_address_begin);
+        if (address == NULL) {
+            CPE_ERROR(mgr->m_em, "ping %s: create address from %s fail!", url, str_address_begin);
+            return NULL;
+        }
+    }
+    else {
+        char * str_address = cpe_str_mem_dup_len(mgr->m_alloc, str_address_begin, str_address_end - str_address_begin);
+        if (str_address == NULL) {
+            CPE_ERROR(mgr->m_em, "ping %s: dup host fail!", url);
+            return NULL;
+        }
+
+        address = net_address_create_auto(mgr->m_schedule, str_address);
+        if (address == NULL) {
+            CPE_ERROR(mgr->m_em, "ping %s: create address from %s fail!", url, str_address);
+            mem_free(mgr->m_alloc, str_address);
+            return NULL;
+        }
+        mem_free(mgr->m_alloc, str_address);
+    }
+
+    net_ping_task_t task = net_ping_task_create_i(mgr, address);
+    if (task == NULL) {
+        net_address_free(address);
+        return NULL; 
+    }
+    net_address_free(address);
+    
+    task->m_type = net_ping_type_http;
+    task->m_http.m_url = cpe_str_mem_dup(mgr->m_alloc, url);
+    if (task->m_http.m_url == NULL) {
+        CPE_ERROR(mgr->m_em, "ping: %s: dup url fail", url);
         net_ping_task_free(task);
         return NULL;
     }
-    
+
     return task;
 }
 
 void net_ping_task_free(net_ping_task_t task) {
     net_ping_mgr_t mgr = task->m_mgr;
-
+    
     if (task->m_is_processing) {
         task->m_is_free = 1;
         return;
@@ -90,9 +131,9 @@ void net_ping_task_free(net_ping_task_t task) {
 
     switch(task->m_type) {
     case net_ping_type_http:
-        if (task->m_http.m_path) {
-            mem_free(mgr->m_alloc, task->m_http.m_path);
-            task->m_http.m_path = NULL;
+        if (task->m_http.m_url) {
+            mem_free(mgr->m_alloc, task->m_http.m_url);
+            task->m_http.m_url = NULL;
         }
         break;
     default:
@@ -318,7 +359,7 @@ void net_ping_task_print(write_stream_t ws, net_ping_task_t task) {
         stream_printf(ws, "tcp-connect");
         break;
     case net_ping_type_http:
-        stream_printf(ws, "tcp-connect");
+        stream_printf(ws, "http");
         break;
     }
 }

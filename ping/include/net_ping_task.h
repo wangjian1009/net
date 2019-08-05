@@ -15,7 +15,7 @@ typedef void (*net_ping_task_cb_fun_t)(void * ctx, net_ping_task_t task, net_pin
 
 net_ping_task_t net_ping_task_create_icmp(net_ping_mgr_t mgr, net_address_t target);
 net_ping_task_t net_ping_task_create_tcp_connect(net_ping_mgr_t mgr, net_address_t target);
-net_ping_task_t net_ping_task_create_http(net_ping_mgr_t mgr, net_address_t target, uint8_t is_https, const char * path);
+net_ping_task_t net_ping_task_create_http(net_ping_mgr_t mgr, const char * url);
 
 void net_ping_task_free(net_ping_task_t task);
 
