@@ -18,7 +18,7 @@ void net_log_schedule_set_debug(net_log_schedule_t schedule, uint8_t debug);
 
 const char * net_log_schedule_cfg_project(net_log_schedule_t schedule);
 const char * net_log_schedule_cfg_ep(net_log_schedule_t schedule);
-int net_log_schedule_cfg_set_ep(net_log_schedule_t schedule, const char * ep);
+int net_log_schedule_set_cfg_ep(net_log_schedule_t schedule, const char * ep);
 const char * net_log_schedule_cfg_access_id(net_log_schedule_t schedule);
 const char * net_log_schedule_cfg_access_key(net_log_schedule_t schedule);
     

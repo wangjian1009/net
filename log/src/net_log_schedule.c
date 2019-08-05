@@ -240,7 +240,7 @@ const char * net_log_schedule_cfg_ep(net_log_schedule_t schedule) {
     return schedule->m_cfg_ep;
 }
 
-int net_log_schedule_cfg_set_ep(net_log_schedule_t schedule, const char * cfg_ep) {
+int net_log_schedule_set_cfg_ep(net_log_schedule_t schedule, const char * cfg_ep) {
     uint8_t new_using_https = 0;
     
     if (cfg_ep) {
