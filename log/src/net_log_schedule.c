@@ -286,10 +286,12 @@ int net_log_schedule_cfg_set_ep(net_log_schedule_t schedule, const char * cfg_ep
     schedule->m_cfg_using_https = new_using_https;
     
     if (schedule->m_cfg_ep == NULL) {
-        if (schedule->m_debug) {
-            CPE_INFO(schedule->m_em, "log: schedule: no ep, auto-pause!");
+        if (net_log_schedule_state(schedule) == net_log_schedule_state_runing) {
+            if (schedule->m_debug) {
+                CPE_INFO(schedule->m_em, "log: schedule: no ep, auto-pause!");
+            }
+            net_log_state_fsm_apply_evt(schedule, net_log_state_fsm_evt_pause);
         }
-        net_log_state_fsm_apply_evt(schedule, net_log_state_fsm_evt_pause);
     }
     
     return 0;
