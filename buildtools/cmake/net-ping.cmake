@@ -8,5 +8,6 @@ set_property(TARGET net_ping PROPERTY INCLUDE_DIRECTORIES
   ${CMAKE_CURRENT_LIST_DIR}/../../../cpe/pal/include
   ${CMAKE_CURRENT_LIST_DIR}/../../../cpe/utils/include
   ${CMAKE_CURRENT_LIST_DIR}/../../core/include
+  ${CMAKE_CURRENT_LIST_DIR}/../../trans/include
   ${net_ping_base}/include
   )

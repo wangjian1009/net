@@ -1,7 +1,7 @@
 #include "check.h"
 
 START_TEST(test_add) {
-    fail_unless(4 == 5, "error, 2 + 3 != 5");
+    fail_unless(5 == 5, "error, 2 + 3 != 5");
 }
 END_TEST
 
