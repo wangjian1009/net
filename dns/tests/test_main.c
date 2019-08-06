@@ -1,4 +1,4 @@
-#include "check.h"
+#include "with_dns_manager.h"
 
 START_TEST(test_add) {
     fail_unless(5 == 5, "error, 2 + 3 != 5");
@@ -8,6 +8,7 @@ END_TEST
 Suite* make_add_suite(void) {
     Suite* s = suite_create("add");
     TCase* tc_add = tcase_create("add");
+    tcase_add_checked_fixture(tc_add, with_dns_manager_setup, with_dns_manager_teardown);
     suite_add_tcase(s, tc_add);
     tcase_add_test(tc_add, test_add);
     return s;
