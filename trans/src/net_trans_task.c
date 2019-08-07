@@ -813,6 +813,20 @@ const char * net_trans_task_error_str(net_trans_task_error_t err) {
     return "unknown";
 }
 
+uint8_t net_timer_real_error_is_network_error(net_trans_task_error_t err) {
+    switch(err) {
+    case net_trans_task_error_dns_resolve_fail:
+    case net_trans_task_error_remote_reset:
+    case net_trans_task_error_net_unreachable:
+    case net_trans_task_error_net_down:
+    case net_trans_task_error_host_unreachable:
+    case net_trans_task_error_connect:
+        return 1;
+    default:
+        return 0;
+    }
+}
+
 uint32_t net_trans_task_hash(net_trans_task_t o, void * user_data) {
     return o->m_id;
 }
