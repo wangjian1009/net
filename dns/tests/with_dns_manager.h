@@ -3,7 +3,7 @@
 #include "check.h"
 #include "cpe/utils/error.h"
 #include "cpe/utils/memory.h"
-#include "net_dns_manage.h"
+#include "../src/net_dns_manage_i.h"
 
 typedef struct with_dns_manager * with_dns_manager_t;
 
