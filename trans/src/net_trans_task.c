@@ -813,7 +813,7 @@ const char * net_trans_task_error_str(net_trans_task_error_t err) {
     return "unknown";
 }
 
-uint8_t net_timer_real_error_is_network_error(net_trans_task_error_t err) {
+uint8_t net_trans_task_error_is_network_error(net_trans_task_error_t err) {
     switch(err) {
     case net_trans_task_error_dns_resolve_fail:
     case net_trans_task_error_remote_reset:
