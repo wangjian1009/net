@@ -18,4 +18,6 @@ with_dns_manager_t with_dns_manager;
 void with_dns_manager_setup(void);
 void with_dns_manager_teardown(void);
 
+void with_dns_manager_add_records(const char * records);
+
 #endif

@@ -1,3 +1,5 @@
+#include "yaml_parse.h"
+#include "yaml_utils.h"
 #include "net_schedule.h"
 #include "with_dns_manager.h"
 
@@ -28,4 +30,21 @@ void with_dns_manager_teardown(void) {
     net_schedule_free(with_dns_manager->m_schedule);
     mem_free(with_dns_manager->m_alloc, with_dns_manager);
     with_dns_manager = NULL;
+}
+
+void with_dns_manager_add_records(const char * str_records) {
+    char error_buf[128];
+
+    yaml_document_t document;
+    ck_assert_msg(
+        yajl_document_parse_one(&document, str_records, error_buf, sizeof(error_buf)) == 0,
+        "parse yaml fail\ninput:\n%s\nerror: %s", str_records, error_buf);
+
+    yaml_node_t * root = yaml_document_get_root_node(&document);
+    ck_assert(root);
+
+    yaml_node_t * pp = yaml_tree_get_2(&document, root, "aa");
+    printf("xxxxx %s\n", yaml_get_string(pp));
+    
+    yaml_document_delete(&document);
 }

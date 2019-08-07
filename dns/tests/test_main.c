@@ -1,6 +1,10 @@
 #include "with_dns_manager.h"
 
 START_TEST(test_add) {
+    with_dns_manager_add_records(
+        "aa: 123\n"
+        "bb: aa\n"
+        );
     fail_unless(5 == 5, "error, 2 + 3 != 5");
 }
 END_TEST
