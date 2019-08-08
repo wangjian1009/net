@@ -1,6 +1,7 @@
 #include "yaml_parse.h"
 #include "yaml_utils.h"
 #include "net_schedule.h"
+#include "net_address.h"
 #include "with_dns_manager.h"
 
 with_dns_manager_t with_dns_manager = NULL;
@@ -21,6 +22,7 @@ void with_dns_manager_setup(void) {
     with_dns_manager->m_dns = 
         net_dns_manage_create(with_dns_manager->m_alloc, &with_dns_manager->m_em_buf, with_dns_manager->m_schedule);
     ck_assert(with_dns_manager->m_dns);
+    net_dns_manage_set_debug(with_dns_manager->m_dns, 1);
 }
 
 void with_dns_manager_teardown(void) {
@@ -33,6 +35,8 @@ void with_dns_manager_teardown(void) {
 }
 
 void with_dns_manager_add_records(const char * str_records) {
+    ck_assert(with_dns_manager);
+    
     char error_buf[128];
 
     yaml_document_t document;
@@ -43,8 +47,34 @@ void with_dns_manager_add_records(const char * str_records) {
     yaml_node_t * root = yaml_document_get_root_node(&document);
     ck_assert(root);
 
-    yaml_node_t * pp = yaml_tree_get_2(&document, root, "aa");
-    printf("xxxxx %s\n", yaml_get_string(pp));
-    
+    struct yaml_node_mapping_item_it node_it;
+    yaml_node_mapping_childs(&document, root, &node_it);
+
+    yaml_node_mapping_item_t child_node;
+    while((child_node = yaml_node_mapping_item_it_next(&node_it)) != NULL) {
+        net_address_t host = net_address_create_auto(with_dns_manager->m_schedule, yaml_node_mapping_item_name(child_node));
+        ck_assert(host);
+        
+        yaml_node_t * child = yaml_node_mapping_item_value(child_node);
+        switch(child->type) {
+        case YAML_SCALAR_NODE: {
+            net_address_t resolved = net_address_create_auto(with_dns_manager->m_schedule, yaml_node_value(child));
+            ck_assert(resolved);
+
+            ck_assert(
+                net_dns_manage_add_record(with_dns_manager->m_dns, host, resolved, 10000) == 0);
+            
+            net_address_free(resolved);
+            break;
+        }
+        case YAML_SEQUENCE_NODE:
+            break;
+        default:
+            break;
+        }
+        
+        net_address_free(host);
+    }
+
     yaml_document_delete(&document);
 }
