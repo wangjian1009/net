@@ -6,14 +6,26 @@ START_TEST(select_circle) {
         "gllto.glpals.com:\n"
         "  - azrltovzs.azureedge.net\n"
         "  - d1iskralo6mo11.cloudfront.net\n"
+        "azrltovzs.azureedge.net:\n"
+        "  - azrltovzs.ec.azureedge.net\n"
+        "azrltovzs.ec.azureedge.net:\n"
+        "  - scdn2.wpc.4df59.chicdn.net\n"
+        "scdn2.wpc.4df59.chicdn.net:\n"
+        "  - sa4gl.wpc.chicdn.net\n"
+        "sa4gl.wpc.chicdn.net:\n"
+        "  - 152.195.12.4\n"
+        "d1iskralo6mo11.cloudfront.net:\n"
+        "  - 13.225.212.32\n"
+        "  - 13.225.212.60\n"
+        "  - 13.225.212.74\n"
+        "  - 13.225.212.80\n"
+        "gllto.trafficmanager.net:\n"
         "  - azrltovzs.azureedge.net\n"
         );
     
-    net_dns_entry_t entry = with_dns_manager_find_entry("gllto.glpals.com");
-    ck_assert(entry != NULL);
-    
-    net_dns_entry_item_t item = net_dns_entry_select_item(entry, net_dns_item_select_policy_first, net_dns_query_ipv4);
-    ck_assert(item);
+    ck_assert_str_eq(
+        with_dns_manager_entry_select_item("gllto.glpals.com", net_dns_query_ipv4),
+        "152.195.12.4");
 }
 END_TEST
 

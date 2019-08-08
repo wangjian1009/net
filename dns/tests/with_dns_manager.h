@@ -25,5 +25,6 @@ void with_dns_manager_add_records(const char * records);
 net_dns_entry_t with_dns_manager_find_entry(const char * adress);
 const char * with_dns_manager_hostnames_by_ip(const char * str_ip);
 const char * with_dns_manager_hostname_by_ip(const char * str_ip);
+const char * with_dns_manager_entry_select_item(const char * entry, net_dns_query_type_t query_type);
 
 #endif

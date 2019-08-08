@@ -4,6 +4,7 @@
 #include "net_schedule.h"
 #include "net_address.h"
 #include "net_dns_entry.h"
+#include "net_dns_entry_item.h"
 #include "with_dns_manager.h"
 
 with_dns_manager_t with_dns_manager = NULL;
@@ -136,4 +137,14 @@ const char * with_dns_manager_hostname_by_ip(const char * str_ip) {
     net_address_free(address);
     
     return r ? net_address_dump(&with_dns_manager->m_tmp_buffer, r) : NULL;
+}
+
+const char * with_dns_manager_entry_select_item(const char * str_entry, net_dns_query_type_t query_type) {
+    ck_assert(with_dns_manager);
+    
+    net_dns_entry_t entry = with_dns_manager_find_entry(str_entry);
+    ck_assert_msg(entry, "entry %s not exist!", str_entry);
+    
+    net_dns_entry_item_t item = net_dns_entry_select_item(entry, net_dns_item_select_policy_first, query_type);
+    return item ? net_address_dump(&with_dns_manager->m_tmp_buffer, net_dns_entry_item_address(item)) : NULL;
 }
