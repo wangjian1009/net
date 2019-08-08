@@ -15,7 +15,12 @@ set_property(TARGET tests_net_dns PROPERTY INCLUDE_DIRECTORIES
   ${net_dns_base}/include
   )
 
-set_property(TARGET tests_net_dns PROPERTY LINK_LIBRARIES
-    net_dns net_core cpe_utils_sock cpe_utils_yaml cpe_utils cpe_pal yaml pcre2 check)
+set(tests_net_dns_libraries
+  net_dns net_core cpe_utils_sock cpe_utils_yaml cpe_utils cpe_pal yaml pcre2 check)
+if (OS_NAME STREQUAL linux32 OR OS_NAME STREQUAL linux64)
+  set(tests_net_dns_libraries ${tests_net_dns_libraries} m)
+endif()
+
+set_property(TARGET tests_net_dns PROPERTY LINK_LIBRARIES ${tests_net_dns_libraries})
 
 add_test(NAME net-dns COMMAND tests_net_dns)
