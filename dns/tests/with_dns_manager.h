@@ -1,5 +1,6 @@
 #ifndef NET_WITH_DNS_MANAGE_H_INCLEDED
 #define NET_WITH_DNS_MANAGE_H_INCLEDED
+#include "cpe/pal/pal_types.h"
 #include "check.h"
 #include "cpe/utils/error.h"
 #include "cpe/utils/memory.h"
