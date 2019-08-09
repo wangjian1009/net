@@ -40,7 +40,7 @@ void with_dns_manager_teardown(void) {
     with_dns_manager = NULL;
 }
 
-void with_dns_manager_add_records(const char * str_records) {
+void with_dns_manager_setup_records(const char * str_records) {
     ck_assert(with_dns_manager);
     
     char error_buf[128];
@@ -147,4 +147,14 @@ const char * with_dns_manager_entry_select_item(const char * str_entry, net_dns_
     
     net_dns_entry_item_t item = net_dns_entry_select_item(entry, net_dns_item_select_policy_first, query_type);
     return item ? net_address_dump(&with_dns_manager->m_tmp_buffer, net_dns_entry_item_address(item)) : NULL;
+}
+
+int with_dns_manager_add_record(const char * str_host, const char * str_resolved) {
+    net_address_t host = net_address_create_auto(with_dns_manager->m_schedule, str_host);
+    ck_assert_msg(host, "create address from %s fail", str_host);
+
+    net_address_t resolved = net_address_create_auto(with_dns_manager->m_schedule, str_resolved);
+    ck_assert_msg(resolved, "create address from %s fail", str_resolved);
+    
+    return net_dns_manage_add_record(with_dns_manager->m_dns, host, resolved, 10000);
 }

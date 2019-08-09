@@ -2,7 +2,7 @@
 #include "test_dns_manager.h"
 
 START_TEST(select_circle) {
-    with_dns_manager_add_records(
+    with_dns_manager_setup_records(
         "gllto.glpals.com:\n"
         "  - azrltovzs.azureedge.net\n"
         "  - d1iskralo6mo11.cloudfront.net\n"

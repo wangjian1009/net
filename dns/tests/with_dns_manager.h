@@ -21,8 +21,9 @@ with_dns_manager_t with_dns_manager;
 void with_dns_manager_setup(void);
 void with_dns_manager_teardown(void);
 
-void with_dns_manager_add_records(const char * records);
+void with_dns_manager_setup_records(const char * records);
 
+int with_dns_manager_add_record(const char * host, const char * resolve_to);
 net_dns_entry_t with_dns_manager_find_entry(const char * adress);
 const char * with_dns_manager_hostnames_by_ip(const char * str_ip);
 const char * with_dns_manager_hostname_by_ip(const char * str_ip);
