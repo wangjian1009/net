@@ -21,6 +21,7 @@ net_dns_entry_alias_create(net_dns_entry_t origin, net_dns_entry_t as) {
 
     alias->m_origin = origin;
     alias->m_as = as;
+    alias->m_visit_id = 0;
 
     TAILQ_INSERT_TAIL(&origin->m_cnames, alias, m_next_for_origin);
     TAILQ_INSERT_TAIL(&as->m_origins, alias, m_next_for_as);

@@ -48,6 +48,8 @@ struct net_dns_manage {
     struct cpe_hash_table m_items_by_ip;
     net_dns_entry_list_t m_free_entries;
 
+    uint32_t m_visit_id_max;
+    
     net_timer_t m_delay_process;
     
     uint32_t m_task_ctx_capacity;

@@ -9,6 +9,7 @@ struct net_dns_entry_alias {
     TAILQ_ENTRY(net_dns_entry_alias) m_next_for_origin;
     net_dns_entry_t m_as;
     TAILQ_ENTRY(net_dns_entry_alias) m_next_for_as;
+    uint32_t m_visit_id;
 };
 
 net_dns_entry_alias_t

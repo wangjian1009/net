@@ -121,6 +121,7 @@ net_dns_entry_find(net_dns_manage_t manage, net_address_t hostname) {
 
 net_dns_entry_item_t
 net_dns_entry_select_item(net_dns_entry_t entry, net_dns_item_select_policy_t policy, net_dns_query_type_t query_type) {
+    net_dns_manage_t manage = entry->m_manage;
     net_dns_entry_item_t item = NULL;
     net_dns_entry_item_t check, next;
 
@@ -160,7 +161,6 @@ net_dns_entry_select_item(net_dns_entry_t entry, net_dns_item_select_policy_t po
     }
 
     if (protect >= protect_limit) {
-        net_dns_manage_t manage = entry->m_manage;
         struct cpe_hash_it dump_entry_it;
         net_dns_entry_t dump_entry;
 
@@ -196,6 +196,7 @@ net_dns_entry_select_item(net_dns_entry_t entry, net_dns_item_select_policy_t po
 }
 
 struct net_dns_entry_address_it_data {
+    uint32_t m_visit_id;
     net_dns_entry_t m_root;
     net_dns_entry_alias_t m_entry_alias;
     net_dns_entry_t m_entry;
@@ -203,48 +204,63 @@ struct net_dns_entry_address_it_data {
 };
 
 static void net_dns_entry_address_it_data_go_next(struct net_dns_entry_address_it_data * data) {
-    while(data->m_entry) {
-        if (data->m_item) {
-            data->m_item = TAILQ_NEXT(data->m_item, m_next_for_entry);
-        }
-        else {
+    while(data->m_entry && data->m_item) {
+        data->m_item = TAILQ_NEXT(data->m_item, m_next_for_entry);
+        if (data->m_item != NULL) return;
+
+        /*当前节点遍历完成 */
+        net_dns_entry_alias_t child_alias = TAILQ_FIRST(&data->m_entry->m_cnames);
+        if (child_alias && child_alias->m_visit_id < data->m_visit_id) { /*有子节点，尝试遍历子节点 */
+            child_alias->m_visit_id = data->m_visit_id;
+            data->m_entry_alias = child_alias;
+            data->m_entry = child_alias->m_as;
             data->m_item = TAILQ_FIRST(&data->m_entry->m_items);
-        }
-
-        if (data->m_item) break;
-        
-        assert(data->m_item == NULL);
-
-        if (data->m_entry == data->m_root) {
-            data->m_entry = NULL;
-            break;
-        }
-
-        if (data->m_entry_alias == NULL) {
-            data->m_entry = NULL;
-            break;
-        }
-        
-        net_dns_entry_alias_t next_alias = TAILQ_NEXT(data->m_entry_alias, m_next_for_origin);
-        if (next_alias) {
-            data->m_entry_alias = next_alias;
-            data->m_entry = next_alias->m_as;
-            while(!TAILQ_EMPTY(&data->m_entry->m_cnames)) {
-                data->m_entry_alias = TAILQ_FIRST(&data->m_entry->m_cnames);
-                data->m_entry = data->m_entry_alias->m_as;
+            if (data->m_item != NULL) {
+                return;
             }
+            continue;
         }
-        else {
-            data->m_entry = data->m_entry_alias->m_origin;
 
-            if (data->m_entry == data->m_root) {
-                data->m_entry_alias = NULL;
+        /*当前是子节点，则需要进行树遍历 */
+        while (data->m_entry_alias) {
+            net_dns_entry_alias_t next_alias = TAILQ_NEXT(data->m_entry_alias, m_next_for_origin);
+            while(next_alias && next_alias->m_visit_id >= data->m_visit_id) {
+                next_alias = TAILQ_NEXT(data->m_entry_alias, m_next_for_origin);
             }
+            
+            /*有兄弟节点, 则访问兄弟节点 */
+            if (next_alias) {
+                data->m_entry_alias = next_alias;
+                data->m_entry = next_alias->m_as;
+                next_alias->m_visit_id = data->m_visit_id;
+                data->m_item = TAILQ_FIRST(&data->m_entry->m_items);
+                if (data->m_item != NULL) return;
+            } 
             else {
-                TAILQ_FOREACH(data->m_entry_alias, &data->m_entry->m_origins, m_next_for_as) {
-                    if (data->m_entry_alias->m_as == data->m_entry) break;
+                /*没有兄弟节点，尝试回溯到上一层 */
+
+                data->m_entry = data->m_entry_alias->m_origin;
+                assert(!TAILQ_EMPTY(&data->m_entry->m_cnames));
+
+                if (data->m_entry == data->m_root) {
+                    data->m_entry = NULL;
+                    data->m_entry_alias = NULL;
+                    return;
+                } 
+                else {
+                    TAILQ_FOREACH(data->m_entry_alias, &data->m_entry->m_origins, m_next_for_as) {
+                        if (data->m_entry_alias->m_as == data->m_entry) {
+                            break;
+                        }
+                    }
+                    assert(data->m_entry_alias);
                 }
             }
+        }
+
+        if (data->m_entry_alias == NULL && data->m_entry != NULL) {
+            data->m_entry = NULL;
+            assert(data->m_item == NULL);
         }
     }
 }
@@ -272,22 +288,28 @@ static net_address_t net_dns_entry_address_it_basic_next(net_address_it_t it) {
 }
 
 void net_dns_entry_addresses(net_dns_entry_t entry, net_address_it_t it, uint8_t recursive) {
+    net_dns_manage_t manage = entry->m_manage;
+    
     if (recursive) {
         struct net_dns_entry_address_it_data * data = (struct net_dns_entry_address_it_data *)it->data;
 
         assert(sizeof(struct net_dns_entry_address_it_data) <= sizeof(it->data));
-        
-        data->m_root = entry;
-        data->m_item = NULL;
 
+        data->m_visit_id = ++manage->m_visit_id_max;
+        data->m_root = entry;
         data->m_entry = data->m_root;
         data->m_entry_alias = NULL;
-        while(!TAILQ_EMPTY(&data->m_entry->m_cnames)) {
-            data->m_entry_alias = TAILQ_FIRST(&data->m_entry->m_cnames);
-            data->m_entry = data->m_entry_alias->m_as;
+        data->m_item = TAILQ_FIRST(&data->m_entry->m_items);
+        if (data->m_item == NULL) {
+            net_dns_entry_address_it_data_go_next(data);
         }
-        
-        net_dns_entry_address_it_data_go_next(data);
+        else {
+            printf(
+                "          %s found(2) %s\n",
+                (const char*)net_address_data(data->m_entry->m_hostname),
+                net_address_dump(net_dns_manage_tmp_buffer(data->m_root->m_manage), data->m_item->m_address));
+        }
+
         it->next = net_dns_entry_address_it_recursive_next;
     }
     else {
@@ -333,12 +355,10 @@ void net_dns_entry_items(net_dns_entry_t entry, net_dns_entry_item_it_t it, uint
 
         data->m_entry = data->m_root;
         data->m_entry_alias = NULL;
-        while(!TAILQ_EMPTY(&data->m_entry->m_cnames)) {
-            data->m_entry_alias = TAILQ_FIRST(&data->m_entry->m_cnames);
-            data->m_entry = data->m_entry_alias->m_as;
+        data->m_item = TAILQ_FIRST(&data->m_entry->m_items);
+        if (data->m_item == NULL) {
+            net_dns_entry_address_it_data_go_next(data);
         }
-
-        net_dns_entry_address_it_data_go_next(data);
         it->next = net_dns_entry_item_it_recursive_next;
     }
     else {
