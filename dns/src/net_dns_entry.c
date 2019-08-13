@@ -221,6 +221,7 @@ net_dns_entry_recursive_it_data_append_node(
     node->m_entry = entry;
     node->m_child = TAILQ_FIRST(&entry->m_cnames);
     data->m_item = TAILQ_FIRST(&entry->m_items);
+    data->m_stack_size++;
     
     return node;
 }
