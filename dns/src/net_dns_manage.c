@@ -46,6 +46,7 @@ net_dns_manage_t net_dns_manage_create(
     manage->m_delay_process = NULL;
     manage->m_default_item_select_policy = net_dns_item_select_policy_first;
     manage->m_visit_id_max = 0;
+    manage->m_visit_id_current = 0;
     
     TAILQ_INIT(&manage->m_sources);
     TAILQ_INIT(&manage->m_to_notify_querys);

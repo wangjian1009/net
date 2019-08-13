@@ -28,6 +28,11 @@ typedef TAILQ_HEAD(net_dns_task_monitor_list, net_dns_task_monitor) net_dns_task
 typedef TAILQ_HEAD(net_dns_query_ex_list, net_dns_query_ex) net_dns_query_ex_list_t;
 typedef TAILQ_HEAD(net_dns_scope_source_list, net_dns_scope_source) net_dns_scope_source_list_t;
 
+struct net_dns_visit_node {
+    net_dns_entry_t m_entry;
+    net_dns_entry_alias_t m_child;
+};
+
 struct net_dns_manage {
     mem_allocrator_t m_alloc;
     error_monitor_t m_em;
@@ -49,7 +54,9 @@ struct net_dns_manage {
     net_dns_entry_list_t m_free_entries;
 
     uint32_t m_visit_id_max;
-    
+    uint32_t m_visit_id_current;
+    struct net_dns_visit_node m_visit_stack[32];
+
     net_timer_t m_delay_process;
     
     uint32_t m_task_ctx_capacity;

@@ -195,83 +195,101 @@ net_dns_entry_select_item(net_dns_entry_t entry, net_dns_item_select_policy_t po
     return item;
 }
 
-struct net_dns_entry_address_it_data {
+struct net_dns_entry_recursive_it_data {
     uint32_t m_visit_id;
-    net_dns_entry_t m_root;
-    net_dns_entry_alias_t m_entry_alias;
-    net_dns_entry_t m_entry;
+    uint16_t m_stack_size;
     net_dns_entry_item_t m_item;
 };
 
-static void net_dns_entry_address_it_data_go_next(struct net_dns_entry_address_it_data * data) {
-    while(data->m_entry && data->m_item) {
-        data->m_item = TAILQ_NEXT(data->m_item, m_next_for_entry);
-        if (data->m_item != NULL) return;
+static 
+struct net_dns_visit_node * 
+net_dns_entry_recursive_it_data_append_node(
+    net_dns_manage_t manage, struct net_dns_entry_recursive_it_data * data, net_dns_entry_t entry)
+{
+    if (data->m_visit_id != manage->m_visit_id_current) {
+        CPE_ERROR(manage->m_em, "net: dns: recursive it visit id mismatch");
+        return NULL;
+    }
+    
+    if (data->m_stack_size >= CPE_ARRAY_SIZE(manage->m_visit_stack)) {
+        CPE_ERROR(manage->m_em, "net: dns: recursive it overflow");
+        return NULL;
+    }
+    
+    struct net_dns_visit_node * node = &manage->m_visit_stack[data->m_stack_size];
+    
+    node->m_entry = entry;
+    node->m_child = TAILQ_FIRST(&entry->m_cnames);
+    data->m_item = TAILQ_FIRST(&entry->m_items);
+    
+    return node;
+}
 
-        /*当前节点遍历完成 */
-        net_dns_entry_alias_t child_alias = TAILQ_FIRST(&data->m_entry->m_cnames);
-        if (child_alias && child_alias->m_visit_id < data->m_visit_id) { /*有子节点，尝试遍历子节点 */
-            child_alias->m_visit_id = data->m_visit_id;
-            data->m_entry_alias = child_alias;
-            data->m_entry = child_alias->m_as;
-            data->m_item = TAILQ_FIRST(&data->m_entry->m_items);
-            if (data->m_item != NULL) {
-                return;
-            }
-            continue;
+static 
+struct net_dns_visit_node * 
+net_dns_entry_recursive_it_data_current_node(net_dns_manage_t manage, struct net_dns_entry_recursive_it_data * data) {
+    if (data->m_visit_id != manage->m_visit_id_current) {
+        CPE_ERROR(manage->m_em, "net: dns: recursive it visit id mismatch");
+        return NULL;
+    }
+    
+    if (data->m_stack_size >= CPE_ARRAY_SIZE(manage->m_visit_stack)) {
+        CPE_ERROR(manage->m_em, "net: dns: recursive it overflow");
+        return NULL;
+    }
+
+    return data->m_stack_size == 0 ? NULL : &manage->m_visit_stack[data->m_stack_size - 1];
+}
+
+static void net_dns_entry_recursive_it_data_go_next(net_dns_manage_t manage, struct net_dns_entry_recursive_it_data * data) {
+    assert(data->m_stack_size <= CPE_ARRAY_SIZE(manage->m_visit_stack));
+
+    struct net_dns_visit_node * node = net_dns_entry_recursive_it_data_current_node(manage, data);
+PROCESS_NODE:    
+    if (node) {
+        /*优先遍历当前节点 */
+        if (data->m_item) {
+            data->m_item = TAILQ_NEXT(data->m_item, m_next_for_entry);
+            if (data->m_item != NULL) return;
         }
 
-        /*当前是子节点，则需要进行树遍历 */
-        while (data->m_entry_alias) {
-            net_dns_entry_alias_t next_alias = TAILQ_NEXT(data->m_entry_alias, m_next_for_origin);
-            while(next_alias && next_alias->m_visit_id >= data->m_visit_id) {
-                next_alias = TAILQ_NEXT(data->m_entry_alias, m_next_for_origin);
-            }
-            
-            /*有兄弟节点, 则访问兄弟节点 */
-            if (next_alias) {
-                data->m_entry_alias = next_alias;
-                data->m_entry = next_alias->m_as;
-                next_alias->m_visit_id = data->m_visit_id;
-                data->m_item = TAILQ_FIRST(&data->m_entry->m_items);
+        /*然后尝试遍历子节点 */
+        assert(data->m_item == NULL);
+        while(node->m_child) {
+            if (node->m_child->m_visit_id < data->m_visit_id) {
+                /*没有访问过的子节点 */
+                net_dns_entry_t next_entry = node->m_child->m_as;
+                node->m_child->m_visit_id = data->m_visit_id;
+                node->m_child = TAILQ_NEXT(node->m_child, m_next_for_origin);
+                node = net_dns_entry_recursive_it_data_append_node(manage, data, next_entry);
                 if (data->m_item != NULL) return;
-            } 
+                goto PROCESS_NODE;
+            }
             else {
-                /*没有兄弟节点，尝试回溯到上一层 */
-
-                data->m_entry = data->m_entry_alias->m_origin;
-                assert(!TAILQ_EMPTY(&data->m_entry->m_cnames));
-
-                if (data->m_entry == data->m_root) {
-                    data->m_entry = NULL;
-                    data->m_entry_alias = NULL;
-                    return;
-                } 
-                else {
-                    TAILQ_FOREACH(data->m_entry_alias, &data->m_entry->m_origins, m_next_for_as) {
-                        if (data->m_entry_alias->m_as == data->m_entry) {
-                            break;
-                        }
-                    }
-                    assert(data->m_entry_alias);
-                }
+                node->m_child = TAILQ_NEXT(node->m_child, m_next_for_origin);
             }
         }
-
-        if (data->m_entry_alias == NULL && data->m_entry != NULL) {
-            data->m_entry = NULL;
-            assert(data->m_item == NULL);
-        }
+        
+        /*最后回溯到父节点 */
+        assert(data->m_stack_size > 0);
+        data->m_stack_size--;
+        node = net_dns_entry_recursive_it_data_current_node(manage, data);
+        goto PROCESS_NODE;
+    }
+    
+    if (node == NULL) {
+        data->m_item = NULL;
     }
 }
 
 static net_address_t net_dns_entry_address_it_recursive_next(net_address_it_t it) {
-    struct net_dns_entry_address_it_data * data = (struct net_dns_entry_address_it_data *)it->data;
+    struct net_dns_entry_recursive_it_data * data = (struct net_dns_entry_recursive_it_data *)it->data;
 
     if (data->m_item == NULL) return NULL;
 
     net_address_t r = data->m_item->m_address;
-    net_dns_entry_address_it_data_go_next(data);
+    net_dns_manage_t manage = data->m_item->m_entry->m_manage;
+    net_dns_entry_recursive_it_data_go_next(manage, data);
 
     return r;
 }
@@ -291,23 +309,16 @@ void net_dns_entry_addresses(net_dns_entry_t entry, net_address_it_t it, uint8_t
     net_dns_manage_t manage = entry->m_manage;
     
     if (recursive) {
-        struct net_dns_entry_address_it_data * data = (struct net_dns_entry_address_it_data *)it->data;
+        struct net_dns_entry_recursive_it_data * data = (struct net_dns_entry_recursive_it_data *)it->data;
 
-        assert(sizeof(struct net_dns_entry_address_it_data) <= sizeof(it->data));
+        assert(sizeof(struct net_dns_entry_recursive_it_data) <= sizeof(it->data));
 
-        data->m_visit_id = ++manage->m_visit_id_max;
-        data->m_root = entry;
-        data->m_entry = data->m_root;
-        data->m_entry_alias = NULL;
-        data->m_item = TAILQ_FIRST(&data->m_entry->m_items);
+        manage->m_visit_id_current = ++manage->m_visit_id_max;
+        data->m_visit_id = manage->m_visit_id_current;
+        data->m_stack_size = 0;
+        net_dns_entry_recursive_it_data_append_node(manage, data, entry);
         if (data->m_item == NULL) {
-            net_dns_entry_address_it_data_go_next(data);
-        }
-        else {
-            printf(
-                "          %s found(2) %s\n",
-                (const char*)net_address_data(data->m_entry->m_hostname),
-                net_address_dump(net_dns_manage_tmp_buffer(data->m_root->m_manage), data->m_item->m_address));
+            net_dns_entry_recursive_it_data_go_next(manage, data);
         }
 
         it->next = net_dns_entry_address_it_recursive_next;
@@ -320,12 +331,13 @@ void net_dns_entry_addresses(net_dns_entry_t entry, net_address_it_t it, uint8_t
 }
 
 static net_dns_entry_item_t net_dns_entry_item_it_recursive_next(net_dns_entry_item_it_t it) {
-    struct net_dns_entry_address_it_data * data = (struct net_dns_entry_address_it_data *)it->data;
+    struct net_dns_entry_recursive_it_data * data = (struct net_dns_entry_recursive_it_data *)it->data;
 
     if (data->m_item == NULL) return NULL;
 
     net_dns_entry_item_t r = data->m_item;
-    net_dns_entry_address_it_data_go_next(data);
+    net_dns_manage_t manage = data->m_item->m_entry->m_manage;
+    net_dns_entry_recursive_it_data_go_next(manage, data);
 
     return r;
 }
@@ -343,21 +355,21 @@ static net_dns_entry_item_t net_dns_entry_item_it_basic_next(net_dns_entry_item_
 }
 
 void net_dns_entry_items(net_dns_entry_t entry, net_dns_entry_item_it_t it, uint8_t recursive) {
+    net_dns_manage_t manage = entry->m_manage;
+    
     assert(entry);
 
     if (recursive) {
-        struct net_dns_entry_address_it_data * data = (struct net_dns_entry_address_it_data *)it->data;
+        struct net_dns_entry_recursive_it_data * data = (struct net_dns_entry_recursive_it_data *)it->data;
 
-        assert(sizeof(struct net_dns_entry_address_it_data) <= sizeof(it->data));
-        
-        data->m_root = entry;
-        data->m_item = NULL;
+        assert(sizeof(struct net_dns_entry_recursive_it_data) <= sizeof(it->data));
 
-        data->m_entry = data->m_root;
-        data->m_entry_alias = NULL;
-        data->m_item = TAILQ_FIRST(&data->m_entry->m_items);
+        manage->m_visit_id_current = ++manage->m_visit_id_max;
+        data->m_visit_id = manage->m_visit_id_current;
+        data->m_stack_size = 0;
+        net_dns_entry_recursive_it_data_append_node(manage, data, entry);
         if (data->m_item == NULL) {
-            net_dns_entry_address_it_data_go_next(data);
+            net_dns_entry_recursive_it_data_go_next(manage, data);
         }
         it->next = net_dns_entry_item_it_recursive_next;
     }
