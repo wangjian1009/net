@@ -23,6 +23,12 @@ struct net_log_pipe_cmd_stoped {
     void * owner;
 };
 
+struct net_log_pipe_cmd_staistic_load {
+    struct net_log_pipe_cmd head;
+    uint32_t m_load_package_count;
+    uint32_t m_load_record_count;
+};
+
 NET_END_DECL
 
 #endif

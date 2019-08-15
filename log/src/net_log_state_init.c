@@ -25,7 +25,7 @@ static uint32_t net_log_state_fsm_init_trans(fsm_machine_t fsm, fsm_def_state_t 
             return net_log_schedule_state_error;
         }
 
-        if (schedule->m_cfg_ep == NULL) {
+        if (schedule->m_env_active == NULL) {
             if (schedule->m_debug) {
                 CPE_INFO(schedule->m_em, "log: schedule: state-fsm: init: no cfg-ep, auto pause!");
             }

@@ -27,7 +27,7 @@ static uint32_t net_log_state_fsm_pause_trans(fsm_machine_t fsm, fsm_def_state_t
     case net_log_state_fsm_evt_stop_complete:
         return net_log_schedule_state_init;
     case net_log_state_fsm_evt_resume:
-        if (schedule->m_cfg_ep == NULL) {
+        if (schedule->m_env_active == NULL) {
             if (schedule->m_debug) {
                 CPE_INFO(schedule->m_em, "log: schedule: state-fsm: pause: no cfg-ep, can`t resume!");
             }

@@ -11,6 +11,7 @@
 #include "net_timer.h"
 #include "net_trans_task.h"
 #include "net_log_request.h"
+#include "net_log_env_i.h"
 #include "net_log_category_i.h"
 #include "net_log_util.h"
 #include "net_log_builder.h"
@@ -226,7 +227,9 @@ static int net_log_request_send(net_log_request_t request) {
     net_log_category_t category = request->m_category;
     net_log_schedule_t schedule = category->m_schedule;
 
-    if (schedule->m_cfg_ep == NULL) {
+    mgr->m_env_active = schedule->m_env_active;
+    
+    if (mgr->m_env_active == NULL) {
         CPE_ERROR(
             schedule->m_em, "log: %s: category [%d]%s: request %d: entry-point not configured",
             mgr->m_name, category->m_id, category->m_name, request->m_id);
@@ -257,7 +260,7 @@ static int net_log_request_send(net_log_request_t request) {
     // url
     snprintf(
         buf, sizeof(buf), "%s/logstores/%s/shards/lb", 
-        schedule->m_cfg_ep,
+        mgr->m_env_active->m_url,
         category->m_name);
     
     request->m_task = net_trans_task_create(mgr->m_trans_mgr, net_trans_method_post, buf, schedule->m_debug);
@@ -399,7 +402,7 @@ static void net_log_request_process_result(
     int32_t sleepMs = net_log_request_check_result(schedule, category, request, send_result);
     if (sleepMs <= 0) { /*done or discard*/
         if (send_result != net_log_request_send_ok) {
-            net_log_category_add_fail_statistics(category, request->m_send_param->log_count);
+            //TODO: net_log_category_add_fail_statistics(category, request->m_send_param->log_count);
         }
         
         net_log_request_free(request);
@@ -424,7 +427,7 @@ static void net_log_request_process_result(
                     mgr->m_name, category->m_id, category->m_name, request->m_id,
                     net_log_request_send_result_str(send_result));
 
-                net_log_category_add_fail_statistics(category, request->m_send_param->log_count);
+                //TODO: net_log_category_add_fail_statistics(category, request->m_send_param->log_count);
                 net_log_request_free(request);
                 net_log_request_mgr_check_active_requests(mgr);
                 return;

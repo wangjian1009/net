@@ -25,6 +25,7 @@ net_log_request_manage_create(
     net_log_request_manage_t mgr = mem_alloc(schedule->m_alloc, sizeof(struct net_log_request_manage));
 
     mgr->m_schedule = schedule;
+    mgr->m_env_active = NULL;
     mgr->m_net_schedule = net_schedule;
     mgr->m_net_driver = net_driver;
 
@@ -129,7 +130,7 @@ void net_log_request_manage_process_cmd_send(
     return;
     
 SEND_FAIL:
-    net_log_category_add_fail_statistics(send_param->category, send_param->log_count);
+    //TODO: Loki net_log_category_add_fail_statistics(send_param->category, send_param->log_count);
     net_log_request_param_free(send_param);
 }
 

@@ -11,6 +11,7 @@ typedef enum net_log_request_manage_state {
 
 struct net_log_request_manage {
     net_log_schedule_t m_schedule;
+    net_log_env_t m_env_active;
     net_schedule_t m_net_schedule;
     net_driver_t m_net_driver;
     net_trans_manage_t m_trans_mgr;

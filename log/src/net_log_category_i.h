@@ -1,6 +1,5 @@
 #ifndef NET_LOG_CATEGORY_I_H_INCLEDED
 #define NET_LOG_CATEGORY_I_H_INCLEDED
-#include "cpe/utils/traffic_bps.h"
 #include "net_log_category.h"
 #include "net_log_schedule_i.h"
 
@@ -28,23 +27,19 @@ struct net_log_category {
     uint32_t m_cfg_count_per_package;
     uint32_t m_cfg_bytes_per_package;
     uint32_t m_cfg_timeout_ms;
+
+    /*statistics*/
+    net_log_env_category_list_t m_statistics;
+    uint32_t m_statistics_record_count;
+    uint32_t m_statistics_package_count;
+    uint32_t m_statistics_success_count;
+    uint32_t m_statistics_discard_count[net_log_discard_reason_count];
     
     /*runtime*/
     net_timer_t m_commit_timer;
     net_log_builder_t m_builder;
     char * m_pack_prefix;
     volatile uint32_t m_pack_index;
-
-    /*statistics*/
-    uint32_t m_statistics_log_count;
-    uint32_t m_statistics_package_count;
-    struct cpe_traffic_bps m_statistics_input_bps;
-
-#if NET_LOG_MULTI_THREAD
-    pthread_mutex_t m_statistics_mutex;
-#endif    
-    uint32_t m_statistics_fail_log_count;    
-    uint32_t m_statistics_fail_package_count;    
 };
 
 void net_log_category_network_recover(net_log_category_t category);
@@ -58,7 +53,8 @@ void net_log_category_log_end(net_log_category_t category);
 
 void net_log_category_commit(net_log_category_t category);
 
-void net_log_category_add_fail_statistics(net_log_category_t category, uint32_t log_count);
+void net_log_category_statistic_success(net_log_category_t category);
+void net_log_category_statistic_discard(net_log_category_t category, net_log_discard_reason_t reason);
 
 NET_END_DECL
 

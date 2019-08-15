@@ -20,6 +20,8 @@ typedef TAILQ_HEAD(net_log_category_list, net_log_category) net_log_category_lis
 typedef TAILQ_HEAD(net_log_request_list, net_log_request) net_log_request_list_t;
 typedef TAILQ_HEAD(net_log_request_cache_list, net_log_request_cache) net_log_request_cache_list_t;
 typedef TAILQ_HEAD(net_log_state_monitor_list, net_log_state_monitor) net_log_state_monitor_list_t;
+typedef TAILQ_HEAD(net_log_env_list, net_log_env) net_log_env_list_t;
+typedef TAILQ_HEAD(net_log_env_category_list, net_log_env_category) net_log_env_category_list_t;
 
 typedef struct net_log_request * net_log_request_t;
 typedef struct net_log_request_manage * net_log_request_manage_t;
@@ -43,7 +45,6 @@ struct net_log_schedule {
     net_driver_t m_net_driver;
     vfs_mgr_t m_vfs;
     char * m_cfg_project;
-    char * m_cfg_ep;
     char * m_cfg_access_id;
     char * m_cfg_access_key;
     char * m_cfg_source;
@@ -66,6 +67,10 @@ struct net_log_schedule {
     struct fsm_machine m_state_fsm;
     net_log_state_monitor_list_t m_state_monitors;
 
+    /*env*/
+    net_log_env_list_t m_envs;
+    net_log_env_t m_env_active;
+    
     /*categories*/
     uint8_t m_category_count;
     net_log_category_t * m_categories;
@@ -90,6 +95,8 @@ int net_log_schedule_init_main_thread_pipe(net_log_schedule_t schedule);
 
 void net_log_schedule_process_cmd_stoped(net_log_schedule_t schedule, void * owner);
 void net_log_schedule_check_stop_complete(net_log_schedule_t schedule);
+
+void net_log_schedule_set_active_env(net_log_schedule_t schedule, net_log_env_t env);
 
 NET_END_DECL
 

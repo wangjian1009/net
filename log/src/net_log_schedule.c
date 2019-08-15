@@ -16,6 +16,7 @@
 #include "net_log_flusher_i.h"
 #include "net_log_sender_i.h"
 #include "net_log_state_monitor_i.h"
+#include "net_log_env_i.h"
 #include "net_log_request_manage.h"
 #include "net_log_pipe.h"
 
@@ -49,13 +50,13 @@ net_log_schedule_create(
     schedule->m_cfg_active_request_count = 1;
     schedule->m_cfg_dump_span_ms = 0;
     schedule->m_cfg_cache_dir = NULL;
-    schedule->m_cfg_ep = NULL;
     schedule->m_dump_timer = NULL;
     schedule->m_cfg_dump_span_ms = 0;
     schedule->m_cfg_stop_wait_ms = 3000;
     schedule->m_category_count = 0;
     schedule->m_runing_thread_count = 0;
-
+    schedule->m_env_active = NULL;
+    
     schedule->m_cfg_project = cpe_str_mem_dup(alloc, cfg_project);
     if (schedule->m_cfg_project == NULL) {
         CPE_ERROR(schedule->m_em, "log: schedule: dup cfg project fail!");
@@ -88,6 +89,7 @@ net_log_schedule_create(
     TAILQ_INIT(&schedule->m_state_monitors);
     TAILQ_INIT(&schedule->m_flushers);
     TAILQ_INIT(&schedule->m_senders);
+    TAILQ_INIT(&schedule->m_envs);
     
     return schedule;
 
@@ -97,7 +99,6 @@ CREATE_ERROR:
     if (schedule->m_cfg_project) mem_free(alloc, schedule->m_cfg_project);
     if (schedule->m_cfg_access_id) mem_free(alloc, schedule->m_cfg_access_id);
     if (schedule->m_cfg_access_key) mem_free(alloc, schedule->m_cfg_access_key);
-    if (schedule->m_cfg_ep) mem_free(alloc, schedule->m_cfg_ep);
     
     mem_free(alloc, schedule);
     return NULL;
@@ -168,6 +169,11 @@ void net_log_schedule_free(net_log_schedule_t schedule) {
         net_log_sender_free(TAILQ_FIRST(&schedule->m_senders));
     }
 
+    /*statistic*/
+    while(!TAILQ_EMPTY(&schedule->m_envs)) {
+        net_log_env_free(TAILQ_FIRST(&schedule->m_envs));
+    }
+    
     /**/
     if (schedule->m_dump_timer) {
         net_timer_free(schedule->m_dump_timer);
@@ -185,11 +191,6 @@ void net_log_schedule_free(net_log_schedule_t schedule) {
         schedule->m_cfg_project = NULL;
     }
 
-    if (schedule->m_cfg_ep) {
-        mem_free(schedule->m_alloc, schedule->m_cfg_ep);
-        schedule->m_cfg_ep = NULL;
-    }
-    
     if (schedule->m_cfg_access_id) {
         mem_free(schedule->m_alloc, schedule->m_cfg_access_id);
         schedule->m_cfg_access_id = NULL;
@@ -236,45 +237,28 @@ const char * net_log_schedule_cfg_project(net_log_schedule_t schedule) {
 }
 
 const char * net_log_schedule_cfg_ep(net_log_schedule_t schedule) {
-    return schedule->m_cfg_ep;
+    return schedule->m_env_active ? schedule->m_env_active->m_url : NULL;
 }
 
 int net_log_schedule_set_cfg_ep(net_log_schedule_t schedule, const char * cfg_ep) {
-    if (cpe_str_cmp_opt(schedule->m_cfg_ep, cfg_ep) == 0) {
+    if (cpe_str_cmp_opt(net_log_schedule_cfg_ep(schedule), cfg_ep) == 0) {
         return 0;
     }
-    
-    char * new_ep = NULL;
+
+    net_log_env_t new_env = NULL;
     if (cfg_ep) {
-        new_ep = cpe_str_mem_dup(schedule->m_alloc, cfg_ep);
-        if (new_ep == NULL) {
-            CPE_ERROR(schedule->m_em, "log: schedule: dup endpoint fail!");
-            return -1;
+        new_env = net_log_env_find(schedule, cfg_ep);
+        if (new_env == NULL) {
+            new_env = net_log_env_create(schedule, cfg_ep);
+            if (new_env == NULL) {
+                CPE_ERROR(schedule->m_em, "log: schedule: create env fail!");
+                return -1;
+            }
         }
     }
 
-    if (schedule->m_debug) {
-        CPE_INFO(
-            schedule->m_em, "log: schedule: ep %s ==> %s", 
-            schedule->m_cfg_ep ? schedule->m_cfg_ep : "N/A",
-            new_ep ? new_ep : "N/A");
-    }
-    
-    if (schedule->m_cfg_ep) {
-        mem_free(schedule->m_alloc, schedule->m_cfg_ep);
-    }
-    
-    schedule->m_cfg_ep = new_ep;
-    
-    if (schedule->m_cfg_ep == NULL) {
-        if (net_log_schedule_state(schedule) == net_log_schedule_state_runing) {
-            if (schedule->m_debug) {
-                CPE_INFO(schedule->m_em, "log: schedule: no ep, auto-pause!");
-            }
-            net_log_state_fsm_apply_evt(schedule, net_log_state_fsm_evt_pause);
-        }
-    }
-    
+    net_log_schedule_set_active_env(schedule, new_env);
+
     return 0;
 }
 
@@ -495,17 +479,17 @@ static void net_log_schedule_dump_timer(net_timer_t timer, void * ctx) {
 
     CPE_INFO(schedule->m_em, "log: begin dump, category-count=%d", schedule->m_category_count);
     
-    uint8_t i;
-    for(i = 0; i < schedule->m_category_count; ++i) {
-        net_log_category_t category = schedule->m_categories[i];
-        if (category == NULL) continue;
+    /* uint8_t i; */
+    /* for(i = 0; i < schedule->m_category_count; ++i) { */
+    /*     net_log_category_t category = schedule->m_categories[i]; */
+    /*     if (category == NULL) continue; */
 
-        CPE_INFO(
-            schedule->m_em, "log: category [%d]%s: input-log=%d, input-pckage=%d, input-bytes=%.2fM",
-            category->m_id, category->m_name,
-            category->m_statistics_log_count, category->m_statistics_package_count,
-            ((float)category->m_statistics_input_bps.m_total_bytes / 1024.0f / 1024.0f));
-    }
+    /*     CPE_INFO( */
+    /*         schedule->m_em, "log: category [%d]%s: input-log=%d, input-pckage=%d, input-bytes=%.2fM", */
+    /*         category->m_id, category->m_name, */
+    /*         category->m_statistics_log_count, category->m_statistics_package_count, */
+    /*         ((float)category->m_statistics_input_bps.m_total_bytes / 1024.0f / 1024.0f)); */
+    /* } */
     
     net_timer_active(schedule->m_dump_timer, schedule->m_cfg_dump_span_ms);
 }
@@ -560,5 +544,25 @@ void net_log_schedule_check_stop_complete(net_log_schedule_t schedule) {
     {
         net_log_state_fsm_apply_evt(schedule, net_log_state_fsm_evt_stop_complete);
         return;
+    }
+}
+
+void net_log_schedule_set_active_env(net_log_schedule_t schedule, net_log_env_t new_env) {
+    if (schedule->m_debug) {
+        CPE_INFO(
+            schedule->m_em, "log: schedule: ep %s ==> %s", 
+            cpe_str_opt(net_log_schedule_cfg_ep(schedule), "N/A"),
+            new_env ? new_env->m_url : "N/A");
+    }
+    
+    schedule->m_env_active = new_env;
+    
+    if (schedule->m_env_active == NULL) {
+        if (net_log_schedule_state(schedule) == net_log_schedule_state_runing) {
+            if (schedule->m_debug) {
+                CPE_INFO(schedule->m_em, "log: schedule: no ep, auto-pause!");
+            }
+            net_log_state_fsm_apply_evt(schedule, net_log_state_fsm_evt_pause);
+        }
     }
 }

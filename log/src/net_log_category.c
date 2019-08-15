@@ -1,6 +1,7 @@
 #include <assert.h>
 #include "md5.h"
 #include "cpe/pal/pal_string.h"
+#include "cpe/pal/pal_strings.h"
 #include "cpe/utils/string_utils.h"
 #include "net_timer.h"
 #include "net_log_category_i.h"
@@ -10,6 +11,7 @@
 #include "net_log_builder.h"
 #include "net_log_pipe.h"
 #include "net_log_pipe_cmd.h"
+#include "net_log_env_category_i.h"
 
 static char * net_log_category_get_pack_id(net_log_schedule_t schedule, const char * configName, const char * ip);
 static void net_log_category_commit_timer(net_timer_t timer, void * ctx);
@@ -68,6 +70,13 @@ net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, 
     category->m_cfg_count_per_package = 2048;
     category->m_cfg_timeout_ms = 0;
 
+    category->m_statistics_record_count = 0;
+    category->m_statistics_package_count = 0;
+    category->m_statistics_success_count = 0;
+    
+    bzero(category->m_statistics_discard_count, sizeof(category->m_statistics_discard_count));
+    TAILQ_INIT(&category->m_statistics);
+
     category->m_commit_timer = net_timer_create(schedule->m_net_driver, net_log_category_commit_timer, category);
     if (category->m_commit_timer == NULL) {
         CPE_ERROR(schedule->m_em, "log: category [%d]%s: create timer fail!", id, name);
@@ -82,17 +91,6 @@ net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, 
         mem_free(schedule->m_alloc, category);
         return NULL;
     }
-
-    /*statistics*/
-    category->m_statistics_log_count = 0;
-    category->m_statistics_package_count = 0;
-    cpe_traffic_bps_init(&category->m_statistics_input_bps);
-
-#if NET_LOG_MULTI_THREAD
-    pthread_mutex_init(&category->m_statistics_mutex, NULL);
-#endif
-    category->m_statistics_fail_log_count = 0;
-    category->m_statistics_fail_package_count = 0;
 
     /*commit*/
     schedule->m_categories[id] = category;
@@ -122,10 +120,6 @@ void net_log_category_free(net_log_category_t category) {
     assert(net_log_schedule_state(schedule) == net_log_schedule_state_init);
     assert(schedule->m_categories[category->m_id] == category);
 
-#if NET_LOG_MULTI_THREAD
-    pthread_mutex_destroy(&category->m_statistics_mutex);
-#endif
-
     if (schedule->m_current_category == category) {
         schedule->m_current_category = NULL;
     }
@@ -144,6 +138,10 @@ void net_log_category_free(net_log_category_t category) {
     category->m_commit_timer = NULL;
 
     mem_free(schedule->m_alloc, category->m_pack_prefix);
+
+    while(!TAILQ_EMPTY(&category->m_statistics)) {
+        net_log_env_category_free(TAILQ_FIRST(&category->m_statistics));
+    }
 
     /*config*/
     if (category->m_cfg_topic) {
@@ -410,9 +408,9 @@ void net_log_category_commit(net_log_category_t category) {
     size_t loggroup_size = builder->loggroup_size;
 
     /*input statistics*/
-    category->m_statistics_log_count += builder->grp->n_logs;
+    category->m_statistics_record_count += builder->grp->n_logs;
     category->m_statistics_package_count++;
-    cpe_traffic_bps_add_flow(&category->m_statistics_input_bps, loggroup_size, time(0));
+    //cpe_traffic_bps_add_flow(&category->m_statistics_input_bps, loggroup_size, time(0));
 
     /*提交 */
     if (category->m_flusher) { /*异步flush */
@@ -420,7 +418,7 @@ void net_log_category_commit(net_log_category_t category) {
             CPE_ERROR(
                 schedule->m_em, "log: category [%d]%s: try push loggroup to flusher failed, force drop this log group",
                 category->m_id, category->m_name);
-            net_log_category_add_fail_statistics(category, builder->grp->n_logs);
+            //TODO: Loki net_log_category_add_fail_statistics(category, builder->grp->n_logs);
             net_log_group_destroy(builder);
         }
         else {
@@ -437,11 +435,11 @@ void net_log_category_commit(net_log_category_t category) {
 
         if (send_param == NULL) {
             CPE_ERROR(schedule->m_em, "log: category [%d]%s: commit: build request fail", category->m_id, category->m_name);
-            net_log_category_add_fail_statistics(category, builder->grp->n_logs);
+            //TODO: Loki net_log_category_add_fail_statistics(category, builder->grp->n_logs);
         }
         else {        
             if (net_log_category_commit_request(category, send_param, 1) != 0) {
-                net_log_category_add_fail_statistics(category, builder->grp->n_logs);
+                //TODO: Loki net_log_category_add_fail_statistics(category, builder->grp->n_logs);
                 net_log_group_destroy(builder);
                 net_log_request_param_free(send_param);
             }
@@ -454,15 +452,11 @@ static void net_log_category_commit_timer(net_timer_t timer, void * ctx) {
     net_log_category_commit(category);
 }
 
-void net_log_category_add_fail_statistics(net_log_category_t category, uint32_t log_count) {
+void net_log_category_statistic_success(net_log_category_t category);
+void net_log_category_statistic_discard(net_log_category_t category, net_log_discard_reason_t reason) {
 #if NET_LOG_MULTI_THREAD
-    pthread_mutex_lock(&category->m_statistics_mutex);
-#endif
-
-    category->m_statistics_fail_log_count += log_count;
-    category->m_statistics_fail_package_count++;
-
-#if NET_LOG_MULTI_THREAD
-    pthread_mutex_unlock(&category->m_statistics_mutex);
+    if (pthread_self()
+#else
+    category->m_statistics_discard_count[reason]++;
 #endif
 }
