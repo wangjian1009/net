@@ -5,6 +5,7 @@ START_TEST(select_circle_1) {
     with_dns_manager_setup_records(
         "gllto.glpals.com:\n"
         "  - azrltovzs.azureedge.net\n"
+        "  - gllto.trafficmanager.net\n"
         "  - d1iskralo6mo11.cloudfront.net\n"
         "azrltovzs.azureedge.net:\n"
         "  - azrltovzs.ec.azureedge.net\n"
@@ -59,6 +60,16 @@ START_TEST(select_circle_2) {
     
     ck_assert_str_eq(
         with_dns_manager_entry_select_item("account.live.com", net_dns_query_ipv4),
+        "40.126.12.34");
+}
+END_TEST
+
+START_TEST(select_circle_3) {
+    with_dns_manager_setup_records(
+        "v.lkqd.net");
+    
+    ck_assert_str_eq(
+        with_dns_manager_entry_select_item("v.lkqd.net", net_dns_query_ipv4),
         "40.126.12.34");
 }
 END_TEST
