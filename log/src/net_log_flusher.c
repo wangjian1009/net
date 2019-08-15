@@ -4,6 +4,7 @@
 #include "cpe/pal/pal_strings.h"
 #include "cpe/pal/pal_stdlib.h"
 #include "cpe/utils/string_utils.h"
+#include "net_timer.h"
 #include "net_log_flusher_i.h"
 #include "net_log_category_i.h"
 #include "net_log_request.h"
@@ -12,8 +13,6 @@
 #include "net_log_state_i.h"
 #include "net_log_pipe.h"
 #include "net_log_pipe_cmd.h"
-
-static void * net_log_flusher_thread(void * param);
 
 net_log_flusher_t
 net_log_flusher_create(net_log_schedule_t schedule, const char * name) {
@@ -32,11 +31,12 @@ net_log_flusher_create(net_log_schedule_t schedule, const char * name) {
         return NULL;
     }
 
+    flusher->m_is_runing = 0;
     _MS(flusher->m_thread = NULL);
-    _MS(flusher->m_is_runing = 0);
     _MS(pthread_mutex_init(&flusher->m_mutex, NULL));
     _MS(pthread_cond_init(&flusher->m_cond, NULL));
-
+    _SS(flusher->m_processor = NULL);
+    
     TAILQ_INIT(&flusher->m_categories);
     TAILQ_INSERT_TAIL(&schedule->m_flushers, flusher, m_next);
     
@@ -57,6 +57,7 @@ void net_log_flusher_free(net_log_flusher_t flusher) {
     
     _MS(pthread_cond_destroy(&flusher->m_cond));
     _MS(pthread_mutex_destroy(&flusher->m_mutex));
+    _SS(if (flusher->m_processor) { net_timer_free(flusher->m_processor); flusher->m_processor = NULL; });
     
     TAILQ_REMOVE(&schedule->m_flushers, flusher, m_next);
     mem_free(schedule->m_alloc, flusher);
@@ -83,6 +84,8 @@ int net_log_flusher_queue(net_log_flusher_t flusher, net_log_builder_t builder) 
         return -1;
     }
     else {
+        _SS(assert(flusher->m_processor));
+        _SS(net_timer_active(flusher->m_processor, 0));
         _MS(pthread_cond_signal(&flusher->m_cond));
     }
     
@@ -143,6 +146,35 @@ static void * net_log_flusher_thread(void * param) {
     
     return NULL;
 }
+#else
+
+void net_log_flusher_start_process(net_timer_t timer, void * ctx) {
+    net_log_flusher_t flusher = ctx;
+    net_log_schedule_t schedule = flusher->m_schedule;
+    
+    while(flusher->m_is_runing) {
+        net_log_builder_t builder = net_log_queue_pop(flusher->m_queue);
+        if (builder == NULL) {
+            return;
+        }
+
+        net_log_category_t category = builder->m_category;
+
+        net_log_request_param_t send_param = net_log_category_build_request(category, builder);
+        net_log_group_destroy(builder);
+        
+        if (send_param == NULL) {
+            CPE_ERROR(schedule->m_em, "log: flusher %s: build param fail", flusher->m_name);
+        }
+        else {
+            if (net_log_category_commit_request(category, send_param, 0) != 0) {
+                net_log_request_param_free(send_param);
+            }
+        }
+    }
+    
+}
+
 #endif
 
 int net_log_flusher_start(net_log_flusher_t flusher) {
@@ -172,6 +204,20 @@ int net_log_flusher_start(net_log_flusher_t flusher) {
     }
     
     schedule->m_runing_thread_count++;
+#else
+    if (flusher->m_processor) {
+        CPE_ERROR(schedule->m_em, "log: flusher %s: notify stop: thread already stoped", flusher->m_name);
+        return -1;
+    }
+
+    flusher->m_processor = net_timer_auto_create(schedule->m_net_schedule, net_log_flusher_start_process, flusher);
+    if (flusher->m_processor == NULL) {
+        CPE_ERROR(schedule->m_em, "log: flusher %s: start: create timer fail", flusher->m_name);
+        return -1;
+    }
+    
+    flusher->m_is_runing = 1;
+
 #endif
     return 0;
 }
@@ -222,5 +268,20 @@ void net_log_flusher_wait_stop(net_log_flusher_t flusher) {
     }
 
     net_log_schedule_check_stop_complete(schedule);
+#else    
+    if (flusher->m_processor == NULL) {
+        CPE_ERROR(schedule->m_em, "log: flusher %s: wait stop: processor already stoped", flusher->m_name);
+        return;
+    }
+
+    net_timer_free(flusher->m_processor);
+    flusher->m_processor = NULL;
+    
+    if (schedule->m_debug) {
+        CPE_INFO(
+            schedule->m_em, "log: flusher %s: wait stop: wait success",
+            flusher->m_name, schedule->m_runing_thread_count);
+    }
+
 #endif
 }

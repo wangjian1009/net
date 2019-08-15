@@ -4,6 +4,7 @@
 #include "cpe/pal/pal_string.h"
 #include "cpe/utils/string_utils.h"
 #include "net_schedule.h"
+#include "net_timer.h"
 #include "net_driver.h"
 #include "net_ev_driver.h"
 #include "net_log_sender_i.h"
@@ -34,6 +35,7 @@ net_log_sender_create(net_log_schedule_t schedule, const char * name, uint16_t a
         return NULL;
     }
     _MS(sender->m_thread = NULL);
+    _SS(sender->m_processor = NULL);
 
     TAILQ_INIT(&sender->m_categories);
     TAILQ_INSERT_TAIL(&schedule->m_senders, sender, m_next);

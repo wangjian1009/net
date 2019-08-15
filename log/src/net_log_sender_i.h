@@ -13,6 +13,7 @@ struct net_log_sender {
     uint16_t m_cfg_active_request_count;
     net_log_pipe_t m_pipe;
     _MS(pthread_t * m_thread);
+    _SS(net_timer_t m_processor);
 };
 
 int net_log_sender_start(net_log_sender_t sender);

@@ -13,9 +13,11 @@
 #include "net_log_schedule.h"
 
 #if NET_LOG_MULTI_THREAD
-#define _MS(__sentence) (__sentence)
+#define _MS(__sentence) __sentence
+#define _SS(__sentence)
 #else
 #define _MS(__sentence)
+#define _SS(__sentence) __sentence
 #endif
 
 NET_BEGIN_DECL
