@@ -149,9 +149,8 @@ static int net_ping_processor_tcp_connect_connect(net_ping_mgr_t mgr, net_ping_t
     case net_address_local:
 #if _MSC_VER
         CPE_ERROR(
-            driver->m_em, "sock: %s: fd=%d: connect win32 not support AF_LOCAL",
-            net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint),
-            endpoint->m_fd);
+            mgr->m_em, "ping %s: start: connect win32 not support AF_LOCAL",
+            net_ping_task_dump(net_ping_mgr_tmp_buffer(mgr), task));
         return -1;
 #else        
         domain = AF_LOCAL;
