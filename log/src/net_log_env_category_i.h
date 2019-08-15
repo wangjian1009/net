@@ -11,10 +11,6 @@ struct net_log_env_category {
     TAILQ_ENTRY(net_log_env_category) m_next_for_env;
     net_log_category_t m_log_category;
     TAILQ_ENTRY(net_log_env_category) m_next_for_log_cagegory;
-    uint32_t m_load_package_count;
-    uint32_t m_load_record_count;
-    uint32_t m_gen_package_count;
-    uint32_t m_gen_record_count;
     uint32_t m_send_count;
     uint32_t m_send_success_count;
     uint32_t m_send_fail_count;

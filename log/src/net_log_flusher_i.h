@@ -10,13 +10,11 @@ struct net_log_flusher {
     TAILQ_ENTRY(net_log_flusher) m_next;
     net_log_category_list_t m_categories;
     char m_name[64];
-    uint8_t m_is_runing;
     net_log_queue_t m_queue;
-#if NET_LOG_MULTI_THREAD
-    pthread_t * m_thread;
-    pthread_mutex_t m_mutex;
-    pthread_cond_t m_cond;
-#endif
+    _MS(uint8_t m_is_runing);
+    _MS(pthread_t * m_thread);
+    _MS(pthread_mutex_t m_mutex);
+    _MS(pthread_cond_t m_cond);
 };
 
 int net_log_flusher_queue(net_log_flusher_t flusher, net_log_builder_t builder);

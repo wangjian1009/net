@@ -12,6 +12,12 @@
 #include "net_trans_system.h"
 #include "net_log_schedule.h"
 
+#if NET_LOG_MULTI_THREAD
+#define _MS(__sentence) (__sentence)
+#else
+#define _MS(__sentence)
+#endif
+
 NET_BEGIN_DECL
 
 typedef TAILQ_HEAD(net_log_flusher_list, net_log_flusher) net_log_flusher_list_t;

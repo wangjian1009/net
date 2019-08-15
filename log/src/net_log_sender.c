@@ -14,10 +14,7 @@
 #include "net_log_queue.h"
 #include "net_log_state_i.h"
 
-#if NET_LOG_MULTI_THREAD
-
-static void * net_log_sender_thread(void * param);
-static void net_log_send_stop(void* ctx);
+_MS(static void * net_log_sender_thread(void * param));
 
 net_log_sender_t
 net_log_sender_create(net_log_schedule_t schedule, const char * name, uint16_t active_request_count) {
@@ -36,7 +33,7 @@ net_log_sender_create(net_log_schedule_t schedule, const char * name, uint16_t a
         mem_free(schedule->m_alloc, sender);
         return NULL;
     }
-    sender->m_thread = NULL;
+    _MS(sender->m_thread = NULL);
 
     TAILQ_INIT(&sender->m_categories);
     TAILQ_INSERT_TAIL(&schedule->m_senders, sender, m_next);
@@ -48,7 +45,7 @@ void net_log_sender_free(net_log_sender_t sender) {
     net_log_schedule_t schedule = sender->m_schedule;
 
     assert(net_log_schedule_state(schedule) == net_log_schedule_state_init);
-    assert(sender->m_thread == NULL);
+    _MS(assert(sender->m_thread == NULL));
 
     while(!TAILQ_EMPTY(&sender->m_categories)) {
         net_log_category_t category = TAILQ_FIRST(&sender->m_categories);
@@ -77,6 +74,7 @@ net_log_sender_t net_log_sender_find(net_log_schedule_t schedule, const char * n
 int net_log_sender_start(net_log_sender_t sender) {
     net_log_schedule_t schedule = sender->m_schedule;
 
+#if NET_LOG_MULTI_THREAD    
     if (sender->m_thread) {
         CPE_ERROR(schedule->m_em, "log: %s: sender: start: thread already started", sender->m_name);
         return -1;
@@ -98,12 +96,15 @@ int net_log_sender_start(net_log_sender_t sender) {
     }
 
     schedule->m_runing_thread_count++;
+#endif
+
     return 0;
 }
 
 void net_log_sender_notify_stop(net_log_sender_t sender) {
     net_log_schedule_t schedule = sender->m_schedule;
 
+#if NET_LOG_MULTI_THREAD    
     if (sender->m_thread == NULL) {
         CPE_ERROR(schedule->m_em, "log: %s: sender: notify stop: thread already stoped", sender->m_name);
         return;
@@ -120,11 +121,13 @@ void net_log_sender_notify_stop(net_log_sender_t sender) {
     if (schedule->m_debug) {
         CPE_INFO(schedule->m_em, "log: %s: sender: notify stop: notify success", sender->m_name);
     }
+#endif
 }
 
 void net_log_sender_wait_stop(net_log_sender_t sender) {
     net_log_schedule_t schedule = sender->m_schedule;
 
+#if NET_LOG_MULTI_THREAD    
     if (sender->m_thread == NULL) {
         CPE_ERROR(schedule->m_em, "log: %s: sender: wait stop: thread already stoped", sender->m_name);
         return;
@@ -147,6 +150,13 @@ void net_log_sender_wait_stop(net_log_sender_t sender) {
     }
 
     net_log_schedule_check_stop_complete(schedule);
+#endif    
+}
+
+#if NET_LOG_MULTI_THREAD    
+static void net_log_send_stop(void* ctx) {
+    struct ev_loop * ev_loop = ctx;
+    ev_break(ev_loop, EVBREAK_ALL);
 }
 
 static void * net_log_sender_thread(void * param) {
@@ -261,31 +271,5 @@ THREAD_COMPLETED:
     
     return NULL;
 }
-
-static void net_log_send_stop(void* ctx) {
-    struct ev_loop * ev_loop = ctx;
-    ev_break(ev_loop, EVBREAK_ALL);
-}
-
-#else
-
-net_log_sender_t
-net_log_sender_create(net_log_schedule_t schedule, const char * name, uint16_t active_request_count) {
-    CPE_ERROR(schedule->m_em, "log: %s: sender: not support multi thread, can`t create sender", name);
-    return NULL;
-}
-
-void net_log_sender_free(net_log_sender_t sender) {
-    assert(0);
-}
-
-int net_log_sender_start(net_log_sender_t sender) {
-    assert(0);
-    return -1;
-}
-
-void net_log_sender_wait_stop(net_log_sender_t sender) {
-    assert(0);
-}
-
 #endif
+

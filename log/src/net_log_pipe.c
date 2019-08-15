@@ -11,8 +11,6 @@
 #include "net_log_category_i.h"
 #include "net_log_request.h"
 
-#if NET_LOG_MULTI_THREAD
-
 static void net_log_pipe_action(void * ctx, int fd, uint8_t do_read, uint8_t do_write);
 
 net_log_pipe_t net_log_pipe_create(net_log_schedule_t schedule, const char * name) {
@@ -20,7 +18,9 @@ net_log_pipe_t net_log_pipe_create(net_log_schedule_t schedule, const char * nam
 
     request_pipe->m_schedule = schedule;
     request_pipe->m_name = name;
-    pthread_mutex_init(&request_pipe->m_mutex, NULL);
+
+    _MS(pthread_mutex_init(&request_pipe->m_mutex, NULL));
+    
     request_pipe->m_send_param_queue = net_log_queue_create(32);
     request_pipe->m_bind_watcher = NULL;
     request_pipe->m_bind_request_mgr = NULL;
@@ -60,7 +60,7 @@ void net_log_pipe_free(net_log_pipe_t pipe) {
 
     net_log_queue_free(pipe->m_send_param_queue);
     
-    pthread_mutex_destroy(&pipe->m_mutex);
+    _MS(pthread_mutex_destroy(&pipe->m_mutex));
     
     mem_free(schedule->m_alloc, pipe);
 }
@@ -102,7 +102,7 @@ int net_log_pipe_queue(net_log_pipe_t pipe, net_log_request_param_t send_param) 
     net_log_schedule_t schedule = pipe->m_schedule;
     net_log_category_t category = send_param->category;
 
-    pthread_mutex_lock(&pipe->m_mutex);
+    _MS(pthread_mutex_lock(&pipe->m_mutex));
 
     struct net_log_pipe_cmd cmd;
     cmd.m_size = sizeof(cmd);
@@ -112,7 +112,7 @@ int net_log_pipe_queue(net_log_pipe_t pipe, net_log_request_param_t send_param) 
         CPE_ERROR(
             schedule->m_em, "log: category [%d]%s: pipe %s: send notify cmd fail",
             category->m_id, category->m_name, pipe->m_name);
-        pthread_mutex_unlock(&pipe->m_mutex);
+        _MS(pthread_mutex_unlock(&pipe->m_mutex));
         return -1;
     }
 
@@ -120,36 +120,35 @@ int net_log_pipe_queue(net_log_pipe_t pipe, net_log_request_param_t send_param) 
         CPE_ERROR(
             schedule->m_em, "log: category [%d]%s: pipe %s: push param fail",
             category->m_id, category->m_name, pipe->m_name);
-        pthread_mutex_unlock(&pipe->m_mutex);
+        _MS(pthread_mutex_unlock(&pipe->m_mutex));
         return -1;
     }
 
-    pthread_mutex_unlock(&pipe->m_mutex);
-
+    _MS(pthread_mutex_unlock(&pipe->m_mutex));
     return 0;
 }
 
 int net_log_pipe_send_cmd(net_log_pipe_t pipe, net_log_pipe_cmd_t cmd) {
-    pthread_mutex_lock(&pipe->m_mutex);
+    _MS(pthread_mutex_lock(&pipe->m_mutex));
     
     if (write(pipe->m_pipe_fd[1], cmd, cmd->m_size) < 0) {
         CPE_ERROR(
             pipe->m_schedule->m_em, "log: pipe %s: write pipe fail, error=%d (%s)!",
             pipe->m_name, errno, strerror(errno));
-        pthread_mutex_unlock(&pipe->m_mutex);
+        _MS(pthread_mutex_unlock(&pipe->m_mutex));
         return -1;
     }
 
-    pthread_mutex_unlock(&pipe->m_mutex);
+    _MS(pthread_mutex_unlock(&pipe->m_mutex));
     return 0;
 }
 
 static net_log_request_param_t net_log_pipe_pop_send_param(net_log_pipe_t pipe) {
     net_log_request_param_t send_param;
 
-    pthread_mutex_lock(&pipe->m_mutex);
+    _MS(pthread_mutex_lock(&pipe->m_mutex));
     send_param = net_log_queue_pop(pipe->m_send_param_queue);
-    pthread_mutex_unlock(&pipe->m_mutex);
+    _MS(pthread_mutex_unlock(&pipe->m_mutex));
 
     return send_param;
 }
@@ -198,7 +197,7 @@ static void net_log_pipe_action(void * ctx, int fd, uint8_t do_read, uint8_t do_
                     }
                     else {
                         CPE_ERROR(schedule->m_em, "log: pipe %s: cmd send: no bind request mgr", pipe->m_name);
-                        net_log_category_add_fail_statistics(send_param->category, send_param->log_count);
+                        //TODO: loki net_log_category_add_fail_statistics(send_param->category, send_param->log_count);
                         net_log_request_param_free(send_param);
                     }
                     break;
@@ -257,40 +256,3 @@ static void net_log_pipe_action(void * ctx, int fd, uint8_t do_read, uint8_t do_
         }
     }
 }
-
-#else
-
-net_log_pipe_t net_log_pipe_create(net_log_schedule_t schedule, const char * name) {
-    CPE_ERROR(schedule->m_em, "log: pipe not support multi thread, can`t create pipe!");
-    return NULL;
-}
-
-void net_log_pipe_free(net_log_pipe_t pipe) {
-    assert(0);
-}
-
-void net_log_pipe_stop_process(net_log_pipe_t pipe) {
-    assert(0);
-}
-
-uint8_t net_log_pipe_is_processing(net_log_pipe_t pipe) {
-    assert(0);
-    return 0;
-}
-
-int net_log_pipe_begin_process(net_log_pipe_t pipe, net_driver_t net_driver) {
-    assert(0);
-    return -1;
-}
-
-int net_log_pipe_queue(net_log_pipe_t pipe, net_log_request_param_t send_param) {
-    assert(0);
-    return -1;
-}
-
-int net_log_pipe_send_cmd(net_log_pipe_t pipe, net_log_pipe_cmd_t cmd) {
-    assert(0);
-    return -1;
-}
-
-#endif

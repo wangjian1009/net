@@ -13,8 +13,6 @@
 #include "net_log_pipe.h"
 #include "net_log_pipe_cmd.h"
 
-#if NET_LOG_MULTI_THREAD
-
 static void * net_log_flusher_thread(void * param);
 
 net_log_flusher_t
@@ -34,10 +32,10 @@ net_log_flusher_create(net_log_schedule_t schedule, const char * name) {
         return NULL;
     }
 
-    flusher->m_thread = NULL;
-    flusher->m_is_runing = 0;
-    pthread_mutex_init(&flusher->m_mutex, NULL);
-    pthread_cond_init(&flusher->m_cond, NULL);
+    _MS(flusher->m_thread = NULL);
+    _MS(flusher->m_is_runing = 0);
+    _MS(pthread_mutex_init(&flusher->m_mutex, NULL));
+    _MS(pthread_cond_init(&flusher->m_cond, NULL));
 
     TAILQ_INIT(&flusher->m_categories);
     TAILQ_INSERT_TAIL(&schedule->m_flushers, flusher, m_next);
@@ -49,7 +47,7 @@ void net_log_flusher_free(net_log_flusher_t flusher) {
     net_log_schedule_t schedule = flusher->m_schedule;
 
     assert(net_log_schedule_state(schedule) == net_log_schedule_state_init);
-    assert(flusher->m_thread == NULL);
+    _MS(assert(flusher->m_thread == NULL));
 
     while(!TAILQ_EMPTY(&flusher->m_categories)) {
         net_log_category_t category = TAILQ_FIRST(&flusher->m_categories);
@@ -57,8 +55,8 @@ void net_log_flusher_free(net_log_flusher_t flusher) {
         TAILQ_REMOVE(&flusher->m_categories, category, m_next_for_flusher);
     }
     
-    pthread_cond_destroy(&flusher->m_cond);
-    pthread_mutex_destroy(&flusher->m_mutex);
+    _MS(pthread_cond_destroy(&flusher->m_cond));
+    _MS(pthread_mutex_destroy(&flusher->m_mutex));
     
     TAILQ_REMOVE(&schedule->m_flushers, flusher, m_next);
     mem_free(schedule->m_alloc, flusher);
@@ -77,22 +75,23 @@ net_log_flusher_t net_log_flusher_find(net_log_schedule_t schedule, const char *
 int net_log_flusher_queue(net_log_flusher_t flusher, net_log_builder_t builder) {
     net_log_schedule_t schedule = flusher->m_schedule;
 
-    pthread_mutex_lock(&flusher->m_mutex);
+    _MS(pthread_mutex_lock(&flusher->m_mutex));
 
     if (net_log_queue_push(flusher->m_queue, builder) != 0) {
         CPE_ERROR(schedule->m_em, "log: flusher %s: push log group fail", flusher->m_name);
-        pthread_mutex_unlock(&flusher->m_mutex);
+        _MS(pthread_mutex_unlock(&flusher->m_mutex));
         return -1;
     }
     else {
-        pthread_cond_signal(&flusher->m_cond);
+        _MS(pthread_cond_signal(&flusher->m_cond));
     }
     
-    pthread_mutex_unlock(&flusher->m_mutex);
+    _MS(pthread_mutex_unlock(&flusher->m_mutex));
 
     return 0;
 }
 
+#if NET_LOG_MULTI_THREAD
 static void * net_log_flusher_thread(void * param) {
     net_log_flusher_t flusher = param;
     net_log_schedule_t schedule = flusher->m_schedule;
@@ -144,10 +143,12 @@ static void * net_log_flusher_thread(void * param) {
     
     return NULL;
 }
+#endif
 
 int net_log_flusher_start(net_log_flusher_t flusher) {
     net_log_schedule_t schedule = flusher->m_schedule;
 
+#if NET_LOG_MULTI_THREAD
     if (flusher->m_thread) {
         CPE_ERROR(schedule->m_em, "log: flusher %s: start: thread already started", flusher->m_name);
         return -1;
@@ -171,12 +172,14 @@ int net_log_flusher_start(net_log_flusher_t flusher) {
     }
     
     schedule->m_runing_thread_count++;
+#endif
     return 0;
 }
 
 void net_log_flusher_notify_stop(net_log_flusher_t flusher) {
     net_log_schedule_t schedule = flusher->m_schedule;
 
+#if NET_LOG_MULTI_THREAD
     if (flusher->m_thread == NULL) {
         CPE_ERROR(schedule->m_em, "log: flusher %s: notify stop: thread already stoped", flusher->m_name);
         return;
@@ -190,11 +193,13 @@ void net_log_flusher_notify_stop(net_log_flusher_t flusher) {
     if (schedule->m_debug) {
         CPE_INFO(schedule->m_em, "log: flusher %s: notify stop: notify success", flusher->m_name);
     }
+#endif
 }
 
 void net_log_flusher_wait_stop(net_log_flusher_t flusher) {
     net_log_schedule_t schedule = flusher->m_schedule;
 
+#if NET_LOG_MULTI_THREAD
     if (flusher->m_thread == NULL) {
         CPE_ERROR(schedule->m_em, "log: flusher %s: wait stop: thread already stoped", flusher->m_name);
         return;
@@ -217,32 +222,5 @@ void net_log_flusher_wait_stop(net_log_flusher_t flusher) {
     }
 
     net_log_schedule_check_stop_complete(schedule);
-}
-
-#else
-
-net_log_flusher_t
-net_log_flusher_create(net_log_schedule_t schedule, const char * name) {
-    CPE_ERROR(schedule->m_em, "log: flusher %s: not support multi thread, can`t create flusher!", name);
-    return NULL;
-}
-
-void net_log_flusher_free(net_log_flusher_t flusher) {
-    assert(0);
-}
-
-int net_log_flusher_start(net_log_flusher_t flusher) {
-    assert(0);
-    return -1;
-}
-
-void net_log_flusher_wait_stop(net_log_flusher_t flusher) {
-    assert(0);
-}
-
-int net_log_flusher_queue(net_log_flusher_t flusher, net_log_builder_t builder) {
-    assert(0);
-    return -1;
-}
-
 #endif
+}
