@@ -91,6 +91,7 @@ struct net_log_schedule {
     /*main thread request*/
     net_log_pipe_t m_main_thread_pipe;
     net_log_request_manage_t m_main_thread_request_mgr;
+    _MS(pthread_t m_main_thread);
     
     /*builder helper*/
     net_log_category_t m_current_category;

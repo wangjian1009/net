@@ -18,13 +18,17 @@ set(net_log_includes
   ${net_log_base}/include
   )
 
-if (MSVC)
+if (OS_NAME STREQUAL "android")
+  set(net_log_compile_definitions ${net_log_compile_options} NET_LOG_MULTI_THREAD)
+endif()
 
-set(net_log_includes
+if (MSVC)
+  set(net_log_includes
     ${net_log_includes}
     ${CMAKE_CURRENT_LIST_DIR}/../../../cpe/depends/pthread/vc/include
     )
-    
 endif ()
 
 set_property(TARGET net_log PROPERTY INCLUDE_DIRECTORIES ${net_log_includes})
+set_property(TARGET net_log PROPERTY COMPILE_OPTIONS ${net_log_compile_options})
+set_property(TARGET net_log PROPERTY COMPILE_DEFINITIONS ${net_log_compile_definitions})

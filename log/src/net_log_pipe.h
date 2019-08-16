@@ -27,6 +27,8 @@ uint8_t net_log_pipe_is_processing(net_log_pipe_t pipe);
 int net_log_pipe_begin_process(net_log_pipe_t pipe, net_driver_t net_driver);
 void net_log_pipe_stop_process(net_log_pipe_t pipe);
 
+void net_log_pipe_dispatch(net_log_pipe_t pipe, net_log_pipe_cmd_t cmd);
+
 NET_END_DECL
 
 #endif

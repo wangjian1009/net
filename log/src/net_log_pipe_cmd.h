@@ -11,6 +11,7 @@ typedef enum net_log_pipe_cmd_type {
     net_log_pipe_cmd_stop_begin,
     net_log_pipe_cmd_stop_complete,
     net_log_pipe_cmd_stoped,
+    net_log_pipe_cmd_staistic_,
 } net_log_pipe_cmd_type_t;
 
 struct net_log_pipe_cmd {

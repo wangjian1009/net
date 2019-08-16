@@ -452,10 +452,19 @@ static void net_log_category_commit_timer(net_timer_t timer, void * ctx) {
     net_log_category_commit(category);
 }
 
-void net_log_category_statistic_success(net_log_category_t category);
+void net_log_category_statistic_success(net_log_category_t category) {
+}
+
 void net_log_category_statistic_discard(net_log_category_t category, net_log_discard_reason_t reason) {
 #if NET_LOG_MULTI_THREAD
-    if (pthread_self()
+    net_log_schedule_t schedule = category->m_schedule;
+    
+    if (schedule->m_main_thread == pthread_self()) {
+        category->m_statistics_discard_count[reason]++;
+    }
+    else {
+        
+    }
 #else
     category->m_statistics_discard_count[reason]++;
 #endif

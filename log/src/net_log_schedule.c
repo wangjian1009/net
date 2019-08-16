@@ -56,6 +56,7 @@ net_log_schedule_create(
     schedule->m_category_count = 0;
     schedule->m_runing_thread_count = 0;
     schedule->m_env_active = NULL;
+    _MS(schedule->m_main_thread = pthread_self());
     
     schedule->m_cfg_project = cpe_str_mem_dup(alloc, cfg_project);
     if (schedule->m_cfg_project == NULL) {
