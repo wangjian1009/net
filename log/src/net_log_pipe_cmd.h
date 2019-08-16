@@ -11,7 +11,8 @@ typedef enum net_log_pipe_cmd_type {
     net_log_pipe_cmd_stop_begin,
     net_log_pipe_cmd_stop_complete,
     net_log_pipe_cmd_stoped,
-    net_log_pipe_cmd_staistic_,
+    net_log_pipe_cmd_staistic_package_discard,
+    net_log_pipe_cmd_staistic_package_success,
 } net_log_pipe_cmd_type_t;
 
 struct net_log_pipe_cmd {
@@ -28,6 +29,17 @@ struct net_log_pipe_cmd_staistic_load {
     struct net_log_pipe_cmd head;
     uint32_t m_load_package_count;
     uint32_t m_load_record_count;
+};
+
+struct net_log_pipe_cmd_staistic_package_success {
+    struct net_log_pipe_cmd head;
+    net_log_category_t m_category;
+};
+
+struct net_log_pipe_cmd_staistic_package_discard {
+    struct net_log_pipe_cmd head;
+    net_log_category_t m_category;
+    net_log_discard_reason_t m_reason;
 };
 
 NET_END_DECL

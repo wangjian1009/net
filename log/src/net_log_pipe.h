@@ -22,6 +22,7 @@ void net_log_pipe_free(net_log_pipe_t pipe);
 
 int net_log_pipe_send_cmd(net_log_pipe_t pipe, net_log_pipe_cmd_t cmd);
 int net_log_pipe_queue(net_log_pipe_t pipe, net_log_request_param_t send_param);
+net_log_request_param_t net_log_pipe_pop(net_log_pipe_t pipe);
 
 uint8_t net_log_pipe_is_processing(net_log_pipe_t pipe);
 int net_log_pipe_begin_process(net_log_pipe_t pipe, net_driver_t net_driver);

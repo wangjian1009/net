@@ -30,6 +30,7 @@ typedef struct net_log_env_category_it * net_log_env_category_it_t;
 
 typedef enum net_log_discard_reason {
     net_log_discard_reason_queue_to_pack_fail,
+    net_log_discard_reason_queue_to_send_fail,
 } net_log_discard_reason_t;
 
 #define net_log_discard_reason_count (net_log_discard_reason_queue_to_pack_fail + 1)

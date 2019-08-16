@@ -1,9 +1,11 @@
+#include <assert.h>
 #include "cpe/pal/pal_string.h"
 #include "net_log_env_category_i.h"
 
 net_log_env_category_t
 net_log_env_category_create(net_log_env_t env, net_log_category_t log_category) {
     net_log_schedule_t schedule = env->m_schedule;
+    ASSERT_THREAD(schedule->m_main_thread);
     
     net_log_env_category_t category = mem_alloc(schedule->m_alloc, sizeof(struct net_log_env_category));
     if (category == NULL) {

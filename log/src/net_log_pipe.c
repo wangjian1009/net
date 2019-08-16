@@ -7,8 +7,8 @@
 #include "net_log_pipe.h"
 #include "net_log_pipe_cmd.h"
 #include "net_log_queue.h"
-#include "net_log_category_i.h"
 #include "net_log_request.h"
+#include "net_log_category_i.h"
 
 static void net_log_pipe_action(void * ctx, int fd, uint8_t do_read, uint8_t do_write);
 
@@ -125,6 +125,16 @@ int net_log_pipe_queue(net_log_pipe_t pipe, net_log_request_param_t send_param) 
 
     _MS(pthread_mutex_unlock(&pipe->m_mutex));
     return 0;
+}
+
+net_log_request_param_t net_log_pipe_pop(net_log_pipe_t pipe) {
+    net_log_request_param_t send_param;
+
+    _MS(pthread_mutex_lock(&pipe->m_mutex));
+    send_param = net_log_queue_pop(pipe->m_send_param_queue);
+    _MS(pthread_mutex_unlock(&pipe->m_mutex));
+
+    return send_param;
 }
 
 int net_log_pipe_send_cmd(net_log_pipe_t pipe, net_log_pipe_cmd_t cmd) {

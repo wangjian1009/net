@@ -20,6 +20,8 @@
 #define _SS(__sentence) __sentence
 #endif
 
+#define ASSERT_THREAD(__thread) _MS(assert((__thread) == pthread_self()))
+
 NET_BEGIN_DECL
 
 typedef TAILQ_HEAD(net_log_flusher_list, net_log_flusher) net_log_flusher_list_t;

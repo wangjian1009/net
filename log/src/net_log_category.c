@@ -25,6 +25,8 @@ net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, 
         return NULL;
     }
 
+    ASSERT_THREAD(schedule->m_main_thread);
+    
     if (id >= schedule->m_category_count) {
         uint8_t new_count = id < 16 ? 16 : id;
         net_log_category_t * new_categories = mem_calloc(schedule->m_alloc, sizeof(net_log_category_t) * new_count);
@@ -453,6 +455,23 @@ static void net_log_category_commit_timer(net_timer_t timer, void * ctx) {
 }
 
 void net_log_category_statistic_success(net_log_category_t category) {
+#if NET_LOG_MULTI_THREAD
+    net_log_schedule_t schedule = category->m_schedule;
+    
+    if (schedule->m_main_thread == pthread_self()) {
+        category->m_statistics_success_count++;
+    }
+    else {
+        struct net_log_pipe_cmd_staistic_package_success package_success_cmd;
+        package_success_cmd.head.m_size = sizeof(package_success_cmd);
+        package_success_cmd.head.m_cmd = net_log_pipe_cmd_staistic_package_success;
+        package_success_cmd.m_category = category;
+        assert(schedule->m_main_thread_pipe);
+        net_log_pipe_send_cmd(schedule->m_main_thread_pipe, (net_log_pipe_cmd_t)&package_success_cmd);
+    }
+#else
+    category->m_statistics_success_count++;
+#endif
 }
 
 void net_log_category_statistic_discard(net_log_category_t category, net_log_discard_reason_t reason) {
@@ -463,7 +482,13 @@ void net_log_category_statistic_discard(net_log_category_t category, net_log_dis
         category->m_statistics_discard_count[reason]++;
     }
     else {
-        
+        struct net_log_pipe_cmd_staistic_package_discard package_discard_cmd;
+        package_discard_cmd.head.m_size = sizeof(package_discard_cmd);
+        package_discard_cmd.head.m_cmd = net_log_pipe_cmd_staistic_package_discard;
+        package_discard_cmd.m_category = category;
+        package_discard_cmd.m_reason = reason;
+        assert(schedule->m_main_thread_pipe);
+        net_log_pipe_send_cmd(schedule->m_main_thread_pipe, (net_log_pipe_cmd_t)&package_discard_cmd);
     }
 #else
     category->m_statistics_discard_count[reason]++;
