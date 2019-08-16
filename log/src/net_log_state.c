@@ -1,9 +1,7 @@
 #include "cpe/fsm/fsm_def.h"
 #include "net_log_state_i.h"
-#include "net_log_flusher_i.h"
-#include "net_log_sender_i.h"
-#include "net_log_pipe_cmd.h"
-#include "net_log_pipe.h"
+#include "net_log_thread_i.h"
+#include "net_log_thread_cmd.h"
 #include "net_log_request_manage.h"
 #include "net_log_category_i.h"
 #include "net_log_state_monitor_i.h"
@@ -63,20 +61,10 @@ static void net_log_state_fsm_dump_event(write_stream_t s, fsm_def_machine_t m, 
 }
 
 int net_log_schedule_start_threads(net_log_schedule_t schedule) {
-    net_log_flusher_t flusher;
-    net_log_sender_t sender;
+    net_log_thread_t thread;
 
-    TAILQ_FOREACH(flusher, &schedule->m_flushers, m_next) {
-        if (net_log_flusher_start(flusher) != 0) {
-            if (net_log_schedule_notify_stop_threads(schedule)) {
-                net_log_schedule_wait_stop_threads(schedule);
-            }
-            return -1;
-        }
-    }
-
-    TAILQ_FOREACH(sender, &schedule->m_senders, m_next) {
-        if (net_log_sender_start(sender) != 0) {
+    TAILQ_FOREACH(thread, &schedule->m_threads, m_next) {
+        if (net_log_thread_start(thread) != 0) {
             if (net_log_schedule_notify_stop_threads(schedule)) {
                 net_log_schedule_wait_stop_threads(schedule);
             }
@@ -88,139 +76,113 @@ int net_log_schedule_start_threads(net_log_schedule_t schedule) {
 }
 
 uint8_t net_log_schedule_notify_stop_threads(net_log_schedule_t schedule) {
-    net_log_flusher_t flusher;
-    net_log_sender_t sender;
+    net_log_thread_t thread;
 
     uint8_t have_runing_thread = 0;
 
-    /*首先通知所有线程停止 */
-#if NET_LOG_MULTI_THREAD
-    TAILQ_FOREACH(flusher, &schedule->m_flushers, m_next) {
-        if (flusher->m_thread) {
-            net_log_flusher_notify_stop(flusher);
+    TAILQ_FOREACH(thread, &schedule->m_threads, m_next) {
+        if (thread->m_is_runing) {
+            net_log_thread_notify_stop(thread);
             have_runing_thread = 1;
         }
     }
-
-    TAILQ_FOREACH(sender, &schedule->m_senders, m_next) {
-        if (sender->m_thread) {
-            net_log_sender_notify_stop(sender);
-            have_runing_thread = 1;
-        }
-    }
-#endif
 
     return have_runing_thread;
 }
 
 void net_log_schedule_wait_stop_threads(net_log_schedule_t schedule) {
-#if NET_LOG_MULTI_THREAD
-    net_log_flusher_t flusher;
-    net_log_sender_t sender;
+    net_log_thread_t thread;
 
-    TAILQ_FOREACH(flusher, &schedule->m_flushers, m_next) {
-        if (flusher->m_thread) net_log_flusher_wait_stop(flusher);
+    TAILQ_FOREACH(thread, &schedule->m_threads, m_next) {
+        if (thread->m_is_runing) net_log_thread_wait_stop(thread);
     }
-
-    TAILQ_FOREACH(sender, &schedule->m_senders, m_next) {
-        if (sender->m_thread) net_log_sender_wait_stop(sender);
-    }
-#endif
 }
 
 void net_log_schedule_pause_senders(net_log_schedule_t schedule) {
-    struct net_log_pipe_cmd cmd;
+    struct net_log_thread_cmd cmd;
     cmd.m_size = sizeof(cmd);
-    cmd.m_cmd = net_log_pipe_cmd_pause;
+    cmd.m_cmd = net_log_thread_cmd_pause;
 
-    if (schedule->m_main_thread_request_mgr) {
-        net_log_request_manage_process_cmd_pause(schedule->m_main_thread_request_mgr);
-    }
-
-    net_log_sender_t sender;
-    TAILQ_FOREACH(sender, &schedule->m_senders, m_next) {
-        net_log_pipe_send_cmd(sender->m_pipe, &cmd);
+    net_log_thread_t thread;
+    TAILQ_FOREACH(thread, &schedule->m_threads, m_next) {
+        net_log_thread_send_cmd(thread, &cmd);
     }
 }
 
 void net_log_schedule_resume_senders(net_log_schedule_t schedule) {
-    struct net_log_pipe_cmd cmd;
+    struct net_log_thread_cmd cmd;
     cmd.m_size = sizeof(cmd);
-    cmd.m_cmd = net_log_pipe_cmd_resume;
+    cmd.m_cmd = net_log_thread_cmd_resume;
 
-    if (schedule->m_main_thread_request_mgr) {
-        net_log_request_manage_process_cmd_resume(schedule->m_main_thread_request_mgr);
-    }
-
-    net_log_sender_t sender;
-    TAILQ_FOREACH(sender, &schedule->m_senders, m_next) {
-        net_log_pipe_send_cmd(sender->m_pipe, &cmd);
+    net_log_thread_t thread;
+    TAILQ_FOREACH(thread, &schedule->m_threads, m_next) {
+        net_log_thread_send_cmd(thread, &cmd);
     }
 }
 
-int net_log_schedule_start_main(net_log_schedule_t schedule) {
-    uint8_t need_mgr = 0;
-    uint8_t need_pipe = 0;
+/* int net_log_schedule_start_main(net_log_schedule_t schedule) { */
+/*     uint8_t need_mgr = 0; */
+/*     uint8_t need_pipe = 0; */
 
-    uint8_t i;
-    for(i = 0; i < schedule->m_category_count; ++i) {
-        net_log_category_t category = schedule->m_categories[i];
-        if (category == NULL) continue;
+/*     uint8_t i; */
+/*     for(i = 0; i < schedule->m_category_count; ++i) { */
+/*         net_log_category_t category = schedule->m_categories[i]; */
+/*         if (category == NULL) continue; */
 
-        if (category->m_sender == NULL) {
-            if (category->m_flusher == NULL) {
-                need_mgr = 1;
-            }
-            else {
-                need_pipe = 1;
-            }
-        }
-        else {
-            need_pipe = 1;
-        }
-    }
+/*         if (category->m_sender == NULL) { */
+/*             if (category->m_flusher == NULL) { */
+/*                 need_mgr = 1; */
+/*             } */
+/*             else { */
+/*                 need_pipe = 1; */
+/*             } */
+/*         } */
+/*         else { */
+/*             need_pipe = 1; */
+/*         } */
+/*     } */
 
-    if (need_pipe) {
-        if (net_log_schedule_init_main_thread_pipe(schedule) != 0) {
-            CPE_ERROR(schedule->m_em, "log: schedule: init main thread pipe fail!");
-            return -1;
-        }
-    }
-    else if (need_mgr) {
-        if (net_log_schedule_init_main_thread_mgr(schedule) != 0) {
-            CPE_ERROR(schedule->m_em, "log: schedule: init main thread mgr fail!");
-            return -1;
-        }
-    }
+/*     if (need_pipe) { */
+/*         if (net_log_schedule_init_main_thread_pipe(schedule) != 0) { */
+/*             CPE_ERROR(schedule->m_em, "log: schedule: init main thread pipe fail!"); */
+/*             return -1; */
+/*         } */
+/*     } */
+/*     else if (need_mgr) { */
+/*         if (net_log_schedule_init_main_thread_mgr(schedule) != 0) { */
+/*             CPE_ERROR(schedule->m_em, "log: schedule: init main thread mgr fail!"); */
+/*             return -1; */
+/*         } */
+/*     } */
 
-    return 0;
-}
+/*     return 0; */
+/* } */
 
-void net_log_schedule_stop_main(net_log_schedule_t schedule) {
-    if (schedule->m_main_thread_request_mgr) {
-        if (schedule->m_cfg_cache_dir) { /*保存缓存 */
-            net_log_request_mgr_save_and_clear_requests(schedule->m_main_thread_request_mgr);
-        }
+/* void net_log_schedule_stop_main(net_log_schedule_t schedule) { */
+/*     if (schedule->m_main_thread_request_mgr) { */
+/*         if (schedule->m_cfg_cache_dir) { /\*保存缓存 *\/ */
+/*             net_log_request_mgr_save_and_clear_requests(schedule->m_main_thread_request_mgr); */
+/*         } */
 
-        if (schedule->m_main_thread_pipe
-            && schedule->m_main_thread_pipe->m_bind_request_mgr == schedule->m_main_thread_request_mgr)
-        {
-            schedule->m_main_thread_pipe->m_bind_request_mgr = NULL;
-        }
+/*         if (schedule->m_main_thread_pipe */
+/*             && schedule->m_main_thread_pipe->m_bind_request_mgr == schedule->m_main_thread_request_mgr) */
+/*         { */
+/*             schedule->m_main_thread_pipe->m_bind_request_mgr = NULL; */
+/*         } */
         
-        net_log_request_manage_free(schedule->m_main_thread_request_mgr);
-        schedule->m_main_thread_request_mgr = NULL;
-    }
+/*         net_log_request_manage_free(schedule->m_main_thread_request_mgr); */
+/*         schedule->m_main_thread_request_mgr = NULL; */
+/*     } */
 
-    if (schedule->m_main_thread_pipe) {
-        if (net_log_pipe_is_processing(schedule->m_main_thread_pipe)) {
-            net_log_pipe_stop_process(schedule->m_main_thread_pipe);
-        }
+/*     if (schedule->m_main_thread_pipe) { */
+/*         if (net_log_pipe_is_processing(schedule->m_main_thread_pipe)) { */
+/*             net_log_pipe_stop_process(schedule->m_main_thread_pipe); */
+/*         } */
         
-        net_log_pipe_free(schedule->m_main_thread_pipe);
-        schedule->m_main_thread_pipe = NULL;
-    }
-}
+/*         net_log_pipe_free(schedule->m_main_thread_pipe); */
+/*         schedule->m_main_thread_pipe = NULL; */
+/*     } */
+/* } */
 
 void net_log_state_fsm_notify_state_chagne(net_log_schedule_t schedule) {
     net_log_state_monitor_t monitor;

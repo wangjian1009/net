@@ -6,7 +6,6 @@
 static void net_log_state_fsm_error_enter(fsm_machine_t fsm, fsm_def_state_t state, void * event) {
     net_log_schedule_t schedule = fsm_machine_context(fsm);
     net_log_schedule_wait_stop_threads(schedule);
-    net_log_schedule_stop_main(schedule);
     net_log_state_fsm_notify_state_chagne(schedule);
 }
 
@@ -19,9 +18,7 @@ static uint32_t net_log_state_fsm_error_trans(fsm_machine_t fsm, fsm_def_state_t
 
     switch(evt->m_type) {
     case net_log_state_fsm_evt_start:
-        if (net_log_schedule_start_main(schedule) != 0
-            || net_log_schedule_start_threads(schedule) != 0)
-        {
+        if (net_log_schedule_start_threads(schedule) != 0) {
             return net_log_schedule_state_error;
         }
         return net_log_schedule_state_runing;

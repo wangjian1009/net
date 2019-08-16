@@ -13,7 +13,6 @@ set(net_log_includes
   ${CMAKE_CURRENT_LIST_DIR}/../../../cpe/fsm/include
   ${CMAKE_CURRENT_LIST_DIR}/../../../cpe/vfs/include
   ${CMAKE_CURRENT_LIST_DIR}/../../core/include
-  ${CMAKE_CURRENT_LIST_DIR}/../../driver_ev/include
   ${CMAKE_CURRENT_LIST_DIR}/../../trans/include
   ${net_log_base}/include
   )

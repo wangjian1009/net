@@ -20,10 +20,9 @@
 #define _SS(__sentence) __sentence
 #endif
 
-#define ASSERT_THREAD(__thread) _MS(assert((__thread) == pthread_self()))
-
 NET_BEGIN_DECL
 
+typedef TAILQ_HEAD(net_log_thread_list, net_log_thread) net_log_thread_list_t;
 typedef TAILQ_HEAD(net_log_flusher_list, net_log_flusher) net_log_flusher_list_t;
 typedef TAILQ_HEAD(net_log_sender_list, net_log_sender) net_log_sender_list_t;
 typedef TAILQ_HEAD(net_log_category_list, net_log_category) net_log_category_list_t;
@@ -37,9 +36,8 @@ typedef struct net_log_request * net_log_request_t;
 typedef struct net_log_request_manage * net_log_request_manage_t;
 typedef struct net_log_request_cache * net_log_request_cache_t;
 typedef struct net_log_pipe * net_log_pipe_t;
-typedef struct net_log_pipe_cmd * net_log_pipe_cmd_t;
+typedef struct net_log_thread_cmd * net_log_thread_cmd_t;
 typedef struct net_log_request_param * net_log_request_param_t;
-typedef struct net_log_queue * net_log_queue_t;
 typedef struct net_log_builder * net_log_builder_t;
 typedef struct net_log_group * net_log_group_t;
 typedef struct net_log_tag * net_log_tag_t;
@@ -85,24 +83,17 @@ struct net_log_schedule {
     uint8_t m_category_count;
     net_log_category_t * m_categories;
 
-    /*flusher*/
+    /*threads*/
     uint8_t m_runing_thread_count;
-    net_log_flusher_list_t m_flushers;
-    net_log_sender_list_t m_senders;
+    _MS(pthread_t m_main_thread_id);
+    net_log_thread_t m_thread_main;
+    net_log_thread_list_t m_threads;
 
-    /*main thread request*/
-    net_log_pipe_t m_main_thread_pipe;
-    net_log_request_manage_t m_main_thread_request_mgr;
-    _MS(pthread_t m_main_thread);
-    
     /*builder helper*/
     net_log_category_t m_current_category;
 };
 
 mem_buffer_t net_log_schedule_tmp_buffer(net_log_schedule_t schedule);
-
-int net_log_schedule_init_main_thread_mgr(net_log_schedule_t schedule);
-int net_log_schedule_init_main_thread_pipe(net_log_schedule_t schedule);
 
 void net_log_schedule_process_cmd_stoped(net_log_schedule_t schedule, void * owner);
 void net_log_schedule_check_stop_complete(net_log_schedule_t schedule);

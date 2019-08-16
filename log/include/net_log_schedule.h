@@ -37,6 +37,8 @@ void net_log_schedule_commit(net_log_schedule_t schedule);
 
 int net_log_schedule_start_dump(net_log_schedule_t schedule, uint32_t dump_span_ms);
 
+net_log_thread_t net_log_schedule_thread_main(net_log_schedule_t schedule);
+
 const char * net_log_schedule_state_str(net_log_schedule_state_t schedule_state);
 
 void net_log_begin(net_log_schedule_t schedule, uint8_t log_type);

@@ -13,12 +13,10 @@
 #include "net_log_schedule_i.h"
 #include "net_log_state_i.h"
 #include "net_log_category_i.h"
-#include "net_log_flusher_i.h"
-#include "net_log_sender_i.h"
+#include "net_log_thread_i.h"
 #include "net_log_state_monitor_i.h"
 #include "net_log_env_i.h"
 #include "net_log_request_manage.h"
-#include "net_log_pipe.h"
 
 net_log_schedule_t
 net_log_schedule_create(
@@ -56,7 +54,8 @@ net_log_schedule_create(
     schedule->m_category_count = 0;
     schedule->m_runing_thread_count = 0;
     schedule->m_env_active = NULL;
-    _MS(schedule->m_main_thread = pthread_self());
+    _MS(schedule->m_main_thread_id = pthread_self());
+    schedule->m_thread_main = NULL;
     
     schedule->m_cfg_project = cpe_str_mem_dup(alloc, cfg_project);
     if (schedule->m_cfg_project == NULL) {
@@ -86,11 +85,17 @@ net_log_schedule_create(
         CPE_ERROR(schedule->m_em, "log: schedule: init fsm machine fail!");
         goto CREATE_ERROR;
     }
-    
+
+    //TODO:
+    /* schedule->m_thread_main = net_log_thread_create(schedule, "main"); */
+    /* if (schedule->m_thread_main == NULL) { */
+    /*     goto CREATE_ERROR; */
+    /* } */
+
     TAILQ_INIT(&schedule->m_state_monitors);
-    TAILQ_INIT(&schedule->m_flushers);
-    TAILQ_INIT(&schedule->m_senders);
+    TAILQ_INIT(&schedule->m_threads);
     TAILQ_INIT(&schedule->m_envs);
+    
     
     return schedule;
 
@@ -100,12 +105,15 @@ CREATE_ERROR:
     if (schedule->m_cfg_project) mem_free(alloc, schedule->m_cfg_project);
     if (schedule->m_cfg_access_id) mem_free(alloc, schedule->m_cfg_access_id);
     if (schedule->m_cfg_access_key) mem_free(alloc, schedule->m_cfg_access_key);
+    if (schedule->m_thread_main) net_log_thread_free(schedule->m_thread_main);
     
     mem_free(alloc, schedule);
     return NULL;
 }
 
 void net_log_schedule_free(net_log_schedule_t schedule) {
+    ASSERT_ON_THREAD_MAIN(schedule);
+    
     if (schedule->m_debug) {
         CPE_INFO(schedule->m_em, "log: schedule: free");
     }
@@ -123,24 +131,6 @@ void net_log_schedule_free(net_log_schedule_t schedule) {
         net_log_schedule_wait_stop_threads(schedule);
     }
 
-    if (schedule->m_main_thread_request_mgr) {
-        if (schedule->m_main_thread_pipe
-            && schedule->m_main_thread_pipe->m_bind_request_mgr == schedule->m_main_thread_request_mgr)
-        {
-            schedule->m_main_thread_pipe->m_bind_request_mgr = NULL;
-        }
-        net_log_request_manage_free(schedule->m_main_thread_request_mgr);
-        schedule->m_main_thread_request_mgr = NULL;
-    }
-
-    if (schedule->m_main_thread_pipe) {
-        if (net_log_pipe_is_processing(schedule->m_main_thread_pipe)) {
-            net_log_pipe_stop_process(schedule->m_main_thread_pipe);
-        }
-        net_log_pipe_free(schedule->m_main_thread_pipe);
-        schedule->m_main_thread_pipe = NULL;
-    }
-    
     uint8_t i;
     for(i = 0; i < schedule->m_category_count; ++i) {
         if (schedule->m_categories[i]) {
@@ -160,16 +150,12 @@ void net_log_schedule_free(net_log_schedule_t schedule) {
         net_log_state_monitor_free(TAILQ_FIRST(&schedule->m_state_monitors));
     }
     
-    /*flusher*/
-    while(!TAILQ_EMPTY(&schedule->m_flushers)) {
-        net_log_flusher_free(TAILQ_FIRST(&schedule->m_flushers));
+    /*thread*/
+    while(!TAILQ_EMPTY(&schedule->m_threads)) {
+        net_log_thread_free(TAILQ_FIRST(&schedule->m_threads));
     }
-
-    /*sender*/
-    while(!TAILQ_EMPTY(&schedule->m_senders)) {
-        net_log_sender_free(TAILQ_FIRST(&schedule->m_senders));
-    }
-
+    assert(schedule->m_thread_main == NULL);
+    
     /*statistic*/
     while(!TAILQ_EMPTY(&schedule->m_envs)) {
         net_log_env_free(TAILQ_FIRST(&schedule->m_envs));
@@ -234,14 +220,18 @@ void net_log_schedule_set_debug(net_log_schedule_t schedule, uint8_t debug) {
 }
 
 const char * net_log_schedule_cfg_project(net_log_schedule_t schedule) {
+    ASSERT_ON_THREAD_MAIN(schedule);
     return schedule->m_cfg_project;
 }
 
 const char * net_log_schedule_cfg_ep(net_log_schedule_t schedule) {
+    ASSERT_ON_THREAD_MAIN(schedule);
     return schedule->m_env_active ? schedule->m_env_active->m_url : NULL;
 }
 
 int net_log_schedule_set_cfg_ep(net_log_schedule_t schedule, const char * cfg_ep) {
+    ASSERT_ON_THREAD_MAIN(schedule);
+    
     if (cpe_str_cmp_opt(net_log_schedule_cfg_ep(schedule), cfg_ep) == 0) {
         return 0;
     }
@@ -302,55 +292,9 @@ net_log_schedule_state_t net_log_schedule_state(net_log_schedule_t schedule) {
     return (net_log_schedule_state_t)schedule->m_state_fsm.m_curent_state;
 }
 
-int net_log_schedule_init_main_thread_mgr(net_log_schedule_t schedule) {
-    assert(net_log_schedule_state(schedule) == net_log_schedule_state_init);
-
-    if (schedule->m_main_thread_request_mgr == NULL) {
-        schedule->m_main_thread_request_mgr =
-            net_log_request_manage_create(
-                schedule, schedule->m_net_schedule, schedule->m_net_driver,
-                schedule->m_cfg_active_request_count, "main", net_log_schedule_tmp_buffer(schedule),
-                NULL, NULL);
-        if (schedule->m_main_thread_request_mgr == NULL) {
-            CPE_ERROR(schedule->m_em, "log: schedule: create main thread request mgr fail");
-            return -1;
-        }
-
-        if (schedule->m_cfg_cache_dir) { /*加载缓存 */
-            if (net_log_request_mgr_init_cache_dir(schedule->m_main_thread_request_mgr) != 0) return -1;
-            if (net_log_request_mgr_search_cache(schedule->m_main_thread_request_mgr) != 0) return -1;
-            net_log_request_mgr_check_active_requests(schedule->m_main_thread_request_mgr);
-        }
-    }
-
-    return 0;
-}
-
-int net_log_schedule_init_main_thread_pipe(net_log_schedule_t schedule) {
-    assert(net_log_schedule_state(schedule) == net_log_schedule_state_init);
-
-    if (net_log_schedule_init_main_thread_mgr(schedule) != 0) return -1;
-
-    if (schedule->m_main_thread_pipe == NULL) {
-        schedule->m_main_thread_pipe = net_log_pipe_create(schedule, "main");
-        if (schedule->m_main_thread_pipe == NULL) {
-            CPE_ERROR(schedule->m_em, "log: schedule: create main thread request pipe fail");
-            return -1;
-        }
-    }
-
-    if (!net_log_pipe_is_processing(schedule->m_main_thread_pipe)) {
-        if (net_log_pipe_begin_process(schedule->m_main_thread_pipe, schedule->m_net_driver) != 0) {
-            CPE_ERROR(schedule->m_em, "log: schedule: create main thread request pipe bind fail");
-            return -1;
-        }
-        schedule->m_main_thread_pipe->m_bind_request_mgr = schedule->m_main_thread_request_mgr;
-    }
-    
-    return 0;
-}
-
 void net_log_schedule_commit(net_log_schedule_t schedule) {
+    ASSERT_ON_THREAD_MAIN(schedule);
+    
     uint8_t i;
     for(i = 0; i < schedule->m_category_count; ++i) {
         net_log_category_t category = schedule->m_categories[i];
@@ -364,6 +308,8 @@ void net_log_schedule_commit(net_log_schedule_t schedule) {
 }
 
 int net_log_schedule_start(net_log_schedule_t schedule) {
+    ASSERT_ON_THREAD_MAIN(schedule);
+    
     if (schedule->m_debug) {
         CPE_INFO(schedule->m_em, "log: schedule: start!");
     }
@@ -372,6 +318,8 @@ int net_log_schedule_start(net_log_schedule_t schedule) {
 }
 
 void net_log_schedule_stop(net_log_schedule_t schedule) {
+    ASSERT_ON_THREAD_MAIN(schedule);
+
     if (schedule->m_debug) {
         CPE_INFO(schedule->m_em, "log: schedule: stop!");
     }
@@ -380,6 +328,8 @@ void net_log_schedule_stop(net_log_schedule_t schedule) {
 }
 
 void net_log_schedule_pause(net_log_schedule_t schedule) {
+    ASSERT_ON_THREAD_MAIN(schedule);
+
     if (schedule->m_debug) {
         CPE_INFO(schedule->m_em, "log: schedule: pause!");
     }
@@ -387,6 +337,8 @@ void net_log_schedule_pause(net_log_schedule_t schedule) {
 }
 
 void net_log_schedule_resume(net_log_schedule_t schedule) {
+    ASSERT_ON_THREAD_MAIN(schedule);
+
     if (schedule->m_debug) {
         CPE_INFO(schedule->m_em, "log: schedule: resume!");
     }
@@ -414,6 +366,8 @@ const char * net_log_schedule_state_str(net_log_schedule_state_t schedule_state)
 }
 
 void net_log_begin(net_log_schedule_t schedule, uint8_t log_type) {
+    ASSERT_ON_THREAD_MAIN(schedule);
+
     assert(schedule->m_current_category == NULL);
     assert(log_type < schedule->m_category_count);
 
@@ -466,17 +420,25 @@ void net_log_append_net_address(net_log_schedule_t schedule, const char * name, 
 }
 
 void net_log_commit(net_log_schedule_t schedule) {
+    ASSERT_ON_THREAD_MAIN(schedule);
     assert(schedule->m_current_category);
     net_log_category_log_end(schedule->m_current_category);
     schedule->m_current_category = NULL;
 }
 
+net_log_thread_t net_log_schedule_thread_main(net_log_schedule_t schedule) {
+    ASSERT_ON_THREAD_MAIN(schedule);
+    return schedule->m_thread_main;
+}
+
 mem_buffer_t net_log_schedule_tmp_buffer(net_log_schedule_t schedule) {
+    ASSERT_ON_THREAD_MAIN(schedule);
     return net_schedule_tmp_buffer(schedule->m_net_schedule);
 }
 
 static void net_log_schedule_dump_timer(net_timer_t timer, void * ctx) {
     net_log_schedule_t schedule = ctx;
+    ASSERT_ON_THREAD_MAIN(schedule);
 
     CPE_INFO(schedule->m_em, "log: begin dump, category-count=%d", schedule->m_category_count);
     
@@ -496,6 +458,7 @@ static void net_log_schedule_dump_timer(net_timer_t timer, void * ctx) {
 }
 
 int net_log_schedule_start_dump(net_log_schedule_t schedule, uint32_t dump_span_ms) {
+    ASSERT_ON_THREAD_MAIN(schedule);
     if (dump_span_ms == 0) {
         if (schedule->m_dump_timer) {
             net_timer_cancel(schedule->m_dump_timer);
@@ -517,38 +480,35 @@ int net_log_schedule_start_dump(net_log_schedule_t schedule, uint32_t dump_span_
     return 0;
 }
 
-void net_log_schedule_process_cmd_stoped(net_log_schedule_t schedule, void * owner) {
-    net_log_flusher_t flusher;
-    TAILQ_FOREACH(flusher, &schedule->m_flushers, m_next) {
-        if (flusher == owner) {
-            net_log_flusher_wait_stop(flusher);
-            return;
-        }
-    }
+/* void net_log_schedule_process_cmd_stoped(net_log_schedule_t schedule, void * owner) { */
+/*     net_log_thread_t thread; */
+/*     TAILQ_FOREACH(thread, &schedule->m_threads, m_next) { */
+/*         if (flusher == owner) { */
+/*             net_log_flusher_wait_stop(flusher); */
+/*             return; */
+/*         } */
+/*     } */
 
-    net_log_sender_t sender;
-    TAILQ_FOREACH(sender, &schedule->m_senders, m_next) {
-        if (sender == owner) {
-            net_log_sender_wait_stop(sender);
-            return;
-        }
-    }
+/*     net_log_sender_t sender; */
+/*     TAILQ_FOREACH(sender, &schedule->m_senders, m_next) { */
+/*         if (sender == owner) { */
+/*             net_log_sender_wait_stop(sender); */
+/*             return; */
+/*         } */
+/*     } */
 
-    CPE_ERROR(schedule->m_em, "log: schedule: cmd stoped: no owner matched");
-}
+/*     CPE_ERROR(schedule->m_em, "log: schedule: cmd stoped: no owner matched"); */
+/* } */
 
 void net_log_schedule_check_stop_complete(net_log_schedule_t schedule) {
     if (schedule->m_runing_thread_count != 0) return;
-    
-    if (schedule->m_main_thread_request_mgr == NULL
-        || net_log_request_mgr_is_empty(schedule->m_main_thread_request_mgr))
-    {
-        net_log_state_fsm_apply_evt(schedule, net_log_state_fsm_evt_stop_complete);
-        return;
-    }
+    net_log_state_fsm_apply_evt(schedule, net_log_state_fsm_evt_stop_complete);
+    return;
 }
 
 void net_log_schedule_set_active_env(net_log_schedule_t schedule, net_log_env_t new_env) {
+    ASSERT_ON_THREAD_MAIN(schedule);
+    
     if (schedule->m_debug) {
         CPE_INFO(
             schedule->m_em, "log: schedule: ep %s ==> %s", 

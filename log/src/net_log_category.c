@@ -5,19 +5,17 @@
 #include "cpe/utils/string_utils.h"
 #include "net_timer.h"
 #include "net_log_category_i.h"
-#include "net_log_flusher_i.h"
-#include "net_log_sender_i.h"
 #include "net_log_request.h"
 #include "net_log_builder.h"
-#include "net_log_pipe.h"
-#include "net_log_pipe_cmd.h"
+#include "net_log_thread_i.h"
+#include "net_log_thread_cmd.h"
 #include "net_log_env_category_i.h"
 
 static char * net_log_category_get_pack_id(net_log_schedule_t schedule, const char * configName, const char * ip);
 static void net_log_category_commit_timer(net_timer_t timer, void * ctx);
 
 net_log_category_t
-net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, net_log_sender_t sender, const char * name, uint8_t id) {
+net_log_category_create(net_log_schedule_t schedule, net_log_thread_t flusher, net_log_thread_t sender, const char * name, uint8_t id) {
     if (net_log_schedule_state(schedule) != net_log_schedule_state_init) {
         CPE_ERROR(
             schedule->m_em, "log: category [%d]%s: schedule in state %s, can`t create !", id, name,
@@ -25,7 +23,9 @@ net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, 
         return NULL;
     }
 
-    ASSERT_THREAD(schedule->m_main_thread);
+    ASSERT_ON_THREAD_MAIN(schedule);
+    assert(flusher);
+    assert(sender);
     
     if (id >= schedule->m_category_count) {
         uint8_t new_count = id < 16 ? 16 : id;
@@ -97,14 +97,6 @@ net_log_category_create(net_log_schedule_t schedule, net_log_flusher_t flusher, 
     /*commit*/
     schedule->m_categories[id] = category;
 
-    if (flusher) {
-        TAILQ_INSERT_TAIL(&flusher->m_categories, category, m_next_for_flusher);
-    }
-
-    if (sender) {
-        TAILQ_INSERT_TAIL(&sender->m_categories, category, m_next_for_sender);
-    }
-
     if (schedule->m_debug) {
         CPE_INFO(
             schedule->m_em, "log: category [%d]%s: create success, flusher %s, sender %s!",
@@ -127,14 +119,6 @@ void net_log_category_free(net_log_category_t category) {
     }
 
     schedule->m_categories[category->m_id] = NULL;
-
-    if (category->m_flusher) {
-        TAILQ_REMOVE(&category->m_flusher->m_categories, category, m_next_for_flusher);
-    }
-
-    if (category->m_sender) {
-        TAILQ_REMOVE(&category->m_sender->m_categories, category, m_next_for_sender);
-    }
 
     net_timer_free(category->m_commit_timer);
     category->m_commit_timer = NULL;
@@ -213,15 +197,60 @@ net_log_category_build_request(net_log_category_t category, net_log_builder_t bu
     return send_param;
 }
 
-int net_log_category_commit_request(net_log_category_t category, net_log_request_param_t send_param, uint8_t in_main_thread) {
+void net_log_category_pack_request(net_log_category_t category, net_log_builder_t builder) {
     net_log_schedule_t schedule = category->m_schedule;
 
-    if (category->m_sender) {
-        if (net_log_pipe_queue(category->m_sender->m_pipe, send_param) != 0) {
+    if (IS_ON_THREAD(category->m_flusher)) {
+        net_log_request_param_t send_param = net_log_category_build_request(category, builder);
+        net_log_group_destroy(builder);
+
+        if (send_param == NULL) {
+            CPE_ERROR(schedule->m_em, "log: category [%d]%s: commit: build request fail", category->m_id, category->m_name);
+            net_log_category_statistic_discard(category, net_log_discard_reason_pack_fail);
+            return;
+        }
+
+        net_log_category_send_request(category, send_param);
+    } 
+    else {
+        struct net_log_thread_cmd_package_pack cmd_pack;
+        cmd_pack.head.m_size = sizeof(cmd_pack);
+        cmd_pack.head.m_cmd = net_log_thread_cmd_package_pack;
+        cmd_pack.m_builder = builder;
+
+        if (net_log_thread_send_cmd(category->m_flusher, (net_log_thread_cmd_t)&cmd_pack) != 0) {
             CPE_ERROR(
-                schedule->m_em, "log: category [%d]%s: commit param to sender %s fail!",
-                category->m_id, category->m_name, category->m_sender->m_name);
-            return -1;
+                schedule->m_em, "log: category [%d]%s: try push loggroup to flusher failed, force drop this log group",
+                category->m_id, category->m_name);
+            net_log_category_statistic_discard(category, net_log_discard_reason_queue_to_pack_fail);
+            net_log_group_destroy(builder);
+            return;
+        }
+
+        if (schedule->m_debug) {
+            CPE_INFO(
+                schedule->m_em, "log: category [%d]%s: commit: queue to flusher, package(count=%d, size=%d)",
+                category->m_id, category->m_name, (int)builder->grp->n_logs, (int)builder->loggroup_size);
+        }
+    }
+}
+
+void net_log_category_send_request(net_log_category_t category, net_log_request_param_t send_param) {
+    net_log_schedule_t schedule = category->m_schedule;
+
+    if (IS_ON_THREAD(category->m_sender)) {
+        net_log_request_manage_process_cmd_send(category->m_sender->m_request_mgr, send_param);
+    }
+    else {
+        struct net_log_thread_cmd_package_send cmd_send;
+        cmd_send.head.m_size = sizeof(cmd_send);
+        cmd_send.head.m_cmd = net_log_thread_cmd_package_send;
+        cmd_send.m_send_param = send_param;
+
+        if (net_log_thread_send_cmd(category->m_flusher, (net_log_thread_cmd_t)&cmd_send) != 0) {
+            net_log_category_statistic_discard(category, net_log_discard_reason_queue_to_send_fail);
+            net_log_request_param_free(send_param);
+            return;
         }
 
         if (schedule->m_debug) {
@@ -229,30 +258,6 @@ int net_log_category_commit_request(net_log_category_t category, net_log_request
                 schedule->m_em, "log: category [%d]%s: commit param to sender %s success!",
                 category->m_id, category->m_name, category->m_sender->m_name);
         }
-
-        return 0;
-    }
-    else if (in_main_thread) { /*在主线程中，直接发送 */
-        assert(schedule->m_main_thread_request_mgr);
-        net_log_request_manage_process_cmd_send(schedule->m_main_thread_request_mgr, send_param);
-        return 0;
-    }
-    else { /*提交到主线程处理 */
-        assert(schedule->m_main_thread_pipe);
-        if (net_log_pipe_queue(schedule->m_main_thread_pipe, send_param) != 0) {
-            CPE_ERROR(
-                schedule->m_em, "log: category [%d]%s: commit param to main-thread fail!",
-                category->m_id, category->m_name);
-            return -1;
-        }
-
-        if (schedule->m_debug) {
-            CPE_INFO(
-                schedule->m_em, "log: category [%d]%s: post param to main-thread success!",
-                category->m_id, category->m_name);
-        }
-
-        return 0;
     }
 }
 
@@ -350,8 +355,9 @@ void net_log_category_set_timeout_ms(net_log_category_t category, uint32_t timeo
 }
 
 void net_log_category_log_begin(net_log_category_t category) {
-    //net_log_schedule_t schedule = category->m_schedule;
-
+    net_log_schedule_t schedule = category->m_schedule;
+    ASSERT_ON_THREAD_MAIN(schedule);
+    
     if (category->m_builder == NULL) {
         category->m_builder = log_group_create(category);
         if (category->m_builder == NULL) return;
@@ -365,13 +371,18 @@ void net_log_category_log_begin(net_log_category_t category) {
 }
 
 void net_log_category_log_apppend(net_log_category_t category, const char * key, const char * value) {
+    net_log_schedule_t schedule = category->m_schedule;
+    ASSERT_ON_THREAD_MAIN(schedule);
+    
     net_log_builder_t builder = category->m_builder;
     assert(builder);
     add_log_key_value(builder, (char*)key, strlen(key), (char * )value, strlen(value));
 }
 
 void net_log_category_log_end(net_log_category_t category) {
-    //net_log_schedule_t schedule = category->m_schedule;
+    net_log_schedule_t schedule = category->m_schedule;
+    ASSERT_ON_THREAD_MAIN(schedule);
+
     net_log_builder_t builder = category->m_builder;
 
     add_log_end(builder);
@@ -402,6 +413,8 @@ char * net_log_category_get_pack_id(net_log_schedule_t schedule, const char * co
 
 void net_log_category_commit(net_log_category_t category) {
     net_log_schedule_t schedule = category->m_schedule;
+    ASSERT_ON_THREAD_MAIN(schedule);
+    
     net_log_builder_t builder = category->m_builder;
     assert(builder);
     
@@ -415,38 +428,6 @@ void net_log_category_commit(net_log_category_t category) {
     //cpe_traffic_bps_add_flow(&category->m_statistics_input_bps, loggroup_size, time(0));
 
     /*提交 */
-    if (category->m_flusher) { /*异步flush */
-        if (net_log_flusher_queue(category->m_flusher, builder) != 0) {
-            CPE_ERROR(
-                schedule->m_em, "log: category [%d]%s: try push loggroup to flusher failed, force drop this log group",
-                category->m_id, category->m_name);
-            //TODO: Loki net_log_category_add_fail_statistics(category, builder->grp->n_logs);
-            net_log_group_destroy(builder);
-        }
-        else {
-            if (schedule->m_debug) {
-                CPE_INFO(
-                    schedule->m_em, "log: category [%d]%s: commit: queue to flusher, package(count=%d, size=%d)",
-                    category->m_id, category->m_name, (int)builder->grp->n_logs, (int)builder->loggroup_size);
-            }
-        }
-    }
-    else { /*同步flush */
-        net_log_request_param_t send_param = net_log_category_build_request(category, builder);
-        net_log_group_destroy(builder);
-
-        if (send_param == NULL) {
-            CPE_ERROR(schedule->m_em, "log: category [%d]%s: commit: build request fail", category->m_id, category->m_name);
-            //TODO: Loki net_log_category_add_fail_statistics(category, builder->grp->n_logs);
-        }
-        else {        
-            if (net_log_category_commit_request(category, send_param, 1) != 0) {
-                //TODO: Loki net_log_category_add_fail_statistics(category, builder->grp->n_logs);
-                net_log_group_destroy(builder);
-                net_log_request_param_free(send_param);
-            }
-        }
-    }
 }
 
 static void net_log_category_commit_timer(net_timer_t timer, void * ctx) {
@@ -455,42 +436,33 @@ static void net_log_category_commit_timer(net_timer_t timer, void * ctx) {
 }
 
 void net_log_category_statistic_success(net_log_category_t category) {
-#if NET_LOG_MULTI_THREAD
     net_log_schedule_t schedule = category->m_schedule;
     
-    if (schedule->m_main_thread == pthread_self()) {
+    if (IS_ON_THREAD_MAIN(schedule)) {
         category->m_statistics_success_count++;
     }
     else {
-        struct net_log_pipe_cmd_staistic_package_success package_success_cmd;
+        struct net_log_thread_cmd_staistic_package_success package_success_cmd;
         package_success_cmd.head.m_size = sizeof(package_success_cmd);
-        package_success_cmd.head.m_cmd = net_log_pipe_cmd_staistic_package_success;
+        package_success_cmd.head.m_cmd = net_log_thread_cmd_staistic_package_success;
         package_success_cmd.m_category = category;
-        assert(schedule->m_main_thread_pipe);
-        net_log_pipe_send_cmd(schedule->m_main_thread_pipe, (net_log_pipe_cmd_t)&package_success_cmd);
+        assert(schedule->m_thread_main);
+        net_log_thread_send_cmd(schedule->m_thread_main, (net_log_thread_cmd_t)&package_success_cmd);
     }
-#else
-    category->m_statistics_success_count++;
-#endif
 }
 
 void net_log_category_statistic_discard(net_log_category_t category, net_log_discard_reason_t reason) {
-#if NET_LOG_MULTI_THREAD
     net_log_schedule_t schedule = category->m_schedule;
     
-    if (schedule->m_main_thread == pthread_self()) {
+    if (IS_ON_THREAD_MAIN(schedule)) {
         category->m_statistics_discard_count[reason]++;
     }
     else {
-        struct net_log_pipe_cmd_staistic_package_discard package_discard_cmd;
+        struct net_log_thread_cmd_staistic_package_discard package_discard_cmd;
         package_discard_cmd.head.m_size = sizeof(package_discard_cmd);
-        package_discard_cmd.head.m_cmd = net_log_pipe_cmd_staistic_package_discard;
+        package_discard_cmd.head.m_cmd = net_log_thread_cmd_staistic_package_discard;
         package_discard_cmd.m_category = category;
         package_discard_cmd.m_reason = reason;
-        assert(schedule->m_main_thread_pipe);
-        net_log_pipe_send_cmd(schedule->m_main_thread_pipe, (net_log_pipe_cmd_t)&package_discard_cmd);
+        net_log_thread_send_cmd(schedule->m_thread_main, (net_log_thread_cmd_t)&package_discard_cmd);
     }
-#else
-    category->m_statistics_discard_count[reason]++;
-#endif
 }

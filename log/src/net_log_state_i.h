@@ -24,8 +24,8 @@ int net_log_state_fsm_create_error(fsm_def_machine_t fsm_def, error_monitor_t em
 
 int net_log_state_fsm_apply_evt(net_log_schedule_t schedule, net_log_state_fsm_evt_type_t type);
 
-int net_log_schedule_start_main(net_log_schedule_t schedule);
-void net_log_schedule_stop_main(net_log_schedule_t schedule);
+/* int net_log_schedule_start_main(net_log_schedule_t schedule); */
+/* void net_log_schedule_stop_main(net_log_schedule_t schedule); */
 
 int net_log_schedule_start_threads(net_log_schedule_t schedule);
 
