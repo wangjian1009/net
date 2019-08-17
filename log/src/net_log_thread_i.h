@@ -38,11 +38,23 @@ struct net_log_thread {
     uint16_t m_pipe_r_size;
     net_watcher_t m_watcher;
 
-    /**/
+    /*net*/
     net_schedule_t m_net_schedule;
     net_driver_t m_net_driver;
+    net_trans_manage_t m_trans_mgr;
     
-    /**/
+    /*requests*/
+    uint16_t m_active_request_count;
+    uint16_t m_request_count;
+    uint32_t m_request_buf_size;
+    uint32_t m_request_max_id;
+    uint32_t m_cache_max_id;
+    net_log_request_cache_list_t m_caches;
+    net_log_request_list_t m_waiting_requests;
+    net_log_request_list_t m_active_requests;
+    net_log_request_list_t m_free_requests;
+    
+    /*tmp_buffer*/
     struct mem_buffer m_tmp_buffer;
 };
 
