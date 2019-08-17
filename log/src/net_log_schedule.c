@@ -86,16 +86,14 @@ net_log_schedule_create(
         goto CREATE_ERROR;
     }
 
-    //TODO:
-    /* schedule->m_thread_main = net_log_thread_create(schedule, "main"); */
-    /* if (schedule->m_thread_main == NULL) { */
-    /*     goto CREATE_ERROR; */
-    /* } */
+    schedule->m_thread_main = net_log_thread_create(schedule, "main", NULL);
+    if (schedule->m_thread_main == NULL) {
+        goto CREATE_ERROR;
+    }
 
     TAILQ_INIT(&schedule->m_state_monitors);
     TAILQ_INIT(&schedule->m_threads);
     TAILQ_INIT(&schedule->m_envs);
-    
     
     return schedule;
 
@@ -154,7 +152,7 @@ void net_log_schedule_free(net_log_schedule_t schedule) {
     while(!TAILQ_EMPTY(&schedule->m_threads)) {
         net_log_thread_free(TAILQ_FIRST(&schedule->m_threads));
     }
-    assert(schedule->m_thread_main == NULL);
+    schedule->m_thread_main = NULL;
     
     /*statistic*/
     while(!TAILQ_EMPTY(&schedule->m_envs)) {
