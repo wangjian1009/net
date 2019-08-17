@@ -235,15 +235,31 @@ int net_log_thread_start(net_log_thread_t thread) {
     ASSERT_ON_THREAD_MAIN(schedule);
 
 #if NET_LOG_MULTI_THREAD
-    /* assert(thread->m_runing_thread == NULL); */
-    /* thread->m_runing_thread = mem_alloc(schedule->m_alloc, sizeof(pthread_t)); */
-    /* if (thread->m_runing_thread == NULL) { */
-    /*     CPE_ERROR(schedule->m_em, "log: thread %s: setup: alloc pthread_t fail", thread->m_name); */
-    /*     return -1; */
-    /* } */
-    /* *thread->m_runing_thread = pthread_self(); */
+    if (thread->m_runing_thread != NULL) {
+        CPE_ERROR(schedule->m_em, "log: thread %s: start: already started", thread->m_name);
+        return -1;
+    }
     
-#else    
+    thread->m_runing_thread = mem_alloc(schedule->m_alloc, sizeof(pthread_t));
+    if (thread->m_runing_thread == NULL) {
+        CPE_ERROR(schedule->m_em, "log: thread %s: start: alloc pthread_t fail", thread->m_name);
+        return -1;
+    }
+
+    if (pthread_create(thread->m_runing_thread, NULL, net_log_thread_execute, thread) != 0) {
+        CPE_ERROR(
+            schedule->m_em, "log: thread %s: start: pthread_create fail, error=%d (%s)!", 
+            thread->m_name, errno, strerror(errno));
+        mem_free(schedule->m_alloc, thread->m_runing_thread);
+        thread->m_runing_thread = NULL;
+        return -1;
+    }
+    
+#else   
+    if (net_log_thread_setup(log_thread) != 0) {
+        CPE_ERROR(schedule->m_em, "log: thread %s: start: thread setup fail!", thread->m_name);
+        return -1;
+    }
 #endif
 
     return 0;
@@ -286,7 +302,8 @@ void net_log_thread_wait_stop(net_log_thread_t log_thread) {
     log_thread->m_runing_thread = NULL;
 
 #else
-    net_log_thread_pipe_clear(thread);
+    net_log_thread_pipe_clear(log_thread);
+    net_log_thread_teardown(log_thread);
 #endif
     
     assert(schedule->m_runing_thread_count > 0);
