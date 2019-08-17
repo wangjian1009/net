@@ -38,18 +38,15 @@ void net_log_thread_dispatch(net_log_thread_t thread, net_log_thread_cmd_t cmd) 
         assert(thread->m_request_mgr);
         net_log_request_manage_process_cmd_stop_begin(thread->m_request_mgr);
         break;
-    case net_log_thread_cmd_stop_complete:
-        /* if (thread->m_bind_request_mgr) { */
-        /*     net_log_request_manage_process_cmd_stop_complete(thread->m_bind_request_mgr); */
-        /* } else { */
-        /*     CPE_ERROR(schedule->m_em, "log: thread %s: cmd stop-complete: no bind request mgr", thread->m_name); */
-        /* } */
+    case net_log_thread_cmd_stop_force:
+        assert(thread->m_request_mgr);
+        net_log_request_manage_process_cmd_stop_force(thread->m_request_mgr);
         break;
     case net_log_thread_cmd_stoped:
         ASSERT_ON_THREAD_MAIN(schedule);
         struct net_log_thread_cmd_stoped* stoped_cmd = (struct net_log_thread_cmd_stoped*)cmd;
         assert(stoped_cmd->head.m_size = sizeof(*stoped_cmd));
-        net_log_schedule_process_cmd_stoped(schedule, stoped_cmd->owner);
+        net_log_thread_wait_stop(stoped_cmd->log_thread);
         break;
     case net_log_thread_cmd_staistic_package_success: {
         ASSERT_ON_THREAD_MAIN(schedule);

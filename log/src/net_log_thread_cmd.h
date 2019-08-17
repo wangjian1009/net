@@ -10,7 +10,7 @@ typedef enum net_log_thread_cmd_type {
     net_log_thread_cmd_pause,
     net_log_thread_cmd_resume,
     net_log_thread_cmd_stop_begin,
-    net_log_thread_cmd_stop_complete,
+    net_log_thread_cmd_stop_force,
     net_log_thread_cmd_stoped,
     net_log_thread_cmd_staistic_package_discard,
     net_log_thread_cmd_staistic_package_success,
@@ -23,7 +23,7 @@ struct net_log_thread_cmd {
 
 struct net_log_thread_cmd_stoped {
     struct net_log_thread_cmd head;
-    void * owner;
+    net_log_thread_t log_thread;
 };
 
 struct net_log_thread_cmd_package_pack {

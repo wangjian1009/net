@@ -44,7 +44,7 @@ void net_log_request_manage_process_cmd_send(net_log_request_manage_t mgr, net_l
 void net_log_request_manage_process_cmd_pause(net_log_request_manage_t mgr);
 void net_log_request_manage_process_cmd_resume(net_log_request_manage_t mgr);
 void net_log_request_manage_process_cmd_stop_begin(net_log_request_manage_t mgr);
-void net_log_request_manage_process_cmd_stop_complete(net_log_request_manage_t mgr);
+void net_log_request_manage_process_cmd_stop_force(net_log_request_manage_t mgr);
 
 const char * net_log_request_manage_cache_dir(net_log_request_manage_t mgr, mem_buffer_t tmp_buffer);
 const char * net_log_request_manage_cache_file(net_log_request_manage_t mgr, uint32_t id, mem_buffer_t tmp_buffer);

@@ -19,6 +19,7 @@ typedef enum net_log_schedule_state {
 
 typedef struct net_log_schedule * net_log_schedule_t;
 typedef struct net_log_thread * net_log_thread_t;
+typedef struct net_log_thread_processor * net_log_thread_processor_t;
 typedef struct net_log_category * net_log_category_t;
 typedef struct net_log_state_monitor * net_log_state_monitor_t;
 

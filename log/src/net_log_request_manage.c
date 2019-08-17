@@ -166,7 +166,7 @@ void net_log_request_manage_process_cmd_stop_begin(net_log_request_manage_t mgr)
     net_log_schedule_t schedule = mgr->m_schedule;
 
     if (net_log_request_mgr_is_empty(mgr)) {
-        net_log_request_manage_process_cmd_stop_complete(mgr);
+        net_log_request_manage_process_cmd_stop_force(mgr);
     }
     else {
         net_log_request_manage_set_state(mgr, net_log_request_manage_state_stoping);
@@ -176,7 +176,7 @@ void net_log_request_manage_process_cmd_stop_begin(net_log_request_manage_t mgr)
     }
 }
 
-void net_log_request_manage_process_cmd_stop_complete(net_log_request_manage_t mgr) {
+void net_log_request_manage_process_cmd_stop_force(net_log_request_manage_t mgr) {
     net_log_schedule_t schedule = mgr->m_schedule;
 
     if (mgr->m_state == net_log_request_manage_state_stoped) return;
@@ -328,7 +328,7 @@ void net_log_request_mgr_check_active_requests(net_log_request_manage_t mgr) {
             if (schedule->m_debug) {
                 CPE_INFO(schedule->m_em, "log: %s: manage: stoping: all request done!", mgr->m_name);
             }
-            net_log_request_manage_process_cmd_stop_complete(mgr);
+            net_log_request_manage_process_cmd_stop_force(mgr);
         }
     }
 }

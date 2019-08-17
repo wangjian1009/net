@@ -82,7 +82,7 @@ uint8_t net_log_schedule_notify_stop_threads(net_log_schedule_t schedule) {
 
     TAILQ_FOREACH(thread, &schedule->m_threads, m_next) {
         if (thread->m_is_runing) {
-            net_log_thread_notify_stop(thread);
+            net_log_thread_notify_stop_force(thread);
             have_runing_thread = 1;
         }
     }

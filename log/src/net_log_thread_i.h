@@ -25,12 +25,7 @@ struct net_log_thread {
     net_log_request_manage_t m_request_mgr;
 
     /*thread op */
-    void * m_thread_ctx;
-    net_log_thread_ctx_fini_fun_t m_thread_ctx_fini;
-    net_log_thread_setup_fun_t m_thread_setup;
-    net_log_thread_teardown_fun_t m_thread_teardown;
-    net_log_thread_run_fun_t m_thread_run;
-    net_log_thread_stop_fun_t m_thread_stop;
+    struct net_log_thread_processor m_processor;
 
     /*thread*/
     _MS(pthread_t * m_runing_thread);
@@ -54,7 +49,7 @@ struct net_log_thread {
 void net_log_thread_free(net_log_thread_t thread);
 
 int net_log_thread_start(net_log_thread_t thread);
-void net_log_thread_notify_stop(net_log_thread_t thread);
+void net_log_thread_notify_stop_force(net_log_thread_t thread);
 void net_log_thread_wait_stop(net_log_thread_t thread);
 
 int net_log_thread_send_cmd(net_log_thread_t thread, net_log_thread_cmd_t cmd);

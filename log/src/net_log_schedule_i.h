@@ -95,7 +95,6 @@ struct net_log_schedule {
 
 mem_buffer_t net_log_schedule_tmp_buffer(net_log_schedule_t schedule);
 
-void net_log_schedule_process_cmd_stoped(net_log_schedule_t schedule, void * owner);
 void net_log_schedule_check_stop_complete(net_log_schedule_t schedule);
 
 void net_log_schedule_set_active_env(net_log_schedule_t schedule, net_log_env_t env);
