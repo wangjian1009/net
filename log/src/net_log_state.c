@@ -2,7 +2,6 @@
 #include "net_log_state_i.h"
 #include "net_log_thread_i.h"
 #include "net_log_thread_cmd.h"
-#include "net_log_request_manage.h"
 #include "net_log_category_i.h"
 #include "net_log_state_monitor_i.h"
 

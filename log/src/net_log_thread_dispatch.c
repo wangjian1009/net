@@ -1,14 +1,13 @@
 #include <assert.h>
 #include "net_log_thread_i.h"
 #include "net_log_thread_cmd.h"
-#include "net_log_request_manage.h"
 #include "net_log_request.h"
 #include "net_log_builder.h"
 #include "net_log_category_i.h"
 
-void net_log_thread_dispatch(net_log_thread_t thread, net_log_thread_cmd_t cmd) {
-    net_log_schedule_t schedule = thread->m_schedule;
-    ASSERT_ON_THREAD(thread);
+void net_log_thread_dispatch(net_log_thread_t log_thread, net_log_thread_cmd_t cmd) {
+    net_log_schedule_t schedule = log_thread->m_schedule;
+    ASSERT_ON_THREAD(log_thread);
     
     switch (cmd->m_cmd) {
     case net_log_thread_cmd_package_pack: {
@@ -21,26 +20,20 @@ void net_log_thread_dispatch(net_log_thread_t thread, net_log_thread_cmd_t cmd) 
     case net_log_thread_cmd_package_send: {
         struct net_log_thread_cmd_package_send* send_cmd = (struct net_log_thread_cmd_package_send*)cmd;
         assert(send_cmd->head.m_size = sizeof(*send_cmd));
-        
-        assert(thread->m_request_mgr);
-        net_log_request_manage_process_cmd_send(thread->m_request_mgr, send_cmd->m_send_param);
+        net_log_thread_process_cmd_send(log_thread, send_cmd->m_send_param);
         break;
     }
     case net_log_thread_cmd_pause:
-        assert(thread->m_request_mgr);
-        net_log_request_manage_process_cmd_pause(thread->m_request_mgr);
+        net_log_thread_process_cmd_pause(log_thread);
         break;
     case net_log_thread_cmd_resume:
-        assert(thread->m_request_mgr);
-        net_log_request_manage_process_cmd_resume(thread->m_request_mgr);
+        net_log_thread_process_cmd_resume(log_thread);
         break;
     case net_log_thread_cmd_stop_begin:
-        assert(thread->m_request_mgr);
-        net_log_request_manage_process_cmd_stop_begin(thread->m_request_mgr);
+        net_log_thread_process_cmd_stop_begin(log_thread);
         break;
     case net_log_thread_cmd_stop_force:
-        assert(thread->m_request_mgr);
-        net_log_request_manage_process_cmd_stop_force(thread->m_request_mgr);
+        net_log_thread_process_cmd_stop_force(log_thread);
         break;
     case net_log_thread_cmd_stoped:
         ASSERT_ON_THREAD_MAIN(schedule);
@@ -61,7 +54,7 @@ void net_log_thread_dispatch(net_log_thread_t thread, net_log_thread_cmd_t cmd) 
         break;
     }
     default:
-        CPE_ERROR(schedule->m_em, "log: thread %s: unknown cmd %d", thread->m_name, cmd->m_cmd);
+        CPE_ERROR(schedule->m_em, "log: thread %s: unknown cmd %d", log_thread->m_name, cmd->m_cmd);
         break;
     }
 }

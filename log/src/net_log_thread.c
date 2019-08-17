@@ -6,7 +6,6 @@
 #include "cpe/pal/pal_errno.h"
 #include "net_log_thread_i.h"
 #include "net_log_thread_cmd.h"
-#include "net_log_request_manage.h"
 #include "net_log_request_cache.h"
 
 net_log_thread_t net_log_thread_create(net_log_schedule_t schedule, const char * name, net_log_thread_processor_t processor) {
@@ -17,7 +16,8 @@ net_log_thread_t net_log_thread_create(net_log_schedule_t schedule, const char *
     log_thread->m_schedule = schedule;
     log_thread->m_em = schedule->m_em;
     log_thread->m_name = name;
-
+    log_thread->m_state = net_log_thread_state_stoped;
+    
     if (processor) {
         log_thread->m_processor = *processor;
     }
@@ -31,7 +31,6 @@ net_log_thread_t net_log_thread_create(net_log_schedule_t schedule, const char *
     log_thread->m_cfg_net_buf_size = 2 * 1024 * 1024;
     log_thread->m_runing_thread = NULL;
     log_thread->m_watcher = NULL;
-    log_thread->m_request_mgr = NULL;
     log_thread->m_pipe_r_size = 0;
     log_thread->m_is_runing = 0;
     log_thread->m_net_schedule = NULL;
@@ -89,7 +88,6 @@ void net_log_thread_free(net_log_thread_t log_thread) {
     
     assert(!log_thread->m_is_runing);
     assert(log_thread->m_watcher == NULL);
-    assert(log_thread->m_request_mgr == NULL);
     assert(log_thread->m_net_schedule == NULL);
     assert(log_thread->m_net_driver == NULL);
     assert(log_thread->m_trans_mgr == NULL);
@@ -128,4 +126,64 @@ int net_log_thread_send_cmd(net_log_thread_t log_thread, net_log_thread_cmd_t cm
     mem_buffer_clear(&log_thread->m_tmp_buffer);
     
     return 0;
+}
+
+const char * net_log_thread_cache_dir(net_log_thread_t log_thread, mem_buffer_t tmp_buffer) {
+    net_log_schedule_t schedule = log_thread->m_schedule;
+    ASSERT_ON_THREAD(log_thread);
+    
+    assert(schedule->m_cfg_cache_dir);
+    
+    mem_buffer_clear_data(tmp_buffer);
+
+    if (mem_buffer_printf(tmp_buffer, "%s/%s", schedule->m_cfg_cache_dir, log_thread->m_name) < 0) {
+        CPE_ERROR(log_thread->m_em, "log: %s: manage: format buffer fail", log_thread->m_name);
+        return NULL;
+    }
+
+    return mem_buffer_make_continuous(tmp_buffer, 0);
+}
+
+const char * net_log_thread_cache_file(net_log_thread_t log_thread, uint32_t id, mem_buffer_t tmp_buffer) {
+    net_log_schedule_t schedule = log_thread->m_schedule;
+    ASSERT_ON_THREAD(log_thread);
+
+    assert(schedule->m_cfg_cache_dir);
+    
+    mem_buffer_clear_data(tmp_buffer);
+
+    if (mem_buffer_printf(tmp_buffer, "%s/%s/cache_%05d", schedule->m_cfg_cache_dir, log_thread->m_name, id) < 0) {
+        CPE_ERROR(log_thread->m_em, "log: %s: manage: format buffer fail", log_thread->m_name);
+        return NULL;
+    }
+
+    return mem_buffer_make_continuous(tmp_buffer, 0);
+}
+
+void net_log_thread_set_state(net_log_thread_t log_thread, net_log_thread_state_t state) {
+    ASSERT_ON_THREAD(log_thread);
+    
+    if (log_thread->m_state == state) return;
+    
+    net_log_schedule_t schedule = log_thread->m_schedule;
+    if (schedule->m_debug) {
+        CPE_INFO(
+            log_thread->m_em, "log: thread %s: state %s ==> %s", log_thread->m_name,
+            net_log_thread_state_str(log_thread->m_state), net_log_thread_state_str(state));
+    }
+    
+    log_thread->m_state = state;
+}
+
+const char * net_log_thread_state_str(net_log_thread_state_t state) {
+    switch(state) {
+    case net_log_thread_state_runing:
+        return "runing";
+    case net_log_thread_state_pause:
+        return "pause";
+    case net_log_thread_state_stoping:
+        return "stoping";
+    case net_log_thread_state_stoped:
+        return "stoped";
+    }
 }

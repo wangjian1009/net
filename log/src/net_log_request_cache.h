@@ -1,6 +1,6 @@
 #ifndef NET_LOG_REQUEST_CACHE_H_INCLEDED
 #define NET_LOG_REQUEST_CACHE_H_INCLEDED
-#include "net_log_request_manage.h"
+#include "net_log_thread_i.h"
 
 typedef enum net_log_request_cache_state {
     net_log_request_cache_building,
@@ -8,7 +8,7 @@ typedef enum net_log_request_cache_state {
 } net_log_request_cache_state_t;
 
 struct net_log_request_cache {
-    net_log_request_manage_t m_mgr;
+    net_log_thread_t m_thread;
     TAILQ_ENTRY(net_log_request_cache) m_next;
     uint32_t m_id;
     net_log_request_cache_state_t m_state;
@@ -18,7 +18,7 @@ struct net_log_request_cache {
 
 net_log_request_cache_t
 net_log_request_cache_create(
-    net_log_request_manage_t mgr, uint32_t id, net_log_request_cache_state_t state);
+    net_log_thread_t thread, uint32_t id, net_log_request_cache_state_t state);
 void net_log_request_cache_free(net_log_request_cache_t cache);
 
 void net_log_request_cache_clear_and_free(net_log_request_cache_t cache);

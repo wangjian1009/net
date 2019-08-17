@@ -239,7 +239,7 @@ void net_log_category_send_request(net_log_category_t category, net_log_request_
     net_log_schedule_t schedule = category->m_schedule;
 
     if (IS_ON_THREAD(category->m_sender)) {
-        net_log_request_manage_process_cmd_send(category->m_sender->m_request_mgr, send_param);
+        net_log_thread_process_cmd_send(category->m_sender, send_param);
     }
     else {
         struct net_log_thread_cmd_package_send cmd_send;

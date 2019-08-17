@@ -10,7 +10,6 @@
 #include "net_trans_manage.h"
 #include "net_log_thread_i.h"
 #include "net_log_thread_cmd.h"
-#include "net_log_request_manage.h"
 #include "net_log_request.h"
 #include "net_log_request_cache.h"
 
@@ -136,12 +135,8 @@ static void net_log_thread_teardown(net_log_thread_t log_thread) {
         log_thread->m_trans_mgr = NULL;
     }
     
-    if (log_thread->m_request_mgr) {
-        if (schedule->m_cfg_cache_dir) { /*保存缓存 */
-            net_log_request_mgr_save_and_clear_requests(log_thread->m_request_mgr);
-        }
-        net_log_request_manage_free(log_thread->m_request_mgr);
-        log_thread->m_request_mgr = NULL;
+    if (schedule->m_cfg_cache_dir) { /*保存缓存 */
+        net_log_thread_save_and_clear_requests(log_thread);
     }
 
     if (!IS_ON_THREAD_MAIN(schedule)) {
@@ -166,11 +161,14 @@ static void * net_log_thread_execute(void * param) {
         CPE_INFO(schedule->m_em, "log: thread %s: thread: thread starated", log_thread->m_name);
     }
 
-    assert(log_thread->m_runing_thread == NULL);
     assert(log_thread->m_watcher == NULL);
-    assert(log_thread->m_request_mgr == NULL);
     assert(log_thread->m_net_schedule == NULL);
     assert(log_thread->m_net_driver == NULL);
+    assert(log_thread->m_trans_mgr == NULL);
+    assert(TAILQ_EMPTY(&log_thread->m_waiting_requests));
+    assert(TAILQ_EMPTY(&log_thread->m_active_requests));
+    assert(TAILQ_EMPTY(&log_thread->m_free_requests));
+    assert(TAILQ_EMPTY(&log_thread->m_caches));
 
     if (net_log_thread_setup(log_thread) != 0) {
         return NULL;
@@ -187,7 +185,7 @@ static void * net_log_thread_execute(void * param) {
     net_log_thread_send_cmd(schedule->m_thread_main, (net_log_thread_cmd_t)&stop_cmd);
 
     if (schedule->m_debug) {
-        CPE_INFO(schedule->m_em, "log: %s: thread: thread stoped", log_thread->m_name);
+        CPE_INFO(schedule->m_em, "log: thread %s: thread: thread stoped", log_thread->m_name);
     }
 
     return NULL;

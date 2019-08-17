@@ -16,7 +16,6 @@
 #include "net_log_thread_i.h"
 #include "net_log_state_monitor_i.h"
 #include "net_log_env_i.h"
-#include "net_log_request_manage.h"
 
 net_log_schedule_t
 net_log_schedule_create(

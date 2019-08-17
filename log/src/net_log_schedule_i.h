@@ -33,11 +33,9 @@ typedef TAILQ_HEAD(net_log_env_list, net_log_env) net_log_env_list_t;
 typedef TAILQ_HEAD(net_log_env_category_list, net_log_env_category) net_log_env_category_list_t;
 
 typedef struct net_log_request * net_log_request_t;
-typedef struct net_log_request_manage * net_log_request_manage_t;
 typedef struct net_log_request_cache * net_log_request_cache_t;
-typedef struct net_log_pipe * net_log_pipe_t;
-typedef struct net_log_thread_cmd * net_log_thread_cmd_t;
 typedef struct net_log_request_param * net_log_request_param_t;
+typedef struct net_log_thread_cmd * net_log_thread_cmd_t;
 typedef struct net_log_builder * net_log_builder_t;
 typedef struct net_log_group * net_log_group_t;
 typedef struct net_log_tag * net_log_tag_t;

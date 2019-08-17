@@ -1,6 +1,6 @@
 #ifndef NET_LOG_REQUEST_H_INCLEDED
 #define NET_LOG_REQUEST_H_INCLEDED
-#include "net_log_request_manage.h"
+#include "net_log_thread_i.h"
 
 #define LOG_PRODUCER_SEND_MAGIC_NUM 0x1B35487A
 
@@ -35,7 +35,7 @@ struct net_log_request_param {
 };
 
 struct net_log_request {
-    net_log_request_manage_t m_mgr;
+    net_log_thread_t m_thread;
     TAILQ_ENTRY(net_log_request) m_next;
     uint32_t m_id;
     net_log_category_t m_category;
@@ -51,7 +51,7 @@ struct net_log_request {
     uint32_t m_first_error_time;
 };
 
-net_log_request_t net_log_request_create(net_log_request_manage_t mgr, net_log_request_param_t send_param);
+net_log_request_t net_log_request_create(net_log_thread_t thread, net_log_request_param_t send_param);
 void net_log_request_free(net_log_request_t request);
 
 void net_log_request_real_free(net_log_request_t request);
