@@ -4,6 +4,8 @@
 #include "net_log_request_cache.h"
 
 void net_log_thread_process_cmd_send(net_log_thread_t log_thread, net_log_request_param_t send_param) {
+    net_log_schedule_t schedule = log_thread->m_schedule;
+    
     ASSERT_ON_THREAD(log_thread);
     
     assert(send_param);
@@ -13,7 +15,7 @@ void net_log_thread_process_cmd_send(net_log_thread_t log_thread, net_log_reques
         if (log_thread->m_request_buf_size < log_thread->m_schedule->m_cfg_cache_mem_capacity) { /*没有超过内存限制 */
             net_log_request_t request = net_log_request_create(log_thread, send_param);
             if (request == NULL) {
-                CPE_ERROR(log_thread->m_em, "log: thread %s: send: create request fail", log_thread->m_name);
+                CPE_ERROR(schedule->m_em, "log: thread %s: send: create request fail", log_thread->m_name);
                 goto SEND_FAIL;
             }
 
@@ -25,14 +27,14 @@ void net_log_thread_process_cmd_send(net_log_thread_t log_thread, net_log_reques
     if (cache == NULL || cache->m_state != net_log_request_cache_building) {
         cache = net_log_request_cache_create(log_thread, log_thread->m_cache_max_id + 1, net_log_request_cache_building);
         if (cache == NULL) {
-            CPE_ERROR(log_thread->m_em, "log: thread %s: send: create cache fail", log_thread->m_name);
+            CPE_ERROR(schedule->m_em, "log: thread %s: send: create cache fail", log_thread->m_name);
             goto SEND_FAIL;
         }
         log_thread->m_cache_max_id++;
     }
 
     if (net_log_request_cache_append(cache, send_param) != 0) {
-        CPE_ERROR(log_thread->m_em, "log: thread %s: send: append to cache %d fail", log_thread->m_name, cache->m_id);
+        CPE_ERROR(schedule->m_em, "log: thread %s: send: append to cache %d fail", log_thread->m_name, cache->m_id);
         goto SEND_FAIL;
     }
 
@@ -56,7 +58,7 @@ void net_log_thread_process_cmd_pause(net_log_thread_t log_thread) {
     
     if (log_thread->m_state == net_log_thread_state_pause) {
         if (schedule->m_debug) {
-            CPE_INFO(log_thread->m_em, "log: thread %s: already pause", log_thread->m_name);
+            CPE_INFO(schedule->m_em, "log: thread %s: already pause", log_thread->m_name);
         }
         return;
     }
@@ -70,7 +72,7 @@ void net_log_thread_process_cmd_resume(net_log_thread_t log_thread) {
 
     /* if (log_thread->m_state == net_log_thread_state_runing) { */
     /*     if (schedule->m_debug) { */
-    /*         CPE_INFO(log_thread->m_em, "log: thread %s: already running", log_thread->m_name); */
+    /*         CPE_INFO(schedule->m_em, "log: thread %s: already running", log_thread->m_name); */
     /*     } */
     /*     return; */
     /* } */

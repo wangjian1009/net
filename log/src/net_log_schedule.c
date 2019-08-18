@@ -10,12 +10,16 @@
 #include "net_schedule.h"
 #include "net_address.h"
 #include "net_timer.h"
+#include "net_local_ip_stack_monitor.h"
 #include "net_log_schedule_i.h"
 #include "net_log_state_i.h"
 #include "net_log_category_i.h"
 #include "net_log_thread_i.h"
+#include "net_log_thread_cmd.h"
 #include "net_log_state_monitor_i.h"
 #include "net_log_env_i.h"
+
+static void net_log_schedule_on_local_ip_stack_changed(void * ctx, net_schedule_t net_schedule);
 
 net_log_schedule_t
 net_log_schedule_create(
@@ -55,6 +59,14 @@ net_log_schedule_create(
     schedule->m_env_active = NULL;
     _MS(schedule->m_main_thread_id = pthread_self());
     schedule->m_thread_main = NULL;
+    schedule->m_net_monitor = NULL;
+
+    schedule->m_net_monitor = net_local_ip_stack_monitor_create(
+        schedule->m_net_schedule, schedule, NULL, net_log_schedule_on_local_ip_stack_changed);
+    if (schedule->m_net_monitor == NULL) {
+        CPE_ERROR(schedule->m_em, "log: schedule: create net monitor fail!");
+        goto CREATE_ERROR;
+    }
     
     schedule->m_cfg_project = cpe_str_mem_dup(alloc, cfg_project);
     if (schedule->m_cfg_project == NULL) {
@@ -97,6 +109,7 @@ net_log_schedule_create(
     return schedule;
 
 CREATE_ERROR:
+    if (schedule->m_net_monitor) net_local_ip_stack_monitor_free(schedule->m_net_monitor);
     if (schedule->m_state_fsm_def) fsm_def_machine_free(schedule->m_state_fsm_def);
     if (schedule->m_dump_timer) net_timer_free(schedule->m_dump_timer);
     if (schedule->m_cfg_project) mem_free(alloc, schedule->m_cfg_project);
@@ -158,12 +171,17 @@ void net_log_schedule_free(net_log_schedule_t schedule) {
         net_log_env_free(TAILQ_FIRST(&schedule->m_envs));
     }
     
-    /**/
+    /*net*/
     if (schedule->m_dump_timer) {
         net_timer_free(schedule->m_dump_timer);
         schedule->m_dump_timer = NULL;
     }
 
+    if (schedule->m_net_monitor) {
+        net_local_ip_stack_monitor_free(schedule->m_net_monitor);
+        schedule->m_net_monitor = NULL;
+    }
+    
     /*state*/
     fsm_machine_fini(&schedule->m_state_fsm);
     fsm_def_machine_free(schedule->m_state_fsm_def);
@@ -501,6 +519,23 @@ void net_log_schedule_set_active_env(net_log_schedule_t schedule, net_log_env_t 
                 CPE_INFO(schedule->m_em, "log: schedule: no ep, auto-pause!");
             }
             net_log_state_fsm_apply_evt(schedule, net_log_state_fsm_evt_pause);
+        }
+    }
+}
+
+static void net_log_schedule_on_local_ip_stack_changed(void * ctx, net_schedule_t net_schedule) {
+    net_log_schedule_t schedule = ctx;
+    ASSERT_ON_THREAD_MAIN(schedule);
+
+    struct net_log_thread_cmd_update_net update_net_cmd;
+    update_net_cmd.head.m_size = sizeof(update_net_cmd);
+    update_net_cmd.head.m_cmd = net_log_thread_cmd_update_net;
+    update_net_cmd.m_local_ip_stack = net_schedule_local_ip_stack(schedule->m_net_schedule);
+    
+    net_log_thread_t log_thread;
+    TAILQ_FOREACH(log_thread, &schedule->m_threads, m_next) {
+        if (log_thread->m_is_runing) {
+            net_log_thread_send_cmd(log_thread, (net_log_thread_cmd_t)&update_net_cmd);
         }
     }
 }

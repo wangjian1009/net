@@ -1,6 +1,7 @@
 #include <assert.h>
 #include "cpe/pal/pal_errno.h"
 #include "cpe/pal/pal_stdio.h"
+#include "cpe/pal/pal_stdlib.h"
 #include "cpe/pal/pal_string.h"
 #include "cpe/utils/tailq_sort.h"
 #include "cpe/utils/string_utils.h"

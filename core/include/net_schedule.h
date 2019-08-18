@@ -47,7 +47,7 @@ int net_schedule_dns_local_query(
 
 /*ipstack*/
 net_local_ip_stack_t net_schedule_local_ip_stack(net_schedule_t schedule);
-void net_schedule_local_ip_stack_set_to_none(net_schedule_t schedule);
+void net_schedule_set_local_ip_stack(net_schedule_t schedule, net_local_ip_stack_t ipstack);
 int net_schedule_local_ip_stack_detect(net_schedule_t schedule);
 const char * net_local_ip_stack_str(net_local_ip_stack_t ipstack);
 

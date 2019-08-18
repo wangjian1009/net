@@ -23,7 +23,6 @@ typedef enum net_log_thread_state {
 
 struct net_log_thread {
     net_log_schedule_t m_schedule;
-    error_monitor_t m_em;
     TAILQ_ENTRY(net_log_thread) m_next;
     const char * m_name;
     uint16_t m_cfg_active_request_count;

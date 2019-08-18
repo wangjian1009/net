@@ -1,10 +1,14 @@
+#include <assert.h>
 #include "cpe/pal/pal_string.h"
 #include "net_log_env_i.h"
 #include "net_log_env_category_i.h"
+#include "net_log_thread_i.h"
 
 net_log_env_t
 net_log_env_create(net_log_schedule_t schedule, const char * url) {
     size_t url_len = strlen(url) + 1;
+
+    ASSERT_ON_THREAD_MAIN(schedule);
     
     net_log_env_t env = mem_alloc(schedule->m_alloc, sizeof(struct net_log_env) + url_len);
     if (env == NULL) {
@@ -35,5 +39,12 @@ void net_log_env_free(net_log_env_t env) {
 }
 
 net_log_env_t net_log_env_find(net_log_schedule_t schedule, const char * url) {
+    ASSERT_ON_THREAD_MAIN(schedule);
+
+    net_log_env_t env;
+    TAILQ_FOREACH(env, &schedule->m_envs, m_next) {
+        if (strcmp(env->m_url, url) == 0) return env;
+    }
+
     return NULL;
 }

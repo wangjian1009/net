@@ -14,7 +14,7 @@
 #include "net_log_request_cache.h"
 
 static void net_log_thread_rw_cb(void * ctx, int fd, uint8_t do_read, uint8_t do_write);
-static void net_log_thread_pipe_clear(net_log_schedule_t schedule);
+static void net_log_thread_pipe_clear(net_log_thread_t thread);
 
 static int net_log_thread_setup(net_log_thread_t log_thread) {
     net_log_schedule_t schedule = log_thread->m_schedule;
@@ -26,15 +26,15 @@ static int net_log_thread_setup(net_log_thread_t log_thread) {
         log_thread->m_net_driver = schedule->m_net_driver;
     }
     else {
-        log_thread->m_net_schedule = net_schedule_create(schedule->m_alloc, log_thread->m_em, log_thread->m_cfg_net_buf_size);
+        log_thread->m_net_schedule = net_schedule_create(schedule->m_alloc, schedule->m_em, log_thread->m_cfg_net_buf_size);
         if (log_thread->m_net_schedule != NULL) {
-            CPE_ERROR(log_thread->m_em, "log: thread %s: setup: create net schedule fail", log_thread->m_name);
+            CPE_ERROR(schedule->m_em, "log: thread %s: setup: create net schedule fail", log_thread->m_name);
             goto SETUP_FAIL;
         }
 
         assert(log_thread->m_processor.m_setup);
         if (log_thread->m_processor.m_setup(log_thread->m_processor.m_ctx, log_thread, log_thread->m_net_schedule) != 0) {
-            CPE_ERROR(log_thread->m_em, "log: thread %s: setup: setup fail", log_thread->m_name);
+            CPE_ERROR(schedule->m_em, "log: thread %s: setup: setup fail", log_thread->m_name);
             goto SETUP_FAIL;
         }
         external_setup = 1;
@@ -45,7 +45,7 @@ static int net_log_thread_setup(net_log_thread_t log_thread) {
     log_thread->m_trans_mgr = 
         net_trans_manage_create(schedule->m_alloc, schedule->m_em, log_thread->m_net_schedule, log_thread->m_net_driver, trans_name);
     if (log_thread->m_trans_mgr == NULL) {
-        CPE_ERROR(log_thread->m_em, "log: thread %s: setup: create trans mgr fail", log_thread->m_name);
+        CPE_ERROR(schedule->m_em, "log: thread %s: setup: create trans mgr fail", log_thread->m_name);
         goto SETUP_FAIL;
     }
     /* log_thread->m_request_mgr = NULL; */
@@ -71,7 +71,7 @@ static int net_log_thread_setup(net_log_thread_t log_thread) {
 
     log_thread->m_watcher = net_watcher_create(log_thread->m_net_driver, log_thread->m_pipe_fd[0], log_thread, net_log_thread_rw_cb);
     if (log_thread->m_watcher == NULL) {
-        CPE_ERROR(log_thread->m_em, "log: thread %s: setup: create watcher fail!", log_thread->m_name);
+        CPE_ERROR(schedule->m_em, "log: thread %s: setup: create watcher fail!", log_thread->m_name);
         goto SETUP_FAIL;
     }
     net_watcher_update(log_thread->m_watcher, 1, 0);
@@ -192,34 +192,34 @@ static void * net_log_thread_execute(void * param) {
 }
 #endif
 
-int net_log_thread_start(net_log_thread_t thread) {
-    net_log_schedule_t schedule = thread->m_schedule;
+int net_log_thread_start(net_log_thread_t log_thread) {
+    net_log_schedule_t schedule = log_thread->m_schedule;
     ASSERT_ON_THREAD_MAIN(schedule);
 
 #if NET_LOG_MULTI_THREAD
-    if (thread->m_runing_thread != NULL) {
-        CPE_ERROR(schedule->m_em, "log: thread %s: start: already started", thread->m_name);
+    if (log_thread->m_runing_thread != NULL) {
+        CPE_ERROR(schedule->m_em, "log: thread %s: start: already started", log_thread->m_name);
         return -1;
     }
     
-    thread->m_runing_thread = mem_alloc(schedule->m_alloc, sizeof(pthread_t));
-    if (thread->m_runing_thread == NULL) {
-        CPE_ERROR(schedule->m_em, "log: thread %s: start: alloc pthread_t fail", thread->m_name);
+    log_thread->m_runing_thread = mem_alloc(schedule->m_alloc, sizeof(pthread_t));
+    if (log_thread->m_runing_thread == NULL) {
+        CPE_ERROR(schedule->m_em, "log: thread %s: start: alloc pthread_t fail", log_thread->m_name);
         return -1;
     }
 
-    if (pthread_create(thread->m_runing_thread, NULL, net_log_thread_execute, thread) != 0) {
+    if (pthread_create(log_thread->m_runing_thread, NULL, net_log_thread_execute, log_thread) != 0) {
         CPE_ERROR(
             schedule->m_em, "log: thread %s: start: pthread_create fail, error=%d (%s)!", 
-            thread->m_name, errno, strerror(errno));
-        mem_free(schedule->m_alloc, thread->m_runing_thread);
-        thread->m_runing_thread = NULL;
+            log_thread->m_name, errno, strerror(errno));
+        mem_free(schedule->m_alloc, log_thread->m_runing_thread);
+        log_thread->m_runing_thread = NULL;
         return -1;
     }
     
 #else   
     if (net_log_thread_setup(log_thread) != 0) {
-        CPE_ERROR(schedule->m_em, "log: thread %s: start: thread setup fail!", thread->m_name);
+        CPE_ERROR(schedule->m_em, "log: thread %s: start: thread setup fail!", log_thread->m_name);
         return -1;
     }
 #endif
@@ -231,11 +231,6 @@ void net_log_thread_notify_stop_force(net_log_thread_t log_thread) {
     net_log_schedule_t schedule = log_thread->m_schedule;
     ASSERT_ON_THREAD_MAIN(schedule);
     
-    if (log_thread->m_runing_thread == NULL) {
-        CPE_ERROR(schedule->m_em, "log: thread %s: notify stop complete: thread already stoped", log_thread->m_name);
-        return;
-    }
-
     struct net_log_thread_cmd stop_cmd;
     stop_cmd.m_size = sizeof(stop_cmd);
     stop_cmd.m_cmd = net_log_thread_cmd_stop_force;
@@ -323,5 +318,5 @@ static void net_log_thread_rw_cb(void * ctx, int fd, uint8_t do_read, uint8_t do
     }
 }
 
-static void net_log_thread_pipe_clear(net_log_schedule_t schedule) {
+static void net_log_thread_pipe_clear(net_log_thread_t log_thread) {
 }

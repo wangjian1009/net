@@ -17,7 +17,7 @@ net_log_request_cache_create(net_log_thread_t log_thread, uint32_t id, net_log_r
     
     net_log_request_cache_t cache = mem_alloc(schedule->m_alloc, sizeof(struct net_log_request_cache));
     if (cache == NULL) {
-        CPE_ERROR(log_thread->m_em, "log: thread %s: cache %d: alloc fail", log_thread->m_name, id);
+        CPE_ERROR(schedule->m_em, "log: thread %s: cache %d: alloc fail", log_thread->m_name, id);
         return NULL;
     }
 
@@ -30,14 +30,14 @@ net_log_request_cache_create(net_log_thread_t log_thread, uint32_t id, net_log_r
     if (cache->m_state == net_log_request_cache_building) {
         const char * file = net_log_thread_cache_file(log_thread, id, &log_thread->m_tmp_buffer);
         if (file == NULL) {
-            CPE_ERROR(log_thread->m_em, "log: thread %s: cache %d: alloc cache file fail", log_thread->m_name, id);
+            CPE_ERROR(schedule->m_em, "log: thread %s: cache %d: alloc cache file fail", log_thread->m_name, id);
             mem_free(schedule->m_alloc, cache);
             return NULL;
         }
 
         cache->m_file = vfs_file_open(schedule->m_vfs, file, "wb");
         if (cache->m_file == NULL) {
-            CPE_ERROR(log_thread->m_em, "log: thread %s: cache %d: open file %s fail", log_thread->m_name, id, file);
+            CPE_ERROR(schedule->m_em, "log: thread %s: cache %d: open file %s fail", log_thread->m_name, id, file);
             mem_free(schedule->m_alloc, cache);
             return NULL;
         }
@@ -47,7 +47,7 @@ net_log_request_cache_create(net_log_thread_t log_thread, uint32_t id, net_log_r
 
     if (schedule->m_debug) {
         CPE_INFO(
-            log_thread->m_em, "log: thread %s: cache %d: created, state=%s",
+            schedule->m_em, "log: thread %s: cache %d: created, state=%s",
             log_thread->m_name, id, net_log_request_cache_state_str(cache->m_state));
     }
     
@@ -61,7 +61,7 @@ void net_log_request_cache_free(net_log_request_cache_t cache) {
 
     if (schedule->m_debug) {
         CPE_INFO(
-            log_thread->m_em, "log: thread %s: cache %d: free, state=%s",
+            schedule->m_em, "log: thread %s: cache %d: free, state=%s",
             log_thread->m_name, cache->m_id, net_log_request_cache_state_str(cache->m_state));
     }
     
@@ -82,18 +82,18 @@ void net_log_request_cache_clear_and_free(net_log_request_cache_t cache) {
 
     const char * file = net_log_thread_cache_file(log_thread, cache->m_id, &log_thread->m_tmp_buffer);
     if (file == NULL) {
-        CPE_ERROR(log_thread->m_em, "log: thread %s: cache %d: clear and free: calc file path fail", log_thread->m_name, cache->m_id);
+        CPE_ERROR(schedule->m_em, "log: thread %s: cache %d: clear and free: calc file path fail", log_thread->m_name, cache->m_id);
     }
     else {
         if (vfs_file_rm(schedule->m_vfs, file) != 0) {
             CPE_ERROR(
-                log_thread->m_em, "log: thread %s: cache %d: clear and free: rm file %s fail, error=%d (%s)",
+                schedule->m_em, "log: thread %s: cache %d: clear and free: rm file %s fail, error=%d (%s)",
                 log_thread->m_name, cache->m_id, file, errno, strerror(errno));
         }
         else {
             if (schedule->m_debug) {
                 CPE_INFO(
-                    log_thread->m_em, "log: thread %s: cache %d: clear and free: rm file %s success",
+                    schedule->m_em, "log: thread %s: cache %d: clear and free: rm file %s success",
                     log_thread->m_name, cache->m_id, file);
             }
         }
@@ -122,7 +122,7 @@ int net_log_request_cache_append(net_log_request_cache_t cache, net_log_request_
 
     if (cache->m_state != net_log_request_cache_building) {
         CPE_ERROR(
-            log_thread->m_em, "log: thread %s: cache %d: push: state is %s, can`t push",
+            schedule->m_em, "log: thread %s: cache %d: push: state is %s, can`t push",
             log_thread->m_name, cache->m_id, net_log_request_cache_state_str(cache->m_state));
         return -1;
     }
@@ -141,14 +141,14 @@ int net_log_request_cache_append(net_log_request_cache_t cache, net_log_request_
     assert(cache->m_file);
     if (vfs_file_write(cache->m_file, &head, sizeof(head)) != sizeof(head)) {
         CPE_ERROR(
-            log_thread->m_em, "log: thread %s: cache %d: push: write head fail, error=%d (%s)",
+            schedule->m_em, "log: thread %s: cache %d: push: write head fail, error=%d (%s)",
             log_thread->m_name, cache->m_id, errno, strerror(errno));
         return -1;
     }
 
     if (vfs_file_write(cache->m_file, send_param->log_buf->data, send_param->log_buf->length) != send_param->log_buf->length) {
         CPE_ERROR(
-            log_thread->m_em, "log: thread %s: cache %d: push: write body error, length=%d, error=%d (%s)",
+            schedule->m_em, "log: thread %s: cache %d: push: write body error, length=%d, error=%d (%s)",
             log_thread->m_name, cache->m_id, send_param->log_buf->length, errno, strerror(errno));
         return -1;
     }
@@ -163,21 +163,21 @@ int net_log_request_cache_load(net_log_request_cache_t cache) {
 
     if (cache->m_state != net_log_request_cache_done) {
         CPE_ERROR(
-            log_thread->m_em, "log: thread %s: cache %d: load: state is %s, can`t load",
+            schedule->m_em, "log: thread %s: cache %d: load: state is %s, can`t load",
             log_thread->m_name, cache->m_id, net_log_request_cache_state_str(cache->m_state));
         return -1;
     }
 
     const char * file = net_log_thread_cache_file(log_thread, cache->m_id, &log_thread->m_tmp_buffer);
     if (file == NULL) {
-        CPE_ERROR(log_thread->m_em, "log: thread %s: cache %d: load: calc file path fail", log_thread->m_name, cache->m_id);
+        CPE_ERROR(schedule->m_em, "log: thread %s: cache %d: load: calc file path fail", log_thread->m_name, cache->m_id);
         return -1;
     }
 
     vfs_file_t fp = vfs_file_open(schedule->m_vfs, file, "rb");
     if (fp == NULL) {
         CPE_ERROR(
-            log_thread->m_em, "log: thread %s: cache %d: load: open file %s fail, error=%d(%s)",
+            schedule->m_em, "log: thread %s: cache %d: load: open file %s fail, error=%d(%s)",
             log_thread->m_name, cache->m_id, file, errno, strerror(errno));
         return -1;
     }
@@ -192,28 +192,28 @@ int net_log_request_cache_load(net_log_request_cache_t cache) {
         }
         else if (sz < 0) {
             CPE_ERROR(
-                log_thread->m_em, "log: thread %s: cache %d: load: read head from %s fail, error=%d(%s)",
+                schedule->m_em, "log: thread %s: cache %d: load: read head from %s fail, error=%d(%s)",
                 log_thread->m_name, cache->m_id, file, errno, strerror(errno));
             rv = -1;
             break;
         }
         else if (sz != sizeof(head)) {
             CPE_ERROR(
-                log_thread->m_em, "log: thread %s: cache %d: load: read head from %s not enough data, readed=%d, head-size=%d",
+                schedule->m_em, "log: thread %s: cache %d: load: read head from %s not enough data, readed=%d, head-size=%d",
                 log_thread->m_name, cache->m_id, file, (int)sz, (int)sizeof(head));
             rv = -1;
             break;
         }
 
         if (head.magic_num != LOG_PRODUCER_SEND_MAGIC_NUM) {
-            CPE_ERROR(log_thread->m_em, "log: thread %s: cache %d: load: magic num mismatch", log_thread->m_name, cache->m_id);
+            CPE_ERROR(schedule->m_em, "log: thread %s: cache %d: load: magic num mismatch", log_thread->m_name, cache->m_id);
             rv = -1;
             break;
         }
         
         if (head.compressed_size > UINT16_MAX) {
             CPE_ERROR(
-                log_thread->m_em, "log: thread %s: cache %d: load: compressed_size %d overflow",
+                schedule->m_em, "log: thread %s: cache %d: load: compressed_size %d overflow",
                 log_thread->m_name, cache->m_id, head.compressed_size);
             rv = -1;
             break;
@@ -222,7 +222,7 @@ int net_log_request_cache_load(net_log_request_cache_t cache) {
         net_log_lz4_buf_t buf = lz4_log_buf_create(schedule, NULL, head.compressed_size, head.raw_size);
         if (buf == NULL) {
             CPE_ERROR(
-                log_thread->m_em, "log: thread %s: cache %d: load: alloc buf fail, size=%d",
+                schedule->m_em, "log: thread %s: cache %d: load: alloc buf fail, size=%d",
                 log_thread->m_name, cache->m_id, head.compressed_size);
             rv = -1;
             break;
@@ -230,14 +230,14 @@ int net_log_request_cache_load(net_log_request_cache_t cache) {
 
         sz = vfs_file_read(fp, buf->data, buf->length);
         if (sz == 0) {
-            CPE_ERROR(log_thread->m_em, "log: thread %s: cache %d: load: read body fail, no data", log_thread->m_name, cache->m_id);
+            CPE_ERROR(schedule->m_em, "log: thread %s: cache %d: load: read body fail, no data", log_thread->m_name, cache->m_id);
             rv = -1;
             lz4_log_buf_free(buf);
             break;
         }
         else if (sz < 0) {
             CPE_ERROR(
-                log_thread->m_em, "log: thread %s: cache %d: load: read data fail, error=%d(%s)",
+                schedule->m_em, "log: thread %s: cache %d: load: read data fail, error=%d(%s)",
                 log_thread->m_name, cache->m_id, errno, strerror(errno));
             rv = -1;
             lz4_log_buf_free(buf);
@@ -245,7 +245,7 @@ int net_log_request_cache_load(net_log_request_cache_t cache) {
         }
         else if (sz != buf->length) {
             CPE_ERROR(
-                log_thread->m_em, "log: thread %s: cache %d: load: read data not enough data, readed=%d, body-size=%d",
+                schedule->m_em, "log: thread %s: cache %d: load: read data not enough data, readed=%d, body-size=%d",
                 log_thread->m_name, cache->m_id, (int)sz, buf->length);
             rv = -1;
             lz4_log_buf_free(buf);
@@ -254,7 +254,7 @@ int net_log_request_cache_load(net_log_request_cache_t cache) {
 
         if (head.category_id > schedule->m_category_count || schedule->m_categories[head.category_id] == NULL) {
             CPE_ERROR(
-                log_thread->m_em, "log: thread %s: cache %d: load: category %d not exist, ignore",
+                schedule->m_em, "log: thread %s: cache %d: load: category %d not exist, ignore",
                 log_thread->m_name, cache->m_id, head.category_id);
             lz4_log_buf_free(buf);
             continue;
@@ -263,7 +263,7 @@ int net_log_request_cache_load(net_log_request_cache_t cache) {
         net_log_category_t category = schedule->m_categories[head.category_id];
         net_log_request_param_t param = net_log_request_param_create(category, buf, head.log_count, head.builder_time);
         if (param == NULL) {
-            CPE_ERROR(log_thread->m_em, "log: thread %s: cache %d: load: create param fail", log_thread->m_name, cache->m_id);
+            CPE_ERROR(schedule->m_em, "log: thread %s: cache %d: load: create param fail", log_thread->m_name, cache->m_id);
             rv = -1;
             lz4_log_buf_free(buf);
             break;
@@ -271,7 +271,7 @@ int net_log_request_cache_load(net_log_request_cache_t cache) {
 
         net_log_request_t request = net_log_request_create(log_thread, param);
         if (request == NULL) {
-            CPE_ERROR(log_thread->m_em, "log: thread %s: cache %d: load: create request fail", log_thread->m_name, cache->m_id);
+            CPE_ERROR(schedule->m_em, "log: thread %s: cache %d: load: create request fail", log_thread->m_name, cache->m_id);
             net_log_request_param_free(param);
             return -1;
         }
@@ -280,7 +280,7 @@ int net_log_request_cache_load(net_log_request_cache_t cache) {
     } while(1);
 
     if (schedule->m_debug) {
-        CPE_INFO(log_thread->m_em, "log: thread %s: cache %d: load: read %d requests", log_thread->m_name, cache->m_id, count);
+        CPE_INFO(schedule->m_em, "log: thread %s: cache %d: load: read %d requests", log_thread->m_name, cache->m_id, count);
     }
     
     vfs_file_close(fp);
@@ -295,7 +295,7 @@ int net_log_request_cache_close(net_log_request_cache_t cache) {
     
     if (cache->m_state != net_log_request_cache_building) {
         CPE_ERROR(
-            log_thread->m_em, "log: thread %s: cache %d: close: state is %s, can`t save",
+            schedule->m_em, "log: thread %s: cache %d: close: state is %s, can`t save",
             log_thread->m_name, cache->m_id, net_log_request_cache_state_str(cache->m_state));
         return -1;
     }
@@ -308,7 +308,7 @@ int net_log_request_cache_close(net_log_request_cache_t cache) {
 
     if (schedule->m_debug) {
         CPE_INFO(
-            log_thread->m_em, "log: thread %s: cache %d: close: success, size=%.2fKB",
+            schedule->m_em, "log: thread %s: cache %d: close: success, size=%.2fKB",
             log_thread->m_name, cache->m_id, (float)cache->m_size / 1024.0f);
     }
     

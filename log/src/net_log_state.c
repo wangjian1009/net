@@ -100,23 +100,23 @@ void net_log_schedule_wait_stop_threads(net_log_schedule_t schedule) {
 void net_log_schedule_pause_senders(net_log_schedule_t schedule) {
     struct net_log_thread_cmd cmd;
     cmd.m_size = sizeof(cmd);
-    cmd.m_cmd = net_log_thread_cmd_pause;
+    /* cmd.m_cmd = net_log_thread_cmd_pause; */
 
-    net_log_thread_t thread;
-    TAILQ_FOREACH(thread, &schedule->m_threads, m_next) {
-        net_log_thread_send_cmd(thread, &cmd);
-    }
+    /* net_log_thread_t thread; */
+    /* TAILQ_FOREACH(thread, &schedule->m_threads, m_next) { */
+    /*     net_log_thread_send_cmd(thread, &cmd); */
+    /* } */
 }
 
 void net_log_schedule_resume_senders(net_log_schedule_t schedule) {
     struct net_log_thread_cmd cmd;
     cmd.m_size = sizeof(cmd);
-    cmd.m_cmd = net_log_thread_cmd_resume;
+    /* cmd.m_cmd = net_log_thread_cmd_resume; */
 
-    net_log_thread_t thread;
-    TAILQ_FOREACH(thread, &schedule->m_threads, m_next) {
-        net_log_thread_send_cmd(thread, &cmd);
-    }
+    /* net_log_thread_t thread; */
+    /* TAILQ_FOREACH(thread, &schedule->m_threads, m_next) { */
+    /*     net_log_thread_send_cmd(thread, &cmd); */
+    /* } */
 }
 
 /* int net_log_schedule_start_main(net_log_schedule_t schedule) { */

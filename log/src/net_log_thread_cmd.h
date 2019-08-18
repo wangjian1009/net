@@ -7,8 +7,8 @@ NET_BEGIN_DECL
 typedef enum net_log_thread_cmd_type {
     net_log_thread_cmd_package_pack,
     net_log_thread_cmd_package_send,
-    net_log_thread_cmd_pause,
-    net_log_thread_cmd_resume,
+    net_log_thread_cmd_update_env,
+    net_log_thread_cmd_update_net,
     net_log_thread_cmd_stop_begin,
     net_log_thread_cmd_stop_force,
     net_log_thread_cmd_stoped,
@@ -19,6 +19,16 @@ typedef enum net_log_thread_cmd_type {
 struct net_log_thread_cmd {
     uint8_t m_size;
     uint8_t m_cmd;
+};
+
+struct net_log_thread_cmd_update_env {
+    struct net_log_thread_cmd head;
+    net_log_env_t m_env;
+};
+
+struct net_log_thread_cmd_update_net {
+    struct net_log_thread_cmd head;
+    net_local_ip_stack_t m_local_ip_stack;
 };
 
 struct net_log_thread_cmd_stoped {

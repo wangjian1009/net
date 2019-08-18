@@ -68,6 +68,9 @@ struct net_log_schedule {
     uint32_t m_cfg_stop_wait_ms;
     net_timer_t m_dump_timer;
 
+    /**/
+    net_local_ip_stack_monitor_t m_net_monitor;
+
     /*state*/
     fsm_def_machine_t m_state_fsm_def;
     struct fsm_machine m_state_fsm;

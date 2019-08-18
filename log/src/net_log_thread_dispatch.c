@@ -23,11 +23,11 @@ void net_log_thread_dispatch(net_log_thread_t log_thread, net_log_thread_cmd_t c
         net_log_thread_process_cmd_send(log_thread, send_cmd->m_send_param);
         break;
     }
-    case net_log_thread_cmd_pause:
-        net_log_thread_process_cmd_pause(log_thread);
+    case net_log_thread_cmd_update_env:
+        //net_log_thread_process_cmd_pause(log_thread);
         break;
-    case net_log_thread_cmd_resume:
-        net_log_thread_process_cmd_resume(log_thread);
+    case net_log_thread_cmd_update_net:
+        //net_log_thread_process_cmd_resume(log_thread);
         break;
     case net_log_thread_cmd_stop_begin:
         net_log_thread_process_cmd_stop_begin(log_thread);

@@ -14,7 +14,6 @@ net_log_thread_t net_log_thread_create(net_log_schedule_t schedule, const char *
     net_log_thread_t log_thread = mem_alloc(schedule->m_alloc, sizeof(struct net_log_thread) + (processor ? processor->m_capacity : 0));
 
     log_thread->m_schedule = schedule;
-    log_thread->m_em = schedule->m_em;
     log_thread->m_name = name;
     log_thread->m_state = net_log_thread_state_stoped;
     
@@ -29,7 +28,7 @@ net_log_thread_t net_log_thread_create(net_log_schedule_t schedule, const char *
     
     log_thread->m_cfg_active_request_count = 1;
     log_thread->m_cfg_net_buf_size = 2 * 1024 * 1024;
-    log_thread->m_runing_thread = NULL;
+    _MS(log_thread->m_runing_thread = NULL);
     log_thread->m_watcher = NULL;
     log_thread->m_pipe_r_size = 0;
     log_thread->m_is_runing = 0;
@@ -137,7 +136,7 @@ const char * net_log_thread_cache_dir(net_log_thread_t log_thread, mem_buffer_t 
     mem_buffer_clear_data(tmp_buffer);
 
     if (mem_buffer_printf(tmp_buffer, "%s/%s", schedule->m_cfg_cache_dir, log_thread->m_name) < 0) {
-        CPE_ERROR(log_thread->m_em, "log: %s: manage: format buffer fail", log_thread->m_name);
+        CPE_ERROR(schedule->m_em, "log: %s: manage: format buffer fail", log_thread->m_name);
         return NULL;
     }
 
@@ -153,7 +152,7 @@ const char * net_log_thread_cache_file(net_log_thread_t log_thread, uint32_t id,
     mem_buffer_clear_data(tmp_buffer);
 
     if (mem_buffer_printf(tmp_buffer, "%s/%s/cache_%05d", schedule->m_cfg_cache_dir, log_thread->m_name, id) < 0) {
-        CPE_ERROR(log_thread->m_em, "log: %s: manage: format buffer fail", log_thread->m_name);
+        CPE_ERROR(schedule->m_em, "log: %s: manage: format buffer fail", log_thread->m_name);
         return NULL;
     }
 
@@ -168,7 +167,7 @@ void net_log_thread_set_state(net_log_thread_t log_thread, net_log_thread_state_
     net_log_schedule_t schedule = log_thread->m_schedule;
     if (schedule->m_debug) {
         CPE_INFO(
-            log_thread->m_em, "log: thread %s: state %s ==> %s", log_thread->m_name,
+            schedule->m_em, "log: thread %s: state %s ==> %s", log_thread->m_name,
             net_log_thread_state_str(log_thread->m_state), net_log_thread_state_str(state));
     }
     

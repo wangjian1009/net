@@ -55,7 +55,7 @@ net_log_request_create(net_log_thread_t log_thread, net_log_request_param_t send
     else {
         request = mem_alloc(schedule->m_alloc, sizeof(struct net_log_request));
         if (request == NULL) {
-            CPE_ERROR(log_thread->m_em, "log: thread %s: request: alloc fail!", log_thread->m_name);
+            CPE_ERROR(schedule->m_em, "log: thread %s: request: alloc fail!", log_thread->m_name);
             return NULL;
         }
     }
@@ -78,7 +78,7 @@ net_log_request_create(net_log_thread_t log_thread, net_log_request_param_t send
 
     if (schedule->m_debug) {
         CPE_INFO(
-            log_thread->m_em, "log: %s: category [%d]%s: request %d: created (total-active=%d, total-waiting=%d)",
+            schedule->m_em, "log: %s: category [%d]%s: request %d: created (total-active=%d, total-waiting=%d)",
             log_thread->m_name, category->m_id, category->m_name, request->m_id,
             log_thread->m_active_request_count, log_thread->m_request_count - log_thread->m_active_request_count);
     }
@@ -111,7 +111,7 @@ void net_log_request_free(net_log_request_t request) {
 
     if (schedule->m_debug) {
         CPE_INFO(
-            log_thread->m_em, "log: %s: category [%d]%s: request %d: free  (total-active=%d, total-waiting=%d)",
+            schedule->m_em, "log: %s: category [%d]%s: request %d: free  (total-active=%d, total-waiting=%d)",
             log_thread->m_name, category->m_id, category->m_name, request->m_id,
             log_thread->m_active_request_count, log_thread->m_request_count - log_thread->m_active_request_count);
     }
@@ -188,7 +188,7 @@ void net_log_request_set_state(net_log_request_t request, net_log_request_state_
 
     if (schedule->m_debug) {
         CPE_INFO(
-            log_thread->m_em, "log: %s: category [%d]%s: request %d: state %s ==> %s",
+            schedule->m_em, "log: %s: category [%d]%s: request %d: state %s ==> %s",
             log_thread->m_name, category->m_id, category->m_name, request->m_id,
             net_log_request_state_str(old_state),
             net_log_request_state_str(request->m_state));
@@ -224,7 +224,7 @@ static void net_log_request_on_header(net_trans_task_t task, void * ctx, const c
         request->m_response_have_request_id = 1;
         if (schedule->m_debug) {
             CPE_INFO(
-                log_thread->m_em, "log: %s: category [%d]%s: request %d: response have request-id",
+                schedule->m_em, "log: %s: category [%d]%s: request %d: response have request-id",
                 log_thread->m_name, category->m_id, category->m_name, request->m_id);
         }
     }
@@ -242,7 +242,7 @@ static int net_log_request_send(net_log_request_t request) {
     
     if (log_thread->m_env_active == NULL) {
         CPE_ERROR(
-            log_thread->m_em, "log: %s: category [%d]%s: request %d: entry-point not configured",
+            schedule->m_em, "log: %s: category [%d]%s: request %d: entry-point not configured",
             log_thread->m_name, category->m_id, category->m_name, request->m_id);
         return -1;
     }
@@ -277,7 +277,7 @@ static int net_log_request_send(net_log_request_t request) {
     request->m_task = net_trans_task_create(log_thread->m_trans_mgr, net_trans_method_post, buf, schedule->m_debug);
     if (request->m_task == NULL) {
         CPE_ERROR(
-            log_thread->m_em, "log: %s: category [%d]%s: request %d: create trans task fail",
+            schedule->m_em, "log: %s: category [%d]%s: request %d: create trans task fail",
             log_thread->m_name, category->m_id, category->m_name, request->m_id);
         return -1;
     }
@@ -390,7 +390,7 @@ static int net_log_request_send(net_log_request_t request) {
 
     if (net_trans_task_start(request->m_task) != 0) {
         CPE_ERROR(
-            log_thread->m_em, "log: %s: category [%d]%s: request %d: start fail",
+            schedule->m_em, "log: %s: category [%d]%s: request %d: start fail",
             log_thread->m_name, category->m_id, category->m_name, request->m_id);
         net_trans_task_free(request->m_task);
         request->m_task = NULL;
@@ -399,7 +399,7 @@ static int net_log_request_send(net_log_request_t request) {
 
     if (schedule->m_debug) {
         CPE_INFO(
-            log_thread->m_em, "log: %s: category [%d]%s: request %d: start success",
+            schedule->m_em, "log: %s: category [%d]%s: request %d: start success",
             log_thread->m_name, category->m_id, category->m_name, request->m_id);
     }
     
@@ -426,7 +426,7 @@ static void net_log_request_process_result(
 
         if (schedule->m_debug) {
             CPE_INFO(
-                log_thread->m_em, "log: %s: category [%d]%s: request %d: complete with result %s, pause",
+                schedule->m_em, "log: %s: category [%d]%s: request %d: complete with result %s, pause",
                 log_thread->m_name, category->m_id, category->m_name, request->m_id,
                 net_log_request_send_result_str(send_result));
         }
@@ -436,7 +436,7 @@ static void net_log_request_process_result(
             request->m_delay_process = net_timer_create(log_thread->m_net_driver, net_log_request_delay_commit, request);
             if (request->m_delay_process == NULL) {
                 CPE_ERROR(
-                    log_thread->m_em, "log: %s: category [%d]%s: request %d: complete with result %s, create delay process timer fail",
+                    schedule->m_em, "log: %s: category [%d]%s: request %d: complete with result %s, create delay process timer fail",
                     log_thread->m_name, category->m_id, category->m_name, request->m_id,
                     net_log_request_send_result_str(send_result));
 
@@ -451,7 +451,7 @@ static void net_log_request_process_result(
 
         if (schedule->m_debug) {
             CPE_INFO(
-                log_thread->m_em, "log: %s: category [%d]%s: request %d: complete with result %s, delay %.2fs",
+                schedule->m_em, "log: %s: category [%d]%s: request %d: complete with result %s, delay %.2fs",
                 log_thread->m_name, category->m_id, category->m_name, request->m_id,
                 net_log_request_send_result_str(send_result),
                 ((float)sleepMs) / 1000.0f);
@@ -516,7 +516,7 @@ net_log_request_calc_result(net_log_schedule_t schedule, net_log_request_t reque
     case net_trans_task_init:
     case net_trans_task_working:
         CPE_ERROR(
-            log_thread->m_em, "log: %s: category [%d]%s: request %d: transfer not complete",
+            schedule->m_em, "log: %s: category [%d]%s: request %d: transfer not complete",
             log_thread->m_name, category->m_id, category->m_name, request->m_id);
         return net_log_request_send_network_error;
     case net_trans_task_done:
@@ -526,20 +526,20 @@ net_log_request_calc_result(net_log_schedule_t schedule, net_log_request_t reque
     switch(net_trans_task_result(task)) {
     case net_trans_result_unknown:
         CPE_ERROR(
-            log_thread->m_em, "log: %s: category [%d]%s: request %d: transfer result unknown!",
+            schedule->m_em, "log: %s: category [%d]%s: request %d: transfer result unknown!",
             log_thread->m_name, category->m_id, category->m_name, request->m_id);
         return net_log_request_send_network_error;
     case net_trans_result_complete:
         break;
     case net_trans_result_error:
         CPE_ERROR(
-            log_thread->m_em, "log: %s: category [%d]%s: request %d: transfer error, %s",
+            schedule->m_em, "log: %s: category [%d]%s: request %d: transfer error, %s",
             log_thread->m_name, category->m_id, category->m_name, request->m_id,
             net_trans_task_error_str(net_trans_task_error(task)));
         return net_log_request_send_network_error;
     case net_trans_result_cancel:
         CPE_ERROR(
-            log_thread->m_em, "log: %s: category [%d]%s: request %d: transfer canceled",
+            schedule->m_em, "log: %s: category [%d]%s: request %d: transfer canceled",
             log_thread->m_name, category->m_id, category->m_name, request->m_id);
         return net_log_request_send_network_error;
     }
@@ -547,7 +547,7 @@ net_log_request_calc_result(net_log_schedule_t schedule, net_log_request_t reque
     int16_t http_code = net_trans_task_res_code(task);
     if (http_code == 0) {
         CPE_ERROR(
-            log_thread->m_em, "log: %s: category [%d]%s: request %d: transfer get server response fail",
+            schedule->m_em, "log: %s: category [%d]%s: request %d: transfer get server response fail",
             log_thread->m_name, category->m_id, category->m_name, request->m_id);
         return net_log_request_send_network_error;
     }
@@ -588,7 +588,7 @@ static int32_t net_log_request_check_result(
 
         if (schedule->m_debug) {
             CPE_INFO(
-                log_thread->m_em, "log: %s: category [%d]%s: request %d: time error",
+                schedule->m_em, "log: %s: category [%d]%s: request %d: time error",
                 log_thread->m_name, category->m_id, category->m_name, request->m_id);
         }
         
@@ -611,7 +611,7 @@ static int32_t net_log_request_check_result(
         
         if (schedule->m_debug) {
             CPE_INFO(
-                log_thread->m_em, "log: %s: category [%d]%s: request %d: send quota error",
+                schedule->m_em, "log: %s: category [%d]%s: request %d: send quota error",
                 log_thread->m_name, category->m_id, category->m_name, request->m_id);
         }
 
@@ -635,7 +635,7 @@ static int32_t net_log_request_check_result(
 
         if (schedule->m_debug) {
             CPE_INFO(
-                log_thread->m_em, "log: %s: category [%d]%s: request %d: send network error",
+                schedule->m_em, "log: %s: category [%d]%s: request %d: send network error",
                 log_thread->m_name, category->m_id, category->m_name, request->m_id);
         }
 
@@ -648,14 +648,14 @@ static int32_t net_log_request_check_result(
     if (schedule->m_debug) {
         if (send_result == net_log_request_send_ok) {
             CPE_INFO(
-                log_thread->m_em, "log: %s: category [%d]%s: request %d: send success, buffer-len=%d, raw-len=%d",
+                schedule->m_em, "log: %s: category [%d]%s: request %d: send success, buffer-len=%d, raw-len=%d",
                 log_thread->m_name, category->m_id, category->m_name, request->m_id,
                 (int)request->m_send_param->log_buf->length,
                 (int)request->m_send_param->log_buf->raw_length);
         }
         else {
             CPE_INFO(
-                log_thread->m_em, "log: %s: category [%d]%s: request %d: send fail, discard data, buffer-len=%d, raw=len=%d",
+                schedule->m_em, "log: %s: category [%d]%s: request %d: send fail, discard data, buffer-len=%d, raw=len=%d",
                 log_thread->m_name, category->m_id, category->m_name, request->m_id,
                 (int)request->m_send_param->log_buf->length,
                 (int)request->m_send_param->log_buf->raw_length);
@@ -685,7 +685,7 @@ static void net_log_request_rebuild_time(
     
     if (schedule->m_debug) {
         CPE_INFO(
-            log_thread->m_em, "log: %s: category [%d]%s: request %d: rebuild time",
+            schedule->m_em, "log: %s: category [%d]%s: request %d: rebuild time",
             log_thread->m_name, category->m_id, category->m_name, request->m_id);
     }
 
@@ -694,14 +694,14 @@ static void net_log_request_rebuild_time(
     char * buf = (char *)malloc(lz4_buf->raw_length);
     if (buf == NULL) {
         CPE_ERROR(
-            log_thread->m_em, "log: %s: category [%d]%s: request %d: alloc buf fail",
+            schedule->m_em, "log: %s: category [%d]%s: request %d: alloc buf fail",
             log_thread->m_name, category->m_id, category->m_name, request->m_id);
         return;
     }
 
     if (LZ4_decompress_safe((const char* )lz4_buf->data, buf, lz4_buf->length, lz4_buf->raw_length) <= 0) {
         CPE_ERROR(
-            log_thread->m_em, "log: %s: category [%d]%s: request %d: LZ4_decompress_safe error",
+            schedule->m_em, "log: %s: category [%d]%s: request %d: LZ4_decompress_safe error",
             log_thread->m_name, category->m_id, category->m_name, request->m_id);
         free(buf);
         return;
@@ -714,7 +714,7 @@ static void net_log_request_rebuild_time(
     int compressed_size = LZ4_compress_default((char *)buf, compress_data, lz4_buf->raw_length, compress_bound);
     if(compressed_size <= 0) {
         CPE_ERROR(
-            log_thread->m_em, "log: %s: category [%d]%s: request %d: LZ4_compress_default error",
+            schedule->m_em, "log: %s: category [%d]%s: request %d: LZ4_compress_default error",
             log_thread->m_name, category->m_id, category->m_name, request->m_id);
         free(buf);
         free(compress_data);
@@ -726,7 +726,7 @@ static void net_log_request_rebuild_time(
     free(compress_data); compress_data = NULL;
     if (new_lz4_buf == NULL) {
         CPE_ERROR(
-            log_thread->m_em, "log: %s: category [%d]%s: request %d: alloc new buf fail, sz=%d",
+            schedule->m_em, "log: %s: category [%d]%s: request %d: alloc new buf fail, sz=%d",
             log_thread->m_name, category->m_id, category->m_name, request->m_id,
             (int)(sizeof(struct net_log_lz4_buf) + compressed_size));
         return;

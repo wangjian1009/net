@@ -11,36 +11,34 @@ net_local_ip_stack_t net_schedule_local_ip_stack(net_schedule_t schedule) {
     return schedule->m_local_ip_stack;
 }
 
-void net_schedule_local_ip_stack_set_to_none(net_schedule_t schedule) {
-    schedule->m_local_ip_stack = net_local_ip_stack_none;
+void net_schedule_set_local_ip_stack(net_schedule_t schedule, net_local_ip_stack_t local_ip_stack) {
+    if (schedule->m_local_ip_stack == local_ip_stack) return;
     
     if (schedule->m_debug) {
-        CPE_INFO(schedule->m_em, "core: set to none, network ==> %s", net_local_ip_stack_str(schedule->m_local_ip_stack));
+        CPE_INFO(
+            schedule->m_em, "core: network %s ==> %s", 
+            net_local_ip_stack_str(schedule->m_local_ip_stack), net_local_ip_stack_str(local_ip_stack));
     }
+
+    schedule->m_local_ip_stack = local_ip_stack;
 }
-    
+
 int net_schedule_local_ip_stack_detect(net_schedule_t schedule) {
     struct in6_addr addr6_gateway = IN6ADDR_ANY_INIT;
-    if (0 != getdefaultgateway6(&addr6_gateway)
-        || IN6_IS_ADDR_UNSPECIFIED(&addr6_gateway))
-    {
-        schedule->m_local_ip_stack = net_local_ip_stack_ipv4;
+    if (0 != getdefaultgateway6(&addr6_gateway) || IN6_IS_ADDR_UNSPECIFIED(&addr6_gateway)) {
         if (schedule->m_debug) {
-            CPE_INFO(schedule->m_em, "core: no ipv6 defaultgetway, network ==> %s", net_local_ip_stack_str(schedule->m_local_ip_stack));
+            CPE_INFO(schedule->m_em, "core: ip stack detect: no ipv6 defaultgetway");
         }
+        net_schedule_set_local_ip_stack(schedule, net_local_ip_stack_ipv4);
         return 0;
     }
     
     struct in_addr addr_gateway = {0};
-    if (0 != getdefaultgateway(&addr_gateway)
-        || INADDR_NONE == addr_gateway.s_addr
-        || INADDR_ANY == addr_gateway.s_addr)
-    {
-        schedule->m_local_ip_stack = net_local_ip_stack_ipv6;
+    if (0 != getdefaultgateway(&addr_gateway) || INADDR_NONE == addr_gateway.s_addr || INADDR_ANY == addr_gateway.s_addr) {
         if (schedule->m_debug) {
-            CPE_INFO(schedule->m_em, "core: no ipv4 defaultgetway, network ==> %s", net_local_ip_stack_str(schedule->m_local_ip_stack));
+            CPE_INFO(schedule->m_em, "core: ip stack detect: no ipv4 defaultgetway");
         }
-
+        net_schedule_set_local_ip_stack(schedule, net_local_ip_stack_ipv6);
         return 0;
     }
     
@@ -50,16 +48,13 @@ int net_schedule_local_ip_stack_detect(net_schedule_t schedule) {
     if (have_ipv4) { local_stack |= net_local_ip_stack_ipv4; }
     if (have_ipv6) { local_stack |= net_local_ip_stack_ipv6; }
     if (net_local_ip_stack_dual != local_stack) {
-        schedule->m_local_ip_stack = (net_local_ip_stack_t)local_stack;
-
         if (schedule->m_debug) {
             CPE_INFO(
-                schedule->m_em, "core: ipv4 test %s, ipv6 test %s, network ==> %s",
-                have_ipv4 ? "success" : "fail",
-                have_ipv6 ? "success" : "fail",
-                net_local_ip_stack_str(schedule->m_local_ip_stack));
+                schedule->m_em, "core: ip stack detect: ipv4 test %s, ipv6 test %s",
+                have_ipv4 ? "success" : "fail", have_ipv6 ? "success" : "fail");
         }
 
+        net_schedule_set_local_ip_stack(schedule, (net_local_ip_stack_t)local_stack);
         return 0;
     }
     
@@ -79,27 +74,21 @@ int net_schedule_local_ip_stack_detect(net_schedule_t schedule) {
     }
 
     if (dns_ip_stack != net_local_ip_stack_none) {
-        schedule->m_local_ip_stack = (net_local_ip_stack_t)local_stack;
-        
         if (schedule->m_debug) {
-            CPE_INFO(
-                schedule->m_em, "core: dns tested, network ==> %s",
-                net_local_ip_stack_str(schedule->m_local_ip_stack));
+            CPE_INFO(schedule->m_em, "core: ip stack detect: dns tested");
         }
 
+        net_schedule_set_local_ip_stack(schedule, (net_local_ip_stack_t)local_stack);
         return 0;
     }
     else {
-        schedule->m_local_ip_stack = (net_local_ip_stack_t)local_stack;
-        
         if (schedule->m_debug) {
             CPE_INFO(
-                schedule->m_em, "core: no dns tested, ipv4 test %s, ipv6 test %s, network ==> %s",
-                have_ipv4 ? "success" : "fail",
-                have_ipv6 ? "success" : "fail",
-                net_local_ip_stack_str(schedule->m_local_ip_stack));
+                schedule->m_em, "core: ip stack detect: no dns tested, ipv4 test %s, ipv6 test %s",
+                have_ipv4 ? "success" : "fail", have_ipv6 ? "success" : "fail");
         }
 
+        net_schedule_set_local_ip_stack(schedule, (net_local_ip_stack_t)local_stack);
         return 0;
     }
 }
