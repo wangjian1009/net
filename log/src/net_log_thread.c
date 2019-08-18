@@ -4,6 +4,7 @@
 #include "cpe/pal/pal_strings.h"
 #include "cpe/pal/pal_stdio.h"
 #include "cpe/pal/pal_errno.h"
+#include "net_schedule.h"
 #include "net_log_thread_i.h"
 #include "net_log_thread_cmd.h"
 #include "net_log_request_cache.h"
@@ -35,7 +36,8 @@ net_log_thread_t net_log_thread_create(net_log_schedule_t schedule, const char *
     log_thread->m_net_schedule = NULL;
     log_thread->m_net_driver = NULL;
     log_thread->m_trans_mgr = NULL;
-    
+    log_thread->m_env_active = NULL;
+
     /*request*/
     log_thread->m_request_max_id = 0;
     log_thread->m_request_count = 0;
@@ -174,12 +176,19 @@ void net_log_thread_set_state(net_log_thread_t log_thread, net_log_thread_state_
     log_thread->m_state = state;
 }
 
+uint8_t net_log_thread_is_suspend(net_log_thread_t log_thread) {
+    ASSERT_ON_THREAD(log_thread);
+    if (log_thread->m_net_schedule == NULL) return 1;
+    if (log_thread->m_env_active == NULL) return 1;
+    if (net_schedule_local_ip_stack(log_thread->m_net_schedule) == net_local_ip_stack_none) return 1;
+    
+    return 0;
+}
+
 const char * net_log_thread_state_str(net_log_thread_state_t state) {
     switch(state) {
     case net_log_thread_state_runing:
         return "runing";
-    case net_log_thread_state_pause:
-        return "pause";
     case net_log_thread_state_stoping:
         return "stoping";
     case net_log_thread_state_stoped:

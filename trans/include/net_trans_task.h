@@ -26,6 +26,7 @@ int net_trans_task_set_net_interface(net_trans_task_t task, const char * net_int
 int net_trans_task_set_protect_vpn(net_trans_task_t task, uint8_t protect_vpn);
 int net_trans_task_set_follow_location(net_trans_task_t task, uint8_t enable);
 
+void net_trans_task_clear_callback(net_trans_task_t task);
 void net_trans_task_set_callback(
     net_trans_task_t task,
     net_trans_task_commit_op_t commit,

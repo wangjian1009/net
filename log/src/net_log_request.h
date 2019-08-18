@@ -18,12 +18,12 @@ typedef enum net_log_request_state {
 
 typedef enum net_log_request_send_result {
     net_log_request_send_ok = 0,
-    net_log_request_send_network_error = 1,
-    net_log_request_send_quota_exceed = 2,
-    net_log_request_send_unauthorized = 3,
-    net_log_request_send_server_error = 4,
-    net_log_request_send_discard_error = 5,
-    net_log_request_send_time_error = 6,
+    net_log_request_send_network_error,
+    net_log_request_send_quota_exceed,
+    net_log_request_send_unauthorized,
+    net_log_request_send_server_error,
+    net_log_request_send_discard_error,
+    net_log_request_send_time_error,
 } net_log_request_send_result_t;
 
 struct net_log_request_param {
@@ -41,7 +41,6 @@ struct net_log_request {
     net_log_category_t m_category;
     net_log_request_state_t m_state;
     net_trans_task_t m_task;
-    net_timer_t m_delay_process;
 
     /*result*/
     net_log_request_param_t m_send_param;

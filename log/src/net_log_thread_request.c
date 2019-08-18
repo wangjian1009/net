@@ -15,7 +15,7 @@ void net_log_thread_check_active_requests(net_log_thread_t log_thread) {
     net_log_schedule_t schedule = log_thread->m_schedule;
     ASSERT_ON_THREAD(log_thread);
 
-    if (log_thread->m_state == net_log_thread_state_pause
+    if (net_log_thread_is_suspend(log_thread)
         || log_thread->m_state == net_log_thread_state_stoped) return;
 
     while(log_thread->m_cfg_active_request_count == 0

@@ -583,6 +583,19 @@ void net_trans_task_set_debug(net_trans_task_t task, uint8_t is_debug) {
     task->m_debug = is_debug;
 }
 
+void net_trans_task_clear_callback(net_trans_task_t task) {
+    if (task->m_ctx_free) {
+        task->m_ctx_free(task->m_ctx);
+    }
+
+    task->m_commit_op = NULL;
+    task->m_write_op = NULL;
+    task->m_progress_op = NULL;
+    task->m_head_op = NULL;
+    task->m_ctx = NULL;
+    task->m_ctx_free = NULL;
+}
+
 void net_trans_task_set_callback(
     net_trans_task_t task,
     net_trans_task_commit_op_t commit,

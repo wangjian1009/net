@@ -16,7 +16,6 @@
 
 typedef enum net_log_thread_state {
     net_log_thread_state_runing,
-    net_log_thread_state_pause,
     net_log_thread_state_stoping,
     net_log_thread_state_stoped,
 } net_log_thread_state_t;
@@ -76,6 +75,8 @@ void net_log_thread_wait_stop(net_log_thread_t log_thread);
 
 int net_log_thread_send_cmd(net_log_thread_t log_thread, net_log_thread_cmd_t cmd);
 void net_log_thread_dispatch(net_log_thread_t log_thread, net_log_thread_cmd_t cmd);
+
+uint8_t net_log_thread_is_suspend(net_log_thread_t log_thread);
 
 /*cache*/
 const char * net_log_thread_cache_dir(net_log_thread_t log_thread, mem_buffer_t tmp_buffer);

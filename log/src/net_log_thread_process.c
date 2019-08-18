@@ -1,4 +1,5 @@
 #include <assert.h>
+#include "net_schedule.h"
 #include "net_log_thread_i.h"
 #include "net_log_thread_cmd.h"
 #include "net_log_request.h"
@@ -56,14 +57,26 @@ static void net_log_thread_process_package_send(net_log_schedule_t schedule, net
     return;
     
 SEND_FAIL:
-    //TODO: Loki net_log_category_add_fail_statistics(send_param->category, send_param->log_count);
+    net_log_category_statistic_discard(send_param->category, net_log_discard_reason_queue_to_send_fail);
     net_log_request_param_free(send_param);
 }
 
 static void net_log_thread_process_update_env(net_log_schedule_t schedule, net_log_thread_t log_thread, net_log_thread_cmd_t cmd) {
+    struct net_log_thread_cmd_update_env* update_env_cmd = (struct net_log_thread_cmd_update_env*)cmd;
+    assert(update_env_cmd->head.m_size = sizeof(*update_env_cmd));
+    
 }
 
 static void net_log_thread_process_update_net(net_log_schedule_t schedule, net_log_thread_t log_thread, net_log_thread_cmd_t cmd) {
+    struct net_log_thread_cmd_update_net* update_net_cmd = (struct net_log_thread_cmd_update_net*)cmd;
+    assert(update_net_cmd->head.m_size = sizeof(*update_net_cmd));
+    
+    if (log_thread->m_net_schedule != schedule->m_net_schedule) {
+        net_schedule_set_local_ip_stack(log_thread->m_net_schedule, update_net_cmd->m_local_ip_stack);
+    }
+    
+    if (update_net_cmd->m_local_ip_stack == net_local_ip_stack_none) { //TODO:
+    }
 }
 
 static void net_log_thread_process_stop_force(net_log_schedule_t schedule, net_log_thread_t log_thread, net_log_thread_cmd_t cmd) {
