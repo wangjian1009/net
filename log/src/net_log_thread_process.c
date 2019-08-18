@@ -3,9 +3,7 @@
 #include "net_log_request.h"
 #include "net_log_request_cache.h"
 
-void net_log_thread_process_cmd_send(
-    net_log_thread_t log_thread, net_log_request_param_t send_param)
-{
+void net_log_thread_process_cmd_send(net_log_thread_t log_thread, net_log_request_param_t send_param) {
     ASSERT_ON_THREAD(log_thread);
     
     assert(send_param);
@@ -90,10 +88,7 @@ void net_log_thread_process_cmd_stop_begin(net_log_thread_t log_thread) {
         net_log_thread_process_cmd_stop_force(log_thread);
     }
     else {
-        //net_log_thread_set_state(log_thread, net_log_thread_state_stoping);
-        if (schedule->m_debug) {
-            CPE_INFO(log_thread->m_em, "log: thread %s: stoping: wait all request done", log_thread->m_name);
-        }
+        net_log_thread_set_state(log_thread, net_log_thread_state_stoping);
     }
 }
 
@@ -101,10 +96,13 @@ void net_log_thread_process_cmd_stop_force(net_log_thread_t log_thread) {
     net_log_schedule_t schedule = log_thread->m_schedule;
     ASSERT_ON_THREAD(log_thread);
 
-    //if (log_thread->m_state == net_log_thread_state_stoped) return;
+    if (log_thread->m_state == net_log_thread_state_stoped) return;
+
+    if (log_thread->m_processor.m_stop) {
+        log_thread->m_processor.m_stop(log_thread->m_processor.m_ctx, log_thread);
+    }
     
-    //net_log_thread_set_state(log_thread, net_log_thread_state_stoped);
-    CPE_ERROR(log_thread->m_em, "log: thread %s: manage: not support stop", log_thread->m_name);
+    net_log_thread_set_state(log_thread, net_log_thread_state_stoped);
 }
 
 
