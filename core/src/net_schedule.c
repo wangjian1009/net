@@ -2,6 +2,7 @@
 #include "cpe/pal/pal_stdlib.h"
 #include "cpe/utils/ringbuffer.h"
 #include "net_schedule_i.h"
+#include "net_local_ip_stack_monitor_i.h"
 #include "net_driver_i.h"
 #include "net_protocol_i.h"
 #include "net_endpoint_i.h"
@@ -47,10 +48,12 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em, uint32_t common_
     schedule->m_local_ip_stack = net_local_ip_stack_ipv4;
     schedule->m_domain_address_rule = NULL;
 
+    TAILQ_INIT(&schedule->m_local_ip_stack_monitors);
     TAILQ_INIT(&schedule->m_debug_setups);
     TAILQ_INIT(&schedule->m_drivers);
     TAILQ_INIT(&schedule->m_protocols);
     TAILQ_INIT(&schedule->m_links);
+    TAILQ_INIT(&schedule->m_free_local_ip_stack_monitors);
     TAILQ_INIT(&schedule->m_free_addresses);
     TAILQ_INIT(&schedule->m_free_links);
     TAILQ_INIT(&schedule->m_free_dns_querys);
@@ -116,6 +119,10 @@ void net_schedule_free(net_schedule_t schedule) {
         schedule->m_dns_resolver_ctx = NULL;
     }
 
+    while(!TAILQ_EMPTY(&schedule->m_local_ip_stack_monitors)) {
+        net_local_ip_stack_monitor_free(TAILQ_FIRST(&schedule->m_local_ip_stack_monitors));
+    }
+    
     while(!TAILQ_EMPTY(&schedule->m_links)) {
         net_link_free(TAILQ_FIRST(&schedule->m_links));
     }
@@ -142,10 +149,14 @@ void net_schedule_free(net_schedule_t schedule) {
         schedule->m_domain_address_rule = NULL;
     }
 
+    while(!TAILQ_EMPTY(&schedule->m_free_local_ip_stack_monitors)) {
+        net_local_ip_stack_monitor_real_free(TAILQ_FIRST(&schedule->m_free_local_ip_stack_monitors));
+    }
+
     while(!TAILQ_EMPTY(&schedule->m_free_addresses)) {
         net_address_real_free(TAILQ_FIRST(&schedule->m_free_addresses));
     }
-
+    
     while(!TAILQ_EMPTY(&schedule->m_free_links)) {
         net_link_real_free(TAILQ_FIRST(&schedule->m_free_links));
     }

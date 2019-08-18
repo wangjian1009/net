@@ -12,6 +12,7 @@ NET_BEGIN_DECL
 typedef struct net_address_in_cache * net_address_in_cache_t;
 typedef struct net_endpoint_next * net_endpoint_next_t;
 
+typedef TAILQ_HEAD(net_local_ip_stack_monitor_list, net_local_ip_stack_monitor) net_local_ip_stack_monitor_list_t;
 typedef TAILQ_HEAD(net_driver_list, net_driver) net_driver_list_t;
 typedef TAILQ_HEAD(net_acceptor_list, net_acceptor) net_acceptor_list_t;
 typedef TAILQ_HEAD(net_protocol_list, net_protocol) net_protocol_list_t;
@@ -38,6 +39,7 @@ struct net_schedule {
     net_debug_setup_list_t m_debug_setups;
 
     net_local_ip_stack_t m_local_ip_stack;
+    net_local_ip_stack_monitor_list_t m_local_ip_stack_monitors;
 
     net_address_rule_t m_domain_address_rule;
     
@@ -66,6 +68,7 @@ struct net_schedule {
     ringbuffer_t m_endpoint_buf;
     ringbuffer_block_t m_endpoint_tb;
 
+    net_local_ip_stack_monitor_list_t m_free_local_ip_stack_monitors;
     net_address_list_t m_free_addresses;
     net_link_list_t m_free_links;
     net_dns_query_list_t m_free_dns_querys;

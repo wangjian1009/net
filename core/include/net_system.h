@@ -7,6 +7,7 @@ NET_BEGIN_DECL
 #define NET_ENDPOINT_NO_LIMIT ((uint32_t)-1)
 
 typedef struct net_schedule * net_schedule_t;
+typedef struct net_local_ip_stack_monitor * net_local_ip_stack_monitor_t;
 typedef struct net_driver * net_driver_t;
 typedef struct net_protocol * net_protocol_t;
 typedef struct net_link * net_link_t;
