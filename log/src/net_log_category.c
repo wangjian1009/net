@@ -215,7 +215,7 @@ void net_log_category_pack_request(net_log_category_t category, net_log_builder_
     else {
         struct net_log_thread_cmd_package_pack cmd_pack;
         cmd_pack.head.m_size = sizeof(cmd_pack);
-        cmd_pack.head.m_cmd = net_log_thread_cmd_package_pack;
+        cmd_pack.head.m_cmd = net_log_thread_cmd_type_package_pack;
         cmd_pack.m_builder = builder;
 
         if (net_log_thread_send_cmd(category->m_flusher, (net_log_thread_cmd_t)&cmd_pack) != 0) {
@@ -238,26 +238,21 @@ void net_log_category_pack_request(net_log_category_t category, net_log_builder_
 void net_log_category_send_request(net_log_category_t category, net_log_request_param_t send_param) {
     net_log_schedule_t schedule = category->m_schedule;
 
-    if (IS_ON_THREAD(category->m_sender)) {
-        net_log_thread_process_cmd_send(category->m_sender, send_param);
+    struct net_log_thread_cmd_package_send cmd_send;
+    cmd_send.head.m_size = sizeof(cmd_send);
+    cmd_send.head.m_cmd = net_log_thread_cmd_type_package_send;
+    cmd_send.m_send_param = send_param;
+
+    if (net_log_thread_send_cmd(category->m_flusher, (net_log_thread_cmd_t)&cmd_send) != 0) {
+        net_log_category_statistic_discard(category, net_log_discard_reason_queue_to_send_fail);
+        net_log_request_param_free(send_param);
+        return;
     }
-    else {
-        struct net_log_thread_cmd_package_send cmd_send;
-        cmd_send.head.m_size = sizeof(cmd_send);
-        cmd_send.head.m_cmd = net_log_thread_cmd_package_send;
-        cmd_send.m_send_param = send_param;
 
-        if (net_log_thread_send_cmd(category->m_flusher, (net_log_thread_cmd_t)&cmd_send) != 0) {
-            net_log_category_statistic_discard(category, net_log_discard_reason_queue_to_send_fail);
-            net_log_request_param_free(send_param);
-            return;
-        }
-
-        if (schedule->m_debug) {
-            CPE_INFO(
-                schedule->m_em, "log: category [%d]%s: commit param to sender %s success!",
-                category->m_id, category->m_name, category->m_sender->m_name);
-        }
+    if (schedule->m_debug) {
+        CPE_INFO(
+            schedule->m_em, "log: category [%d]%s: commit param to sender %s success!",
+            category->m_id, category->m_name, category->m_sender->m_name);
     }
 }
 
@@ -444,7 +439,7 @@ void net_log_category_statistic_success(net_log_category_t category) {
     else {
         struct net_log_thread_cmd_staistic_package_success package_success_cmd;
         package_success_cmd.head.m_size = sizeof(package_success_cmd);
-        package_success_cmd.head.m_cmd = net_log_thread_cmd_staistic_package_success;
+        package_success_cmd.head.m_cmd = net_log_thread_cmd_type_staistic_package_success;
         package_success_cmd.m_category = category;
         assert(schedule->m_thread_main);
         net_log_thread_send_cmd(schedule->m_thread_main, (net_log_thread_cmd_t)&package_success_cmd);
@@ -460,7 +455,7 @@ void net_log_category_statistic_discard(net_log_category_t category, net_log_dis
     else {
         struct net_log_thread_cmd_staistic_package_discard package_discard_cmd;
         package_discard_cmd.head.m_size = sizeof(package_discard_cmd);
-        package_discard_cmd.head.m_cmd = net_log_thread_cmd_staistic_package_discard;
+        package_discard_cmd.head.m_cmd = net_log_thread_cmd_type_staistic_package_discard;
         package_discard_cmd.m_category = category;
         package_discard_cmd.m_reason = reason;
         net_log_thread_send_cmd(schedule->m_thread_main, (net_log_thread_cmd_t)&package_discard_cmd);

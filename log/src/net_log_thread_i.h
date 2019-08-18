@@ -87,13 +87,6 @@ int net_log_thread_save_and_clear_requests(net_log_thread_t log_thread);
 uint8_t net_log_thread_request_is_empty(net_log_thread_t log_thread);
 void net_log_thread_check_active_requests(net_log_thread_t log_thread);
 
-/*process*/
-void net_log_thread_process_cmd_send(net_log_thread_t log_thread, net_log_request_param_t send_param);
-void net_log_thread_process_cmd_pause(net_log_thread_t log_thread);
-void net_log_thread_process_cmd_resume(net_log_thread_t log_thread);
-void net_log_thread_process_cmd_stop_begin(net_log_thread_t log_thread);
-void net_log_thread_process_cmd_stop_force(net_log_thread_t log_thread);
-
 /*strings*/
 const char * net_log_thread_state_str(net_log_thread_state_t state);
 

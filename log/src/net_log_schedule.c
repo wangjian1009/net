@@ -529,7 +529,7 @@ static void net_log_schedule_on_local_ip_stack_changed(void * ctx, net_schedule_
 
     struct net_log_thread_cmd_update_net update_net_cmd;
     update_net_cmd.head.m_size = sizeof(update_net_cmd);
-    update_net_cmd.head.m_cmd = net_log_thread_cmd_update_net;
+    update_net_cmd.head.m_cmd = net_log_thread_cmd_type_update_net;
     update_net_cmd.m_local_ip_stack = net_schedule_local_ip_stack(schedule->m_net_schedule);
     
     net_log_thread_t log_thread;

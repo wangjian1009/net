@@ -179,7 +179,7 @@ static void * net_log_thread_execute(void * param) {
 
     struct net_log_thread_cmd_stoped stop_cmd;
     stop_cmd.head.m_size = sizeof(stop_cmd);
-    stop_cmd.head.m_cmd = net_log_thread_cmd_stoped;
+    stop_cmd.head.m_cmd = net_log_thread_cmd_type_stoped;
     stop_cmd.log_thread = log_thread;
     assert(schedule->m_thread_main);
     net_log_thread_send_cmd(schedule->m_thread_main, (net_log_thread_cmd_t)&stop_cmd);
@@ -233,7 +233,7 @@ void net_log_thread_notify_stop_force(net_log_thread_t log_thread) {
     
     struct net_log_thread_cmd stop_cmd;
     stop_cmd.m_size = sizeof(stop_cmd);
-    stop_cmd.m_cmd = net_log_thread_cmd_stop_force;
+    stop_cmd.m_cmd = net_log_thread_cmd_type_stop_force;
     net_log_thread_send_cmd(log_thread, &stop_cmd);
 
     if (schedule->m_debug) {

@@ -5,15 +5,15 @@
 NET_BEGIN_DECL
 
 typedef enum net_log_thread_cmd_type {
-    net_log_thread_cmd_package_pack,
-    net_log_thread_cmd_package_send,
-    net_log_thread_cmd_update_env,
-    net_log_thread_cmd_update_net,
-    net_log_thread_cmd_stop_begin,
-    net_log_thread_cmd_stop_force,
-    net_log_thread_cmd_stoped,
-    net_log_thread_cmd_staistic_package_discard,
-    net_log_thread_cmd_staistic_package_success,
+    net_log_thread_cmd_type_package_pack,
+    net_log_thread_cmd_type_package_send,
+    net_log_thread_cmd_type_update_env,
+    net_log_thread_cmd_type_update_net,
+    net_log_thread_cmd_type_stop_begin,
+    net_log_thread_cmd_type_stop_force,
+    net_log_thread_cmd_type_stoped,
+    net_log_thread_cmd_type_staistic_package_discard,
+    net_log_thread_cmd_type_staistic_package_success,
 } net_log_thread_cmd_type_t;
 
 struct net_log_thread_cmd {
