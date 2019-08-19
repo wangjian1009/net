@@ -187,9 +187,13 @@ static void * net_log_thread_execute(void * param) {
         return NULL;
     }
 
+    net_log_thread_set_state(log_thread, net_log_thread_state_runing);
+    
     assert(log_thread->m_processor.m_run);
     log_thread->m_processor.m_run(log_thread->m_processor.m_ctx, log_thread);
 
+    net_log_thread_set_state(log_thread, net_log_thread_state_stoped);
+    
     struct net_log_thread_cmd_stoped stop_cmd;
     stop_cmd.head.m_size = sizeof(stop_cmd);
     stop_cmd.head.m_cmd = net_log_thread_cmd_type_stoped;
@@ -224,6 +228,8 @@ int net_log_thread_start(net_log_thread_t log_thread) {
     }
 
     if (log_thread == schedule->m_thread_main) {
+        assert(log_thread->m_state == net_log_thread_state_stoped);
+        
         *log_thread->m_runing_thread = pthread_self();
         
         if (net_log_thread_setup(log_thread) != 0) {
@@ -231,6 +237,8 @@ int net_log_thread_start(net_log_thread_t log_thread) {
             return -1;
         }
 
+        net_log_thread_set_state(log_thread, net_log_thread_state_runing);
+        
         if (schedule->m_debug) {
             CPE_INFO(schedule->m_em, "log: thread %s: start: thread setup success!", log_thread->m_name);
         }
@@ -292,6 +300,8 @@ void net_log_thread_wait_stop(net_log_thread_t log_thread) {
         net_log_thread_pipe_clear(log_thread);
         net_log_thread_teardown(log_thread);
 
+        net_log_thread_set_state(log_thread, net_log_thread_state_stoped);
+        
         if (schedule->m_debug) {
             CPE_INFO(schedule->m_em, "log: thread %s: wait stop: tear down success!", log_thread->m_name);
         }
@@ -331,7 +341,8 @@ void net_log_thread_wait_stop(net_log_thread_t log_thread) {
 static void net_log_thread_rw_cb(void * ctx, int fd, uint8_t do_read, uint8_t do_write) {
     net_log_thread_t log_thread = ctx;
     net_log_schedule_t schedule = log_thread->m_schedule;
-
+    ASSERT_ON_THREAD(log_thread);
+    
     if (do_read) {
         uint8_t need_process = 1;
 
@@ -360,6 +371,12 @@ static void net_log_thread_rw_cb(void * ctx, int fd, uint8_t do_read, uint8_t do
                 if (log_thread->m_pipe_r_size < cmd->m_size) {
                     need_process = 0;
                     break;
+                }
+
+                if (schedule->m_debug) {
+                    CPE_INFO(
+                        schedule->m_em, "log: thread %s: <== %s",
+                        log_thread->m_name, net_log_thread_cmd_dump(&log_thread->m_tmp_buffer, cmd));
                 }
 
                 net_log_thread_dispatch(log_thread, cmd);

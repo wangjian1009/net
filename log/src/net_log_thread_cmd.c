@@ -9,18 +9,18 @@
 void net_log_thread_cmd_print(write_stream_t ws, net_log_thread_cmd_t cmd) {
     switch(cmd->m_cmd) {
     case net_log_thread_cmd_type_package_pack:
-        stream_printf(ws, "pack(category=%s)", ((struct net_log_thread_cmd_package_pack *)(cmd))->m_builder->m_category->m_name);
+        stream_printf(ws, "pack(category=%s)", ((struct net_log_thread_cmd_package_pack *)cmd)->m_builder->m_category->m_name);
         break;
     case net_log_thread_cmd_type_package_send:
-        stream_printf(ws, "send(category=%s)", ((struct net_log_thread_cmd_package_send *)(cmd))->m_send_param->category->m_name);
+        stream_printf(ws, "send(category=%s)", ((struct net_log_thread_cmd_package_send *)cmd)->m_send_param->category->m_name);
         break;
     case net_log_thread_cmd_type_update_env: {
-        net_log_env_t env = ((struct net_log_thread_cmd_update_env *)(cmd))->m_env;
+        net_log_env_t env = ((struct net_log_thread_cmd_update_env *)cmd)->m_env;
         stream_printf(ws, "update-env(url=%s)", env ? env->m_url : "N/A");
         break;
     }
     case net_log_thread_cmd_type_update_net:
-        stream_printf(ws, "update-net(local-ip-stack=%s)", net_local_ip_stack_str(((struct net_log_thread_cmd_update_net *)(cmd))->m_local_ip_stack));
+        stream_printf(ws, "update-net(local-ip-stack=%s)", net_local_ip_stack_str(((struct net_log_thread_cmd_update_net *)cmd)->m_local_ip_stack));
         break;
     case net_log_thread_cmd_type_stop_begin:
         stream_printf(ws, "stop-begin");
