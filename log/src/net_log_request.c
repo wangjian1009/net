@@ -29,14 +29,6 @@
 static int net_log_request_send(net_log_request_t request);
 static void net_log_request_rebuild_time(net_log_schedule_t schedule, net_log_category_t category, net_log_request_t request, uint32_t nowTime);
 
-static net_log_request_send_result_t net_log_request_calc_result(net_log_schedule_t schedule, net_log_request_t request, net_trans_task_t task);
-
-static int32_t net_log_request_check_result(
-    net_log_schedule_t schedule, net_log_category_t category, net_log_request_t request, net_log_request_send_result_t send_result);
-static void net_log_request_process_result(
-    net_log_schedule_t schedule, net_log_category_t category, net_log_thread_t mgr,
-    net_log_request_t request, net_log_request_send_result_t send_result);
-
 static void net_log_request_schedule_retry(
     net_log_schedule_t schedule, net_log_category_t category, net_log_thread_t log_thread, net_log_request_t request);
     
@@ -68,9 +60,7 @@ net_log_request_create(net_log_thread_t log_thread, net_log_request_param_t send
     request->m_id = ++log_thread->m_request_max_id;
     request->m_send_param = send_param;
     request->m_response_have_request_id = 0;
-    request->m_last_send_error = net_log_request_send_ok;
-    request->m_last_sleep_ms = 0;
-    request->m_first_error_time = 0;
+    request->m_need_rebuild_time = 0;
 
     log_thread->m_request_count++;
     log_thread->m_request_buf_size += send_param->log_buf->length;
@@ -150,7 +140,8 @@ void net_log_request_active(net_log_request_t request) {
     }
     
     if (net_log_request_send(request) != 0) {
-        net_log_request_process_result(schedule, category, log_thread, request, net_log_request_send_network_error);
+        net_log_request_set_state(request, net_log_request_state_waiting);
+        net_log_thread_commit_schedule_delay(log_thread, net_log_thread_commit_error_network);
     }
 }
 
@@ -191,6 +182,24 @@ void net_log_request_set_state(net_log_request_t request, net_log_request_state_
     }
 }
 
+static void net_log_request_commit_do_error(
+    net_log_schedule_t schedule, net_log_category_t category, net_log_thread_t log_thread, 
+    net_log_request_t request, net_log_thread_commit_error_t commit_error)
+{
+    net_log_request_set_state(request, net_log_request_state_waiting);
+
+    if (commit_error != net_log_thread_commit_error_none) {
+        net_log_thread_commit_schedule_delay(log_thread, commit_error);
+    }
+}
+
+static void net_log_request_commit_do_success(
+    net_log_schedule_t schedule, net_log_category_t category, net_log_thread_t log_thread, net_log_request_t request)
+{
+    net_log_category_statistic_success(category);
+    net_log_request_free(request);
+}
+
 static void net_log_request_commit(net_trans_task_t task, void * ctx, void * data, size_t data_size) {
     net_log_request_t request = ctx;
     net_log_category_t category = request->m_category;
@@ -201,12 +210,79 @@ static void net_log_request_commit(net_trans_task_t task, void * ctx, void * dat
 
     assert(request->m_task == task);
 
-    net_log_request_send_result_t send_result = net_log_request_calc_result(schedule, request, task);
+    switch(net_trans_task_state(task)) {
+    case net_trans_task_init:
+    case net_trans_task_working:
+        CPE_ERROR(
+            schedule->m_em, "log: %s: category [%d]%s: request %d: transfer not complete",
+            log_thread->m_name, category->m_id, category->m_name, request->m_id);
+        net_log_request_commit_do_error(schedule, category, log_thread, request, net_log_thread_commit_error_none);
+        goto COMMIT_COMPLETE;
+    case net_trans_task_done:
+        break;
+    }
 
+    switch(net_trans_task_result(task)) {
+    case net_trans_result_unknown:
+        CPE_ERROR(
+            schedule->m_em, "log: %s: category [%d]%s: request %d: transfer result unknown!",
+            log_thread->m_name, category->m_id, category->m_name, request->m_id);
+        net_log_request_commit_do_error(schedule, category, log_thread, request, net_log_thread_commit_error_network);
+        goto COMMIT_COMPLETE;
+    case net_trans_result_complete:
+        break;
+    case net_trans_result_error:
+        CPE_ERROR(
+            schedule->m_em, "log: %s: category [%d]%s: request %d: transfer error, %s",
+            log_thread->m_name, category->m_id, category->m_name, request->m_id,
+            net_trans_task_error_str(net_trans_task_error(task)));
+        net_log_request_commit_do_error(schedule, category, log_thread, request, net_log_thread_commit_error_network);
+        goto COMMIT_COMPLETE;
+    case net_trans_result_cancel:
+        CPE_ERROR(
+            schedule->m_em, "log: %s: category [%d]%s: request %d: transfer canceled",
+            log_thread->m_name, category->m_id, category->m_name, request->m_id);
+        net_log_request_commit_do_error(schedule, category, log_thread, request, net_log_thread_commit_error_none);
+        goto COMMIT_COMPLETE;
+    }
+
+    int16_t http_code = net_trans_task_res_code(task);
+    if (http_code == 0) {
+        CPE_ERROR(
+            schedule->m_em, "log: %s: category [%d]%s: request %d: transfer get server response fail",
+            log_thread->m_name, category->m_id, category->m_name, request->m_id);
+        net_log_request_commit_do_error(schedule, category, log_thread, request, net_log_thread_commit_error_network);
+        goto COMMIT_COMPLETE;
+    }
+
+    if (http_code / 100 == 2) {
+        net_log_request_commit_do_success(schedule, category, log_thread, request);
+    }
+    else {
+        CPE_ERROR(
+            schedule->m_em, "log: %s: category [%d]%s: request %d: server http error code %d",
+            log_thread->m_name, category->m_id, category->m_name, request->m_id, http_code);
+
+        if (http_code >= 500 || !request->m_response_have_request_id) {
+            net_log_request_commit_do_error(schedule, category, log_thread, request, net_log_thread_commit_error_network);
+        } else if (http_code == 403) {
+            net_log_request_commit_do_error(schedule, category, log_thread, request, net_log_thread_commit_error_quota_exceed);
+        } else if (http_code == 401 || http_code == 404) {
+            net_log_request_commit_do_error(schedule, category, log_thread, request, net_log_thread_commit_error_network);
+        }
+        /* else if (result->errorMessage != NULL && strstr(result->errorMessage, LOGE_TIME_EXPIRED) != NULL) { */
+        /*     return net_log_request_send_time_error; */
+        /* } */
+        else {
+            net_log_request_commit_do_error(schedule, category, log_thread, request, net_log_thread_commit_error_network);
+        }
+    }
+    
+COMMIT_COMPLETE:    
     net_trans_task_free(task);
     request->m_task = NULL;
 
-    net_log_request_process_result(schedule, category, log_thread, request, send_result);
+    net_log_thread_check_active_requests(log_thread);
 }
 
 static void net_log_request_on_header(net_trans_task_t task, void * ctx, const char * name, const char * value) {
@@ -233,14 +309,15 @@ static int net_log_request_send(net_log_request_t request) {
     net_log_schedule_t schedule = category->m_schedule;
     ASSERT_ON_THREAD(log_thread);
 
-    assert(log_thread->m_env_active);
-
+    assert(!net_log_thread_is_suspend(log_thread));
+    
     time_t nowTime = (uint32_t)time(NULL);
     if (nowTime - send_param->builder_time > 600
         || send_param->builder_time > (uint32_t)nowTime
-        || request->m_last_send_error == net_log_request_send_time_error)
+        || request->m_need_rebuild_time)
     {
         net_log_request_rebuild_time(schedule, category, request, (uint32_t)nowTime);
+        request->m_need_rebuild_time = 0;
     }
 
     net_log_lz4_buf_t buffer = send_param->log_buf;
@@ -438,50 +515,6 @@ static void net_log_request_schedule_retry(
     }
 }
 
-static void net_log_request_process_result(
-    net_log_schedule_t schedule, net_log_category_t category, net_log_thread_t log_thread,
-    net_log_request_t request, net_log_request_send_result_t send_result)
-{
-    ASSERT_ON_THREAD(log_thread);
-    
-    int32_t sleepMs = net_log_request_check_result(schedule, category, request, send_result);
-    if (sleepMs <= 0) { /*done or discard*/
-        if (send_result != net_log_request_send_ok) {
-    /*         switch(send_result) { */
-    /*         case net_log_request_send_network_error: */
-    /*         case net_log_request_send_quota_exceed: */
-    /*             net_log_request_send_unauthorized = 3, */
-    /* net_log_request_send_server_error = 4, */
-    /* net_log_request_send_discard_error = 5, */
-    /* net_log_request_send_time_error = 6, */
-
-            //net_log_category_statistic_discard(category, );
-        }
-        
-        net_log_request_free(request);
-        net_log_thread_check_active_requests(log_thread);
-    }
-}
-
-const char * net_log_request_send_result_str(net_log_request_send_result_t result) {
-    switch(result) {
-    case net_log_request_send_ok:
-        return "ok";
-    case net_log_request_send_network_error:
-        return "network-error";
-    case net_log_request_send_quota_exceed:
-        return "quota-exceed";
-    case net_log_request_send_unauthorized:
-        return "unauthorized";
-    case net_log_request_send_server_error:
-        return "server-error";
-    case net_log_request_send_discard_error:
-        return "discard-error";
-    case net_log_request_send_time_error:
-        return "time-error";
-    }
-}
-
 const char * net_log_request_state_str(net_log_request_state_t state) {
     switch(state) {
     case net_log_request_state_waiting:
@@ -510,164 +543,98 @@ void net_log_request_param_free(net_log_request_param_t send_param) {
     free(send_param);
 }
 
-static net_log_request_send_result_t
-net_log_request_calc_result(net_log_schedule_t schedule, net_log_request_t request, net_trans_task_t task) {
-    net_log_category_t category = request->m_category;
-    net_log_thread_t log_thread = request->m_thread;
-    ASSERT_ON_THREAD(log_thread);
+/* static int32_t net_log_request_check_result( */
+/*     net_log_schedule_t schedule, net_log_category_t category, net_log_request_t request, net_log_request_send_result_t send_result) */
+/* { */
+/*     net_log_thread_t log_thread = request->m_thread; */
+/*     ASSERT_ON_THREAD(log_thread); */
 
-    switch(net_trans_task_state(task)) {
-    case net_trans_task_init:
-    case net_trans_task_working:
-        CPE_ERROR(
-            schedule->m_em, "log: %s: category [%d]%s: request %d: transfer not complete",
-            log_thread->m_name, category->m_id, category->m_name, request->m_id);
-        return net_log_request_send_network_error;
-    case net_trans_task_done:
-        break;
-    }
+/*     switch (send_result) { */
+/*     case net_log_request_send_ok: */
+/*         break; */
+/*     case net_log_request_send_time_error: */
+/*         // if no this marco, drop data */
+/*         request->m_last_send_error = net_log_request_send_time_error; */
+/*         request->m_last_sleep_ms = INVALID_TIME_TRY_INTERVAL; */
 
-    switch(net_trans_task_result(task)) {
-    case net_trans_result_unknown:
-        CPE_ERROR(
-            schedule->m_em, "log: %s: category [%d]%s: request %d: transfer result unknown!",
-            log_thread->m_name, category->m_id, category->m_name, request->m_id);
-        return net_log_request_send_network_error;
-    case net_trans_result_complete:
-        break;
-    case net_trans_result_error:
-        CPE_ERROR(
-            schedule->m_em, "log: %s: category [%d]%s: request %d: transfer error, %s",
-            log_thread->m_name, category->m_id, category->m_name, request->m_id,
-            net_trans_task_error_str(net_trans_task_error(task)));
-        return net_log_request_send_network_error;
-    case net_trans_result_cancel:
-        CPE_ERROR(
-            schedule->m_em, "log: %s: category [%d]%s: request %d: transfer canceled",
-            log_thread->m_name, category->m_id, category->m_name, request->m_id);
-        return net_log_request_send_network_error;
-    }
-
-    int16_t http_code = net_trans_task_res_code(task);
-    if (http_code == 0) {
-        CPE_ERROR(
-            schedule->m_em, "log: %s: category [%d]%s: request %d: transfer get server response fail",
-            log_thread->m_name, category->m_id, category->m_name, request->m_id);
-        return net_log_request_send_network_error;
-    }
-
-    if (http_code / 100 == 2) {
-        return net_log_request_send_ok;
-    }
-    else if (http_code >= 500 || !request->m_response_have_request_id) {
-        return net_log_request_send_server_error;
-    }
-    else if (http_code == 403) {
-        return net_log_request_send_quota_exceed;
-    }
-    else if (http_code == 401 || http_code == 404) {
-        return net_log_request_send_unauthorized;
-    }
-    /* else if (result->errorMessage != NULL && strstr(result->errorMessage, LOGE_TIME_EXPIRED) != NULL) { */
-    /*     return net_log_request_send_time_error; */
-    /* } */
-    else {
-        return net_log_request_send_discard_error;
-    }
-}
-
-static int32_t net_log_request_check_result(
-    net_log_schedule_t schedule, net_log_category_t category, net_log_request_t request, net_log_request_send_result_t send_result)
-{
-    net_log_thread_t log_thread = request->m_thread;
-    ASSERT_ON_THREAD(log_thread);
-
-    switch (send_result) {
-    case net_log_request_send_ok:
-        break;
-    case net_log_request_send_time_error:
-        // if no this marco, drop data
-        request->m_last_send_error = net_log_request_send_time_error;
-        request->m_last_sleep_ms = INVALID_TIME_TRY_INTERVAL;
-
-        if (schedule->m_debug) {
-            CPE_INFO(
-                schedule->m_em, "log: %s: category [%d]%s: request %d: time error",
-                log_thread->m_name, category->m_id, category->m_name, request->m_id);
-        }
+/*         if (schedule->m_debug) { */
+/*             CPE_INFO( */
+/*                 schedule->m_em, "log: %s: category [%d]%s: request %d: time error", */
+/*                 log_thread->m_name, category->m_id, category->m_name, request->m_id); */
+/*         } */
         
-        return request->m_last_sleep_ms;
-    case net_log_request_send_quota_exceed:
-        if (request->m_last_send_error != net_log_request_send_quota_exceed) {
-            request->m_last_send_error = net_log_request_send_quota_exceed;
-            request->m_last_sleep_ms = BASE_QUOTA_ERROR_SLEEP_MS;
-            request->m_first_error_time = (uint32_t)time(NULL);
-        }
-        else {
-            if (request->m_last_sleep_ms < MAX_QUOTA_ERROR_SLEEP_MS) {
-                request->m_last_sleep_ms *= 2;
-            }
+/*         return request->m_last_sleep_ms; */
+/*     case net_log_request_send_quota_exceed: */
+/*         if (request->m_last_send_error != net_log_request_send_quota_exceed) { */
+/*             request->m_last_send_error = net_log_request_send_quota_exceed; */
+/*             request->m_last_sleep_ms = BASE_QUOTA_ERROR_SLEEP_MS; */
+/*             request->m_first_error_time = (uint32_t)time(NULL); */
+/*         } */
+/*         else { */
+/*             if (request->m_last_sleep_ms < MAX_QUOTA_ERROR_SLEEP_MS) { */
+/*                 request->m_last_sleep_ms *= 2; */
+/*             } */
 
-            if (time(NULL) - request->m_first_error_time > DROP_FAIL_DATA_TIME_SECOND) {
-                break;
-            }
-        }
+/*             if (time(NULL) - request->m_first_error_time > DROP_FAIL_DATA_TIME_SECOND) { */
+/*                 break; */
+/*             } */
+/*         } */
         
-        if (schedule->m_debug) {
-            CPE_INFO(
-                schedule->m_em, "log: %s: category [%d]%s: request %d: send quota error",
-                log_thread->m_name, category->m_id, category->m_name, request->m_id);
-        }
+/*         if (schedule->m_debug) { */
+/*             CPE_INFO( */
+/*                 schedule->m_em, "log: %s: category [%d]%s: request %d: send quota error", */
+/*                 log_thread->m_name, category->m_id, category->m_name, request->m_id); */
+/*         } */
 
-        return request->m_last_sleep_ms;
-    case net_log_request_send_server_error:
-    case net_log_request_send_network_error:
-        if (request->m_last_send_error != net_log_request_send_network_error) {
-            request->m_last_send_error = net_log_request_send_network_error;
-            request->m_last_sleep_ms = BASE_NETWORK_ERROR_SLEEP_MS;
-            request->m_first_error_time = (uint32_t)time(NULL);
-        }
-        else {
-            if (request->m_last_sleep_ms < MAX_NETWORK_ERROR_SLEEP_MS) {
-                request->m_last_sleep_ms *= 2;
-            }
-            // only drop data when SEND_TIME_INVALID_FIX not defined
-            if (time(NULL) - request->m_first_error_time > DROP_FAIL_DATA_TIME_SECOND) {
-                break;
-            }
-        }
+/*         return request->m_last_sleep_ms; */
+/*     case net_log_request_send_server_error: */
+/*     case net_log_request_send_network_error: */
+/*         if (request->m_last_send_error != net_log_request_send_network_error) { */
+/*             request->m_last_send_error = net_log_request_send_network_error; */
+/*             request->m_last_sleep_ms = BASE_NETWORK_ERROR_SLEEP_MS; */
+/*             request->m_first_error_time = (uint32_t)time(NULL); */
+/*         } */
+/*         else { */
+/*             if (request->m_last_sleep_ms < MAX_NETWORK_ERROR_SLEEP_MS) { */
+/*                 request->m_last_sleep_ms *= 2; */
+/*             } */
+/*             // only drop data when SEND_TIME_INVALID_FIX not defined */
+/*             if (time(NULL) - request->m_first_error_time > DROP_FAIL_DATA_TIME_SECOND) { */
+/*                 break; */
+/*             } */
+/*         } */
 
-        if (schedule->m_debug) {
-            CPE_INFO(
-                schedule->m_em, "log: %s: category [%d]%s: request %d: send network error",
-                log_thread->m_name, category->m_id, category->m_name, request->m_id);
-        }
+/*         if (schedule->m_debug) { */
+/*             CPE_INFO( */
+/*                 schedule->m_em, "log: %s: category [%d]%s: request %d: send network error", */
+/*                 log_thread->m_name, category->m_id, category->m_name, request->m_id); */
+/*         } */
 
-        return request->m_last_sleep_ms;
-    default:
-        // discard data
-        break;
-    }
+/*         return request->m_last_sleep_ms; */
+/*     default: */
+/*         // discard data */
+/*         break; */
+/*     } */
 
-    if (schedule->m_debug) {
-        if (send_result == net_log_request_send_ok) {
-            CPE_INFO(
-                schedule->m_em, "log: %s: category [%d]%s: request %d: send success, buffer-len=%d, raw-len=%d",
-                log_thread->m_name, category->m_id, category->m_name, request->m_id,
-                (int)request->m_send_param->log_buf->length,
-                (int)request->m_send_param->log_buf->raw_length);
-        }
-        else {
-            CPE_INFO(
-                schedule->m_em, "log: %s: category [%d]%s: request %d: send fail, discard data, buffer-len=%d, raw=len=%d",
-                log_thread->m_name, category->m_id, category->m_name, request->m_id,
-                (int)request->m_send_param->log_buf->length,
-                (int)request->m_send_param->log_buf->raw_length);
-        }
-    }
+/*     if (schedule->m_debug) { */
+/*         if (send_result == net_log_request_send_ok) { */
+/*             CPE_INFO( */
+/*                 schedule->m_em, "log: %s: category [%d]%s: request %d: send success, buffer-len=%d, raw-len=%d", */
+/*                 log_thread->m_name, category->m_id, category->m_name, request->m_id, */
+/*                 (int)request->m_send_param->log_buf->length, */
+/*                 (int)request->m_send_param->log_buf->raw_length); */
+/*         } */
+/*         else { */
+/*             CPE_INFO( */
+/*                 schedule->m_em, "log: %s: category [%d]%s: request %d: send fail, discard data, buffer-len=%d, raw=len=%d", */
+/*                 log_thread->m_name, category->m_id, category->m_name, request->m_id, */
+/*                 (int)request->m_send_param->log_buf->length, */
+/*                 (int)request->m_send_param->log_buf->raw_length); */
+/*         } */
+/*     } */
 
-    return 0;
-}
+/*     return 0; */
+/* } */
 
 static void net_log_request_rebuild_time(
     net_log_schedule_t schedule, net_log_category_t category, net_log_request_t request, uint32_t nowTime)

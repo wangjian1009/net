@@ -16,16 +16,6 @@ typedef enum net_log_request_state {
     net_log_request_state_active,
 } net_log_request_state_t;
 
-typedef enum net_log_request_send_result {
-    net_log_request_send_ok = 0,
-    net_log_request_send_network_error,
-    net_log_request_send_quota_exceed,
-    net_log_request_send_unauthorized,
-    net_log_request_send_server_error,
-    net_log_request_send_discard_error,
-    net_log_request_send_time_error,
-} net_log_request_send_result_t;
-
 struct net_log_request_param {
     net_log_category_t category;
     net_log_lz4_buf_t log_buf;
@@ -41,13 +31,11 @@ struct net_log_request {
     net_log_category_t m_category;
     net_log_request_state_t m_state;
     net_trans_task_t m_task;
-
+    uint8_t m_need_rebuild_time;
+    
     /*result*/
     net_log_request_param_t m_send_param;
     uint8_t m_response_have_request_id;
-    net_log_request_send_result_t m_last_send_error;
-    uint32_t m_last_sleep_ms;
-    uint32_t m_first_error_time;
 };
 
 net_log_request_t net_log_request_create(net_log_thread_t thread, net_log_request_param_t send_param);
@@ -58,7 +46,6 @@ void net_log_request_real_free(net_log_request_t request);
 void net_log_request_active(net_log_request_t request);
 void net_log_request_set_state(net_log_request_t request, net_log_request_state_t state);
 
-const char * net_log_request_send_result_str(net_log_request_send_result_t result);
 const char * net_log_request_state_str(net_log_request_state_t state);
 
 /**/

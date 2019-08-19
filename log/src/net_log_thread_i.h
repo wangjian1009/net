@@ -20,6 +20,12 @@ typedef enum net_log_thread_state {
     net_log_thread_state_stoped,
 } net_log_thread_state_t;
 
+typedef enum net_log_thread_commit_error {
+    net_log_thread_commit_error_none,
+    net_log_thread_commit_error_network,
+    net_log_thread_commit_error_quota_exceed,
+} net_log_thread_commit_error_t;
+
 struct net_log_thread {
     net_log_schedule_t m_schedule;
     TAILQ_ENTRY(net_log_thread) m_next;
@@ -60,7 +66,12 @@ struct net_log_thread {
     net_log_request_list_t m_waiting_requests;
     net_log_request_list_t m_active_requests;
     net_log_request_list_t m_free_requests;
-    
+
+    /*schedule*/
+    net_log_thread_commit_error_t m_commit_last_error;
+    int64_t m_commit_delay_until_ms;
+    net_timer_t m_commit_delay_processor;
+
     /*tmp_buffer*/
     struct mem_buffer m_tmp_buffer;
 };
@@ -87,6 +98,9 @@ int net_log_thread_save_and_clear_requests(net_log_thread_t log_thread);
 /*request*/
 uint8_t net_log_thread_request_is_empty(net_log_thread_t log_thread);
 void net_log_thread_check_active_requests(net_log_thread_t log_thread);
+
+/*schedule*/
+void net_log_thread_commit_schedule_delay(net_log_thread_t log_thread, net_log_thread_commit_error_t commit_error);
 
 /*strings*/
 const char * net_log_thread_state_str(net_log_thread_state_t state);

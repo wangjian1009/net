@@ -40,6 +40,19 @@ static int net_log_thread_setup(net_log_thread_t log_thread) {
         external_setup = 1;
     }
 
+    /* request->m_delay_process = net_timer_create(log_thread->m_net_driver, net_log_request_delay_commit, request); */
+    /* if (request->m_delay_process == NULL) { */
+    /*     CPE_ERROR( */
+    /*         schedule->m_em, "log: %s: category [%d]%s: request %d: complete with result %s, create delay process timer fail", */
+    /*         log_thread->m_name, category->m_id, category->m_name, request->m_id, */
+    /*         net_log_request_send_result_str(send_result)); */
+
+    /*     //TODO: net_log_category_add_fail_statistics(category, request->m_send_param->log_count); */
+    /*     net_log_request_free(request); */
+    /*     net_log_thread_check_active_requests(log_thread); */
+    /*     return; */
+    /* } */
+    
     char trans_name[64];
     snprintf(trans_name, sizeof(trans_name), "log.%s", log_thread->m_name);
     log_thread->m_trans_mgr = 

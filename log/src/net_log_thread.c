@@ -5,6 +5,7 @@
 #include "cpe/pal/pal_stdio.h"
 #include "cpe/pal/pal_errno.h"
 #include "net_schedule.h"
+#include "net_timer.h"
 #include "net_log_thread_i.h"
 #include "net_log_thread_cmd.h"
 #include "net_log_request_cache.h"
@@ -50,7 +51,12 @@ net_log_thread_t net_log_thread_create(net_log_schedule_t schedule, const char *
     TAILQ_INIT(&log_thread->m_waiting_requests);
     TAILQ_INIT(&log_thread->m_active_requests);
     TAILQ_INIT(&log_thread->m_free_requests);
-    
+
+    /*schedule*/
+    log_thread->m_commit_last_error = net_log_thread_commit_error_none;
+    log_thread->m_commit_delay_until_ms = 0;
+    log_thread->m_commit_delay_processor = NULL;
+
     /*pipe*/
     if (pipe(log_thread->m_pipe_fd) != 0) {
         CPE_ERROR(schedule->m_em, "log: thread %s: create pipe fail, error=%d (%s)!", name, errno, strerror(errno));
@@ -92,6 +98,7 @@ void net_log_thread_free(net_log_thread_t log_thread) {
     assert(log_thread->m_net_schedule == NULL);
     assert(log_thread->m_net_driver == NULL);
     assert(log_thread->m_trans_mgr == NULL);
+    assert(log_thread->m_commit_delay_processor == NULL);
     assert(TAILQ_EMPTY(&log_thread->m_waiting_requests));
     assert(TAILQ_EMPTY(&log_thread->m_active_requests));
     assert(TAILQ_EMPTY(&log_thread->m_free_requests));
@@ -181,8 +188,39 @@ uint8_t net_log_thread_is_suspend(net_log_thread_t log_thread) {
     if (log_thread->m_net_schedule == NULL) return 1;
     if (log_thread->m_env_active == NULL) return 1;
     if (net_schedule_local_ip_stack(log_thread->m_net_schedule) == net_local_ip_stack_none) return 1;
+    if (log_thread->m_commit_delay_processor && net_timer_is_active(log_thread->m_commit_delay_processor)) return 1;
     
     return 0;
+}
+
+void net_log_thread_commit_schedule_delay(net_log_thread_t log_thread, net_log_thread_commit_error_t commit_error) {
+    ASSERT_ON_THREAD(log_thread);
+
+    assert(log_thread->m_commit_delay_processor);
+    assert(commit_error != net_log_thread_commit_error_none);
+    
+    switch(commit_error) {
+    case net_log_thread_commit_error_none:
+        break;
+    case net_log_thread_commit_error_network:
+    /*         if (request->m_last_send_error != net_log_request_send_network_error) { */
+/*             request->m_last_send_error = net_log_request_send_network_error; */
+/*             request->m_last_sleep_ms = BASE_NETWORK_ERROR_SLEEP_MS; */
+/*             request->m_first_error_time = (uint32_t)time(NULL); */
+/*         } */
+/*         else { */
+/*             if (request->m_last_sleep_ms < MAX_NETWORK_ERROR_SLEEP_MS) { */
+/*                 request->m_last_sleep_ms *= 2; */
+/*             } */
+/*             // only drop data when SEND_TIME_INVALID_FIX not defined */
+/*             if (time(NULL) - request->m_first_error_time > DROP_FAIL_DATA_TIME_SECOND) { */
+/*                 break; */
+/*             } */
+/*         } */
+        break;
+    case net_log_thread_commit_error_quota_exceed:
+        break;
+    }
 }
 
 const char * net_log_thread_state_str(net_log_thread_state_t state) {
