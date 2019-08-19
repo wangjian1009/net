@@ -201,7 +201,7 @@ static void net_log_request_commit_do_error(
 static void net_log_request_commit_do_success(
     net_log_schedule_t schedule, net_log_category_t category, net_log_thread_t log_thread, net_log_request_t request)
 {
-    net_log_category_statistic_success(category);
+    net_log_category_statistic_success(category, log_thread);
     net_log_request_free(request);
 }
 

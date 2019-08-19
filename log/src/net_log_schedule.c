@@ -535,7 +535,7 @@ static void net_log_schedule_on_local_ip_stack_changed(void * ctx, net_schedule_
     net_log_thread_t log_thread;
     TAILQ_FOREACH(log_thread, &schedule->m_threads, m_next) {
         if (log_thread->m_is_runing) {
-            net_log_thread_send_cmd(log_thread, (net_log_thread_cmd_t)&update_net_cmd);
+            net_log_thread_send_cmd(log_thread, (net_log_thread_cmd_t)&update_net_cmd, schedule->m_thread_main);
         }
     }
 }

@@ -44,8 +44,8 @@ void net_log_category_network_recover(net_log_category_t category);
 
 net_log_request_param_t net_log_category_build_request(net_log_category_t category, net_log_builder_t builder);
 
-void net_log_category_pack_request(net_log_category_t category, net_log_builder_t builder);
-void net_log_category_send_request(net_log_category_t category, net_log_request_param_t send_param);
+void net_log_category_pack_request(net_log_category_t category, net_log_builder_t builder, net_log_thread_t from_thread);
+void net_log_category_send_request(net_log_category_t category, net_log_request_param_t send_param, net_log_thread_t from_thread);
 
 void net_log_category_log_begin(net_log_category_t category);
 void net_log_category_log_apppend(net_log_category_t category, const char * key, const char * value);
@@ -53,8 +53,8 @@ void net_log_category_log_end(net_log_category_t category);
 
 void net_log_category_commit(net_log_category_t category);
 
-void net_log_category_statistic_success(net_log_category_t category);
-void net_log_category_statistic_discard(net_log_category_t category, net_log_discard_reason_t reason);
+void net_log_category_statistic_success(net_log_category_t category, net_log_thread_t from_thread);
+void net_log_category_statistic_discard(net_log_category_t category, net_log_discard_reason_t reason, net_log_thread_t from_thread);
 
 NET_END_DECL
 

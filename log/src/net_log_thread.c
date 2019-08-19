@@ -120,21 +120,30 @@ void net_log_thread_free(net_log_thread_t log_thread) {
     mem_free(schedule->m_alloc, log_thread);
 }
 
-int net_log_thread_send_cmd(net_log_thread_t log_thread, net_log_thread_cmd_t cmd) {
+int net_log_thread_send_cmd(net_log_thread_t log_thread, net_log_thread_cmd_t cmd, net_log_thread_t from_thread) {
+    net_log_schedule_t schedule = log_thread->m_schedule;
+    
+    ASSERT_ON_THREAD(from_thread);
+    
     _MS(pthread_mutex_lock(&log_thread->m_mutex));
 
     if (write(log_thread->m_pipe_fd[1], cmd, cmd->m_size) < 0) {
         CPE_ERROR(
-            log_thread->m_schedule->m_em, "log: thread %s: write thread fail, error=%d (%s)!",
-            log_thread->m_name, errno, strerror(errno));
+            schedule->m_em, "log: thread %s: ==> (%s) %s | write thread fail, error=%d (%s)!",
+            from_thread->m_name, log_thread->m_name, net_log_thread_cmd_dump(&from_thread->m_tmp_buffer, cmd), 
+            errno, strerror(errno));
         _MS(pthread_mutex_unlock(&log_thread->m_mutex));
         return -1;
     }
 
     _MS(pthread_mutex_unlock(&log_thread->m_mutex));
-    
-    mem_buffer_clear(&log_thread->m_tmp_buffer);
-    
+
+    if (schedule->m_debug) {
+        CPE_INFO(
+            schedule->m_em, "log: thread %s: ==> (%s) %s",
+            from_thread->m_name, log_thread->m_name, net_log_thread_cmd_dump(&from_thread->m_tmp_buffer, cmd));
+    }
+
     return 0;
 }
 

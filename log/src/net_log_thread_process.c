@@ -12,7 +12,7 @@ static void net_log_thread_process_package_pack(net_log_schedule_t schedule, net
     struct net_log_thread_cmd_package_pack* pack_cmd = (struct net_log_thread_cmd_package_pack*)cmd;
     assert(pack_cmd->head.m_size = sizeof(*pack_cmd));
 
-    net_log_category_pack_request(pack_cmd->m_builder->m_category, pack_cmd->m_builder);
+    net_log_category_pack_request(pack_cmd->m_builder->m_category, pack_cmd->m_builder, log_thread);
 }
 
 static void net_log_thread_process_package_send(net_log_schedule_t schedule, net_log_thread_t log_thread, net_log_thread_cmd_t cmd) {
@@ -58,7 +58,7 @@ static void net_log_thread_process_package_send(net_log_schedule_t schedule, net
     return;
     
 SEND_FAIL:
-    net_log_category_statistic_discard(send_param->category, net_log_discard_reason_queue_to_send_fail);
+    net_log_category_statistic_discard(send_param->category, net_log_discard_reason_queue_to_send_fail, log_thread);
     net_log_request_param_free(send_param);
 }
 
@@ -137,14 +137,14 @@ static void net_log_thread_process_package_success(net_log_schedule_t schedule, 
     ASSERT_ON_THREAD_MAIN(schedule);
 
     struct net_log_thread_cmd_staistic_package_success * package_success_cmd = (struct net_log_thread_cmd_staistic_package_success *)cmd;
-    net_log_category_statistic_success(package_success_cmd->m_category);
+    net_log_category_statistic_success(package_success_cmd->m_category, log_thread);
 }
 
 static void net_log_thread_process_package_discard(net_log_schedule_t schedule, net_log_thread_t log_thread, net_log_thread_cmd_t cmd) {
     ASSERT_ON_THREAD_MAIN(schedule);
 
     struct net_log_thread_cmd_staistic_package_discard * package_discard_cmd = (struct net_log_thread_cmd_staistic_package_discard *)cmd;
-    net_log_category_statistic_discard(package_discard_cmd->m_category, package_discard_cmd->m_reason);
+    net_log_category_statistic_discard(package_discard_cmd->m_category, package_discard_cmd->m_reason, log_thread);
 }
 
 static struct {
