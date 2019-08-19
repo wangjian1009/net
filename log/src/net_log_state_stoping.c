@@ -18,10 +18,8 @@ static uint32_t net_log_state_fsm_stoping_trans(fsm_machine_t fsm, fsm_def_state
     switch(evt->m_type) {
     case net_log_state_fsm_evt_stop_complete:
         return net_log_schedule_state_init;
-    case net_log_state_fsm_evt_resume:
     case net_log_state_fsm_evt_stop_begin:
     case net_log_state_fsm_evt_start:
-    case net_log_state_fsm_evt_pause:
         return FSM_KEEP_STATE;
     }
 }

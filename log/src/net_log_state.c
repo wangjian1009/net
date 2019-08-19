@@ -18,7 +18,6 @@ fsm_def_machine_t net_log_create_fsm_def(net_log_schedule_t schedule) {
 
     if (net_log_state_fsm_create_init(fsm_def, schedule->m_em) != 0
         || net_log_state_fsm_create_runing(fsm_def, schedule->m_em) != 0
-        || net_log_state_fsm_create_pause(fsm_def, schedule->m_em) != 0
         || net_log_state_fsm_create_stoping(fsm_def, schedule->m_em) != 0
         || net_log_state_fsm_create_error(fsm_def, schedule->m_em) != 0
         )
@@ -49,12 +48,6 @@ static void net_log_state_fsm_dump_event(write_stream_t s, fsm_def_machine_t m, 
         break;
     case net_log_state_fsm_evt_stop_complete:
         stream_printf(s, "stop-complete");
-        break;
-    case net_log_state_fsm_evt_pause:
-        stream_printf(s, "pause");
-        break;
-    case net_log_state_fsm_evt_resume:
-        stream_printf(s, "resume");
         break;
     }
 }
@@ -95,28 +88,6 @@ void net_log_schedule_wait_stop_threads(net_log_schedule_t schedule) {
     TAILQ_FOREACH(thread, &schedule->m_threads, m_next) {
         if (thread->m_is_runing) net_log_thread_wait_stop(thread);
     }
-}
-
-void net_log_schedule_pause_senders(net_log_schedule_t schedule) {
-    struct net_log_thread_cmd cmd;
-    cmd.m_size = sizeof(cmd);
-    /* cmd.m_cmd = net_log_thread_cmd_pause; */
-
-    /* net_log_thread_t thread; */
-    /* TAILQ_FOREACH(thread, &schedule->m_threads, m_next) { */
-    /*     net_log_thread_send_cmd(thread, &cmd); */
-    /* } */
-}
-
-void net_log_schedule_resume_senders(net_log_schedule_t schedule) {
-    struct net_log_thread_cmd cmd;
-    cmd.m_size = sizeof(cmd);
-    /* cmd.m_cmd = net_log_thread_cmd_resume; */
-
-    /* net_log_thread_t thread; */
-    /* TAILQ_FOREACH(thread, &schedule->m_threads, m_next) { */
-    /*     net_log_thread_send_cmd(thread, &cmd); */
-    /* } */
 }
 
 /* int net_log_schedule_start_main(net_log_schedule_t schedule) { */

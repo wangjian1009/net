@@ -23,24 +23,9 @@ static uint32_t net_log_state_fsm_init_trans(fsm_machine_t fsm, fsm_def_state_t 
             return net_log_schedule_state_error;
         }
 
-        if (schedule->m_env_active == NULL) {
-            if (schedule->m_debug) {
-                CPE_INFO(schedule->m_em, "log: schedule: state-fsm: init: no cfg-ep, auto pause!");
-            }
-            return net_log_schedule_state_pause;
-        } else if (net_schedule_local_ip_stack(schedule->m_net_schedule) == net_local_ip_stack_none) {
-            if (schedule->m_debug) {
-                CPE_INFO(schedule->m_em, "log: schedule: state-fsm: init: no active network, auto pause!");
-            }
-            return net_log_schedule_state_pause;
-        } else {
-            net_log_schedule_resume_senders(schedule);
-            return net_log_schedule_state_runing;
-        }
+        return net_log_schedule_state_runing;
     case net_log_state_fsm_evt_stop_begin:
     case net_log_state_fsm_evt_stop_complete:
-    case net_log_state_fsm_evt_pause:
-    case net_log_state_fsm_evt_resume:
         return FSM_KEEP_STATE;
     }
 }

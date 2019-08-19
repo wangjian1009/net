@@ -342,24 +342,6 @@ void net_log_schedule_stop(net_log_schedule_t schedule) {
     net_log_state_fsm_apply_evt(schedule, net_log_state_fsm_evt_stop_begin);
 }
 
-void net_log_schedule_pause(net_log_schedule_t schedule) {
-    ASSERT_ON_THREAD_MAIN(schedule);
-
-    if (schedule->m_debug) {
-        CPE_INFO(schedule->m_em, "log: schedule: pause!");
-    }
-    net_log_state_fsm_apply_evt(schedule, net_log_state_fsm_evt_pause);
-}
-
-void net_log_schedule_resume(net_log_schedule_t schedule) {
-    ASSERT_ON_THREAD_MAIN(schedule);
-
-    if (schedule->m_debug) {
-        CPE_INFO(schedule->m_em, "log: schedule: resume!");
-    }
-    net_log_state_fsm_apply_evt(schedule, net_log_state_fsm_evt_resume);
-}
-
 void net_log_schedule_set_max_active_request_count(net_log_schedule_t schedule, uint8_t max_active_request_count) {
     assert(net_log_schedule_state(schedule) == net_log_schedule_state_init);
     schedule->m_cfg_active_request_count = max_active_request_count;
@@ -512,13 +494,16 @@ void net_log_schedule_set_active_env(net_log_schedule_t schedule, net_log_env_t 
     }
     
     schedule->m_env_active = new_env;
+
+    struct net_log_thread_cmd_update_env update_env_cmd;
+    update_env_cmd.head.m_size = sizeof(update_env_cmd);
+    update_env_cmd.head.m_cmd = net_log_thread_cmd_type_update_env;
+    update_env_cmd.m_env = new_env;
     
-    if (schedule->m_env_active == NULL) {
-        if (net_log_schedule_state(schedule) == net_log_schedule_state_runing) {
-            if (schedule->m_debug) {
-                CPE_INFO(schedule->m_em, "log: schedule: no ep, auto-pause!");
-            }
-            net_log_state_fsm_apply_evt(schedule, net_log_state_fsm_evt_pause);
+    net_log_thread_t log_thread;
+    TAILQ_FOREACH(log_thread, &schedule->m_threads, m_next) {
+        if (log_thread->m_is_runing) {
+            net_log_thread_send_cmd(log_thread, (net_log_thread_cmd_t)&update_env_cmd, schedule->m_thread_main);
         }
     }
 }
