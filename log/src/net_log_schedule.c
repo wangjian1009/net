@@ -15,7 +15,6 @@
 #include "net_log_state_i.h"
 #include "net_log_category_i.h"
 #include "net_log_thread_i.h"
-#include "net_log_thread_cmd.h"
 #include "net_log_state_monitor_i.h"
 #include "net_log_env_i.h"
 
@@ -495,16 +494,9 @@ void net_log_schedule_set_active_env(net_log_schedule_t schedule, net_log_env_t 
     
     schedule->m_env_active = new_env;
 
-    struct net_log_thread_cmd_update_env update_env_cmd;
-    update_env_cmd.head.m_size = sizeof(update_env_cmd);
-    update_env_cmd.head.m_cmd = net_log_thread_cmd_type_update_env;
-    update_env_cmd.m_env = new_env;
-    
     net_log_thread_t log_thread;
     TAILQ_FOREACH(log_thread, &schedule->m_threads, m_next) {
-        if (log_thread->m_is_runing) {
-            net_log_thread_send_cmd(log_thread, (net_log_thread_cmd_t)&update_env_cmd, schedule->m_thread_main);
-        }
+        if (log_thread->m_is_runing) net_log_thread_update_env(log_thread);
     }
 }
 
@@ -512,15 +504,10 @@ static void net_log_schedule_on_local_ip_stack_changed(void * ctx, net_schedule_
     net_log_schedule_t schedule = ctx;
     ASSERT_ON_THREAD_MAIN(schedule);
 
-    struct net_log_thread_cmd_update_net update_net_cmd;
-    update_net_cmd.head.m_size = sizeof(update_net_cmd);
-    update_net_cmd.head.m_cmd = net_log_thread_cmd_type_update_net;
-    update_net_cmd.m_local_ip_stack = net_schedule_local_ip_stack(schedule->m_net_schedule);
-    
     net_log_thread_t log_thread;
     TAILQ_FOREACH(log_thread, &schedule->m_threads, m_next) {
         if (log_thread->m_is_runing) {
-            net_log_thread_send_cmd(log_thread, (net_log_thread_cmd_t)&update_net_cmd, schedule->m_thread_main);
+            net_log_thread_update_net(log_thread);
         }
     }
 }

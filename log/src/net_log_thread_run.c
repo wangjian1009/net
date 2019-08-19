@@ -209,6 +209,8 @@ int net_log_thread_start(net_log_thread_t log_thread) {
     net_log_schedule_t schedule = log_thread->m_schedule;
     ASSERT_ON_THREAD_MAIN(schedule);
 
+    assert(!log_thread->m_is_runing);
+    
 #if NET_LOG_MULTI_THREAD
     if (log_thread->m_runing_thread != NULL) {
         CPE_ERROR(schedule->m_em, "log: thread %s: start: already started", log_thread->m_name);
@@ -221,15 +223,32 @@ int net_log_thread_start(net_log_thread_t log_thread) {
         return -1;
     }
 
-    if (pthread_create(log_thread->m_runing_thread, NULL, net_log_thread_execute, log_thread) != 0) {
-        CPE_ERROR(
-            schedule->m_em, "log: thread %s: start: pthread_create fail, error=%d (%s)!", 
-            log_thread->m_name, errno, strerror(errno));
-        mem_free(schedule->m_alloc, log_thread->m_runing_thread);
-        log_thread->m_runing_thread = NULL;
-        return -1;
+    if (log_thread == schedule->m_thread_main) {
+        *log_thread->m_runing_thread = pthread_self();
+        
+        if (net_log_thread_setup(log_thread) != 0) {
+            CPE_ERROR(schedule->m_em, "log: thread %s: start: thread setup fail!", log_thread->m_name);
+            return -1;
+        }
+
+        if (schedule->m_debug) {
+            CPE_INFO(schedule->m_em, "log: thread %s: start: thread setup success!", log_thread->m_name);
+        }
+    } else {
+        if (pthread_create(log_thread->m_runing_thread, NULL, net_log_thread_execute, log_thread) != 0) {
+            CPE_ERROR(
+                schedule->m_em, "log: thread %s: start: pthread_create fail, error=%d (%s)!",
+                log_thread->m_name, errno, strerror(errno));
+            mem_free(schedule->m_alloc, log_thread->m_runing_thread);
+            log_thread->m_runing_thread = NULL;
+            return -1;
+        }
+
+        if (schedule->m_debug) {
+            CPE_INFO(schedule->m_em, "log: thread %s: start: thread create success!", log_thread->m_name);
+        }
     }
-    
+
 #else   
     if (net_log_thread_setup(log_thread) != 0) {
         CPE_ERROR(schedule->m_em, "log: thread %s: start: thread setup fail!", log_thread->m_name);
@@ -237,6 +256,9 @@ int net_log_thread_start(net_log_thread_t log_thread) {
     }
 #endif
 
+    log_thread->m_is_runing = 1;
+    schedule->m_runing_thread_count++;
+    
     return 0;
 }
 
@@ -258,16 +280,33 @@ void net_log_thread_wait_stop(net_log_thread_t log_thread) {
     net_log_schedule_t schedule = log_thread->m_schedule;
     ASSERT_ON_THREAD_MAIN(schedule);
 
+    assert(log_thread->m_is_runing);
+    
 #if NET_LOG_MULTI_THREAD
     if (log_thread->m_runing_thread == NULL) {
         CPE_ERROR(schedule->m_em, "log: thread %s: wait stop: thread already stoped", log_thread->m_name);
         return;
     }
 
-    if (pthread_join(*log_thread->m_runing_thread, NULL) != 0) {
-        CPE_ERROR(schedule->m_em, "log: thread %s: wait stop: wait error, errno=%d (%s)", log_thread->m_name, errno, strerror(errno));
-    }
+    if (log_thread == schedule->m_thread_main) {
+        net_log_thread_pipe_clear(log_thread);
+        net_log_thread_teardown(log_thread);
 
+        if (schedule->m_debug) {
+            CPE_INFO(schedule->m_em, "log: thread %s: wait stop: tear down success!", log_thread->m_name);
+        }
+    }
+    else {
+        if (pthread_join(*log_thread->m_runing_thread, NULL) != 0) {
+            CPE_ERROR(schedule->m_em, "log: thread %s: wait stop: wait error, errno=%d (%s)", log_thread->m_name, errno, strerror(errno));
+        }
+        else {
+            if (schedule->m_debug) {
+                CPE_INFO(schedule->m_em, "log: thread %s: wait stop: thread join success!", log_thread->m_name);
+            }
+        }
+    }
+    
     mem_free(schedule->m_alloc, log_thread->m_runing_thread);
     log_thread->m_runing_thread = NULL;
 
@@ -278,6 +317,7 @@ void net_log_thread_wait_stop(net_log_thread_t log_thread) {
     
     assert(schedule->m_runing_thread_count > 0);
     schedule->m_runing_thread_count--;
+    log_thread->m_is_runing = 0;
     
     if (schedule->m_debug) {
         CPE_INFO(

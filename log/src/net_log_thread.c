@@ -147,6 +147,32 @@ int net_log_thread_send_cmd(net_log_thread_t log_thread, net_log_thread_cmd_t cm
     return 0;
 }
 
+int net_log_thread_update_env(net_log_thread_t log_thread) {
+    net_log_schedule_t schedule = log_thread->m_schedule;
+    ASSERT_ON_THREAD_MAIN(schedule);
+    assert(log_thread->m_is_runing);
+
+    struct net_log_thread_cmd_update_env update_env_cmd;
+    update_env_cmd.head.m_size = sizeof(update_env_cmd);
+    update_env_cmd.head.m_cmd = net_log_thread_cmd_type_update_env;
+    update_env_cmd.m_env = schedule->m_env_active;
+
+    return net_log_thread_send_cmd(log_thread, (net_log_thread_cmd_t)&update_env_cmd, schedule->m_thread_main);
+}
+
+int net_log_thread_update_net(net_log_thread_t log_thread) {
+    net_log_schedule_t schedule = log_thread->m_schedule;
+    ASSERT_ON_THREAD_MAIN(schedule);
+    assert(log_thread->m_is_runing);
+    
+    struct net_log_thread_cmd_update_net update_net_cmd;
+    update_net_cmd.head.m_size = sizeof(update_net_cmd);
+    update_net_cmd.head.m_cmd = net_log_thread_cmd_type_update_net;
+    update_net_cmd.m_local_ip_stack = net_schedule_local_ip_stack(schedule->m_net_schedule);
+    
+    return net_log_thread_send_cmd(log_thread, (net_log_thread_cmd_t)&update_net_cmd, schedule->m_thread_main);
+}
+
 const char * net_log_thread_cache_dir(net_log_thread_t log_thread, mem_buffer_t tmp_buffer) {
     net_log_schedule_t schedule = log_thread->m_schedule;
     ASSERT_ON_THREAD(log_thread);

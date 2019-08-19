@@ -86,6 +86,9 @@ int net_log_thread_start(net_log_thread_t log_thread);
 void net_log_thread_notify_stop_force(net_log_thread_t log_thread);
 void net_log_thread_wait_stop(net_log_thread_t log_thread);
 
+int net_log_thread_update_env(net_log_thread_t log_thread);
+int net_log_thread_update_net(net_log_thread_t log_thread);
+
 int net_log_thread_send_cmd(net_log_thread_t log_thread, net_log_thread_cmd_t cmd, net_log_thread_t from_log_thread);
 void net_log_thread_dispatch(net_log_thread_t log_thread, net_log_thread_cmd_t cmd);
 
