@@ -1,3 +1,4 @@
+#include <assert.h>
 #include "cpe/fsm/fsm_def.h"
 #include "net_log_state_i.h"
 #include "net_log_thread_i.h"
@@ -53,12 +54,14 @@ static void net_log_state_fsm_dump_event(write_stream_t s, fsm_def_machine_t m, 
 }
 
 int net_log_schedule_start_threads(net_log_schedule_t schedule) {
-    net_log_thread_t thread;
-
-    TAILQ_FOREACH(thread, &schedule->m_threads, m_next) {
-        if (net_log_thread_start(thread) != 0) goto START_ERROR;
-        if (net_log_thread_update_net(thread) != 0) goto START_ERROR;
-        if (net_log_thread_update_env(thread) != 0) goto START_ERROR;
+    net_log_thread_t log_thread;
+    
+    ASSERT_ON_THREAD_MAIN(schedule);
+    
+    TAILQ_FOREACH(log_thread, &schedule->m_threads, m_next) {
+        if (net_log_thread_start(log_thread) != 0) goto START_ERROR;
+        if (net_log_thread_update_net(log_thread) != 0) goto START_ERROR;
+        if (net_log_thread_update_env(log_thread) != 0) goto START_ERROR;
     }
 
     return 0;

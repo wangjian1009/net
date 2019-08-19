@@ -72,8 +72,8 @@ static void net_log_thread_process_update_env(net_log_schedule_t schedule, net_l
         CPE_INFO(
             schedule->m_em, "log: thread %s: update env: %s ==> %s",
             log_thread->m_name, 
-            log_thread->m_env_active ? log_thread->m_env_active->m_url : NULL,
-            update_env_cmd->m_env ? update_env_cmd->m_env->m_url : NULL);
+            log_thread->m_env_active ? log_thread->m_env_active->m_url : "N/A",
+            update_env_cmd->m_env ? update_env_cmd->m_env->m_url : "N/A");
     }
 
     log_thread->m_env_active = update_env_cmd->m_env;

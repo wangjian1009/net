@@ -83,9 +83,10 @@ net_log_thread_t net_log_thread_create(net_log_schedule_t schedule, const char *
             return NULL;
         }
     }
-    
+
     mem_buffer_init(&log_thread->m_tmp_buffer, schedule->m_alloc);
     
+    TAILQ_INSERT_TAIL(&schedule->m_threads, log_thread, m_next);
     return log_thread;
 }
 
@@ -116,6 +117,8 @@ void net_log_thread_free(net_log_thread_t log_thread) {
     log_thread->m_pipe_fd[1] = -1;
 
     _MS(pthread_mutex_destroy(&log_thread->m_mutex));
+    
+    TAILQ_REMOVE(&schedule->m_threads, log_thread, m_next);
     
     mem_free(schedule->m_alloc, log_thread);
 }
