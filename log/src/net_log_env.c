@@ -17,8 +17,8 @@ net_log_env_create(net_log_schedule_t schedule, const char * url) {
     }
 
     env->m_schedule = schedule;
-    env->m_url = (char*)(schedule + 1);
-    memcpy((char*)(schedule + 1), url, url_len);
+    env->m_url = (char*)(env + 1);
+    memcpy((char*)(env + 1), url, url_len);
     TAILQ_INIT(&env->m_categories);
     
     TAILQ_INSERT_TAIL(&schedule->m_envs, env, m_next);

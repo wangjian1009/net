@@ -373,16 +373,19 @@ static void net_log_thread_rw_cb(void * ctx, int fd, uint8_t do_read, uint8_t do
                     break;
                 }
 
+                char cmd_buf[64];
+                assert(cmd->m_size <= sizeof(cmd_buf));
+                memcpy(&cmd_buf, cmd, cmd->m_size);
+                
                 if (schedule->m_debug) {
                     CPE_INFO(
                         schedule->m_em, "log: thread %s: <== %s",
-                        log_thread->m_name, net_log_thread_cmd_dump(&log_thread->m_tmp_buffer, cmd));
+                        log_thread->m_name, net_log_thread_cmd_dump(&log_thread->m_tmp_buffer, (net_log_thread_cmd_t)cmd_buf));
                 }
-
-                net_log_thread_dispatch(log_thread, cmd);
-
                 memmove(log_thread->m_pipe_r_buf, log_thread->m_pipe_r_buf + cmd->m_size, log_thread->m_pipe_r_size - cmd->m_size);
                 log_thread->m_pipe_r_size -= cmd->m_size;
+
+                net_log_thread_dispatch(log_thread, (net_log_thread_cmd_t)cmd_buf);
             }
         }
     }
