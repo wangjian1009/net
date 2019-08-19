@@ -4,6 +4,7 @@
 #include "cpe/pal/pal_strings.h"
 #include "cpe/pal/pal_stdio.h"
 #include "cpe/pal/pal_errno.h"
+#include "cpe/utils/time_utils.h"
 #include "net_schedule.h"
 #include "net_timer.h"
 #include "net_log_thread_i.h"
@@ -54,6 +55,7 @@ net_log_thread_t net_log_thread_create(net_log_schedule_t schedule, const char *
 
     /*schedule*/
     log_thread->m_commit_last_error = net_log_thread_commit_error_none;
+    log_thread->m_commit_last_error_count = 0;
     log_thread->m_commit_delay_until_ms = 0;
     log_thread->m_commit_delay_processor = NULL;
 
@@ -199,28 +201,62 @@ void net_log_thread_commit_schedule_delay(net_log_thread_t log_thread, net_log_t
     assert(log_thread->m_commit_delay_processor);
     assert(commit_error != net_log_thread_commit_error_none);
     
+    uint64_t baseRetryTime = 0;
+    uint64_t maxRetryTime = 0;
+
+    if (log_thread->m_commit_last_error != commit_error) {
+        log_thread->m_commit_last_error = commit_error;
+    }
+    log_thread->m_commit_last_error_count++;
+
     switch(commit_error) {
     case net_log_thread_commit_error_none:
+        assert(0);
         break;
     case net_log_thread_commit_error_network:
-    /*         if (request->m_last_send_error != net_log_request_send_network_error) { */
-/*             request->m_last_send_error = net_log_request_send_network_error; */
-/*             request->m_last_sleep_ms = BASE_NETWORK_ERROR_SLEEP_MS; */
-/*             request->m_first_error_time = (uint32_t)time(NULL); */
-/*         } */
-/*         else { */
-/*             if (request->m_last_sleep_ms < MAX_NETWORK_ERROR_SLEEP_MS) { */
-/*                 request->m_last_sleep_ms *= 2; */
-/*             } */
-/*             // only drop data when SEND_TIME_INVALID_FIX not defined */
-/*             if (time(NULL) - request->m_first_error_time > DROP_FAIL_DATA_TIME_SECOND) { */
-/*                 break; */
-/*             } */
-/*         } */
+        maxRetryTime = 3600000;
+        baseRetryTime = 1000;
         break;
     case net_log_thread_commit_error_quota_exceed:
+        maxRetryTime = 60000;
+        baseRetryTime = 3000;
+    case net_log_thread_commit_error_package_time:
+        maxRetryTime = 3000;
+        baseRetryTime = 3000;
         break;
     }
+    
+    uint64_t sleepMs = baseRetryTime;
+    uint8_t i;
+    for(i = 1; i < log_thread->m_commit_last_error_count; ++i) {
+        uint32_t nextSleepMs = sleepMs * 2;
+        if (nextSleepMs < maxRetryTime) {
+            sleepMs = nextSleepMs;
+        }
+        else {
+            sleepMs = maxRetryTime;
+            break;
+        }
+    }
+
+    int64_t commit_delay_until_ms = cur_time_ms() + (int64_t)sleepMs;
+    if (log_thread->m_commit_delay_until_ms == 0
+        || commit_delay_until_ms > log_thread->m_commit_delay_until_ms)
+    {
+        log_thread->m_commit_delay_until_ms = commit_delay_until_ms;
+        assert(log_thread->m_commit_delay_processor);
+        net_timer_active(log_thread->m_commit_delay_processor, sleepMs);
+    }
+}
+
+void net_log_thread_commit_delay(void * ctx, net_timer_t timer) {
+    net_log_thread_t log_thread = ctx;
+    ASSERT_ON_THREAD(log_thread);
+    
+    log_thread->m_commit_last_error = net_log_thread_commit_error_none;
+    log_thread->m_commit_last_error_count = 0;
+    log_thread->m_commit_delay_until_ms = 0;
+    net_log_thread_check_active_requests(log_thread);
 }
 
 const char * net_log_thread_state_str(net_log_thread_state_t state) {

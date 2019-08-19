@@ -24,6 +24,7 @@ typedef enum net_log_thread_commit_error {
     net_log_thread_commit_error_none,
     net_log_thread_commit_error_network,
     net_log_thread_commit_error_quota_exceed,
+    net_log_thread_commit_error_package_time,
 } net_log_thread_commit_error_t;
 
 struct net_log_thread {
@@ -69,6 +70,7 @@ struct net_log_thread {
 
     /*schedule*/
     net_log_thread_commit_error_t m_commit_last_error;
+    uint8_t m_commit_last_error_count;
     int64_t m_commit_delay_until_ms;
     net_timer_t m_commit_delay_processor;
 
@@ -101,6 +103,7 @@ void net_log_thread_check_active_requests(net_log_thread_t log_thread);
 
 /*schedule*/
 void net_log_thread_commit_schedule_delay(net_log_thread_t log_thread, net_log_thread_commit_error_t commit_error);
+void net_log_thread_commit_delay(void * ctx, net_timer_t timer);
 
 /*strings*/
 const char * net_log_thread_state_str(net_log_thread_state_t state);

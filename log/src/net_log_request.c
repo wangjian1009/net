@@ -16,16 +16,6 @@
 #include "net_log_builder.h"
 #include "lz4.h"
 
-#define MAX_NETWORK_ERROR_SLEEP_MS 3600000
-#define BASE_NETWORK_ERROR_SLEEP_MS 1000
-
-#define MAX_QUOTA_ERROR_SLEEP_MS 60000
-#define BASE_QUOTA_ERROR_SLEEP_MS 3000
-
-#define INVALID_TIME_TRY_INTERVAL 3000
-
-#define DROP_FAIL_DATA_TIME_SECOND (3600 * 6)
-
 static int net_log_request_send(net_log_request_t request);
 static void net_log_request_rebuild_time(net_log_schedule_t schedule, net_log_category_t category, net_log_request_t request, uint32_t nowTime);
 
@@ -145,6 +135,21 @@ void net_log_request_active(net_log_request_t request) {
     }
 }
 
+void net_log_request_cancel(net_log_request_t request) {
+    net_log_thread_t log_thread = request->m_thread;
+    net_log_category_t category = request->m_category;
+    net_log_schedule_t schedule = log_thread->m_schedule;
+    ASSERT_ON_THREAD(log_thread);
+
+    if (request->m_task) {
+        net_trans_task_clear_callback(request->m_task);
+        net_trans_task_free(request->m_task);
+        request->m_task = NULL;
+    }
+    
+    net_log_request_set_state(request, net_log_request_state_waiting);
+}
+
 void net_log_request_set_state(net_log_request_t request, net_log_request_state_t state) {
     net_log_thread_t log_thread = request->m_thread;
     net_log_category_t category = request->m_category;
@@ -187,7 +192,7 @@ static void net_log_request_commit_do_error(
     net_log_request_t request, net_log_thread_commit_error_t commit_error)
 {
     net_log_request_set_state(request, net_log_request_state_waiting);
-
+    
     if (commit_error != net_log_thread_commit_error_none) {
         net_log_thread_commit_schedule_delay(log_thread, commit_error);
     }
@@ -322,7 +327,7 @@ static int net_log_request_send(net_log_request_t request) {
 
     net_log_lz4_buf_t buffer = send_param->log_buf;
     assert(buffer);
-    
+
     if (request->m_task) {
         net_trans_task_clear_callback(request->m_task);
         net_trans_task_free(request->m_task);
@@ -555,7 +560,7 @@ void net_log_request_param_free(net_log_request_param_t send_param) {
 /*     case net_log_request_send_time_error: */
 /*         // if no this marco, drop data */
 /*         request->m_last_send_error = net_log_request_send_time_error; */
-/*         request->m_last_sleep_ms = INVALID_TIME_TRY_INTERVAL; */
+/*         request->m_last_sleep_ms = INVALID_TIME_TRY_NTERVAL; */
 
 /*         if (schedule->m_debug) { */
 /*             CPE_INFO( */

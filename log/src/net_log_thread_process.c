@@ -6,6 +6,7 @@
 #include "net_log_builder.h"
 #include "net_log_category_i.h"
 #include "net_log_request_cache.h"
+#include "net_log_env_i.h"
 
 static void net_log_thread_process_package_pack(net_log_schedule_t schedule, net_log_thread_t log_thread, net_log_thread_cmd_t cmd) {
     struct net_log_thread_cmd_package_pack* pack_cmd = (struct net_log_thread_cmd_package_pack*)cmd;
@@ -65,6 +66,26 @@ static void net_log_thread_process_update_env(net_log_schedule_t schedule, net_l
     struct net_log_thread_cmd_update_env* update_env_cmd = (struct net_log_thread_cmd_update_env*)cmd;
     assert(update_env_cmd->head.m_size = sizeof(*update_env_cmd));
     
+    if (log_thread->m_env_active == update_env_cmd->m_env) return;
+
+    if (schedule->m_debug) {
+        CPE_INFO(
+            schedule->m_em, "log: thread %s: update env: %s ==> %s",
+            log_thread->m_name, 
+            log_thread->m_env_active ? log_thread->m_env_active->m_url : NULL,
+            update_env_cmd->m_env ? update_env_cmd->m_env->m_url : NULL);
+    }
+
+    log_thread->m_env_active = update_env_cmd->m_env;
+    
+    if (log_thread->m_env_active == NULL) {
+        while(!TAILQ_EMPTY(&log_thread->m_active_requests)) {
+            net_log_request_cancel(TAILQ_FIRST(&log_thread->m_active_requests));
+        }
+    }
+    else {
+        net_log_thread_check_active_requests(log_thread);
+    }
 }
 
 static void net_log_thread_process_update_net(net_log_schedule_t schedule, net_log_thread_t log_thread, net_log_thread_cmd_t cmd) {
@@ -75,7 +96,13 @@ static void net_log_thread_process_update_net(net_log_schedule_t schedule, net_l
         net_schedule_set_local_ip_stack(log_thread->m_net_schedule, update_net_cmd->m_local_ip_stack);
     }
     
-    if (update_net_cmd->m_local_ip_stack == net_local_ip_stack_none) { //TODO:
+    if (update_net_cmd->m_local_ip_stack == net_local_ip_stack_none) {
+        while(!TAILQ_EMPTY(&log_thread->m_active_requests)) {
+            net_log_request_cancel(TAILQ_FIRST(&log_thread->m_active_requests));
+        }
+    }
+    else {
+        net_log_thread_check_active_requests(log_thread);
     }
 }
 

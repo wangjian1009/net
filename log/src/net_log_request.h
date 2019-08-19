@@ -43,6 +43,7 @@ void net_log_request_free(net_log_request_t request);
 
 void net_log_request_real_free(net_log_request_t request);
 
+void net_log_request_cancel(net_log_request_t request);
 void net_log_request_active(net_log_request_t request);
 void net_log_request_set_state(net_log_request_t request, net_log_request_state_t state);
 

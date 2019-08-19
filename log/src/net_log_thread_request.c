@@ -15,11 +15,16 @@ void net_log_thread_check_active_requests(net_log_thread_t log_thread) {
     net_log_schedule_t schedule = log_thread->m_schedule;
     ASSERT_ON_THREAD(log_thread);
 
-    if (net_log_thread_is_suspend(log_thread)
-        || log_thread->m_state == net_log_thread_state_stoped) return;
-
-    while(log_thread->m_cfg_active_request_count == 0
-          || log_thread->m_active_request_count < log_thread->m_cfg_active_request_count)
+    uint16_t protect_count = 0;
+    while( /*还可以启动新的请求 */
+        (log_thread->m_cfg_active_request_count == 0
+         || log_thread->m_active_request_count < log_thread->m_cfg_active_request_count)
+        /*还在运行中 */
+        && (log_thread->m_state == net_log_thread_state_runing
+            || log_thread->m_state == net_log_thread_state_stoping) 
+        /*发送条件满足 */        
+        && !net_log_thread_is_suspend(log_thread)
+        )
     {
         net_log_request_t request = TAILQ_FIRST(&log_thread->m_waiting_requests);
         if (request) {
@@ -49,15 +54,6 @@ void net_log_thread_check_active_requests(net_log_thread_t log_thread) {
             if (TAILQ_EMPTY(&log_thread->m_waiting_requests)) break;
         }
     }
-
-    /* if (log_thread->m_state == net_log_thread_state_stoping) { */
-    /*     if (net_log_thread_is_empty(log_thread)) { */
-    /*         if (schedule->m_debug) { */
-    /*             CPE_INFO(schedule->m_em, "log: %s: manage: stoping: all request done!", log_thread->m_name); */
-    /*         } */
-    /*         net_log_thread_process_cmd_stop_force(log_thread); */
-    /*     } */
-    /* } */
 }
 
 int net_log_thread_save_and_clear_requests(net_log_thread_t log_thread) {
