@@ -63,6 +63,9 @@ struct net_log_thread_cmd_staistic_package_discard {
     net_log_discard_reason_t m_reason;
 };
 
+void net_log_thread_cmd_print(write_stream_t ws, net_log_thread_cmd_t cmd);
+const char * net_log_thread_cmd_dump(mem_buffer_t buffer, net_log_thread_cmd_t cmd);
+
 NET_END_DECL
 
 #endif
