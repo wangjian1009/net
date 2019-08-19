@@ -48,7 +48,7 @@ struct net_log_thread {
     /*pipe*/
     _MS(pthread_mutex_t m_mutex);
     int m_pipe_fd[2];
-    char m_pipe_r_buf[64];
+    char m_pipe_r_buf[256];
     uint16_t m_pipe_r_size;
     net_watcher_t m_watcher;
 

@@ -143,8 +143,8 @@ int net_log_thread_send_cmd(net_log_thread_t log_thread, net_log_thread_cmd_t cm
 
     if (schedule->m_debug) {
         CPE_INFO(
-            schedule->m_em, "log: thread %s: ==> (%s) %s",
-            from_thread->m_name, log_thread->m_name, net_log_thread_cmd_dump(&from_thread->m_tmp_buffer, cmd));
+            schedule->m_em, "log: thread %s: ==> (%s) %s (size=%d)",
+            from_thread->m_name, log_thread->m_name, net_log_thread_cmd_dump(&from_thread->m_tmp_buffer, cmd), cmd->m_size);
     }
 
     return 0;

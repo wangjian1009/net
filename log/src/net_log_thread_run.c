@@ -363,6 +363,9 @@ static void net_log_thread_rw_cb(void * ctx, int fd, uint8_t do_read, uint8_t do
             else {
                 log_thread->m_pipe_r_size += (uint16_t)rv;
                 assert(log_thread->m_pipe_r_size <= sizeof(log_thread->m_pipe_r_buf));
+                
+                CPE_ERROR(
+                    schedule->m_em, "log: thread %s: read %d, size=%d", log_thread->m_name, (int)rv, (int)log_thread->m_pipe_r_size);
             }
 
             while(log_thread->m_pipe_r_size >= sizeof(struct net_log_thread_cmd)) {
@@ -381,8 +384,9 @@ static void net_log_thread_rw_cb(void * ctx, int fd, uint8_t do_read, uint8_t do
 
                 net_log_thread_dispatch(log_thread, cmd);
 
+                uint8_t cmd_size = cmd->m_size;
                 memmove(log_thread->m_pipe_r_buf, log_thread->m_pipe_r_buf + cmd->m_size, log_thread->m_pipe_r_size - cmd->m_size);
-                log_thread->m_pipe_r_size -= cmd->m_size;
+                log_thread->m_pipe_r_size -= cmd_size;
             }
         }
     }
