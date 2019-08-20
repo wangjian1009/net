@@ -14,6 +14,7 @@ typedef enum net_log_thread_cmd_type {
     net_log_thread_cmd_type_stoped,
     net_log_thread_cmd_type_staistic_package_discard,
     net_log_thread_cmd_type_staistic_package_success,
+    net_log_thread_cmd_type_staistic_op_error,
 } net_log_thread_cmd_type_t;
 
 struct net_log_thread_cmd {
@@ -55,14 +56,21 @@ struct net_log_thread_cmd_staistic_load {
 struct net_log_thread_cmd_staistic_package_success {
     struct net_log_thread_cmd head;
     net_log_category_t m_category;
-    net_log_env_t m_env;
 };
 
 struct net_log_thread_cmd_staistic_package_discard {
     struct net_log_thread_cmd head;
     net_log_category_t m_category;
-    net_log_env_t m_env;
     net_log_discard_reason_t m_reason;
+};
+
+struct net_log_thread_cmd_staistic_op_error {
+    struct net_log_thread_cmd head;
+    net_log_env_t m_env;
+    net_log_category_t m_category;
+    net_trans_task_error_t m_trans_error;
+    int m_http_code;
+    char m_http_msg[64];
 };
 
 void net_log_thread_cmd_print(write_stream_t ws, net_log_thread_cmd_t cmd);

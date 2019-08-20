@@ -16,6 +16,7 @@
 #include "net_log_category_i.h"
 #include "net_log_thread_i.h"
 #include "net_log_state_monitor_i.h"
+#include "net_log_statistic_monitor_i.h"
 #include "net_log_env_i.h"
 
 static void net_log_schedule_on_local_ip_stack_changed(void * ctx, net_schedule_t net_schedule);
@@ -97,6 +98,7 @@ net_log_schedule_create(
     }
 
     TAILQ_INIT(&schedule->m_state_monitors);
+    TAILQ_INIT(&schedule->m_statistic_monitors);
     TAILQ_INIT(&schedule->m_threads);
     TAILQ_INIT(&schedule->m_envs);
     
@@ -157,6 +159,11 @@ void net_log_schedule_free(net_log_schedule_t schedule) {
     /*state-monitor*/
     while(!TAILQ_EMPTY(&schedule->m_state_monitors)) {
         net_log_state_monitor_free(TAILQ_FIRST(&schedule->m_state_monitors));
+    }
+    
+    /*statistic-monitor*/
+    while(!TAILQ_EMPTY(&schedule->m_statistic_monitors)) {
+        net_log_statistic_monitor_free(TAILQ_FIRST(&schedule->m_statistic_monitors));
     }
     
     /*thread*/

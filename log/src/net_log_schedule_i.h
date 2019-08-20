@@ -29,6 +29,7 @@ typedef TAILQ_HEAD(net_log_category_list, net_log_category) net_log_category_lis
 typedef TAILQ_HEAD(net_log_request_list, net_log_request) net_log_request_list_t;
 typedef TAILQ_HEAD(net_log_request_cache_list, net_log_request_cache) net_log_request_cache_list_t;
 typedef TAILQ_HEAD(net_log_state_monitor_list, net_log_state_monitor) net_log_state_monitor_list_t;
+typedef TAILQ_HEAD(net_log_statistic_monitor_list, net_log_statistic_monitor) net_log_statistic_monitor_list_t;
 typedef TAILQ_HEAD(net_log_env_list, net_log_env) net_log_env_list_t;
 
 typedef struct net_log_request * net_log_request_t;
@@ -83,6 +84,9 @@ struct net_log_schedule {
     uint8_t m_category_count;
     net_log_category_t * m_categories;
 
+    /*statistic*/
+    net_log_statistic_monitor_list_t m_statistic_monitors;
+    
     /*threads*/
     uint8_t m_runing_thread_count;
     _MS(pthread_t m_main_thread_id);

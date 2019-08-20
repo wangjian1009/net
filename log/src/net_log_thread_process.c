@@ -7,6 +7,7 @@
 #include "net_log_category_i.h"
 #include "net_log_request_cache.h"
 #include "net_log_env_i.h"
+#include "net_log_statistic_monitor_i.h"
 
 static void net_log_thread_process_package_pack(net_log_schedule_t schedule, net_log_thread_t log_thread, net_log_thread_cmd_t cmd) {
     struct net_log_thread_cmd_package_pack* pack_cmd = (struct net_log_thread_cmd_package_pack*)cmd;
@@ -156,7 +157,7 @@ static void net_log_thread_process_stoped(net_log_schedule_t schedule, net_log_t
     net_log_thread_wait_stop(stoped_cmd->log_thread);
 }
 
-static void net_log_thread_process_package_success(net_log_schedule_t schedule, net_log_thread_t log_thread, net_log_thread_cmd_t cmd) {
+static void net_log_thread_process_statistic_package_success(net_log_schedule_t schedule, net_log_thread_t log_thread, net_log_thread_cmd_t cmd) {
     ASSERT_ON_THREAD_MAIN(schedule);
 
     struct net_log_thread_cmd_staistic_package_success * package_success_cmd = (struct net_log_thread_cmd_staistic_package_success *)cmd;
@@ -164,13 +165,40 @@ static void net_log_thread_process_package_success(net_log_schedule_t schedule, 
     category->m_statistics_success_count++;
 }
 
-static void net_log_thread_process_package_discard(net_log_schedule_t schedule, net_log_thread_t log_thread, net_log_thread_cmd_t cmd) {
+static void net_log_thread_process_statistic_package_discard(net_log_schedule_t schedule, net_log_thread_t log_thread, net_log_thread_cmd_t cmd) {
     ASSERT_ON_THREAD_MAIN(schedule);
 
     struct net_log_thread_cmd_staistic_package_discard * package_discard_cmd = (struct net_log_thread_cmd_staistic_package_discard *)cmd;
 
     net_log_category_t category = package_discard_cmd->m_category;
-    category->m_statistics_discard_count[package_discard_cmd->m_reason]++;
+    net_log_discard_reason_t reason = package_discard_cmd->m_reason;
+
+    category->m_statistics_discard_count[reason]++;
+    
+    net_log_statistic_monitor_t monitor;
+    TAILQ_FOREACH(monitor, &schedule->m_statistic_monitors, m_next) {
+        if (monitor->m_on_discard) {
+            monitor->m_on_discard(monitor->m_monitor_ctx, category, reason);
+        }
+    }
+}
+
+static void net_log_thread_process_statistic_op_error(net_log_schedule_t schedule, net_log_thread_t log_thread, net_log_thread_cmd_t cmd) {
+    ASSERT_ON_THREAD_MAIN(schedule);
+
+    struct net_log_thread_cmd_staistic_op_error * op_error_cmd = (struct net_log_thread_cmd_staistic_op_error *)cmd;
+
+    net_log_env_t env = op_error_cmd->m_env;
+    net_log_category_t category = op_error_cmd->m_category;
+    
+    net_log_statistic_monitor_t monitor;
+    TAILQ_FOREACH(monitor, &schedule->m_statistic_monitors, m_next) {
+        if (monitor->m_on_op_error) {
+            monitor->m_on_op_error(
+                monitor->m_monitor_ctx, env, category,
+                op_error_cmd->m_trans_error, op_error_cmd->m_http_code, op_error_cmd->m_http_msg);
+        }
+    }
 }
 
 static struct {
@@ -184,8 +212,9 @@ static struct {
     , { net_log_thread_cmd_type_stop_begin, net_log_thread_process_stop_begin }
     , { net_log_thread_cmd_type_stop_force, net_log_thread_process_stop_force }
     , { net_log_thread_cmd_type_stoped, net_log_thread_process_stoped }
-    , { net_log_thread_cmd_type_staistic_package_discard, net_log_thread_process_package_discard }
-    , { net_log_thread_cmd_type_staistic_package_success, net_log_thread_process_package_success }
+    , { net_log_thread_cmd_type_staistic_package_discard, net_log_thread_process_statistic_package_discard }
+    , { net_log_thread_cmd_type_staistic_package_success, net_log_thread_process_statistic_package_success }
+    , { net_log_thread_cmd_type_staistic_op_error, net_log_thread_process_statistic_op_error }
 };
 
 void net_log_thread_dispatch(net_log_thread_t log_thread, net_log_thread_cmd_t cmd) {
