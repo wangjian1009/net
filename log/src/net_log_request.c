@@ -212,10 +212,6 @@ static void net_log_request_commit(net_trans_task_t task, void * ctx, void * dat
 
     assert(request->m_task == task);
 
-    CPE_ERROR(
-        schedule->m_em, "log: thread %s: category [%d]%s: request %d: xxxx on complete",
-        log_thread->m_name, category->m_id, category->m_name, request->m_id);
-
     switch(net_trans_task_state(task)) {
     case net_trans_task_init:
     case net_trans_task_working:
@@ -228,10 +224,6 @@ static void net_log_request_commit(net_trans_task_t task, void * ctx, void * dat
         break;
     }
 
-    CPE_ERROR(
-        schedule->m_em, "log: thread %s: category [%d]%s: request %d: xxxx 111",
-        log_thread->m_name, category->m_id, category->m_name, request->m_id);
-    
     switch(net_trans_task_result(task)) {
     case net_trans_result_unknown:
         CPE_ERROR(
@@ -265,10 +257,6 @@ static void net_log_request_commit(net_trans_task_t task, void * ctx, void * dat
         goto COMMIT_COMPLETE;
     }
 
-    CPE_ERROR(
-        schedule->m_em, "log: thread %s: category [%d]%s: request %d: xxxx 2222",
-        log_thread->m_name, category->m_id, category->m_name, request->m_id);
-    
     if (http_code / 100 == 2) {
         net_log_request_commit_do_success(schedule, category, log_thread, request);
     }
