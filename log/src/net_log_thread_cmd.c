@@ -49,7 +49,7 @@ void net_log_thread_cmd_print(write_stream_t ws, net_log_thread_cmd_t cmd) {
         struct net_log_thread_cmd_staistic_op_error * op_error_cmd = (struct net_log_thread_cmd_staistic_op_error *)cmd;
         stream_printf(
             ws, "statistic-op-error(env=%s,category=%s", 
-            op_error_cmd->m_env->m_url,
+            op_error_cmd->m_env ? op_error_cmd->m_env->m_url : "N/A",
             op_error_cmd->m_category->m_name);
         if (op_error_cmd->m_trans_error != net_trans_task_error_none) {
             stream_printf(ws, ",trans-error=%s", net_trans_task_error_str(op_error_cmd->m_trans_error));

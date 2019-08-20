@@ -268,8 +268,6 @@ static void net_log_request_commit(net_trans_task_t task, void * ctx, void * dat
 
     if (http_code / 100 == 2) {
         net_log_request_commit_do_success(schedule, category, log_thread, request);
-        //TODO: debug
-        net_log_request_statistic_http_error(schedule, category, log_thread, http_code, net_trans_task_error_addition(task));
     }
     else {
         CPE_ERROR(
@@ -584,7 +582,7 @@ static void net_log_request_statistic_trans_error(
     net_trans_task_error_t trans_error)
 {
     struct net_log_thread_cmd_staistic_op_error op_error_cmd;
-    op_error_cmd.head.m_size = sizeof(op_error_cmd);
+    op_error_cmd.head.m_size = sizeof(op_error_cmd) + 1;
     op_error_cmd.head.m_cmd = net_log_thread_cmd_type_staistic_op_error;
     op_error_cmd.m_env = log_thread->m_env_active;
     op_error_cmd.m_category = category;
@@ -607,7 +605,7 @@ static void net_log_request_statistic_http_error(
     }
     
     struct net_log_thread_cmd_staistic_op_error * op_error_cmd = (struct net_log_thread_cmd_staistic_op_error *)cmd_buf;
-    op_error_cmd->head.m_size = sizeof(op_error_cmd) + http_msg_len;
+    op_error_cmd->head.m_size = sizeof(*op_error_cmd) + http_msg_len + 1;
     op_error_cmd->head.m_cmd = net_log_thread_cmd_type_staistic_op_error;
     op_error_cmd->m_env = log_thread->m_env_active;
     op_error_cmd->m_category = category;
