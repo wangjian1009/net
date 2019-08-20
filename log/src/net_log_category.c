@@ -391,19 +391,14 @@ static void net_log_category_commit_timer(net_timer_t timer, void * ctx) {
 void net_log_category_statistic_success(net_log_category_t category, net_log_thread_t from_thread) {
     net_log_schedule_t schedule = category->m_schedule;
     ASSERT_ON_THREAD(from_thread);
-    
-    if (IS_ON_THREAD_MAIN(schedule)) {
-        category->m_statistics_success_count++;
-    }
-    else {
-        struct net_log_thread_cmd_staistic_package_success package_success_cmd;
-        package_success_cmd.head.m_size = sizeof(package_success_cmd);
-        package_success_cmd.head.m_cmd = net_log_thread_cmd_type_staistic_package_success;
-        package_success_cmd.m_env = from_thread->m_env_active;
-        package_success_cmd.m_category = category;
-        assert(schedule->m_thread_main);
-        net_log_thread_send_cmd(schedule->m_thread_main, (net_log_thread_cmd_t)&package_success_cmd, from_thread);
-    }
+
+    struct net_log_thread_cmd_staistic_package_success package_success_cmd;
+    package_success_cmd.head.m_size = sizeof(package_success_cmd);
+    package_success_cmd.head.m_cmd = net_log_thread_cmd_type_staistic_package_success;
+    package_success_cmd.m_env = from_thread->m_env_active;
+    package_success_cmd.m_category = category;
+    assert(schedule->m_thread_main);
+    net_log_thread_send_cmd(schedule->m_thread_main, (net_log_thread_cmd_t)&package_success_cmd, from_thread);
 }
 
 void net_log_category_statistic_discard(net_log_category_t category, net_log_discard_reason_t reason, net_log_thread_t from_thread) {
