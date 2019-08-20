@@ -197,67 +197,6 @@ net_log_category_build_request(net_log_category_t category, net_log_builder_t bu
     return send_param;
 }
 
-void net_log_category_pack_request(net_log_category_t category, net_log_builder_t builder, net_log_thread_t from_thread) {
-    net_log_schedule_t schedule = category->m_schedule;
-    ASSERT_ON_THREAD(from_thread);
-    
-    if (IS_ON_THREAD(category->m_flusher)) {
-        net_log_request_param_t send_param = net_log_category_build_request(category, builder);
-        net_log_group_destroy(builder);
-
-        if (send_param == NULL) {
-            CPE_ERROR(schedule->m_em, "log: category [%d]%s: commit: build request fail", category->m_id, category->m_name);
-            net_log_category_statistic_discard(category, net_log_discard_reason_pack_fail, from_thread);
-            return;
-        }
-
-        net_log_category_send_request(category, send_param, from_thread);
-    } 
-    else {
-        struct net_log_thread_cmd_package_pack cmd_pack;
-        cmd_pack.head.m_size = sizeof(cmd_pack);
-        cmd_pack.head.m_cmd = net_log_thread_cmd_type_package_pack;
-        cmd_pack.m_builder = builder;
-
-        if (net_log_thread_send_cmd(category->m_flusher, (net_log_thread_cmd_t)&cmd_pack, from_thread) != 0) {
-            CPE_ERROR(
-                schedule->m_em, "log: category [%d]%s: try push loggroup to flusher failed, force drop this log group",
-                category->m_id, category->m_name);
-            net_log_category_statistic_discard(category, net_log_discard_reason_queue_to_pack_fail, from_thread);
-            net_log_group_destroy(builder);
-            return;
-        }
-
-        if (schedule->m_debug) {
-            CPE_INFO(
-                schedule->m_em, "log: category [%d]%s: commit: queue to flusher, package(count=%d, size=%d)",
-                category->m_id, category->m_name, (int)builder->grp->n_logs, (int)builder->loggroup_size);
-        }
-    }
-}
-
-void net_log_category_send_request(net_log_category_t category, net_log_request_param_t send_param, net_log_thread_t from_thread) {
-    net_log_schedule_t schedule = category->m_schedule;
-    ASSERT_ON_THREAD(from_thread);
-    
-    struct net_log_thread_cmd_package_send cmd_send;
-    cmd_send.head.m_size = sizeof(cmd_send);
-    cmd_send.head.m_cmd = net_log_thread_cmd_type_package_send;
-    cmd_send.m_send_param = send_param;
-
-    if (net_log_thread_send_cmd(category->m_flusher, (net_log_thread_cmd_t)&cmd_send, from_thread) != 0) {
-        net_log_category_statistic_discard(category, net_log_discard_reason_queue_to_send_fail, from_thread);
-        net_log_request_param_free(send_param);
-        return;
-    }
-
-    if (schedule->m_debug) {
-        CPE_INFO(
-            schedule->m_em, "log: category [%d]%s: commit param to sender %s success!",
-            category->m_id, category->m_name, category->m_sender->m_name);
-    }
-}
-
 int net_log_category_set_topic(net_log_category_t category, const char * topic) {
     net_log_schedule_t schedule = category->m_schedule;
     assert(net_log_schedule_state(schedule) == net_log_schedule_state_init);
@@ -422,9 +361,26 @@ void net_log_category_commit(net_log_category_t category) {
     /*input statistics*/
     category->m_statistics_record_count += builder->grp->n_logs;
     category->m_statistics_package_count++;
-    //cpe_traffic_bps_add_flow(&category->m_statistics_input_bps, loggroup_size, time(0));
 
-    /*提交 */
+    struct net_log_thread_cmd_package_pack cmd_pack;
+    cmd_pack.head.m_size = sizeof(cmd_pack);
+    cmd_pack.head.m_cmd = net_log_thread_cmd_type_package_pack;
+    cmd_pack.m_builder = builder;
+
+    if (net_log_thread_send_cmd(category->m_flusher, (net_log_thread_cmd_t)&cmd_pack, schedule->m_thread_main) != 0) {
+        CPE_ERROR(
+            schedule->m_em, "log: category [%d]%s: try push loggroup to flusher failed, force drop this log group",
+            category->m_id, category->m_name);
+        net_log_category_statistic_discard(category, net_log_discard_reason_queue_to_pack_fail, schedule->m_thread_main);
+        net_log_group_destroy(builder);
+        return;
+    }
+
+    if (schedule->m_debug) {
+        CPE_INFO(
+            schedule->m_em, "log: category [%d]%s: commit: queue to flusher, package(count=%d, size=%d)",
+            category->m_id, category->m_name, (int)builder->grp->n_logs, (int)builder->loggroup_size);
+    }
 }
 
 static void net_log_category_commit_timer(net_timer_t timer, void * ctx) {

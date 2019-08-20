@@ -34,7 +34,7 @@ void net_log_thread_check_active_requests(net_log_thread_t log_thread) {
             net_log_request_cache_t cache;
             while((cache = TAILQ_LAST(&log_thread->m_caches, net_log_request_cache_list))) {
                 if (net_log_request_cache_load(cache) != 0) {
-                    CPE_ERROR(schedule->m_em, "log: %s: restore: cache %d load fail, clear", log_thread->m_name, cache->m_id);
+                    CPE_ERROR(schedule->m_em, "log: thread %s: restore: cache %d load fail, clear", log_thread->m_name, cache->m_id);
                     net_log_request_cache_clear_and_free(cache);
                     continue;
                 }
@@ -44,7 +44,7 @@ void net_log_thread_check_active_requests(net_log_thread_t log_thread) {
                 if (!TAILQ_EMPTY(&log_thread->m_waiting_requests)) {
                     if (schedule->m_debug) {
                         CPE_INFO(
-                            schedule->m_em, "log: %s: restore: load %d requests",
+                            schedule->m_em, "log: thread %s: restore: load %d requests",
                             log_thread->m_name, (log_thread->m_request_count - log_thread->m_active_request_count));
                     }
                     break;
@@ -61,7 +61,7 @@ int net_log_thread_save_and_clear_requests(net_log_thread_t log_thread) {
     
     if(TAILQ_EMPTY(&log_thread->m_active_requests) && TAILQ_EMPTY(&log_thread->m_waiting_requests)) {
         if (schedule->m_debug) {
-            CPE_INFO(schedule->m_em, "log: %s: manage: sanve and clear: no requests", log_thread->m_name);
+            CPE_INFO(schedule->m_em, "log: thread %s: manage: sanve and clear: no requests", log_thread->m_name);
         }
         return 0;
     }
@@ -73,7 +73,7 @@ int net_log_thread_save_and_clear_requests(net_log_thread_t log_thread) {
 
     net_log_request_cache_t cache = net_log_request_cache_create(log_thread, cache_id, net_log_request_cache_building);
     if (cache == NULL) {
-        CPE_ERROR(schedule->m_em, "log: %s: manage: sanve and clear: create cache fail", log_thread->m_name);
+        CPE_ERROR(schedule->m_em, "log: thread %s: manage: sanve and clear: create cache fail", log_thread->m_name);
         return -1;
     }
     if (cache_id > log_thread->m_cache_max_id) log_thread->m_cache_max_id = cache_id;
@@ -100,7 +100,7 @@ int net_log_thread_save_and_clear_requests(net_log_thread_t log_thread) {
     if (net_log_request_cache_close(cache) != 0) return -1;
 
     if (schedule->m_debug) {
-        CPE_INFO(schedule->m_em, "log: %s: manage: sanve and clear: saved %d requests", log_thread->m_name, count);
+        CPE_INFO(schedule->m_em, "log: thread %s: manage: sanve and clear: saved %d requests", log_thread->m_name, count);
     }
     
     return 0;

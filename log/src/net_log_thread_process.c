@@ -12,7 +12,36 @@ static void net_log_thread_process_package_pack(net_log_schedule_t schedule, net
     struct net_log_thread_cmd_package_pack* pack_cmd = (struct net_log_thread_cmd_package_pack*)cmd;
     assert(pack_cmd->head.m_size = sizeof(*pack_cmd));
 
-    net_log_category_pack_request(pack_cmd->m_builder->m_category, pack_cmd->m_builder, log_thread);
+    net_log_builder_t builder = pack_cmd->m_builder;
+    net_log_category_t category = builder->m_category;
+
+    net_log_request_param_t send_param = net_log_category_build_request(category, builder);
+    net_log_group_destroy(builder);
+
+    if (send_param == NULL) {
+        CPE_ERROR(
+            schedule->m_em, "log: thread %s: category [%d]%s: commit: build request fail", 
+            log_thread->m_name, category->m_id, category->m_name);
+        net_log_category_statistic_discard(category, net_log_discard_reason_pack_fail, log_thread);
+        return;
+    }
+    
+    struct net_log_thread_cmd_package_send cmd_send;
+    cmd_send.head.m_size = sizeof(cmd_send);
+    cmd_send.head.m_cmd = net_log_thread_cmd_type_package_send;
+    cmd_send.m_send_param = send_param;
+
+    if (net_log_thread_send_cmd(category->m_flusher, (net_log_thread_cmd_t)&cmd_send, log_thread) != 0) {
+        net_log_category_statistic_discard(category, net_log_discard_reason_queue_to_send_fail, log_thread);
+        net_log_request_param_free(send_param);
+        return;
+    }
+
+    if (schedule->m_debug) {
+        CPE_INFO(
+            schedule->m_em, "log: thread %s: category [%d]%s: commit param to sender %s success!",
+            log_thread->m_name, category->m_id, category->m_name, category->m_sender->m_name);
+    }
 }
 
 static void net_log_thread_process_package_send(net_log_schedule_t schedule, net_log_thread_t log_thread, net_log_thread_cmd_t cmd) {

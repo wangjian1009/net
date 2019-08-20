@@ -106,7 +106,7 @@ void net_log_thread_check_active_requests(net_log_thread_t log_thread);
 
 /*schedule*/
 void net_log_thread_commit_schedule_delay(net_log_thread_t log_thread, net_log_thread_commit_error_t commit_error);
-void net_log_thread_commit_delay(void * ctx, net_timer_t timer);
+void net_log_thread_commit_delay(net_timer_t timer, void * ctx);
 
 /*strings*/
 const char * net_log_thread_state_str(net_log_thread_state_t state);

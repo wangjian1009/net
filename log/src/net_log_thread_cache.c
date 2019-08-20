@@ -17,14 +17,14 @@ int net_log_thread_search_cache(net_log_thread_t log_thread) {
 
     const char * cache_dir = net_log_thread_cache_dir(log_thread, &log_thread->m_tmp_buffer);
     if (cache_dir == NULL) {
-        CPE_ERROR(schedule->m_em, "log: %s: manage: search cache: calc cache dir fail", log_thread->m_name);
+        CPE_ERROR(schedule->m_em, "log: thread %s: manage: search cache: calc cache dir fail", log_thread->m_name);
         return -1;
     }
 
     if (!vfs_dir_exist(schedule->m_vfs, cache_dir)) {
         if (schedule->m_debug) {
             CPE_INFO(
-                schedule->m_em, "log: %s: manage: search cache: cache dir %s not exist, skip",
+                schedule->m_em, "log: thread %s: manage: search cache: cache dir %s not exist, skip",
                 log_thread->m_name, cache_dir);
         }
         return 0;
@@ -33,7 +33,7 @@ int net_log_thread_search_cache(net_log_thread_t log_thread) {
     vfs_dir_t d = vfs_dir_open(schedule->m_vfs, cache_dir);
     if (d == NULL) {
         CPE_ERROR(
-            schedule->m_em, "log: %s: manage: search cache: cache dir %s open fail, error=%d (%s)",
+            schedule->m_em, "log: thread %s: manage: search cache: cache dir %s open fail, error=%d (%s)",
             log_thread->m_name, cache_dir, errno, strerror(errno));
         return -1;
     }
@@ -54,7 +54,7 @@ int net_log_thread_search_cache(net_log_thread_t log_thread) {
         net_log_request_cache_t cache = net_log_request_cache_create(log_thread, id, net_log_request_cache_done);
         if (cache == NULL) {
             CPE_ERROR(
-                schedule->m_em, "log: %s: manage: search cache: cache %s(id=%d) create fail",
+                schedule->m_em, "log: thread %s: manage: search cache: cache %s(id=%d) create fail",
                 log_thread->m_name, entry->m_name, id);
             rv = -1;
             continue;
@@ -70,7 +70,7 @@ int net_log_thread_search_cache(net_log_thread_t log_thread) {
     if (schedule->m_debug) {
         net_log_request_cache_t cache;
         TAILQ_FOREACH(cache, &log_thread->m_caches, m_next) {
-            CPE_INFO(schedule->m_em, "log: %s: manage: found cache %d", log_thread->m_name, cache->m_id);
+            CPE_INFO(schedule->m_em, "log: thread %s: manage: found cache %d", log_thread->m_name, cache->m_id);
         }
     }
 

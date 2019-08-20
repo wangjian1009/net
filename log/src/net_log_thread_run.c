@@ -7,6 +7,7 @@
 #include "cpe/pal/pal_unistd.h"
 #include "net_schedule.h"
 #include "net_watcher.h"
+#include "net_timer.h"
 #include "net_trans_manage.h"
 #include "net_log_thread_i.h"
 #include "net_log_thread_cmd.h"
@@ -40,18 +41,12 @@ static int net_log_thread_setup(net_log_thread_t log_thread) {
         external_setup = 1;
     }
 
-    /* request->m_delay_process = net_timer_create(log_thread->m_net_driver, net_log_request_delay_commit, request); */
-    /* if (request->m_delay_process == NULL) { */
-    /*     CPE_ERROR( */
-    /*         schedule->m_em, "log: %s: category [%d]%s: request %d: complete with result %s, create delay process timer fail", */
-    /*         log_thread->m_name, category->m_id, category->m_name, request->m_id, */
-    /*         net_log_request_send_result_str(send_result)); */
-
-    /*     //TODO: net_log_category_add_fail_statistics(category, request->m_send_param->log_count); */
-    /*     net_log_request_free(request); */
-    /*     net_log_thread_check_active_requests(log_thread); */
-    /*     return; */
-    /* } */
+    assert(log_thread->m_commit_delay_processor == NULL);
+    log_thread->m_commit_delay_processor = net_timer_create(log_thread->m_net_driver, net_log_thread_commit_delay, log_thread);
+    if (log_thread->m_commit_delay_processor == NULL) {
+        CPE_ERROR(schedule->m_em, "log: thread %s: setup: create commit-delay timer fail", log_thread->m_name);
+        goto SETUP_FAIL;
+    }
     
     char trans_name[64];
     snprintf(trans_name, sizeof(trans_name), "log.%s", log_thread->m_name);
@@ -61,26 +56,6 @@ static int net_log_thread_setup(net_log_thread_t log_thread) {
         CPE_ERROR(schedule->m_em, "log: thread %s: setup: create trans mgr fail", log_thread->m_name);
         goto SETUP_FAIL;
     }
-    /* log_thread->m_request_mgr = NULL; */
-    /*     net_log_request_manage_create( */
-    /*         schedule, schedule->m_net_schedule, schedule->m_net_driver, */
-    /*         schedule->m_cfg_active_request_count, "main", net_log_schedule_tmp_buffer(schedule), */
-    /*         NULL, NULL); */
-    /*     if (schedule->m_main_thread_request_mgr == NULL) { */
-    /*         CPE_ERROR(schedule->m_em, "log: schedule: create main thread request mgr fail"); */
-    /*         return -1; */
-    /*     } */
-
-    /*     if (schedule->m_cfg_cache_dir) { /\*加载缓存 *\/ */
-    /*         if (net_log_request_mgr_init_cache_dir(schedule->m_main_thread_request_mgr) != 0) return -1; */
-    /*         if (net_log_request_mgr_search_cache(schedule->m_main_thread_request_mgr) != 0) return -1; */
-    /*         net_log_request_mgr_check_active_requests(schedule->m_main_thread_request_mgr); */
-    /*     } */
-
-    /* if (thread->m_bind_watcher != NULL) { */
-    /*     CPE_ERROR(schedule->m_em, "log: thread %s: bind: already binded!", thread->m_name); */
-    /*     return -1; */
-    /* } */
 
     log_thread->m_watcher = net_watcher_create(log_thread->m_net_driver, log_thread->m_pipe_fd[0], log_thread, net_log_thread_rw_cb);
     if (log_thread->m_watcher == NULL) {
@@ -95,6 +70,11 @@ SETUP_FAIL:
     if (log_thread->m_watcher) {
         net_watcher_free(log_thread->m_watcher);
         log_thread->m_watcher = NULL;
+    }
+
+    if (log_thread->m_commit_delay_processor) {
+        net_timer_free(log_thread->m_commit_delay_processor);
+        log_thread->m_commit_delay_processor = NULL;
     }
     
     if (log_thread->m_trans_mgr) {
@@ -147,6 +127,11 @@ static void net_log_thread_teardown(net_log_thread_t log_thread) {
         net_trans_manage_free(log_thread->m_trans_mgr);
         log_thread->m_trans_mgr = NULL;
     }
+
+    if (log_thread->m_commit_delay_processor) {
+        net_timer_free(log_thread->m_commit_delay_processor);
+        log_thread->m_commit_delay_processor = NULL;
+    }
     
     if (schedule->m_cfg_cache_dir) { /*保存缓存 */
         net_log_thread_save_and_clear_requests(log_thread);
@@ -178,6 +163,7 @@ static void * net_log_thread_execute(void * param) {
     assert(log_thread->m_net_schedule == NULL);
     assert(log_thread->m_net_driver == NULL);
     assert(log_thread->m_trans_mgr == NULL);
+    assert(log_thread->m_commit_delay_processor == NULL);
     assert(TAILQ_EMPTY(&log_thread->m_waiting_requests));
     assert(TAILQ_EMPTY(&log_thread->m_active_requests));
     assert(TAILQ_EMPTY(&log_thread->m_free_requests));

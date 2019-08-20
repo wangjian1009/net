@@ -201,7 +201,7 @@ const char * net_log_thread_cache_file(net_log_thread_t log_thread, uint32_t id,
     mem_buffer_clear_data(tmp_buffer);
 
     if (mem_buffer_printf(tmp_buffer, "%s/%s/cache_%05d", schedule->m_cfg_cache_dir, log_thread->m_name, id) < 0) {
-        CPE_ERROR(schedule->m_em, "log: %s: manage: format buffer fail", log_thread->m_name);
+        CPE_ERROR(schedule->m_em, "log: thread %s: manage: format buffer fail", log_thread->m_name);
         return NULL;
     }
 
@@ -287,7 +287,7 @@ void net_log_thread_commit_schedule_delay(net_log_thread_t log_thread, net_log_t
     }
 }
 
-void net_log_thread_commit_delay(void * ctx, net_timer_t timer) {
+void net_log_thread_commit_delay(net_timer_t timer, void * ctx) {
     net_log_thread_t log_thread = ctx;
     ASSERT_ON_THREAD(log_thread);
     
