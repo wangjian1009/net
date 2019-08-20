@@ -36,12 +36,6 @@ static void net_log_thread_process_package_pack(net_log_schedule_t schedule, net
         net_log_request_param_free(send_param);
         return;
     }
-
-    if (schedule->m_debug) {
-        CPE_INFO(
-            schedule->m_em, "log: thread %s: category [%d]%s: commit param to sender %s success!",
-            log_thread->m_name, category->m_id, category->m_name, category->m_sender->m_name);
-    }
 }
 
 static void net_log_thread_process_package_send(net_log_schedule_t schedule, net_log_thread_t log_thread, net_log_thread_cmd_t cmd) {

@@ -14,8 +14,6 @@ void net_log_envs(net_log_schedule_t schedule, net_log_env_it_t env_it);
 const char * net_log_env_url(net_log_env_t env);
 net_log_env_t net_log_env_find(net_log_schedule_t schedule, const char * url);
 
-void net_log_env_categories(net_log_env_t env, net_log_env_category_it_t category_it);
-
 #define net_log_env_it_next(__it) ((__it)->next(__it))
 
 

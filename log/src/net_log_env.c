@@ -1,7 +1,6 @@
 #include <assert.h>
 #include "cpe/pal/pal_string.h"
 #include "net_log_env_i.h"
-#include "net_log_env_category_i.h"
 #include "net_log_thread_i.h"
 
 net_log_env_t
@@ -19,7 +18,6 @@ net_log_env_create(net_log_schedule_t schedule, const char * url) {
     env->m_schedule = schedule;
     env->m_url = (char*)(env + 1);
     memcpy((char*)(env + 1), url, url_len);
-    TAILQ_INIT(&env->m_categories);
     
     TAILQ_INSERT_TAIL(&schedule->m_envs, env, m_next);
     
@@ -28,10 +26,6 @@ net_log_env_create(net_log_schedule_t schedule, const char * url) {
 
 void net_log_env_free(net_log_env_t env) {
     net_log_schedule_t schedule = env->m_schedule;
-
-    while(TAILQ_EMPTY(&env->m_categories)) {
-        net_log_env_category_free(TAILQ_FIRST(&env->m_categories));
-    }
 
     TAILQ_REMOVE(&schedule->m_envs, env, m_next);
     

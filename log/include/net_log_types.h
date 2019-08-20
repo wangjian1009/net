@@ -25,8 +25,6 @@ typedef struct net_log_state_monitor * net_log_state_monitor_t;
 
 typedef struct net_log_env * net_log_env_t;
 typedef struct net_log_env_it * net_log_env_it_t;
-typedef struct net_log_env_category * net_log_env_category_t;
-typedef struct net_log_env_category_it * net_log_env_category_it_t;
 
 typedef enum net_log_discard_reason {
     net_log_discard_reason_pack_fail,

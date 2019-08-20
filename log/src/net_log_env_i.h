@@ -9,7 +9,6 @@ struct net_log_env {
     net_log_schedule_t m_schedule;
     TAILQ_ENTRY(net_log_env) m_next;
     const char * m_url;
-    net_log_env_category_list_t m_categories;
 };
 
 net_log_env_t net_log_env_create(net_log_schedule_t schedule, const char * url);

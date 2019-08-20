@@ -9,7 +9,6 @@
 #include "net_log_builder.h"
 #include "net_log_thread_i.h"
 #include "net_log_thread_cmd.h"
-#include "net_log_env_category_i.h"
 
 static char * net_log_category_get_pack_id(net_log_schedule_t schedule, const char * configName, const char * ip);
 static void net_log_category_commit_timer(net_timer_t timer, void * ctx);
@@ -77,7 +76,6 @@ net_log_category_create(net_log_schedule_t schedule, net_log_thread_t flusher, n
     category->m_statistics_success_count = 0;
     
     bzero(category->m_statistics_discard_count, sizeof(category->m_statistics_discard_count));
-    TAILQ_INIT(&category->m_statistics);
 
     category->m_commit_timer = net_timer_create(schedule->m_net_driver, net_log_category_commit_timer, category);
     if (category->m_commit_timer == NULL) {
@@ -124,10 +122,6 @@ void net_log_category_free(net_log_category_t category) {
     category->m_commit_timer = NULL;
 
     mem_free(schedule->m_alloc, category->m_pack_prefix);
-
-    while(!TAILQ_EMPTY(&category->m_statistics)) {
-        net_log_env_category_free(TAILQ_FIRST(&category->m_statistics));
-    }
 
     /*config*/
     if (category->m_cfg_topic) {
