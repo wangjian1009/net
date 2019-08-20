@@ -365,6 +365,17 @@ const char * net_log_schedule_state_str(net_log_schedule_state_t schedule_state)
     }
 }
 
+const char * net_log_discard_reason_str(net_log_discard_reason_t discard_reason) {
+    switch(discard_reason) {
+    case net_log_discard_reason_pack_fail:
+        return "pack-fail";
+    case net_log_discard_reason_queue_to_pack_fail:
+        return "queue-to-pack-fail";
+    case net_log_discard_reason_queue_to_send_fail:
+        return "queue-to-send-fail";
+    }
+}
+
 void net_log_begin(net_log_schedule_t schedule, uint8_t log_type) {
     ASSERT_ON_THREAD_MAIN(schedule);
 

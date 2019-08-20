@@ -55,11 +55,13 @@ struct net_log_thread_cmd_staistic_load {
 struct net_log_thread_cmd_staistic_package_success {
     struct net_log_thread_cmd head;
     net_log_category_t m_category;
+    net_log_env_t m_env;
 };
 
 struct net_log_thread_cmd_staistic_package_discard {
     struct net_log_thread_cmd head;
     net_log_category_t m_category;
+    net_log_env_t m_env;
     net_log_discard_reason_t m_reason;
 };
 

@@ -11,7 +11,7 @@ void net_log_thread_cmd_print(write_stream_t ws, net_log_thread_cmd_t cmd) {
     case net_log_thread_cmd_type_package_pack:
         stream_printf(ws, "pack(category=%s)", ((struct net_log_thread_cmd_package_pack *)cmd)->m_builder->m_category->m_name);
         break;
-    case net_log_thread_cmd_type_package_send:
+    case net_log_thread_cmd_type_package_send: 
         stream_printf(ws, "send(category=%s)", ((struct net_log_thread_cmd_package_send *)cmd)->m_send_param->category->m_name);
         break;
     case net_log_thread_cmd_type_update_env: {
@@ -31,12 +31,23 @@ void net_log_thread_cmd_print(write_stream_t ws, net_log_thread_cmd_t cmd) {
     case net_log_thread_cmd_type_stoped:
         stream_printf(ws, "stoped");
         break;
-    case net_log_thread_cmd_type_staistic_package_discard:
-        stream_printf(ws, "statistic-package-discard");
+    case net_log_thread_cmd_type_staistic_package_discard: {
+        struct net_log_thread_cmd_staistic_package_discard * discard_cmd = (struct net_log_thread_cmd_staistic_package_discard *)cmd;
+        stream_printf(
+            ws, "statistic-package-discard(category=%s,reason=%s,env=%s)",
+            discard_cmd->m_category->m_name,
+            net_log_discard_reason_str(discard_cmd->m_reason),
+            discard_cmd->m_env ? discard_cmd->m_env->m_url : "N/A");
         break;
-    case net_log_thread_cmd_type_staistic_package_success:
-        stream_printf(ws, "statistic-package-discard");
+    }
+    case net_log_thread_cmd_type_staistic_package_success: {
+        struct net_log_thread_cmd_staistic_package_success * success_cmd = (struct net_log_thread_cmd_staistic_package_success *)cmd;
+        stream_printf(
+            ws, "statistic-package-success(category=%s,env=%s)",
+            success_cmd->m_category->m_name,
+            success_cmd->m_env ? success_cmd->m_env->m_url : "N/A");
         break;
+    }
     }
 }
 
