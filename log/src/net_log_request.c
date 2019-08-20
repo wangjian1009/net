@@ -14,15 +14,16 @@
 #include "net_log_category_i.h"
 #include "net_log_util.h"
 #include "net_log_builder.h"
+#include "net_log_thread_cmd.h"
 #include "lz4.h"
 
 static int net_log_request_send(net_log_request_t request);
 static void net_log_request_rebuild_time(net_log_schedule_t schedule, net_log_category_t category, net_log_request_t request, uint32_t nowTime);
 static void net_log_request_statistic_trans_error(
-    net_log_schedule_t schedule, net_log_category_t category, net_log_thread_t thread,
+    net_log_schedule_t schedule, net_log_category_t category, net_log_thread_t log_thread,
     net_trans_task_error_t trans_error);
 static void net_log_request_statistic_http_error(
-    net_log_schedule_t schedule, net_log_category_t category, net_log_thread_t thread,
+    net_log_schedule_t schedule, net_log_category_t category, net_log_thread_t log_thread,
     int16_t http_code, const char * http_msg);
 
 net_log_request_t
@@ -267,6 +268,8 @@ static void net_log_request_commit(net_trans_task_t task, void * ctx, void * dat
 
     if (http_code / 100 == 2) {
         net_log_request_commit_do_success(schedule, category, log_thread, request);
+        //TODO: debug
+        net_log_request_statistic_http_error(schedule, category, log_thread, http_code, net_trans_task_error_addition(task));
     }
     else {
         CPE_ERROR(
@@ -577,13 +580,13 @@ static void net_log_request_rebuild_time(
 }
 
 static void net_log_request_statistic_trans_error(
-    net_log_schedule_t schedule, net_log_category_t category, net_log_thread_t thread,
+    net_log_schedule_t schedule, net_log_category_t category, net_log_thread_t log_thread,
     net_trans_task_error_t trans_error)
 {
     struct net_log_thread_cmd_staistic_op_error op_error_cmd;
-    op_error_cmd.m_head.m_size = sizeof(op_error_cmd);
-    op_error_cmd.m_head.m_type = net_log_thread_cmd_type_staistic_op_error;
-    op_error_cmd.m_env = thread->m_env_active;
+    op_error_cmd.head.m_size = sizeof(op_error_cmd);
+    op_error_cmd.head.m_cmd = net_log_thread_cmd_type_staistic_op_error;
+    op_error_cmd.m_env = log_thread->m_env_active;
     op_error_cmd.m_category = category;
     op_error_cmd.m_trans_error = trans_error;
     op_error_cmd.m_http_code = 0;
@@ -593,7 +596,7 @@ static void net_log_request_statistic_trans_error(
 }
 
 static void net_log_request_statistic_http_error(
-    net_log_schedule_t schedule, net_log_category_t category, net_log_thread_t thread,
+    net_log_schedule_t schedule, net_log_category_t category, net_log_thread_t log_thread,
     int16_t http_code, const char * http_msg)
 {
     char cmd_buf[sizeof(struct net_log_thread_cmd_staistic_op_error) + 128];
@@ -604,12 +607,12 @@ static void net_log_request_statistic_http_error(
     }
     
     struct net_log_thread_cmd_staistic_op_error * op_error_cmd = (struct net_log_thread_cmd_staistic_op_error *)cmd_buf;
-    op_error_cmd->m_head.m_size = sizeof(op_error_cmd) + http_msg_len;
-    op_error_cmd->m_head.m_type = net_log_thread_cmd_type_staistic_op_error;
-    op_error_cmd->m_env = thread->m_env_active;
+    op_error_cmd->head.m_size = sizeof(op_error_cmd) + http_msg_len;
+    op_error_cmd->head.m_cmd = net_log_thread_cmd_type_staistic_op_error;
+    op_error_cmd->m_env = log_thread->m_env_active;
     op_error_cmd->m_category = category;
     op_error_cmd->m_trans_error = net_trans_task_error_none;
-    op_error_cmd->m_http_code = net_trans_task_res_code(task);
+    op_error_cmd->m_http_code = http_code;
     if (http_msg) {
         memcpy(op_error_cmd->m_http_msg, http_msg, http_msg_len);
     }
