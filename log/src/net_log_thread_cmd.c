@@ -1,5 +1,6 @@
 #include "cpe/utils/stream_buffer.h"
 #include "net_schedule.h"
+#include "net_trans_task.h"
 #include "net_log_thread_cmd.h"
 #include "net_log_builder.h"
 #include "net_log_category_i.h"
@@ -50,7 +51,14 @@ void net_log_thread_cmd_print(write_stream_t ws, net_log_thread_cmd_t cmd) {
             ws, "statistic-op-error(env=%s,category=%s", 
             op_error_cmd->m_env->m_url,
             op_error_cmd->m_category->m_name);
-        
+        if (op_error_cmd->m_trans_error != net_trans_task_error_none) {
+            stream_printf(ws, ",trans-error=%s", net_trans_task_error_str(op_error_cmd->m_trans_error));
+        }
+        else {
+            stream_printf(
+                ws, ",http-code=%d,http-msg=%s", 
+                op_error_cmd->m_http_code, op_error_cmd->m_http_msg);
+        }
         stream_printf(ws, ")");
         break;
     }
