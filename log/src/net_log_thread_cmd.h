@@ -70,7 +70,7 @@ struct net_log_thread_cmd_staistic_op_error {
     net_log_category_t m_category;
     net_trans_task_error_t m_trans_error;
     int m_http_code;
-    char m_http_msg[64];
+    char m_http_msg[0];
 };
 
 void net_log_thread_cmd_print(write_stream_t ws, net_log_thread_cmd_t cmd);

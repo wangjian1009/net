@@ -18,6 +18,12 @@
 
 static int net_log_request_send(net_log_request_t request);
 static void net_log_request_rebuild_time(net_log_schedule_t schedule, net_log_category_t category, net_log_request_t request, uint32_t nowTime);
+static void net_log_request_statistic_trans_error(
+    net_log_schedule_t schedule, net_log_category_t category, net_log_thread_t thread,
+    net_trans_task_error_t trans_error);
+static void net_log_request_statistic_http_error(
+    net_log_schedule_t schedule, net_log_category_t category, net_log_thread_t thread,
+    int16_t http_code, const char * http_msg);
 
 net_log_request_t
 net_log_request_create(net_log_thread_t log_thread, net_log_request_param_t send_param) {
@@ -233,13 +239,15 @@ static void net_log_request_commit(net_trans_task_t task, void * ctx, void * dat
         goto COMMIT_COMPLETE;
     case net_trans_result_complete:
         break;
-    case net_trans_result_error:
+    case net_trans_result_error: {
         CPE_ERROR(
             schedule->m_em, "log: thread %s: category [%d]%s: request %d: transfer error, %s",
             log_thread->m_name, category->m_id, category->m_name, request->m_id,
             net_trans_task_error_str(net_trans_task_error(task)));
         net_log_request_commit_do_error(schedule, category, log_thread, request, net_log_thread_commit_error_network);
+        net_log_request_statistic_trans_error(schedule, category, log_thread, net_trans_task_error(task));
         goto COMMIT_COMPLETE;
+    }
     case net_trans_result_cancel:
         CPE_ERROR(
             schedule->m_em, "log: thread %s: category [%d]%s: request %d: transfer canceled",
@@ -278,6 +286,8 @@ static void net_log_request_commit(net_trans_task_t task, void * ctx, void * dat
         else {
             net_log_request_commit_do_error(schedule, category, log_thread, request, net_log_thread_commit_error_network);
         }
+
+        net_log_request_statistic_http_error(schedule, category, log_thread, http_code, net_trans_task_error_addition(task));
     }
     
 COMMIT_COMPLETE:    
@@ -564,4 +574,46 @@ static void net_log_request_rebuild_time(
     request->m_send_param->log_buf = new_lz4_buf;
     request->m_send_param->builder_time = nowTime;
     log_thread->m_request_buf_size += request->m_send_param->log_buf->length;
+}
+
+static void net_log_request_statistic_trans_error(
+    net_log_schedule_t schedule, net_log_category_t category, net_log_thread_t thread,
+    net_trans_task_error_t trans_error)
+{
+    struct net_log_thread_cmd_staistic_op_error op_error_cmd;
+    op_error_cmd.m_head.m_size = sizeof(op_error_cmd);
+    op_error_cmd.m_head.m_type = net_log_thread_cmd_type_staistic_op_error;
+    op_error_cmd.m_env = thread->m_env_active;
+    op_error_cmd.m_category = category;
+    op_error_cmd.m_trans_error = trans_error;
+    op_error_cmd.m_http_code = 0;
+    op_error_cmd.m_http_msg[0] = 0;
+
+    net_log_thread_send_cmd(schedule->m_thread_main, (net_log_thread_cmd_t)&op_error_cmd, log_thread);
+}
+
+static void net_log_request_statistic_http_error(
+    net_log_schedule_t schedule, net_log_category_t category, net_log_thread_t thread,
+    int16_t http_code, const char * http_msg)
+{
+    char cmd_buf[sizeof(struct net_log_thread_cmd_staistic_op_error) + 128];
+    
+    size_t http_msg_len = http_msg ? strlen(http_msg) : 0;
+    if (http_msg_len > 128) {
+        http_msg_len = 128;
+    }
+    
+    struct net_log_thread_cmd_staistic_op_error * op_error_cmd = (struct net_log_thread_cmd_staistic_op_error *)cmd_buf;
+    op_error_cmd->m_head.m_size = sizeof(op_error_cmd) + http_msg_len;
+    op_error_cmd->m_head.m_type = net_log_thread_cmd_type_staistic_op_error;
+    op_error_cmd->m_env = thread->m_env_active;
+    op_error_cmd->m_category = category;
+    op_error_cmd->m_trans_error = net_trans_task_error_none;
+    op_error_cmd->m_http_code = net_trans_task_res_code(task);
+    if (http_msg) {
+        memcpy(op_error_cmd->m_http_msg, http_msg, http_msg_len);
+    }
+    op_error_cmd->m_http_msg[http_msg_len] = 0;
+
+    net_log_thread_send_cmd(schedule->m_thread_main, (net_log_thread_cmd_t)op_error_cmd, log_thread);
 }
