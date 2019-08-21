@@ -32,6 +32,26 @@ void net_log_env_free(net_log_env_t env) {
     mem_free(schedule->m_alloc, env);
 }
 
+
+static net_log_env_t net_log_schedule_env_next(net_log_env_it_t it) {
+    net_log_env_t * data = (net_log_env_t *)it->data;
+
+    net_log_env_t r = *data;
+
+    if (r) {
+        *data = TAILQ_NEXT(r, m_next);
+    }
+
+    return r;
+}
+
+void net_log_envs(net_log_schedule_t schedule, net_log_env_it_t env_it) {
+    ASSERT_ON_THREAD_MAIN(schedule);
+
+    *(net_log_env_t *)env_it->data = TAILQ_FIRST(&schedule->m_envs);
+    env_it->next = net_log_schedule_env_next;
+}
+
 const char * net_log_env_url(net_log_env_t env) {
     return env->m_url;
 }

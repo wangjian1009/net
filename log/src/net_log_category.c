@@ -378,6 +378,41 @@ void net_log_category_commit(net_log_category_t category) {
     }
 }
 
+struct net_log_category_it_data {
+    net_log_schedule_t m_schedule;
+    uint8_t m_pos;
+};
+
+static net_log_category_t net_log_category_it_do_next(net_log_category_it_t category_it) {
+    struct net_log_category_it_data * data = (struct net_log_category_it_data *)category_it->data;
+    net_log_schedule_t schedule = data->m_schedule;
+    
+    ASSERT_ON_THREAD_MAIN(schedule);
+    
+    if (data->m_pos >= schedule->m_category_count) return NULL;
+    
+    net_log_category_t r = schedule->m_categories[data->m_pos];
+
+    for(data->m_pos++; data->m_pos < schedule->m_category_count; data->m_pos++) {
+        if (schedule->m_categories[data->m_pos] != NULL) break;
+    }
+    
+    return r;
+}
+
+void net_log_categories(net_log_schedule_t schedule, net_log_category_it_t category_it) {
+    ASSERT_ON_THREAD_MAIN(schedule);
+    
+    struct net_log_category_it_data * data = (struct net_log_category_it_data *)category_it->data;
+    data->m_schedule = schedule;
+    data->m_pos = 0;
+    category_it->next = net_log_category_it_do_next;
+
+    if (data->m_pos < schedule->m_category_count && schedule->m_categories[data->m_pos] == NULL) {
+        net_log_category_it_do_next(category_it);
+    }
+}
+
 static void net_log_category_commit_timer(net_timer_t timer, void * ctx) {
     net_log_category_t category = ctx;
     net_log_category_commit(category);

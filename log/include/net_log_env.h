@@ -16,7 +16,6 @@ net_log_env_t net_log_env_find(net_log_schedule_t schedule, const char * url);
 
 #define net_log_env_it_next(__it) ((__it)->next(__it))
 
-
 NET_END_DECL
 
 #endif
