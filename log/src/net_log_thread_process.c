@@ -208,8 +208,9 @@ static void net_log_thread_process_statistic_cache_loaded(net_log_schedule_t sch
 
     struct net_log_thread_cmd_staistic_cache_loaded * cache_loaded_cmd = (struct net_log_thread_cmd_staistic_cache_loaded *)cmd;
 
-    /* schedule->m_statistics_package_count += cache_loaded_cmd->m_found_package_count; */
-    /* schedule->m_statistics_record_count += cache_loaded_cmd->m_found_record_count; */
+    net_log_category_t category = cache_loaded_cmd->m_category;
+    category->m_statistics_package_count += cache_loaded_cmd->m_package_count;
+    category->m_statistics_record_count += cache_loaded_cmd->m_record_count;
 }
 
 static void net_log_thread_process_statistic_cache_created(net_log_schedule_t schedule, net_log_thread_t log_thread, net_log_thread_cmd_t cmd) {

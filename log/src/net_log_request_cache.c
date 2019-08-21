@@ -186,6 +186,13 @@ int net_log_request_cache_load(net_log_request_cache_t cache) {
         return -1;
     }
 
+    struct net_log_thread_cmd_staistic_cache_loaded cache_loaded_cmd;
+    cache_loaded_cmd.head.m_size = sizeof(cache_loaded_cmd);
+    cache_loaded_cmd.head.m_cmd = net_log_thread_cmd_type_staistic_cache_loaded;
+    cache_loaded_cmd.m_category = NULL;
+    cache_loaded_cmd.m_record_count = 0;
+    cache_loaded_cmd.m_package_count = 0;
+        
     int rv = 0;
     uint16_t count = 0;
     do {
@@ -280,9 +287,35 @@ int net_log_request_cache_load(net_log_request_cache_t cache) {
             return -1;
         }
 
+        if (!cache->m_is_package_counted) {
+            if (cache_loaded_cmd.m_category) {
+                if (cache_loaded_cmd.m_category != category) {
+                    net_log_thread_send_cmd(schedule->m_thread_main, (net_log_thread_cmd_t)&cache_loaded_cmd, log_thread);
+                    cache_loaded_cmd.m_category = category;
+                    cache_loaded_cmd.m_record_count = 0;
+                    cache_loaded_cmd.m_package_count = 0;
+                }
+            }
+            else {
+                cache_loaded_cmd.m_category = category;
+                assert(cache_loaded_cmd.m_record_count == 0);
+                assert(cache_loaded_cmd.m_package_count == 0);
+            }
+            
+            cache_loaded_cmd.m_record_count+=request->m_send_param->log_count;
+            cache_loaded_cmd.m_package_count++;
+        }
+        
         count++;
     } while(1);
 
+    if (!cache->m_is_package_counted) {
+        if (cache_loaded_cmd.m_category) {
+            net_log_thread_send_cmd(schedule->m_thread_main, (net_log_thread_cmd_t)&cache_loaded_cmd, log_thread);
+        }
+        cache->m_is_package_counted = 1;
+    }
+    
     if (schedule->m_debug) {
         CPE_INFO(schedule->m_em, "log: thread %s: cache %d: load: read %d requests", log_thread->m_name, cache->m_id, count);
     }
