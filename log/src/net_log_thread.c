@@ -123,6 +123,14 @@ void net_log_thread_free(net_log_thread_t log_thread) {
     mem_free(schedule->m_alloc, log_thread);
 }
 
+const char * net_log_thread_name(net_log_thread_t log_thread) {
+    return log_thread->m_name;
+}
+
+void * net_log_thread_data(net_log_thread_t log_thread) {
+    return log_thread + 1;
+}
+
 int net_log_thread_send_cmd(net_log_thread_t log_thread, net_log_thread_cmd_t cmd, net_log_thread_t from_thread) {
     net_log_schedule_t schedule = log_thread->m_schedule;
     
