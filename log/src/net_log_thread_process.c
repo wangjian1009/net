@@ -202,6 +202,35 @@ static void net_log_thread_process_statistic_op_error(net_log_schedule_t schedul
     }
 }
 
+static void net_log_thread_process_statistic_cache_loaded(net_log_schedule_t schedule, net_log_thread_t log_thread, net_log_thread_cmd_t cmd) {
+    ASSERT_ON_THREAD_MAIN(schedule);
+
+    struct net_log_thread_cmd_staistic_cache_loaded * cache_loaded_cmd = (struct net_log_thread_cmd_staistic_cache_loaded *)cmd;
+
+    net_log_category_t category = op_error_cmd->m_category;
+    category->m_statistics_cache_created++;
+    category->m_statistics_package_count += cache_loaded_cmd->m_found_package_count;
+    category->m_statistics_record_count += cache_loaded_cmd->m_found_record_count;
+}
+
+static void net_log_thread_process_statistic_cache_created(net_log_schedule_t schedule, net_log_thread_t log_thread, net_log_thread_cmd_t cmd) {
+    ASSERT_ON_THREAD_MAIN(schedule);
+
+    struct net_log_thread_cmd_staistic_cache_created * cache_created_cmd = (struct net_log_thread_cmd_staistic_cache_created *)cmd;
+
+    net_log_category_t category = op_error_cmd->m_category;
+    category->m_statistics_cache_created++;
+}
+
+static void net_log_thread_process_statistic_cache_destoried(net_log_schedule_t schedule, net_log_thread_t log_thread, net_log_thread_cmd_t cmd) {
+    ASSERT_ON_THREAD_MAIN(schedule);
+
+    struct net_log_thread_cmd_staistic_cache_destoried * cache_destoried_cmd = (struct net_log_thread_cmd_staistic_cache_destoried *)cmd;
+
+    net_log_category_t category = op_error_cmd->m_category;
+    category->m_statistics_cache_destoried++;
+}
+
 static struct {
     net_log_thread_cmd_type_t m_cmd;
     void (*m_fun)(net_log_schedule_t schedule, net_log_thread_t log_thread, net_log_thread_cmd_t cmd);
@@ -216,6 +245,9 @@ static struct {
     , { net_log_thread_cmd_type_staistic_package_discard, net_log_thread_process_statistic_package_discard }
     , { net_log_thread_cmd_type_staistic_package_success, net_log_thread_process_statistic_package_success }
     , { net_log_thread_cmd_type_staistic_op_error, net_log_thread_process_statistic_op_error }
+    , { net_log_thread_cmd_type_staistic_cache_loaded, net_log_thread_process_statistic_cache_loaded }
+    , { net_log_thread_cmd_type_staistic_cache_created, net_log_thread_process_statistic_cache_created }
+    , { net_log_thread_cmd_type_staistic_cache_destoried, net_log_thread_process_statistic_cache_destoried }
 };
 
 void net_log_thread_dispatch(net_log_thread_t log_thread, net_log_thread_cmd_t cmd) {
