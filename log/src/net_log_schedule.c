@@ -460,18 +460,29 @@ static void net_log_schedule_dump_timer(net_timer_t timer, void * ctx) {
 
     CPE_INFO(schedule->m_em, "log: begin dump, category-count=%d", schedule->m_category_count);
     
-    /* uint8_t i; */
-    /* for(i = 0; i < schedule->m_category_count; ++i) { */
-    /*     net_log_category_t category = schedule->m_categories[i]; */
-    /*     if (category == NULL) continue; */
+    uint8_t i;
+    for(i = 0; i < schedule->m_category_count; ++i) {
+        net_log_category_t category = schedule->m_categories[i];
+        if (category == NULL) continue;
 
-    /*     CPE_INFO( */
-    /*         schedule->m_em, "log: category [%d]%s: input-log=%d, input-pckage=%d, input-bytes=%.2fM", */
-    /*         category->m_id, category->m_name, */
-    /*         category->m_statistics_log_count, category->m_statistics_package_count, */
-    /*         ((float)category->m_statistics_input_bps.m_total_bytes / 1024.0f / 1024.0f)); */
-    /* } */
+        CPE_INFO(
+            schedule->m_em, "log:               category [%d]%s: record=%d, package=%d/%d, cache=%d/%d, package-error(%d,%d,%d)",
+            category->m_id, category->m_name,
+            category->m_statistics_record_count,
+            category->m_statistics_package_success_count, category->m_statistics_package_count,
+            category->m_statistics_cache_destoried, category->m_statistics_cache_created,
+            category->m_statistics_package_discard_count[0],
+            category->m_statistics_package_discard_count[1],
+            category->m_statistics_package_discard_count[2]);
+    }
     
+    net_log_env_t env;
+    TAILQ_FOREACH(env, &schedule->m_envs, m_next) {
+        CPE_INFO(
+            schedule->m_em, "log:               env %s: ",
+            env->m_url);
+    }
+
     net_timer_active(schedule->m_dump_timer, schedule->m_cfg_dump_span_ms);
 }
 

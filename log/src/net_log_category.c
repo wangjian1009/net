@@ -72,11 +72,14 @@ net_log_category_create(net_log_schedule_t schedule, net_log_thread_t flusher, n
     category->m_cfg_count_per_package = 2048;
     category->m_cfg_timeout_ms = 0;
 
+    category->m_statistics_cache_created = 0;
+    category->m_statistics_cache_destoried = 0;
+
     category->m_statistics_record_count = 0;
+
     category->m_statistics_package_count = 0;
-    category->m_statistics_success_count = 0;
-    
-    bzero(category->m_statistics_discard_count, sizeof(category->m_statistics_discard_count));
+    category->m_statistics_package_success_count = 0;
+    bzero(category->m_statistics_package_discard_count, sizeof(category->m_statistics_package_discard_count));
 
     category->m_commit_timer = net_timer_create(schedule->m_net_driver, net_log_category_commit_timer, category);
     if (category->m_commit_timer == NULL) {

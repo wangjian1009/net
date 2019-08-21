@@ -163,7 +163,7 @@ static void net_log_thread_process_statistic_package_success(net_log_schedule_t 
 
     struct net_log_thread_cmd_staistic_package_success * package_success_cmd = (struct net_log_thread_cmd_staistic_package_success *)cmd;
     net_log_category_t category = package_success_cmd->m_category;
-    category->m_statistics_success_count++;
+    category->m_statistics_package_success_count++;
 }
 
 static void net_log_thread_process_statistic_package_discard(net_log_schedule_t schedule, net_log_thread_t log_thread, net_log_thread_cmd_t cmd) {
@@ -174,7 +174,7 @@ static void net_log_thread_process_statistic_package_discard(net_log_schedule_t 
     net_log_category_t category = package_discard_cmd->m_category;
     net_log_discard_reason_t reason = package_discard_cmd->m_reason;
 
-    category->m_statistics_discard_count[reason]++;
+    category->m_statistics_package_discard_count[reason]++;
     
     net_log_statistic_monitor_t monitor;
     TAILQ_FOREACH(monitor, &schedule->m_statistic_monitors, m_next) {
