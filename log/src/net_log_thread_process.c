@@ -222,6 +222,11 @@ static void net_log_thread_process_statistic_cache_destoried(net_log_schedule_t 
     schedule->m_statistics_cache_destoried++;
 }
 
+static void net_log_thread_process_statistic_cache_discard(net_log_schedule_t schedule, net_log_thread_t log_thread, net_log_thread_cmd_t cmd) {
+    ASSERT_ON_THREAD_MAIN(schedule);
+    schedule->m_statistics_cache_discard++;
+}
+
 static struct {
     net_log_thread_cmd_type_t m_cmd;
     void (*m_fun)(net_log_schedule_t schedule, net_log_thread_t log_thread, net_log_thread_cmd_t cmd);
@@ -239,6 +244,7 @@ static struct {
     , { net_log_thread_cmd_type_staistic_cache_loaded, net_log_thread_process_statistic_cache_loaded }
     , { net_log_thread_cmd_type_staistic_cache_created, net_log_thread_process_statistic_cache_created }
     , { net_log_thread_cmd_type_staistic_cache_destoried, net_log_thread_process_statistic_cache_destoried }
+    , { net_log_thread_cmd_type_staistic_cache_discard, net_log_thread_process_statistic_cache_discard }
 };
 
 void net_log_thread_dispatch(net_log_thread_t log_thread, net_log_thread_cmd_t cmd) {

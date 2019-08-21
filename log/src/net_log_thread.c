@@ -135,24 +135,35 @@ int net_log_thread_send_cmd(net_log_thread_t log_thread, net_log_thread_cmd_t cm
     net_log_schedule_t schedule = log_thread->m_schedule;
     
     ASSERT_ON_THREAD(from_thread);
-    
-    _MS(pthread_mutex_lock(&log_thread->m_mutex));
 
-    if (write(log_thread->m_pipe_fd[1], cmd, cmd->m_size) < 0) {
-        CPE_ERROR(
-            schedule->m_em, "log: thread %s: ==> (%s) %s | write thread fail, error=%d (%s)!",
-            from_thread->m_name, log_thread->m_name, net_log_thread_cmd_dump(&from_thread->m_tmp_buffer, cmd), 
-            errno, strerror(errno));
-        _MS(pthread_mutex_unlock(&log_thread->m_mutex));
-        return -1;
+    if (IS_ON_THREAD(log_thread)) {
+        if (schedule->m_debug) {
+            CPE_INFO(
+                schedule->m_em, "log: thread %s: --- (%s) %s",
+                from_thread->m_name, log_thread->m_name, net_log_thread_cmd_dump(&from_thread->m_tmp_buffer, cmd));
+        }
+        
+        net_log_thread_dispatch(log_thread, cmd);
     }
+    else {
+        _MS(pthread_mutex_lock(&log_thread->m_mutex));
 
-    _MS(pthread_mutex_unlock(&log_thread->m_mutex));
+        if (write(log_thread->m_pipe_fd[1], cmd, cmd->m_size) < 0) {
+            CPE_ERROR(
+                schedule->m_em, "log: thread %s: ==> (%s) %s | write thread fail, error=%d (%s)!",
+                from_thread->m_name, log_thread->m_name, net_log_thread_cmd_dump(&from_thread->m_tmp_buffer, cmd),
+                errno, strerror(errno));
+            _MS(pthread_mutex_unlock(&log_thread->m_mutex));
+            return -1;
+        }
 
-    if (schedule->m_debug) {
-        CPE_INFO(
-            schedule->m_em, "log: thread %s: ==> (%s) %s (size=%d)",
-            from_thread->m_name, log_thread->m_name, net_log_thread_cmd_dump(&from_thread->m_tmp_buffer, cmd), cmd->m_size);
+        _MS(pthread_mutex_unlock(&log_thread->m_mutex));
+
+        if (schedule->m_debug) {
+            CPE_INFO(
+                schedule->m_em, "log: thread %s: ==> (%s) %s",
+                from_thread->m_name, log_thread->m_name, net_log_thread_cmd_dump(&from_thread->m_tmp_buffer, cmd));
+        }
     }
 
     return 0;

@@ -62,6 +62,7 @@ net_log_schedule_create(
     schedule->m_net_monitor = NULL;
     schedule->m_statistics_cache_created = 0;
     schedule->m_statistics_cache_destoried = 0;
+    schedule->m_statistics_cache_discard = 0;
 
     schedule->m_net_monitor = net_local_ip_stack_monitor_create(
         schedule->m_net_schedule, schedule, NULL, net_log_schedule_on_local_ip_stack_changed);
@@ -461,9 +462,11 @@ static void net_log_schedule_dump_timer(net_timer_t timer, void * ctx) {
     ASSERT_ON_THREAD_MAIN(schedule);
 
     CPE_INFO(
-        schedule->m_em, "log: begin dump, category-count=%d, cache=%d/%d",
+        schedule->m_em, "log: begin dump, category-count=%d, cache=%d/%d, cache-discard=%d",
         schedule->m_category_count,
-        schedule->m_statistics_cache_destoried, schedule->m_statistics_cache_created);
+        schedule->m_statistics_cache_destoried + schedule->m_statistics_cache_discard, 
+        schedule->m_statistics_cache_created, 
+        schedule->m_statistics_cache_discard);
     
     uint8_t i;
     for(i = 0; i < schedule->m_category_count; ++i) {

@@ -18,6 +18,7 @@ typedef enum net_log_thread_cmd_type {
     net_log_thread_cmd_type_staistic_cache_loaded,
     net_log_thread_cmd_type_staistic_cache_created,
     net_log_thread_cmd_type_staistic_cache_destoried,
+    net_log_thread_cmd_type_staistic_cache_discard,
 } net_log_thread_cmd_type_t;
 
 struct net_log_thread_cmd {
@@ -85,6 +86,10 @@ struct net_log_thread_cmd_staistic_cache_created {
 };
 
 struct net_log_thread_cmd_staistic_cache_destoried {
+    struct net_log_thread_cmd head;
+};
+
+struct net_log_thread_cmd_staistic_cache_discard {
     struct net_log_thread_cmd head;
 };
 
