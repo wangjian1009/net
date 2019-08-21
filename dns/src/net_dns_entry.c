@@ -131,7 +131,7 @@ net_dns_entry_select_item(net_dns_entry_t entry, net_dns_item_select_policy_t po
     net_dns_entry_items(entry, &item_it, 1);
 
     uint32_t protect = 0;
-    uint32_t protect_limit = 100;
+    uint32_t protect_limit = 500;
     for(check = net_dns_entry_item_it_next(&item_it); check && protect < protect_limit; check = next, protect++) {
         next = net_dns_entry_item_it_next(&item_it);
         assert(next != check);
