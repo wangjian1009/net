@@ -64,7 +64,9 @@ static int net_log_thread_setup(net_log_thread_t log_thread) {
         goto SETUP_FAIL;
     }
     net_watcher_update(log_thread->m_watcher, 1, 0);
-    
+
+    net_log_thread_search_cache(log_thread);
+
     return 0;
     
 SETUP_FAIL:

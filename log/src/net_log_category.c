@@ -9,6 +9,7 @@
 #include "net_log_builder.h"
 #include "net_log_thread_i.h"
 #include "net_log_thread_cmd.h"
+#include "net_log_statistic_i.h"
 
 static char * net_log_category_get_pack_id(net_log_schedule_t schedule, const char * configName, const char * ip);
 static void net_log_category_commit_timer(net_timer_t timer, void * ctx);
@@ -369,7 +370,7 @@ void net_log_category_commit(net_log_category_t category) {
         CPE_ERROR(
             schedule->m_em, "log: category [%d]%s: try push loggroup to flusher failed, force drop this log group",
             category->m_id, category->m_name);
-        net_log_category_statistic_discard(category, net_log_discard_reason_queue_to_pack_fail, schedule->m_thread_main);
+        net_log_statistic_package_discard(schedule->m_thread_main, category, net_log_discard_reason_queue_to_pack_fail);
         net_log_group_destroy(builder);
         return;
     }
@@ -386,26 +387,3 @@ static void net_log_category_commit_timer(net_timer_t timer, void * ctx) {
     net_log_category_commit(category);
 }
 
-void net_log_category_statistic_success(net_log_category_t category, net_log_thread_t from_thread) {
-    net_log_schedule_t schedule = category->m_schedule;
-    ASSERT_ON_THREAD(from_thread);
-
-    struct net_log_thread_cmd_staistic_package_success package_success_cmd;
-    package_success_cmd.head.m_size = sizeof(package_success_cmd);
-    package_success_cmd.head.m_cmd = net_log_thread_cmd_type_staistic_package_success;
-    package_success_cmd.m_category = category;
-    assert(schedule->m_thread_main);
-    net_log_thread_send_cmd(schedule->m_thread_main, (net_log_thread_cmd_t)&package_success_cmd, from_thread);
-}
-
-void net_log_category_statistic_discard(net_log_category_t category, net_log_discard_reason_t reason, net_log_thread_t from_thread) {
-    net_log_schedule_t schedule = category->m_schedule;
-    ASSERT_ON_THREAD(from_thread);
-
-    struct net_log_thread_cmd_staistic_package_discard package_discard_cmd;
-    package_discard_cmd.head.m_size = sizeof(package_discard_cmd);
-    package_discard_cmd.head.m_cmd = net_log_thread_cmd_type_staistic_package_discard;
-    package_discard_cmd.m_category = category;
-    package_discard_cmd.m_reason = reason;
-    net_log_thread_send_cmd(schedule->m_thread_main, (net_log_thread_cmd_t)&package_discard_cmd, from_thread);
-}

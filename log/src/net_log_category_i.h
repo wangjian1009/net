@@ -49,9 +49,6 @@ void net_log_category_log_end(net_log_category_t category);
 
 void net_log_category_commit(net_log_category_t category);
 
-void net_log_category_statistic_success(net_log_category_t category, net_log_thread_t from_thread);
-void net_log_category_statistic_discard(net_log_category_t category, net_log_discard_reason_t reason, net_log_thread_t from_thread);
-
 NET_END_DECL
 
 #endif

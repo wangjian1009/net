@@ -7,6 +7,7 @@
 #include "net_log_category_i.h"
 #include "net_log_request_cache.h"
 #include "net_log_env_i.h"
+#include "net_log_statistic_i.h"
 #include "net_log_statistic_monitor_i.h"
 
 static void net_log_thread_process_package_pack(net_log_schedule_t schedule, net_log_thread_t log_thread, net_log_thread_cmd_t cmd) {
@@ -23,7 +24,7 @@ static void net_log_thread_process_package_pack(net_log_schedule_t schedule, net
         CPE_ERROR(
             schedule->m_em, "log: thread %s: category [%d]%s: commit: build request fail", 
             log_thread->m_name, category->m_id, category->m_name);
-        net_log_category_statistic_discard(category, net_log_discard_reason_pack_fail, log_thread);
+        net_log_statistic_package_discard(log_thread, category, net_log_discard_reason_pack_fail);
         return;
     }
     
@@ -33,7 +34,7 @@ static void net_log_thread_process_package_pack(net_log_schedule_t schedule, net
     cmd_send.m_send_param = send_param;
 
     if (net_log_thread_send_cmd(category->m_flusher, (net_log_thread_cmd_t)&cmd_send, log_thread) != 0) {
-        net_log_category_statistic_discard(category, net_log_discard_reason_queue_to_send_fail, log_thread);
+        net_log_statistic_package_discard(log_thread, category, net_log_discard_reason_queue_to_send_fail);
         net_log_request_param_free(send_param);
         return;
     }
@@ -82,7 +83,7 @@ static void net_log_thread_process_package_send(net_log_schedule_t schedule, net
     return;
     
 SEND_FAIL:
-    net_log_category_statistic_discard(send_param->category, net_log_discard_reason_queue_to_send_fail, log_thread);
+    net_log_statistic_package_discard(log_thread, send_param->category, net_log_discard_reason_queue_to_send_fail);
     net_log_request_param_free(send_param);
 }
 

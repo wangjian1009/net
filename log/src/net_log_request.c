@@ -15,6 +15,7 @@
 #include "net_log_util.h"
 #include "net_log_builder.h"
 #include "net_log_thread_cmd.h"
+#include "net_log_statistic_i.h"
 #include "lz4.h"
 
 static int net_log_request_send(net_log_request_t request);
@@ -205,7 +206,7 @@ static void net_log_request_commit_do_error(
 static void net_log_request_commit_do_success(
     net_log_schedule_t schedule, net_log_category_t category, net_log_thread_t log_thread, net_log_request_t request)
 {
-    net_log_category_statistic_success(category, log_thread);
+    net_log_statistic_package_success(log_thread, category);
     net_log_request_free(request);
 }
 
