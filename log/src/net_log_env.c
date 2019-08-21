@@ -32,6 +32,10 @@ void net_log_env_free(net_log_env_t env) {
     mem_free(schedule->m_alloc, env);
 }
 
+const char * net_log_env_url(net_log_env_t env) {
+    return env->m_url;
+}
+
 net_log_env_t net_log_env_find(net_log_schedule_t schedule, const char * url) {
     ASSERT_ON_THREAD_MAIN(schedule);
 

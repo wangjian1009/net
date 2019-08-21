@@ -143,6 +143,10 @@ void net_log_category_free(net_log_category_t category) {
     mem_free(schedule->m_alloc, category);
 }
 
+const char * net_log_category_name(net_log_category_t category) {
+    return category->m_name;
+}
+
 net_log_request_param_t
 net_log_category_build_request(net_log_category_t category, net_log_builder_t builder) {
     net_log_schedule_t schedule = category->m_schedule;
