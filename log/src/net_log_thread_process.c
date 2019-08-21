@@ -164,7 +164,7 @@ static void net_log_thread_process_statistic_package_success(net_log_schedule_t 
 
     struct net_log_thread_cmd_staistic_package_success * package_success_cmd = (struct net_log_thread_cmd_staistic_package_success *)cmd;
     net_log_category_t category = package_success_cmd->m_category;
-    category->m_statistics_package_success_count++;
+    category->m_statistic.m_package_success_count++;
 }
 
 static void net_log_thread_process_statistic_package_discard(net_log_schedule_t schedule, net_log_thread_t log_thread, net_log_thread_cmd_t cmd) {
@@ -175,7 +175,7 @@ static void net_log_thread_process_statistic_package_discard(net_log_schedule_t 
     net_log_category_t category = package_discard_cmd->m_category;
     net_log_discard_reason_t reason = package_discard_cmd->m_reason;
 
-    category->m_statistics_package_discard_count[reason]++;
+    category->m_statistic.m_package_discard_count[reason]++;
     
     net_log_statistic_monitor_t monitor;
     TAILQ_FOREACH(monitor, &schedule->m_statistic_monitors, m_next) {
@@ -209,23 +209,25 @@ static void net_log_thread_process_statistic_cache_loaded(net_log_schedule_t sch
     struct net_log_thread_cmd_staistic_cache_loaded * cache_loaded_cmd = (struct net_log_thread_cmd_staistic_cache_loaded *)cmd;
 
     net_log_category_t category = cache_loaded_cmd->m_category;
-    category->m_statistics_package_count += cache_loaded_cmd->m_package_count;
-    category->m_statistics_record_count += cache_loaded_cmd->m_record_count;
+    category->m_statistic.m_loaded_package_count += cache_loaded_cmd->m_package_count;
+    category->m_statistic.m_loaded_record_count += cache_loaded_cmd->m_record_count;
+    category->m_statistic.m_package_count += cache_loaded_cmd->m_package_count;
+    category->m_statistic.m_record_count += cache_loaded_cmd->m_record_count;
 }
 
 static void net_log_thread_process_statistic_cache_created(net_log_schedule_t schedule, net_log_thread_t log_thread, net_log_thread_cmd_t cmd) {
     ASSERT_ON_THREAD_MAIN(schedule);
-    schedule->m_statistics_cache_created++;
+    schedule->m_statistic.m_cache_created++;
 }
 
 static void net_log_thread_process_statistic_cache_destoried(net_log_schedule_t schedule, net_log_thread_t log_thread, net_log_thread_cmd_t cmd) {
     ASSERT_ON_THREAD_MAIN(schedule);
-    schedule->m_statistics_cache_destoried++;
+    schedule->m_statistic.m_cache_destoried++;
 }
 
 static void net_log_thread_process_statistic_cache_discard(net_log_schedule_t schedule, net_log_thread_t log_thread, net_log_thread_cmd_t cmd) {
     ASSERT_ON_THREAD_MAIN(schedule);
-    schedule->m_statistics_cache_discard++;
+    schedule->m_statistic.m_cache_discard++;
 }
 
 static struct {

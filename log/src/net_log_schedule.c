@@ -60,9 +60,8 @@ net_log_schedule_create(
     _MS(schedule->m_main_thread_id = pthread_self());
     schedule->m_thread_main = NULL;
     schedule->m_net_monitor = NULL;
-    schedule->m_statistics_cache_created = 0;
-    schedule->m_statistics_cache_destoried = 0;
-    schedule->m_statistics_cache_discard = 0;
+    
+    bzero(&schedule->m_statistic, sizeof(schedule->m_statistic));
 
     schedule->m_net_monitor = net_local_ip_stack_monitor_create(
         schedule->m_net_schedule, schedule, NULL, net_log_schedule_on_local_ip_stack_changed);
@@ -320,6 +319,10 @@ net_log_schedule_state_t net_log_schedule_state(net_log_schedule_t schedule) {
     return (net_log_schedule_state_t)schedule->m_state_fsm.m_curent_state;
 }
 
+net_log_schedule_statistic_t net_log_schedule_statistic(net_log_schedule_t schedule) {
+    return &schedule->m_statistic;
+}
+
 void net_log_schedule_commit(net_log_schedule_t schedule) {
     ASSERT_ON_THREAD_MAIN(schedule);
     
@@ -464,9 +467,9 @@ static void net_log_schedule_dump_timer(net_timer_t timer, void * ctx) {
     CPE_INFO(
         schedule->m_em, "log: begin dump, category-count=%d, cache=%d/%d, cache-discard=%d",
         schedule->m_category_count,
-        schedule->m_statistics_cache_destoried + schedule->m_statistics_cache_discard, 
-        schedule->m_statistics_cache_created, 
-        schedule->m_statistics_cache_discard);
+        schedule->m_statistic.m_cache_destoried + schedule->m_statistic.m_cache_discard, 
+        schedule->m_statistic.m_cache_created, 
+        schedule->m_statistic.m_cache_discard);
     
     uint8_t i;
     for(i = 0; i < schedule->m_category_count; ++i) {
@@ -476,11 +479,11 @@ static void net_log_schedule_dump_timer(net_timer_t timer, void * ctx) {
         CPE_INFO(
             schedule->m_em, "log:               category [%d]%s: record=%d, package=%d/%d, package-error(%d,%d,%d)",
             category->m_id, category->m_name,
-            category->m_statistics_record_count,
-            category->m_statistics_package_success_count, category->m_statistics_package_count,
-            category->m_statistics_package_discard_count[0],
-            category->m_statistics_package_discard_count[1],
-            category->m_statistics_package_discard_count[2]);
+            category->m_statistic.m_record_count,
+            category->m_statistic.m_package_success_count, category->m_statistic.m_package_count,
+            category->m_statistic.m_package_discard_count[0],
+            category->m_statistic.m_package_discard_count[1],
+            category->m_statistic.m_package_discard_count[2]);
     }
     
     net_log_env_t env;

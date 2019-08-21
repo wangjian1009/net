@@ -4,6 +4,15 @@
 
 NET_BEGIN_DECL
 
+struct net_log_category_statistic {
+    uint32_t m_loaded_record_count;
+    uint32_t m_loaded_package_count;
+    uint32_t m_record_count;
+    uint32_t m_package_count;
+    uint32_t m_package_success_count;
+    uint32_t m_package_discard_count[net_log_discard_reason_count];
+};
+
 net_log_category_t net_log_category_create(
     net_log_schedule_t schedule, net_log_thread_t flusher, net_log_thread_t sender, const char * name, uint8_t id);
 void net_log_category_free(net_log_category_t category);
@@ -16,6 +25,8 @@ int net_log_category_add_global_tag(net_log_category_t category, const char * ke
 
 uint32_t net_log_category_timeout_ms(net_log_category_t category);
 void net_log_category_set_timeout_ms(net_log_category_t category, uint32_t timeout_ms);
+
+net_log_category_statistic_t net_log_category_statistic(net_log_category_t category);
 
 NET_END_DECL
 

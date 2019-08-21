@@ -72,11 +72,7 @@ net_log_category_create(net_log_schedule_t schedule, net_log_thread_t flusher, n
     category->m_cfg_count_per_package = 2048;
     category->m_cfg_timeout_ms = 0;
 
-    category->m_statistics_record_count = 0;
-
-    category->m_statistics_package_count = 0;
-    category->m_statistics_package_success_count = 0;
-    bzero(category->m_statistics_package_discard_count, sizeof(category->m_statistics_package_discard_count));
+    bzero(&category->m_statistic, sizeof(category->m_statistic));
 
     category->m_commit_timer = net_timer_create(schedule->m_net_driver, net_log_category_commit_timer, category);
     if (category->m_commit_timer == NULL) {
@@ -358,8 +354,8 @@ void net_log_category_commit(net_log_category_t category) {
     size_t loggroup_size = builder->loggroup_size;
 
     /*input statistics*/
-    category->m_statistics_record_count += builder->grp->n_logs;
-    category->m_statistics_package_count++;
+    category->m_statistic.m_record_count += builder->grp->n_logs;
+    category->m_statistic.m_package_count++;
 
     struct net_log_thread_cmd_package_pack cmd_pack;
     cmd_pack.head.m_size = sizeof(cmd_pack);

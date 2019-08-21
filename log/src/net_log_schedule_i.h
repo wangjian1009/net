@@ -85,9 +85,7 @@ struct net_log_schedule {
     net_log_category_t * m_categories;
 
     /*statistic*/
-    uint32_t m_statistics_cache_created;
-    uint32_t m_statistics_cache_destoried;
-    uint32_t m_statistics_cache_discard;
+    struct net_log_schedule_statistic m_statistic;
     net_log_statistic_monitor_list_t m_statistic_monitors;
     
     /*threads*/

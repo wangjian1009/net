@@ -6,6 +6,12 @@
 
 NET_BEGIN_DECL
 
+struct net_log_schedule_statistic {
+    uint32_t m_cache_created;
+    uint32_t m_cache_destoried;
+    uint32_t m_cache_discard;
+};
+
 net_log_schedule_t net_log_schedule_create(
     mem_allocrator_t alloc, error_monitor_t em, uint8_t debug,
     net_schedule_t schedule, net_driver_t driver, vfs_mgr_t vfs,
@@ -30,6 +36,8 @@ net_log_schedule_state_t net_log_schedule_state(net_log_schedule_t schedule);
 int net_log_schedule_start(net_log_schedule_t schedule);
 void net_log_schedule_stop(net_log_schedule_t schedule);
 uint8_t net_log_schedule_stop_check(net_log_schedule_t schedule);
+
+net_log_schedule_statistic_t net_log_schedule_statistic(net_log_schedule_t schedule);
 
 void net_log_schedule_commit(net_log_schedule_t schedule);
 
