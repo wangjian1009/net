@@ -2,6 +2,7 @@
 #include "net_log_request.h"
 #include "net_log_request_cache.h"
 #include "net_log_thread_i.h"
+#include "net_log_statistic_i.h"
 
 uint8_t net_log_thread_request_is_empty(net_log_thread_t log_thread) {
     ASSERT_ON_THREAD(log_thread);
@@ -71,7 +72,7 @@ int net_log_thread_save_and_clear_requests(net_log_thread_t log_thread) {
     
     uint32_t cache_id = next_cache ? (next_cache->m_id - 1) : (log_thread->m_cache_max_id + 1);
 
-    net_log_request_cache_t cache = net_log_request_cache_create(log_thread, cache_id, net_log_request_cache_building);
+    net_log_request_cache_t cache = net_log_request_cache_create(log_thread, cache_id, net_log_request_cache_building, 1);
     if (cache == NULL) {
         CPE_ERROR(schedule->m_em, "log: thread %s: manage: sanve and clear: create cache fail", log_thread->m_name);
         return -1;
@@ -99,6 +100,8 @@ int net_log_thread_save_and_clear_requests(net_log_thread_t log_thread) {
 
     if (net_log_request_cache_close(cache) != 0) return -1;
 
+    net_log_statistic_cache_created(log_thread);
+    
     if (schedule->m_debug) {
         CPE_INFO(schedule->m_em, "log: thread %s: manage: sanve and clear: saved %d requests", log_thread->m_name, count);
     }

@@ -60,6 +60,8 @@ net_log_schedule_create(
     _MS(schedule->m_main_thread_id = pthread_self());
     schedule->m_thread_main = NULL;
     schedule->m_net_monitor = NULL;
+    schedule->m_statistics_cache_created = 0;
+    schedule->m_statistics_cache_destoried = 0;
 
     schedule->m_net_monitor = net_local_ip_stack_monitor_create(
         schedule->m_net_schedule, schedule, NULL, net_log_schedule_on_local_ip_stack_changed);
@@ -458,7 +460,10 @@ static void net_log_schedule_dump_timer(net_timer_t timer, void * ctx) {
     net_log_schedule_t schedule = ctx;
     ASSERT_ON_THREAD_MAIN(schedule);
 
-    CPE_INFO(schedule->m_em, "log: begin dump, category-count=%d", schedule->m_category_count);
+    CPE_INFO(
+        schedule->m_em, "log: begin dump, category-count=%d, cache=%d/%d",
+        schedule->m_category_count,
+        schedule->m_statistics_cache_destoried, schedule->m_statistics_cache_created);
     
     uint8_t i;
     for(i = 0; i < schedule->m_category_count; ++i) {
@@ -466,11 +471,10 @@ static void net_log_schedule_dump_timer(net_timer_t timer, void * ctx) {
         if (category == NULL) continue;
 
         CPE_INFO(
-            schedule->m_em, "log:               category [%d]%s: record=%d, package=%d/%d, cache=%d/%d, package-error(%d,%d,%d)",
+            schedule->m_em, "log:               category [%d]%s: record=%d, package=%d/%d, package-error(%d,%d,%d)",
             category->m_id, category->m_name,
             category->m_statistics_record_count,
             category->m_statistics_package_success_count, category->m_statistics_package_count,
-            category->m_statistics_cache_destoried, category->m_statistics_cache_created,
             category->m_statistics_package_discard_count[0],
             category->m_statistics_package_discard_count[1],
             category->m_statistics_package_discard_count[2]);

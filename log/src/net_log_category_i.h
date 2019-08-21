@@ -27,8 +27,6 @@ struct net_log_category {
     uint32_t m_cfg_timeout_ms;
 
     /*statistics*/
-    uint32_t m_statistics_cache_created;
-    uint32_t m_statistics_cache_destoried;
     uint32_t m_statistics_record_count;
     uint32_t m_statistics_package_count;
     uint32_t m_statistics_package_success_count;

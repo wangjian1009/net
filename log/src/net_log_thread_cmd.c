@@ -62,11 +62,15 @@ void net_log_thread_cmd_print(write_stream_t ws, net_log_thread_cmd_t cmd) {
         stream_printf(ws, ")");
         break;
     }
-    case net_log_thread_cmd_type_staistic_cache_created: {
-        struct net_log_thread_cmd_staistic_cache_created * cache_created_cmd = (struct net_log_thread_cmd_staistic_cache_created *)cmd;
-        stream_printf(ws, "statistic-cache-created(category=%s)", cache_created_cmd->m_category->m_name);
+    case net_log_thread_cmd_type_staistic_cache_loaded:
+        stream_printf(ws, "statistic-cache-loaded");
         break;
-    }
+    case net_log_thread_cmd_type_staistic_cache_created:
+        stream_printf(ws, "statistic-cache-created");
+        break;
+    case net_log_thread_cmd_type_staistic_cache_destoried:
+        stream_printf(ws, "statistic-cache-destoried");
+        break;
     }
 }
 

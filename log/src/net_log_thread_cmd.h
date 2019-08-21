@@ -78,19 +78,14 @@ struct net_log_thread_cmd_staistic_op_error {
 
 struct net_log_thread_cmd_staistic_cache_loaded {
     struct net_log_thread_cmd head;
-    net_log_category_t m_category;
-    uint32_t m_found_package_count;
-    uint32_t m_found_record_count;
 };
 
 struct net_log_thread_cmd_staistic_cache_created {
     struct net_log_thread_cmd head;
-    net_log_category_t m_category;
 };
 
 struct net_log_thread_cmd_staistic_cache_destoried {
     struct net_log_thread_cmd head;
-    net_log_category_t m_category;
 };
 
 void net_log_thread_cmd_print(write_stream_t ws, net_log_thread_cmd_t cmd);

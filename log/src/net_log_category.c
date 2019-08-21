@@ -72,9 +72,6 @@ net_log_category_create(net_log_schedule_t schedule, net_log_thread_t flusher, n
     category->m_cfg_count_per_package = 2048;
     category->m_cfg_timeout_ms = 0;
 
-    category->m_statistics_cache_created = 0;
-    category->m_statistics_cache_destoried = 0;
-
     category->m_statistics_record_count = 0;
 
     category->m_statistics_package_count = 0;

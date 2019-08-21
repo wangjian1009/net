@@ -11,7 +11,9 @@
 #include "net_log_builder.h"
 
 net_log_request_cache_t
-net_log_request_cache_create(net_log_thread_t log_thread, uint32_t id, net_log_request_cache_state_t state) {
+net_log_request_cache_create(
+    net_log_thread_t log_thread, uint32_t id, net_log_request_cache_state_t state, uint8_t is_package_counted)
+{
     net_log_schedule_t schedule = log_thread->m_schedule;
     ASSERT_ON_THREAD(log_thread);
     
@@ -25,6 +27,7 @@ net_log_request_cache_create(net_log_thread_t log_thread, uint32_t id, net_log_r
     cache->m_id = id;
     cache->m_state = state;
     cache->m_size = 0;
+    cache->m_is_package_counted = is_package_counted;
     cache->m_file = NULL;
 
     if (cache->m_state == net_log_request_cache_building) {

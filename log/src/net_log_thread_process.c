@@ -62,12 +62,13 @@ static void net_log_thread_process_package_send(net_log_schedule_t schedule, net
     }
 
     if (cache == NULL || cache->m_state != net_log_request_cache_building) {
-        cache = net_log_request_cache_create(log_thread, log_thread->m_cache_max_id + 1, net_log_request_cache_building);
+        cache = net_log_request_cache_create(log_thread, log_thread->m_cache_max_id + 1, net_log_request_cache_building, 1);
         if (cache == NULL) {
             CPE_ERROR(schedule->m_em, "log: thread %s: send: create cache fail", log_thread->m_name);
             goto SEND_FAIL;
         }
         log_thread->m_cache_max_id++;
+        net_log_statistic_cache_created(log_thread);
     }
 
     if (net_log_request_cache_append(cache, send_param) != 0) {
@@ -207,28 +208,18 @@ static void net_log_thread_process_statistic_cache_loaded(net_log_schedule_t sch
 
     struct net_log_thread_cmd_staistic_cache_loaded * cache_loaded_cmd = (struct net_log_thread_cmd_staistic_cache_loaded *)cmd;
 
-    net_log_category_t category = op_error_cmd->m_category;
-    category->m_statistics_cache_created++;
-    category->m_statistics_package_count += cache_loaded_cmd->m_found_package_count;
-    category->m_statistics_record_count += cache_loaded_cmd->m_found_record_count;
+    /* schedule->m_statistics_package_count += cache_loaded_cmd->m_found_package_count; */
+    /* schedule->m_statistics_record_count += cache_loaded_cmd->m_found_record_count; */
 }
 
 static void net_log_thread_process_statistic_cache_created(net_log_schedule_t schedule, net_log_thread_t log_thread, net_log_thread_cmd_t cmd) {
     ASSERT_ON_THREAD_MAIN(schedule);
-
-    struct net_log_thread_cmd_staistic_cache_created * cache_created_cmd = (struct net_log_thread_cmd_staistic_cache_created *)cmd;
-
-    net_log_category_t category = op_error_cmd->m_category;
-    category->m_statistics_cache_created++;
+    schedule->m_statistics_cache_created++;
 }
 
 static void net_log_thread_process_statistic_cache_destoried(net_log_schedule_t schedule, net_log_thread_t log_thread, net_log_thread_cmd_t cmd) {
     ASSERT_ON_THREAD_MAIN(schedule);
-
-    struct net_log_thread_cmd_staistic_cache_destoried * cache_destoried_cmd = (struct net_log_thread_cmd_staistic_cache_destoried *)cmd;
-
-    net_log_category_t category = op_error_cmd->m_category;
-    category->m_statistics_cache_destoried++;
+    schedule->m_statistics_cache_destoried++;
 }
 
 static struct {

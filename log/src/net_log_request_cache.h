@@ -13,12 +13,13 @@ struct net_log_request_cache {
     uint32_t m_id;
     net_log_request_cache_state_t m_state;
     uint32_t m_size;
+    uint8_t m_is_package_counted;
     vfs_file_t m_file;
 };
 
 net_log_request_cache_t
 net_log_request_cache_create(
-    net_log_thread_t thread, uint32_t id, net_log_request_cache_state_t state);
+    net_log_thread_t thread, uint32_t id, net_log_request_cache_state_t state, uint8_t is_package_counted);
 void net_log_request_cache_free(net_log_request_cache_t cache);
 
 void net_log_request_cache_clear_and_free(net_log_request_cache_t cache);

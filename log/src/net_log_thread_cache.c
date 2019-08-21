@@ -12,6 +12,7 @@
 #include "net_log_thread_cmd.h"
 #include "net_log_request.h"
 #include "net_log_request_cache.h"
+#include "net_log_statistic_i.h"
 
 int net_log_thread_search_cache(net_log_thread_t log_thread) {
     net_log_schedule_t schedule = log_thread->m_schedule;
@@ -42,11 +43,6 @@ int net_log_thread_search_cache(net_log_thread_t log_thread) {
     struct vfs_entry_info_it entry_it;
     vfs_dir_entries(d, &entry_it);
 
-    /* struct net_log_thread_cmd_staistic_cache_scaned cache_scaned_cmd; */
-    /* cache_scaned_cmd.head.m_ize = sizeof(cache_scaned_cmd); */
-    /* cache_scaned_cmd.head.m_cmd = net_log_thread_cmd_type_staistic_cache_scaned; */
-    /* cache_scaned_cmd.m_category = category; */
-    
     int rv = 0;
 
     vfs_entry_info_t entry;
@@ -57,7 +53,7 @@ int net_log_thread_search_cache(net_log_thread_t log_thread) {
         const char * str_id = entry->m_name + 6;
         uint32_t id = atoi(str_id);
 
-        net_log_request_cache_t cache = net_log_request_cache_create(log_thread, id, net_log_request_cache_done);
+        net_log_request_cache_t cache = net_log_request_cache_create(log_thread, id, net_log_request_cache_done, 0);
         if (cache == NULL) {
             CPE_ERROR(
                 schedule->m_em, "log: thread %s: manage: search cache: cache %s(id=%d) create fail",
@@ -67,6 +63,8 @@ int net_log_thread_search_cache(net_log_thread_t log_thread) {
         }
 
         if (id > log_thread->m_cache_max_id) log_thread->m_cache_max_id = id;
+        
+        net_log_statistic_cache_created(log_thread);
     }
 
     vfs_dir_close(d);
