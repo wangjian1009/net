@@ -28,13 +28,14 @@ static int net_log_thread_setup(net_log_thread_t log_thread) {
     }
     else {
         log_thread->m_net_schedule = net_schedule_create(schedule->m_alloc, schedule->m_em, log_thread->m_cfg_net_buf_size);
-        if (log_thread->m_net_schedule != NULL) {
+        if (log_thread->m_net_schedule == NULL) {
             CPE_ERROR(schedule->m_em, "log: thread %s: setup: create net schedule fail", log_thread->m_name);
             goto SETUP_FAIL;
         }
 
         assert(log_thread->m_processor.m_setup);
-        if (log_thread->m_processor.m_setup(log_thread->m_processor.m_ctx, log_thread, log_thread->m_net_schedule) != 0) {
+        log_thread->m_net_driver = log_thread->m_processor.m_setup(log_thread->m_processor.m_ctx, log_thread, log_thread->m_net_schedule);
+        if (log_thread->m_net_driver == NULL) {
             CPE_ERROR(schedule->m_em, "log: thread %s: setup: setup fail", log_thread->m_name);
             goto SETUP_FAIL;
         }
@@ -91,7 +92,7 @@ SETUP_FAIL:
         
     if (log_thread->m_schedule) {
         if (!IS_ON_THREAD_MAIN(schedule)) {
-            net_log_schedule_free(log_thread->m_schedule);
+            net_schedule_free(log_thread->m_net_schedule);
         }
         log_thread->m_net_schedule = NULL;
     }
