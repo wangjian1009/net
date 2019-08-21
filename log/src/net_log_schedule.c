@@ -319,6 +319,10 @@ net_log_schedule_state_t net_log_schedule_state(net_log_schedule_t schedule) {
     return (net_log_schedule_state_t)schedule->m_state_fsm.m_curent_state;
 }
 
+net_log_env_t net_log_schedule_env_active(net_log_schedule_t schedule) {
+    return schedule->m_env_active;
+}
+
 net_log_schedule_statistic_t net_log_schedule_statistic(net_log_schedule_t schedule) {
     return &schedule->m_statistic;
 }

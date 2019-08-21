@@ -285,6 +285,10 @@ void net_log_category_set_timeout_ms(net_log_category_t category, uint32_t timeo
     category->m_cfg_timeout_ms = timeout_ms;
 }
 
+net_log_category_statistic_t net_log_category_statistic(net_log_category_t category) {
+    return &category->m_statistic;
+}
+
 void net_log_category_log_begin(net_log_category_t category) {
     net_log_schedule_t schedule = category->m_schedule;
     ASSERT_ON_THREAD_MAIN(schedule);
