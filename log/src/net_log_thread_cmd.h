@@ -74,7 +74,7 @@ struct net_log_thread_cmd_staistic_op_error {
     net_log_category_t m_category;
     net_trans_task_error_t m_trans_error;
     int m_http_code;
-    char m_http_msg[0];
+    char m_http_msg[1];
 };
 
 struct net_log_thread_cmd_staistic_cache_loaded {

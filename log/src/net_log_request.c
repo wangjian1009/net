@@ -606,7 +606,7 @@ static void net_log_request_statistic_http_error(
     }
     
     struct net_log_thread_cmd_staistic_op_error * op_error_cmd = (struct net_log_thread_cmd_staistic_op_error *)cmd_buf;
-    op_error_cmd->head.m_size = sizeof(*op_error_cmd) + http_msg_len + 1;
+    op_error_cmd->head.m_size = sizeof(*op_error_cmd) + http_msg_len;
     op_error_cmd->head.m_cmd = net_log_thread_cmd_type_staistic_op_error;
     op_error_cmd->m_env = log_thread->m_env_active;
     op_error_cmd->m_category = category;
