@@ -60,3 +60,13 @@ void net_log_statistic_cache_destoried(net_log_thread_t log_thread) {
     package_discard_cmd.head.m_cmd = net_log_thread_cmd_type_staistic_cache_destoried;
     net_log_thread_send_cmd(schedule->m_thread_main, (net_log_thread_cmd_t)&package_discard_cmd, log_thread);
 }
+
+void net_log_statistic_cache_discard(net_log_thread_t log_thread) {
+    net_log_schedule_t schedule = log_thread->m_schedule;
+    ASSERT_ON_THREAD(log_thread);
+
+    struct net_log_thread_cmd_staistic_cache_discard package_discard_cmd;
+    package_discard_cmd.head.m_size = sizeof(package_discard_cmd);
+    package_discard_cmd.head.m_cmd = net_log_thread_cmd_type_staistic_cache_discard;
+    net_log_thread_send_cmd(schedule->m_thread_main, (net_log_thread_cmd_t)&package_discard_cmd, log_thread);
+}

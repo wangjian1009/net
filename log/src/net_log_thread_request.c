@@ -36,10 +36,12 @@ void net_log_thread_check_active_requests(net_log_thread_t log_thread) {
             while((cache = TAILQ_LAST(&log_thread->m_caches, net_log_request_cache_list))) {
                 if (net_log_request_cache_load(cache) != 0) {
                     CPE_ERROR(schedule->m_em, "log: thread %s: restore: cache %d load fail, clear", log_thread->m_name, cache->m_id);
+                    net_log_statistic_cache_discard(log_thread);
                     net_log_request_cache_clear_and_free(cache);
                     continue;
                 }
 
+                net_log_statistic_cache_destoried(log_thread);
                 net_log_request_cache_clear_and_free(cache);
 
                 if (!TAILQ_EMPTY(&log_thread->m_waiting_requests)) {

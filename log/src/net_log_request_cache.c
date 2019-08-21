@@ -8,6 +8,7 @@
 #include "net_log_request_cache.h"
 #include "net_log_request.h"
 #include "net_log_category_i.h"
+#include "net_log_thread_cmd.h"
 #include "net_log_builder.h"
 
 net_log_request_cache_t
