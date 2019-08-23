@@ -140,6 +140,11 @@ void net_ping_task_free(net_ping_task_t task) {
         break;
     }
 
+    if (task->m_target) {
+        net_address_free(task->m_target);
+        task->m_target = NULL;
+    }
+
     if (task->m_to_notify) {
         TAILQ_REMOVE(&mgr->m_tasks_to_notify, task, m_next);
     }

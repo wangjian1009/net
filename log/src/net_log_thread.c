@@ -116,6 +116,8 @@ void net_log_thread_free(net_log_thread_t log_thread) {
     log_thread->m_pipe_fd[0] = -1;
     log_thread->m_pipe_fd[1] = -1;
 
+    mem_buffer_clear(&log_thread->m_tmp_buffer);
+    
     _MS(pthread_mutex_destroy(&log_thread->m_mutex));
     
     TAILQ_REMOVE(&schedule->m_threads, log_thread, m_next);
