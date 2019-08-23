@@ -5,6 +5,7 @@
 #include "cpe/pal/pal_string.h"
 #include "cpe/pal/pal_stdlib.h"
 #include "cpe/vfs/vfs_file.h"
+#include "cpe/vfs/vfs_dir.h"
 #include "net_log_request_cache.h"
 #include "net_log_request.h"
 #include "net_log_category_i.h"
@@ -32,6 +33,21 @@ net_log_request_cache_create(
     cache->m_file = NULL;
 
     if (cache->m_state == net_log_request_cache_building) {
+        const char* cache_dir = net_log_thread_cache_dir(log_thread, &log_thread->m_tmp_buffer);
+        if (cache_dir == NULL) {
+            CPE_ERROR(schedule->m_em, "log: thread %s: cache %d: calc cache dir fail", log_thread->m_name, id);
+            mem_free(schedule->m_alloc, cache);
+            return NULL;
+        }
+
+        if (vfs_dir_mk_recursion(schedule->m_vfs, cache_dir) != 0) {
+            CPE_ERROR(
+                schedule->m_em, "log: thread %s: cache %d: mk cache dir %s fail, error=%d (%s)",
+                log_thread->m_name, id, cache_dir, errno, strerror(errno));
+            mem_free(schedule->m_alloc, cache);
+            return NULL;
+        }
+        
         const char * file = net_log_thread_cache_file(log_thread, id, &log_thread->m_tmp_buffer);
         if (file == NULL) {
             CPE_ERROR(schedule->m_em, "log: thread %s: cache %d: alloc cache file fail", log_thread->m_name, id);
@@ -41,7 +57,9 @@ net_log_request_cache_create(
 
         cache->m_file = vfs_file_open(schedule->m_vfs, file, "wb");
         if (cache->m_file == NULL) {
-            CPE_ERROR(schedule->m_em, "log: thread %s: cache %d: open file %s fail", log_thread->m_name, id, file);
+            CPE_ERROR(
+                schedule->m_em, "log: thread %s: cache %d: open file %s fail", 
+                log_thread->m_name, id, file, errno, strerror(errno));
             mem_free(schedule->m_alloc, cache);
             return NULL;
         }
