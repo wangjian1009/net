@@ -16,6 +16,13 @@ void net_log_thread_check_active_requests(net_log_thread_t log_thread) {
     net_log_schedule_t schedule = log_thread->m_schedule;
     ASSERT_ON_THREAD(log_thread);
 
+    /* CPE_ERROR( */
+    /*     schedule->m_em, "log: thread %s: restore: xxxx request: active=%d/%d, state=%s, is-suspend=%d", */
+    /*     log_thread->m_name,  */
+    /*     log_thread->m_active_request_count, log_thread->m_cfg_active_request_count, */
+    /*     net_log_thread_state_str(log_thread->m_state), */
+    /*     net_log_thread_is_suspend(log_thread)); */
+    
     uint16_t protect_count = 0;
     while( /*还可以启动新的请求 */
         (log_thread->m_cfg_active_request_count == 0

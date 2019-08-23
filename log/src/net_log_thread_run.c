@@ -251,6 +251,12 @@ int net_log_thread_start(net_log_thread_t log_thread) {
         CPE_ERROR(schedule->m_em, "log: thread %s: start: thread setup fail!", log_thread->m_name);
         return -1;
     }
+
+    net_log_thread_set_state(log_thread, net_log_thread_state_runing);
+
+    if (schedule->m_debug) {
+        CPE_INFO(schedule->m_em, "log: thread %s: start: thread setup success!", log_thread->m_name);
+    }
 #endif
 
     log_thread->m_is_runing = 1;
