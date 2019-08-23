@@ -328,7 +328,6 @@ void net_log_category_log_end(net_log_category_t category) {
         return;
     }
 
-    net_timer_cancel(category->m_commit_timer);
     net_log_category_commit(category);
 }
 
@@ -354,6 +353,7 @@ void net_log_category_commit(net_log_category_t category) {
     assert(builder);
     
     category->m_builder = NULL;
+    net_timer_cancel(category->m_commit_timer);
 
     size_t loggroup_size = builder->loggroup_size;
 
@@ -419,6 +419,7 @@ void net_log_categories(net_log_schedule_t schedule, net_log_category_it_t categ
 
 static void net_log_category_commit_timer(net_timer_t timer, void * ctx) {
     net_log_category_t category = ctx;
+    assert(category->m_builder);
     net_log_category_commit(category);
 }
 
