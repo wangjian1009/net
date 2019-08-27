@@ -684,13 +684,13 @@ ringbuffer_block_t net_endpoint_common_buf_alloc(net_endpoint_t endpoint, uint32
             schedule->m_em, "%s: buf alloc: not enouth capacity, len=%d!",
             net_endpoint_dump(&schedule->m_tmp_buffer, endpoint), size);
 
-        CPE_ERROR(schedule->m_em, "ringbuffer: before gc: dump buf:");
-        ringbuffer_dump(schedule->m_endpoint_buf);
+        // CPE_ERROR(schedule->m_em, "ringbuffer: before gc: dump buf:");
+        // ringbuffer_dump(schedule->m_endpoint_buf);
 
         ringbuffer_gc(schedule->m_endpoint_buf, schedule, net_endpoint_common_buf_move);
 
-        CPE_ERROR(schedule->m_em, "ringbuffer: after gc: dump buf:");
-        ringbuffer_dump(schedule->m_endpoint_buf);
+        // CPE_ERROR(schedule->m_em, "ringbuffer: after gc: dump buf:");
+        // ringbuffer_dump(schedule->m_endpoint_buf);
 
         blk = ringbuffer_alloc(schedule->m_endpoint_buf, size);
         if  (blk == NULL) {
