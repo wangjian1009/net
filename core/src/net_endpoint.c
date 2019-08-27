@@ -898,6 +898,7 @@ static void net_endpoint_dns_query_callback(void * ctx, net_address_t address, n
         return;
     }
 
+    assert(endpoint->m_remote_address);
     if (net_address_set_resolved(endpoint->m_remote_address, address, 0) != 0) {
         CPE_ERROR(
             schedule->m_em, "%s: resolve: set resolve result fail!",

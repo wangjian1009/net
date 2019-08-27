@@ -21,14 +21,14 @@ int net_endpoint_link_direct(net_endpoint_t endpoint, net_address_t target_addr,
 
     net_endpoint_set_remote_address(target, target_addr, is_own);
     if (net_endpoint_connect(target) != 0) {
-        target->m_remote_address = NULL;
+        if (is_own) target->m_remote_address = NULL;
         net_endpoint_free(target);
         return -1;
     }
 
     net_link_t link = net_link_create(endpoint, 0, target, 1);
     if (link == NULL) {
-        target->m_remote_address = NULL;
+        if (is_own) target->m_remote_address = NULL;
         net_endpoint_free(target);
         return -1;
     }
