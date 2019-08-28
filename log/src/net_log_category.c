@@ -356,7 +356,8 @@ void net_log_category_commit(net_log_category_t category) {
     net_timer_cancel(category->m_commit_timer);
 
     size_t loggroup_size = builder->loggroup_size;
-
+    uint32_t n_logs = builder->grp->n_logs;
+    
     /*input statistics*/
     category->m_statistic.m_record_count += builder->grp->n_logs;
     category->m_statistic.m_package_count++;
@@ -366,6 +367,8 @@ void net_log_category_commit(net_log_category_t category) {
     cmd_pack.head.m_cmd = net_log_thread_cmd_type_package_pack;
     cmd_pack.m_builder = builder;
 
+    (int)builder->grp->n_logs, (int)builder->loggroup_size
+        
     if (net_log_thread_send_cmd(category->m_flusher, (net_log_thread_cmd_t)&cmd_pack, schedule->m_thread_main) != 0) {
         CPE_ERROR(
             schedule->m_em, "log: category [%d]%s: try push loggroup to flusher failed, force drop this log group",
@@ -378,7 +381,7 @@ void net_log_category_commit(net_log_category_t category) {
     if (schedule->m_debug) {
         CPE_INFO(
             schedule->m_em, "log: category [%d]%s: commit: queue to flusher, package(count=%d, size=%d)",
-            category->m_id, category->m_name, (int)builder->grp->n_logs, (int)builder->loggroup_size);
+            category->m_id, category->m_name, (int)n_logs, (int)loggroup_size);
     }
 }
 
