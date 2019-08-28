@@ -281,6 +281,10 @@ void net_ping_task_start(net_ping_task_t task, uint32_t ping_span_ms, uint16_t p
     assert(ping_count > 0);
 
     if (task->m_processor) {
+        if (task->m_debug) {
+            CPE_INFO(mgr->m_em, "ping: %s: start: clear old processor!", net_ping_task_dump(net_ping_mgr_tmp_buffer(mgr), task));
+        }
+        
         net_ping_processor_free(task->m_processor);
         task->m_processor = NULL;
     }
