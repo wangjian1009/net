@@ -24,6 +24,7 @@ static net_ping_task_t net_ping_task_create_i(net_ping_mgr_t mgr, net_address_t 
     task->m_mgr = mgr;
     task->m_state = net_ping_task_state_init;
     task->m_processor = NULL;
+    task->m_debug = 0;
     task->m_record_count = 0;
     task->m_to_notify = 0;
     task->m_is_processing = 0;
@@ -199,6 +200,10 @@ void net_ping_task_records(net_ping_task_t task, net_ping_record_it_t record_it)
 void net_ping_task_set_cb(net_ping_task_t task, void * cb_ctx, net_ping_task_cb_fun_t cb_fun) {
     task->m_cb_ctx = cb_ctx;
     task->m_cb_fun = cb_fun;
+}
+
+void net_ping_task_set_debug(net_ping_task_t task, uint8_t debug) {
+    task->m_debug = debug;
 }
 
 void net_ping_task_set_to_notify(net_ping_task_t task, uint8_t to_notify) {

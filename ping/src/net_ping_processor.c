@@ -90,7 +90,7 @@ void net_ping_processor_free(net_ping_processor_t processor) {
         break;
     case net_ping_type_http:
         if (processor->m_http.m_task) {
-            net_trans_task_set_callback(processor->m_http.m_task, NULL, NULL, NULL, NULL, NULL, NULL);
+            net_trans_task_clear_callback(processor->m_http.m_task);
             net_trans_task_free(processor->m_http.m_task);
             processor->m_http.m_task = NULL;
         }

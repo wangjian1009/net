@@ -11,7 +11,7 @@ int net_ping_processor_start_http(net_ping_processor_t processor) {
 
     assert(processor->m_http.m_task == NULL);
 
-    processor->m_http.m_task = net_trans_task_create(mgr->m_trans_mgr, net_trans_method_get, task->m_http.m_url, 1);
+    processor->m_http.m_task = net_trans_task_create(mgr->m_trans_mgr, net_trans_method_get, task->m_http.m_url, task->m_debug);
     if (processor->m_http.m_task == NULL) {
         CPE_ERROR(
             mgr->m_em, "ping: %s: start: create trans task fail!",

@@ -7,6 +7,7 @@ struct net_ping_task {
     net_ping_mgr_t m_mgr;
     TAILQ_ENTRY(net_ping_task) m_next;
     net_ping_type_t m_type;
+    uint8_t m_debug;
     uint8_t m_to_notify;
     uint8_t m_is_processing;
     uint8_t m_is_free;
