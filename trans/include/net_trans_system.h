@@ -32,6 +32,9 @@ typedef enum net_trans_task_error {
 typedef enum net_trans_method {
     net_trans_method_get,
     net_trans_method_post,
+    net_trans_method_put,
+    net_trans_method_delete,
+    net_trans_method_patch,
 } net_trans_method_t;
 
 typedef struct net_trans_manage * net_trans_manage_t;

@@ -174,6 +174,15 @@ net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const c
     case net_trans_method_post:
         if (curl_easy_setopt(task->m_handler, CURLOPT_POST, 1L) != (int)CURLE_OK) goto CREATED_ERROR;
         break;
+    case net_trans_method_put:
+        if (curl_easy_setopt(task->m_handler, CURLOPT_PUT, 1L) != (int)CURLE_OK) goto CREATED_ERROR;
+        break;
+    case net_trans_method_delete:
+        if (curl_easy_setopt(task->m_handler, CURLOPT_CUSTOMREQUEST, "DELETE") != (int)CURLE_OK) goto CREATED_ERROR;
+        break;
+    case net_trans_method_patch:
+        if (curl_easy_setopt(task->m_handler, CURLOPT_CUSTOMREQUEST, "PATCH") != (int)CURLE_OK) goto CREATED_ERROR;
+        break;
     }
 
     if (strcasecmp(protocol, "https") == 0) {
