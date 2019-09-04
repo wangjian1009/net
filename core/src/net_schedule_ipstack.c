@@ -3,6 +3,7 @@
 #include "cpe/utils_sock/getgateway.h"
 #include "cpe/utils_sock/getdnssvraddrs.h"
 #include "net_schedule_i.h"
+#include "net_local_ip_stack_monitor_i.h"
 
 static uint8_t net_schedule_local_ip_stack_have_ipv6(net_schedule_t schedule);
 static uint8_t net_schedule_local_ip_stack_have_ipv4(net_schedule_t schedule);
@@ -21,6 +22,26 @@ void net_schedule_set_local_ip_stack(net_schedule_t schedule, net_local_ip_stack
     }
 
     schedule->m_local_ip_stack = local_ip_stack;
+    
+    net_local_ip_stack_monitor_t monitor = TAILQ_FIRST(&schedule->m_local_ip_stack_monitors);
+    while(monitor) {
+        uint8_t tag_local = 0;
+        if (!monitor->m_is_processing) {
+            tag_local = 1;
+            monitor->m_is_processing = 1;
+        }
+        
+        monitor->m_on_change(monitor->m_ctx, schedule);
+
+        net_local_ip_stack_monitor_t next_monitor = TAILQ_NEXT(monitor, m_next);
+            
+        if (tag_local) {
+            monitor->m_is_processing = 0;
+            if (monitor->m_is_free) net_local_ip_stack_monitor_free(monitor);
+        }
+        
+        monitor = next_monitor;
+    }
 }
 
 int net_schedule_local_ip_stack_detect(net_schedule_t schedule) {
