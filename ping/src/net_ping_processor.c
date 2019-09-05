@@ -183,7 +183,6 @@ static void net_ping_processor_timeout(net_timer_t timer, void * ctx) {
     if (rv != 0) {
         if (task->m_record_count == record_count) {
             net_point_processor_set_result_one(task->m_processor, net_ping_error_internal, "retry-start-fail", 0, 0, 0, 0);
-            assert(task->m_state == net_ping_task_state_error);
         }
     }
     
