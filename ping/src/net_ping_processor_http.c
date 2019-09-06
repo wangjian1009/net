@@ -20,8 +20,8 @@ int net_ping_processor_start_http(net_ping_processor_t processor) {
     }
 
     net_trans_task_set_callback(
-        processor->m_http.m_task, 
-        net_ping_processor_http_task_commit, NULL, NULL, NULL, 
+        processor->m_http.m_task,
+        net_ping_processor_http_task_commit, NULL, NULL, NULL,
         processor, NULL);
 
     if (net_trans_task_start(processor->m_http.m_task) != 0) {
@@ -32,7 +32,7 @@ int net_ping_processor_start_http(net_ping_processor_t processor) {
         processor->m_http.m_task = NULL;
         return -1;
     }
-    
+
     return 0;
 }
 

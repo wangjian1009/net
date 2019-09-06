@@ -3,6 +3,7 @@
 #include "cpe/pal/pal_strings.h"
 #include "cpe/pal/pal_string.h"
 #include "cpe/utils/time_utils.h"
+#include "net_schedule.h"
 #include "net_timer.h"
 #include "net_watcher.h"
 #include "net_trans_task.h"
@@ -116,10 +117,21 @@ void net_ping_processor_real_free(net_ping_processor_t processor) {
 
 int net_ping_processor_start(net_ping_processor_t processor) {
     net_ping_task_t task = processor->m_task;
+    net_ping_mgr_t mgr = task->m_mgr;
 
     int rv = 0;
     
     processor->m_start_time_ms = cur_time_ms();
+    
+    if (net_schedule_local_ip_stack(mgr->m_schedule) == net_local_ip_stack_none) {
+        if (task->m_debug) {
+            CPE_INFO(mgr->m_em, "ping: %s: start: no local networ, error!", net_ping_task_dump(net_ping_mgr_tmp_buffer(mgr), task));
+        }
+
+        net_point_processor_set_result_one(processor, net_ping_error_no_network, "no-local-network", 0, 0, 0, 0);
+        return -1;
+    }
+    
     switch(task->m_type) {
     case net_ping_type_icmp:
         rv = net_ping_processor_start_icmp(task->m_processor);

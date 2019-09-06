@@ -173,7 +173,7 @@ net_ping_task_state_t net_ping_task_state(net_ping_task_t task) {
 net_ping_error_t net_ping_task_error(net_ping_task_t task) {
     net_ping_record_t record;
     TAILQ_FOREACH_REVERSE(record, &task->m_records, net_ping_record_list, m_next) {
-        if (record->m_error != net_ping_error_no_network) {
+        if (record->m_error != net_ping_error_none) {
             return record->m_error;
         }
     }
@@ -294,7 +294,7 @@ void net_ping_task_start(net_ping_task_t task, uint32_t ping_span_ms, uint16_t p
     }
     
     net_ping_task_set_state(task, net_ping_task_state_processing);
-    
+
     task->m_processor = net_ping_processor_create(task, ping_span_ms, ping_count);
     if (task->m_processor == NULL) {
         net_ping_task_set_state(task, net_ping_task_state_error);
@@ -305,13 +305,11 @@ void net_ping_task_start(net_ping_task_t task, uint32_t ping_span_ms, uint16_t p
     if (rv != 0) {
         if (task->m_record_count == 0) {
             net_point_processor_set_result_one(task->m_processor, net_ping_error_internal, "start-fail", 0, 0, 0, 0);
-            assert(task->m_state == net_ping_task_state_error);
         }
     }
-    
+
     if (task->m_state == net_ping_task_state_error
-        || task->m_state == net_ping_task_state_done)
-    {
+        || task->m_state == net_ping_task_state_done) {
         assert(task->m_processor);
         net_ping_processor_free(task->m_processor);
         task->m_processor = NULL;
