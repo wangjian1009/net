@@ -16,6 +16,7 @@ struct net_log_category {
     net_log_thread_t m_sender;
     char m_name[64];
     uint8_t m_id;
+    uint8_t m_enable;
 
     /*config*/
     char * m_cfg_topic;

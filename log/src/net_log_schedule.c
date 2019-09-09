@@ -399,8 +399,11 @@ uint8_t net_log_begin(net_log_schedule_t schedule, uint8_t log_type) {
     assert(log_type < schedule->m_category_count);
 
     net_log_category_t category = schedule->m_categories[log_type];
+    if (!category->m_enable) return 0;
+    
     schedule->m_current_category = category;
     net_log_category_log_begin(category);
+
     return 1;
 }
 

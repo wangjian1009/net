@@ -60,6 +60,7 @@ net_log_category_create(net_log_schedule_t schedule, net_log_thread_t flusher, n
     category->m_sender = sender;
     cpe_str_dup(category->m_name, sizeof(category->m_name), name);
     category->m_id = id;
+    category->m_enable = 1;
     category->m_builder = NULL;
     category->m_pack_prefix = NULL;
     category->m_pack_index = 0;
@@ -142,6 +143,14 @@ void net_log_category_free(net_log_category_t category) {
 
 const char * net_log_category_name(net_log_category_t category) {
     return category->m_name;
+}
+
+uint8_t net_log_category_enable(net_log_category_t category) {
+    return category->m_enable;
+}
+
+void net_log_category_set_enable(net_log_category_t category, uint8_t is_enable) {
+    category->m_enable = is_enable;
 }
 
 net_log_request_param_t
