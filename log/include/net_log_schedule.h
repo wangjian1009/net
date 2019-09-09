@@ -50,7 +50,7 @@ net_log_thread_t net_log_schedule_thread_main(net_log_schedule_t schedule);
 const char * net_log_schedule_state_str(net_log_schedule_state_t schedule_state);
 const char * net_log_discard_reason_str(net_log_discard_reason_t discard_reason);
 
-void net_log_begin(net_log_schedule_t schedule, uint8_t log_type);
+uint8_t net_log_begin(net_log_schedule_t schedule, uint8_t log_type);
 void net_log_append_int32(net_log_schedule_t schedule, const char * name, int32_t value);
 void net_log_append_uint32(net_log_schedule_t schedule, const char * name, uint32_t value);
 void net_log_append_int64(net_log_schedule_t schedule, const char * name, int64_t value);

@@ -392,7 +392,7 @@ const char * net_log_discard_reason_str(net_log_discard_reason_t discard_reason)
     }
 }
 
-void net_log_begin(net_log_schedule_t schedule, uint8_t log_type) {
+uint8_t net_log_begin(net_log_schedule_t schedule, uint8_t log_type) {
     ASSERT_ON_THREAD_MAIN(schedule);
 
     assert(schedule->m_current_category == NULL);
@@ -401,6 +401,7 @@ void net_log_begin(net_log_schedule_t schedule, uint8_t log_type) {
     net_log_category_t category = schedule->m_categories[log_type];
     schedule->m_current_category = category;
     net_log_category_log_begin(category);
+    return 1;
 }
 
 void net_log_append_int32(net_log_schedule_t schedule, const char * name, int32_t value) {
