@@ -530,7 +530,7 @@ static uint8_t net_endpoint_block_match_forward(
 
 int net_endpoint_buf_by_str(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, const char * str, void * * r_data, uint32_t * r_size) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
-    size_t str_len = strlen(str);
+    uint32_t str_len = strlen(str);
     if (str_len == 0) return -1;
 
     assert(buf_type < net_ep_buf_count);
@@ -586,6 +586,8 @@ int net_endpoint_buf_append(net_endpoint_t endpoint, net_endpoint_buf_type_t buf
 
     assert(buf_type < net_ep_buf_count);
     if (size == 0) return 0;
+
+    if (endpoint->m_state == net_endpoint_state_deleting) return -1;
 
     ringbuffer_block_t tb = net_endpoint_common_buf_alloc(endpoint, size);
     if (tb == NULL) return -1;
