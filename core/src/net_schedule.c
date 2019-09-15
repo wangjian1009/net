@@ -128,7 +128,7 @@ void net_schedule_free(net_schedule_t schedule) {
     }
 
     while(!TAILQ_EMPTY(&schedule->m_drivers)) {
-        net_driver_free(TAILQ_FIRST(&schedule->m_drivers));
+        net_driver_free(TAILQ_LAST(&schedule->m_drivers, net_driver_list));
     }
 
     if (schedule->m_direct_protocol) {
