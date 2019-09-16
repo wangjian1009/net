@@ -181,6 +181,9 @@ static void * net_log_thread_execute(void * param) {
     assert(log_thread->m_processor.m_run);
     log_thread->m_processor.m_run(log_thread->m_processor.m_ctx, log_thread);
 
+    net_log_thread_pipe_clear(log_thread);
+    net_log_thread_teardown(log_thread);
+
     net_log_thread_set_state(log_thread, net_log_thread_state_stoped);
     
     struct net_log_thread_cmd_stoped stop_cmd;
