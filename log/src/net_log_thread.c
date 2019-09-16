@@ -94,7 +94,7 @@ void net_log_thread_free(net_log_thread_t log_thread) {
     net_log_schedule_t schedule = log_thread->m_schedule;
     ASSERT_ON_THREAD_MAIN(schedule);
 
-    CPE_ERROR(schedule->m_em, "log: thread %s: free!", log_thread->m_name);
+    CPE_INFO(schedule->m_em, "log: thread %s: free!", log_thread->m_name);
     
     assert(!log_thread->m_is_runing);
     assert(log_thread->m_watcher == NULL);
