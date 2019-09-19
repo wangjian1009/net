@@ -11,12 +11,18 @@ net_trans_manage_t net_trans_manage_create(
     mem_allocrator_t alloc, error_monitor_t em, net_schedule_t schedule, net_driver_t driver,
     const char * name)
 {
-    net_trans_manage_t manage = mem_alloc(alloc, sizeof(struct net_trans_manage));
-    if (manage == NULL) {
-        CPE_ERROR(em, "trans-cli: manage alloc fail");
+    if (curl_global_init(0) != CURLE_OK) {
+        CPE_ERROR(em, "trans-cli: CURL global init fail");
         return NULL;
     }
     
+    net_trans_manage_t manage = mem_alloc(alloc, sizeof(struct net_trans_manage));
+    if (manage == NULL) {
+        CPE_ERROR(em, "trans-cli: manage alloc fail");
+        curl_global_cleanup();
+        return NULL;
+    }
+
     manage->m_alloc = alloc;
     manage->m_em = em;
     manage->m_debug = 0;
@@ -49,6 +55,7 @@ net_trans_manage_t net_trans_manage_create(
             -1) != 0)
     {
         mem_free(alloc, manage);
+        curl_global_cleanup();
         return NULL;
     }
 
@@ -78,6 +85,7 @@ void net_trans_manage_free(net_trans_manage_t mgr) {
     }
 
     mem_free(mgr->m_alloc, mgr);
+    curl_global_cleanup();
 }
 
 uint8_t net_trans_manage_debug(net_trans_manage_t manage) {
