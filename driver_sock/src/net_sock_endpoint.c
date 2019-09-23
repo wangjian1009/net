@@ -58,8 +58,11 @@ int net_sock_endpoint_update(net_endpoint_t base_endpoint) {
             net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
             return -1;
         }
+        if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return 0;
     }
 
+    assert(net_endpoint_state(base_endpoint) == net_endpoint_state_established);
+    assert(endpoint->m_watcher != NULL);
     if (!net_watcher_expect_read(endpoint->m_watcher) /*socket上没有等待读取的操作（当前有数据可以读取) */
         && !net_endpoint_rbuf_is_full(base_endpoint) /*读取缓存不为空，可以读取数据 */
         )
