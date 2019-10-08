@@ -1,3 +1,6 @@
 [submodule "depends/mbedtls"]
 	path = depends/mbedtls
 	url = https://github.com/ARMmbed/mbedtls
+[submodule "depends/openssl"]
+	path = depends/openssl
+	url = git@github.com:viaduck/openssl-cmake.git
