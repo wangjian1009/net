@@ -48,7 +48,7 @@ ssize_t utils_crypto_aes_decode(
             }
 
             uint32_t output_sz = sizeof(output_block);
-            if (pending == net_crypto_pending_a) {
+            if (pending == net_crypto_pending_pkcs5padding) {
                 if (output_block[sizeof(output_block) - 1] < output_sz) {
                     output_sz -= output_block[sizeof(output_block) - 1];
                 }

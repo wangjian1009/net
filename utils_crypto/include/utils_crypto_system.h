@@ -5,7 +5,7 @@
 CPE_BEGIN_DECL
 
 typedef enum net_crypto_pending {
-    net_crypto_pending_a,
+    net_crypto_pending_pkcs5padding,
 } net_crypto_pending_t;
     
 CPE_END_DECL
