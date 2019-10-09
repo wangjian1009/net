@@ -4,12 +4,51 @@
 #include "cpe/utils/stream.h"
 #include "utils_crypto_aes.h"
 
+#define UTILS_CRYPTO_AES_BLOCK_SIZE (16)
+
 ssize_t utils_crypto_aes_encode(
     write_stream_t ws, read_stream_t is,
     void const * passwd, uint_t passwd_sz, net_crypto_pending_t pending,
     error_monitor_t em)
 {
     return 0;
+}
+
+static ssize_t utils_crypto_aes_decode_output_one(mbedtls_aes_context ctx, write_stream_t ws, unsigned char * input_block, uint8_t is_last_block, net_crypto_pending_t pending, error_monitor_t em) {
+    unsigned char block[UTILS_CRYPTO_AES_BLOCK_SIZE];
+
+    if (mbedtls_aes_crypt_ecb(&ctx, MBEDTLS_AES_DECRYPT, input_block, block) != 0) {
+        CPE_ERROR(em, "crypto: decode: decrypto full block fail!");
+        return -1;
+    }
+
+    if (is_last_block) {
+        uint32_t output_sz = UTILS_CRYPTO_AES_BLOCK_SIZE;
+        if (pending == net_crypto_pending_pkcs5padding) {
+            if (block[UTILS_CRYPTO_AES_BLOCK_SIZE - 1] < output_sz) {
+                output_sz -= block[UTILS_CRYPTO_AES_BLOCK_SIZE - 1];
+            }
+        }
+        else {
+            CPE_ERROR(em, "crypto: decode: unknown pending %d!", pending);
+            return -1;
+        }
+
+        if (stream_write(ws, block, output_sz) != output_sz) {
+            CPE_ERROR(em, "crypto: decode: write loast block fail, sz=%d!", output_sz);
+            return -1;
+        }
+
+        return output_sz;
+    }
+    else {
+        if (stream_write(ws, block, UTILS_CRYPTO_AES_BLOCK_SIZE) != UTILS_CRYPTO_AES_BLOCK_SIZE) {
+            CPE_ERROR(em, "crypto: decode: write block fail, sz=%d!", UTILS_CRYPTO_AES_BLOCK_SIZE);
+            return -1;
+        }
+
+        return UTILS_CRYPTO_AES_BLOCK_SIZE;
+    }
 }
 
 ssize_t utils_crypto_aes_decode(
@@ -26,10 +65,11 @@ ssize_t utils_crypto_aes_decode(
     }
 
     ssize_t rv = 0;
+    unsigned char pre_input_block[16];
+    size_t pre_input_block_sz = 0;
     do {
         unsigned char input_block[16];
-        unsigned char output_block[16];
-
+    
         int32_t sz = stream_read(is, input_block, sizeof(input_block));
         if (sz < 0) {
             CPE_ERROR(em, "crypto: decode: read input block fail!");
@@ -37,51 +77,32 @@ ssize_t utils_crypto_aes_decode(
             break;
         }
         else if (sz == 0) {
-            break;
-        }
-        else if (sz < 16) {
-            bzero(input_block + sz, sizeof(input_block) - sz);
-            if (mbedtls_aes_crypt_ecb(&ctx, MBEDTLS_AES_DECRYPT, output_block, input_block) != 0) {
-                CPE_ERROR(em, "crypto: decode: decrypto loast block fail!");
-                rv = -1;
-                break;
-            }
-
-            uint32_t output_sz = sizeof(output_block);
-            if (pending == net_crypto_pending_pkcs5padding) {
-                if (output_block[sizeof(output_block) - 1] < output_sz) {
-                    output_sz -= output_block[sizeof(output_block) - 1];
+            if (pre_input_block_sz) {
+                sz = utils_crypto_aes_decode_output_one(ctx, ws, pre_input_block, 1, pending, em);
+                if (sz < 0) {
+                    rv = -1;
+                    break;
                 }
+                rv += sz;
             }
-            else {
-                CPE_ERROR(em, "crypto: decode: unknown pending %d!", pending);
-                rv = -1;
-                break;
-            }
-
-            if (stream_write(ws, output_block, output_sz) != output_sz) {
-                CPE_ERROR(em, "crypto: decode: write loast block fail, sz=%d!", output_sz);
-                rv = -1;
-                break;
-            }
-
-            rv += output_sz;
             break;
         }
         else {
-            if (mbedtls_aes_crypt_ecb(&ctx, MBEDTLS_AES_DECRYPT, output_block, input_block) != 0) {
-                CPE_ERROR(em, "crypto: decode: decrypto full block fail!");
-                rv = -1;
-                break;
+            if (sz < 16) {
+                bzero(input_block + sz, sizeof(input_block) - sz);
             }
 
-            if (stream_write(ws, output_block, sizeof(output_block)) != sizeof(output_block)) {
-                CPE_ERROR(em, "crypto: decode: write block fail, sz=%d!", (int)sizeof(output_block));
-                rv = -1;
-                break;
+            if (pre_input_block_sz) {
+                sz = utils_crypto_aes_decode_output_one(ctx, ws, pre_input_block, 0, pending, em);
+                if (sz < 0) {
+                    rv = -1;
+                    break;
+                }
+                rv += sz;
             }
 
-            rv += sizeof(output_block);
+            memcpy(pre_input_block, input_block, sz);
+            pre_input_block_sz = sz;
         }
     } while(1);
 
