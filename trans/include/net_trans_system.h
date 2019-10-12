@@ -48,6 +48,7 @@ typedef void (*net_trans_task_head_op_t)(net_trans_task_t task, void * ctx, cons
 typedef void (*net_trans_task_sock_setup_op_t)(net_trans_task_t task, void * ctx, int fd);
 
 uint8_t net_trans_task_error_is_network_error(net_trans_task_error_t err);
+const char * net_trans_method_str(net_trans_method_t method);
 
 NET_END_DECL
 

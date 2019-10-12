@@ -849,6 +849,21 @@ uint8_t net_trans_task_error_is_network_error(net_trans_task_error_t err) {
     }
 }
 
+const char * net_trans_method_str(net_trans_method_t method) {
+    switch(method) {
+    case net_trans_method_get:
+        return "get";
+    case net_trans_method_post:
+        return "post";
+    case net_trans_method_put:
+        return "put";
+    case net_trans_method_delete:
+        return "delete";
+    case net_trans_method_patch:
+        return "patch";
+    }
+}
+
 uint32_t net_trans_task_hash(net_trans_task_t o, void * user_data) {
     return o->m_id;
 }
