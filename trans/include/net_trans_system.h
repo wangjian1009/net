@@ -36,6 +36,7 @@ typedef enum net_trans_method {
     net_trans_method_delete,
     net_trans_method_patch,
 } net_trans_method_t;
+#define net_trans_method_count (net_trans_method_patch + 1)
 
 typedef struct net_trans_manage * net_trans_manage_t;
 typedef struct net_trans_task * net_trans_task_t;
