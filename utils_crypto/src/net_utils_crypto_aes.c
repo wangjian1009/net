@@ -9,7 +9,7 @@
 
 ssize_t utils_crypto_aes_encode(
     write_stream_t ws, read_stream_t is,
-    void const * passwd, uint_t passwd_sz, net_crypto_pending_t pending,
+    void const * passwd, uint32_t passwd_sz, net_crypto_pending_t pending,
     error_monitor_t em)
 {
     return 0;
@@ -54,7 +54,7 @@ static ssize_t utils_crypto_aes_decode_output_one(mbedtls_aes_context ctx, write
 
 ssize_t utils_crypto_aes_decode(
     write_stream_t ws, read_stream_t is,
-    void const * passwd, uint_t passwd_sz, net_crypto_pending_t pending,
+    void const * passwd, uint32_t passwd_sz, net_crypto_pending_t pending,
     error_monitor_t em)
 {
     struct mbedtls_aes_context ctx;
