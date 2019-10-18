@@ -27,7 +27,7 @@ int net_sock_acceptor_init(net_acceptor_t base_acceptor) {
     }
 
     if (net_address_type(address) == net_address_local) {
-#if _MSC_VER
+#if _MSC_VER || __MINGW32__
         CPE_ERROR(em, "sock: acceptor: win32 not support AF_LOCAL!");
         return -1;
 #else

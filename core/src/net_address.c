@@ -1,7 +1,7 @@
 #ifdef __APPLE__
 #include <netdb.h>
 #endif
-#if _MSC_VER
+#if _MSC_VER || __MINGW32__
 #else
 #include "sys/un.h"
 #endif

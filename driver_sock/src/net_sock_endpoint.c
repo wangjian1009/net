@@ -728,7 +728,7 @@ static int net_sock_endpoint_start_connect(
         protocol = IPPROTO_TCP;
         break;
     case net_address_local:
-#if _MSC_VER
+#if _MSC_VER || __MINGW32__
         CPE_ERROR(
             driver->m_em, "sock: %s: fd=%d: connect win32 not support AF_LOCAL",
             net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint),

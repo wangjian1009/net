@@ -1,5 +1,6 @@
 #include <assert.h>
 #include "cpe/pal/pal_string.h"
+#include "cpe/pal/pal_stdio.h"
 #include "cpe/utils/stream_buffer.h"
 #include "net_endpoint.h"
 #include "net_ebb_response_i.h"

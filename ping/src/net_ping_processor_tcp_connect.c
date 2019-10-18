@@ -147,7 +147,7 @@ static int net_ping_processor_tcp_connect_connect(net_ping_mgr_t mgr, net_ping_t
         protocol = IPPROTO_TCP;
         break;
     case net_address_local:
-#if _MSC_VER
+#if _MSC_VER || __MINGW32__
         CPE_ERROR(
             mgr->m_em, "ping %s: start: connect win32 not support AF_LOCAL",
             net_ping_task_dump(net_ping_mgr_tmp_buffer(mgr), task));

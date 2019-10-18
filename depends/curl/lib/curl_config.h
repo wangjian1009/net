@@ -1,4 +1,4 @@
-#if _MSC_VER
+#if _MSC_VER || __MINGW32__
 #define USE_MBEDTLS 1
 #include "config-win32.h"
 #else
@@ -700,7 +700,10 @@
 #define HAVE_SYS_SELECT_H 1
 
 /* Define to 1 if you have the <sys/socket.h> header file. */
+#if defined __MINGW32__
+#else
 #define HAVE_SYS_SOCKET_H 1
+#endif
 
 /* Define to 1 if you have the <sys/sockio.h> header file. */
 #if defined ANDROID || defined CPE_OS_LINUX
