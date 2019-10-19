@@ -13,7 +13,7 @@
 
 net_log_thread_t net_log_thread_create(net_log_schedule_t schedule, const char * name, net_log_thread_processor_t processor) {
     ASSERT_ON_THREAD_MAIN(schedule);
-    
+
     net_log_thread_t log_thread = mem_alloc(schedule->m_alloc, sizeof(struct net_log_thread) + (processor ? processor->m_capacity : 0));
 
     log_thread->m_schedule = schedule;
@@ -32,8 +32,8 @@ net_log_thread_t net_log_thread_create(net_log_schedule_t schedule, const char *
     log_thread->m_cfg_active_request_count = 1;
     log_thread->m_cfg_net_buf_size = 2 * 1024 * 1024;
     _MS(log_thread->m_runing_thread = NULL);
-    log_thread->m_watcher = NULL;
-    log_thread->m_pipe_r_size = 0;
+    _MS(log_thread->m_watcher = NULL);
+    _MS(log_thread->m_pipe_r_size = 0);
     log_thread->m_is_runing = 0;
     log_thread->m_net_schedule = NULL;
     log_thread->m_net_driver = NULL;
@@ -60,6 +60,7 @@ net_log_thread_t net_log_thread_create(net_log_schedule_t schedule, const char *
     log_thread->m_commit_delay_processor = NULL;
 
     /*pipe*/
+#if NET_LOG_MULTI_THREAD
     if (pipe(log_thread->m_pipe_fd) != 0) {
         CPE_ERROR(schedule->m_em, "log: thread %s: create pipe fail, error=%d (%s)!", name, errno, strerror(errno));
         mem_free(schedule->m_alloc, log_thread);
@@ -73,12 +74,13 @@ net_log_thread_t net_log_thread_create(net_log_schedule_t schedule, const char *
         mem_free(schedule->m_alloc, log_thread);
         return NULL;
     }
+#endif
 
     if (log_thread->m_processor.m_init) {
         if (log_thread->m_processor.m_init(log_thread->m_processor.m_ctx, log_thread) != 0) {
             CPE_ERROR(schedule->m_em, "log: thread %s: processor init fail!", name);
-            close(log_thread->m_pipe_fd[0]);
-            close(log_thread->m_pipe_fd[1]);
+            _MS(close(log_thread->m_pipe_fd[0]));
+            _MS(close(log_thread->m_pipe_fd[1]));
             mem_free(schedule->m_alloc, log_thread);
             return NULL;
         }
@@ -97,7 +99,7 @@ void net_log_thread_free(net_log_thread_t log_thread) {
     CPE_INFO(schedule->m_em, "log: thread %s: free!", log_thread->m_name);
     
     assert(!log_thread->m_is_runing);
-    assert(log_thread->m_watcher == NULL);
+    _MS(assert(log_thread->m_watcher == NULL));
     assert(log_thread->m_net_schedule == NULL);
     assert(log_thread->m_net_driver == NULL);
     assert(log_thread->m_trans_mgr == NULL);
@@ -111,10 +113,10 @@ void net_log_thread_free(net_log_thread_t log_thread) {
         log_thread->m_processor.m_fini(log_thread->m_processor.m_ctx, log_thread);
     }
     
-    close(log_thread->m_pipe_fd[0]);
-    close(log_thread->m_pipe_fd[1]);
-    log_thread->m_pipe_fd[0] = -1;
-    log_thread->m_pipe_fd[1] = -1;
+    _MS(close(log_thread->m_pipe_fd[0]));
+    _MS(close(log_thread->m_pipe_fd[1]));
+    _MS(log_thread->m_pipe_fd[0] = -1);
+    _MS(log_thread->m_pipe_fd[1] = -1);
 
     mem_buffer_clear(&log_thread->m_tmp_buffer);
     
@@ -148,6 +150,7 @@ int net_log_thread_send_cmd(net_log_thread_t log_thread, net_log_thread_cmd_t cm
         net_log_thread_dispatch(log_thread, cmd);
     }
     else {
+#if NET_LOG_MULTI_THREAD
         _MS(pthread_mutex_lock(&log_thread->m_mutex));
 
         if (write(log_thread->m_pipe_fd[1], cmd, cmd->m_size) < 0) {
@@ -166,6 +169,7 @@ int net_log_thread_send_cmd(net_log_thread_t log_thread, net_log_thread_cmd_t cm
                 schedule->m_em, "log: thread %s: ==> (%s) %s",
                 from_thread->m_name, log_thread->m_name, net_log_thread_cmd_dump(&from_thread->m_tmp_buffer, cmd));
         }
+#endif
     }
 
     return 0;

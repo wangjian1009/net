@@ -14,8 +14,10 @@
 #include "net_log_request.h"
 #include "net_log_request_cache.h"
 
+#if NET_LOG_MULTI_THREAD
 static void net_log_thread_rw_cb(void * ctx, int fd, uint8_t do_read, uint8_t do_write);
 static void net_log_thread_pipe_clear(net_log_thread_t thread);
+#endif
 
 static int net_log_thread_setup(net_log_thread_t log_thread) {
     net_log_schedule_t schedule = log_thread->m_schedule;
@@ -58,22 +60,26 @@ static int net_log_thread_setup(net_log_thread_t log_thread) {
         goto SETUP_FAIL;
     }
 
+#if NET_LOG_MULTI_THREAD
     log_thread->m_watcher = net_watcher_create(log_thread->m_net_driver, log_thread->m_pipe_fd[0], log_thread, net_log_thread_rw_cb);
     if (log_thread->m_watcher == NULL) {
         CPE_ERROR(schedule->m_em, "log: thread %s: setup: create watcher fail!", log_thread->m_name);
         goto SETUP_FAIL;
     }
     net_watcher_update(log_thread->m_watcher, 1, 0);
+#endif
 
     net_log_thread_search_cache(log_thread);
 
     return 0;
     
 SETUP_FAIL:
+#if NET_LOG_MULTI_THREAD
     if (log_thread->m_watcher) {
         net_watcher_free(log_thread->m_watcher);
         log_thread->m_watcher = NULL;
     }
+#endif
 
     if (log_thread->m_commit_delay_processor) {
         net_timer_free(log_thread->m_commit_delay_processor);
@@ -121,10 +127,12 @@ static void net_log_thread_teardown(net_log_thread_t log_thread) {
         net_log_request_cache_free(TAILQ_FIRST(&log_thread->m_caches));
     }
 
+#if NET_LOG_MULTI_THREAD
     if (log_thread->m_watcher) {
         net_watcher_free(log_thread->m_watcher);
         log_thread->m_watcher = NULL;
     }
+#endif
 
     if (log_thread->m_trans_mgr) {
         net_trans_manage_free(log_thread->m_trans_mgr);
@@ -318,8 +326,8 @@ void net_log_thread_wait_stop(net_log_thread_t log_thread) {
     mem_free(schedule->m_alloc, log_thread->m_runing_thread);
     log_thread->m_runing_thread = NULL;
 
-#else
     net_log_thread_pipe_clear(log_thread);
+#else
     net_log_thread_teardown(log_thread);
 #endif
     
@@ -336,6 +344,7 @@ void net_log_thread_wait_stop(net_log_thread_t log_thread) {
     net_log_schedule_check_stop_complete(schedule);
 }
 
+#if NET_LOG_MULTI_THREAD
 static void net_log_thread_rw_cb(void * ctx, int fd, uint8_t do_read, uint8_t do_write) {
     net_log_thread_t log_thread = ctx;
     net_log_schedule_t schedule = log_thread->m_schedule;
@@ -389,3 +398,4 @@ static void net_log_thread_rw_cb(void * ctx, int fd, uint8_t do_read, uint8_t do
 
 static void net_log_thread_pipe_clear(net_log_thread_t log_thread) {
 }
+#endif

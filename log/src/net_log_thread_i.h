@@ -46,11 +46,13 @@ struct net_log_thread {
     uint8_t m_is_runing;
 
     /*pipe*/
-    _MS(pthread_mutex_t m_mutex);
+#if NET_LOG_MULTI_THREAD
+    pthread_mutex_t m_mutex;
     int m_pipe_fd[2];
     char m_pipe_r_buf[256];
     uint16_t m_pipe_r_size;
     net_watcher_t m_watcher;
+#endif
 
     /*net*/
     net_schedule_t m_net_schedule;
