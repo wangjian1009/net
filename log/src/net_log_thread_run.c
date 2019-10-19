@@ -326,7 +326,6 @@ void net_log_thread_wait_stop(net_log_thread_t log_thread) {
     mem_free(schedule->m_alloc, log_thread->m_runing_thread);
     log_thread->m_runing_thread = NULL;
 
-    net_log_thread_pipe_clear(log_thread);
 #else
     net_log_thread_teardown(log_thread);
 #endif
