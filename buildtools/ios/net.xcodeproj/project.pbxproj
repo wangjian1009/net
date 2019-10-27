@@ -139,6 +139,14 @@
 		C947723723653058000589C8 /* net_log_category.c in Sources */ = {isa = PBXBuildFile; fileRef = C947721E23653057000589C8 /* net_log_category.c */; };
 		C947723823653058000589C8 /* net_log_thread_cache.c in Sources */ = {isa = PBXBuildFile; fileRef = C947722023653057000589C8 /* net_log_thread_cache.c */; };
 		C947723923653058000589C8 /* net_log_statistic_monitor.c in Sources */ = {isa = PBXBuildFile; fileRef = C947722123653057000589C8 /* net_log_statistic_monitor.c */; };
+		C947728523658F32000589C8 /* net_ping_task.c in Sources */ = {isa = PBXBuildFile; fileRef = C947727A23658F31000589C8 /* net_ping_task.c */; };
+		C947728623658F32000589C8 /* net_ping_processor.c in Sources */ = {isa = PBXBuildFile; fileRef = C947727E23658F31000589C8 /* net_ping_processor.c */; };
+		C947728723658F32000589C8 /* net_ping_processor_http.c in Sources */ = {isa = PBXBuildFile; fileRef = C947727F23658F31000589C8 /* net_ping_processor_http.c */; };
+		C947728823658F32000589C8 /* net_ping_processor_icmp.c in Sources */ = {isa = PBXBuildFile; fileRef = C947728023658F31000589C8 /* net_ping_processor_icmp.c */; };
+		C947728923658F32000589C8 /* net_ping_processor_tcp_connect.c in Sources */ = {isa = PBXBuildFile; fileRef = C947728123658F31000589C8 /* net_ping_processor_tcp_connect.c */; };
+		C947728A23658F32000589C8 /* net_ping_mgr.c in Sources */ = {isa = PBXBuildFile; fileRef = C947728223658F31000589C8 /* net_ping_mgr.c */; };
+		C947728B23658F32000589C8 /* net_ping_record.c in Sources */ = {isa = PBXBuildFile; fileRef = C947728423658F31000589C8 /* net_ping_record.c */; };
+		C947729323658FC6000589C8 /* net_local_ip_stack_monitor.c in Sources */ = {isa = PBXBuildFile; fileRef = C947729223658FC5000589C8 /* net_local_ip_stack_monitor.c */; };
 		C9506CD72127A8400015DDBC /* net_dns_source_ns.c in Sources */ = {isa = PBXBuildFile; fileRef = C9506CD22127A83F0015DDBC /* net_dns_source_ns.c */; };
 		C9506CDC2127ABE90015DDBC /* net_dns_scope.c in Sources */ = {isa = PBXBuildFile; fileRef = C9506CDB2127ABE90015DDBC /* net_dns_scope.c */; };
 		C9506CE0212819520015DDBC /* net_proxy_http_svr_endpoint_basic_rsp.c in Sources */ = {isa = PBXBuildFile; fileRef = C9506CDE212819510015DDBC /* net_proxy_http_svr_endpoint_basic_rsp.c */; };
@@ -429,6 +437,15 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C9415A932121058E00400779 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "include/$(PRODUCT_NAME)";
+			dstSubfolderSpec = 16;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C947726D23658EF5000589C8 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "include/$(PRODUCT_NAME)";
@@ -775,6 +792,25 @@
 		C947721F23653057000589C8 /* hmac-sha.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "hmac-sha.h"; sourceTree = "<group>"; };
 		C947722023653057000589C8 /* net_log_thread_cache.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_log_thread_cache.c; sourceTree = "<group>"; };
 		C947722123653057000589C8 /* net_log_statistic_monitor.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_log_statistic_monitor.c; sourceTree = "<group>"; };
+		C947727123658EF5000589C8 /* libnet_ping.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_ping.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		C947727423658F31000589C8 /* net_ping_types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ping_types.h; sourceTree = "<group>"; };
+		C947727523658F31000589C8 /* net_ping_mgr.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ping_mgr.h; sourceTree = "<group>"; };
+		C947727623658F31000589C8 /* net_ping_record.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ping_record.h; sourceTree = "<group>"; };
+		C947727723658F31000589C8 /* net_ping_task.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ping_task.h; sourceTree = "<group>"; };
+		C947727923658F31000589C8 /* net_ping_mgr_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ping_mgr_i.h; sourceTree = "<group>"; };
+		C947727A23658F31000589C8 /* net_ping_task.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ping_task.c; sourceTree = "<group>"; };
+		C947727B23658F31000589C8 /* net_ping_task_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ping_task_i.h; sourceTree = "<group>"; };
+		C947727C23658F31000589C8 /* net_ping_icmp_pro.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ping_icmp_pro.h; sourceTree = "<group>"; };
+		C947727D23658F31000589C8 /* net_ping_processor_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ping_processor_i.h; sourceTree = "<group>"; };
+		C947727E23658F31000589C8 /* net_ping_processor.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ping_processor.c; sourceTree = "<group>"; };
+		C947727F23658F31000589C8 /* net_ping_processor_http.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ping_processor_http.c; sourceTree = "<group>"; };
+		C947728023658F31000589C8 /* net_ping_processor_icmp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ping_processor_icmp.c; sourceTree = "<group>"; };
+		C947728123658F31000589C8 /* net_ping_processor_tcp_connect.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ping_processor_tcp_connect.c; sourceTree = "<group>"; };
+		C947728223658F31000589C8 /* net_ping_mgr.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ping_mgr.c; sourceTree = "<group>"; };
+		C947728323658F31000589C8 /* net_ping_record_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ping_record_i.h; sourceTree = "<group>"; };
+		C947728423658F31000589C8 /* net_ping_record.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ping_record.c; sourceTree = "<group>"; };
+		C947729123658FC5000589C8 /* net_local_ip_stack_monitor_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_local_ip_stack_monitor_i.h; sourceTree = "<group>"; };
+		C947729223658FC5000589C8 /* net_local_ip_stack_monitor.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_local_ip_stack_monitor.c; sourceTree = "<group>"; };
 		C9506CD02127A82A0015DDBC /* net_dns_source_ns.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_source_ns.h; sourceTree = "<group>"; };
 		C9506CD12127A83F0015DDBC /* net_dns_source_ns_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_source_ns_i.h; sourceTree = "<group>"; };
 		C9506CD22127A83F0015DDBC /* net_dns_source_ns.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_dns_source_ns.c; sourceTree = "<group>"; };
@@ -1374,6 +1410,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C947726C23658EF5000589C8 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		C96A82D521100505000CB30D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -1607,6 +1650,8 @@
 		C91E1EC32105E4160080FAD8 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				C947729123658FC5000589C8 /* net_local_ip_stack_monitor_i.h */,
+				C947729223658FC5000589C8 /* net_local_ip_stack_monitor.c */,
 				C927F75122930E3700B2D19E /* net_endpoint_next_i.h */,
 				C927F75222930E3700B2D19E /* net_endpoint_next.c */,
 				C9BD22D42262FAA300426F27 /* net_schedule_address.c */,
@@ -1697,6 +1742,7 @@
 		C9323A382105E2CD005DD3C0 = {
 			isa = PBXGroup;
 			children = (
+				C947727223658F31000589C8 /* ping */,
 				C991C01C2290FD45004AD135 /* driver_sock */,
 				C985538A224D973A0096C780 /* driver_ev */,
 				C9951633224AFC3400DDEEB1 /* log */,
@@ -1739,6 +1785,7 @@
 				C9855389224D96F40096C780 /* libnet_driver_ev.a */,
 				C991C0192290FCDD004AD135 /* libnet_driver_sock.a */,
 				C9952C12229ACFBC002E5368 /* libc-ares.a */,
+				C947727123658EF5000589C8 /* libnet_ping.a */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1794,6 +1841,46 @@
 				C9415AA3212105CF00400779 /* net_dns_svr.h */,
 			);
 			path = include;
+			sourceTree = "<group>";
+		};
+		C947727223658F31000589C8 /* ping */ = {
+			isa = PBXGroup;
+			children = (
+				C947727323658F31000589C8 /* include */,
+				C947727823658F31000589C8 /* src */,
+			);
+			name = ping;
+			path = ../../ping;
+			sourceTree = "<group>";
+		};
+		C947727323658F31000589C8 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				C947727423658F31000589C8 /* net_ping_types.h */,
+				C947727523658F31000589C8 /* net_ping_mgr.h */,
+				C947727623658F31000589C8 /* net_ping_record.h */,
+				C947727723658F31000589C8 /* net_ping_task.h */,
+			);
+			path = include;
+			sourceTree = "<group>";
+		};
+		C947727823658F31000589C8 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				C947727923658F31000589C8 /* net_ping_mgr_i.h */,
+				C947727A23658F31000589C8 /* net_ping_task.c */,
+				C947727B23658F31000589C8 /* net_ping_task_i.h */,
+				C947727C23658F31000589C8 /* net_ping_icmp_pro.h */,
+				C947727D23658F31000589C8 /* net_ping_processor_i.h */,
+				C947727E23658F31000589C8 /* net_ping_processor.c */,
+				C947727F23658F31000589C8 /* net_ping_processor_http.c */,
+				C947728023658F31000589C8 /* net_ping_processor_icmp.c */,
+				C947728123658F31000589C8 /* net_ping_processor_tcp_connect.c */,
+				C947728223658F31000589C8 /* net_ping_mgr.c */,
+				C947728323658F31000589C8 /* net_ping_record_i.h */,
+				C947728423658F31000589C8 /* net_ping_record.c */,
+			);
+			path = src;
 			sourceTree = "<group>";
 		};
 		C96A82D921100505000CB30D /* driver_dq */ = {
@@ -2935,6 +3022,23 @@
 			productReference = C9415A952121058E00400779 /* libnet_dns_svr.a */;
 			productType = "com.apple.product-type.library.static";
 		};
+		C947724E23658EF5000589C8 /* net_ping */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C947726E23658EF5000589C8 /* Build configuration list for PBXNativeTarget "net_ping" */;
+			buildPhases = (
+				C947724F23658EF5000589C8 /* Sources */,
+				C947726C23658EF5000589C8 /* Frameworks */,
+				C947726D23658EF5000589C8 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = net_ping;
+			productName = net_statistics;
+			productReference = C947727123658EF5000589C8 /* libnet_ping.a */;
+			productType = "com.apple.product-type.library.static";
+		};
 		C96A82D721100505000CB30D /* net_driver_dq */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = C96A82E021100505000CB30D /* Build configuration list for PBXNativeTarget "net_driver_dq" */;
@@ -3272,6 +3376,7 @@
 				C985537C224D96F40096C780 /* net_driver_ev */,
 				C991C00D2290FCDD004AD135 /* net_driver_sock */,
 				C9952C06229ACFBC002E5368 /* c-ares */,
+				C947724E23658EF5000589C8 /* net_ping */,
 			);
 		};
 /* End PBXProject section */
@@ -3381,6 +3486,7 @@
 				C91E1EEE2105E4160080FAD8 /* net_address.c in Sources */,
 				C91E1EF92105E4160080FAD8 /* net_direct_endpoint.c in Sources */,
 				C9BD22D52262FAA400426F27 /* net_schedule_address.c in Sources */,
+				C947729323658FC6000589C8 /* net_local_ip_stack_monitor.c in Sources */,
 				C91E1EFE2105E4160080FAD8 /* net_dgram.c in Sources */,
 				C91E1EEC2105E4160080FAD8 /* net_endpoint_link_to.c in Sources */,
 				C96A831021102748000CB30D /* net_acceptor.c in Sources */,
@@ -3421,6 +3527,20 @@
 				C9CD6E2B2121286800F6413D /* net_dns_svr_protocol.c in Sources */,
 				C9415AA4212105CF00400779 /* net_dns_svr.c in Sources */,
 				C9CD6E252121252B00F6413D /* net_dns_svr_itf.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C947724F23658EF5000589C8 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C947728623658F32000589C8 /* net_ping_processor.c in Sources */,
+				C947728923658F32000589C8 /* net_ping_processor_tcp_connect.c in Sources */,
+				C947728B23658F32000589C8 /* net_ping_record.c in Sources */,
+				C947728823658F32000589C8 /* net_ping_processor_icmp.c in Sources */,
+				C947728723658F32000589C8 /* net_ping_processor_http.c in Sources */,
+				C947728A23658F32000589C8 /* net_ping_mgr.c in Sources */,
+				C947728523658F32000589C8 /* net_ping_task.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4046,6 +4166,44 @@
 			};
 			name = Release;
 		};
+		C947726F23658EF5000589C8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
+				HEADER_SEARCH_PATHS = (
+					../../../cpe/pal/include,
+					../../../cpe/utils/include,
+					../../../cpe/fsm/include,
+					../../../cpe/vfs/include,
+					../../depends/curl/include,
+					../../depends/mbedtls/include/mbedtls,
+					../../core/include,
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C947727023658EF5000589C8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
+				HEADER_SEARCH_PATHS = (
+					../../../cpe/pal/include,
+					../../../cpe/utils/include,
+					../../../cpe/fsm/include,
+					../../../cpe/vfs/include,
+					../../depends/curl/include,
+					../../depends/mbedtls/include/mbedtls,
+					../../core/include,
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		C96A82DE21100505000CB30D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -4610,6 +4768,15 @@
 			buildConfigurations = (
 				C9415A9B2121058E00400779 /* Debug */,
 				C9415A9C2121058E00400779 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C947726E23658EF5000589C8 /* Build configuration list for PBXNativeTarget "net_ping" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C947726F23658EF5000589C8 /* Debug */,
+				C947727023658EF5000589C8 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
