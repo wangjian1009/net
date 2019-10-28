@@ -11,10 +11,13 @@ let package = Package(
         .library(name: "curl", type: .static, targets: ["curl"]),
         .library(name: "net_core", type: .static, targets: ["net_core"]),
         .library(name: "net_log", type: .static, targets: ["net_log"]),
+        .library(name: "net_ebb", type: .static, targets: ["net_ebb"]),
+        .library(name: "net_ping", type: .static, targets: ["net_ping"]),
         .library(name: "net_trans", type: .static, targets: ["net_trans"]),
         .library(name: "net_driver_ev", type: .static, targets: ["net_driver_ev"]),
         .library(name: "net_driver_dq", type: .static, targets: ["net_driver_dq"]),
         .library(name: "net_driver_sock", type: .static, targets: ["net_driver_sock"]),
+        .library(name: "net_utils_crypto", type: .static, targets: ["net_utils_crypto"]),
     ],
     targets: [
         .target(name: "net_core"
@@ -38,6 +41,27 @@ let package = Package(
                      .headerSearchPath("../cpe/utils_sock/include"),
                      .headerSearchPath("../depends/curl/include"),
                      .headerSearchPath("../core/include"),
+                 ]
+        ),
+        .target(name: "net_ebb"
+               , path: "ebb"
+               , sources: ["src"]
+               , cSettings: [
+                     .headerSearchPath("../cpe/pal/include"),
+                     .headerSearchPath("../cpe/utils/include"),
+                     .headerSearchPath("../cpe/utils_sock/include"),
+                     .headerSearchPath("../core/include"),
+                 ]
+        ),
+        .target(name: "net_ping"
+               , path: "ping"
+               , sources: ["src"]
+               , cSettings: [
+                     .headerSearchPath("../cpe/pal/include"),
+                     .headerSearchPath("../cpe/utils/include"),
+                     .headerSearchPath("../cpe/utils_sock/include"),
+                     .headerSearchPath("../core/include"),
+                     .headerSearchPath("../trans/include"),
                  ]
         ),
         .target(name: "net_log"
@@ -84,6 +108,15 @@ let package = Package(
                      .headerSearchPath("../cpe/utils/include"),
                      .headerSearchPath("../core/include"),
                      .headerSearchPath("../driver_sock/include"),
+                 ]
+        ),
+        .target(name: "net_utils_crypto"
+               , path: "utils_crypto"
+               , sources: ["src"]
+               , cSettings: [
+                     .headerSearchPath("../cpe/pal/include"),
+                     .headerSearchPath("../cpe/utils/include"),
+                     .headerSearchPath("../depends/mbedtls/include"),
                  ]
         ),
         .target(name: "mbedtls"
