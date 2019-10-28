@@ -401,6 +401,15 @@
 		C9CD6E252121252B00F6413D /* net_dns_svr_itf.c in Sources */ = {isa = PBXBuildFile; fileRef = C9CD6E242121252B00F6413D /* net_dns_svr_itf.c */; };
 		C9CD6E2B2121286800F6413D /* net_dns_svr_protocol.c in Sources */ = {isa = PBXBuildFile; fileRef = C9CD6E272121286800F6413D /* net_dns_svr_protocol.c */; };
 		C9CD6E2C2121286800F6413D /* net_dns_svr_endpoint.c in Sources */ = {isa = PBXBuildFile; fileRef = C9CD6E2A2121286800F6413D /* net_dns_svr_endpoint.c */; };
+		C9E702052366911D00F5B2B3 /* net_ebb_mount_point.c in Sources */ = {isa = PBXBuildFile; fileRef = C9E701F42366911C00F5B2B3 /* net_ebb_mount_point.c */; };
+		C9E702062366911D00F5B2B3 /* net_ebb_service.c in Sources */ = {isa = PBXBuildFile; fileRef = C9E701F52366911C00F5B2B3 /* net_ebb_service.c */; };
+		C9E702072366911D00F5B2B3 /* net_ebb_response.c in Sources */ = {isa = PBXBuildFile; fileRef = C9E701FB2366911C00F5B2B3 /* net_ebb_response.c */; };
+		C9E702082366911D00F5B2B3 /* net_ebb_request.c in Sources */ = {isa = PBXBuildFile; fileRef = C9E701FC2366911C00F5B2B3 /* net_ebb_request.c */; };
+		C9E702092366911D00F5B2B3 /* net_ebb_request_header.c in Sources */ = {isa = PBXBuildFile; fileRef = C9E701FE2366911C00F5B2B3 /* net_ebb_request_header.c */; };
+		C9E7020A2366911D00F5B2B3 /* net_ebb_processor_dft.c in Sources */ = {isa = PBXBuildFile; fileRef = C9E701FF2366911C00F5B2B3 /* net_ebb_processor_dft.c */; };
+		C9E7020B2366911D00F5B2B3 /* net_ebb_processor.c in Sources */ = {isa = PBXBuildFile; fileRef = C9E702002366911C00F5B2B3 /* net_ebb_processor.c */; };
+		C9E7020C2366911D00F5B2B3 /* net_ebb_request_parser.c in Sources */ = {isa = PBXBuildFile; fileRef = C9E702022366911C00F5B2B3 /* net_ebb_request_parser.c */; };
+		C9E7020D2366911D00F5B2B3 /* net_ebb_connection.c in Sources */ = {isa = PBXBuildFile; fileRef = C9E702042366911C00F5B2B3 /* net_ebb_connection.c */; };
 		C9F3115F21094392006A7621 /* wslay_stack.c in Sources */ = {isa = PBXBuildFile; fileRef = C9F3115521094392006A7621 /* wslay_stack.c */; };
 		C9F3116021094392006A7621 /* wslay_net.c in Sources */ = {isa = PBXBuildFile; fileRef = C9F3115721094392006A7621 /* wslay_net.c */; };
 		C9F3116121094392006A7621 /* wslay_queue.c in Sources */ = {isa = PBXBuildFile; fileRef = C9F3115821094392006A7621 /* wslay_queue.c */; };
@@ -563,6 +572,15 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C9C4B113210861B50045A1A3 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "include/$(PRODUCT_NAME)";
+			dstSubfolderSpec = 16;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C9E701E3236690E300F5B2B3 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "include/$(PRODUCT_NAME)";
@@ -1363,6 +1381,33 @@
 		C9CD6E282121286800F6413D /* net_dns_svr_endpoint_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_svr_endpoint_i.h; sourceTree = "<group>"; };
 		C9CD6E292121286800F6413D /* net_dns_svr_protocol_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_svr_protocol_i.h; sourceTree = "<group>"; };
 		C9CD6E2A2121286800F6413D /* net_dns_svr_endpoint.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_dns_svr_endpoint.c; sourceTree = "<group>"; };
+		C9E701E7236690E300F5B2B3 /* libnet_ebb.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_ebb.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		C9E701EA2366911C00F5B2B3 /* net_ebb_request.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ebb_request.h; sourceTree = "<group>"; };
+		C9E701EB2366911C00F5B2B3 /* net_ebb_response.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ebb_response.h; sourceTree = "<group>"; };
+		C9E701EC2366911C00F5B2B3 /* net_ebb_processor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ebb_processor.h; sourceTree = "<group>"; };
+		C9E701ED2366911C00F5B2B3 /* net_ebb_request_header.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ebb_request_header.h; sourceTree = "<group>"; };
+		C9E701EE2366911C00F5B2B3 /* net_ebb_connection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ebb_connection.h; sourceTree = "<group>"; };
+		C9E701EF2366911C00F5B2B3 /* net_ebb_system.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ebb_system.h; sourceTree = "<group>"; };
+		C9E701F02366911C00F5B2B3 /* net_ebb_service.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ebb_service.h; sourceTree = "<group>"; };
+		C9E701F12366911C00F5B2B3 /* net_ebb_mount_point.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ebb_mount_point.h; sourceTree = "<group>"; };
+		C9E701F32366911C00F5B2B3 /* net_ebb_response_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ebb_response_i.h; sourceTree = "<group>"; };
+		C9E701F42366911C00F5B2B3 /* net_ebb_mount_point.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ebb_mount_point.c; sourceTree = "<group>"; };
+		C9E701F52366911C00F5B2B3 /* net_ebb_service.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ebb_service.c; sourceTree = "<group>"; };
+		C9E701F62366911C00F5B2B3 /* net_ebb_mount_point_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ebb_mount_point_i.h; sourceTree = "<group>"; };
+		C9E701F72366911C00F5B2B3 /* net_ebb_processor_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ebb_processor_i.h; sourceTree = "<group>"; };
+		C9E701F82366911C00F5B2B3 /* net_ebb_connection_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ebb_connection_i.h; sourceTree = "<group>"; };
+		C9E701F92366911C00F5B2B3 /* net_ebb_service_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ebb_service_i.h; sourceTree = "<group>"; };
+		C9E701FA2366911C00F5B2B3 /* net_ebb_request_parser.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ebb_request_parser.h; sourceTree = "<group>"; };
+		C9E701FB2366911C00F5B2B3 /* net_ebb_response.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ebb_response.c; sourceTree = "<group>"; };
+		C9E701FC2366911C00F5B2B3 /* net_ebb_request.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ebb_request.c; sourceTree = "<group>"; };
+		C9E701FD2366911C00F5B2B3 /* net_ebb_request_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ebb_request_i.h; sourceTree = "<group>"; };
+		C9E701FE2366911C00F5B2B3 /* net_ebb_request_header.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ebb_request_header.c; sourceTree = "<group>"; };
+		C9E701FF2366911C00F5B2B3 /* net_ebb_processor_dft.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ebb_processor_dft.c; sourceTree = "<group>"; };
+		C9E702002366911C00F5B2B3 /* net_ebb_processor.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ebb_processor.c; sourceTree = "<group>"; };
+		C9E702012366911C00F5B2B3 /* net_ebb_request_header_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_ebb_request_header_i.h; sourceTree = "<group>"; };
+		C9E702022366911C00F5B2B3 /* net_ebb_request_parser.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ebb_request_parser.c; sourceTree = "<group>"; };
+		C9E702032366911C00F5B2B3 /* net_ebb_request_parser.rl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = net_ebb_request_parser.rl; sourceTree = "<group>"; };
+		C9E702042366911C00F5B2B3 /* net_ebb_connection.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ebb_connection.c; sourceTree = "<group>"; };
 		C9EFFA01225ADABD00F6D50F /* net_log_state_monitor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_log_state_monitor.h; sourceTree = "<group>"; };
 		C9F311452109433C006A7621 /* libwslay.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libwslay.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		C9F3115221094392006A7621 /* wslayver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = wslayver.h; sourceTree = "<group>"; };
@@ -1502,6 +1547,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C9C4B112210861B50045A1A3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C9E701E2236690E300F5B2B3 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -1742,6 +1794,7 @@
 		C9323A382105E2CD005DD3C0 = {
 			isa = PBXGroup;
 			children = (
+				C9E701E82366911C00F5B2B3 /* ebb */,
 				C947727223658F31000589C8 /* ping */,
 				C991C01C2290FD45004AD135 /* driver_sock */,
 				C985538A224D973A0096C780 /* driver_ev */,
@@ -1786,6 +1839,7 @@
 				C991C0192290FCDD004AD135 /* libnet_driver_sock.a */,
 				C9952C12229ACFBC002E5368 /* libc-ares.a */,
 				C947727123658EF5000589C8 /* libnet_ping.a */,
+				C9E701E7236690E300F5B2B3 /* libnet_ebb.a */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -2865,6 +2919,56 @@
 			path = src;
 			sourceTree = "<group>";
 		};
+		C9E701E82366911C00F5B2B3 /* ebb */ = {
+			isa = PBXGroup;
+			children = (
+				C9E701E92366911C00F5B2B3 /* include */,
+				C9E701F22366911C00F5B2B3 /* src */,
+			);
+			name = ebb;
+			path = ../../ebb;
+			sourceTree = "<group>";
+		};
+		C9E701E92366911C00F5B2B3 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				C9E701EA2366911C00F5B2B3 /* net_ebb_request.h */,
+				C9E701EB2366911C00F5B2B3 /* net_ebb_response.h */,
+				C9E701EC2366911C00F5B2B3 /* net_ebb_processor.h */,
+				C9E701ED2366911C00F5B2B3 /* net_ebb_request_header.h */,
+				C9E701EE2366911C00F5B2B3 /* net_ebb_connection.h */,
+				C9E701EF2366911C00F5B2B3 /* net_ebb_system.h */,
+				C9E701F02366911C00F5B2B3 /* net_ebb_service.h */,
+				C9E701F12366911C00F5B2B3 /* net_ebb_mount_point.h */,
+			);
+			path = include;
+			sourceTree = "<group>";
+		};
+		C9E701F22366911C00F5B2B3 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				C9E701F32366911C00F5B2B3 /* net_ebb_response_i.h */,
+				C9E701F42366911C00F5B2B3 /* net_ebb_mount_point.c */,
+				C9E701F52366911C00F5B2B3 /* net_ebb_service.c */,
+				C9E701F62366911C00F5B2B3 /* net_ebb_mount_point_i.h */,
+				C9E701F72366911C00F5B2B3 /* net_ebb_processor_i.h */,
+				C9E701F82366911C00F5B2B3 /* net_ebb_connection_i.h */,
+				C9E701F92366911C00F5B2B3 /* net_ebb_service_i.h */,
+				C9E701FA2366911C00F5B2B3 /* net_ebb_request_parser.h */,
+				C9E701FB2366911C00F5B2B3 /* net_ebb_response.c */,
+				C9E701FC2366911C00F5B2B3 /* net_ebb_request.c */,
+				C9E701FD2366911C00F5B2B3 /* net_ebb_request_i.h */,
+				C9E701FE2366911C00F5B2B3 /* net_ebb_request_header.c */,
+				C9E701FF2366911C00F5B2B3 /* net_ebb_processor_dft.c */,
+				C9E702002366911C00F5B2B3 /* net_ebb_processor.c */,
+				C9E702012366911C00F5B2B3 /* net_ebb_request_header_i.h */,
+				C9E702022366911C00F5B2B3 /* net_ebb_request_parser.c */,
+				C9E702032366911C00F5B2B3 /* net_ebb_request_parser.rl */,
+				C9E702042366911C00F5B2B3 /* net_ebb_connection.c */,
+			);
+			path = src;
+			sourceTree = "<group>";
+		};
 		C9F3114E21094371006A7621 /* depends */ = {
 			isa = PBXGroup;
 			children = (
@@ -3260,6 +3364,23 @@
 			productReference = C9C4B115210861B50045A1A3 /* libnet_router.a */;
 			productType = "com.apple.product-type.library.static";
 		};
+		C9E701D9236690E300F5B2B3 /* net_ebb */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C9E701E4236690E300F5B2B3 /* Build configuration list for PBXNativeTarget "net_ebb" */;
+			buildPhases = (
+				C9E701DA236690E300F5B2B3 /* Sources */,
+				C9E701E2236690E300F5B2B3 /* Frameworks */,
+				C9E701E3236690E300F5B2B3 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = net_ebb;
+			productName = net_statistics;
+			productReference = C9E701E7236690E300F5B2B3 /* libnet_ebb.a */;
+			productType = "com.apple.product-type.library.static";
+		};
 		C9F311442109433C006A7621 /* wslay */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = C9F3114D2109433C006A7621 /* Build configuration list for PBXNativeTarget "wslay" */;
@@ -3377,6 +3498,7 @@
 				C991C00D2290FCDD004AD135 /* net_driver_sock */,
 				C9952C06229ACFBC002E5368 /* c-ares */,
 				C947724E23658EF5000589C8 /* net_ping */,
+				C9E701D9236690E300F5B2B3 /* net_ebb */,
 			);
 		};
 /* End PBXProject section */
@@ -3897,6 +4019,22 @@
 			files = (
 				C9C4B163210862630045A1A3 /* net_router.c in Sources */,
 				C9C4B162210862630045A1A3 /* net_router_schedule.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C9E701DA236690E300F5B2B3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C9E7020B2366911D00F5B2B3 /* net_ebb_processor.c in Sources */,
+				C9E702072366911D00F5B2B3 /* net_ebb_response.c in Sources */,
+				C9E702082366911D00F5B2B3 /* net_ebb_request.c in Sources */,
+				C9E702052366911D00F5B2B3 /* net_ebb_mount_point.c in Sources */,
+				C9E7020D2366911D00F5B2B3 /* net_ebb_connection.c in Sources */,
+				C9E7020C2366911D00F5B2B3 /* net_ebb_request_parser.c in Sources */,
+				C9E702092366911D00F5B2B3 /* net_ebb_request_header.c in Sources */,
+				C9E702062366911D00F5B2B3 /* net_ebb_service.c in Sources */,
+				C9E7020A2366911D00F5B2B3 /* net_ebb_processor_dft.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4662,6 +4800,38 @@
 			};
 			name = Release;
 		};
+		C9E701E5236690E300F5B2B3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
+				HEADER_SEARCH_PATHS = (
+					../../../cpe/pal/include,
+					../../../cpe/utils/include,
+					../../../cpe/fsm/include,
+					../../core/include,
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C9E701E6236690E300F5B2B3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
+				HEADER_SEARCH_PATHS = (
+					../../../cpe/pal/include,
+					../../../cpe/utils/include,
+					../../../cpe/fsm/include,
+					../../core/include,
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		C9F3114B2109433C006A7621 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -4894,6 +5064,15 @@
 			buildConfigurations = (
 				C9C4B11C210861B50045A1A3 /* Debug */,
 				C9C4B11D210861B50045A1A3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C9E701E4236690E300F5B2B3 /* Build configuration list for PBXNativeTarget "net_ebb" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C9E701E5236690E300F5B2B3 /* Debug */,
+				C9E701E6236690E300F5B2B3 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
