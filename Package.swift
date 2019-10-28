@@ -96,6 +96,7 @@ let package = Package(
                , cSettings: [
                      .headerSearchPath("../cpe/pal/include"),
                      .headerSearchPath("../cpe/utils/include"),
+                     .headerSearchPath("../depends/libev/include"),
                      .headerSearchPath("../core/include"),
                      .headerSearchPath("../driver_sock/include"),
                  ]
