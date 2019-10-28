@@ -530,7 +530,7 @@ static uint8_t net_endpoint_block_match_forward(
 
 int net_endpoint_buf_by_str(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, const char * str, void * * r_data, uint32_t * r_size) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
-    uint32_t str_len = strlen(str);
+    uint32_t str_len = (uint32_t)strlen(str);
     if (str_len == 0) return -1;
 
     assert(buf_type < net_ep_buf_count);

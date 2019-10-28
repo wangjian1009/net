@@ -410,6 +410,7 @@
 		C9E7020B2366911D00F5B2B3 /* net_ebb_processor.c in Sources */ = {isa = PBXBuildFile; fileRef = C9E702002366911C00F5B2B3 /* net_ebb_processor.c */; };
 		C9E7020C2366911D00F5B2B3 /* net_ebb_request_parser.c in Sources */ = {isa = PBXBuildFile; fileRef = C9E702022366911C00F5B2B3 /* net_ebb_request_parser.c */; };
 		C9E7020D2366911D00F5B2B3 /* net_ebb_connection.c in Sources */ = {isa = PBXBuildFile; fileRef = C9E702042366911C00F5B2B3 /* net_ebb_connection.c */; };
+		C9E7023C2366952900F5B2B3 /* net_utils_crypto_aes.c in Sources */ = {isa = PBXBuildFile; fileRef = C9E7023B2366952900F5B2B3 /* net_utils_crypto_aes.c */; };
 		C9F3115F21094392006A7621 /* wslay_stack.c in Sources */ = {isa = PBXBuildFile; fileRef = C9F3115521094392006A7621 /* wslay_stack.c */; };
 		C9F3116021094392006A7621 /* wslay_net.c in Sources */ = {isa = PBXBuildFile; fileRef = C9F3115721094392006A7621 /* wslay_net.c */; };
 		C9F3116121094392006A7621 /* wslay_queue.c in Sources */ = {isa = PBXBuildFile; fileRef = C9F3115821094392006A7621 /* wslay_queue.c */; };
@@ -581,6 +582,15 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C9E701E3236690E300F5B2B3 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "include/$(PRODUCT_NAME)";
+			dstSubfolderSpec = 16;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C9E70231236694F800F5B2B3 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "include/$(PRODUCT_NAME)";
@@ -1408,6 +1418,10 @@
 		C9E702022366911C00F5B2B3 /* net_ebb_request_parser.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ebb_request_parser.c; sourceTree = "<group>"; };
 		C9E702032366911C00F5B2B3 /* net_ebb_request_parser.rl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = net_ebb_request_parser.rl; sourceTree = "<group>"; };
 		C9E702042366911C00F5B2B3 /* net_ebb_connection.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_ebb_connection.c; sourceTree = "<group>"; };
+		C9E70235236694F800F5B2B3 /* libnet_utils_crypto.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_utils_crypto.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		C9E702382366952900F5B2B3 /* utils_crypto_system.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = utils_crypto_system.h; sourceTree = "<group>"; };
+		C9E702392366952900F5B2B3 /* utils_crypto_aes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = utils_crypto_aes.h; sourceTree = "<group>"; };
+		C9E7023B2366952900F5B2B3 /* net_utils_crypto_aes.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_utils_crypto_aes.c; sourceTree = "<group>"; };
 		C9EFFA01225ADABD00F6D50F /* net_log_state_monitor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_log_state_monitor.h; sourceTree = "<group>"; };
 		C9F311452109433C006A7621 /* libwslay.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libwslay.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		C9F3115221094392006A7621 /* wslayver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = wslayver.h; sourceTree = "<group>"; };
@@ -1554,6 +1568,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C9E701E2236690E300F5B2B3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C9E70230236694F800F5B2B3 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -1794,6 +1815,7 @@
 		C9323A382105E2CD005DD3C0 = {
 			isa = PBXGroup;
 			children = (
+				C9E702362366952900F5B2B3 /* utils_crypto */,
 				C9E701E82366911C00F5B2B3 /* ebb */,
 				C947727223658F31000589C8 /* ping */,
 				C991C01C2290FD45004AD135 /* driver_sock */,
@@ -1840,6 +1862,7 @@
 				C9952C12229ACFBC002E5368 /* libc-ares.a */,
 				C947727123658EF5000589C8 /* libnet_ping.a */,
 				C9E701E7236690E300F5B2B3 /* libnet_ebb.a */,
+				C9E70235236694F800F5B2B3 /* libnet_utils_crypto.a */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -2969,6 +2992,33 @@
 			path = src;
 			sourceTree = "<group>";
 		};
+		C9E702362366952900F5B2B3 /* utils_crypto */ = {
+			isa = PBXGroup;
+			children = (
+				C9E702372366952900F5B2B3 /* include */,
+				C9E7023A2366952900F5B2B3 /* src */,
+			);
+			name = utils_crypto;
+			path = ../../utils_crypto;
+			sourceTree = "<group>";
+		};
+		C9E702372366952900F5B2B3 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				C9E702382366952900F5B2B3 /* utils_crypto_system.h */,
+				C9E702392366952900F5B2B3 /* utils_crypto_aes.h */,
+			);
+			path = include;
+			sourceTree = "<group>";
+		};
+		C9E7023A2366952900F5B2B3 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				C9E7023B2366952900F5B2B3 /* net_utils_crypto_aes.c */,
+			);
+			path = src;
+			sourceTree = "<group>";
+		};
 		C9F3114E21094371006A7621 /* depends */ = {
 			isa = PBXGroup;
 			children = (
@@ -3381,6 +3431,23 @@
 			productReference = C9E701E7236690E300F5B2B3 /* libnet_ebb.a */;
 			productType = "com.apple.product-type.library.static";
 		};
+		C9E70225236694F800F5B2B3 /* net_utils_crypto */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C9E70232236694F800F5B2B3 /* Build configuration list for PBXNativeTarget "net_utils_crypto" */;
+			buildPhases = (
+				C9E70226236694F800F5B2B3 /* Sources */,
+				C9E70230236694F800F5B2B3 /* Frameworks */,
+				C9E70231236694F800F5B2B3 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = net_utils_crypto;
+			productName = net_statistics;
+			productReference = C9E70235236694F800F5B2B3 /* libnet_utils_crypto.a */;
+			productType = "com.apple.product-type.library.static";
+		};
 		C9F311442109433C006A7621 /* wslay */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = C9F3114D2109433C006A7621 /* Build configuration list for PBXNativeTarget "wslay" */;
@@ -3499,6 +3566,7 @@
 				C9952C06229ACFBC002E5368 /* c-ares */,
 				C947724E23658EF5000589C8 /* net_ping */,
 				C9E701D9236690E300F5B2B3 /* net_ebb */,
+				C9E70225236694F800F5B2B3 /* net_utils_crypto */,
 			);
 		};
 /* End PBXProject section */
@@ -4035,6 +4103,14 @@
 				C9E702092366911D00F5B2B3 /* net_ebb_request_header.c in Sources */,
 				C9E702062366911D00F5B2B3 /* net_ebb_service.c in Sources */,
 				C9E7020A2366911D00F5B2B3 /* net_ebb_processor_dft.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C9E70226236694F800F5B2B3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C9E7023C2366952900F5B2B3 /* net_utils_crypto_aes.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4832,6 +4908,36 @@
 			};
 			name = Release;
 		};
+		C9E70233236694F800F5B2B3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
+				HEADER_SEARCH_PATHS = (
+					../../../cpe/pal/include,
+					../../../cpe/utils/include,
+					../../depends/mbedtls/include,
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C9E70234236694F800F5B2B3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
+				HEADER_SEARCH_PATHS = (
+					../../../cpe/pal/include,
+					../../../cpe/utils/include,
+					../../depends/mbedtls/include,
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		C9F3114B2109433C006A7621 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -5073,6 +5179,15 @@
 			buildConfigurations = (
 				C9E701E5236690E300F5B2B3 /* Debug */,
 				C9E701E6236690E300F5B2B3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C9E70232236694F800F5B2B3 /* Build configuration list for PBXNativeTarget "net_utils_crypto" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C9E70233236694F800F5B2B3 /* Debug */,
+				C9E70234236694F800F5B2B3 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

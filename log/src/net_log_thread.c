@@ -292,7 +292,7 @@ void net_log_thread_commit_schedule_delay(net_log_thread_t log_thread, net_log_t
     uint64_t sleepMs = baseRetryTime;
     uint8_t i;
     for(i = 1; i < log_thread->m_commit_last_error_count; ++i) {
-        uint32_t nextSleepMs = sleepMs * 2;
+        uint32_t nextSleepMs = (uint32_t)(sleepMs * 2);
         if (nextSleepMs < maxRetryTime) {
             sleepMs = nextSleepMs;
         }
@@ -308,7 +308,7 @@ void net_log_thread_commit_schedule_delay(net_log_thread_t log_thread, net_log_t
     {
         log_thread->m_commit_delay_until_ms = commit_delay_until_ms;
         assert(log_thread->m_commit_delay_processor);
-        net_timer_active(log_thread->m_commit_delay_processor, sleepMs);
+        net_timer_active(log_thread->m_commit_delay_processor, (uint32_t)sleepMs);
     }
 }
 

@@ -38,8 +38,6 @@ int net_ping_processor_start_http(net_ping_processor_t processor) {
 
 static void net_ping_processor_http_task_commit(net_trans_task_t trans_task, void * ctx, void * data, size_t data_size) {
     net_ping_processor_t processor = ctx;
-    net_ping_task_t task = processor->m_task;
-    net_ping_mgr_t mgr = task->m_mgr;
 
     assert(processor->m_http.m_task == trans_task);
     

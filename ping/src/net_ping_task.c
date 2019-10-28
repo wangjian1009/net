@@ -59,8 +59,6 @@ net_ping_task_t net_ping_task_create_tcp_connect(net_ping_mgr_t mgr, net_address
 }
 
 net_ping_task_t net_ping_task_create_http(net_ping_mgr_t mgr, const char * url) {
-    uint8_t is_https = 0;
-
     const char * str_address_begin = strstr(url, "://");
     if (str_address_begin == NULL) {
         CPE_ERROR(mgr->m_em, "ping %s: url format error!", url);

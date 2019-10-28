@@ -71,7 +71,7 @@ ssize_t utils_crypto_aes_decode(
     do {
         unsigned char input_block[16];
     
-        int32_t sz = stream_read(is, input_block, sizeof(input_block));
+        ssize_t sz = stream_read(is, input_block, sizeof(input_block));
         if (sz < 0) {
             CPE_ERROR(em, "crypto: decode: read input block fail!");
             rv = -1;
