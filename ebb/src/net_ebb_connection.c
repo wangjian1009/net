@@ -41,7 +41,7 @@ int net_ebb_connection_init(net_endpoint_t base_endpoint) {
 }
 
 void net_ebb_connection_fini(net_endpoint_t base_endpoint) {
-    net_ebb_service_t service = net_protocol_data(net_endpoint_protocol(base_endpoint));
+    //net_ebb_service_t service = net_protocol_data(net_endpoint_protocol(base_endpoint));
     net_ebb_connection_t connection = net_endpoint_data(base_endpoint);
 
     while(!TAILQ_EMPTY(&connection->m_requests)) {
