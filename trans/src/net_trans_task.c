@@ -835,6 +835,41 @@ const char * net_trans_task_error_str(net_trans_task_error_t err) {
     return "unknown";
 }
 
+int net_trans_task_error_from_str(const char * err, net_trans_task_error_t * r) {
+    if (strcmp(err, "none") == 0) {
+        *r = net_trans_task_error_none;
+    }
+    else if (strcmp(err, "dns-resolve-fail") == 0) {
+        *r = net_trans_task_error_dns_resolve_fail;
+    }
+    else if (strcmp(err, "timeout") == 0) {
+        *r = net_trans_task_error_timeout;
+    }
+    else if (strcmp(err, "remote-reset") == 0) {
+        *r = net_trans_task_error_remote_reset;
+    }
+    else if (strcmp(err, "net-unreachable") == 0) {
+        *r = net_trans_task_error_net_unreachable;
+    }
+    else if (strcmp(err, "net-down") == 0) {
+        *r = net_trans_task_error_net_down;
+    }
+    else if (strcmp(err, "host-unreachable") == 0) {
+        *r = net_trans_task_error_host_unreachable;
+    }
+    else if (strcmp(err, "connect") == 0) {
+        *r = net_trans_task_error_connect;
+    }
+    else if (strcmp(err, "internal") == 0) {
+        *r = net_trans_task_error_internal;
+    }
+    else {
+        return -1;
+    }
+
+    return 0;
+}
+
 uint8_t net_trans_task_error_is_network_error(net_trans_task_error_t err) {
     switch(err) {
     case net_trans_task_error_dns_resolve_fail:

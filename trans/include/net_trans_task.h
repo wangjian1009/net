@@ -75,6 +75,7 @@ int net_trans_task_cost_info(net_trans_task_t task, net_trans_task_cost_info_t c
 const char * net_trans_task_state_str(net_trans_task_state_t state);
 const char * net_trans_task_result_str(net_trans_task_result_t result);
 const char * net_trans_task_error_str(net_trans_task_error_t err);
+int net_trans_task_error_from_str(const char * err, net_trans_task_error_t * r);
 
 NET_END_DECL
 
