@@ -74,7 +74,6 @@ uint8_t net_schedule_is_domain_address_arpa(net_schedule_t schedule, const char 
             if (p2 == NULL) {
                 if (i + 1 == CPE_ARRAY_SIZE(values)) {
                     if (p - str_address != 1) {
-                        CPE_ERROR(schedule->m_em, "xxxxxx: 4");
                         return 0;
                     }
                     else {
@@ -82,13 +81,11 @@ uint8_t net_schedule_is_domain_address_arpa(net_schedule_t schedule, const char 
                     }
                 }
                 else {
-                    CPE_ERROR(schedule->m_em, "xxxxxx: 1");
                     return 0;
                 }
             }
             else {
                 if (p - p2 != 2) {
-                    CPE_ERROR(schedule->m_em, "xxxxxx: 2");
                     return 0;
                 }
                 else {
@@ -109,7 +106,6 @@ uint8_t net_schedule_is_domain_address_arpa(net_schedule_t schedule, const char 
                 values[set_pos] = ((uint8_t)(c - 'A')) + 10;
             }
             else {
-                CPE_ERROR(schedule->m_em, "xxxxxx: 3, i=%d, c=%c", i, c);
                 return 0;
             }
         }
