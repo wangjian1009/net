@@ -334,7 +334,7 @@ uint32_t net_ping_task_ping_min(net_ping_task_t task) {
     net_ping_record_t record;
     TAILQ_FOREACH(record, &task->m_records, m_next) {
         if (record->m_error != net_ping_error_none) continue;
-        if (record->m_value < min_ping) {
+        if (min_ping == 0 || record->m_value < min_ping) {
             min_ping = record->m_value;
         }
     }
