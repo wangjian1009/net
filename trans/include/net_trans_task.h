@@ -25,6 +25,7 @@ int net_trans_task_set_user_agent(net_trans_task_t task, const char * user_agent
 int net_trans_task_set_net_interface(net_trans_task_t task, const char * net_interface);
 int net_trans_task_set_protect_vpn(net_trans_task_t task, uint8_t protect_vpn);
 int net_trans_task_set_follow_location(net_trans_task_t task, uint8_t enable);
+int net_trans_task_set_proxy_http_1_1(net_trans_task_t task, net_address_t address);
 
 void net_trans_task_clear_callback(net_trans_task_t task);
 void net_trans_task_set_callback(

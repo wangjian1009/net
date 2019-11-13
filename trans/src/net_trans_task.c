@@ -7,6 +7,7 @@
 #include "cpe/utils/string_utils.h"
 #include "cpe/utils/time_utils.h"
 #include "cpe/utils/stream_buffer.h"
+#include "cpe/utils/stream_mem.h"
 #include "cpe/utils_sock/sock_utils.h"
 #include "cpe/utils_sock/getdnssvraddrs.h"
 #include "net_schedule.h"
@@ -670,6 +671,27 @@ int net_trans_task_set_follow_location(net_trans_task_t task, uint8_t enable) {
         return -1;
     }
 
+    return 0;
+}
+
+int net_trans_task_set_proxy_http_1_1(net_trans_task_t task, net_address_t address) {
+    net_trans_manage_t mgr = task->m_mgr;
+
+    char address_buf[128];
+    struct write_stream_mem ws = CPE_WRITE_STREAM_MEM_INITIALIZER(address_buf, sizeof(address_buf));
+    net_address_print((write_stream_t)&ws, address);
+    stream_putc((write_stream_t)&ws, 0);
+    
+    if (curl_easy_setopt(task->m_handler, CURLOPT_PROXY, address_buf) != CURLE_OK) {
+        CPE_ERROR(mgr->m_em, "trans: %s-%d: set proxy %s fail!", mgr->m_name, task->m_id, address_buf);
+        return -1;
+    }
+
+    if (curl_easy_setopt(task->m_handler, CURLOPT_PROXYTYPE, CURLPROXY_HTTP) != CURLE_OK) {
+        CPE_ERROR(mgr->m_em, "trans: %s-%d: set proxy type http fail!", mgr->m_name, task->m_id);
+        return -1;
+    }
+    
     return 0;
 }
 
