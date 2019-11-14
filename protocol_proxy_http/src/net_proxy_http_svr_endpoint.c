@@ -206,7 +206,7 @@ void net_proxy_http_svr_endpoint_dump_content_text(
     net_endpoint_t endpoint, net_endpoint_buf_type_t buf, uint32_t data_sz)
 {
     char * data;
-    if (net_endpoint_buf_peak_with_size(endpoint, buf, data_sz, (void**)&data) != 0) {
+    if (net_endpoint_buf_peak_with_size(endpoint, buf, data_sz, (void**)&data) != 0 || data == NULL) {
         CPE_ERROR(http_protocol->m_em, "    read context error");
     }
     else {

@@ -258,6 +258,12 @@ static int net_proxy_http_svr_endpoint_tunnel_check_send_response(
             net_endpoint_writer_cancel(&output);
             return -1;
         }
+
+        if (net_endpoint_protocol_debug(endpoint)) {
+            CPE_INFO(
+                http_protocol->m_em, "http-proxy-svr: %s: tunnel: <== first response\nHTTP/1.1 200 Connection Established",
+                net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint));
+        }
         break;
     }
     case net_endpoint_state_logic_error:
@@ -265,6 +271,12 @@ static int net_proxy_http_svr_endpoint_tunnel_check_send_response(
         if (net_endpoint_writer_append_str(&output, "HTTP/1.1 500 Connection Error\r\n\r\n") != 0) {
             net_endpoint_writer_cancel(&output);
             return -1;
+        }
+
+        if (net_endpoint_protocol_debug(endpoint)) {
+            CPE_INFO(
+                http_protocol->m_em, "http-proxy-svr: %s: tunnel: <== first response\nHTTP/1.1 500 Connection Error",
+                net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint));
         }
         break;
     case net_endpoint_state_deleting:
@@ -278,13 +290,6 @@ static int net_proxy_http_svr_endpoint_tunnel_check_send_response(
             http_protocol->m_em, "http-proxy-svr: %s: tunnel: write response error!",
             net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint));
         return -1;
-    }
-
-    if (net_endpoint_protocol_debug(endpoint)) {
-        CPE_INFO(
-            http_protocol->m_em, "http-proxy-svr: %s: tunnel: <== first response",
-            net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint));
-        net_proxy_http_svr_endpoint_dump_content_text(http_protocol, endpoint, net_ep_buf_write, output.m_totall_len - 4);
     }
 
     http_ep->m_tunnel.m_state = proxy_http_svr_tunnel_state_established;
