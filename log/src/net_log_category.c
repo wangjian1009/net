@@ -155,6 +155,10 @@ net_log_category_t net_log_category_find_by_name(net_log_schedule_t schedule, co
     return NULL;
 }
 
+uint8_t net_log_category_id(net_log_category_t category) {
+    return category->m_id;
+}
+
 const char * net_log_category_name(net_log_category_t category) {
     return category->m_name;
 }

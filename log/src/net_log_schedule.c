@@ -435,6 +435,13 @@ void net_log_append_uint64(net_log_schedule_t schedule, const char * name, uint6
     net_log_category_log_apppend(schedule->m_current_category, name, buf);
 }
 
+void net_log_append_double(net_log_schedule_t schedule, const char * name, double value) {
+    assert(schedule->m_current_category);
+    char buf[32];
+    snprintf(buf, sizeof(buf), "%f", value);
+    net_log_category_log_apppend(schedule->m_current_category, name, buf);
+}
+
 void net_log_append_str(net_log_schedule_t schedule, const char * name, const char * value) {
     if (value) {
         assert(schedule->m_current_category);

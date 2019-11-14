@@ -25,6 +25,7 @@ void net_log_category_free(net_log_category_t category);
 net_log_category_t net_log_category_find_by_id(net_log_schedule_t schedule, uint8_t id);
 net_log_category_t net_log_category_find_by_name(net_log_schedule_t schedule, const char * name);
 
+uint8_t net_log_category_id(net_log_category_t category);
 const char * net_log_category_name(net_log_category_t category);
 int net_log_category_set_topic(net_log_category_t category, const char * topic);
 void net_log_category_set_bytes_per_package(net_log_category_t category, uint32_t sz);
