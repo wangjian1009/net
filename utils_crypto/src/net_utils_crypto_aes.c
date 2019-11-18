@@ -26,7 +26,7 @@ static ssize_t utils_crypto_aes_decode_output_one(mbedtls_aes_context ctx, write
     if (is_last_block) {
         uint32_t output_sz = UTILS_CRYPTO_AES_BLOCK_SIZE;
         if (pending == net_crypto_pending_pkcs5padding) {
-            if (block[UTILS_CRYPTO_AES_BLOCK_SIZE - 1] < output_sz) {
+            if (block[UTILS_CRYPTO_AES_BLOCK_SIZE - 1] <= output_sz) {
                 output_sz -= block[UTILS_CRYPTO_AES_BLOCK_SIZE - 1];
             }
         }
