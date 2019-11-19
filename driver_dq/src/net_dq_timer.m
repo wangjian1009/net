@@ -24,7 +24,7 @@ void net_dq_timer_fini(net_timer_t base_timer) {
 void net_dq_timer_active(net_timer_t base_timer, uint64_t delay_milliseconds) {
     net_dq_timer_t timer = net_timer_data(base_timer);
 
-    net_dq_driver_t driver = net_driver_data(net_timer_driver(base_timer));
+    //net_dq_driver_t driver = net_driver_data(net_timer_driver(base_timer));
     //CPE_INFO(driver->m_em, "timer %p active, delay_ms=%d", timer, delay_ms);
 
     if (timer->m_timer) {
@@ -33,7 +33,7 @@ void net_dq_timer_active(net_timer_t base_timer, uint64_t delay_milliseconds) {
         timer->m_timer = nil;
     }
 
-    dispatch_source_t cur_timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, driver->m_queue);
+    dispatch_source_t cur_timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_main_queue());
 
     timer->m_timer = cur_timer;
     

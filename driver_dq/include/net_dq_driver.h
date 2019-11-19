@@ -6,7 +6,7 @@
 
 NET_BEGIN_DECL
 
-net_dq_driver_t net_dq_driver_create(net_schedule_t schedule, dispatch_queue_t queue);
+net_dq_driver_t net_dq_driver_create(net_schedule_t schedule);
 
 void net_dq_driver_free(net_dq_driver_t driver);
 
