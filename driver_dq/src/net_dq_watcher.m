@@ -59,7 +59,7 @@ void net_dq_watcher_update(net_watcher_t base_watcher, int fd, uint8_t expect_re
 static void net_dq_watcher_start_w(net_dq_driver_t driver, int fd, net_dq_watcher_t watcher, net_watcher_t base_watcher) {
     assert(watcher->m_source_w == NULL);
     
-    watcher->m_source_w = dispatch_source_create(DISPATCH_SOURCE_TYPE_WRITE, fd, 0, dispatch_get_main_queue());
+    watcher->m_source_w = dispatch_source_create(DISPATCH_SOURCE_TYPE_WRITE, fd, 0, driver->m_queue);
     dispatch_source_set_event_handler(watcher->m_source_w, ^{
             net_watcher_notify(base_watcher, 0, 1);
         });
@@ -77,7 +77,7 @@ static void net_dq_watcher_stop_w(net_dq_driver_t driver, net_dq_watcher_t watch
 static void net_dq_watcher_start_r(net_dq_driver_t driver, int fd, net_dq_watcher_t watcher, net_watcher_t base_watcher) {
     assert(watcher->m_source_r == NULL);
     
-    watcher->m_source_r = dispatch_source_create(DISPATCH_SOURCE_TYPE_READ, fd, 0, dispatch_get_main_queue());
+    watcher->m_source_r = dispatch_source_create(DISPATCH_SOURCE_TYPE_READ, fd, 0, driver->m_queue);
     dispatch_source_set_event_handler(watcher->m_source_r, ^{
             net_watcher_notify(base_watcher, 1, 0);
         });

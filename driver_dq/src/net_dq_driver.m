@@ -9,7 +9,7 @@ static int net_dq_driver_init(net_sock_driver_t sock_driver);
 static void net_dq_driver_fini(net_sock_driver_t sock_driver);
 
 net_dq_driver_t
-net_dq_driver_create(net_schedule_t schedule) {
+net_dq_driver_create(net_schedule_t schedule, dispatch_queue_t queue) {
     net_sock_driver_t sock_driver;
 
     sock_driver = net_sock_driver_create(
@@ -36,6 +36,7 @@ net_dq_driver_create(net_schedule_t schedule) {
     if (sock_driver == NULL) return NULL;
 
     net_dq_driver_t driver = net_sock_driver_data(sock_driver);
+    driver->m_queue = queue;
 
     return driver;
 }
@@ -48,7 +49,8 @@ static int net_dq_driver_init(net_sock_driver_t sock_driver) {
     driver->m_em = net_schedule_em(schedule);
     driver->m_data_monitor_fun = NULL;
     driver->m_data_monitor_ctx = NULL;
-    
+    driver->m_queue = NULL;
+
     return 0;
 }
 
