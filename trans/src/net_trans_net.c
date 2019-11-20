@@ -98,6 +98,7 @@ void net_trans_check_multi_info(net_trans_manage_t mgr) {
             }
             else {
                 net_trans_task_error_t err = net_trans_task_error_internal;
+                char addition_msg_buf[256];
                 const char * addition_msg = NULL;
                 switch (rc) {
                 case CURLE_OPERATION_TIMEDOUT:
@@ -138,12 +139,22 @@ void net_trans_check_multi_info(net_trans_manage_t mgr) {
                     }
                     break;
                 }
-                default:
+                default: {
                     addition_msg = curl_easy_strerror(rc);
+
+                    long os_error = 0;
+                    if (curl_easy_getinfo(handler, CURLINFO_OS_ERRNO, &os_error) == CURLE_OK
+                        && os_error != 0)
+                    {
+                        snprintf(addition_msg_buf, sizeof(addition_msg_buf), "%s(%s)", addition_msg, strerror(os_error));
+                        addition_msg = addition_msg_buf;
+                    }
+                    
                     CPE_INFO(
                         mgr->m_em, "trans: %s-%d: check_multi_info: not processed CURLcode %d (%s)!",
-                        mgr->m_name, task->m_id, rc, curl_easy_strerror(rc));
+                        mgr->m_name, task->m_id, rc, addition_msg);
                     break;
+                    }
                 }
 
                 net_trans_task_set_done(task, net_trans_result_error, err, addition_msg);
