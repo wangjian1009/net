@@ -1,5 +1,10 @@
 set(openssl_base ${CMAKE_CURRENT_LIST_DIR}/../../depends/openssl/${OS_NAME})
 
+if (ANDROID)
+  set(openssl_base "${openssl_base}/${ANDROID_ABI}")
+endif()
+message(STATUS "openssl_base=${openssl_base}")
+
 set(OPENSSL_LIBSSL_PATH ${openssl_base}/lib/libssl.a)
 set(OPENSSL_LIBCRYPTO_PATH ${openssl_base}/lib/libcrypto.a)
 
@@ -12,21 +17,11 @@ if (BUILD_OPENSSL)
   include(ExternalProject)
 
   find_package(Git REQUIRED)
-  
+  find_package(PythonInterp 3 REQUIRED)
+
   set(OPENSSL_PREFIX ${openssl_base})
   set(OPENSSL_BUILD_VERSION 1.1.1d)
   set(OPENSSL_BUILD_HASH 1e3a91bc1f9dfce01af26026f856e064eab4c8ee0a8f457b5ae30b40b8b711f2)
-
-  set(CONFIGURE_OPENSSL_MODULES ${CONFIGURE_OPENSSL_MODULES} no-hw)
-  set(OPENSSL_PLATFORM ${OS_NAME})
-
-  if (ANDROID)
-    set(PATH "${ANDROID_TOOLCHAIN_ROOT}/bin/:${ANDROID_TOOLCHAIN_ROOT}/${ANDROID_TOOLCHAIN_NAME}/bin/")
-  endif()
-
-  set(LDFLAGS ${CMAKE_MODULE_LINKER_FLAGS})
-  
-  set(COMMAND_CONFIGURE ./Configure android-${OPENSSL_PLATFORM} ${CONFIGURE_OPENSSL_PARAMS} ${CONFIGURE_OPENSSL_MODULES})
 
   add_library(ssl_lib STATIC IMPORTED GLOBAL)
   add_library(crypto_lib STATIC IMPORTED GLOBAL)
@@ -34,71 +29,39 @@ if (BUILD_OPENSSL)
   target_link_libraries(ssl INTERFACE ssl_lib)
   target_link_libraries(crypto INTERFACE crypto_lib)
 
-  set(BUILD_ENV_TOOL /usr/local/bin/python3;/Users/wangjian/workspace/study/openssl-cmake/scripts/building_env.py;UNIX)
+  set(PERL_PATH_FIX_INSTALL true)
+
+  set(CONFIGURE_OPENSSL_MODULES
+    no-cast no-md2 no-md4 no-mdc2 no-rc4 no-rc5 no-engine
+    no-idea no-mdc2 no-rc5 no-camellia no-ssl3 no-heartbeats
+    no-gost no-deprecated no-capieng no-comp no-dtls no-psk
+    no-srp no-dso no-dsa no-rc2 no-des no-shared no-asm
+    no-tests)
+
+  set(CONFIGURE_OPENSSL_PARAMS --libdir=lib --prefix=${openssl_base})
   
-  if (WIN32 AND NOT CROSS)
-    # yep, windows needs special treatment, but neither cygwin nor msys, since they provide an UNIX-like environment
-    
-    if (MINGW)
-      set(OS "WIN32")
-      message(WARNING "Building on windows is experimental")
-      
-      find_program(MSYS_BASH "bash.exe" PATHS "C:/Msys/" "C:/MinGW/msys/" PATH_SUFFIXES "/1.0/bin/" "/bin/"
-        DOC "Path to MSYS installation")
-      if (NOT MSYS_BASH)
-        message(FATAL_ERROR "Specify MSYS installation path")
-      endif(NOT MSYS_BASH)
-      
-      set(MINGW_MAKE ${CMAKE_MAKE_PROGRAM})
-      message(WARNING "Assuming your make program is a sibling of your compiler (resides in same directory)")
-    elseif(NOT (CYGWIN OR MSYS))
-      message(FATAL_ERROR "Unsupported compiler infrastructure")
-    endif(MINGW)
-    
-    set(MAKE_PROGRAM ${CMAKE_MAKE_PROGRAM})
-  elseif(NOT UNIX)
-    message(FATAL_ERROR "Unsupported platform")
-  else()
-    # for OpenSSL we can only use GNU make, no exotic things like Ninja (MSYS always uses GNU make)
-    find_program(MAKE_PROGRAM make)
-  endif()
-
-  # on windows we need to replace path to perl since CreateProcess(..) cannot handle unix paths
-  if (WIN32 AND NOT CROSS)
-    set(PERL_PATH_FIX_INSTALL sed -i -- 's/\\/usr\\/bin\\/perl/perl/g' Makefile)
-  else()
-    set(PERL_PATH_FIX_INSTALL true)
-  endif()
-
-  set(CONFIGURE_OPENSSL_MODULES no-cast no-md2 no-md4 no-mdc2 no-rc4 no-rc5 no-engine no-idea no-mdc2 no-rc5 no-camellia no-ssl3 no-heartbeats no-gost no-deprecated no-capieng no-comp no-dtls no-psk no-srp no-dso no-dsa no-rc2 no-des)
-
-  # additional configure script parameters
-  set(CONFIGURE_OPENSSL_PARAMS --libdir=lib)
-
-  set(CONFIGURE_OPENSSL_MODULES ${CONFIGURE_OPENSSL_MODULES} no-tests)
-
-  # cross-compiling
-  if (CROSS)
-    set(COMMAND_CONFIGURE ./Configure ${CONFIGURE_OPENSSL_PARAMS} --cross-compile-prefix=${CROSS_PREFIX} ${CROSS_TARGET} ${CONFIGURE_OPENSSL_MODULES} --prefix=/usr/local/)
-  elseif(CROSS_ANDROID)
-    
-    # Android specific configuration options
+  if (ANDROID)
     set(CONFIGURE_OPENSSL_MODULES ${CONFIGURE_OPENSSL_MODULES} no-hw)
-    
-    # silence warnings about unused arguments (Clang specific)
-    # set(CFLAGS "${CMAKE_C_FLAGS} -Qunused-arguments")
-    # set(CXXFLAGS "${CMAKE_CXX_FLAGS} -Qunused-arguments")
-    
-    # ... but we have to convert all the CMake options to environment variables!
-    set(PATH "${ANDROID_TOOLCHAIN_ROOT}/bin/:${ANDROID_TOOLCHAIN_ROOT}/${ANDROID_TOOLCHAIN_NAME}/bin/")
-    set(LDFLAGS ${CMAKE_MODULE_LINKER_FLAGS})
-    
-    set(COMMAND_CONFIGURE ./Configure android-${OPENSSL_PLATFORM} ${CONFIGURE_OPENSSL_PARAMS} ${CONFIGURE_OPENSSL_MODULES})
-  else()                   # detect host system automatically
-    set(COMMAND_CONFIGURE ./config --prefix=${openssl_base} ${CONFIGURE_OPENSSL_PARAMS} ${CONFIGURE_OPENSSL_MODULES})
+
+    set(PATH ${ANDROID_TOOLCHAIN_ROOT}/bin/:${ANDROID_TOOLCHAIN_ROOT}/${ANDROID_TOOLCHAIN_NAME}/bin/)
+
+    if (ANDROID_ABI MATCHES "arm64-v8a")
+      set(COMMAND_CONFIGURE ./Configure android-arm64 ${CONFIGURE_OPENSSL_PARAMS} ${CONFIGURE_OPENSSL_MODULES})
+    elseif (ANDROID_ABI MATCHES "armeabi-v7a")
+      set(COMMAND_CONFIGURE ./Configure android-arm ${CONFIGURE_OPENSSL_PARAMS} -march=armv7-a ${CONFIGURE_OPENSSL_MODULES})
+    endif()
+
+    set(BUILD_ENV_TOOL ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_LIST_DIR}/scripts/building_env.py LINUX_CROSS_ANDROID)
+  else()
+    set(COMMAND_CONFIGURE ./config ${CONFIGURE_OPENSSL_PARAMS} ${CONFIGURE_OPENSSL_MODULES})
+    set(BUILD_ENV_TOOL ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_LIST_DIR}/scripts/building_env.py UNIX)
   endif()
+
+  find_program(MAKE_PROGRAM make)
 
   message(STATUS "COMMAND_CONFIGURE=${COMMAND_CONFIGURE}")
+  message(STATUS "BUILD_ENV_TOOL=${BUILD_ENV_TOOL}")
+  message(STATUS "MAKE_PROGRAM=${MAKE_PROGRAM}")
   
   # add openssl target
   ExternalProject_Add(openssl
@@ -170,13 +133,9 @@ if (BUILD_OPENSSL)
   endforeach()
   file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/buildenv.txt ${OUT_FILE})
 
-  # set import locations
   set_target_properties(ssl_lib PROPERTIES IMPORTED_LOCATION ${OPENSSL_LIBSSL_PATH})
   set_target_properties(crypto_lib PROPERTIES IMPORTED_LOCATION ${OPENSSL_LIBCRYPTO_PATH})
 
-  # set include locations
-
-  # add fake targets to common target
   add_dependencies(ssl_lib openssl)
   add_dependencies(crypto_lib openssl)
 else()

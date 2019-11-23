@@ -31,12 +31,12 @@ endif ()
 add_library(curl STATIC ${curl_source})
 set_property(TARGET curl PROPERTY COMPILE_OPTIONS ${curl_compile_options})
 set_property(TARGET curl PROPERTY COMPILE_DEFINITIONS ${curl_compile_definitions})
+add_dependencies(curl crypto ssl)
 
 set_property(TARGET curl PROPERTY INCLUDE_DIRECTORIES
   ${curl_base}/include
   ${curl_base}/lib
   ${curl_base}/../c-ares/include
   ${curl_base}/../c-ares/include/${OS_NAME}
-  ${curl_base}/../mbedtls/include
-  ${curl_base}/../mbedtls/include/mbedtls
+  ${curl_base}/../openssl/${OS_NAME}/include
   )
