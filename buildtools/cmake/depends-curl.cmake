@@ -38,5 +38,5 @@ set_property(TARGET curl PROPERTY INCLUDE_DIRECTORIES
   ${curl_base}/lib
   ${curl_base}/../c-ares/include
   ${curl_base}/../c-ares/include/${OS_NAME}
-  ${curl_base}/../openssl/${OS_NAME}/include
+  ${openssl_base}/include
   )
