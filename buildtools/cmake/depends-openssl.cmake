@@ -32,6 +32,7 @@ if (BUILD_OPENSSL)
   set(PERL_PATH_FIX_INSTALL true)
 
   set(CONFIGURE_OPENSSL_MODULES
+    no-stdio no-ui-console
     no-cast no-md2 no-md4 no-mdc2 no-rc4 no-rc5 no-engine
     no-idea no-mdc2 no-rc5 no-camellia no-ssl3 no-heartbeats
     no-gost no-deprecated no-capieng no-comp no-dtls no-psk
