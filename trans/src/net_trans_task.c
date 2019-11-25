@@ -695,6 +695,39 @@ int net_trans_task_set_proxy_http_1_1(net_trans_task_t task, net_address_t addre
     return 0;
 }
 
+int net_trans_task_set_http_protocol(net_trans_task_t task, net_trans_http_version_t i_http_version) {
+    net_trans_manage_t mgr = task->m_mgr;
+
+    long http_version = CURL_HTTP_VERSION_NONE;
+    switch(i_http_version) {
+    case CURL_HTTP_VERSION_NONE:
+        http_version = net_trans_http_version_none;
+        break;
+    case CURL_HTTP_VERSION_1_0:
+        http_version = net_trans_http_version_1_0;
+        break;
+    case CURL_HTTP_VERSION_1_1:
+        http_version = net_trans_http_version_1_1;
+        break;
+    case CURL_HTTP_VERSION_2_0:
+        http_version = net_trans_http_version_2_0;
+        break;
+    case CURL_HTTP_VERSION_2TLS:
+        http_version = net_trans_http_version_2tls;
+        break;
+    case CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE:
+        http_version = net_trans_http_version_2_prior_knowledge;
+        break;
+    }
+    
+    if (curl_easy_setopt(task->m_handler, CURLOPT_HTTP_VERSION, http_version) != CURLE_OK) {
+        CPE_ERROR(mgr->m_em, "trans: %s-%d: set http version fail!", mgr->m_name, task->m_id);
+        return -1;
+    }
+
+    return 0;
+}
+
 int net_trans_task_set_protect_vpn(net_trans_task_t task, uint8_t protect_vpn) {
     task->m_cfg_protect_vpn = protect_vpn;
     return 0;

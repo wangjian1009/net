@@ -38,7 +38,18 @@ typedef enum net_trans_method {
 } net_trans_method_t;
 #define net_trans_method_count (net_trans_method_patch + 1)
 
-typedef struct net_trans_manage * net_trans_manage_t;
+typedef enum net_trans_http_version {
+    net_trans_http_version_none, /* setting this means we don't care, and that we'd
+                                    like the library to choose the best possible
+                                    for us! */
+    net_trans_http_version_1_0, /* please use HTTP 1.0 in the request */
+    net_trans_http_version_1_1, /* please use HTTP 1.1 in the request */
+    net_trans_http_version_2_0, /* please use HTTP 2 in the request */
+    net_trans_http_version_2tls, /* use version 2 for HTTPS, version 1.1 for HTTP */
+    net_trans_http_version_2_prior_knowledge, /* please use HTTP 2 without HTTP/1.1 */
+} net_trans_http_version_t;
+
+typedef struct net_trans_manage* net_trans_manage_t;
 typedef struct net_trans_task * net_trans_task_t;
 typedef struct net_trans_task_cost_info * net_trans_task_cost_info_t;
 
