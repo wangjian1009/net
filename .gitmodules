@@ -1,3 +1,6 @@
 [submodule "depends/mbedtls"]
 	path = depends/mbedtls
 	url = https://github.com/ARMmbed/mbedtls
+[submodule "depends/nghttp2"]
+	path = depends/nghttp2
+	url = git@github.com:nghttp2/nghttp2.git
