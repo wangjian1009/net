@@ -25,6 +25,13 @@ set(nghttp2_source
   ${nghttp2_base}/lib/nghttp2_debug.c
 )
 
+if (MSVC)
+elseif (CMAKE_C_COMPILER_ID MATCHES "Clang" OR CMAKE_C_COMPILER_IS_GNUCC)
+set(nghttp2_compile_options
+  -Wno-implicit-function-declaration
+  )  
+endif ()
+
 set(nghttp2_compile_definitions BUILDING_NGHTTP2)
 
 add_library(nghttp2 STATIC ${nghttp2_source})
