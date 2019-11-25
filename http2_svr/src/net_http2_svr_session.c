@@ -22,29 +22,7 @@ int net_http2_svr_session_init(net_endpoint_t base_endpoint) {
     TAILQ_INIT(&session->m_requests);
     session->m_session = NULL;
 
-    /* const unsigned char *alpn = NULL; */
-    /* unsigned int alpnlen = 0; */
-    /* SSL *ssl; */
-    //(void)bev;
-
     //CPE_INFO(service->m_em, "%s connected\n", session_data->client_addr);
-
-/*     ssl = bufferevent_openssl_get_ssl(session_data->bev); */
-
-/* #ifndef OPENSSL_NO_NEXTPROTONEG */
-/*     SSL_get0_next_proto_negotiated(ssl, &alpn, &alpnlen); */
-/* #endif /\* !OPENSSL_NO_NEXTPROTONEG *\/ */
-/* #if OPENSSL_VERSION_NUMBER >= 0x10002000L */
-/*     if (alpn == NULL) { */
-/*       SSL_get0_alpn_selected(ssl, &alpn, &alpnlen); */
-/*     } */
-/* #endif /\* OPENSSL_VERSION_NUMBER >= 0x10002000L *\/ */
-
-    /* if (alpn == NULL || alpnlen != 2 || memcmp("h2", alpn, 2) != 0) { */
-    /*   fprintf(stderr, "%s h2 is not negotiated\n", session_data->client_addr); */
-    /*   delete_http2_session_data(session_data); */
-    /*   return; */
-    /* } */
 
     nghttp2_session_callbacks * callbacks = NULL;
     if (nghttp2_session_callbacks_new(&callbacks) != 0) {
@@ -68,12 +46,6 @@ int net_http2_svr_session_init(net_endpoint_t base_endpoint) {
     }
     nghttp2_session_callbacks_del(callbacks);
 
-    /* if (send_server_connection_header(session_data) != 0 || */
-    /*     session_send(session_data) != 0) { */
-    /*   delete_http2_session_data(session_data); */
-    /*   return; */
-    /* } */
-
     return 0;
 }
 
@@ -83,6 +55,11 @@ void net_http2_svr_session_fini(net_endpoint_t base_endpoint) {
 
     while(!TAILQ_EMPTY(&session->m_requests)) {
         net_http2_svr_request_free(TAILQ_FIRST(&session->m_requests));
+    }
+
+    if (session->m_session) {
+        nghttp2_session_del(session->m_session);
+        session->m_session = NULL;
     }
 }
 
