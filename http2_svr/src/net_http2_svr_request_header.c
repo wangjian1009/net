@@ -2,23 +2,23 @@
 #include "cpe/pal/pal_string.h"
 #include "cpe/utils/string_utils.h"
 #include "net_endpoint.h"
-#include "net_nghttp2_request_header_i.h"
+#include "net_http2_svr_request_header_i.h"
 
-net_nghttp2_request_header_t
-net_nghttp2_request_header_create(net_nghttp2_request_t request, uint16_t index, const char * name, size_t name_len) {
-    net_nghttp2_service_t service = net_nghttp2_connection_service(request->m_connection);
-    net_endpoint_t base_endpoint = net_endpoint_from_data(request->m_connection);
+net_http2_svr_request_header_t
+net_http2_svr_request_header_create(net_http2_svr_request_t request, uint16_t index, const char * name, size_t name_len) {
+    net_http2_svr_service_t service = net_http2_svr_stream_service(request->m_stream);
+    net_endpoint_t base_endpoint = net_endpoint_from_data(request->m_stream);
 
-    net_nghttp2_request_header_t header = TAILQ_FIRST(&service->m_free_request_headers);
+    net_http2_svr_request_header_t header = TAILQ_FIRST(&service->m_free_request_headers);
     if (header) {
         TAILQ_REMOVE(&service->m_free_request_headers, header, m_next);
     }
     else {
-        header = mem_alloc(service->m_alloc, sizeof(struct net_nghttp2_request_header));
+        header = mem_alloc(service->m_alloc, sizeof(struct net_http2_svr_request_header));
         if (header == NULL) {
             CPE_ERROR(
                 service->m_em, "nghttp2: %s: header %s: alloc fail!",
-                net_endpoint_dump(net_nghttp2_service_tmp_buffer(service), base_endpoint), name);
+                net_endpoint_dump(net_http2_svr_service_tmp_buffer(service), base_endpoint), name);
             return NULL;
         }
     }
@@ -32,8 +32,8 @@ net_nghttp2_request_header_create(net_nghttp2_request_t request, uint16_t index,
         if (header->m_name == NULL) {
             CPE_ERROR(
                 service->m_em, "nghttp2: %s: header %.*s: dup name fail!",
-                net_endpoint_dump(net_nghttp2_service_tmp_buffer(service), base_endpoint), (int)name_len, name);
-            header->m_request = (net_nghttp2_request_t)service;
+                net_endpoint_dump(net_http2_svr_service_tmp_buffer(service), base_endpoint), (int)name_len, name);
+            header->m_request = (net_http2_svr_request_t)service;
             TAILQ_INSERT_TAIL(&service->m_free_request_headers, header, m_next);
             return NULL;
         }
@@ -49,9 +49,9 @@ net_nghttp2_request_header_create(net_nghttp2_request_t request, uint16_t index,
     return header;
 }
 
-void net_nghttp2_request_header_free(net_nghttp2_request_header_t header) {
-    net_nghttp2_request_t request = header->m_request;
-    net_nghttp2_service_t service = net_nghttp2_connection_service(request->m_connection);
+void net_http2_svr_request_header_free(net_http2_svr_request_header_t header) {
+    net_http2_svr_request_t request = header->m_request;
+    net_http2_svr_service_t service = net_http2_svr_stream_service(request->m_stream);
 
     if (header->m_name) {
         if (header->m_name < header->m_buf || header->m_name >= (header->m_buf + sizeof(header->m_buf))) {
@@ -69,20 +69,20 @@ void net_nghttp2_request_header_free(net_nghttp2_request_header_t header) {
     
     TAILQ_REMOVE(&request->m_headers, header, m_next);
     
-    header->m_request = (net_nghttp2_request_t)service;
+    header->m_request = (net_http2_svr_request_t)service;
     TAILQ_INSERT_TAIL(&service->m_free_request_headers, header, m_next);
 }
 
-void net_nghttp2_request_header_real_free(net_nghttp2_request_header_t header) {
-    net_nghttp2_service_t service = (net_nghttp2_service_t)header->m_request;
+void net_http2_svr_request_header_real_free(net_http2_svr_request_header_t header) {
+    net_http2_svr_service_t service = (net_http2_svr_service_t)header->m_request;
     TAILQ_REMOVE(&service->m_free_request_headers, header, m_next);
     mem_free(service->m_alloc, header);
 }
 
-int net_nghttp2_request_header_set_value(net_nghttp2_request_header_t header, const char * value, size_t value_len) {
-    net_nghttp2_request_t request = header->m_request;
-    net_nghttp2_service_t service = net_nghttp2_connection_service(request->m_connection);
-    net_endpoint_t base_endpoint = net_endpoint_from_data(request->m_connection);
+int net_http2_svr_request_header_set_value(net_http2_svr_request_header_t header, const char * value, size_t value_len) {
+    net_http2_svr_request_t request = header->m_request;
+    net_http2_svr_service_t service = net_http2_svr_stream_service(request->m_stream);
+    net_endpoint_t base_endpoint = net_endpoint_from_data(request->m_stream);
 
     if (header->m_value) {
         if (header->m_value < header->m_buf || header->m_value >= (header->m_buf + sizeof(header->m_buf))) {
@@ -106,7 +106,7 @@ int net_nghttp2_request_header_set_value(net_nghttp2_request_header_t header, co
         if (header->m_value == NULL) {
             CPE_ERROR(
                 service->m_em, "nghttp2: %s: header %s: dup value %s fail!",
-                net_endpoint_dump(net_nghttp2_service_tmp_buffer(service), base_endpoint), header->m_name, value);
+                net_endpoint_dump(net_http2_svr_service_tmp_buffer(service), base_endpoint), header->m_name, value);
             return -1;
         }
     }
@@ -119,11 +119,11 @@ int net_nghttp2_request_header_set_value(net_nghttp2_request_header_t header, co
     return 0;
 }
 
-net_nghttp2_request_header_t
-net_nghttp2_request_header_find_by_index(net_nghttp2_request_t request, uint16_t index) {
-    net_nghttp2_request_header_t header;
+net_http2_svr_request_header_t
+net_http2_svr_request_header_find_by_index(net_http2_svr_request_t request, uint16_t index) {
+    net_http2_svr_request_header_t header;
     
-    TAILQ_FOREACH_REVERSE(header, &request->m_headers, net_nghttp2_request_header_list, m_next) {
+    TAILQ_FOREACH_REVERSE(header, &request->m_headers, net_http2_svr_request_header_list, m_next) {
         if (header->m_index == index) return header;
     }
     
