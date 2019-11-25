@@ -38,5 +38,7 @@ set_property(TARGET curl PROPERTY INCLUDE_DIRECTORIES
   ${curl_base}/lib
   ${curl_base}/../c-ares/include
   ${curl_base}/../c-ares/include/${OS_NAME}
+  ${nghttp2_base}/lib/includes
+  ${CMAKE_CURRENT_LIST_DIR}/../custom/nghttp2
   ${openssl_base}/include
   )
