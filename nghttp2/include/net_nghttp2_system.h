@@ -5,7 +5,8 @@
 NET_BEGIN_DECL
 
 typedef struct net_nghttp2_service * net_nghttp2_service_t;
-typedef struct net_nghttp2_connection * net_nghttp2_connection_t;
+typedef struct net_nghttp2_session * net_nghttp2_session_t;
+typedef struct net_nghttp2_stream * net_nghttp2_stream_t;
 typedef struct net_nghttp2_request * net_nghttp2_request_t;
 typedef struct net_nghttp2_request_header * net_nghttp2_request_header_t;
 typedef struct net_nghttp2_request_header_it * net_nghttp2_request_header_it_t;

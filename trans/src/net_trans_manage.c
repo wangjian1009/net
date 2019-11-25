@@ -106,7 +106,7 @@ void net_trans_manage_set_protect_vpn(net_trans_manage_t manage, uint8_t protect
 
 int net_trans_manage_set_pipelining_stream(net_trans_manage_t manage) {
     if (curl_multi_setopt(manage->m_multi_handle, CURLMOPT_PIPELINING, CURLPIPE_MULTIPLEX) != CURLM_OK) {
-        CPE_ERROR(manage->m_em, "trans-cli %s: set pipelining stream fail");
+        CPE_ERROR(manage->m_em, "trans-cli %s: set pipelining stream fail", manage->m_name);
         return -1;
     }
 

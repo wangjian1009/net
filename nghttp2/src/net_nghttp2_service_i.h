@@ -1,12 +1,14 @@
 #ifndef NET_NGHTTP2_SERVICE_I_H_INCLEDED
 #define NET_NGHTTP2_SERVICE_I_H_INCLEDED
+#include "openssl/ssl.h"
+#include "nghttp2/nghttp2.h"
 #include "cpe/pal/pal_queue.h"
 #include "cpe/utils/memory.h"
 #include "cpe/utils/error.h"
 #include "cpe/utils/buffer.h"
 #include "net_nghttp2_service.h"
 
-typedef TAILQ_HEAD(net_nghttp2_connection_list, net_nghttp2_connection) net_nghttp2_connection_list_t;
+typedef TAILQ_HEAD(net_nghttp2_session_list, net_nghttp2_session) net_nghttp2_session_list_t;
 typedef TAILQ_HEAD(net_nghttp2_request_list, net_nghttp2_request) net_nghttp2_request_list_t;
 typedef TAILQ_HEAD(net_nghttp2_request_header_list, net_nghttp2_request_header) net_nghttp2_request_header_list_t;
 typedef TAILQ_HEAD(net_nghttp2_response_list, net_nghttp2_response) net_nghttp2_response_list_t;
@@ -16,14 +18,15 @@ typedef TAILQ_HEAD(net_nghttp2_mount_point_list, net_nghttp2_mount_point) net_ng
 struct net_nghttp2_service {
     error_monitor_t m_em;
     mem_allocrator_t m_alloc;
-    uint32_t m_cfg_connection_timeout_ms;
+    uint32_t m_cfg_session_timeout_ms;
+    SSL_CTX * m_ssl_ctx;
 
     net_nghttp2_processor_list_t m_processors;
     net_nghttp2_mount_point_t m_root;
     uint32_t m_request_sz;
     
     uint32_t m_max_request_id;
-    net_nghttp2_connection_list_t m_connections;
+    net_nghttp2_session_list_t m_sessions;
 
     struct mem_buffer m_data_buffer; 
     struct mem_buffer m_search_path_buffer;

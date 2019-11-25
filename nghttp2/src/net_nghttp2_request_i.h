@@ -1,14 +1,14 @@
 #ifndef NET_NGHTTP2_REQUEST_H_I_INCLEDED
 #define NET_NGHTTP2_REQUEST_H_I_INCLEDED
 #include "net_nghttp2_request.h"
-#include "net_nghttp2_connection_i.h"
+#include "net_nghttp2_session_i.h"
 
 typedef void (*net_nghttp2_header_cb)(net_nghttp2_request_t, const char* at, size_t length, int header_index);
 typedef void (*net_nghttp2_element_cb)(net_nghttp2_request_t, const char* at, size_t length);
 
 struct net_nghttp2_request {
-    net_nghttp2_connection_t m_connection;
-    TAILQ_ENTRY(net_nghttp2_request) m_next_for_connection;
+    net_nghttp2_session_t m_session;
+    TAILQ_ENTRY(net_nghttp2_request) m_next_for_session;
     net_nghttp2_processor_t m_processor;
     TAILQ_ENTRY(net_nghttp2_request) m_next_for_processor;
     uint32_t m_request_id;
@@ -29,7 +29,7 @@ struct net_nghttp2_request {
     net_nghttp2_response_t m_response;
 };
 
-net_nghttp2_request_t net_nghttp2_request_create(net_nghttp2_connection_t connection);
+net_nghttp2_request_t net_nghttp2_request_create(net_nghttp2_session_t session);
 void net_nghttp2_request_real_free(net_nghttp2_request_t request);
 
 uint8_t net_nghttp2_request_should_keep_alive(net_nghttp2_request_t request);

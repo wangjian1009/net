@@ -11,7 +11,7 @@ struct net_nghttp2_response {
             net_nghttp2_response_state_t m_state;
             net_nghttp2_request_transfer_encoding_t m_transfer_encoding;
             uint16_t m_header_count;
-            uint8_t m_head_connection_setted;
+            uint8_t m_head_stream_setted;
             union {
                 struct {
                     uint32_t m_tota_size;
