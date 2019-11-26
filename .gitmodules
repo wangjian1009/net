@@ -4,3 +4,6 @@
 [submodule "depends/nghttp2"]
 	path = depends/nghttp2
 	url = git@github.com:nghttp2/nghttp2.git
+[submodule "depends/libevent"]
+	path = depends/libevent
+	url = git@github.com:libevent/libevent.git
