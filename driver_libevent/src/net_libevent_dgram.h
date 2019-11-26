@@ -4,8 +4,9 @@
 #include "net_libevent_driver_i.h"
 
 struct net_libevent_dgram {
-    int i;
-    //net_watcher_t m_watcher;
+    int m_domain;
+    int m_fd;
+    struct event * m_read_event;
 };
 
 int net_libevent_dgram_init(net_dgram_t base_dgram);

@@ -11,22 +11,22 @@ void net_libevent_watcher_write_cb(struct bufferevent * bev, void* ptr);
 void net_libevent_watcher_event_cb(struct bufferevent* bev, short events, void* ptr);
 
 int net_libevent_watcher_init(net_watcher_t base_watcher, int fd) {
-    net_libevent_driver_t driver = net_driver_data(net_watcher_driver(base_watcher));
-    net_libevent_watcher_t watcher = net_watcher_data(base_watcher);
-    int options = 0;
-    watcher->m_bufferevent = bufferevent_socket_new(driver->m_event_base, fd, options);
-    bufferevent_setcb(
-        watcher->m_bufferevent,
-        net_libevent_watcher_read_cb,
-        net_libevent_watcher_write_cb,
-        net_libevent_watcher_event_cb,
-        base_watcher);
+    /* net_libevent_driver_t driver = net_driver_data(net_watcher_driver(base_watcher)); */
+    /* net_libevent_watcher_t watcher = net_watcher_data(base_watcher); */
+    /* int options = 0; */
+    /* watcher->m_bufferevent = bufferevent_socket_new(driver->m_event_base, fd, options); */
+    /* bufferevent_setcb( */
+    /*     watcher->m_bufferevent, */
+    /*     net_libevent_watcher_read_cb, */
+    /*     net_libevent_watcher_write_cb, */
+    /*     net_libevent_watcher_event_cb, */
+    /*     base_watcher); */
     return 0;
 }
 
 void net_libevent_watcher_fini(net_watcher_t base_watcher, int fd) {
-    net_libevent_watcher_t watcher = net_watcher_data(base_watcher);
-    bufferevent_free(watcher->m_bufferevent);
+    /* net_libevent_watcher_t watcher = net_watcher_data(base_watcher); */
+    /* bufferevent_free(watcher->m_bufferevent); */
 }
 
 void net_libevent_watcher_update(net_watcher_t base_watcher, int fd, uint8_t expect_read, uint8_t expect_write) {

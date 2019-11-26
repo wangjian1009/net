@@ -4,7 +4,6 @@
 #include "net_libevent_driver_i.h"
 
 struct net_libevent_watcher {
-    struct bufferevent * m_bufferevent;
 };
 
 int net_libevent_watcher_init(net_watcher_t base_watcher, int fd);
