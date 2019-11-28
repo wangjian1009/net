@@ -376,26 +376,63 @@ uint8_t net_libevent_endpoint_on_read(net_libevent_driver_t driver, net_libevent
         uint32_t capacity = 0;
         void * rbuf = net_endpoint_buf_alloc(base_endpoint, &capacity);
         if (rbuf == NULL) {
-            //net_libevent_endpoint_close_libevent(driver, endpoint);
-            
+            if (endpoint->m_bufferevent) {
+                bufferevent_free(endpoint->m_bufferevent);
+                endpoint->m_bufferevent = NULL;
+            }
+
             if (net_endpoint_state(base_endpoint) == net_endpoint_state_deleting) {
                 return -1;
             }
             else {
-                /* CPE_ERROR( */
-                /*     driver->m_em, "libevent: %s: fd=%d: on read: endpoint rbuf full!", */
-                /*     net_endpoint_dump(net_libevent_driver_tmp_buffer(driver), base_endpoint), */
-                /*     endpoint->m_fd); */
+                CPE_ERROR(
+                    driver->m_em, "libevent: %s: fd=%d: on read: endpoint rbuf full!",
+                    net_endpoint_dump(net_libevent_driver_tmp_buffer(driver), base_endpoint),
+                    endpoint->m_bufferevent ? bufferevent_getfd(endpoint->m_bufferevent) : -1);
 
-                /* if (net_endpoint_is_active(base_endpoint)) { */
-                /*     if (!net_endpoint_have_error(base_endpoint)) { */
-                /*         net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_logic, NULL); */
-                /*     } */
+                if (net_endpoint_is_active(base_endpoint)) {
+                    if (!net_endpoint_have_error(base_endpoint)) {
+                        net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_logic, NULL);
+                    }
                 
-                /*     if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) return -1; */
-                /* } */
+                    if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) return -1;
+                }
 
                 return 0;
+            }
+        }
+
+        if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) break;
+
+        
+        size_t bytes = bufferevent_read(endpoint->m_bufferevent, rbuf, capacity);
+        if (net_endpoint_driver_debug(base_endpoint)) {
+            CPE_INFO(
+                driver->m_em, "libevent: %s: fd=%d: recv %d bytes data!",
+                net_endpoint_dump(net_libevent_driver_tmp_buffer(driver), base_endpoint),
+                bufferevent_getfd(endpoint->m_bufferevent),
+                (int)bytes);
+        }
+
+        if (net_endpoint_buf_supply(base_endpoint, net_ep_buf_read, (uint32_t)bytes) != 0) {
+            if (endpoint->m_bufferevent) {
+                bufferevent_free(endpoint->m_bufferevent);
+                endpoint->m_bufferevent = NULL;
+            }
+
+            if (net_endpoint_is_active(base_endpoint)) {
+                if (!net_endpoint_have_error(base_endpoint)) {
+                    net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_logic, NULL);
+                }
+                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_logic_error) != 0) {
+                    if (net_endpoint_driver_debug(base_endpoint)) {
+                        CPE_INFO(
+                            driver->m_em, "libevent: %s: fd=%d: free for process fail!",
+                            net_endpoint_dump(net_libevent_driver_tmp_buffer(driver), base_endpoint),
+                            endpoint->m_bufferevent ? bufferevent_getfd(endpoint->m_bufferevent) : -1);
+                    }
+                    return -1;
+                }
             }
         }
     }
@@ -474,7 +511,7 @@ void net_libevent_endpoint_event_cb(struct bufferevent* bev, short events, void*
         CPE_ERROR(
             driver->m_em, "sock: %s: fd=%d: %serror, errno=%d (%s)!",
             net_endpoint_dump(net_libevent_driver_tmp_buffer(driver), base_endpoint),
-            bufferevent_getfd(endpoint->m_bufferevent),
+            endpoint->m_bufferevent ? bufferevent_getfd(endpoint->m_bufferevent) : -1,
             tag,
             cpe_sock_errno(),
             cpe_sock_errstr(cpe_sock_errno()));
@@ -494,7 +531,7 @@ void net_libevent_endpoint_event_cb(struct bufferevent* bev, short events, void*
         CPE_INFO(
             driver->m_em, "libevent: %s: fd=%d: timeout",
             net_endpoint_dump(net_libevent_driver_tmp_buffer(driver), base_endpoint),
-            bufferevent_getfd(endpoint->m_bufferevent));
+            endpoint->m_bufferevent ? bufferevent_getfd(endpoint->m_bufferevent) : -1);
     }
 
     if (events & BEV_EVENT_EOF) {
@@ -502,7 +539,7 @@ void net_libevent_endpoint_event_cb(struct bufferevent* bev, short events, void*
             CPE_INFO(
                 driver->m_em, "libevent: %s: fd=%d: remote disconnected!",
                 net_endpoint_dump(net_libevent_driver_tmp_buffer(driver), base_endpoint),
-                bufferevent_getfd(endpoint->m_bufferevent));
+                endpoint->m_bufferevent ? bufferevent_getfd(endpoint->m_bufferevent) : -1);
         }
 
         net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_remote_closed, NULL);
@@ -523,14 +560,14 @@ void net_libevent_endpoint_event_cb(struct bufferevent* bev, short events, void*
             CPE_INFO(
                 driver->m_em, "libevent: %s: fd=%d: connect success (local-address=%s)",
                 net_endpoint_dump(net_libevent_driver_tmp_buffer(driver), base_endpoint),
-                bufferevent_getfd(endpoint->m_bufferevent),
+                endpoint->m_bufferevent ? bufferevent_getfd(endpoint->m_bufferevent) : -1,
                 local_addr_buf);
         }
         else {
             CPE_INFO(
                 driver->m_em, "libevent: %s: fd=%d: connect success",
                 net_endpoint_dump(net_libevent_driver_tmp_buffer(driver), base_endpoint),
-                bufferevent_getfd(endpoint->m_bufferevent));
+                endpoint->m_bufferevent ? bufferevent_getfd(endpoint->m_bufferevent) : -1);
         }
 
         if (net_libevent_endpoint_set_established(endpoint) != 0) {
