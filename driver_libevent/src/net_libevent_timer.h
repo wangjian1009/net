@@ -1,10 +1,10 @@
 #ifndef NET_LIBEVENT_TIMER_H_INCLEDED
 #define NET_LIBEVENT_TIMER_H_INCLEDED
-#include "cpe/pal/pal_socket.h"
+#include "event2/event_struct.h"
 #include "net_libevent_driver_i.h"
 
 struct net_libevent_timer {
-    //struct ev_timer m_watcher;
+    struct event m_timer;
 };
 
 int net_libevent_timer_init(net_timer_t base_timer);

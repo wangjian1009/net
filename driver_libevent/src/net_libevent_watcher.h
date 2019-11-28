@@ -1,9 +1,10 @@
 #ifndef NET_LIBEVENT_WATCHER_H_INCLEDED
 #define NET_LIBEVENT_WATCHER_H_INCLEDED
-#include "cpe/pal/pal_socket.h"
+#include "event2/event_struct.h"
 #include "net_libevent_driver_i.h"
 
 struct net_libevent_watcher {
+    struct event m_event;
 };
 
 int net_libevent_watcher_init(net_watcher_t base_watcher, int fd);
