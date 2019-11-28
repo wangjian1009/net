@@ -24,9 +24,12 @@ void net_libevent_watcher_update(net_watcher_t base_watcher, int fd, uint8_t exp
     net_libevent_driver_t driver = net_driver_data(net_watcher_driver(base_watcher));
 
     short events = (expect_read ? EV_READ : 0) | (expect_write ? EV_WRITE : 0);
-    short cur_events = event_initialized(&watcher->m_event)
-        ? event_get_events(&watcher->m_event)
-        : 0;
+    short cur_events = 0;
+
+    if (event_initialized(&watcher->m_event)) {
+        short v = event_get_events(&watcher->m_event);
+        cur_events = v & (EV_READ | EV_WRITE);
+    }
 
     if (events == cur_events) return;
 
@@ -35,7 +38,7 @@ void net_libevent_watcher_update(net_watcher_t base_watcher, int fd, uint8_t exp
     }
 
     if (events) {
-        event_assign(&watcher->m_event, driver->m_event_base, fd, events, net_libevent_watcher_cb, base_watcher);
+        event_assign(&watcher->m_event, driver->m_event_base, fd, events | EV_PERSIST, net_libevent_watcher_cb, base_watcher);
         event_add(&watcher->m_event, NULL);
     }
 }

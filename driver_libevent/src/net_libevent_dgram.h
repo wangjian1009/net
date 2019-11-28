@@ -1,12 +1,11 @@
 #ifndef NET_LIBEVENT_DGRAM_H_INCLEDED
 #define NET_LIBEVENT_DGRAM_H_INCLEDED
-#include "cpe/pal/pal_socket.h"
+#include "event2/event_struct.h"
 #include "net_libevent_driver_i.h"
 
 struct net_libevent_dgram {
     int m_domain;
-    int m_fd;
-    struct event * m_read_event;
+    struct event m_event;
 };
 
 int net_libevent_dgram_init(net_dgram_t base_dgram);

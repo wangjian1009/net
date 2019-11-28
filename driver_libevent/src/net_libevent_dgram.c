@@ -30,8 +30,8 @@ int net_libevent_dgram_init(net_dgram_t base_dgram) {
         break;
     }
 
-    dgram->m_fd = cpe_sock_open(dgram->m_domain, SOCK_DGRAM, IPPROTO_UDP);
-    if (dgram->m_fd == -1) {
+    int fd = cpe_sock_open(dgram->m_domain, SOCK_DGRAM, IPPROTO_UDP);
+    if (fd == -1) {
         CPE_ERROR(
             driver->m_em, "libevent: dgram: socket create error, errno=%d (%s)",
             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
@@ -47,19 +47,18 @@ int net_libevent_dgram_init(net_dgram_t base_dgram) {
 
         if (net_address_to_sockaddr(address, (struct sockaddr *)&addr, &addr_len) != 0) {
             CPE_ERROR(driver->m_em, "libevent: dgram: get sockaddr from address fail");
-            cpe_sock_close(dgram->m_fd);
+            cpe_sock_close(fd);
             return -1;
         }
 
-        cpe_sock_set_reuseport(dgram->m_fd, 1);
+        cpe_sock_set_reuseport(fd, 1);
 
-        if (cpe_bind(dgram->m_fd, (struct sockaddr *)&addr, addr_len) != 0) {
+        if (cpe_bind(fd, (struct sockaddr *)&addr, addr_len) != 0) {
             CPE_ERROR(
                 driver->m_em, "libevent: dgram: bind addr %s fail, errno=%d (%s)",
                 net_address_dump(net_schedule_tmp_buffer(schedule), address),
                 cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-            cpe_sock_close(dgram->m_fd);
-            dgram->m_fd = -1;
+            cpe_sock_close(fd);
             return -1;
         }
 
@@ -73,20 +72,18 @@ int net_libevent_dgram_init(net_dgram_t base_dgram) {
         /* struct sockaddr_storage addr; */
         /* socklen_t addr_len = sizeof(struct sockaddr_storage); */
         /* bzero(&addr, addr_len); */
-        /* if (cpe_getsockname(dgram->m_fd, (struct sockaddr *)&addr, &addr_len) != 0) { */
+        /* if (cpe_getsockname(fd, (struct sockaddr *)&addr, &addr_len) != 0) { */
         /*     CPE_ERROR( */
         /*         driver->m_em, "libevent: dgram: sockaddr error, errno=%d (%s)", */
         /*         cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno())); */
-        /*     cpe_sock_close(dgram->m_fd); */
-        /*     dgram->m_fd = -1; */
+        /*     cpe_sock_close(fd); */
         /*     return -1; */
         /* } */
 
         /* address = net_address_create_from_sockaddr(schedule, (struct sockaddr *)&addr, addr_len); */
         /* if (address == NULL) { */
         /*     CPE_ERROR(net_schedule_em(schedule), "libevent: dgram: create address fail"); */
-        /*     cpe_sock_close(dgram->m_fd); */
-        /*     dgram->m_fd = -1; */
+        /*     cpe_sock_close(fd); */
         /*     return -1; */
         /* } */
 
@@ -99,14 +96,10 @@ int net_libevent_dgram_init(net_dgram_t base_dgram) {
         /* net_dgram_set_address(base_dgram, address); */
     }
 
-    dgram->m_read_event = event_new(driver->m_event_base, dgram->m_fd, EV_READ, net_libevent_dgram_read_cb, base_dgram);
-    if (dgram->m_read_event == NULL) {
-        CPE_ERROR(driver->m_em, "libevent: dgram: create event fail");
-        cpe_sock_close(dgram->m_fd);
-        return -1;
-    }
-    
-    event_add(dgram->m_read_event, NULL);
+    bzero(&dgram->m_event, sizeof(dgram->m_event));
+
+    event_assign(&dgram->m_event, driver->m_event_base, fd, EV_READ | EV_PERSIST, net_libevent_dgram_read_cb, base_dgram);
+    event_add(&dgram->m_event, NULL);
     
     return 0;
 }
@@ -114,14 +107,11 @@ int net_libevent_dgram_init(net_dgram_t base_dgram) {
 void net_libevent_dgram_fini(net_dgram_t base_dgram) {
     net_libevent_dgram_t dgram = net_dgram_data(base_dgram);
 
-    assert(dgram->m_read_event);
-    assert(dgram->m_fd != -1);
+    int fd = event_get_fd(&dgram->m_event);
 
-    event_free(dgram->m_read_event);
-    dgram->m_read_event = NULL;
+	event_del(&dgram->m_event);
 
-    cpe_sock_close(dgram->m_fd);
-    dgram->m_fd = -1;
+    cpe_sock_close(fd);
 }
 
 int net_libevent_dgram_send(net_dgram_t base_dgram, net_address_t target, void const * data, size_t data_len) {
@@ -198,7 +188,7 @@ int net_libevent_dgram_send(net_dgram_t base_dgram, net_address_t target, void c
         }
     }
     
-    int nret = (int)cpe_sendto(dgram->m_fd, data, data_len, CPE_SOCKET_DEFAULT_SEND_FLAGS, (struct sockaddr *)&addr, addr_len);
+    int nret = (int)cpe_sendto(event_get_fd(&dgram->m_event), data, data_len, CPE_SOCKET_DEFAULT_SEND_FLAGS, (struct sockaddr *)&addr, addr_len);
     if (nret < 0) {
         CPE_ERROR(
             net_schedule_em(schedule), "sock: dgram: send %d data to %s fail, errno=%d (%s)",
@@ -228,7 +218,7 @@ void net_libevent_dgram_read_cb(int fd, short events, void* arg) {
     socklen_t addr_len = sizeof(addr);
     char buf[1500] = {0};
 
-    int nrecv = (int)cpe_recvfrom(dgram->m_fd, buf, sizeof(buf) - 1, 0, (struct sockaddr *)&addr, &addr_len);
+    int nrecv = (int)cpe_recvfrom(event_get_fd(&dgram->m_event), buf, sizeof(buf) - 1, 0, (struct sockaddr *)&addr, &addr_len);
     if (nrecv < 0) {
         CPE_ERROR(
             net_schedule_em(schedule),
