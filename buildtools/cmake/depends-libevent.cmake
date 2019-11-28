@@ -19,14 +19,11 @@ set(libevent_source
   ${libevent_base}/signal.c
   ${libevent_base}/strlcpy.c)
 
-if (OS_NAME STREQUAL linux32 OR OS_NAME STREQUAL linux64)
+if (OS_NAME STREQUAL linux32 OR OS_NAME STREQUAL linux64 OR OS_NAME STREQUAL android)
   list(APPEND libevent_source
-    ${libevent_base}/select.c
     ${libevent_base}/epoll.c)
 elseif (OS_NAME STREQUAL mac OR OS_NAME STREQUAL ios)
   list(APPEND libevent_source
-    ${libevent_base}/poll.c
-    ${libevent_base}/select.c
     ${libevent_base}/kqueue.c)
 endif()
 

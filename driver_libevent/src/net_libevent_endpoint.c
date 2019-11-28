@@ -67,7 +67,160 @@ int net_libevent_endpoint_update(net_endpoint_t base_endpoint) {
 }
 
 int net_libevent_endpoint_connect(net_endpoint_t base_endpoint) {
-    return 0;
+    net_libevent_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+    net_libevent_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
+    net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
+
+    if (endpoint->m_bufferevent == NULL) {
+        endpoint->m_bufferevent = bufferevent_socket_new(driver->m_event_base, -1, BEV_OPT_CLOSE_ON_FREE);
+        if (endpoint->m_bufferevent == NULL) {
+            CPE_ERROR(
+                driver->m_em, "libevent: %s: fd=%d: create bufferevent fail!",
+                net_endpoint_dump(net_libevent_driver_tmp_buffer(driver), base_endpoint),
+                -1);
+            return -1;
+        }
+    }
+    
+CONNECT_AGAIN:
+    if (bufferevent_getfd(endpoint->m_bufferevent) != -1) {
+        CPE_ERROR(
+            driver->m_em, "libevent: %s: fd=%d: already connected!",
+            net_endpoint_dump(net_libevent_driver_tmp_buffer(driver), base_endpoint),
+            bufferevent_getfd(endpoint->m_bufferevent));
+        return -1;
+    }
+
+    net_address_t remote_addr = net_endpoint_remote_address(base_endpoint);
+    if (remote_addr == NULL) {
+        CPE_ERROR(
+            driver->m_em, "libevent: %s: fd=%d: connect with no remote address!",
+            net_endpoint_dump(net_libevent_driver_tmp_buffer(driver), base_endpoint),
+            bufferevent_getfd(endpoint->m_bufferevent));
+        return -1;
+    }
+    remote_addr = net_address_resolved(remote_addr);
+
+    if (net_address_type(remote_addr) == net_address_domain) {
+        CPE_ERROR(
+            driver->m_em, "libevent: %s: fd=%d: connect not support domain address!",
+            net_endpoint_dump(net_libevent_driver_tmp_buffer(driver), base_endpoint),
+            bufferevent_getfd(endpoint->m_bufferevent));
+        return -1;
+    }
+
+    net_address_t connect_addr = NULL;
+    
+    if (net_address_type(remote_addr) == net_address_local) {
+        connect_addr = remote_addr;
+    }
+    else {
+        assert(net_address_type(remote_addr) == net_address_ipv4 || net_address_type(remote_addr) == net_address_ipv6);
+
+        net_local_ip_stack_t ip_stack = net_schedule_local_ip_stack(schedule);
+        switch(ip_stack) {
+        case net_local_ip_stack_none:
+            CPE_ERROR(
+                driver->m_em, "libevent: %s: fd=%d: can`t connect in %s!",
+                net_endpoint_dump(net_libevent_driver_tmp_buffer(driver), base_endpoint),
+                bufferevent_getfd(endpoint->m_bufferevent),
+                net_local_ip_stack_str(ip_stack));
+            return -1;
+        case net_local_ip_stack_ipv4:
+            if (net_address_type(remote_addr) == net_address_ipv6) {
+                if (net_address_ipv6_is_ipv4_map(remote_addr)) {
+                    connect_addr = net_address_create_ipv4_from_ipv6_map(net_endpoint_schedule(base_endpoint), remote_addr);
+                    if (connect_addr == NULL) {
+                        CPE_ERROR(
+                            driver->m_em, "libevent: %s: fd=%d: convert ipv6 address to ipv4(map) fail",
+                            net_endpoint_dump(net_libevent_driver_tmp_buffer(driver), base_endpoint),
+                            bufferevent_getfd(endpoint->m_bufferevent));
+                        return -1;
+                    }
+                }
+                else {
+                    CPE_ERROR(
+                        driver->m_em, "libevent: %s: fd=%d: can`t connect to ipv6 network in ipv4 network env!",
+                        net_endpoint_dump(net_libevent_driver_tmp_buffer(driver), base_endpoint),
+                        bufferevent_getfd(endpoint->m_bufferevent));
+                    return -1;
+                }
+            }
+            else {
+                connect_addr = remote_addr;
+            }
+            break;
+        case net_local_ip_stack_ipv6:
+            if (net_address_type(remote_addr) == net_address_ipv4) {
+                connect_addr = net_address_create_ipv6_from_ipv4_nat(net_endpoint_schedule(base_endpoint), remote_addr);
+                if (connect_addr == NULL) {
+                    CPE_ERROR(
+                        driver->m_em, "libevent: %s: fd=%d: convert ipv4 address to ipv6(nat) fail",
+                        net_endpoint_dump(net_libevent_driver_tmp_buffer(driver), base_endpoint),
+                        bufferevent_getfd(endpoint->m_bufferevent));
+                    return -1;
+                }
+            }
+            else {
+                connect_addr = remote_addr;
+            }
+            break;
+        case net_local_ip_stack_dual:
+            connect_addr = remote_addr;
+            break;
+        }
+    }
+
+    struct sockaddr_storage addr;
+    socklen_t addr_len = sizeof(addr);
+    assert(connect_addr);
+
+    if (net_address_to_sockaddr(connect_addr, (struct sockaddr *)&addr, &addr_len) != 0) {
+        if (connect_addr != remote_addr) {
+            net_address_free(connect_addr);
+        }
+
+        CPE_ERROR(
+            driver->m_em, "libevent: %s: fd=%d: to sockaddr fail",
+            net_endpoint_dump(net_libevent_driver_tmp_buffer(driver), base_endpoint),
+            bufferevent_getfd(endpoint->m_bufferevent));
+        goto CONNECT_NEXT;
+    }
+
+    if (connect_addr != remote_addr) {
+        net_address_free(connect_addr);
+    }
+    connect_addr = NULL;
+
+    if (bufferevent_socket_connect(endpoint->m_bufferevent, (struct sockaddr *)&addr, addr_len) != 0) {
+        CPE_ERROR(
+            driver->m_em, "libevent: %s: fd=%d: connect error(first), errno=%d (%s)",
+            net_endpoint_dump(net_libevent_driver_tmp_buffer(driver), base_endpoint),
+            bufferevent_getfd(endpoint->m_bufferevent),
+            cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+        goto CONNECT_NEXT;
+    }
+    else {
+        return 0;
+    }
+    
+CONNECT_NEXT:
+    if (net_endpoint_shift_address(base_endpoint)) {
+        goto CONNECT_AGAIN;
+    }
+    else {
+        if (net_endpoint_state(base_endpoint) != net_endpoint_state_network_error
+            && net_endpoint_state(base_endpoint) != net_endpoint_state_logic_error)
+        {
+            net_endpoint_set_error(
+                base_endpoint, net_endpoint_error_source_network,
+                net_endpoint_network_errno_connect_error, "TODO");
+
+            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) return -1;
+        }
+
+        return -1;
+    }
 }
 
 void net_libevent_endpoint_close(net_endpoint_t base_endpoint) {

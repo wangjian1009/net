@@ -53,8 +53,10 @@
 /* Define to 1 if you have the `arc4random_buf' function. */
 #define EVENT__HAVE_ARC4RANDOM_BUF 1
 
+#if CPE_OS_MAC || CPE_OS_IOS
 /* Define to 1 if you have the `arc4random_addrandom' function. */
 #define EVENT__HAVE_ARC4RANDOM_ADDRANDOM 1
+#endif
 
 /* Define if clock_gettime is available in libc */
 #define EVENT__DNS_USE_CPU_CLOCK_FOR_ID 1
@@ -94,13 +96,16 @@
 #define EVENT__HAVE_DLFCN_H 1
 
 /* Define if your system supports the epoll system calls */
-/* #undef EVENT__HAVE_EPOLL */
+
+#if CPE_OS_ANDROID
+#define EVENT__HAVE_EPOLL 1
 
 /* Define to 1 if you have the `epoll_create1' function. */
-/* #undef EVENT__HAVE_EPOLL_CREATE1 */
+#define EVENT__HAVE_EPOLL_CREATE1 1
 
 /* Define to 1 if you have the `epoll_ctl' function. */
-/* #undef EVENT__HAVE_EPOLL_CTL */
+#define EVENT__HAVE_EPOLL_CTL 1
+#endif
 
 /* Define to 1 if you have the `eventfd' function. */
 /* #undef EVENT__HAVE_EVENTFD */
@@ -137,7 +142,9 @@
 /* #undef EVENT__HAVE_GETHOSTBYNAME_R_6_ARG */
 
 /* Define to 1 if you have the `getifaddrs' function. */
+#if CPE_OS_MAC || CPE_OS_IOS
 #define EVENT__HAVE_GETIFADDRS 1
+#endif
 
 /* Define to 1 if you have the `getnameinfo' function. */
 #define EVENT__HAVE_GETNAMEINFO 1
@@ -164,10 +171,14 @@
 #define EVENT__HAVE_INTTYPES_H 1
 
 /* Define to 1 if you have the `issetugid' function. */
+#if CPE_OS_MAC || CPE_OS_IOS
 #define EVENT__HAVE_ISSETUGID 1
+#endif
 
 /* Define to 1 if you have the `kqueue' function. */
+#if CPE_OS_MAC || CPE_OS_IOS
 #define EVENT__HAVE_KQUEUE 1
+#endif
 
 /* Define if the system has zlib */
 #define EVENT__HAVE_LIBZ 1
@@ -176,7 +187,9 @@
 #define EVENT__HAVE_MACH_ABSOLUTE_TIME 1
 
 /* Define to 1 if you have the <mach/mach_time.h> header file. */
+#if defined CPE_OS_MAC
 #define EVENT__HAVE_MACH_MACH_TIME_H 1
+#endif
 
 /* Define to 1 if you have the <memory.h> header file. */
 #define EVENT__HAVE_MEMORY_H 1
@@ -215,10 +228,10 @@
 /* #undef EVENT__HAVE_PIPE2 */
 
 /* Define to 1 if you have the `poll' function. */
-#define EVENT__HAVE_POLL 1
+/* #undef EVENT__HAVE_POLL */
 
 /* Define to 1 if you have the <poll.h> header file. */
-#define EVENT__HAVE_POLL_H 1
+/* #undef EVENT__HAVE_POLL_H */
 
 /* Define to 1 if you have the `port_create' function. */
 /* #undef EVENT__HAVE_PORT_CREATE */
@@ -236,7 +249,7 @@
 #define EVENT__HAVE_SA_FAMILY_T 1
 
 /* Define to 1 if you have the `select' function. */
-#define EVENT__HAVE_SELECT 1
+/* #undef EVENT__HAVE_SELECT */
 
 /* Define to 1 if you have the `setenv' function. */
 #define EVENT__HAVE_SETENV 1
@@ -314,7 +327,9 @@
 #define EVENT__HAVE_STRUCT_SOCKADDR_IN6 1
 
 /* Define to 1 if `sin6_len' is member of `struct sockaddr_in6'. */
+#if CPE_OS_MAC || CPE_OS_IOS
 #define EVENT__HAVE_STRUCT_SOCKADDR_IN6_SIN6_LEN 1
+#endif
 
 /* Define to 1 if `sin_len' is member of `struct sockaddr_in'. */
 /* #undef EVENT__HAVE_STRUCT_SOCKADDR_IN_SIN_LEN */
@@ -444,7 +459,9 @@
 #define EVENT__HAVE_VASPRINTF 1
 
 /* Define if kqueue works correctly with pipes */
+#if CPE_OS_MAC || CPE_OS_IOS
 #define EVENT__HAVE_WORKING_KQUEUE 1
+#endif
 
 #ifdef __USE_UNUSED_DEFINITIONS__
 /* Define to necessary symbol if this constant uses a non-standard name on your system. */
@@ -452,6 +469,7 @@
 #define EVENT__PTHREAD_CREATE_JOINABLE 
 #endif
 
+#if (__WORDSIZE == 64)
 /* The size of `pthread_t', as computed by sizeof. */
 #define EVENT__SIZEOF_PTHREAD_T 8
 
@@ -484,6 +502,43 @@
 
 /* The size of 'void *', as computer by sizeof */
 #define EVENT__SIZEOF_VOID_P 8
+
+#else
+
+/* The size of `pthread_t', as computed by sizeof. */
+#define EVENT__SIZEOF_PTHREAD_T 4
+
+/* The size of a `int', as computed by sizeof. */
+#define EVENT__SIZEOF_INT 4
+
+/* The size of a `long', as computed by sizeof. */
+#define EVENT__SIZEOF_LONG 4
+
+/* The size of a `long long', as computed by sizeof. */
+#define EVENT__SIZEOF_LONG_LONG 8
+
+/* The size of `off_t', as computed by sizeof. */
+#define EVENT__SIZEOF_OFF_T 4
+
+#define EVENT__SIZEOF_SSIZE_T 4
+
+
+/* The size of a `short', as computed by sizeof. */
+#define EVENT__SIZEOF_SHORT 2
+
+/* The size of `size_t', as computed by sizeof. */
+#define EVENT__SIZEOF_SIZE_T 4
+
+/* Define to 1 if you can safely include both <sys/time.h> and <time.h>. */
+/* #undef EVENT__TIME_WITH_SYS_TIME */
+
+/* The size of `socklen_t', as computed by sizeof. */
+#define EVENT__SIZEOF_SOCKLEN_T 4
+
+/* The size of 'void *', as computer by sizeof */
+#define EVENT__SIZEOF_VOID_P 4
+
+#endif
 
 /* Define to `__inline__' or `__inline' if that's what the C compiler
    calls it, or to nothing if 'inline' is not supported under any name.  */
