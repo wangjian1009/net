@@ -36,12 +36,16 @@ void net_libevent_watcher_update(net_watcher_t base_watcher, int fd, uint8_t exp
 
     if (event_initialized(&watcher->m_event)) {
         event_del(&watcher->m_event);
+        assert(!event_initialized(&watcher->m_event));
     }
 
     if (events) {
         event_assign(&watcher->m_event, driver->m_event_base, fd, events | EV_PERSIST, net_libevent_watcher_cb, base_watcher);
         event_add(&watcher->m_event, NULL);
     }
+    else {
+        bzero(&watcher->m_event, sizeof(watcher->m_event));
+    }        
 }
 
 void net_libevent_watcher_cb(int fd, short events, void * arg) {
