@@ -59,5 +59,9 @@ uint8_t net_libevent_timer_is_active(net_timer_t base_timer) {
 
 void net_libevent_timer_cb(int fd, short events, void* arg) {
     net_timer_t base_timer = arg;
+
+    net_libevent_timer_t timer = net_timer_data(base_timer);
+    bzero(&timer->m_timer, sizeof(timer->m_timer));
+    
     net_timer_process(base_timer);
 }
