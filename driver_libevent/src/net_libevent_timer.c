@@ -39,6 +39,7 @@ void net_libevent_timer_active(net_timer_t base_timer, uint64_t delay_millisecon
     tv.tv_sec = delay_milliseconds / 1000;
     tv.tv_usec = delay_milliseconds - ((uint64_t)tv.tv_sec * 100U);
     evtimer_add(&timer->m_timer, &tv);
+    assert(event_initialized(&timer->m_timer));
 }
 
 void net_libevent_timer_cancel(net_timer_t base_timer) {
@@ -46,8 +47,8 @@ void net_libevent_timer_cancel(net_timer_t base_timer) {
 
     if (evtimer_initialized(&timer->m_timer)) {
         evtimer_del(&timer->m_timer);
-        assert(!event_initialized(&timer->m_timer));
         bzero(&timer->m_timer, sizeof(timer->m_timer));
+        assert(!event_initialized(&timer->m_timer));
     }
 }
 
