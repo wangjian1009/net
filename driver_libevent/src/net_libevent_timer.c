@@ -3,13 +3,14 @@
 #include "cpe/pal/pal_strings.h"
 #include "net_timer.h"
 #include "net_driver.h"
+#include "net_sock_driver.h"
 #include "net_libevent_timer.h"
 
 void net_libevent_timer_cb(int fd, short events, void* arg);
 
 int net_libevent_timer_init(net_timer_t base_timer) {
     net_libevent_timer_t timer = net_timer_data(base_timer);
-    net_libevent_driver_t driver = net_driver_data(net_timer_driver(base_timer));
+    net_libevent_driver_t driver = net_sock_driver_data_from_base_driver(net_timer_driver(base_timer));
 
     bzero(&timer->m_timer, sizeof(timer->m_timer));
 
@@ -26,7 +27,7 @@ void net_libevent_timer_fini(net_timer_t base_timer) {
 
 void net_libevent_timer_active(net_timer_t base_timer, uint64_t delay_milliseconds) {
     net_libevent_timer_t timer = net_timer_data(base_timer);
-    net_libevent_driver_t driver = net_driver_data(net_timer_driver(base_timer));
+    net_libevent_driver_t driver = net_sock_driver_data_from_base_driver(net_timer_driver(base_timer));
 
     if (evtimer_initialized(&timer->m_timer)) {
         evtimer_del(&timer->m_timer);

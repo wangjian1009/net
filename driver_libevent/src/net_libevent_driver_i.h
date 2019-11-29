@@ -7,9 +7,6 @@
 #include "net_schedule.h"
 #include "net_libevent_driver.h"
 
-typedef struct net_libevent_acceptor * net_libevent_acceptor_t;
-typedef struct net_libevent_endpoint * net_libevent_endpoint_t;
-typedef struct net_libevent_dgram * net_libevent_dgram_t;
 typedef struct net_libevent_watcher * net_libevent_watcher_t;
 typedef struct net_libevent_timer * net_libevent_timer_t;
 

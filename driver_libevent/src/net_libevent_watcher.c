@@ -2,6 +2,7 @@
 #include "cpe/pal/pal_strings.h"
 #include "net_watcher.h"
 #include "net_driver.h"
+#include "net_sock_driver.h"
 #include "net_libevent_watcher.h"
 
 void net_libevent_watcher_cb(int fd, short events, void* arg);
@@ -21,7 +22,7 @@ void net_libevent_watcher_fini(net_watcher_t base_watcher, int fd) {
 
 void net_libevent_watcher_update(net_watcher_t base_watcher, int fd, uint8_t expect_read, uint8_t expect_write) {
     net_libevent_watcher_t watcher = net_watcher_data(base_watcher);
-    net_libevent_driver_t driver = net_driver_data(net_watcher_driver(base_watcher));
+    net_libevent_driver_t driver = net_sock_driver_data_from_base_driver(net_watcher_driver(base_watcher));
 
     short events = (expect_read ? EV_READ : 0) | (expect_write ? EV_WRITE : 0);
     short cur_events = 0;
