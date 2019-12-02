@@ -10,7 +10,6 @@ void net_libevent_timer_cb(int fd, short events, void* arg);
 
 int net_libevent_timer_init(net_timer_t base_timer) {
     net_libevent_timer_t timer = net_timer_data(base_timer);
-    net_libevent_driver_t driver = net_sock_driver_data_from_base_driver(net_timer_driver(base_timer));
 
     bzero(&timer->m_timer, sizeof(timer->m_timer));
 

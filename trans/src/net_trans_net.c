@@ -146,7 +146,7 @@ void net_trans_check_multi_info(net_trans_manage_t mgr) {
                     if (curl_easy_getinfo(handler, CURLINFO_OS_ERRNO, &os_error) == CURLE_OK
                         && os_error != 0)
                     {
-                        snprintf(addition_msg_buf, sizeof(addition_msg_buf), "%s(%s)", addition_msg, strerror(os_error));
+                        snprintf(addition_msg_buf, sizeof(addition_msg_buf), "%s(%s)", addition_msg, strerror((int)os_error));
                         addition_msg = addition_msg_buf;
                     }
                     
