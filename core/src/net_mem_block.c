@@ -50,8 +50,8 @@ int net_mem_block_compare(const net_mem_block_t ptr1, const net_mem_block_t ptr2
         return 1;
     }
     {
-        uint32_t size1 = (size == SIZE_MAX) ? ptr1->len : cpe_min(size, ptr1->len);
-        uint32_t size2 = (size == SIZE_MAX) ? ptr2->len : cpe_min(size, ptr2->len);
+        uint32_t size1 = (size == UINT32_MAX) ? ptr1->len : cpe_min(size, ptr1->len);
+        uint32_t size2 = (size == UINT32_MAX) ? ptr2->len : cpe_min(size, ptr2->len);
         uint32_t size0 = cpe_min(size1, size2);
         int ret = memcmp(ptr1->buffer, ptr2->buffer, size0);
         return (ret != 0) ? ret : ((size1 == size2) ? 0 : ((size0 == size1) ? 1 : -1));
