@@ -15,7 +15,7 @@ net_dns_ns_cli_endpoint_create(net_dns_source_t source, net_driver_t driver, net
     
     net_endpoint_t base_endpoint =
         net_endpoint_create(
-            driver, net_protocol_from_data(source->m_manage->m_protocol_dns_ns_cli));
+            driver, net_protocol_from_data(source->m_manage->m_protocol_dns_ns_cli), NULL);
     if (base_endpoint == NULL) {
         CPE_ERROR(
             manage->m_em, "dns-cli: %s: create ns-cli-endpoint fail!",

@@ -3,29 +3,17 @@
 #include "cpe/utils/math_ex.h"
 #include "net_mem_block_i.h"
 
-static uint32_t _memory_size_internal(void* ptr) {
-    if (ptr == NULL) {
-        return 0;
-    }
-#if defined(_WIN32) && defined(_MSC_VER)
-    return _msize(ptr);
-#elif defined(__APPLE__)
-    return malloc_size(ptr);
-#else
-    return malloc_usable_size(ptr); // Linux and __MINGW32__
-#endif
-}
-
-net_mem_block_t net_mem_block_create(net_schedule_t scheudle, uint32_t capacity) {
-    net_mem_block_t ptr = (net_mem_block_t)calloc(1, sizeof(struct net_mem_block));
-    assert(ptr);
-    ptr->m_schedule = schedule;
-    ptr->buffer = (uint8_t*)calloc(capacity, sizeof(uint8_t));
-    assert(ptr->buffer);
-    ptr->capacity = capacity;
-    ptr->ref_count = 1;
-    assert(ptr->capacity <= _memory_size_internal(ptr->buffer));
-    return ptr;
+net_mem_block_t net_mem_block_create(net_schedule_t schedule, uint32_t capacity) {
+    net_mem_block_t block = (net_mem_block_t)calloc(1, sizeof(struct net_mem_block));
+    assert(block);
+    block->m_schedule = schedule;
+    block->m_endpoint = NULL;
+    block->m_buf_type = 0;
+    block->buffer = (uint8_t*)calloc(capacity, sizeof(uint8_t));
+    assert(block->buffer);
+    block->capacity = capacity;
+    block->ref_count = 1;
+    return block;
 }
 
 void net_mem_block_add_ref(net_mem_block_t ptr) {
@@ -65,15 +53,15 @@ int net_mem_block_compare(const net_mem_block_t ptr1, const net_mem_block_t ptr2
         uint32_t size1 = (size == SIZE_MAX) ? ptr1->len : cpe_min(size, ptr1->len);
         uint32_t size2 = (size == SIZE_MAX) ? ptr2->len : cpe_min(size, ptr2->len);
         uint32_t size0 = cpe_min(size1, size2);
-        int ret = memcmp(ptr1->mem_block, ptr2->mem_block, size0);
+        int ret = memcmp(ptr1->buffer, ptr2->buffer, size0);
         return (ret != 0) ? ret : ((size1 == size2) ? 0 : ((size0 == size1) ? 1 : -1));
     }
 }
 
 void net_mem_block_reset(net_mem_block_t ptr) {
-    if (ptr && ptr->mem_block) {
+    if (ptr && ptr->buffer) {
         ptr->len = 0;
-        memset(ptr->mem_block, 0, ptr->capacity);
+        memset(ptr->buffer, 0, ptr->capacity);
     }
 }
 
@@ -82,9 +70,9 @@ net_mem_block_t net_mem_block_clone(const net_mem_block_t ptr) {
     if (ptr == NULL) {
         return result;
     }
-    result = net_mem_block_create(cpe_max(ptr->capacity, ptr->len));
+    result = net_mem_block_create(ptr->m_schedule, cpe_max(ptr->capacity, ptr->len));
     result->len = ptr->len;
-    memmove(result->mem_block, ptr->mem_block, ptr->len);
+    memmove(result->buffer, ptr->buffer, ptr->len);
     return result;
 }
 
@@ -95,11 +83,10 @@ uint32_t net_mem_block_realloc(net_mem_block_t ptr, uint32_t capacity) {
     }
     real_capacity = cpe_max(capacity, ptr->capacity);
     if (ptr->capacity < real_capacity) {
-        ptr->mem_block = (uint8_t*)realloc(ptr->mem_block, real_capacity);
-        assert(ptr->mem_block);
-        memset(ptr->mem_block + ptr->capacity, 0, real_capacity - ptr->capacity);
+        ptr->buffer = (uint8_t*)realloc(ptr->buffer, real_capacity);
+        assert(ptr->buffer);
+        memset(ptr->buffer + ptr->capacity, 0, real_capacity - ptr->capacity);
         ptr->capacity = real_capacity;
-        assert(ptr->capacity <= _memory_size_internal(ptr->mem_block));
     }
     return real_capacity;
 }
@@ -110,8 +97,8 @@ uint32_t net_mem_block_store(net_mem_block_t ptr, const uint8_t* data, uint32_t 
         return result;
     }
     result = net_mem_block_realloc(ptr, size);
-    if (ptr->mem_block && data && size) {
-        memmove(ptr->mem_block, data, size);
+    if (ptr->buffer && data && size) {
+        memmove(ptr->buffer, data, size);
     }
     ptr->len = size;
     return cpe_min(size, result);
@@ -120,14 +107,14 @@ uint32_t net_mem_block_store(net_mem_block_t ptr, const uint8_t* data, uint32_t 
 void net_mem_block_replace(net_mem_block_t dst, const net_mem_block_t src) {
     if (dst) {
         if (src) {
-            net_mem_block_store(dst, src->mem_block, src->len);
+            net_mem_block_store(dst, src->buffer, src->len);
         } else {
             net_mem_block_reset(dst);
         }
     }
     /*
   if (dst==NULL || src==NULL) { return; }
-  net_mem_block_store(dst, src->mem_block, src->len);
+  net_mem_block_store(dst, src->buffer, src->len);
   */
 }
 
@@ -140,8 +127,8 @@ void net_mem_block_insert(net_mem_block_t ptr, uint32_t pos, const uint8_t* data
         pos = ptr->len;
     }
     result = net_mem_block_realloc(ptr, ptr->len + size);
-    memmove(ptr->mem_block + pos + size, ptr->mem_block + pos, ptr->len - pos);
-    memmove(ptr->mem_block + pos, data, size);
+    memmove(ptr->buffer + pos + size, ptr->buffer + pos, ptr->len - pos);
+    memmove(ptr->buffer + pos, data, size);
     ptr->len += size;
 }
 
@@ -149,27 +136,27 @@ void net_mem_block_insert2(net_mem_block_t ptr, uint32_t pos, const net_mem_bloc
     if (ptr == NULL || data == NULL) {
         return;
     }
-    net_mem_block_insert(ptr, pos, data->mem_block, data->len);
+    net_mem_block_insert(ptr, pos, data->buffer, data->len);
 }
 
 uint32_t net_mem_block_concatenate(net_mem_block_t ptr, const uint8_t* data, uint32_t size) {
     uint32_t result = net_mem_block_realloc(ptr, ptr->len + size);
-    memmove(ptr->mem_block + ptr->len, data, size);
+    memmove(ptr->buffer + ptr->len, data, size);
     ptr->len += size;
     return cpe_min(ptr->len, result);
 }
 
 uint32_t net_mem_block_concatenate2(net_mem_block_t dst, const net_mem_block_t src) {
     if (dst == NULL || src == NULL) { return 0; }
-    return net_mem_block_concatenate(dst, src->mem_block, src->len);
+    return net_mem_block_concatenate(dst, src->buffer, src->len);
 }
 
 void net_mem_block_shortened_to(net_mem_block_t ptr, uint32_t begin, uint32_t len) {
     if (ptr && (begin <= ptr->len) && (len <= (ptr->len - begin))) {
         if (begin != 0) {
-            memmove(ptr->mem_block, ptr->mem_block + begin, len);
+            memmove(ptr->buffer, ptr->buffer + begin, len);
         }
-        ptr->mem_block[len] = 0;
+        ptr->buffer[len] = 0;
         ptr->len = len;
     }
 }
@@ -182,8 +169,7 @@ void net_mem_block_release(net_mem_block_t ptr) {
     if (ptr->ref_count > 0) {
         return;
     }
-    if (ptr->mem_block != NULL) {
-        assert(ptr->capacity <= _memory_size_internal(ptr->mem_block));
+    if (ptr->buffer != NULL) {
         free(ptr->buffer);
     }
     free(ptr);

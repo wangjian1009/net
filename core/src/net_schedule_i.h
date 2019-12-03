@@ -65,6 +65,7 @@ struct net_schedule {
 
     uint32_t m_endpoint_max_id;
     struct cpe_hash_table m_endpoints;
+    net_mem_group_t m_dft_mem_group;
     ringbuffer_t m_endpoint_buf;
     ringbuffer_block_t m_endpoint_tb;
 

@@ -149,7 +149,7 @@ static void net_sock_acceptor_cb(void * ctx, int fd, uint8_t do_read, uint8_t do
     }
 
     net_endpoint_t base_endpoint =
-        net_endpoint_create(net_driver_from_data(driver), net_acceptor_protocol(base_acceptor));
+        net_endpoint_create(net_driver_from_data(driver), net_acceptor_protocol(base_acceptor), NULL);
     if (base_endpoint == NULL) {
         CPE_ERROR(em, "sock: acceptor: create endpoint fail");
         cpe_sock_close(new_fd);

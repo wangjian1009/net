@@ -11,6 +11,7 @@ void net_schedule_free(net_schedule_t schedule);
 
 mem_allocrator_t net_schedule_allocrator(net_schedule_t schedule);
 error_monitor_t net_schedule_em(net_schedule_t schedule);
+net_mem_group_t net_schedule_dft_mem_group(net_schedule_t schedule);
 mem_buffer_t net_schedule_tmp_buffer(net_schedule_t schedule);
 
 uint8_t net_schedule_debug(net_schedule_t schedule);

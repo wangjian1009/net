@@ -19,7 +19,7 @@ static void net_endpoint_dns_query_callback(void * ctx, net_address_t main_addre
 static int net_endpoint_notify_state_changed(net_endpoint_t endpoint, net_endpoint_state_t old_state);
 
 net_endpoint_t
-net_endpoint_create(net_driver_t driver, net_protocol_t protocol) {
+net_endpoint_create(net_driver_t driver, net_protocol_t protocol, net_mem_group_t mem_group) {
     net_schedule_t schedule = driver->m_schedule;
     net_endpoint_t endpoint;
     uint16_t capacity = sizeof(struct net_endpoint) + driver->m_endpoint_capacity + schedule->m_endpoint_protocol_capacity;
@@ -42,6 +42,7 @@ net_endpoint_create(net_driver_t driver, net_protocol_t protocol) {
     endpoint->m_address = NULL;
     endpoint->m_remote_address = NULL;
     endpoint->m_protocol = protocol;
+    endpoint->m_mem_group = mem_group ? mem_group : schedule->m_dft_mem_group;
     endpoint->m_prepare_connect = NULL;
     endpoint->m_prepare_connect_ctx = NULL;
     endpoint->m_close_after_send = 0;

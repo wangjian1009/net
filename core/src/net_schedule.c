@@ -18,6 +18,7 @@
 #include "net_dns_query_i.h"
 #include "net_debug_setup_i.h"
 #include "net_debug_condition_i.h"
+#include "net_mem_group_i.h"
 
 static void net_schedule_do_delay_process(net_timer_t timer, void * input_ctx);
 
@@ -60,9 +61,16 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em, uint32_t common_
     TAILQ_INIT(&schedule->m_free_endpoint_monitors);
     TAILQ_INIT(&schedule->m_free_endpoint_nexts);
 
+    schedule->m_dft_mem_group = net_mem_group_create(schedule, common_buff_capacity);
+    if (schedule->m_dft_mem_group == NULL) {
+        CPE_ERROR(em, "schedule: alloc common buff fail, capacity=%d!", common_buff_capacity);
+        return NULL;
+    }
+    
     schedule->m_endpoint_buf = ringbuffer_new(common_buff_capacity, em);
     if (schedule->m_endpoint_buf == NULL) {
         CPE_ERROR(em, "schedule: alloc common buff fail, capacity=%d!", common_buff_capacity);
+        net_mem_group_free(schedule->m_dft_mem_group);
         return NULL;
     }
     schedule->m_endpoint_tb = NULL;
@@ -76,6 +84,7 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em, uint32_t common_
             -1) != 0)
     {
         ringbuffer_delete(schedule->m_endpoint_buf);
+        net_mem_group_free(schedule->m_dft_mem_group);
         mem_free(alloc, schedule);
         return NULL;
     }
@@ -90,6 +99,7 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em, uint32_t common_
     {
         cpe_hash_table_fini(&schedule->m_endpoints);
         ringbuffer_delete(schedule->m_endpoint_buf);
+        net_mem_group_free(schedule->m_dft_mem_group);
         mem_free(alloc, schedule);
         return NULL;
     }
@@ -178,6 +188,9 @@ void net_schedule_free(net_schedule_t schedule) {
 
     ringbuffer_delete(schedule->m_endpoint_buf);
     schedule->m_endpoint_buf = NULL;
+
+    net_mem_group_free(schedule->m_dft_mem_group);
+    schedule->m_dft_mem_group = NULL;
     
     mem_buffer_clear(&schedule->m_tmp_buffer);
     mem_free(schedule->m_alloc, schedule);
@@ -189,6 +202,10 @@ mem_allocrator_t net_schedule_allocrator(net_schedule_t schedule) {
 
 error_monitor_t net_schedule_em(net_schedule_t schedule) {
     return schedule->m_em;
+}
+
+net_mem_group_t net_schedule_dft_mem_group(net_schedule_t schedule) {
+    return schedule->m_dft_mem_group;
 }
 
 mem_buffer_t net_schedule_tmp_buffer(net_schedule_t schedule) {

@@ -8,6 +8,7 @@ NET_BEGIN_DECL
 
 typedef struct net_schedule * net_schedule_t;
 typedef struct net_mem_block * net_mem_block_t;
+typedef struct net_mem_group * net_mem_group_t;
 typedef struct net_local_ip_stack_monitor * net_local_ip_stack_monitor_t;
 typedef struct net_driver * net_driver_t;
 typedef struct net_protocol * net_protocol_t;

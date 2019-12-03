@@ -10,11 +10,12 @@ struct net_endpoint_it {
     char data[64];
 };
 
-net_endpoint_t net_endpoint_create(net_driver_t driver, net_protocol_t protocol);
+net_endpoint_t net_endpoint_create(net_driver_t driver, net_protocol_t protocol, net_mem_group_t mem_group);
 void net_endpoint_free(net_endpoint_t endpoint);
 
 net_schedule_t net_endpoint_schedule(net_endpoint_t endpoint);
 net_protocol_t net_endpoint_protocol(net_endpoint_t endpoint);
+net_mem_group_t net_endpoint_mem_group(net_endpoint_t endpoint);
 const char * net_endpoint_protocol_name(net_endpoint_t endpoint);
 int net_endpoint_set_protocol(net_endpoint_t endpoint, net_protocol_t protocol);
 net_driver_t net_endpoint_driver(net_endpoint_t endpoint);

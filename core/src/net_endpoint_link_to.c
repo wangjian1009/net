@@ -14,7 +14,7 @@ int net_endpoint_link_direct(net_endpoint_t endpoint, net_address_t target_addr,
     
     net_driver_t driver = schedule->m_direct_driver;
 
-    net_endpoint_t target = net_endpoint_create(driver, schedule->m_direct_protocol);
+    net_endpoint_t target = net_endpoint_create(driver, schedule->m_direct_protocol, NULL);
     if (target == NULL) {
         return -1;
     }
