@@ -3,17 +3,6 @@
 #include "cpe/utils/math_ex.h"
 #include "net_buffer_i.h"
 
-void check_memory_content(net_buffer_t buf) {
-#if __MEM_CHECK__
-    static const char data[] = "\xE7\x3C\x73\xA6\x66\x43\x28\x67\xAF\xD3\x5C\xE2\x70\x80\x0D\xD7";
-    if (buf && buf->len >= strlen(data)) {
-        if (memcmp(buf->buffer, data, strlen(data)) == 0) {
-            // _CrtDbgBreak();
-        }
-    }
-#endif // __MEM_CHECK__
-}
-
 static uint32_t _memory_size_internal(void* ptr) {
     if (ptr == NULL) {
         return 0;
@@ -27,9 +16,10 @@ static uint32_t _memory_size_internal(void* ptr) {
 #endif
 }
 
-net_buffer_t net_buffer_create(uint32_t capacity) {
+net_buffer_t net_buffer_create(net_schedule_t scheudle, uint32_t capacity) {
     net_buffer_t ptr = (net_buffer_t)calloc(1, sizeof(struct net_buffer));
     assert(ptr);
+    ptr->m_schedule = schedule;
     ptr->buffer = (uint8_t*)calloc(capacity, sizeof(uint8_t));
     assert(ptr->buffer);
     ptr->capacity = capacity;
@@ -44,8 +34,8 @@ void net_buffer_add_ref(net_buffer_t ptr) {
     }
 }
 
-net_buffer_t net_buffer_create_from(const uint8_t* data, uint32_t len) {
-    net_buffer_t result = net_buffer_create(2048);
+net_buffer_t net_buffer_create_from(net_schedule_t scheudle, const uint8_t* data, uint32_t len) {
+    net_buffer_t result = net_buffer_create(scheudle, 2048);
     net_buffer_store(result, data, len);
     return result;
 }
@@ -95,7 +85,6 @@ net_buffer_t net_buffer_clone(const net_buffer_t ptr) {
     result = net_buffer_create(cpe_max(ptr->capacity, ptr->len));
     result->len = ptr->len;
     memmove(result->buffer, ptr->buffer, ptr->len);
-    check_memory_content(result);
     return result;
 }
 
@@ -125,7 +114,6 @@ uint32_t net_buffer_store(net_buffer_t ptr, const uint8_t* data, uint32_t size) 
         memmove(ptr->buffer, data, size);
     }
     ptr->len = size;
-    check_memory_content(ptr);
     return cpe_min(size, result);
 }
 
@@ -168,7 +156,6 @@ uint32_t net_buffer_concatenate(net_buffer_t ptr, const uint8_t* data, uint32_t 
     uint32_t result = net_buffer_realloc(ptr, ptr->len + size);
     memmove(ptr->buffer + ptr->len, data, size);
     ptr->len += size;
-    check_memory_content(ptr);
     return cpe_min(ptr->len, result);
 }
 
@@ -185,7 +172,6 @@ void net_buffer_shortened_to(net_buffer_t ptr, uint32_t begin, uint32_t len) {
         ptr->buffer[len] = 0;
         ptr->len = len;
     }
-    check_memory_content(ptr);
 }
 
 void net_buffer_release(net_buffer_t ptr) {
