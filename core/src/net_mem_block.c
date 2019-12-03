@@ -3,10 +3,10 @@
 #include "cpe/utils/math_ex.h"
 #include "net_mem_block_i.h"
 
-net_mem_block_t net_mem_block_create(net_schedule_t schedule, uint32_t capacity) {
+net_mem_block_t net_mem_block_create(net_mem_group_t group, uint32_t capacity) {
     net_mem_block_t block = (net_mem_block_t)calloc(1, sizeof(struct net_mem_block));
     assert(block);
-    block->m_schedule = schedule;
+    block->m_group = group;
     block->m_endpoint = NULL;
     block->m_buf_type = 0;
     block->buffer = (uint8_t*)calloc(capacity, sizeof(uint8_t));
@@ -22,8 +22,8 @@ void net_mem_block_add_ref(net_mem_block_t ptr) {
     }
 }
 
-net_mem_block_t net_mem_block_create_from(net_schedule_t scheudle, const uint8_t* data, uint32_t len) {
-    net_mem_block_t result = net_mem_block_create(scheudle, 2048);
+net_mem_block_t net_mem_block_create_from(net_mem_group_t group, const uint8_t* data, uint32_t len) {
+    net_mem_block_t result = net_mem_block_create(group, 2048);
     net_mem_block_store(result, data, len);
     return result;
 }
@@ -65,12 +65,12 @@ void net_mem_block_reset(net_mem_block_t ptr) {
     }
 }
 
-net_mem_block_t net_mem_block_clone(const net_mem_block_t ptr) {
+net_mem_block_t net_mem_block_clone(net_mem_group_t group, const net_mem_block_t ptr) {
     net_mem_block_t result = NULL;
     if (ptr == NULL) {
         return result;
     }
-    result = net_mem_block_create(ptr->m_schedule, cpe_max(ptr->capacity, ptr->len));
+    result = net_mem_block_create(group, cpe_max(ptr->capacity, ptr->len));
     result->len = ptr->len;
     memmove(result->buffer, ptr->buffer, ptr->len);
     return result;
