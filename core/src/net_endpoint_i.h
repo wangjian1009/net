@@ -28,9 +28,9 @@ struct net_endpoint {
     net_endpoint_state_t m_state;
     net_dns_query_t m_dns_query;
     uint32_t m_all_buf_limit;
-    ringbuffer_block_t m_tb;    
+    net_mem_block_t m_tb;    
     struct {
-        ringbuffer_block_t m_buf;
+        net_mem_block_list_t m_blocks;
         uint32_t m_size;
         uint32_t m_limit;        
     } m_bufs[net_ep_buf_count];
@@ -43,10 +43,10 @@ struct net_endpoint {
 
 void net_endpoint_real_free(net_endpoint_t endpoint);
 
-ringbuffer_block_t net_endpoint_common_buf_alloc(net_endpoint_t endpoint, uint32_t size);
-
 int net_endpoint_update_rbuf_is_full(net_endpoint_t endpoint);
-    
+
+uint8_t net_endpoint_buf_validate(net_endpoint_t endpoint, void const * buf, uint32_t capacity);
+
 uint32_t net_endpoint_hash(net_endpoint_t o, void * user_data);
 int net_endpoint_eq(net_endpoint_t l, net_endpoint_t r, void * user_data);
 

@@ -1,10 +1,10 @@
 #include "assert.h"
 #include "cpe/pal/pal_string.h"
 #include "cpe/pal/pal_strings.h"
-#include "cpe/utils/ringbuffer.h"
 #include "cpe/utils/stream_buffer.h"
 #include "cpe/utils/string_utils.h"
 #include "net_endpoint_i.h"
+#include "net_mem_block_i.h"
 #include "net_endpoint_monitor_i.h"
 #include "net_debug_setup_i.h"
 #include "net_protocol_i.h"
@@ -61,7 +61,7 @@ net_endpoint_create(net_driver_t driver, net_protocol_t protocol, net_mem_group_
     endpoint->m_all_buf_limit = NET_ENDPOINT_NO_LIMIT;
     uint8_t i;
     for(i = 0; i < CPE_ARRAY_SIZE(endpoint->m_bufs); ++i) {
-        endpoint->m_bufs[i].m_buf = NULL;
+        TAILQ_INIT(&endpoint->m_bufs[i].m_blocks);
         endpoint->m_bufs[i].m_size = 0;
         endpoint->m_bufs[i].m_limit = NET_ENDPOINT_NO_LIMIT;
     }
@@ -153,19 +153,16 @@ void net_endpoint_free(net_endpoint_t endpoint) {
 	}
 
     if (endpoint->m_tb) {
-        assert(endpoint->m_tb == schedule->m_endpoint_tb);
-        ringbuffer_shrink(schedule->m_endpoint_buf, schedule->m_endpoint_tb, 0);
-        endpoint->m_tb = schedule->m_endpoint_tb = NULL;
+        net_mem_block_free(endpoint->m_tb);
+        endpoint->m_tb = NULL;
     }
-
+    
     uint8_t i;
     for(i = 0; i < CPE_ARRAY_SIZE(endpoint->m_bufs); ++i) {
-        if (endpoint->m_bufs[i].m_buf) {
-            assert(endpoint->m_bufs[i].m_buf->id == endpoint->m_id);
-            ringbuffer_free(schedule->m_endpoint_buf, endpoint->m_bufs[i].m_buf);
-            endpoint->m_bufs[i].m_buf = NULL;
-            endpoint->m_bufs[i].m_size = 0;
+        while(!TAILQ_EMPTY(&endpoint->m_bufs[i].m_blocks)) {
+            net_mem_block_free(TAILQ_FIRST(&endpoint->m_bufs[i].m_blocks));
         }
+        endpoint->m_bufs[i].m_size = 0;
     }
 
     while(!TAILQ_EMPTY(&endpoint->m_monitors)) {
@@ -372,12 +369,10 @@ int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) 
     if (old_is_active && !net_endpoint_is_active(endpoint)) {
         uint8_t i;
         for(i = 0; i < CPE_ARRAY_SIZE(endpoint->m_bufs); ++i) {
-            if (endpoint->m_bufs[i].m_buf) {
-                assert(endpoint->m_bufs[i].m_buf->id == endpoint->m_id);
-                ringbuffer_free(schedule->m_endpoint_buf, endpoint->m_bufs[i].m_buf);
-                endpoint->m_bufs[i].m_buf = NULL;
-                endpoint->m_bufs[i].m_size = 0;
+            while(!TAILQ_EMPTY(&endpoint->m_bufs[i].m_blocks)) {
+                net_mem_block_free(TAILQ_FIRST(&endpoint->m_bufs[i].m_blocks));
             }
+            endpoint->m_bufs[i].m_size = 0;
         }
 
         if (endpoint->m_dns_query) {
@@ -642,129 +637,129 @@ int net_endpoint_direct(net_endpoint_t endpoint, net_address_t target_addr) {
     return endpoint->m_protocol->m_endpoint_direct(endpoint, target_addr);
 }
 
-static int net_endpoint_common_buf_move(void * ctx, ringbuffer_t rb, ringbuffer_block_t old_block, ringbuffer_block_t new_block) {
-    net_schedule_t schedule = ctx;
+/* static int net_endpoint_common_buf_move(void * ctx, ringbuffer_t rb, ringbuffer_block_t old_block, ringbuffer_block_t new_block) { */
+/*     net_schedule_t schedule = ctx; */
 
-    int id = new_block->id;
-    assert(id >= 0);
+/*     int id = new_block->id; */
+/*     assert(id >= 0); */
     
-    net_endpoint_t endpoint = net_endpoint_find(schedule, (uint32_t)id);
-    if (endpoint == NULL) {
-        CPE_ERROR(schedule->m_em, "schedule: buf move: endpoint %d not exist", id);
-        return -1;
-    }
+/*     net_endpoint_t endpoint = net_endpoint_find(schedule, (uint32_t)id); */
+/*     if (endpoint == NULL) { */
+/*         CPE_ERROR(schedule->m_em, "schedule: buf move: endpoint %d not exist", id); */
+/*         return -1; */
+/*     } */
 
-    uint8_t i;
-    for(i = 0; i < CPE_ARRAY_SIZE(endpoint->m_bufs); ++i) {
-        if (endpoint->m_bufs[i].m_buf == old_block) {
-            endpoint->m_bufs[i].m_buf = new_block;
+/*     uint8_t i; */
+/*     for(i = 0; i < CPE_ARRAY_SIZE(endpoint->m_bufs); ++i) { */
+/*         if (endpoint->m_bufs[i].m_buf == old_block) { */
+/*             endpoint->m_bufs[i].m_buf = new_block; */
 
-            CPE_INFO(
-                schedule->m_em, "schedule: ringbuffer: gc: moved %s.%s",
-                net_endpoint_dump(&schedule->m_tmp_buffer, endpoint),
-                net_endpoint_buf_type_str((net_endpoint_buf_type_t)i));
+/*             CPE_INFO( */
+/*                 schedule->m_em, "schedule: ringbuffer: gc: moved %s.%s", */
+/*                 net_endpoint_dump(&schedule->m_tmp_buffer, endpoint), */
+/*                 net_endpoint_buf_type_str((net_endpoint_buf_type_t)i)); */
 
-            return 0;
-        }
-    }
+/*             return 0; */
+/*         } */
+/*     } */
     
-    CPE_ERROR(schedule->m_em, "schedule: buf move: endpoint %d no old buf", id);
-    return -1;
-}
+/*     CPE_ERROR(schedule->m_em, "schedule: buf move: endpoint %d no old buf", id); */
+/*     return -1; */
+/* } */
 
-ringbuffer_block_t net_endpoint_common_buf_alloc(net_endpoint_t endpoint, uint32_t size) {
-    net_schedule_t schedule = endpoint->m_driver->m_schedule;
-    ringbuffer_block_t blk;
+/* ringbuffer_block_t net_endpoint_common_buf_alloc(net_endpoint_t endpoint, uint32_t size) { */
+/*     net_schedule_t schedule = endpoint->m_driver->m_schedule; */
+/*     ringbuffer_block_t blk; */
 
-    assert(schedule->m_endpoint_tb == NULL);
-    assert(endpoint->m_tb == NULL);
+/*     assert(schedule->m_endpoint_tb == NULL); */
+/*     assert(endpoint->m_tb == NULL); */
     
-    blk = ringbuffer_alloc(schedule->m_endpoint_buf, size);
-    if  (blk == NULL) {
-        CPE_ERROR(
-            schedule->m_em, "%s: buf alloc: not enouth capacity, len=%d!",
-            net_endpoint_dump(&schedule->m_tmp_buffer, endpoint), size);
+/*     blk = ringbuffer_alloc(schedule->m_endpoint_buf, size); */
+/*     if  (blk == NULL) { */
+/*         CPE_ERROR( */
+/*             schedule->m_em, "%s: buf alloc: not enouth capacity, len=%d!", */
+/*             net_endpoint_dump(&schedule->m_tmp_buffer, endpoint), size); */
 
-        // CPE_ERROR(schedule->m_em, "ringbuffer: before gc: dump buf:");
-        // ringbuffer_dump(schedule->m_endpoint_buf);
+/*         // CPE_ERROR(schedule->m_em, "ringbuffer: before gc: dump buf:"); */
+/*         // ringbuffer_dump(schedule->m_endpoint_buf); */
 
-        ringbuffer_gc(schedule->m_endpoint_buf, schedule, net_endpoint_common_buf_move);
+/*         ringbuffer_gc(schedule->m_endpoint_buf, schedule, net_endpoint_common_buf_move); */
 
-        // CPE_ERROR(schedule->m_em, "ringbuffer: after gc: dump buf:");
-        // ringbuffer_dump(schedule->m_endpoint_buf);
+/*         // CPE_ERROR(schedule->m_em, "ringbuffer: after gc: dump buf:"); */
+/*         // ringbuffer_dump(schedule->m_endpoint_buf); */
 
-        blk = ringbuffer_alloc(schedule->m_endpoint_buf, size);
-        if  (blk == NULL) {
-            int collect_id = ringbuffer_collect(schedule->m_endpoint_buf);
-            if(collect_id < 0) {
-                CPE_ERROR(
-                    schedule->m_em, "%s: buf alloc: not enouth capacity(after gc), len=%d!",
-                    net_endpoint_dump(&schedule->m_tmp_buffer, endpoint), size);
-                return NULL;
-            }
+/*         blk = ringbuffer_alloc(schedule->m_endpoint_buf, size); */
+/*         if  (blk == NULL) { */
+/*             int collect_id = ringbuffer_collect(schedule->m_endpoint_buf); */
+/*             if(collect_id < 0) { */
+/*                 CPE_ERROR( */
+/*                     schedule->m_em, "%s: buf alloc: not enouth capacity(after gc), len=%d!", */
+/*                     net_endpoint_dump(&schedule->m_tmp_buffer, endpoint), size); */
+/*                 return NULL; */
+/*             } */
 
-            if ((uint32_t)collect_id == endpoint->m_id) {
-                CPE_ERROR(
-                    schedule->m_em, "%s: buf alloc: self use block, require len %d",
-                    net_endpoint_dump(&schedule->m_tmp_buffer, endpoint), size);
+/*             if ((uint32_t)collect_id == endpoint->m_id) { */
+/*                 CPE_ERROR( */
+/*                     schedule->m_em, "%s: buf alloc: self use block, require len %d", */
+/*                     net_endpoint_dump(&schedule->m_tmp_buffer, endpoint), size); */
 
-                uint8_t i;
-                for(i = 0; i < CPE_ARRAY_SIZE(endpoint->m_bufs); ++i) {
-                    if (endpoint->m_bufs[i].m_buf == NULL) continue;
+/*                 uint8_t i; */
+/*                 for(i = 0; i < CPE_ARRAY_SIZE(endpoint->m_bufs); ++i) { */
+/*                     if (endpoint->m_bufs[i].m_buf == NULL) continue; */
 
-                    CPE_ERROR(
-                        schedule->m_em, "%s: buf alloc: self use block, clear %s buf, size=%d",
-                        net_endpoint_dump(&schedule->m_tmp_buffer, endpoint),
-                        net_endpoint_buf_type_str(i), endpoint->m_bufs[i].m_size);
+/*                     CPE_ERROR( */
+/*                         schedule->m_em, "%s: buf alloc: self use block, clear %s buf, size=%d", */
+/*                         net_endpoint_dump(&schedule->m_tmp_buffer, endpoint), */
+/*                         net_endpoint_buf_type_str(i), endpoint->m_bufs[i].m_size); */
                 
-                    endpoint->m_bufs[i].m_buf = NULL;
-                    endpoint->m_bufs[i].m_size = 0;
-                }
+/*                     endpoint->m_bufs[i].m_buf = NULL; */
+/*                     endpoint->m_bufs[i].m_size = 0; */
+/*                 } */
 
-                CPE_ERROR(schedule->m_em, "dump buf:");
-                ringbuffer_dump(schedule->m_endpoint_buf);
+/*                 CPE_ERROR(schedule->m_em, "dump buf:"); */
+/*                 ringbuffer_dump(schedule->m_endpoint_buf); */
         
-                return NULL;
-            }
+/*                 return NULL; */
+/*             } */
         
-            net_endpoint_t free_endpoint = net_endpoint_find(schedule, (uint32_t)collect_id);
-            assert(free_endpoint);
-            assert(free_endpoint != endpoint);
+/*             net_endpoint_t free_endpoint = net_endpoint_find(schedule, (uint32_t)collect_id); */
+/*             assert(free_endpoint); */
+/*             assert(free_endpoint != endpoint); */
 
-            if (free_endpoint->m_tb) {
-                assert(free_endpoint->m_tb == schedule->m_endpoint_tb);
-                net_endpoint_buf_release(free_endpoint);
-            }
+/*             if (free_endpoint->m_tb) { */
+/*                 assert(free_endpoint->m_tb == schedule->m_endpoint_tb); */
+/*                 net_endpoint_buf_release(free_endpoint); */
+/*             } */
         
-            uint8_t i;
-            for(i = 0; i < CPE_ARRAY_SIZE(free_endpoint->m_bufs); ++i) {
-                if (free_endpoint->m_bufs[i].m_buf == NULL) continue;
-                ringbuffer_free(schedule->m_endpoint_buf, endpoint->m_bufs[i].m_buf);
-                free_endpoint->m_bufs[i].m_buf = NULL;
-                free_endpoint->m_bufs[i].m_size = 0;
-            }
+/*             uint8_t i; */
+/*             for(i = 0; i < CPE_ARRAY_SIZE(free_endpoint->m_bufs); ++i) { */
+/*                 if (free_endpoint->m_bufs[i].m_buf == NULL) continue; */
+/*                 ringbuffer_free(schedule->m_endpoint_buf, endpoint->m_bufs[i].m_buf); */
+/*                 free_endpoint->m_bufs[i].m_buf = NULL; */
+/*                 free_endpoint->m_bufs[i].m_size = 0; */
+/*             } */
 
-            char free_endpoint_name[128];
-            cpe_str_dup(free_endpoint_name, sizeof(free_endpoint_name), net_endpoint_dump(&schedule->m_tmp_buffer, free_endpoint));
-            CPE_ERROR(
-                schedule->m_em, "%s: buf alloc: not enouth free buff, free endpoint %s!",
-                net_endpoint_dump(&schedule->m_tmp_buffer, endpoint), free_endpoint_name);
+/*             char free_endpoint_name[128]; */
+/*             cpe_str_dup(free_endpoint_name, sizeof(free_endpoint_name), net_endpoint_dump(&schedule->m_tmp_buffer, free_endpoint)); */
+/*             CPE_ERROR( */
+/*                 schedule->m_em, "%s: buf alloc: not enouth free buff, free endpoint %s!", */
+/*                 net_endpoint_dump(&schedule->m_tmp_buffer, endpoint), free_endpoint_name); */
 
-            CPE_ERROR(schedule->m_em, "dump buf:");
-            ringbuffer_dump(schedule->m_endpoint_buf);
+/*             CPE_ERROR(schedule->m_em, "dump buf:"); */
+/*             ringbuffer_dump(schedule->m_endpoint_buf); */
 
-            if (net_endpoint_set_state(free_endpoint, net_endpoint_state_disable) != 0) {
-                net_endpoint_set_state(free_endpoint, net_endpoint_state_deleting);
-            }
+/*             if (net_endpoint_set_state(free_endpoint, net_endpoint_state_disable) != 0) { */
+/*                 net_endpoint_set_state(free_endpoint, net_endpoint_state_deleting); */
+/*             } */
 
-            if (endpoint->m_state == net_endpoint_state_deleting || endpoint->m_state == net_endpoint_state_disable) return NULL;
+/*             if (endpoint->m_state == net_endpoint_state_deleting || endpoint->m_state == net_endpoint_state_disable) return NULL; */
         
-            blk = ringbuffer_alloc(schedule->m_endpoint_buf , size);
-        }
-    }
+/*             blk = ringbuffer_alloc(schedule->m_endpoint_buf , size); */
+/*         } */
+/*     } */
 
-    return blk;
-}
+/*     return blk; */
+/* } */
 
 uint32_t net_endpoint_hash(net_endpoint_t o, void * user_data) {
     return o->m_id;

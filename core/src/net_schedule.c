@@ -1,6 +1,5 @@
 #include "assert.h"
 #include "cpe/pal/pal_stdlib.h"
-#include "cpe/utils/ringbuffer.h"
 #include "net_schedule_i.h"
 #include "net_local_ip_stack_monitor_i.h"
 #include "net_driver_i.h"
@@ -19,6 +18,7 @@
 #include "net_debug_setup_i.h"
 #include "net_debug_condition_i.h"
 #include "net_mem_group_i.h"
+#include "net_mem_block_i.h"
 
 static void net_schedule_do_delay_process(net_timer_t timer, void * input_ctx);
 
@@ -60,6 +60,8 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em, uint32_t common_
     TAILQ_INIT(&schedule->m_free_dns_querys);
     TAILQ_INIT(&schedule->m_free_endpoint_monitors);
     TAILQ_INIT(&schedule->m_free_endpoint_nexts);
+    TAILQ_INIT(&schedule->m_free_mem_groups);
+    TAILQ_INIT(&schedule->m_free_mem_blocks);
 
     schedule->m_dft_mem_group = net_mem_group_create(schedule, common_buff_capacity);
     if (schedule->m_dft_mem_group == NULL) {
@@ -67,14 +69,6 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em, uint32_t common_
         return NULL;
     }
     
-    schedule->m_endpoint_buf = ringbuffer_new(common_buff_capacity, em);
-    if (schedule->m_endpoint_buf == NULL) {
-        CPE_ERROR(em, "schedule: alloc common buff fail, capacity=%d!", common_buff_capacity);
-        net_mem_group_free(schedule->m_dft_mem_group);
-        return NULL;
-    }
-    schedule->m_endpoint_tb = NULL;
-
     if (cpe_hash_table_init(
             &schedule->m_endpoints,
             alloc,
@@ -83,7 +77,6 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em, uint32_t common_
             CPE_HASH_OBJ2ENTRY(net_endpoint, m_hh),
             -1) != 0)
     {
-        ringbuffer_delete(schedule->m_endpoint_buf);
         net_mem_group_free(schedule->m_dft_mem_group);
         mem_free(alloc, schedule);
         return NULL;
@@ -98,7 +91,6 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em, uint32_t common_
             -1) != 0)
     {
         cpe_hash_table_fini(&schedule->m_endpoints);
-        ringbuffer_delete(schedule->m_endpoint_buf);
         net_mem_group_free(schedule->m_dft_mem_group);
         mem_free(alloc, schedule);
         return NULL;
@@ -146,6 +138,11 @@ void net_schedule_free(net_schedule_t schedule) {
         schedule->m_direct_protocol = NULL;
     }
 
+    if (schedule->m_dft_mem_group) {
+        net_mem_group_free(schedule->m_dft_mem_group);
+        schedule->m_dft_mem_group = NULL;
+    }
+    
     while(!TAILQ_EMPTY(&schedule->m_protocols)) {
         net_protocol_free(TAILQ_FIRST(&schedule->m_protocols));
     }
@@ -183,15 +180,17 @@ void net_schedule_free(net_schedule_t schedule) {
         net_endpoint_next_real_free(TAILQ_FIRST(&schedule->m_free_endpoint_nexts));
     }
     
+    while(!TAILQ_EMPTY(&schedule->m_free_mem_groups)) {
+        net_mem_group_real_free(TAILQ_FIRST(&schedule->m_free_mem_groups));
+    }
+
+    while(!TAILQ_EMPTY(&schedule->m_free_mem_blocks)) {
+        net_mem_block_real_free(TAILQ_FIRST(&schedule->m_free_mem_blocks));
+    }
+    
     assert(cpe_hash_table_count(&schedule->m_endpoints) == 0);
     cpe_hash_table_fini(&schedule->m_endpoints);
 
-    ringbuffer_delete(schedule->m_endpoint_buf);
-    schedule->m_endpoint_buf = NULL;
-
-    net_mem_group_free(schedule->m_dft_mem_group);
-    schedule->m_dft_mem_group = NULL;
-    
     mem_buffer_clear(&schedule->m_tmp_buffer);
     mem_free(schedule->m_alloc, schedule);
 }
