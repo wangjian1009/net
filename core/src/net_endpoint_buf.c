@@ -294,6 +294,7 @@ void net_endpoint_buf_consume(net_endpoint_t endpoint, net_endpoint_buf_type_t b
         }
         else {
             net_mem_block_erase(block, size);
+            size = 0;
         }
     }
     
