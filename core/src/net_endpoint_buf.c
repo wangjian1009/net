@@ -157,7 +157,7 @@ uint8_t net_endpoint_buf_validate(net_endpoint_t endpoint, void const * buf, uin
     assert(endpoint->m_tb);
 
     if (buf < (void *)endpoint->m_tb->m_data
-        || ((const uint8_t *)buf) + capacity > endpoint->m_tb->m_data + endpoint->m_tb->m_len) return 0;
+        || ((const uint8_t *)buf) + capacity > endpoint->m_tb->m_data + endpoint->m_tb->m_capacity) return 0;
 
     return 1;
 }
