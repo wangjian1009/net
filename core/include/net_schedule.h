@@ -5,8 +5,7 @@
 
 NET_BEGIN_DECL
 
-net_schedule_t net_schedule_create(
-    mem_allocrator_t alloc, error_monitor_t em, uint32_t common_buff_capacity);
+net_schedule_t net_schedule_create(mem_allocrator_t alloc, error_monitor_t em);
 void net_schedule_free(net_schedule_t schedule);
 
 mem_allocrator_t net_schedule_allocrator(net_schedule_t schedule);

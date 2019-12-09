@@ -23,7 +23,7 @@
 static void net_schedule_do_delay_process(net_timer_t timer, void * input_ctx);
 
 net_schedule_t
-net_schedule_create(mem_allocrator_t alloc, error_monitor_t em, uint32_t common_buff_capacity) {
+net_schedule_create(mem_allocrator_t alloc, error_monitor_t em) {
     net_schedule_t schedule;
     
     schedule = mem_alloc(alloc, sizeof(struct net_schedule));
@@ -63,9 +63,9 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em, uint32_t common_
     TAILQ_INIT(&schedule->m_free_mem_groups);
     TAILQ_INIT(&schedule->m_free_mem_blocks);
 
-    schedule->m_dft_mem_group = net_mem_group_create(schedule, common_buff_capacity);
+    schedule->m_dft_mem_group = net_mem_group_create(schedule);
     if (schedule->m_dft_mem_group == NULL) {
-        CPE_ERROR(em, "schedule: alloc common buff fail, capacity=%d!", common_buff_capacity);
+        CPE_ERROR(em, "schedule: alloc common buff fail");
         return NULL;
     }
     

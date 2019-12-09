@@ -2,7 +2,7 @@
 #include "net_mem_block_i.h"
 
 net_mem_group_t
-net_mem_group_create(net_schedule_t schedule, uint32_t capacity) {
+net_mem_group_create(net_schedule_t schedule) {
     net_mem_group_t mem_group = TAILQ_FIRST(&schedule->m_free_mem_groups);
     if (mem_group) {
         TAILQ_REMOVE(&schedule->m_free_mem_groups, mem_group, m_next);

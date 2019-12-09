@@ -29,7 +29,7 @@ static int net_log_thread_setup(net_log_thread_t log_thread) {
         log_thread->m_net_driver = schedule->m_net_driver;
     }
     else {
-        log_thread->m_net_schedule = net_schedule_create(schedule->m_alloc, schedule->m_em, log_thread->m_cfg_net_buf_size);
+        log_thread->m_net_schedule = net_schedule_create(schedule->m_alloc, schedule->m_em);
         if (log_thread->m_net_schedule == NULL) {
             CPE_ERROR(schedule->m_em, "log: thread %s: setup: create net schedule fail", log_thread->m_name);
             goto SETUP_FAIL;
