@@ -519,6 +519,7 @@ static uint8_t net_sock_endpoint_on_write(net_sock_driver_t driver, net_sock_end
                             net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
                     }
                     net_watcher_update_write(endpoint->m_watcher, 1);
+                    net_endpoint_set_write_blocked(base_endpoint, 1);
                 }
                 return 0;
             }
@@ -595,6 +596,7 @@ static void net_sock_endpoint_rw_cb(void * ctx, int fd, uint8_t do_read, uint8_t
         }
 
         net_watcher_update_write(endpoint->m_watcher, 0);
+        net_endpoint_set_write_blocked(base_endpoint, 0);
         if (net_sock_endpoint_on_write(driver, endpoint, base_endpoint) != 0) {
             net_endpoint_free(base_endpoint);
             return;

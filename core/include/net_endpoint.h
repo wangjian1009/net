@@ -33,6 +33,9 @@ int net_endpoint_option_set(net_endpoint_t endpoint, net_endpoint_option_t opt, 
 uint8_t net_endpoint_expect_read(net_endpoint_t endpoint);
 void net_endpoint_set_expect_read(net_endpoint_t endpoint, uint8_t expect_read);
 
+uint8_t net_endpoint_write_blocked(net_endpoint_t endpoint);
+void net_endpoint_set_write_blocked(net_endpoint_t endpoint, uint8_t write_blocked);
+
 net_address_t net_endpoint_remote_address(net_endpoint_t endpoint);
 int net_endpoint_set_remote_address(net_endpoint_t endpoint, net_address_t address, uint8_t is_own);
 
