@@ -79,6 +79,10 @@ int net_sock_endpoint_update(net_endpoint_t base_endpoint) {
     return 0;
 }
 
+int net_sock_endpoint_update_option(net_endpoint_t base_endpoint, net_endpoint_option_t opt, uint8_t is_enable) {
+    return 0;
+}
+
 int net_sock_endpoint_connect(net_endpoint_t base_endpoint) {
     net_driver_t base_driver = net_endpoint_driver(base_endpoint);
     net_schedule_t schedule = net_endpoint_schedule(base_endpoint);

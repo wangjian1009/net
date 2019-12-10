@@ -27,6 +27,12 @@ net_endpoint_t net_endpoint_find(net_schedule_t schedule, uint32_t id);
 net_address_t net_endpoint_address(net_endpoint_t endpoint);
 int net_endpoint_set_address(net_endpoint_t endpoint, net_address_t address, uint8_t is_own);
 
+uint8_t net_endpoint_option(net_endpoint_t endpoint, net_endpoint_option_t opt);
+int net_endpoint_option_set(net_endpoint_t endpoint, net_endpoint_option_t opt, uint8_t is_enable);
+
+uint8_t net_endpoint_expect_read(net_endpoint_t endpoint);
+void net_endpoint_set_expect_read(net_endpoint_t endpoint, uint8_t expect_read);
+
 net_address_t net_endpoint_remote_address(net_endpoint_t endpoint);
 int net_endpoint_set_remote_address(net_endpoint_t endpoint, net_address_t address, uint8_t is_own);
 
@@ -131,6 +137,7 @@ void net_endpoint_clear_monitor_by_ctx(net_endpoint_t endpoint, void * ctx);
 void * net_endpoint_protocol_data(net_endpoint_t endpoint);
 
 /**/
+const char * net_endpoint_option_str(net_endpoint_option_t opt);
 const char * net_endpoint_state_str(net_endpoint_state_t state);
 const char * net_endpoint_buf_type_str(net_endpoint_buf_type_t buf_type);
 const char * net_endpoint_data_event_str(net_endpoint_data_event_t data_evt);

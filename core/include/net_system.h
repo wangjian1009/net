@@ -62,6 +62,11 @@ typedef enum net_endpoint_state {
     net_endpoint_state_deleting,
 } net_endpoint_state_t;
 
+typedef enum net_endpoint_option {
+    net_endpoint_option_fastopen,
+    net_endpoint_option_no_delay,
+} net_endpoint_option_t;
+
 typedef enum net_data_direct {
     net_data_in,
     net_data_out,

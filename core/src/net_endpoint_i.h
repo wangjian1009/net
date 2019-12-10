@@ -17,6 +17,8 @@ struct net_endpoint {
     void * m_prepare_connect_ctx;
     net_link_t m_link;
     uint32_t m_id;
+    uint32_t m_options;
+    uint8_t m_expect_read;
     uint8_t m_close_after_send;
     uint8_t m_protocol_debug;
     uint8_t m_driver_debug;
