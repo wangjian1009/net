@@ -85,6 +85,10 @@ net_dns_source_t net_dns_source_from_data(void * date) {
     return ((net_dns_source_t)date) - 1;
 }
 
+net_dns_source_init_fun_t net_dns_source_init(net_dns_source_t source) {
+    return source->m_init;
+}
+
 void net_dns_source_print(write_stream_t ws, net_dns_source_t source) {
     source->m_dump(ws, source);
 }
