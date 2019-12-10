@@ -43,6 +43,7 @@ struct net_endpoint {
 void net_endpoint_real_free(net_endpoint_t endpoint);
 
 uint8_t net_endpoint_buf_validate(net_endpoint_t endpoint, void const * buf, uint32_t capacity);
+void net_endpoint_send_evt(net_endpoint_t endpoint, net_endpoint_monitor_evt_t evt);
 
 uint32_t net_endpoint_hash(net_endpoint_t o, void * user_data);
 int net_endpoint_eq(net_endpoint_t l, net_endpoint_t r, void * user_data);

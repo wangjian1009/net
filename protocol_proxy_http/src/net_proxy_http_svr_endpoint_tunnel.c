@@ -23,7 +23,7 @@ static int net_proxy_http_svr_endpoint_tunnel_check_send_response(
     net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep, net_endpoint_t endpoint, net_endpoint_t other);
 
 static void net_proxy_http_svr_endpoint_tunnel_state_monitor_free(void * ctx);
-static void net_proxy_http_svr_endpoint_tunnel_state_monitor_process(void * ctx, net_endpoint_t endpoint, net_endpoint_state_t from_state);
+static void net_proxy_http_svr_endpoint_tunnel_state_monitor_process(void * ctx, net_endpoint_t endpoint, net_endpoint_monitor_evt_t evt);
 
 int net_proxy_http_svr_endpoint_tunnel_on_connect(
     net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep, net_endpoint_t endpoint, char * data)
@@ -232,12 +232,14 @@ static void net_proxy_http_svr_endpoint_tunnel_state_monitor_free(void * ctx) {
     http_ep->m_tunnel.m_other_state_monitor = NULL;
 }
 
-static void net_proxy_http_svr_endpoint_tunnel_state_monitor_process(void * ctx, net_endpoint_t other, net_endpoint_state_t from_state) {
+static void net_proxy_http_svr_endpoint_tunnel_state_monitor_process(void * ctx, net_endpoint_t other, net_endpoint_monitor_evt_t evt) {
     net_proxy_http_svr_endpoint_t http_ep = ctx;
     net_endpoint_t endpoint = http_ep->m_endpoint;
     net_proxy_http_svr_protocol_t http_protocol = net_protocol_data(net_endpoint_protocol(endpoint));
 
-    net_proxy_http_svr_endpoint_tunnel_check_send_response(http_protocol, http_ep, endpoint, other);
+    if (evt->m_type == net_endpoint_monitor_evt_state_changed) {
+        net_proxy_http_svr_endpoint_tunnel_check_send_response(http_protocol, http_ep, endpoint, other);
+    }
 }
 
 static int net_proxy_http_svr_endpoint_tunnel_check_send_response(

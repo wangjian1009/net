@@ -852,16 +852,6 @@ static int net_sock_endpoint_start_connect(
         return -1;
     }
 
-    /* net_address_t oa = net_address_create_from_sockaddr(net_endpoint_schedule(base_endpoint), (struct sockaddr *)&remote_addr_sock, remote_addr_sock_len); */
-    /* char buf[128]; */
-    /* cpe_str_dup(buf, sizeof(buf), net_address_dump(net_sock_driver_tmp_buffer(driver), oa)); */
-    /* net_address_free(oa); */
-
-    /* CPE_ERROR( */
-    /*     driver->m_em, "sock: %s: fd=%d: connect to %s", */
-    /*     net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd, */
-    /*     buf); */
-
     return cpe_connect(endpoint->m_fd, (struct sockaddr *)&remote_addr_sock, remote_addr_sock_len);
 }
 

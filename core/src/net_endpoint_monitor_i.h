@@ -10,7 +10,7 @@ struct net_endpoint_monitor {
     TAILQ_ENTRY(net_endpoint_monitor) m_next;
     void * m_ctx;
     void (*m_ctx_free)(void *);
-    net_endpoint_monitor_state_changed_fun_t m_on_state_change;
+    net_endpoint_monitor_cb_fun_t m_cb;
     uint8_t m_is_processing;
     uint8_t m_is_free;
 };

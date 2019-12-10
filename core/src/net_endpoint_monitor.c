@@ -6,7 +6,7 @@ net_endpoint_monitor_create(
     net_endpoint_t endpoint,
     void * ctx,
     void (*ctx_free)(void * ctx),
-    net_endpoint_monitor_state_changed_fun_t on_state_change)
+    net_endpoint_monitor_cb_fun_t cb)
 {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
     
@@ -25,7 +25,7 @@ net_endpoint_monitor_create(
     monitor->m_endpoint = endpoint;
     monitor->m_ctx = ctx;
     monitor->m_ctx_free = ctx_free;
-    monitor->m_on_state_change = on_state_change;
+    monitor->m_cb = cb;
     monitor->m_is_processing = 0;
     monitor->m_is_free = 0;
 

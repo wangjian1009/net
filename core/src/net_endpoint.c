@@ -955,6 +955,15 @@ static int net_endpoint_notify_state_changed(net_endpoint_t endpoint, net_endpoi
         ? 0
         : -1;
     
+    struct net_endpoint_monitor_evt evt;
+    evt.m_type = net_endpoint_monitor_evt_state_changed;
+    evt.m_from_state = old_state;
+    net_endpoint_send_evt(endpoint, &evt);
+    
+    return rv;
+}
+
+void net_endpoint_send_evt(net_endpoint_t endpoint, net_endpoint_monitor_evt_t evt) {
     net_endpoint_monitor_t monitor = TAILQ_FIRST(&endpoint->m_monitors);
     while(monitor && endpoint->m_state != net_endpoint_state_deleting) {
         net_endpoint_monitor_t next_monitor = TAILQ_NEXT(monitor, m_next);
@@ -963,13 +972,15 @@ static int net_endpoint_notify_state_changed(net_endpoint_t endpoint, net_endpoi
             continue;
         }
 
-        if (monitor->m_on_state_change) {
+        if (monitor->m_cb) {
             uint8_t tag_local = 0;
             if (!monitor->m_is_processing) {
                 tag_local = 1;
                 monitor->m_is_processing = 1;
             }
-            monitor->m_on_state_change(monitor->m_ctx, endpoint, old_state);
+
+            monitor->m_cb(monitor->m_ctx, endpoint, evt);
+
             if (tag_local) {
                 monitor->m_is_processing = 0;
                 if (monitor->m_is_free) net_endpoint_monitor_free(monitor);
@@ -978,6 +989,4 @@ static int net_endpoint_notify_state_changed(net_endpoint_t endpoint, net_endpoi
         
         monitor = next_monitor;
     }
-
-    return rv;
 }
