@@ -4,8 +4,6 @@
 
 NET_BEGIN_DECL
 
-#define NET_ENDPOINT_NO_LIMIT ((uint32_t)-1)
-
 typedef struct net_schedule * net_schedule_t;
 typedef struct net_mem_block * net_mem_block_t;
 typedef struct net_mem_group * net_mem_group_t;

@@ -65,9 +65,7 @@ int net_sock_endpoint_update(net_endpoint_t base_endpoint) {
     assert(endpoint->m_watcher != NULL);
 
     if (net_endpoint_expect_read(base_endpoint)) {
-        if (!net_watcher_expect_read(endpoint->m_watcher) /*socket上没有等待读取的操作（当前有数据可以读取) */
-            && !net_endpoint_rbuf_is_full(base_endpoint) /*读取缓存不为空，可以读取数据 */
-        ) {
+        if (!net_watcher_expect_read(endpoint->m_watcher)) { /*socket上没有等待读取的操作（当前有数据可以读取) */
             if (net_endpoint_driver_debug(base_endpoint) >= 3) {
                 CPE_INFO(
                     driver->m_em, "sock: %s: fd=%d: wait read begin(not full)!",
@@ -359,11 +357,7 @@ int net_sock_endpoint_update_remote_address(net_sock_endpoint_t endpoint) {
 }
 
 static uint8_t net_sock_endpoint_on_read(net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint) {
-    while(
-        net_endpoint_state(base_endpoint) == net_endpoint_state_established /*当前状态正确 */
-        && !net_endpoint_rbuf_is_full(base_endpoint) /*读取缓存没有满 */
-        )
-    {
+    while(net_endpoint_state(base_endpoint) == net_endpoint_state_established) { /*当前状态正确 */
         if (!net_endpoint_expect_read(base_endpoint)) {
             net_watcher_update_read(endpoint->m_watcher, 0);
             return 0;
@@ -580,7 +574,7 @@ static void net_sock_endpoint_rw_cb(void * ctx, int fd, uint8_t do_read, uint8_t
             return;
         }
 
-        if (endpoint->m_watcher && net_endpoint_rbuf_is_full(base_endpoint)) {
+        if (endpoint->m_watcher && !net_endpoint_expect_read(base_endpoint)) {
             if (net_endpoint_driver_debug(base_endpoint) >= 3) {
                 CPE_INFO(
                     driver->m_em, "sock: %s: fd=%d: wait read stop(rbuf full) ",

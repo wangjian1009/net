@@ -30,10 +30,6 @@ uint8_t net_endpoint_have_any_data(net_endpoint_t endpoint) {
     return 0;
 }
 
-uint32_t net_endpoint_all_buf_limit(net_endpoint_t endpoint) {
-    return endpoint->m_all_buf_limit;
-}
-
 uint32_t net_endpoint_all_buf_size(net_endpoint_t endpoint) {
     uint32_t size = 0;
 
@@ -43,77 +39,6 @@ uint32_t net_endpoint_all_buf_size(net_endpoint_t endpoint) {
     }
 
     return size;
-}
-
-int net_endpoint_set_all_buf_limit(net_endpoint_t endpoint, uint32_t limit) {
-    net_schedule_t schedule = endpoint->m_driver->m_schedule;
-    
-    if (endpoint->m_all_buf_limit == limit) return 0;
-
-    if (endpoint->m_driver_debug) {
-        uint8_t limit_grow_bigger =
-            limit == NET_ENDPOINT_NO_LIMIT
-            || (endpoint->m_all_buf_limit != NET_ENDPOINT_NO_LIMIT && limit > endpoint->m_all_buf_limit);
-
-        CPE_INFO(
-            schedule->m_em, "core: %s: all buf limit %u ==> %u(%s)",
-            net_endpoint_dump(&schedule->m_tmp_buffer, endpoint),
-            endpoint->m_all_buf_limit, limit,
-            limit_grow_bigger ? "+" : "-");
-    }
-
-    endpoint->m_all_buf_limit = limit;
-    
-    return net_endpoint_update_rbuf_is_full(endpoint);
-}
-
-uint8_t net_endpoint_rbuf_is_full(net_endpoint_t endpoint) {
-    return endpoint->m_rb_is_full;
-}
-
-int net_endpoint_update_rbuf_is_full(net_endpoint_t endpoint) {
-    uint8_t rb_is_full = net_endpoint_buf_is_full(endpoint, net_ep_buf_read);
-
-    if (rb_is_full == endpoint->m_rb_is_full) return 0;
-
-    endpoint->m_rb_is_full = rb_is_full;
-
-    if (net_endpoint_driver_debug(endpoint)) {
-        net_schedule_t schedule = endpoint->m_driver->m_schedule;
-        if (rb_is_full) {
-            CPE_INFO(schedule->m_em, "core: %s: rbuf is full", net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
-        }
-        else {
-            CPE_INFO(schedule->m_em, "core: %s: rbuf not full", net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
-        }
-    }
-    
-    if (endpoint->m_state == net_endpoint_state_established) {
-        return net_endpoint_driver_update(endpoint);
-    }
-    else {
-        return 0;
-    }
-}
-
-uint8_t net_endpoint_buf_is_full(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type) {
-    assert(buf_type < net_ep_buf_count);
-
-    if (endpoint->m_bufs[buf_type].m_limit != NET_ENDPOINT_NO_LIMIT) {
-        if (endpoint->m_bufs[buf_type].m_size >= endpoint->m_bufs[buf_type].m_limit) return 1;
-    }
-
-    if (endpoint->m_all_buf_limit != NET_ENDPOINT_NO_LIMIT) {
-        if (net_endpoint_all_buf_size(endpoint) >= endpoint->m_all_buf_limit) return 1;
-    }
-
-    if (endpoint->m_link && endpoint->m_link->m_buf_limit != NET_ENDPOINT_NO_LIMIT) {
-        net_endpoint_t other = net_endpoint_other(endpoint);
-        uint32_t sz = net_endpoint_all_buf_size(endpoint) + (other ? net_endpoint_all_buf_size(other) : 0);
-        if (sz >= endpoint->m_link->m_buf_limit) return 1;
-    }
-    
-    return 0;
 }
 
 uint8_t net_endpoint_buf_is_empty(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type) {
@@ -193,76 +118,6 @@ uint32_t net_endpoint_buf_size(net_endpoint_t endpoint, net_endpoint_buf_type_t 
     return endpoint->m_bufs[buf_type].m_size;
 }
 
-uint32_t net_endpoint_buf_limit(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type) {
-    assert(buf_type < net_ep_buf_count);
-    return endpoint->m_bufs[buf_type].m_limit;
-}
-
-int net_endpoint_buf_set_limit(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, uint32_t limit) {
-    net_schedule_t schedule = endpoint->m_driver->m_schedule;
-    assert(buf_type < net_ep_buf_count);
-
-    if (limit == endpoint->m_bufs[buf_type].m_limit) return 0;
-    
-    if (endpoint->m_driver_debug) {
-        uint8_t limit_grow_bigger =
-            limit == 0
-            || (endpoint->m_bufs[buf_type].m_limit != NET_ENDPOINT_NO_LIMIT && limit > endpoint->m_bufs[buf_type].m_limit);
-
-        CPE_INFO(
-            schedule->m_em, "core: %s: buf %s limit %u ==> %u(%s)",
-            net_endpoint_dump(&schedule->m_tmp_buffer, endpoint),
-            net_endpoint_buf_type_str(buf_type), endpoint->m_bufs[buf_type].m_limit, limit,
-            limit_grow_bigger ? "+" : "-");
-    }
-    
-    endpoint->m_bufs[buf_type].m_limit = limit;
-
-    return net_endpoint_update_rbuf_is_full(endpoint);
-}
-
-uint32_t net_endpoint_buf_capacity(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type) {
-    uint32_t capacity = NET_ENDPOINT_NO_LIMIT;
-    
-    assert(buf_type < net_ep_buf_count);
-
-    if (endpoint->m_bufs[buf_type].m_limit != NET_ENDPOINT_NO_LIMIT) {
-        if (endpoint->m_bufs[buf_type].m_size >= endpoint->m_bufs[buf_type].m_limit) {
-            return 0;
-        }
-        else {
-            uint32_t cur_capacity = endpoint->m_bufs[buf_type].m_limit - endpoint->m_bufs[buf_type].m_size;
-            if (cur_capacity < capacity) capacity = cur_capacity;
-        }
-    }
-
-    if (endpoint->m_all_buf_limit != NET_ENDPOINT_NO_LIMIT) {
-        uint32_t sz = net_endpoint_all_buf_size(endpoint);
-        if (sz >= endpoint->m_all_buf_limit) {
-            return 0;
-        }
-        else {
-            uint32_t cur_capacity = endpoint->m_all_buf_limit - sz;
-            if (cur_capacity < capacity) capacity = cur_capacity;
-        }
-    }
-
-    if (endpoint->m_link && endpoint->m_link->m_buf_limit != NET_ENDPOINT_NO_LIMIT) {
-        net_endpoint_t other = net_endpoint_other(endpoint);
-        uint32_t sz = net_endpoint_all_buf_size(endpoint) + (other ? net_endpoint_all_buf_size(other) : 0);
-        
-        if (sz >= endpoint->m_link->m_buf_limit) {
-            return 0;
-        }
-        else {
-            uint32_t cur_capacity = endpoint->m_link->m_buf_limit - sz;
-            if (cur_capacity < capacity) capacity = cur_capacity;
-        }
-    }
-    
-    return capacity;
-}
-
 void net_endpoint_buf_clear(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
 
@@ -305,9 +160,6 @@ void net_endpoint_buf_consume(net_endpoint_t endpoint, net_endpoint_buf_type_t b
     }
 
     net_endpoint_t other = net_endpoint_other(endpoint);
-    if (other && other->m_link->m_buf_limit != NET_ENDPOINT_NO_LIMIT) {
-        net_endpoint_update_rbuf_is_full(other);
-    }
     
     if (!net_endpoint_is_active(endpoint)) return;
 
@@ -323,8 +175,6 @@ void net_endpoint_buf_consume(net_endpoint_t endpoint, net_endpoint_buf_type_t b
         }
         return;
     }
-
-    net_endpoint_update_rbuf_is_full(endpoint);
 }
 
 void * net_endpoint_buf_peak(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, uint32_t * size) {
@@ -405,11 +255,6 @@ int net_endpoint_buf_recv(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_t
             endpoint->m_data_watcher_fun(endpoint->m_data_watcher_ctx, endpoint, buf_type, net_endpoint_data_consume, received);
         }
 
-        net_endpoint_t other = net_endpoint_other(endpoint);
-        if (other && other->m_link->m_buf_limit != NET_ENDPOINT_NO_LIMIT) {
-            net_endpoint_update_rbuf_is_full(other);
-        }
-        
         if (endpoint->m_close_after_send && net_endpoint_is_active(endpoint) && !net_endpoint_have_any_data(endpoint)) {
             if (endpoint->m_protocol_debug || endpoint->m_driver_debug) {
                 CPE_INFO(
@@ -423,8 +268,6 @@ int net_endpoint_buf_recv(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_t
 
             return 0;
         }
-
-        if (net_endpoint_update_rbuf_is_full(other) != 0) return -1;
     }
     
     return 0;
@@ -640,13 +483,6 @@ int net_endpoint_buf_append_from_other(
         }
     }
 
-    net_endpoint_update_rbuf_is_full(other);
-    
-    net_endpoint_t other_other = net_endpoint_other(other);
-    if (other_other && other_other != endpoint && other_other->m_link->m_buf_limit != NET_ENDPOINT_NO_LIMIT) {
-        net_endpoint_update_rbuf_is_full(other_other);
-    }
-
     /*处理Self */
     return net_endpoint_buf_on_supply(schedule, endpoint, buf_type, moved_size);
 }
@@ -736,17 +572,12 @@ static int net_endpoint_buf_on_supply(net_schedule_t schedule, net_endpoint_t en
     }
 
     net_endpoint_t other = net_endpoint_other(endpoint);
-    if (other && other->m_link->m_buf_limit != NET_ENDPOINT_NO_LIMIT) {
-        net_endpoint_update_rbuf_is_full(other);
-    }
 
-    uint8_t is_updated = 0;
     if (buf_type == net_ep_buf_write && endpoint->m_state == net_endpoint_state_established) {
         if (net_endpoint_driver_update(endpoint) != 0) return -1;
-        is_updated = 1;
     }
     
-    return is_updated ? 0 : net_endpoint_update_rbuf_is_full(endpoint);
+    return 0;
 }
 
 net_mem_block_t net_endpoint_buf_combine(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type) {

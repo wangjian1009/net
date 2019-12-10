@@ -11,7 +11,6 @@ struct net_link {
     net_endpoint_t m_local;
     uint8_t m_remote_is_tie;
     net_endpoint_t m_remote;
-    uint32_t m_buf_limit;
 };
 
 void net_link_real_free(net_link_t link);

@@ -48,7 +48,6 @@ net_endpoint_create(net_driver_t driver, net_protocol_t protocol, net_mem_group_
     endpoint->m_close_after_send = 0;
     endpoint->m_protocol_debug = protocol->m_debug;
     endpoint->m_driver_debug = driver->m_debug;
-    endpoint->m_rb_is_full = 0;
     endpoint->m_error_source = net_endpoint_error_source_network;
     endpoint->m_error_no = 0;
     endpoint->m_error_msg = NULL;
@@ -60,12 +59,10 @@ net_endpoint_create(net_driver_t driver, net_protocol_t protocol, net_mem_group_
     endpoint->m_dns_query = NULL;
     endpoint->m_tb = NULL;
 
-    endpoint->m_all_buf_limit = NET_ENDPOINT_NO_LIMIT;
     uint8_t i;
     for(i = 0; i < CPE_ARRAY_SIZE(endpoint->m_bufs); ++i) {
         TAILQ_INIT(&endpoint->m_bufs[i].m_blocks);
         endpoint->m_bufs[i].m_size = 0;
-        endpoint->m_bufs[i].m_limit = NET_ENDPOINT_NO_LIMIT;
     }
     
     endpoint->m_data_watcher_ctx = NULL;

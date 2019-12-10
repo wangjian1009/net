@@ -27,7 +27,6 @@ net_link_create(
     local->m_link = link;
     link->m_local = local;
     link->m_local_is_tie = local_is_tie;
-    link->m_buf_limit = NET_ENDPOINT_NO_LIMIT;
 
     remote->m_link = link;
     link->m_remote = remote;
@@ -91,42 +90,4 @@ void net_link_set_tie(net_link_t link, net_endpoint_t endpoint, uint8_t is_tie) 
         assert(link->m_remote == endpoint);
         link->m_remote_is_tie = is_tie;
     }
-}
-
-uint32_t net_link_buf_limit(net_link_t link) {
-    return link->m_buf_limit;
-}
-
-int net_link_set_buf_limit(net_link_t link, uint32_t limit) {
-
-    if (link->m_buf_limit == limit) return 0;
-    
-    net_schedule_t schedule = link->m_local->m_driver->m_schedule;
-
-    uint8_t limit_grow_bigger =
-        limit == 0
-        || (link->m_buf_limit > 0 && limit > link->m_buf_limit);
-
-    if (link->m_local->m_driver_debug) {
-        CPE_INFO(
-            schedule->m_em, "core: %s: link limit %u ==> %u(%s)",
-            net_endpoint_dump(&schedule->m_tmp_buffer, link->m_local),
-            link->m_buf_limit, limit, limit_grow_bigger ? "+" : "-");
-    }
-
-    if (link->m_remote->m_driver_debug) {
-        CPE_INFO(
-            schedule->m_em, "core: %s: link limit %u ==> %u(%s)",
-            net_endpoint_dump(&schedule->m_tmp_buffer, link->m_remote),
-            link->m_buf_limit, limit, limit_grow_bigger ? "+" : "-");
-    }
-    
-    link->m_buf_limit = limit;
-
-    int rv = 0;
-
-    if (net_endpoint_update_rbuf_is_full(link->m_local) != 0) rv = -1;
-    if (net_endpoint_update_rbuf_is_full(link->m_remote) != 0) rv = -1;
-
-    return rv;
 }

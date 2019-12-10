@@ -22,19 +22,16 @@ struct net_endpoint {
     uint8_t m_close_after_send;
     uint8_t m_protocol_debug;
     uint8_t m_driver_debug;
-    uint8_t m_rb_is_full;
     net_endpoint_error_source_t m_error_source;
     uint32_t m_error_no;
     char * m_error_msg;
     struct cpe_hash_entry m_hh;
     net_endpoint_state_t m_state;
     net_dns_query_t m_dns_query;
-    uint32_t m_all_buf_limit;
     net_mem_block_t m_tb;    
     struct {
         net_mem_block_list_t m_blocks;
         uint32_t m_size;
-        uint32_t m_limit;        
     } m_bufs[net_ep_buf_count];
     void * m_data_watcher_ctx;
     net_endpoint_data_watch_fun_t m_data_watcher_fun;
@@ -44,8 +41,6 @@ struct net_endpoint {
 };
 
 void net_endpoint_real_free(net_endpoint_t endpoint);
-
-int net_endpoint_update_rbuf_is_full(net_endpoint_t endpoint);
 
 uint8_t net_endpoint_buf_validate(net_endpoint_t endpoint, void const * buf, uint32_t capacity);
 
