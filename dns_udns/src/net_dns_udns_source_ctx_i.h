@@ -5,7 +5,7 @@
 NET_BEGIN_DECL
 
 struct net_dns_udns_source_ctx {
-    int n;
+    struct dns_query * m_query;
 };
 
 int net_dns_udns_source_ctx_init(net_dns_source_t source, net_dns_task_ctx_t task_ctx);
