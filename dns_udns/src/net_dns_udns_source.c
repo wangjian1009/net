@@ -1,3 +1,4 @@
+#include "cpe/pal/pal_strings.h"
 #include "net_dns_manage.h"
 #include "net_dns_source.h"
 #include "net_dns_udns_source_i.h"
@@ -32,7 +33,13 @@ net_dns_udns_source_create(
     udns->m_em = em;
     udns->m_manage = manage;
     udns->m_driver = driver;
-    //udns->m_dns_ctx;
+
+    udns->m_dns_ctx = dns_new(&dns_defctx);
+    if (udns->m_dns_ctx == NULL) {
+        CPE_ERROR(em, "udns: dns_new fail!");
+        net_dns_source_free(source);
+        return NULL;
+    }
     
     return udns;
 }
@@ -48,10 +55,20 @@ net_dns_udns_source_t net_dns_udns_source_from_source(net_dns_source_t source) {
 }
 
 int net_dns_udns_source_init(net_dns_source_t source) {
+    net_dns_udns_source_t udns = net_dns_source_data(source);
+
+    bzero(udns, sizeof(*udns));
+
     return 0;
 }
 
 void net_dns_udns_source_fini(net_dns_source_t source) {
+    net_dns_udns_source_t udns = net_dns_source_data(source);
+
+    if (udns->m_dns_ctx) {
+        dns_free(udns->m_dns_ctx);
+        udns->m_dns_ctx = NULL;
+    }
 }
 
 void net_dns_udns_source_dump(write_stream_t ws, net_dns_source_t source) {
