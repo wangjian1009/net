@@ -47,3 +47,12 @@ net_dns_udns_source_t net_dns_udns_source_from_source(net_dns_source_t source) {
         : NULL;
 }
 
+int net_dns_udns_source_init(net_dns_source_t source) {
+    return 0;
+}
+
+void net_dns_udns_source_fini(net_dns_source_t source) {
+}
+
+void net_dns_udns_source_dump(write_stream_t ws, net_dns_source_t source) {
+}
