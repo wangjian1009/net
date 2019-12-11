@@ -9,6 +9,8 @@ NET_BEGIN_DECL
 struct dns_ctx;
 struct dns_query;
 
+typedef struct net_dns_udns_source_ctx * net_dns_udns_source_ctx_t;
+
 struct net_dns_udns_source {
     mem_allocrator_t m_alloc;
     error_monitor_t m_em;

@@ -1,7 +1,10 @@
 #include "assert.h"
 #include "udns.h"
 #include "cpe/pal/pal_strings.h"
+#include "cpe/pal/pal_socket.h"
 #include "cpe/utils/stream.h"
+#include "net_address.h"
+#include "net_schedule.h"
 #include "net_driver.h"
 #include "net_watcher.h"
 #include "net_timer.h"
@@ -42,6 +45,7 @@ net_dns_udns_source_create(
     if (source == NULL) return NULL;
 
     net_dns_udns_source_t udns = net_dns_source_data(source);
+    net_schedule_t schedule = net_driver_schedule(driver);
 
     udns->m_alloc = alloc;
     udns->m_em = em;
@@ -49,7 +53,7 @@ net_dns_udns_source_create(
     udns->m_manage = manage;
     udns->m_driver = driver;
     udns->m_watcher = NULL;
-    udns->m_timeout = net_timer_auto_create(net_driver_schedule(driver), net_dns_udns_source_timeout_cb, udns);
+    udns->m_timeout = net_timer_auto_create(schedule, net_dns_udns_source_timeout_cb, udns);
     if (udns->m_timeout == NULL) {
         CPE_ERROR(em, "udns: create timer fail!");
         net_dns_source_free(source);
@@ -91,8 +95,36 @@ void net_dns_udns_source_reset(net_dns_udns_source_t udns) {
 }
 
 int net_dns_udns_source_add_server(net_dns_udns_source_t udns, net_address_t address) {
+    struct sockaddr_storage sock_addr;
+    socklen_t addr_len = sizeof(sock_addr);
+    if (net_address_to_sockaddr(address, (struct sockaddr *)&sock_addr, &addr_len) != 0) {
+        CPE_ERROR(
+            udns->m_em, "udns: add server %s: to sock addr fail",
+            net_address_dump(net_schedule_tmp_buffer(net_driver_schedule(udns->m_driver)), address));
+        return -1;
+    }
+
+    //DNS_MAXSERV
+    if (dns_add_serv_s(udns->m_dns_ctx, (struct sockaddr *)&sock_addr) < 0) {
+        if (errno == ENFILE) {
+            if (udns->m_debug) {
+                CPE_INFO(
+                    udns->m_em, "udns: add server %s: ignore for count limit",
+                    net_address_dump(net_schedule_tmp_buffer(net_driver_schedule(udns->m_driver)), address));
+            }
+            return 0;
+        } else {
+            CPE_ERROR(
+                udns->m_em, "udns: add server %s: add do dns fail",
+                net_address_dump(net_schedule_tmp_buffer(net_driver_schedule(udns->m_driver)), address));
+            return -1;
+        }
+    }
+
     if (udns->m_debug) {
-        CPE_INFO(udns->m_em, "udns: rested!");
+        CPE_INFO(
+            udns->m_em, "udns: add server %s: success",
+            net_address_dump(net_schedule_tmp_buffer(net_driver_schedule(udns->m_driver)), address));
     }
     
     return 0;
@@ -107,6 +139,12 @@ int net_dns_udns_source_start(net_dns_udns_source_t udns) {
         return -1;
     }
 
+    if (cpe_sock_set_none_block(sockfd, 1) != 0) {
+        CPE_ERROR(udns->m_em, "udns: start: set nonk socket fail");
+        dns_close(udns->m_dns_ctx);
+        return -1;
+    }
+    
     assert(udns->m_watcher == NULL);
     udns->m_watcher = net_watcher_create(udns->m_driver, sockfd, udns, net_dns_udns_source_rw_cb);
     if (udns->m_watcher == NULL) {
@@ -117,6 +155,10 @@ int net_dns_udns_source_start(net_dns_udns_source_t udns) {
     net_watcher_expect_read(udns->m_watcher);
 
     dns_set_tmcbck(udns->m_dns_ctx, net_dns_udns_source_timer_setup_cb, udns);
+
+    if (udns->m_debug) {
+        CPE_INFO(udns->m_em, "udns: start success!");
+    }
     
     return 0;
 }
@@ -187,4 +229,3 @@ void net_dns_udns_source_rw_cb(void * ctx, int fd, uint8_t do_read, uint8_t do_w
         dns_ioevent(udns->m_dns_ctx, time(0));
     }
 }
-
