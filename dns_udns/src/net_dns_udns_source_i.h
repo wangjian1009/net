@@ -1,5 +1,7 @@
 #ifndef NET_DNS_UDNS_SOURCE_I_H_INCLEDED
 #define NET_DNS_UDNS_SOURCE_I_H_INCLEDED
+#include "cpe/utils/error.h"
+#include "cpe/utils/memory.h"
 #include "net_dns_udns_source.h"
 
 NET_BEGIN_DECL
