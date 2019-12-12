@@ -18,6 +18,7 @@ net_dns_task_step_t net_dns_task_ctx_step(net_dns_task_ctx_t ctx);
 net_dns_source_t net_dns_task_ctx_source(net_dns_task_ctx_t ctx);
 
 void * net_dns_task_ctx_data(net_dns_task_ctx_t ctx);
+net_dns_task_ctx_t net_dns_task_ctx_from_data(void * data);
 
 net_dns_task_state_t net_dns_task_ctx_state(net_dns_task_ctx_t ctx);
 

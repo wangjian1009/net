@@ -59,7 +59,7 @@ net_dns_udns_source_create(
         net_dns_source_free(source);
         return NULL;
     }
-    
+
     dns_reset(NULL);
     udns->m_dns_ctx = dns_new(NULL);
     if (udns->m_dns_ctx == NULL) {
@@ -168,11 +168,17 @@ int net_dns_udns_source_init(net_dns_source_t source) {
 
     bzero(udns, sizeof(*udns));
 
+    TAILQ_INIT(&udns->m_queries);
+    
     return 0;
 }
 
 void net_dns_udns_source_fini(net_dns_source_t source) {
     net_dns_udns_source_t udns = net_dns_source_data(source);
+
+    while(TAILQ_EMPTY(&udns->m_queries)) {
+        net_dns_udns_source_ctx_active_cancel(TAILQ_FIRST(&udns->m_queries));
+    }
 
     if (udns->m_watcher) {
         net_watcher_free(udns->m_watcher);
@@ -207,10 +213,10 @@ void net_dns_udns_source_timer_setup_cb(struct dns_ctx *ctx, int timeout, void *
 
     if (ctx != NULL && timeout >= 0) {
         if (udns->m_debug) {
-            CPE_INFO(udns->m_em, "udns: timer active, timeout=%d!", timeout);
+            CPE_INFO(udns->m_em, "udns: timer active, timeout=%d(s)!", timeout);
         }
         
-        net_timer_active(udns->m_timeout, timeout);
+        net_timer_active(udns->m_timeout, timeout * 1000);
     }
     else {
         net_timer_cancel(udns->m_timeout);

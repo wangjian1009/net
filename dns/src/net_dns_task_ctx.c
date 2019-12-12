@@ -94,6 +94,10 @@ void * net_dns_task_ctx_data(net_dns_task_ctx_t ctx) {
     return ctx + 1;
 }
 
+net_dns_task_ctx_t net_dns_task_ctx_from_data(void * data) {
+    return ((net_dns_task_ctx_t)data) - 1;
+}
+
 net_dns_task_state_t net_dns_task_ctx_state(net_dns_task_ctx_t ctx) {
     return ctx->m_state;
 }
