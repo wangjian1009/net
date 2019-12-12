@@ -13,6 +13,8 @@ void net_dns_manage_free(net_dns_manage_t dns_manage);
 uint8_t net_dns_manage_debug(net_dns_manage_t manage);
 void net_dns_manage_set_debug(net_dns_manage_t manage, uint8_t debug);
 
+uint32_t net_dns_manage_ttl_s(net_dns_manage_t manage);
+
 void net_dns_manage_clear_cache(net_dns_manage_t manage);
 
 net_dns_task_builder_t net_dns_task_builder_internal(net_dns_manage_t manage);

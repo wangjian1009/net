@@ -50,8 +50,21 @@ void net_dns_udns_source_ctx_query_v4_cb(struct dns_ctx *ctx, struct dns_rr_a4 *
                 net_address_t result_address =
                     net_address_create_ipv4_from_data(schedule, (void *)(result->dnsa4_addr + i), 0u);
                 if (result_address == NULL) {
-                    CPE_ERROR(udns->m_em, "udns: %s: no ipv4 record", hostname);
+                    CPE_ERROR(udns->m_em, "udns: %s: create ipv4 address fail", hostname);
+                    continue;
                 }
+
+                if (net_dns_manage_add_record(
+                        udns->m_manage, net_dns_task_hostname(task), result_address, net_dns_manage_ttl_s(udns->m_manage)) != 0)
+                {
+                    CPE_ERROR(
+                        udns->m_em, "udns: %s: add record %s fail",
+                        hostname, net_address_host(net_schedule_tmp_buffer(schedule), result_address));
+                    net_address_free(result_address);
+                    continue;
+                }
+
+                net_address_free(result_address);
             }
         }
     }
@@ -93,8 +106,21 @@ void net_dns_udns_source_ctx_query_v6_cb(struct dns_ctx *ctx, struct dns_rr_a6 *
                 net_address_t result_address =
                     net_address_create_ipv6_from_data(schedule, (void *)(result->dnsa6_addr + i), 0u);
                 if (result_address == NULL) {
-                    CPE_ERROR(udns->m_em, "udns: %s: no ipv6 record", hostname);
+                    CPE_ERROR(udns->m_em, "udns: %s: create ipv6 address fail", hostname);
+                    continue;
                 }
+
+                if (net_dns_manage_add_record(
+                        udns->m_manage, net_dns_task_hostname(task), result_address, net_dns_manage_ttl_s(udns->m_manage)) != 0)
+                {
+                    CPE_ERROR(
+                        udns->m_em, "udns: %s: add record %s fail",
+                        hostname, net_address_host(net_schedule_tmp_buffer(schedule), result_address));
+                    net_address_free(result_address);
+                    continue;
+                }
+
+                net_address_free(result_address);
             }
         }
     }

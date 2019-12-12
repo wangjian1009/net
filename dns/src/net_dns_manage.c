@@ -242,6 +242,10 @@ void net_dns_manage_set_debug(net_dns_manage_t manage, uint8_t debug) {
     manage->m_debug = debug;
 }
 
+uint32_t net_dns_manage_ttl_s(net_dns_manage_t manage) {
+    return manage->m_cfg_ttl_s;
+}
+
 void net_dns_manage_clear_cache(net_dns_manage_t manage) {
     struct cpe_hash_it entry_it;
     cpe_hash_it_init(&entry_it, &manage->m_entries);
