@@ -176,7 +176,7 @@ int net_dns_udns_source_init(net_dns_source_t source) {
 void net_dns_udns_source_fini(net_dns_source_t source) {
     net_dns_udns_source_t udns = net_dns_source_data(source);
 
-    while(TAILQ_EMPTY(&udns->m_queries)) {
+    while(!TAILQ_EMPTY(&udns->m_queries)) {
         net_dns_udns_source_ctx_active_cancel(TAILQ_FIRST(&udns->m_queries));
     }
 
