@@ -48,13 +48,17 @@
 /* #undef EVENT__HAVE_ACCEPT4 */
 
 /* Define to 1 if you have the `arc4random' function. */
+#if CPE_OS_ANDROID
 #define EVENT__HAVE_ARC4RANDOM 1
-
-/* Define to 1 if you have the `arc4random_buf' function. */
 #define EVENT__HAVE_ARC4RANDOM_BUF 1
+#endif
+
+#if CPE_OS_LINUX
+#endif
 
 #if CPE_OS_MAC || CPE_OS_IOS
-/* Define to 1 if you have the `arc4random_addrandom' function. */
+#define EVENT__HAVE_ARC4RANDOM 1
+#define EVENT__HAVE_ARC4RANDOM_BUF 1
 #define EVENT__HAVE_ARC4RANDOM_ADDRANDOM 1
 #endif
 
@@ -294,7 +298,9 @@
 #define EVENT__HAVE_STRING_H 1
 
 /* Define to 1 if you have the `strlcpy' function. */
+#if CPE_OS_MAC
 #define EVENT__HAVE_STRLCPY 1
+#endif
 
 /* Define to 1 if you have the `strsep' function. */
 #define EVENT__HAVE_STRSEP 1

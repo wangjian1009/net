@@ -58,7 +58,7 @@ net_log_request_cache_create(
         cache->m_file = vfs_file_open(schedule->m_vfs, file, "wb");
         if (cache->m_file == NULL) {
             CPE_ERROR(
-                schedule->m_em, "log: thread %s: cache %d: open file %s fail", 
+                schedule->m_em, "log: thread %s: cache %d: open file %s fail, error=%d (%s)", 
                 log_thread->m_name, id, file, errno, strerror(errno));
             mem_free(schedule->m_alloc, cache);
             return NULL;

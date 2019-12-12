@@ -104,7 +104,8 @@ int net_ebb_response_append_code(net_ebb_response_t response, int http_code, con
         CPE_INFO(
             service->m_em, "ebb: %s: req %d: header %d: => %.*s", 
             net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
-            request->m_request_id, response->m_header_count, (int)mem_buffer_size(buffer), mem_buffer_make_continuous(buffer, 0));
+            request->m_request_id, response->m_header_count, (int)mem_buffer_size(buffer),
+            (const char *)mem_buffer_make_continuous(buffer, 0));
     }
 
     stream_printf((write_stream_t)&ws, "\r\n");
@@ -143,7 +144,7 @@ int net_ebb_response_append_head(net_ebb_response_t response, const char * name,
         CPE_INFO(
             service->m_em, "ebb: %s: req %d: header %d: => %.*s", 
             net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
-            request->m_request_id, response->m_header_count, (int)mem_buffer_size(buffer), mem_buffer_make_continuous(buffer, 0));
+            request->m_request_id, response->m_header_count, (int)mem_buffer_size(buffer), (const char *)mem_buffer_make_continuous(buffer, 0));
     }
 
     stream_printf((write_stream_t)&ws, "\r\n");
@@ -181,7 +182,8 @@ int net_ebb_response_append_head_line(net_ebb_response_t response, const char * 
         CPE_INFO(
             service->m_em, "ebb: %s: req %d: header %d: => %.*s", 
             net_endpoint_dump(net_ebb_service_tmp_buffer(service), net_endpoint_from_data(connection)),
-            request->m_request_id, response->m_header_count, (int)mem_buffer_size(buffer), mem_buffer_make_continuous(buffer, 0));
+            request->m_request_id, response->m_header_count, (int)mem_buffer_size(buffer),
+            (const char *)mem_buffer_make_continuous(buffer, 0));
     }
 
     stream_printf((write_stream_t)&ws, "\r\n");
