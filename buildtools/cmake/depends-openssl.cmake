@@ -146,3 +146,7 @@ else()
   target_link_libraries(ssl INTERFACE ${OPENSSL_LIBSSL_PATH})
   target_link_libraries(crypto INTERFACE ${OPENSSL_LIBCRYPTO_PATH})
 endif()
+
+if (OS_NAME MATCHES "linux")
+  target_link_libraries(crypto INTERFACE dl)
+endif()

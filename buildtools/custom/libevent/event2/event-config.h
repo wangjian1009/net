@@ -101,7 +101,7 @@
 
 /* Define if your system supports the epoll system calls */
 
-#if CPE_OS_ANDROID
+#if CPE_OS_ANDROID || CPE_OS_LINUX
 #define EVENT__HAVE_EPOLL 1
 
 /* Define to 1 if you have the `epoll_create1' function. */
