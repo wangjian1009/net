@@ -4,10 +4,12 @@
 #include "cpe/pal/pal_socket.h"
 #include "cpe/pal/pal_stdlib.h"
 #include "net_address.h"
+#include "net_schedule.h"
 #include "net_driver.h"
 #include "net_dns_manage.h"
 #include "net_dns_source.h"
 #include "net_dns_task.h"
+#include "net_dns_query.h"
 #include "net_dns_task_ctx.h"
 #include "net_dns_udns_source_ctx_i.h"
 
@@ -60,10 +62,15 @@ void net_dns_udns_source_ctx_query_v4_cb(struct dns_ctx *ctx, struct dns_rr_a4 *
                     CPE_ERROR(
                         udns->m_em, "udns: %s: add record %s fail",
                         hostname, net_address_host(net_schedule_tmp_buffer(schedule), result_address));
-                    net_address_free(result_address);
-                    continue;
                 }
-
+                else {
+                    if (udns->m_debug) {
+                        CPE_INFO(
+                            udns->m_em, "udns: %s: add record %s success",
+                            hostname, net_address_host(net_schedule_tmp_buffer(schedule), result_address));
+                    }
+                    udns_ctx->m_result_count++;
+                }
                 net_address_free(result_address);
             }
         }
@@ -116,10 +123,16 @@ void net_dns_udns_source_ctx_query_v6_cb(struct dns_ctx *ctx, struct dns_rr_a6 *
                     CPE_ERROR(
                         udns->m_em, "udns: %s: add record %s fail",
                         hostname, net_address_host(net_schedule_tmp_buffer(schedule), result_address));
-                    net_address_free(result_address);
-                    continue;
                 }
-
+                else {
+                    if (udns->m_debug) {
+                        CPE_INFO(
+                            udns->m_em, "udns: %s: add record %s success",
+                            hostname, net_address_host(net_schedule_tmp_buffer(schedule), result_address));
+                    }
+                    udns_ctx->m_result_count++;
+                }
+                
                 net_address_free(result_address);
             }
         }
@@ -172,7 +185,9 @@ int net_dns_udns_source_ctx_start(net_dns_source_t source, net_dns_task_ctx_t ta
 
     if (net_dns_udns_source_ctx_all_query_done(udns_ctx)) {
         if (udns->m_debug) {
-            CPE_INFO(udns->m_em, "udns: %s: ignore for no query", hostname);
+            CPE_INFO(
+                udns->m_em, "udns: %s: query type %s ignore for no query",
+                hostname, net_dns_query_type_str(query_type));
         }
         net_dns_task_ctx_set_empty(task_ctx);
         return 0;

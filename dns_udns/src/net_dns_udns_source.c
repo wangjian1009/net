@@ -152,7 +152,7 @@ int net_dns_udns_source_start(net_dns_udns_source_t udns) {
         dns_close(udns->m_dns_ctx);
         return -1;
     }
-    net_watcher_expect_read(udns->m_watcher);
+    net_watcher_update_read(udns->m_watcher, 1);
 
     dns_set_tmcbck(udns->m_dns_ctx, net_dns_udns_source_timer_setup_cb, udns);
 
@@ -212,9 +212,9 @@ void net_dns_udns_source_timer_setup_cb(struct dns_ctx *ctx, int timeout, void *
     net_dns_udns_source_t udns = data;
 
     if (ctx != NULL && timeout >= 0) {
-        if (udns->m_debug) {
-            CPE_INFO(udns->m_em, "udns: timer active, timeout=%d(s)!", timeout);
-        }
+        /* if (udns->m_debug) { */
+        /*     CPE_INFO(udns->m_em, "udns: timer active, timeout=%d(s)!", timeout); */
+        /* } */
         
         net_timer_active(udns->m_timeout, timeout * 1000);
     }
