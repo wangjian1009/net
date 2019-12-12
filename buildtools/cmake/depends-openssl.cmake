@@ -36,7 +36,7 @@ if (BUILD_OPENSSL)
     no-cast no-md2 no-md4 no-mdc2 no-rc4 no-rc5 no-engine
     no-idea no-mdc2 no-rc5 no-camellia no-ssl3 no-heartbeats
     no-gost no-deprecated no-capieng no-comp no-dtls no-psk
-    no-srp no-dso no-dsa no-rc2 no-shared no-asm
+    no-srp no-rc2 no-shared no-asm no-threads no-dso no-dsa
     no-tests)
 
   set(CONFIGURE_OPENSSL_PARAMS --libdir=lib --prefix=${openssl_base})
