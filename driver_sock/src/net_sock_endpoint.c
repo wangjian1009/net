@@ -83,7 +83,14 @@ int net_sock_endpoint_update(net_endpoint_t base_endpoint) {
 }
 
 int net_sock_endpoint_update_option(net_endpoint_t base_endpoint, net_endpoint_option_t opt, uint8_t is_enable) {
-    return 0;
+    net_sock_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+
+    switch(opt) {
+    case net_endpoint_option_fastopen:
+        return 0;
+    case net_endpoint_option_no_delay:
+        return cpe_sock_set_no_delay(endpoint->m_fd, is_enable);
+    }
 }
 
 int net_sock_endpoint_connect(net_endpoint_t base_endpoint) {
@@ -250,7 +257,10 @@ CONNECT_AGAIN:
             net_sock_endpoint_update_local_address(endpoint);
         }
 
-        if (net_sock_endpoint_set_established(driver, endpoint, base_endpoint) != 0) return -1;
+        if (net_sock_endpoint_set_established(driver, endpoint, base_endpoint) != 0) {
+            net_sock_endpoint_close_sock(driver, endpoint);
+            return -1;
+        }
 
         return 0;
     }
@@ -269,11 +279,14 @@ int net_sock_endpoint_set_established(net_sock_driver_t driver, net_sock_endpoin
     assert(endpoint->m_watcher == NULL);
     assert(endpoint->m_fd != -1);
 
-    if (cpe_sock_set_no_delay(endpoint->m_fd, net_endpoint_option(base_endpoint, net_endpoint_option_no_delay) ? 1 : 0) != 0) {
-        CPE_ERROR(
-            driver->m_em, "sock: %s: fd=%d: set established: set no delay fail",
-            net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
-        return -1;
+    if (net_endpoint_option(base_endpoint, net_endpoint_option_no_delay)) {
+        if (cpe_sock_set_no_delay(endpoint->m_fd, 1) != 0) {
+            CPE_ERROR(
+                driver->m_em, "sock: %s: fd=%d: set established: set no delay fail, errno=%d (%s)",
+                net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
+                errno, strerror(errno));
+            return -1;
+        }
     }
 
     endpoint->m_watcher = net_watcher_create(net_endpoint_driver(base_endpoint), _to_watcher_fd(endpoint->m_fd), endpoint, net_sock_endpoint_rw_cb);
