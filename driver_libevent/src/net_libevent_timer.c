@@ -35,8 +35,8 @@ void net_libevent_timer_active(net_timer_t base_timer, uint64_t delay_millisecon
     evtimer_assign(&timer->m_timer, driver->m_event_base, net_libevent_timer_cb, base_timer);
 
     struct timeval tv;
-    tv.tv_sec = delay_milliseconds / 1000;
-    tv.tv_usec = delay_milliseconds - ((uint64_t)tv.tv_sec * 100U);
+    tv.tv_sec = delay_milliseconds / 1000000;
+    tv.tv_usec = delay_milliseconds - ((uint64_t)tv.tv_sec * 1000000U);
     evtimer_add(&timer->m_timer, &tv);
     assert(event_initialized(&timer->m_timer));
 }
