@@ -88,14 +88,15 @@ uint8_t net_endpoint_have_any_data(net_endpoint_t endpoint);
 uint8_t net_endpoint_shift_address(net_endpoint_t endpoint);
 
 /*    write*/
+net_mem_block_t net_endpoint_block_alloc(net_endpoint_t endpoint, uint32_t capacity);
 void * net_endpoint_buf_alloc(net_endpoint_t endpoint, uint32_t * inout_size);
-//uint8_t net_endpoint_buf_validate(net_endpoint_t endpoint, void const * buf, uint32_t capacity);
 void net_endpoint_buf_release(net_endpoint_t endpoint);
 int net_endpoint_buf_supply(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, uint32_t size);
 int net_endpoint_buf_append(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, void const * data, uint32_t size);
 int net_endpoint_buf_append_char(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, uint8_t c);
 
 /*    read*/
+net_mem_block_t net_endpoint_block_get(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type);
 void * net_endpoint_buf_peak(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, uint32_t * size);
 int net_endpoint_buf_peak_with_size(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, uint32_t require, void * * data);
 int net_endpoint_buf_recv(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, void * data, uint32_t * size);

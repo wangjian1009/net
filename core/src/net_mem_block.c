@@ -74,18 +74,15 @@ void net_mem_block_real_free(net_mem_block_t block) {
     mem_free(schedule->m_alloc, block);
 }
 
-uint32_t net_mem_block_get_length(const net_mem_block_t block) {
+uint32_t net_mem_block_size(net_mem_block_t block) {
     return block ? block->m_len : 0;
 }
 
-const uint8_t* net_mem_block_get_data(const net_mem_block_t ptr, uint32_t* length) {
-    if (length) {
-        *length = net_mem_block_get_length(ptr);
-    }
+uint8_t * net_mem_block_data(net_mem_block_t ptr) {
     return ptr ? ptr->m_data : NULL;
 }
 
-int net_mem_block_compare(const net_mem_block_t ptr1, const net_mem_block_t ptr2, uint32_t size) {
+int net_mem_block_compare(net_mem_block_t ptr1, net_mem_block_t ptr2, uint32_t size) {
     if (ptr1 == NULL && ptr2 == NULL) {
         return 0;
     }

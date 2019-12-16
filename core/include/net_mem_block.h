@@ -6,9 +6,10 @@ NET_BEGIN_DECL
 
 net_mem_block_t net_mem_block_create(net_mem_group_t group, uint32_t capacity);
 net_mem_block_t net_mem_block_create_from(net_mem_group_t group, const uint8_t *data, uint32_t len);
-uint32_t net_mem_block_get_length(net_mem_block_t ptr);
-const uint8_t * net_mem_block_get_data(net_mem_block_t ptr, uint32_t *length);
 void net_mem_block_free(net_mem_block_t mem_bloc);
+
+uint32_t net_mem_block_get_size(net_mem_block_t ptr);
+uint8_t * net_mem_block_data(net_mem_block_t ptr);
 
 int net_mem_block_compare(net_mem_block_t ptr1, net_mem_block_t ptr2, uint32_t size);
 void net_mem_block_reset(net_mem_block_t ptr);
