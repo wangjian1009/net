@@ -1,5 +1,6 @@
 #include "cpe/pal/pal_string.h"
 #include "cpe/utils/md5.h"
+#include "cpe/utils/string_utils.h"
 #include "cpe/utils/stream_mem.h"
 #include "net_log_util.h"
 #include "hmac-sha.h"
@@ -15,6 +16,7 @@ void md5_to_string(const char * buffer, int bufLen, char * md5) {
 
     struct write_stream_mem ws = CPE_WRITE_STREAM_MEM_INITIALIZER(md5, 32);
     cpe_md5_print((write_stream_t)&ws, &ctx.value);
+    cpe_str_toupper(md5);
 }
 
 int aos_base64_encode(const unsigned char *in, int inLen, char *out) {
