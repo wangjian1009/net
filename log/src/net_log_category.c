@@ -1,8 +1,9 @@
 #include <assert.h>
-#include "md5.h"
+#include "cpe/utils/md5.h"
 #include "cpe/pal/pal_string.h"
 #include "cpe/pal/pal_strings.h"
 #include "cpe/utils/string_utils.h"
+#include "cpe/utils/stream_mem.h"
 #include "net_timer.h"
 #include "net_log_category_i.h"
 #include "net_log_request.h"
@@ -359,16 +360,15 @@ void net_log_category_log_end(net_log_category_t category) {
 }
 
 char * net_log_category_get_pack_id(net_log_schedule_t schedule, const char * configName, const char * ip) {
-    unsigned char md5Buf[16];
-    mbedtls_md5((const unsigned char *)configName, strlen(configName), md5Buf);
-    int loop = 0;
+    struct cpe_md5_ctx ctx;
+    
+    cpe_md5_ctx_init(&ctx);
+    cpe_md5_ctx_update(&ctx, configName, strlen(configName));
+    cpe_md5_ctx_final(&ctx);
+
     char * val = (char *)mem_alloc(schedule->m_alloc, sizeof(char) * 32);
-    memset(val, 0, sizeof(char) * 32);
-    for(; loop < 8; ++loop) {
-        unsigned char a = ((md5Buf[loop])>>4) & 0xF, b = (md5Buf[loop]) & 0xF;
-        val[loop<<1] = a > 9 ? (a - 10 + 'A') : (a + '0');
-        val[(loop<<1)|1] = b > 9 ? (b - 10 + 'A') : (b + '0');
-    }
+    struct write_stream_mem ws = CPE_WRITE_STREAM_MEM_INITIALIZER(val, 32);
+    cpe_md5_print((write_stream_t)&ws, &ctx.value);
     return val;
 }
 

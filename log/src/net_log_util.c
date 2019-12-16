@@ -1,18 +1,20 @@
 #include "cpe/pal/pal_string.h"
+#include "cpe/utils/md5.h"
+#include "cpe/utils/stream_mem.h"
 #include "net_log_util.h"
-#include "md5.h"
 #include "hmac-sha.h"
 
 static const char *g_hex_hash = "0123456789ABCDEF";
 
 void md5_to_string(const char * buffer, int bufLen, char * md5) {
-    unsigned char md5Buf[16];
-    mbedtls_md5((const unsigned char *)buffer, bufLen, md5Buf);
-    int i = 0;
-    for(; i < 32; i+=2) {
-        md5[i] = g_hex_hash[md5Buf[i >> 1] >> 4];
-        md5[i+1] = g_hex_hash[md5Buf[i >> 1] & 0xF];
-    }
+    struct cpe_md5_ctx ctx;
+    
+    cpe_md5_ctx_init(&ctx);
+    cpe_md5_ctx_update(&ctx, buffer, bufLen);
+    cpe_md5_ctx_final(&ctx);
+
+    struct write_stream_mem ws = CPE_WRITE_STREAM_MEM_INITIALIZER(md5, 32);
+    cpe_md5_print((write_stream_t)&ws, &ctx.value);
 }
 
 int aos_base64_encode(const unsigned char *in, int inLen, char *out) {
