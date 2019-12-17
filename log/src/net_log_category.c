@@ -366,9 +366,11 @@ char * net_log_category_get_pack_id(net_log_schedule_t schedule, const char * co
     cpe_md5_ctx_update(&ctx, configName, strlen(configName));
     cpe_md5_ctx_final(&ctx);
 
-    char * val = (char *)mem_alloc(schedule->m_alloc, sizeof(char) * 32);
-    struct write_stream_mem ws = CPE_WRITE_STREAM_MEM_INITIALIZER(val, 32);
+    uint32_t capacity = 32 + 1;
+    char * val = (char *)mem_alloc(schedule->m_alloc, capacity);
+    struct write_stream_mem ws = CPE_WRITE_STREAM_MEM_INITIALIZER(val, capacity);
     cpe_md5_print((write_stream_t)&ws, &ctx.value);
+    stream_putc((write_stream_t)&ws, 0);
     cpe_str_toupper(val);
     return val;
 }
