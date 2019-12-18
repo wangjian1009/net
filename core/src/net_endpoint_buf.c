@@ -154,17 +154,18 @@ void net_endpoint_buf_consume(net_endpoint_t endpoint, net_endpoint_buf_type_t b
     assert(!TAILQ_EMPTY(&endpoint->m_bufs[buf_type].m_blocks));
     assert(endpoint->m_bufs[buf_type].m_size >= size);
 
-    while(size > 0) {
+    uint32_t left_size = size;
+    while(left_size > 0) {
         net_mem_block_t block = TAILQ_FIRST(&endpoint->m_bufs[buf_type].m_blocks);
         assert(block);
 
-        if (block->m_len <= size) {
-            size -= block->m_len;
+        if (block->m_len <= left_size) {
+            left_size -= block->m_len;
             net_mem_block_free(block);
         }
         else {
-            net_mem_block_erase(block, size);
-            size = 0;
+            net_mem_block_erase(block, left_size);
+            left_size = 0;
         }
     }
     
@@ -585,8 +586,6 @@ static int net_endpoint_buf_on_supply(net_schedule_t schedule, net_endpoint_t en
             if (net_endpoint_driver_update(endpoint) != 0) return -1;
         }
     }
-
-    net_endpoint_t other = net_endpoint_other(endpoint);
 
     if (buf_type == net_ep_buf_write && endpoint->m_state == net_endpoint_state_established) {
         if (net_endpoint_driver_update(endpoint) != 0) return -1;
