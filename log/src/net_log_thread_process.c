@@ -140,6 +140,15 @@ static void net_log_thread_process_stop_force(net_log_schedule_t schedule, net_l
     }
     
     net_log_thread_set_state(log_thread, net_log_thread_state_stoped);
+
+    if (IS_ON_THREAD_MAIN(schedule)) {
+        struct net_log_thread_cmd_stoped stop_cmd;
+        stop_cmd.head.m_size = sizeof(stop_cmd);
+        stop_cmd.head.m_cmd = net_log_thread_cmd_type_stoped;
+        stop_cmd.log_thread = log_thread;
+        assert(schedule->m_thread_main);
+        net_log_thread_send_cmd(schedule->m_thread_main, (net_log_thread_cmd_t)&stop_cmd, log_thread);
+    }
 }
 
 static void net_log_thread_process_stop_begin(net_log_schedule_t schedule, net_log_thread_t log_thread, net_log_thread_cmd_t cmd) {
