@@ -85,6 +85,7 @@ void net_log_thread_free(net_log_thread_t log_thread);
 void net_log_thread_set_state(net_log_thread_t log_thread, net_log_thread_state_t state);
 
 int net_log_thread_start(net_log_thread_t log_thread);
+void net_log_thread_notify_stop_begin(net_log_thread_t log_thread);
 void net_log_thread_notify_stop_force(net_log_thread_t log_thread);
 void net_log_thread_wait_stop(net_log_thread_t log_thread);
 

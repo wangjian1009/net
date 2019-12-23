@@ -20,6 +20,7 @@
 #include "net_log_env_i.h"
 
 static void net_log_schedule_on_local_ip_stack_changed(void * ctx, net_schedule_t net_schedule);
+void net_log_schedule_stop_timer(net_timer_t timer, void * ctx);
 
 net_log_schedule_t
 net_log_schedule_create(
@@ -52,8 +53,8 @@ net_log_schedule_create(
     schedule->m_cfg_dump_span_ms = 0;
     schedule->m_cfg_cache_dir = NULL;
     schedule->m_dump_timer = NULL;
+    schedule->m_stop_timer = NULL;
     schedule->m_cfg_dump_span_ms = 0;
-    schedule->m_cfg_stop_wait_ms = 3000;
     schedule->m_category_count = 0;
     schedule->m_runing_thread_count = 0;
     schedule->m_env_active = NULL;
@@ -67,6 +68,12 @@ net_log_schedule_create(
         schedule->m_net_schedule, schedule, NULL, net_log_schedule_on_local_ip_stack_changed);
     if (schedule->m_net_monitor == NULL) {
         CPE_ERROR(schedule->m_em, "log: schedule: create net monitor fail!");
+        goto CREATE_ERROR;
+    }
+
+    schedule->m_stop_timer = net_timer_auto_create(schedule->m_net_schedule, net_log_schedule_stop_timer, schedule);
+    if (schedule->m_stop_timer == NULL) {
+        CPE_ERROR(schedule->m_em, "log: schedule: create stop timer fail!");
         goto CREATE_ERROR;
     }
     
@@ -115,6 +122,7 @@ CREATE_ERROR:
     if (schedule->m_net_monitor) net_local_ip_stack_monitor_free(schedule->m_net_monitor);
     if (schedule->m_state_fsm_def) fsm_def_machine_free(schedule->m_state_fsm_def);
     if (schedule->m_dump_timer) net_timer_free(schedule->m_dump_timer);
+    if (schedule->m_stop_timer) net_timer_free(schedule->m_stop_timer);
     if (schedule->m_cfg_project) mem_free(alloc, schedule->m_cfg_project);
     if (schedule->m_cfg_access_id) mem_free(alloc, schedule->m_cfg_access_id);
     if (schedule->m_cfg_access_key) mem_free(alloc, schedule->m_cfg_access_key);
@@ -131,18 +139,27 @@ void net_log_schedule_free(net_log_schedule_t schedule) {
         CPE_INFO(schedule->m_em, "log: schedule: free");
     }
 
+    net_log_thread_t thread;
+
     switch(net_log_schedule_state(schedule)) {
     case net_log_schedule_state_runing:
     case net_log_schedule_state_pause:
-        net_log_schedule_stop(schedule);
+        net_log_schedule_commit(schedule);
+        TAILQ_FOREACH(thread, &schedule->m_threads, m_next) {
+            net_log_thread_notify_stop_begin(thread);
+            net_log_thread_notify_stop_force(thread);
+        }
+        break;
+    case net_log_schedule_state_stoping:
+        TAILQ_FOREACH(thread, &schedule->m_threads, m_next) {
+            net_log_thread_notify_stop_force(thread);
+        }
         break;
     default:
         break;
     }
     
-    if (net_log_schedule_state(schedule) == net_log_schedule_state_stoping) {
-        net_log_schedule_wait_stop_threads(schedule);
-    }
+    net_log_schedule_wait_stop_threads(schedule);
 
     uint8_t i;
     for(i = 0; i < schedule->m_category_count; ++i) {
@@ -187,6 +204,11 @@ void net_log_schedule_free(net_log_schedule_t schedule) {
     if (schedule->m_dump_timer) {
         net_timer_free(schedule->m_dump_timer);
         schedule->m_dump_timer = NULL;
+    }
+
+    if (schedule->m_stop_timer) {
+        net_timer_free(schedule->m_stop_timer);
+        schedule->m_stop_timer = NULL;
     }
 
     if (schedule->m_net_monitor) {
@@ -351,12 +373,15 @@ int net_log_schedule_start(net_log_schedule_t schedule) {
     return 0;
 }
 
-void net_log_schedule_stop(net_log_schedule_t schedule) {
+void net_log_schedule_stop(net_log_schedule_t schedule, uint32_t timeout_ms) {
     ASSERT_ON_THREAD_MAIN(schedule);
 
     if (schedule->m_debug) {
         CPE_INFO(schedule->m_em, "log: schedule: stop!");
     }
+
+    net_timer_active(schedule->m_stop_timer, timeout_ms);
+
     net_log_schedule_commit(schedule);
     net_log_state_fsm_apply_evt(schedule, net_log_state_fsm_evt_stop_begin);
 }
@@ -566,5 +591,18 @@ static void net_log_schedule_on_local_ip_stack_changed(void * ctx, net_schedule_
         if (log_thread->m_is_runing) {
             net_log_thread_update_net(log_thread);
         }
+    }
+}
+
+void net_log_schedule_stop_timer(net_timer_t timer, void * ctx) {
+    net_log_schedule_t schedule = ctx;
+    net_log_thread_t thread;
+
+    if (schedule->m_debug) {
+        CPE_INFO(schedule->m_em, "log: schedule: stop meout, force stop");
+    }
+    
+    TAILQ_FOREACH(thread, &schedule->m_threads, m_next) {
+        net_log_thread_notify_stop_force(thread);
     }
 }

@@ -2,14 +2,25 @@
 #include "cpe/pal/pal_string.h"
 #include "cpe/utils/time_utils.h"
 #include "cpe/fsm/fsm_def.h"
+#include "net_timer.h"
 #include "net_log_state_i.h"
+#include "net_log_thread_i.h"
 
 static void net_log_state_fsm_stoping_enter(fsm_machine_t fsm, fsm_def_state_t state, void * event) {
     net_log_schedule_t schedule = fsm_machine_context(fsm);
     net_log_state_fsm_notify_state_chagne(schedule);
+
+    net_log_thread_t log_thread;
+    TAILQ_FOREACH(log_thread, &schedule->m_threads, m_next) {
+        net_log_thread_notify_stop_begin(log_thread);
+    }
+
+    net_log_schedule_check_stop_complete(schedule);
 }
 
 static void net_log_state_fsm_stoping_leave(fsm_machine_t fsm, fsm_def_state_t state, void * event) {
+    net_log_schedule_t schedule = fsm_machine_context(fsm);
+    net_timer_cancel(schedule->m_stop_timer);
 }
 
 static uint32_t net_log_state_fsm_stoping_trans(fsm_machine_t fsm, fsm_def_state_t state, void * input_evt) {

@@ -2,6 +2,7 @@
 #include "cpe/pal/pal_string.h"
 #include "cpe/fsm/fsm_def.h"
 #include "net_schedule.h"
+#include "net_timer.h"
 #include "net_log_state_i.h"
 
 static void net_log_state_fsm_init_enter(fsm_machine_t fsm, fsm_def_state_t state, void * event) {
@@ -10,6 +11,10 @@ static void net_log_state_fsm_init_enter(fsm_machine_t fsm, fsm_def_state_t stat
         net_log_schedule_wait_stop_threads(schedule);
     }
     net_log_state_fsm_notify_state_chagne(schedule);
+
+    if (schedule->m_dump_timer) {
+        net_timer_cancel(schedule->m_dump_timer);
+    }
 }
 
 static void net_log_state_fsm_init_leave(fsm_machine_t fsm, fsm_def_state_t state, void * event) {

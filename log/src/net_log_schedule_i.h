@@ -65,8 +65,8 @@ struct net_log_schedule {
     net_log_compress_type_t m_cfg_compress;
     char * m_cfg_cache_dir;
     uint32_t m_cfg_dump_span_ms;
-    uint32_t m_cfg_stop_wait_ms;
     net_timer_t m_dump_timer;
+    net_timer_t m_stop_timer;
 
     /**/
     net_local_ip_stack_monitor_t m_net_monitor;

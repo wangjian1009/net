@@ -36,7 +36,7 @@ net_log_schedule_state_t net_log_schedule_state(net_log_schedule_t schedule);
 net_log_env_t net_log_schedule_env_active(net_log_schedule_t schedule);
 
 int net_log_schedule_start(net_log_schedule_t schedule);
-void net_log_schedule_stop(net_log_schedule_t schedule);
+void net_log_schedule_stop(net_log_schedule_t schedule, uint32_t timeout_ms);
 uint8_t net_log_schedule_stop_check(net_log_schedule_t schedule);
 
 net_log_schedule_statistic_t net_log_schedule_statistic(net_log_schedule_t schedule);

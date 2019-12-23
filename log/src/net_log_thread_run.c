@@ -276,6 +276,20 @@ int net_log_thread_start(net_log_thread_t log_thread) {
     return 0;
 }
 
+void net_log_thread_notify_stop_begin(net_log_thread_t log_thread) {
+    net_log_schedule_t schedule = log_thread->m_schedule;
+    ASSERT_ON_THREAD_MAIN(schedule);
+    
+    struct net_log_thread_cmd stop_cmd;
+    stop_cmd.m_size = sizeof(stop_cmd);
+    stop_cmd.m_cmd = net_log_thread_cmd_type_stop_begin;
+    net_log_thread_send_cmd(log_thread, &stop_cmd, schedule->m_thread_main);
+
+    if (schedule->m_debug) {
+        CPE_INFO(schedule->m_em, "log: thread %s: notify stop begin: notify success", log_thread->m_name);
+    }
+}
+
 void net_log_thread_notify_stop_force(net_log_thread_t log_thread) {
     net_log_schedule_t schedule = log_thread->m_schedule;
     ASSERT_ON_THREAD_MAIN(schedule);
