@@ -526,17 +526,16 @@ static uint8_t net_sock_endpoint_on_write(net_sock_driver_t driver, net_sock_end
                 }
 
                 net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_network_error, cpe_sock_errstr(err));
-                net_sock_endpoint_close_sock(driver, endpoint);
-                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) return -1;
-                return 0;
             }
-            
-            CPE_ERROR(
-                driver->m_em, "sock: %s: fd=%d: send error, errno=%d (%s)!",
-                net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
-                err, cpe_sock_errstr(err));
+            else {
+                CPE_ERROR(
+                    driver->m_em, "sock: %s: fd=%d: send error, errno=%d (%s)!",
+                    net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
+                    err, cpe_sock_errstr(err));
 
-            net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_network_error, cpe_sock_errstr(err));
+                net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_network_error, cpe_sock_errstr(err));
+            }
+
             net_sock_endpoint_close_sock(driver, endpoint);
             if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) return -1;
 
