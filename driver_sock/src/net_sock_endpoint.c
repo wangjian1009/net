@@ -505,11 +505,11 @@ static uint8_t net_sock_endpoint_on_write(net_sock_driver_t driver, net_sock_end
             if (err == EWOULDBLOCK || err == EINPROGRESS) {
                 if (!net_watcher_expect_write(endpoint->m_watcher)) {
                     assert(endpoint->m_watcher);
-                    if (net_endpoint_driver_debug(base_endpoint) >= 3) {
+                    /* if (net_endpoint_driver_debug(base_endpoint) >= 3) { */
                         CPE_INFO(
                             driver->m_em, "sock: %s: fd=%d: wait write begin!",
                             net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
-                    }
+                    /* } */
                     net_watcher_update_write(endpoint->m_watcher, 1);
                     net_endpoint_set_write_blocked(base_endpoint, 1);
                 }
