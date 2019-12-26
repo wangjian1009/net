@@ -912,3 +912,27 @@ net_endpoint_t net_sock_endpoint_base_endpoint(net_sock_endpoint_t endpoint) {
 int net_sock_endpoint_fd(net_sock_endpoint_t endpoint) {
     return endpoint->m_fd;
 }
+
+int net_sock_endpoint_set_dft_block_size_to_mss(net_sock_endpoint_t endpoint) {
+    net_endpoint_t base_endpoint = net_endpoint_from_data(endpoint);
+    net_sock_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
+    
+    int mss = cpe_sock_get_tcp_mss(endpoint->m_fd);
+    if (mss < 0) {
+        CPE_ERROR(
+            driver->m_em, "sock: %s: fd=%d: get mss fail, errno=%d (%s)",
+            net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
+            cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+        return -1;
+    }
+    else {
+        if (net_endpoint_driver_debug(base_endpoint) >= 2) {
+            CPE_INFO(
+                driver->m_em, "sock: %s: fd=%d: dft-block-size to mss %d",
+                net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd, mss);
+        }
+
+        net_endpoint_set_dft_block_size(base_endpoint, (uint32_t)mss);
+        return 0;
+    }
+}
