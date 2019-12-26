@@ -77,6 +77,9 @@ net_link_t net_endpoint_link(net_endpoint_t endpoint);
 net_endpoint_t net_endpoint_other(net_endpoint_t endpoint);
 
 /*buf*/
+uint32_t net_endpoint_dft_block_size(net_endpoint_t endpoint);
+void net_endpoint_set_dft_block_size(net_endpoint_t endpoint, uint32_t read_block_size);
+
 /*    check */
 uint32_t net_endpoint_buf_size(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type);
 uint8_t net_endpoint_buf_is_empty(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type);

@@ -18,6 +18,7 @@ struct net_endpoint {
     net_link_t m_link;
     uint32_t m_id;
     uint32_t m_options;
+    uint32_t m_dft_block_size;
     uint8_t m_expect_read;
     uint8_t m_write_blocked;
     uint8_t m_close_after_send;

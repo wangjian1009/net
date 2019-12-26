@@ -60,6 +60,7 @@ net_driver_create(
 
     /*driver*/
     driver->m_driver_capacity = driver_capacity;
+    driver->m_driver_init = driver_init;
     driver->m_driver_fini = driver_fini;
 
     /*timer*/
@@ -221,4 +222,9 @@ void * net_driver_data(net_driver_t driver) {
 net_driver_t net_driver_from_data(void * data) {
     return ((net_driver_t)data) - 1;
 }
+
+net_driver_init_fun_t net_driver_init_fun(net_driver_t driver) {
+    return driver->m_driver_init;
+}
+
 

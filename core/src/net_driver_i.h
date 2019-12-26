@@ -12,6 +12,7 @@ struct net_driver {
     uint8_t m_debug;
     /*driver*/
     uint16_t m_driver_capacity;
+    net_driver_init_fun_t m_driver_init;
     net_driver_fini_fun_t m_driver_fini;
     /*timer*/
     uint16_t m_timer_capacity;

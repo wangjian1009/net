@@ -51,7 +51,9 @@ net_mem_block_t net_endpoint_block_alloc(net_endpoint_t endpoint, uint32_t capac
 
     assert(endpoint->m_tb == NULL);
 
-    if (capacity == 0) capacity = 2048;
+    if (capacity == 0) {
+        capacity = endpoint->m_dft_block_size ? endpoint->m_dft_block_size : 2048;
+    }
 
     endpoint->m_tb = net_mem_block_create(endpoint->m_mem_group, capacity);
     if (endpoint->m_tb == NULL) {

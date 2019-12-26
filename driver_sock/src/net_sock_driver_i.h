@@ -19,6 +19,8 @@ struct net_sock_driver {
 net_schedule_t net_sock_driver_schedule(net_sock_driver_t driver);
 mem_buffer_t net_sock_driver_tmp_buffer(net_sock_driver_t driver);
 
+int net_sock_driver_init(net_driver_t driver);
+
 #ifdef _WIN32
 #define _to_watcher_fd(__fd) (_get_osfhandle((__fd)))
 #else

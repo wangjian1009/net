@@ -8,7 +8,6 @@
 #include "net_sock_endpoint_i.h"
 #include "net_sock_dgram.h"
 
-static int net_sock_driver_init(net_driver_t driver);
 static void net_sock_driver_fini(net_driver_t driver);
 
 net_sock_driver_t
@@ -87,7 +86,7 @@ net_sock_driver_create(
     return driver;
 }
 
-static int net_sock_driver_init(net_driver_t base_driver) {
+int net_sock_driver_init(net_driver_t base_driver) {
     net_sock_driver_t driver = net_driver_data(base_driver);
     net_schedule_t schedule = net_driver_schedule(base_driver);
 

@@ -53,6 +53,7 @@ net_endpoint_create(net_driver_t driver, net_protocol_t protocol, net_mem_group_
     endpoint->m_error_msg = NULL;
     endpoint->m_link = NULL;
     endpoint->m_id = schedule->m_endpoint_max_id + 1;
+    endpoint->m_dft_block_size = 0;
     endpoint->m_options = 0;
     endpoint->m_expect_read = 1;
     endpoint->m_write_blocked = 0;
@@ -262,6 +263,14 @@ net_endpoint_t net_endpoint_find(net_schedule_t schedule, uint32_t id) {
     struct net_endpoint key;
     key.m_id = id;
     return cpe_hash_table_find(&schedule->m_endpoints, &key);
+}
+
+uint32_t net_endpoint_dft_block_size(net_endpoint_t endpoint) {
+    return endpoint->m_dft_block_size;
+}
+
+void net_endpoint_set_dft_block_size(net_endpoint_t endpoint, uint32_t block_size) {
+    endpoint->m_dft_block_size = block_size;
 }
 
 uint8_t net_endpoint_close_after_send(net_endpoint_t endpoint) {

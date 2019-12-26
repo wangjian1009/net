@@ -897,7 +897,12 @@ static void net_sock_endpoint_close_sock(net_sock_driver_t driver, net_sock_endp
 }
 
 net_sock_endpoint_t net_sock_endpoint_from_base_endpoint(net_endpoint_t ep) {
-    return net_endpoint_data(ep);    
+    if (net_driver_init_fun(net_endpoint_driver(ep)) == net_sock_driver_init) {
+        return net_endpoint_data(ep);
+    }
+    else {
+        return NULL;
+    }
 }
 
 net_endpoint_t net_sock_endpoint_base_endpoint(net_sock_endpoint_t endpoint) {

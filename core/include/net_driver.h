@@ -80,6 +80,8 @@ const char * net_driver_name(net_driver_t driver);
 void * net_driver_data(net_driver_t driver);
 net_driver_t net_driver_from_data(void * data);
 
+net_driver_init_fun_t net_driver_init_fun(net_driver_t driver);
+
 uint8_t net_driver_debug(net_driver_t driver);
 void net_driver_set_debug(net_driver_t driver, uint8_t debug);
 
