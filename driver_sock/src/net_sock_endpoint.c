@@ -82,33 +82,6 @@ int net_sock_endpoint_update(net_endpoint_t base_endpoint) {
     return 0;
 }
 
-int net_sock_endpoint_update_option(net_endpoint_t base_endpoint, net_endpoint_option_t opt, uint8_t is_enable) {
-    net_sock_endpoint_t endpoint = net_endpoint_data(base_endpoint);
-    net_sock_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
-
-    switch(opt) {
-    case net_endpoint_option_fastopen:
-        return 0;
-    case net_endpoint_option_no_delay:
-        if (cpe_sock_set_no_delay(endpoint->m_fd, is_enable) != 0) {
-            CPE_ERROR(
-                driver->m_em, "sock: %s: fd=%d: set sock nodelay to %s error, errno=%d (%s)!",
-                net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint),
-                endpoint->m_fd, is_enable ? "enable" : "disable",
-                errno, strerror(errno));
-            return -1;
-        }
-        else {
-            if (net_endpoint_driver_debug(base_endpoint) >= 2) {
-                CPE_INFO(
-                    driver->m_em, "sock: %s: fd=%d: set sock nodelay to %s success!",
-                    net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd, is_enable ? "enable" : "disable");
-            }
-            return 0;
-        }
-    }
-}
-
 int net_sock_endpoint_connect(net_endpoint_t base_endpoint) {
     net_driver_t base_driver = net_endpoint_driver(base_endpoint);
     net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
@@ -926,13 +899,35 @@ int net_sock_endpoint_set_dft_block_size_to_mss(net_sock_endpoint_t endpoint) {
         return -1;
     }
     else {
-        if (net_endpoint_driver_debug(base_endpoint) >= 2) {
+        if (net_endpoint_driver_debug(base_endpoint)) {
             CPE_INFO(
                 driver->m_em, "sock: %s: fd=%d: dft-block-size to mss %d",
                 net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd, mss);
         }
 
         net_endpoint_set_dft_block_size(base_endpoint, (uint32_t)mss);
+        return 0;
+    }
+}
+
+int net_sock_endpoint_set_no_delay(net_sock_endpoint_t endpoint, uint8_t is_enable) {
+    net_endpoint_t base_endpoint = net_endpoint_from_data(endpoint);
+    net_sock_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
+
+    if (cpe_sock_set_no_delay(endpoint->m_fd, is_enable) != 0) {
+        CPE_ERROR(
+            driver->m_em, "sock: %s: fd=%d: set sock nodelay to %s error, errno=%d (%s)!",
+            net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint),
+            endpoint->m_fd, is_enable ? "enable" : "disable",
+            errno, strerror(errno));
+        return -1;
+    } else {
+        if (net_endpoint_driver_debug(base_endpoint) >= 2) {
+            CPE_INFO(
+                driver->m_em, "sock: %s: fd=%d: set sock nodelay to %s success!",
+                net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint),
+                endpoint->m_fd, is_enable ? "enable" : "disable");
+        }
         return 0;
     }
 }

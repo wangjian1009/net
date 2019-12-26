@@ -524,58 +524,6 @@ net_endpoint_t net_endpoint_from_data(void * data) {
     return ((net_endpoint_t)data) - 1;
 }
 
-uint8_t net_endpoint_option(net_endpoint_t endpoint, net_endpoint_option_t opt) {
-    uint32_t mask = (uint32_t)1u << opt;
-    return (endpoint->m_options & mask) ? 1 : 0;
-}
-
-int net_endpoint_option_set(net_endpoint_t endpoint, net_endpoint_option_t opt, uint8_t is_enable) {
-    net_schedule_t schedule = endpoint->m_driver->m_schedule;
-    
-    uint32_t mask = (uint32_t)1u << opt;
-
-    if (is_enable) {
-        if (endpoint->m_options & mask) return 0;
-
-        if (endpoint->m_driver->m_endpoint_update_option) {
-            if (endpoint->m_driver->m_endpoint_update_option(endpoint, opt, 1) != 0) {
-                CPE_ERROR(
-                    schedule->m_em, "%s: set options: enable %s fail!",
-                    net_endpoint_dump(&schedule->m_tmp_buffer, endpoint),
-                    net_endpoint_option_str(opt));
-                return -1;
-            }
-        }
-
-        endpoint->m_options |= mask;
-    }
-    else {
-        if (!(endpoint->m_options & mask)) return 0;
-
-        if (endpoint->m_driver->m_endpoint_update_option) {
-            if (endpoint->m_driver->m_endpoint_update_option(endpoint, opt, 0) != 0) {
-                CPE_ERROR(
-                    schedule->m_em, "%s: set options: disable %s fail!",
-                    net_endpoint_dump(&schedule->m_tmp_buffer, endpoint),
-                    net_endpoint_option_str(opt));
-                return -1;
-            }
-        }
-
-        endpoint->m_options &= ~mask;
-    }
-
-    if (endpoint->m_driver_debug || schedule->m_debug >= 2) {
-        CPE_INFO(
-            schedule->m_em, "%s: set options: %s ==> %s",
-            net_endpoint_dump(&schedule->m_tmp_buffer, endpoint),
-            net_endpoint_option_str(opt),
-            (endpoint->m_options & mask) ? "enable" : "disable");
-    }
-
-    return 0;
-}
-
 uint8_t net_endpoint_expect_read(net_endpoint_t endpoint) {
     return endpoint->m_expect_read;
 }
@@ -793,15 +741,6 @@ void net_endpoint_set_data_watcher(
     endpoint->m_data_watcher_ctx = watcher_ctx;
     endpoint->m_data_watcher_fun = watcher_fun;
     endpoint->m_data_watcher_fini = watcher_ctx_fini;
-}
-
-const char * net_endpoint_option_str(net_endpoint_option_t opt) {
-    switch(opt) {
-    case net_endpoint_option_fastopen:
-        return "fastopen";
-    case net_endpoint_option_no_delay:
-        return "no-delay";
-    }
 }
 
 const char * net_endpoint_state_str(net_endpoint_state_t state) {
