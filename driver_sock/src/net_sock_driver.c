@@ -5,7 +5,7 @@
 #include "net_driver.h"
 #include "net_sock_driver_i.h"
 #include "net_sock_acceptor_i.h"
-#include "net_sock_endpoint.h"
+#include "net_sock_endpoint_i.h"
 #include "net_sock_dgram.h"
 
 static int net_sock_driver_init(net_driver_t driver);

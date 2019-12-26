@@ -7,7 +7,6 @@
 #include "net_sock_driver.h"
 
 typedef struct net_sock_acceptor * net_sock_acceptor_t;
-typedef struct net_sock_endpoint * net_sock_endpoint_t;
 typedef struct net_sock_dgram * net_sock_dgram_t;
 
 struct net_sock_driver {

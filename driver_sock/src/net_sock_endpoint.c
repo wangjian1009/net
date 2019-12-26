@@ -8,7 +8,7 @@
 #include "net_address.h"
 #include "net_driver.h"
 #include "net_watcher.h"
-#include "net_sock_endpoint.h"
+#include "net_sock_endpoint_i.h"
 
 static void net_sock_endpoint_rw_cb(void * ctx, int fd, uint8_t do_read, uint8_t do_write);
 static void net_sock_endpoint_connect_cb(void * ctx, int fd, uint8_t do_read, uint8_t do_write);
@@ -894,4 +894,16 @@ static void net_sock_endpoint_close_sock(net_sock_driver_t driver, net_sock_endp
         cpe_sock_close(endpoint->m_fd);
         endpoint->m_fd = -1;
     }
+}
+
+net_sock_endpoint_t net_sock_endpoint_from_base_endpoint(net_endpoint_t ep) {
+    return net_endpoint_data(ep);    
+}
+
+net_endpoint_t net_sock_endpoint_base_endpoint(net_sock_endpoint_t endpoint) {
+    return net_endpoint_from_data(endpoint);
+}
+
+int net_sock_endpoint_fd(net_sock_endpoint_t endpoint) {
+    return endpoint->m_fd;
 }

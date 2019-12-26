@@ -1,5 +1,6 @@
-#ifndef NET_SOCK_ENDPOINT_H_INCLEDED
-#define NET_SOCK_ENDPOINT_H_INCLEDED
+#ifndef NET_SOCK_ENDPOINT_I_H_INCLEDED
+#define NET_SOCK_ENDPOINT_I_H_INCLEDED
+#include "net_sock_endpoint.h"
 #include "net_sock_driver_i.h"
 
 struct net_sock_endpoint {

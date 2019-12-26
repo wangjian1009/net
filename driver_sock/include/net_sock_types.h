@@ -5,6 +5,7 @@
 NET_BEGIN_DECL
 
 typedef struct net_sock_driver * net_sock_driver_t;
+typedef struct net_sock_endpoint * net_sock_endpoint_t;
 
 NET_END_DECL
 

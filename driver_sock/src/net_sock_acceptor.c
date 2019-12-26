@@ -7,7 +7,7 @@
 #include "net_address.h"
 #include "net_watcher.h"
 #include "net_sock_acceptor_i.h"
-#include "net_sock_endpoint.h"
+#include "net_sock_endpoint_i.h"
 
 static void net_sock_acceptor_cb(void * ctx, int fd, uint8_t do_read, uint8_t do_write);
 
