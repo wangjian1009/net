@@ -580,11 +580,11 @@ static void net_sock_endpoint_rw_cb(void * ctx, int fd, uint8_t do_read, uint8_t
     }
 
     if (do_write) {
-        if (net_endpoint_driver_debug(base_endpoint) >= 3) {
+        /* if (net_endpoint_driver_debug(base_endpoint) >= 3) { */
             CPE_INFO(
                 driver->m_em, "sock: %s: fd=%d: net can write",
                 net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
-        }
+        /* } */
 
         net_watcher_update_write(endpoint->m_watcher, 0);
         net_endpoint_set_write_blocked(base_endpoint, 0);
@@ -895,6 +895,7 @@ int net_sock_endpoint_set_dft_block_size_to_mss(net_sock_endpoint_t endpoint) {
             driver->m_em, "sock: %s: fd=%d: get mss fail, errno=%d (%s)",
             net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+        assert(0);
         return -1;
     }
     else {
