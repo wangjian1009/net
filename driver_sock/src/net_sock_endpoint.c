@@ -470,7 +470,10 @@ static uint8_t net_sock_endpoint_on_write(net_sock_driver_t driver, net_sock_end
           && !net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write) /*还有数据等待写入 */
         )
     {
-        uint32_t data_size = net_endpoint_buf_size(base_endpoint, net_ep_buf_write);
+        uint32_t data_size = 0;
+        if (net_endpoint_dft_block_size(base_endpoint) == 0) {
+            data_size = net_endpoint_buf_size(base_endpoint, net_ep_buf_write);
+        }
         void * data = net_endpoint_buf_peak(base_endpoint, net_ep_buf_write, &data_size);
         assert(data_size > 0);
         assert(data);
@@ -542,7 +545,22 @@ static uint8_t net_sock_endpoint_on_write(net_sock_driver_t driver, net_sock_end
             return 0;
         }
     }
-    
+
+    if (net_endpoint_state(base_endpoint) == net_endpoint_state_established) {
+        assert(net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write));
+
+        if (net_watcher_expect_write(endpoint->m_watcher)) {
+            /* if (net_endpoint_driver_debug(base_endpoint) >= 3) { */
+            CPE_INFO(
+                driver->m_em, "sock: %s: fd=%d: wait write stop",
+                net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
+            /* } */
+
+            net_watcher_update_write(endpoint->m_watcher, 0);
+            net_endpoint_set_write_blocked(base_endpoint, 0);
+        }
+    }
+
     return 0;
 }
 
@@ -580,14 +598,6 @@ static void net_sock_endpoint_rw_cb(void * ctx, int fd, uint8_t do_read, uint8_t
     }
 
     if (do_write) {
-        /* if (net_endpoint_driver_debug(base_endpoint) >= 3) { */
-            CPE_INFO(
-                driver->m_em, "sock: %s: fd=%d: net can write",
-                net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
-        /* } */
-
-        net_watcher_update_write(endpoint->m_watcher, 0);
-        net_endpoint_set_write_blocked(base_endpoint, 0);
         if (net_sock_endpoint_on_write(driver, endpoint, base_endpoint) != 0) {
             net_endpoint_free(base_endpoint);
             return;
