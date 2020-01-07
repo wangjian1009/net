@@ -37,8 +37,6 @@ elseif (OS_NAME STREQUAL mingw)
   list(APPEND libevent_include_directories ${libevent_base}/compat)
 endif()
 
-message(STATUS ${libevent_include_directories})
-
 add_library(libevent STATIC ${libevent_source})
 set_property(TARGET libevent PROPERTY COMPILE_OPTIONS ${libevent_compile_options})
 set_property(TARGET libevent PROPERTY COMPILE_DEFINITIONS ${libevent_compile_definitions})

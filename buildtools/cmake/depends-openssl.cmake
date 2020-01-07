@@ -3,7 +3,6 @@ set(openssl_base ${CMAKE_CURRENT_LIST_DIR}/../../depends/openssl/${OS_NAME})
 if (ANDROID)
   set(openssl_base "${openssl_base}/${ANDROID_ABI}")
 endif()
-message(STATUS "openssl_base=${openssl_base}")
 
 set(OPENSSL_LIBSSL_PATH ${openssl_base}/lib/libssl.a)
 set(OPENSSL_LIBCRYPTO_PATH ${openssl_base}/lib/libcrypto.a)

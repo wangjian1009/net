@@ -5,7 +5,7 @@
 #include "net_sock_driver.h"
 #include "net_libevent_watcher.h"
 
-void net_libevent_watcher_cb(int fd, short events, void* arg);
+void net_libevent_watcher_cb(evutil_socket_t fd, short events, void* arg);
 
 int net_libevent_watcher_init(net_watcher_t base_watcher, int fd) {
     net_libevent_watcher_t watcher = net_watcher_data(base_watcher);
@@ -49,7 +49,7 @@ void net_libevent_watcher_update(net_watcher_t base_watcher, int fd, uint8_t exp
     }        
 }
 
-void net_libevent_watcher_cb(int fd, short events, void * arg) {
+void net_libevent_watcher_cb(evutil_socket_t fd, short events, void * arg) {
     net_watcher_t base_watcher = arg;
     net_watcher_notify(base_watcher, (events | EV_READ) ? 1 : 0, (events | EV_WRITE) ? 1 : 0);
 }

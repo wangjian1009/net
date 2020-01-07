@@ -26,7 +26,11 @@ set(udns_compile_options
   )  
 endif ()
 
-set(udns_compile_definitions HAVE_INET_PTON_NTOP)
+if (OS_NAME STREQUAL mingw)
+  set(udns_compile_definitions WINDOWS)
+else()
+  set(udns_compile_definitions HAVE_INET_PTON_NTOP)
+endif()
 
 add_library(udns STATIC ${udns_source})
 set_property(TARGET udns PROPERTY COMPILE_OPTIONS ${udns_compile_options})
