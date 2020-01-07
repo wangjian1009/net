@@ -1,4 +1,5 @@
 set(nghttp2_base ${CMAKE_CURRENT_LIST_DIR}/../../depends/nghttp2)
+set(nghttp2_custom ${CMAKE_CURRENT_LIST_DIR}/../custom/nghttp2)
 
 set(nghttp2_source
   ${nghttp2_base}/lib/nghttp2_pq.c
@@ -32,7 +33,7 @@ set(nghttp2_compile_options
   )  
 endif ()
 
-set(nghttp2_compile_definitions BUILDING_NGHTTP2)
+set(nghttp2_compile_definitions NGHTTP2_STATICLIB)
 
 add_library(nghttp2 STATIC ${nghttp2_source})
 set_property(TARGET nghttp2 PROPERTY COMPILE_OPTIONS ${nghttp2_compile_options})
@@ -40,5 +41,5 @@ set_property(TARGET nghttp2 PROPERTY COMPILE_DEFINITIONS ${nghttp2_compile_defin
 
 set_property(TARGET nghttp2 PROPERTY INCLUDE_DIRECTORIES
   ${nghttp2_base}/lib/includes
-  ${CMAKE_CURRENT_LIST_DIR}/../custom/nghttp2
+  ${nghttp2_custom}
   )

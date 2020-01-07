@@ -9,8 +9,8 @@ file(GLOB curl_source
 set(curl_compile_definitions
   ${curl_compile_definitions}
   HAVE_CONFIG_H
-  BUILDING_LIBCURL
   CURL_STATICLIB
+  NGHTTP2_STATICLIB
   )
 
 if (CMAKE_BUILD_TYPE STREQUAL Debug)
