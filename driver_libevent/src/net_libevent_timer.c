@@ -6,7 +6,7 @@
 #include "net_sock_driver.h"
 #include "net_libevent_timer.h"
 
-void net_libevent_timer_cb(int fd, short events, void* arg);
+void net_libevent_timer_cb(evutil_socket_t fd, short events, void* arg);
 
 int net_libevent_timer_init(net_timer_t base_timer) {
     net_libevent_timer_t timer = net_timer_data(base_timer);
@@ -56,7 +56,7 @@ uint8_t net_libevent_timer_is_active(net_timer_t base_timer) {
     return evtimer_initialized(&timer->m_timer);
 }
 
-void net_libevent_timer_cb(int fd, short events, void* arg) {
+void net_libevent_timer_cb(evutil_socket_t fd, short events, void* arg) {
     net_timer_t base_timer = arg;
 
     net_libevent_timer_t timer = net_timer_data(base_timer);

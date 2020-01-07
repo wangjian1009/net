@@ -1,5 +1,5 @@
 set(libevent_base ${CMAKE_CURRENT_LIST_DIR}/../../depends/libevent)
-set(libevent_tmp ${CMAKE_CURRRENT_BINARY_DIR}/include/libevent)
+set(libevent_custom ${CMAKE_CURRENT_LIST_DIR}/../custom/libevent/${OS_NAME})
 
 set(libevent_source
   ${libevent_base}/buffer.c
@@ -20,30 +20,26 @@ set(libevent_source
   ${libevent_base}/signal.c
   ${libevent_base}/strlcpy.c)
 
+set(libevent_include_directories
+  ${libevent_base}/include
+  ${libevent_custom}
+  ${libevent_custom}/private
+  ${openssl_base}/include
+  )
+
 if (OS_NAME STREQUAL linux32 OR OS_NAME STREQUAL linux64 OR OS_NAME STREQUAL android)
   list(APPEND libevent_source
     ${libevent_base}/epoll.c)
 elseif (OS_NAME STREQUAL mac OR OS_NAME STREQUAL ios)
   list(APPEND libevent_source
     ${libevent_base}/kqueue.c)
+elseif (OS_NAME STREQUAL mingw)
+  list(APPEND libevent_include_directories ${libevent_base}/compat)
 endif()
+
+message(STATUS ${libevent_include_directories})
 
 add_library(libevent STATIC ${libevent_source})
 set_property(TARGET libevent PROPERTY COMPILE_OPTIONS ${libevent_compile_options})
 set_property(TARGET libevent PROPERTY COMPILE_DEFINITIONS ${libevent_compile_definitions})
-
-configure_file(
-    ${libevent_base}/event-config.h.cmake
-    ${libevent_tmp}/event2/event-config.h
-        NEWLINE_STYLE UNIX)
-
-configure_file(
-    ${libevent_base}/evconfig-private.h.cmake
-    ${libevent_tmp}/private/evconfig-private.h)
-
-set_property(TARGET libevent PROPERTY INCLUDE_DIRECTORIES
-  ${libevent_base}/include
-  ${libevent_tmp}
-  ${libevent_tmp}/private
-  ${openssl_base}/include
-  )
+set_property(TARGET libevent PROPERTY INCLUDE_DIRECTORIES ${libevent_include_directories})
