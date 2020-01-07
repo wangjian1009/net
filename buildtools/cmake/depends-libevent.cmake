@@ -1,4 +1,5 @@
 set(libevent_base ${CMAKE_CURRENT_LIST_DIR}/../../depends/libevent)
+set(libevent_tmp ${CMAKE_CURRRENT_BINARY_DIR}/include/libevent)
 
 set(libevent_source
   ${libevent_base}/buffer.c
@@ -31,9 +32,18 @@ add_library(libevent STATIC ${libevent_source})
 set_property(TARGET libevent PROPERTY COMPILE_OPTIONS ${libevent_compile_options})
 set_property(TARGET libevent PROPERTY COMPILE_DEFINITIONS ${libevent_compile_definitions})
 
+configure_file(
+    ${libevent_base}/event-config.h.cmake
+    ${libevent_tmp}/event2/event-config.h
+        NEWLINE_STYLE UNIX)
+
+configure_file(
+    ${libevent_base}/evconfig-private.h.cmake
+    ${libevent_tmp}/private/evconfig-private.h)
+
 set_property(TARGET libevent PROPERTY INCLUDE_DIRECTORIES
   ${libevent_base}/include
-  ${CMAKE_CURRENT_LIST_DIR}/../custom/libevent
-  ${CMAKE_CURRENT_LIST_DIR}/../custom/libevent/private
+  ${libevent_tmp}
+  ${libevent_tmp}/private
   ${openssl_base}/include
   )
