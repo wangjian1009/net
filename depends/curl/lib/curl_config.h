@@ -1,5 +1,6 @@
 #if _MSC_VER || __MINGW32__
-#define USE_MBEDTLS 1
+#define USE_OPENSSL 1
+#define USE_NGHTTP2 1
 #include "config-win32.h"
 #else
 /* lib/curl_config.h.  Generated from curl_config.h.in by configure.  */
