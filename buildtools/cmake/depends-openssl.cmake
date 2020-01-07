@@ -1,5 +1,10 @@
 set(openssl_base ${CMAKE_CURRENT_LIST_DIR}/../../depends/openssl/${OS_NAME})
 
+#MinGW 准备工作
+# ln -s ../usr/bin/git.exe git.exe
+# ln -s x86_64-w64-mingw32-gcc-ar.exe x86_64-w64-mingw32-ar.exe
+# ln -s x86_64-w64-mingw32-gcc-ranlib.exe x86_64-w64-mingw32-ranlib.exe
+
 if (ANDROID)
   set(openssl_base "${openssl_base}/${ANDROID_ABI}")
 endif()
@@ -41,6 +46,7 @@ if (BUILD_OPENSSL)
   set(CONFIGURE_OPENSSL_PARAMS --libdir=lib --prefix=${openssl_base})
   
   if (ANDROID)
+    find_program(MAKE_PROGRAM make)
     set(CONFIGURE_OPENSSL_MODULES ${CONFIGURE_OPENSSL_MODULES} no-hw)
 
     set(PATH ${ANDROID_TOOLCHAIN_ROOT}/bin/:${ANDROID_TOOLCHAIN_ROOT}/${ANDROID_TOOLCHAIN_NAME}/bin/)
@@ -53,19 +59,29 @@ if (BUILD_OPENSSL)
 
     set(BUILD_ENV_TOOL ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_LIST_DIR}/scripts/building_env.py LINUX_CROSS_ANDROID)
   elseif (IOS)
+    find_program(MAKE_PROGRAM make)
     set(COMMAND_CONFIGURE ./Configure ios64-xcrun ${CONFIGURE_OPENSSL_PARAMS} ${CONFIGURE_OPENSSL_MODULES})
     set(BUILD_ENV_TOOL ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_LIST_DIR}/scripts/building_env.py IOS)
+  elseif (MINGW)
+    find_program(MAKE_PROGRAM make)
+    set(COMMAND_CONFIGURE ./Configure mingw64
+      --cross-compile-prefix=x86_64-w64-mingw32-
+      ${CONFIGURE_OPENSSL_PARAMS} ${CONFIGURE_OPENSSL_MODULES})
+    set(BUILD_ENV_TOOL
+      ${PYTHON_EXECUTABLE}
+      ${CMAKE_CURRENT_LIST_DIR}/scripts/building_env.py
+      WIN32 c:/msys64/usr/bin/bash.exe c:/msys64/mingw64)
   else()
+    find_program(MAKE_PROGRAM make)
     set(COMMAND_CONFIGURE ./config ${CONFIGURE_OPENSSL_PARAMS} ${CONFIGURE_OPENSSL_MODULES})
     set(BUILD_ENV_TOOL ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_LIST_DIR}/scripts/building_env.py UNIX)
   endif()
 
-  find_program(MAKE_PROGRAM make)
 
-  message(STATUS "COMMAND_CONFIGURE=${COMMAND_CONFIGURE}")
-  message(STATUS "BUILD_ENV_TOOL=${BUILD_ENV_TOOL}")
-  message(STATUS "MAKE_PROGRAM=${MAKE_PROGRAM}")
-  
+  # message(STATUS "COMMAND_CONFIGURE=${COMMAND_CONFIGURE}")
+  # message(STATUS "BUILD_ENV_TOOL=${BUILD_ENV_TOOL}")
+  # message(STATUS "MAKE_PROGRAM=${MAKE_PROGRAM}")
+
   # add openssl target
   ExternalProject_Add(openssl
     PREFIX openssl
@@ -73,7 +89,8 @@ if (BUILD_OPENSSL)
     INSTALL_DIR ${openssl_base}
     URL https://mirror.viaduck.org/openssl/openssl-${OPENSSL_BUILD_VERSION}.tar.gz
     URL_HASH SHA256=${OPENSSL_BUILD_HASH}
-    UPDATE_COMMAND ""
+
+    UPDATE_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> sed -i -e 's/return return/return/g' crypto/threads_none.c
 
     CONFIGURE_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${COMMAND_CONFIGURE}
 
@@ -114,18 +131,18 @@ if (BUILD_OPENSSL)
   ##
 
   # set git config values to previous values
-  ExternalProject_Add_Step(openssl restoreGitConfig
-    # unset first (is required, since old value could be omitted, which wouldn't take any effect in "set"
-    COMMAND ${GIT_EXECUTABLE} config --global --unset core.autocrlf
-    COMMAND ${GIT_EXECUTABLE} config --global --unset core.eol
+  # ExternalProject_Add_Step(openssl restoreGitConfig
+  #   # unset first (is required, since old value could be omitted, which wouldn't take any effect in "set"
+  #   COMMAND ${GIT_EXECUTABLE} config --global --unset core.autocrlf
+  #   COMMAND ${GIT_EXECUTABLE} config --global --unset core.eol
 
-    COMMAND ${GIT_CORE_AUTOCRLF_CMD}
-    COMMAND ${GIT_CORE_EOL_CMD}
+  #   COMMAND ${GIT_CORE_AUTOCRLF_CMD}
+  #   COMMAND ${GIT_CORE_EOL_CMD}
 
-    DEPENDEES download
-    DEPENDERS configure
-    ALWAYS ON
-    )
+  #   DEPENDEES download
+  #   DEPENDERS configure
+  #   ALWAYS ON
+  #   )
 
   # write environment to file, is picked up by python script
   get_cmake_property(_variableNames VARIABLES)
