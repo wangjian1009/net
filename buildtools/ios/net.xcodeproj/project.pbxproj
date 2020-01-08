@@ -70,6 +70,47 @@
 		C9506CE1212819520015DDBC /* net_proxy_http_svr_endpoint_basic_req.c in Sources */ = {isa = PBXBuildFile; fileRef = C9506CDF212819510015DDBC /* net_proxy_http_svr_endpoint_basic_req.c */; };
 		C9506CE8212861F90015DDBC /* net_debug_setup.c in Sources */ = {isa = PBXBuildFile; fileRef = C9506CE4212861F80015DDBC /* net_debug_setup.c */; };
 		C9506CE9212861F90015DDBC /* net_debug_condition.c in Sources */ = {isa = PBXBuildFile; fileRef = C9506CE5212861F90015DDBC /* net_debug_condition.c */; };
+		C960DAC223C5D67300D1B4AD /* net_mem_block.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DABF23C5D67300D1B4AD /* net_mem_block.c */; };
+		C960DAC323C5D67300D1B4AD /* net_mem_group.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DAC123C5D67300D1B4AD /* net_mem_group.c */; };
+		C960DAE023C5D8A000D1B4AD /* net_dns_udns_source.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DADD23C5D8A000D1B4AD /* net_dns_udns_source.c */; };
+		C960DAE123C5D8A000D1B4AD /* net_dns_udns_source_ctx.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DADE23C5D8A000D1B4AD /* net_dns_udns_source_ctx.c */; };
+		C960DE6823C5DB3F00D1B4AD /* nghttp2_priority_spec.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DE3023C5DB3F00D1B4AD /* nghttp2_priority_spec.c */; };
+		C960DE6923C5DB3F00D1B4AD /* nghttp2_npn.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DE3223C5DB3F00D1B4AD /* nghttp2_npn.c */; };
+		C960DE6A23C5DB3F00D1B4AD /* nghttp2_map.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DE3323C5DB3F00D1B4AD /* nghttp2_map.c */; };
+		C960DE6B23C5DB3F00D1B4AD /* nghttp2_stream.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DE3523C5DB3F00D1B4AD /* nghttp2_stream.c */; };
+		C960DE6C23C5DB3F00D1B4AD /* nghttp2_hd_huffman_data.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DE3623C5DB3F00D1B4AD /* nghttp2_hd_huffman_data.c */; };
+		C960DE6D23C5DB3F00D1B4AD /* nghttp2_buf.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DE3923C5DB3F00D1B4AD /* nghttp2_buf.c */; };
+		C960DE6E23C5DB3F00D1B4AD /* nghttp2_outbound_item.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DE3B23C5DB3F00D1B4AD /* nghttp2_outbound_item.c */; };
+		C960DE6F23C5DB3F00D1B4AD /* nghttp2_helper.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DE4023C5DB3F00D1B4AD /* nghttp2_helper.c */; };
+		C960DE7023C5DB3F00D1B4AD /* nghttp2_queue.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DE4923C5DB3F00D1B4AD /* nghttp2_queue.c */; };
+		C960DE7123C5DB3F00D1B4AD /* nghttp2_submit.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DE4A23C5DB3F00D1B4AD /* nghttp2_submit.c */; };
+		C960DE7223C5DB3F00D1B4AD /* nghttp2_session.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DE4B23C5DB3F00D1B4AD /* nghttp2_session.c */; };
+		C960DE7323C5DB3F00D1B4AD /* nghttp2_debug.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DE5023C5DB3F00D1B4AD /* nghttp2_debug.c */; };
+		C960DE7423C5DB3F00D1B4AD /* nghttp2_rcbuf.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DE5523C5DB3F00D1B4AD /* nghttp2_rcbuf.c */; };
+		C960DE7523C5DB3F00D1B4AD /* nghttp2_hd_huffman.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DE5623C5DB3F00D1B4AD /* nghttp2_hd_huffman.c */; };
+		C960DE7623C5DB3F00D1B4AD /* nghttp2_hd.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DE5823C5DB3F00D1B4AD /* nghttp2_hd.c */; };
+		C960DE7723C5DB3F00D1B4AD /* nghttp2_option.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DE5B23C5DB3F00D1B4AD /* nghttp2_option.c */; };
+		C960DE7823C5DB3F00D1B4AD /* nghttp2_frame.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DE5C23C5DB3F00D1B4AD /* nghttp2_frame.c */; };
+		C960DE7923C5DB3F00D1B4AD /* nghttp2_http.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DE5D23C5DB3F00D1B4AD /* nghttp2_http.c */; };
+		C960DE7A23C5DB3F00D1B4AD /* nghttp2_pq.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DE5E23C5DB3F00D1B4AD /* nghttp2_pq.c */; };
+		C960DE7B23C5DB3F00D1B4AD /* nghttp2_callbacks.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DE6023C5DB3F00D1B4AD /* nghttp2_callbacks.c */; };
+		C960DE7C23C5DB3F00D1B4AD /* nghttp2_version.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DE6123C5DB3F00D1B4AD /* nghttp2_version.c */; };
+		C960DE7D23C5DB3F00D1B4AD /* nghttp2_mem.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DE6623C5DB3F00D1B4AD /* nghttp2_mem.c */; };
+		C960DEB423C5EBDD00D1B4AD /* udns_parse.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DE9523C5EBDD00D1B4AD /* udns_parse.c */; };
+		C960DEB623C5EBDD00D1B4AD /* udns_dn.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DE9823C5EBDD00D1B4AD /* udns_dn.c */; };
+		C960DEB823C5EBDD00D1B4AD /* udns_dntosp.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DE9B23C5EBDD00D1B4AD /* udns_dntosp.c */; };
+		C960DEB923C5EBDD00D1B4AD /* udns_misc.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DE9D23C5EBDD00D1B4AD /* udns_misc.c */; };
+		C960DEBA23C5EBDD00D1B4AD /* udns_XtoX.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DE9E23C5EBDD00D1B4AD /* udns_XtoX.c */; };
+		C960DEBC23C5EBDD00D1B4AD /* udns_resolver.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DEA423C5EBDD00D1B4AD /* udns_resolver.c */; };
+		C960DEBD23C5EBDD00D1B4AD /* udns_bl.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DEA523C5EBDD00D1B4AD /* udns_bl.c */; };
+		C960DEBE23C5EBDD00D1B4AD /* udns_rr_txt.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DEA623C5EBDD00D1B4AD /* udns_rr_txt.c */; };
+		C960DEBF23C5EBDD00D1B4AD /* udns_codes.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DEA823C5EBDD00D1B4AD /* udns_codes.c */; };
+		C960DEC023C5EBDD00D1B4AD /* udns_rr_naptr.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DEA923C5EBDD00D1B4AD /* udns_rr_naptr.c */; };
+		C960DEC123C5EBDD00D1B4AD /* udns_rr_srv.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DEAC23C5EBDD00D1B4AD /* udns_rr_srv.c */; };
+		C960DEC223C5EBDD00D1B4AD /* udns_init.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DEAD23C5EBDD00D1B4AD /* udns_init.c */; };
+		C960DEC323C5EBDD00D1B4AD /* udns_rr_a.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DEAE23C5EBDD00D1B4AD /* udns_rr_a.c */; };
+		C960DEC423C5EBDD00D1B4AD /* udns_jran.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DEAF23C5EBDD00D1B4AD /* udns_jran.c */; };
+		C960DEC523C5EBDD00D1B4AD /* udns_rr_mx.c in Sources */ = {isa = PBXBuildFile; fileRef = C960DEB023C5EBDD00D1B4AD /* udns_rr_mx.c */; };
 		C9616254212B8A8A00FA398E /* net_dns_ns_pro.c in Sources */ = {isa = PBXBuildFile; fileRef = C9616253212B8A8900FA398E /* net_dns_ns_pro.c */; };
 		C961625A212B8CFB00FA398E /* net_dns_ns_cli_protocol.c in Sources */ = {isa = PBXBuildFile; fileRef = C9616255212B8CFA00FA398E /* net_dns_ns_cli_protocol.c */; };
 		C961625B212B8CFB00FA398E /* net_dns_ns_cli_endpoint.c in Sources */ = {isa = PBXBuildFile; fileRef = C9616257212B8CFA00FA398E /* net_dns_ns_cli_endpoint.c */; };
@@ -285,11 +326,6 @@
 		C9A19B4B23952BC20075C049 /* net_libevent_timer.c in Sources */ = {isa = PBXBuildFile; fileRef = C9A19B4823952BC10075C049 /* net_libevent_timer.c */; };
 		C9A19B4C23952BC20075C049 /* net_libevent_watcher.c in Sources */ = {isa = PBXBuildFile; fileRef = C9A19B4923952BC10075C049 /* net_libevent_watcher.c */; };
 		C9A19B4D23952BC20075C049 /* net_libevent_driver.c in Sources */ = {isa = PBXBuildFile; fileRef = C9A19B4A23952BC10075C049 /* net_libevent_driver.c */; };
-		C9A19B69239537940075C049 /* wslay_net.c in Sources */ = {isa = PBXBuildFile; fileRef = C9F3115721094392006A7621 /* wslay_net.c */; };
-		C9A19B6A239537940075C049 /* wslay_frame.c in Sources */ = {isa = PBXBuildFile; fileRef = C9F3115E21094392006A7621 /* wslay_frame.c */; };
-		C9A19B6B239537940075C049 /* wslay_queue.c in Sources */ = {isa = PBXBuildFile; fileRef = C9F3115821094392006A7621 /* wslay_queue.c */; };
-		C9A19B6C239537940075C049 /* wslay_stack.c in Sources */ = {isa = PBXBuildFile; fileRef = C9F3115521094392006A7621 /* wslay_stack.c */; };
-		C9A19B6D239537940075C049 /* wslay_event.c in Sources */ = {isa = PBXBuildFile; fileRef = C9F3115A21094392006A7621 /* wslay_event.c */; };
 		C9B0C46F2123F35F008DB367 /* net_proxy_http_svr_endpoint.c in Sources */ = {isa = PBXBuildFile; fileRef = C9B0C46B2123F35F008DB367 /* net_proxy_http_svr_endpoint.c */; };
 		C9B0C4882124099F008DB367 /* net_proxy_http_svr_protocol.c in Sources */ = {isa = PBXBuildFile; fileRef = C9B0C4872124099F008DB367 /* net_proxy_http_svr_protocol.c */; };
 		C9BD22D52262FAA400426F27 /* net_schedule_address.c in Sources */ = {isa = PBXBuildFile; fileRef = C9BD22D42262FAA300426F27 /* net_schedule_address.c */; };
@@ -357,6 +393,24 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C947726D23658EF5000589C8 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "include/$(PRODUCT_NAME)";
+			dstSubfolderSpec = 16;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C960DAD223C5D82F00D1B4AD /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "include/$(PRODUCT_NAME)";
+			dstSubfolderSpec = 16;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C960DE8F23C5EBB500D1B4AD /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "include/$(PRODUCT_NAME)";
@@ -637,6 +691,87 @@
 		C9506CE5212861F90015DDBC /* net_debug_condition.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_debug_condition.c; sourceTree = "<group>"; };
 		C9506CE6212861F90015DDBC /* net_debug_condition_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_debug_condition_i.h; sourceTree = "<group>"; };
 		C9506CE7212861F90015DDBC /* net_debug_setup_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_debug_setup_i.h; sourceTree = "<group>"; };
+		C960DABE23C5D67300D1B4AD /* net_mem_block_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_mem_block_i.h; sourceTree = "<group>"; };
+		C960DABF23C5D67300D1B4AD /* net_mem_block.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_mem_block.c; sourceTree = "<group>"; };
+		C960DAC023C5D67300D1B4AD /* net_mem_group_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_mem_group_i.h; sourceTree = "<group>"; };
+		C960DAC123C5D67300D1B4AD /* net_mem_group.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_mem_group.c; sourceTree = "<group>"; };
+		C960DAC423C5D68E00D1B4AD /* net_mem_block.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_mem_block.h; sourceTree = "<group>"; };
+		C960DAC523C5D68E00D1B4AD /* net_mem_group.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_mem_group.h; sourceTree = "<group>"; };
+		C960DAC623C5D68E00D1B4AD /* net_local_ip_stack_monitor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_local_ip_stack_monitor.h; sourceTree = "<group>"; };
+		C960DAD623C5D82F00D1B4AD /* libnet_dns_udns.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_dns_udns.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		C960DAD923C5D8A000D1B4AD /* net_dns_udns_system.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_udns_system.h; sourceTree = "<group>"; };
+		C960DADA23C5D8A000D1B4AD /* net_dns_udns_source.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_udns_source.h; sourceTree = "<group>"; };
+		C960DADC23C5D8A000D1B4AD /* net_dns_udns_source_ctx_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_udns_source_ctx_i.h; sourceTree = "<group>"; };
+		C960DADD23C5D8A000D1B4AD /* net_dns_udns_source.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_dns_udns_source.c; sourceTree = "<group>"; };
+		C960DADE23C5D8A000D1B4AD /* net_dns_udns_source_ctx.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_dns_udns_source_ctx.c; sourceTree = "<group>"; };
+		C960DADF23C5D8A000D1B4AD /* net_dns_udns_source_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_udns_source_i.h; sourceTree = "<group>"; };
+		C960DE3023C5DB3F00D1B4AD /* nghttp2_priority_spec.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = nghttp2_priority_spec.c; sourceTree = "<group>"; };
+		C960DE3123C5DB3F00D1B4AD /* nghttp2_debug.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = nghttp2_debug.h; sourceTree = "<group>"; };
+		C960DE3223C5DB3F00D1B4AD /* nghttp2_npn.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = nghttp2_npn.c; sourceTree = "<group>"; };
+		C960DE3323C5DB3F00D1B4AD /* nghttp2_map.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = nghttp2_map.c; sourceTree = "<group>"; };
+		C960DE3423C5DB3F00D1B4AD /* nghttp2_hd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = nghttp2_hd.h; sourceTree = "<group>"; };
+		C960DE3523C5DB3F00D1B4AD /* nghttp2_stream.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = nghttp2_stream.c; sourceTree = "<group>"; };
+		C960DE3623C5DB3F00D1B4AD /* nghttp2_hd_huffman_data.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = nghttp2_hd_huffman_data.c; sourceTree = "<group>"; };
+		C960DE3723C5DB3F00D1B4AD /* nghttp2_rcbuf.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = nghttp2_rcbuf.h; sourceTree = "<group>"; };
+		C960DE3823C5DB3F00D1B4AD /* nghttp2_hd_huffman.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = nghttp2_hd_huffman.h; sourceTree = "<group>"; };
+		C960DE3923C5DB3F00D1B4AD /* nghttp2_buf.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = nghttp2_buf.c; sourceTree = "<group>"; };
+		C960DE3A23C5DB3F00D1B4AD /* nghttp2_callbacks.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = nghttp2_callbacks.h; sourceTree = "<group>"; };
+		C960DE3B23C5DB3F00D1B4AD /* nghttp2_outbound_item.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = nghttp2_outbound_item.c; sourceTree = "<group>"; };
+		C960DE3C23C5DB3F00D1B4AD /* nghttp2_pq.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = nghttp2_pq.h; sourceTree = "<group>"; };
+		C960DE3D23C5DB3F00D1B4AD /* nghttp2_http.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = nghttp2_http.h; sourceTree = "<group>"; };
+		C960DE3E23C5DB3F00D1B4AD /* Makefile.am */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Makefile.am; sourceTree = "<group>"; };
+		C960DE3F23C5DB3F00D1B4AD /* nghttp2_frame.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = nghttp2_frame.h; sourceTree = "<group>"; };
+		C960DE4023C5DB3F00D1B4AD /* nghttp2_helper.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = nghttp2_helper.c; sourceTree = "<group>"; };
+		C960DE4123C5DB3F00D1B4AD /* nghttp2_option.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = nghttp2_option.h; sourceTree = "<group>"; };
+		C960DE4223C5DB3F00D1B4AD /* nghttp2_mem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = nghttp2_mem.h; sourceTree = "<group>"; };
+		C960DE4523C5DB3F00D1B4AD /* nghttp2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = nghttp2.h; sourceTree = "<group>"; };
+		C960DE4623C5DB3F00D1B4AD /* nghttp2ver.h.in */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = nghttp2ver.h.in; sourceTree = "<group>"; };
+		C960DE4723C5DB3F00D1B4AD /* Makefile.am */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Makefile.am; sourceTree = "<group>"; };
+		C960DE4823C5DB3F00D1B4AD /* CMakeLists.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
+		C960DE4923C5DB3F00D1B4AD /* nghttp2_queue.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = nghttp2_queue.c; sourceTree = "<group>"; };
+		C960DE4A23C5DB3F00D1B4AD /* nghttp2_submit.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = nghttp2_submit.c; sourceTree = "<group>"; };
+		C960DE4B23C5DB3F00D1B4AD /* nghttp2_session.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = nghttp2_session.c; sourceTree = "<group>"; };
+		C960DE4D23C5DB3F00D1B4AD /* nghttp2_npn.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = nghttp2_npn.h; sourceTree = "<group>"; };
+		C960DE4E23C5DB3F00D1B4AD /* nghttp2_map.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = nghttp2_map.h; sourceTree = "<group>"; };
+		C960DE4F23C5DB3F00D1B4AD /* libnghttp2.pc.in */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = libnghttp2.pc.in; sourceTree = "<group>"; };
+		C960DE5023C5DB3F00D1B4AD /* nghttp2_debug.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = nghttp2_debug.c; sourceTree = "<group>"; };
+		C960DE5123C5DB3F00D1B4AD /* nghttp2_priority_spec.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = nghttp2_priority_spec.h; sourceTree = "<group>"; };
+		C960DE5323C5DB3F00D1B4AD /* nghttp2_net.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = nghttp2_net.h; sourceTree = "<group>"; };
+		C960DE5523C5DB3F00D1B4AD /* nghttp2_rcbuf.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = nghttp2_rcbuf.c; sourceTree = "<group>"; };
+		C960DE5623C5DB3F00D1B4AD /* nghttp2_hd_huffman.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = nghttp2_hd_huffman.c; sourceTree = "<group>"; };
+		C960DE5723C5DB3F00D1B4AD /* nghttp2_stream.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = nghttp2_stream.h; sourceTree = "<group>"; };
+		C960DE5823C5DB3F00D1B4AD /* nghttp2_hd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = nghttp2_hd.c; sourceTree = "<group>"; };
+		C960DE5923C5DB3F00D1B4AD /* nghttp2_int.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = nghttp2_int.h; sourceTree = "<group>"; };
+		C960DE5A23C5DB3F00D1B4AD /* nghttp2_helper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = nghttp2_helper.h; sourceTree = "<group>"; };
+		C960DE5B23C5DB3F00D1B4AD /* nghttp2_option.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = nghttp2_option.c; sourceTree = "<group>"; };
+		C960DE5C23C5DB3F00D1B4AD /* nghttp2_frame.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = nghttp2_frame.c; sourceTree = "<group>"; };
+		C960DE5D23C5DB3F00D1B4AD /* nghttp2_http.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = nghttp2_http.c; sourceTree = "<group>"; };
+		C960DE5E23C5DB3F00D1B4AD /* nghttp2_pq.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = nghttp2_pq.c; sourceTree = "<group>"; };
+		C960DE5F23C5DB3F00D1B4AD /* nghttp2_outbound_item.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = nghttp2_outbound_item.h; sourceTree = "<group>"; };
+		C960DE6023C5DB3F00D1B4AD /* nghttp2_callbacks.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = nghttp2_callbacks.c; sourceTree = "<group>"; };
+		C960DE6123C5DB3F00D1B4AD /* nghttp2_version.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = nghttp2_version.c; sourceTree = "<group>"; };
+		C960DE6223C5DB3F00D1B4AD /* nghttp2_buf.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = nghttp2_buf.h; sourceTree = "<group>"; };
+		C960DE6423C5DB3F00D1B4AD /* nghttp2_session.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = nghttp2_session.h; sourceTree = "<group>"; };
+		C960DE6523C5DB3F00D1B4AD /* nghttp2_submit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = nghttp2_submit.h; sourceTree = "<group>"; };
+		C960DE6623C5DB3F00D1B4AD /* nghttp2_mem.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = nghttp2_mem.c; sourceTree = "<group>"; };
+		C960DE6723C5DB3F00D1B4AD /* nghttp2_queue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = nghttp2_queue.h; sourceTree = "<group>"; };
+		C960DE9323C5EBB500D1B4AD /* libudns.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libudns.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		C960DE9523C5EBDD00D1B4AD /* udns_parse.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = udns_parse.c; sourceTree = "<group>"; };
+		C960DE9623C5EBDD00D1B4AD /* udns.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = udns.h; sourceTree = "<group>"; };
+		C960DE9823C5EBDD00D1B4AD /* udns_dn.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = udns_dn.c; sourceTree = "<group>"; };
+		C960DE9B23C5EBDD00D1B4AD /* udns_dntosp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = udns_dntosp.c; sourceTree = "<group>"; };
+		C960DE9D23C5EBDD00D1B4AD /* udns_misc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = udns_misc.c; sourceTree = "<group>"; };
+		C960DE9E23C5EBDD00D1B4AD /* udns_XtoX.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = udns_XtoX.c; sourceTree = "<group>"; };
+		C960DEA423C5EBDD00D1B4AD /* udns_resolver.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = udns_resolver.c; sourceTree = "<group>"; };
+		C960DEA523C5EBDD00D1B4AD /* udns_bl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = udns_bl.c; sourceTree = "<group>"; };
+		C960DEA623C5EBDD00D1B4AD /* udns_rr_txt.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = udns_rr_txt.c; sourceTree = "<group>"; };
+		C960DEA823C5EBDD00D1B4AD /* udns_codes.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = udns_codes.c; sourceTree = "<group>"; };
+		C960DEA923C5EBDD00D1B4AD /* udns_rr_naptr.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = udns_rr_naptr.c; sourceTree = "<group>"; };
+		C960DEAC23C5EBDD00D1B4AD /* udns_rr_srv.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = udns_rr_srv.c; sourceTree = "<group>"; };
+		C960DEAD23C5EBDD00D1B4AD /* udns_init.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = udns_init.c; sourceTree = "<group>"; };
+		C960DEAE23C5EBDD00D1B4AD /* udns_rr_a.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = udns_rr_a.c; sourceTree = "<group>"; };
+		C960DEAF23C5EBDD00D1B4AD /* udns_jran.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = udns_jran.c; sourceTree = "<group>"; };
+		C960DEB023C5EBDD00D1B4AD /* udns_rr_mx.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = udns_rr_mx.c; sourceTree = "<group>"; };
 		C9616252212B8A8900FA398E /* net_dns_ns_pro.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_ns_pro.h; sourceTree = "<group>"; };
 		C9616253212B8A8900FA398E /* net_dns_ns_pro.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_dns_ns_pro.c; sourceTree = "<group>"; };
 		C9616255212B8CFA00FA398E /* net_dns_ns_cli_protocol.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_dns_ns_cli_protocol.c; sourceTree = "<group>"; };
@@ -962,11 +1097,6 @@
 		C9855331224C697F0096C780 /* net_log_sender.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_log_sender.h; sourceTree = "<group>"; };
 		C9855332224C697F0096C780 /* net_log_flusher.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_log_flusher.h; sourceTree = "<group>"; };
 		C9855333224C69800096C780 /* net_log_category.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_log_category.h; sourceTree = "<group>"; };
-		C9855354224D96060096C780 /* ev.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ev.h; sourceTree = "<group>"; };
-		C9855358224D96060096C780 /* ev_vars.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ev_vars.h; sourceTree = "<group>"; };
-		C9855359224D96060096C780 /* ev.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ev.c; sourceTree = "<group>"; };
-		C985535A224D96060096C780 /* ev_wrap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ev_wrap.h; sourceTree = "<group>"; };
-		C985535E224D96060096C780 /* libev_config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = libev_config.h; sourceTree = "<group>"; };
 		C9855389224D96F40096C780 /* libnet_driver_libevent.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_driver_libevent.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		C98F3079213D3CA700C64DC6 /* net_schedule_ipstack.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_schedule_ipstack.c; sourceTree = "<group>"; };
 		C991C0192290FCDD004AD135 /* libnet_driver_sock.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_driver_sock.a; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1231,6 +1361,20 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C960DAD123C5D82F00D1B4AD /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C960DE8E23C5EBB500D1B4AD /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		C96A82D521100505000CB30D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -1335,6 +1479,9 @@
 		C91E1EB32105E4150080FAD8 /* include */ = {
 			isa = PBXGroup;
 			children = (
+				C960DAC623C5D68E00D1B4AD /* net_local_ip_stack_monitor.h */,
+				C960DAC423C5D68E00D1B4AD /* net_mem_block.h */,
+				C960DAC523C5D68E00D1B4AD /* net_mem_group.h */,
 				C91AE887223C6E2E00E4E007 /* net_endpoint_writer.h */,
 				C96D82DC221A7787001002B6 /* net_watcher.h */,
 				C9506CE2212861D60015DDBC /* net_debug_condition.h */,
@@ -1362,6 +1509,10 @@
 		C91E1EC32105E4160080FAD8 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				C960DABE23C5D67300D1B4AD /* net_mem_block_i.h */,
+				C960DABF23C5D67300D1B4AD /* net_mem_block.c */,
+				C960DAC023C5D67300D1B4AD /* net_mem_group_i.h */,
+				C960DAC123C5D67300D1B4AD /* net_mem_group.c */,
 				C947729123658FC5000589C8 /* net_local_ip_stack_monitor_i.h */,
 				C947729223658FC5000589C8 /* net_local_ip_stack_monitor.c */,
 				C927F75122930E3700B2D19E /* net_endpoint_next_i.h */,
@@ -1454,6 +1605,7 @@
 		C9323A382105E2CD005DD3C0 = {
 			isa = PBXGroup;
 			children = (
+				C960DAD723C5D8A000D1B4AD /* dns_udns */,
 				C9A19B4023952BC10075C049 /* driver_libevent */,
 				C9E701E82366911C00F5B2B3 /* ebb */,
 				C947727223658F31000589C8 /* ping */,
@@ -1494,6 +1646,8 @@
 				C947727123658EF5000589C8 /* libnet_ping.a */,
 				C9E701E7236690E300F5B2B3 /* libnet_ebb.a */,
 				C9A19B73239537940075C049 /* libnghttp2.a */,
+				C960DAD623C5D82F00D1B4AD /* libnet_dns_udns.a */,
+				C960DE9323C5EBB500D1B4AD /* libudns.a */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1589,6 +1743,140 @@
 				C947728423658F31000589C8 /* net_ping_record.c */,
 			);
 			path = src;
+			sourceTree = "<group>";
+		};
+		C960DAD723C5D8A000D1B4AD /* dns_udns */ = {
+			isa = PBXGroup;
+			children = (
+				C960DAD823C5D8A000D1B4AD /* include */,
+				C960DADB23C5D8A000D1B4AD /* src */,
+			);
+			name = dns_udns;
+			path = ../../dns_udns;
+			sourceTree = "<group>";
+		};
+		C960DAD823C5D8A000D1B4AD /* include */ = {
+			isa = PBXGroup;
+			children = (
+				C960DAD923C5D8A000D1B4AD /* net_dns_udns_system.h */,
+				C960DADA23C5D8A000D1B4AD /* net_dns_udns_source.h */,
+			);
+			path = include;
+			sourceTree = "<group>";
+		};
+		C960DADB23C5D8A000D1B4AD /* src */ = {
+			isa = PBXGroup;
+			children = (
+				C960DADC23C5D8A000D1B4AD /* net_dns_udns_source_ctx_i.h */,
+				C960DADD23C5D8A000D1B4AD /* net_dns_udns_source.c */,
+				C960DADE23C5D8A000D1B4AD /* net_dns_udns_source_ctx.c */,
+				C960DADF23C5D8A000D1B4AD /* net_dns_udns_source_i.h */,
+			);
+			path = src;
+			sourceTree = "<group>";
+		};
+		C960DAE223C5DA6900D1B4AD /* nghttp2 */ = {
+			isa = PBXGroup;
+			children = (
+				C960DE2F23C5DB3F00D1B4AD /* lib */,
+			);
+			path = nghttp2;
+			sourceTree = "<group>";
+		};
+		C960DE2F23C5DB3F00D1B4AD /* lib */ = {
+			isa = PBXGroup;
+			children = (
+				C960DE3023C5DB3F00D1B4AD /* nghttp2_priority_spec.c */,
+				C960DE3123C5DB3F00D1B4AD /* nghttp2_debug.h */,
+				C960DE3223C5DB3F00D1B4AD /* nghttp2_npn.c */,
+				C960DE3323C5DB3F00D1B4AD /* nghttp2_map.c */,
+				C960DE3423C5DB3F00D1B4AD /* nghttp2_hd.h */,
+				C960DE3523C5DB3F00D1B4AD /* nghttp2_stream.c */,
+				C960DE3623C5DB3F00D1B4AD /* nghttp2_hd_huffman_data.c */,
+				C960DE3723C5DB3F00D1B4AD /* nghttp2_rcbuf.h */,
+				C960DE3823C5DB3F00D1B4AD /* nghttp2_hd_huffman.h */,
+				C960DE3923C5DB3F00D1B4AD /* nghttp2_buf.c */,
+				C960DE3A23C5DB3F00D1B4AD /* nghttp2_callbacks.h */,
+				C960DE3B23C5DB3F00D1B4AD /* nghttp2_outbound_item.c */,
+				C960DE3C23C5DB3F00D1B4AD /* nghttp2_pq.h */,
+				C960DE3D23C5DB3F00D1B4AD /* nghttp2_http.h */,
+				C960DE3E23C5DB3F00D1B4AD /* Makefile.am */,
+				C960DE3F23C5DB3F00D1B4AD /* nghttp2_frame.h */,
+				C960DE4023C5DB3F00D1B4AD /* nghttp2_helper.c */,
+				C960DE4123C5DB3F00D1B4AD /* nghttp2_option.h */,
+				C960DE4223C5DB3F00D1B4AD /* nghttp2_mem.h */,
+				C960DE4323C5DB3F00D1B4AD /* includes */,
+				C960DE4923C5DB3F00D1B4AD /* nghttp2_queue.c */,
+				C960DE4A23C5DB3F00D1B4AD /* nghttp2_submit.c */,
+				C960DE4B23C5DB3F00D1B4AD /* nghttp2_session.c */,
+				C960DE4D23C5DB3F00D1B4AD /* nghttp2_npn.h */,
+				C960DE4E23C5DB3F00D1B4AD /* nghttp2_map.h */,
+				C960DE4F23C5DB3F00D1B4AD /* libnghttp2.pc.in */,
+				C960DE5023C5DB3F00D1B4AD /* nghttp2_debug.c */,
+				C960DE5123C5DB3F00D1B4AD /* nghttp2_priority_spec.h */,
+				C960DE5323C5DB3F00D1B4AD /* nghttp2_net.h */,
+				C960DE5523C5DB3F00D1B4AD /* nghttp2_rcbuf.c */,
+				C960DE5623C5DB3F00D1B4AD /* nghttp2_hd_huffman.c */,
+				C960DE5723C5DB3F00D1B4AD /* nghttp2_stream.h */,
+				C960DE5823C5DB3F00D1B4AD /* nghttp2_hd.c */,
+				C960DE5923C5DB3F00D1B4AD /* nghttp2_int.h */,
+				C960DE5A23C5DB3F00D1B4AD /* nghttp2_helper.h */,
+				C960DE5B23C5DB3F00D1B4AD /* nghttp2_option.c */,
+				C960DE5C23C5DB3F00D1B4AD /* nghttp2_frame.c */,
+				C960DE5D23C5DB3F00D1B4AD /* nghttp2_http.c */,
+				C960DE5E23C5DB3F00D1B4AD /* nghttp2_pq.c */,
+				C960DE5F23C5DB3F00D1B4AD /* nghttp2_outbound_item.h */,
+				C960DE6023C5DB3F00D1B4AD /* nghttp2_callbacks.c */,
+				C960DE6123C5DB3F00D1B4AD /* nghttp2_version.c */,
+				C960DE6223C5DB3F00D1B4AD /* nghttp2_buf.h */,
+				C960DE6423C5DB3F00D1B4AD /* nghttp2_session.h */,
+				C960DE6523C5DB3F00D1B4AD /* nghttp2_submit.h */,
+				C960DE6623C5DB3F00D1B4AD /* nghttp2_mem.c */,
+				C960DE6723C5DB3F00D1B4AD /* nghttp2_queue.h */,
+			);
+			path = lib;
+			sourceTree = "<group>";
+		};
+		C960DE4323C5DB3F00D1B4AD /* includes */ = {
+			isa = PBXGroup;
+			children = (
+				C960DE4423C5DB3F00D1B4AD /* nghttp2 */,
+				C960DE4723C5DB3F00D1B4AD /* Makefile.am */,
+				C960DE4823C5DB3F00D1B4AD /* CMakeLists.txt */,
+			);
+			path = includes;
+			sourceTree = "<group>";
+		};
+		C960DE4423C5DB3F00D1B4AD /* nghttp2 */ = {
+			isa = PBXGroup;
+			children = (
+				C960DE4523C5DB3F00D1B4AD /* nghttp2.h */,
+				C960DE4623C5DB3F00D1B4AD /* nghttp2ver.h.in */,
+			);
+			path = nghttp2;
+			sourceTree = "<group>";
+		};
+		C960DE9423C5EBDC00D1B4AD /* udns */ = {
+			isa = PBXGroup;
+			children = (
+				C960DE9523C5EBDD00D1B4AD /* udns_parse.c */,
+				C960DE9623C5EBDD00D1B4AD /* udns.h */,
+				C960DE9823C5EBDD00D1B4AD /* udns_dn.c */,
+				C960DE9B23C5EBDD00D1B4AD /* udns_dntosp.c */,
+				C960DE9D23C5EBDD00D1B4AD /* udns_misc.c */,
+				C960DE9E23C5EBDD00D1B4AD /* udns_XtoX.c */,
+				C960DEA423C5EBDD00D1B4AD /* udns_resolver.c */,
+				C960DEA523C5EBDD00D1B4AD /* udns_bl.c */,
+				C960DEA623C5EBDD00D1B4AD /* udns_rr_txt.c */,
+				C960DEA823C5EBDD00D1B4AD /* udns_codes.c */,
+				C960DEA923C5EBDD00D1B4AD /* udns_rr_naptr.c */,
+				C960DEAC23C5EBDD00D1B4AD /* udns_rr_srv.c */,
+				C960DEAD23C5EBDD00D1B4AD /* udns_init.c */,
+				C960DEAE23C5EBDD00D1B4AD /* udns_rr_a.c */,
+				C960DEAF23C5EBDD00D1B4AD /* udns_jran.c */,
+				C960DEB023C5EBDD00D1B4AD /* udns_rr_mx.c */,
+			);
+			path = udns;
 			sourceTree = "<group>";
 		};
 		C96A82D921100505000CB30D /* driver_dq */ = {
@@ -1961,42 +2249,6 @@
 				C96D83EB221A78DB001002B6 /* cyassl.c */,
 			);
 			path = vtls;
-			sourceTree = "<group>";
-		};
-		C9855350224D96060096C780 /* libev */ = {
-			isa = PBXGroup;
-			children = (
-				C9855351224D96060096C780 /* include */,
-				C9855355224D96060096C780 /* src */,
-			);
-			path = libev;
-			sourceTree = "<group>";
-		};
-		C9855351224D96060096C780 /* include */ = {
-			isa = PBXGroup;
-			children = (
-				C9855354224D96060096C780 /* ev.h */,
-			);
-			path = include;
-			sourceTree = "<group>";
-		};
-		C9855355224D96060096C780 /* src */ = {
-			isa = PBXGroup;
-			children = (
-				C9855358224D96060096C780 /* ev_vars.h */,
-				C9855359224D96060096C780 /* ev.c */,
-				C985535A224D96060096C780 /* ev_wrap.h */,
-				C985535D224D96060096C780 /* ios */,
-			);
-			path = src;
-			sourceTree = "<group>";
-		};
-		C985535D224D96060096C780 /* ios */ = {
-			isa = PBXGroup;
-			children = (
-				C985535E224D96060096C780 /* libev_config.h */,
-			);
-			path = ios;
 			sourceTree = "<group>";
 		};
 		C991C01C2290FD45004AD135 /* driver_sock */ = {
@@ -2552,8 +2804,9 @@
 		C9F3114E21094371006A7621 /* depends */ = {
 			isa = PBXGroup;
 			children = (
+				C960DE9423C5EBDC00D1B4AD /* udns */,
+				C960DAE223C5DA6900D1B4AD /* nghttp2 */,
 				C9952C13229AD009002E5368 /* c-ares */,
-				C9855350224D96060096C780 /* libev */,
 				C96D82E2221A78DA001002B6 /* curl */,
 				C9F3114F21094392006A7621 /* wslay */,
 			);
@@ -2704,6 +2957,40 @@
 			name = net_ping;
 			productName = net_statistics;
 			productReference = C947727123658EF5000589C8 /* libnet_ping.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+		C960DAC723C5D82F00D1B4AD /* net_dns_udns */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C960DAD323C5D82F00D1B4AD /* Build configuration list for PBXNativeTarget "net_dns_udns" */;
+			buildPhases = (
+				C960DAC823C5D82F00D1B4AD /* Sources */,
+				C960DAD123C5D82F00D1B4AD /* Frameworks */,
+				C960DAD223C5D82F00D1B4AD /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = net_dns_udns;
+			productName = net_dns_svr;
+			productReference = C960DAD623C5D82F00D1B4AD /* libnet_dns_udns.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+		C960DE8723C5EBB500D1B4AD /* udns */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C960DE9023C5EBB500D1B4AD /* Build configuration list for PBXNativeTarget "udns" */;
+			buildPhases = (
+				C960DE8823C5EBB500D1B4AD /* Sources */,
+				C960DE8E23C5EBB500D1B4AD /* Frameworks */,
+				C960DE8F23C5EBB500D1B4AD /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = udns;
+			productName = wslay;
+			productReference = C960DE9323C5EBB500D1B4AD /* libudns.a */;
 			productType = "com.apple.product-type.library.static";
 		};
 		C96A82D721100505000CB30D /* net_driver_dq */ = {
@@ -3016,6 +3303,8 @@
 				C947724E23658EF5000589C8 /* net_ping */,
 				C9E701D9236690E300F5B2B3 /* net_ebb */,
 				C9A19B67239537940075C049 /* nghttp2 */,
+				C960DAC723C5D82F00D1B4AD /* net_dns_udns */,
+				C960DE8723C5EBB500D1B4AD /* udns */,
 			);
 		};
 /* End PBXProject section */
@@ -3036,6 +3325,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C91E1EF62105E4160080FAD8 /* net_endpoint.c in Sources */,
+				C960DAC223C5D67300D1B4AD /* net_mem_block.c in Sources */,
 				C91E1EEE2105E4160080FAD8 /* net_address.c in Sources */,
 				C91E1EF92105E4160080FAD8 /* net_direct_endpoint.c in Sources */,
 				C9BD22D52262FAA400426F27 /* net_schedule_address.c in Sources */,
@@ -3051,6 +3341,7 @@
 				C91E1EF22105E4160080FAD8 /* net_ipset_node.c in Sources */,
 				C91E1F012105E4160080FAD8 /* net_ipset_node_cache.c in Sources */,
 				C91E1EFC2105E4160080FAD8 /* net_link.c in Sources */,
+				C960DAC323C5D67300D1B4AD /* net_mem_group.c in Sources */,
 				C91E1EFF2105E4160080FAD8 /* net_address_matcher.c in Sources */,
 				C96D82DF221A779E001002B6 /* net_watcher.c in Sources */,
 				C927F75322930E3700B2D19E /* net_endpoint_next.c in Sources */,
@@ -3094,6 +3385,37 @@
 				C947728723658F32000589C8 /* net_ping_processor_http.c in Sources */,
 				C947728A23658F32000589C8 /* net_ping_mgr.c in Sources */,
 				C947728523658F32000589C8 /* net_ping_task.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C960DAC823C5D82F00D1B4AD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C960DAE123C5D8A000D1B4AD /* net_dns_udns_source_ctx.c in Sources */,
+				C960DAE023C5D8A000D1B4AD /* net_dns_udns_source.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C960DE8823C5EBB500D1B4AD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C960DEBF23C5EBDD00D1B4AD /* udns_codes.c in Sources */,
+				C960DEB623C5EBDD00D1B4AD /* udns_dn.c in Sources */,
+				C960DEC023C5EBDD00D1B4AD /* udns_rr_naptr.c in Sources */,
+				C960DEBA23C5EBDD00D1B4AD /* udns_XtoX.c in Sources */,
+				C960DEB423C5EBDD00D1B4AD /* udns_parse.c in Sources */,
+				C960DEC523C5EBDD00D1B4AD /* udns_rr_mx.c in Sources */,
+				C960DEB823C5EBDD00D1B4AD /* udns_dntosp.c in Sources */,
+				C960DEBC23C5EBDD00D1B4AD /* udns_resolver.c in Sources */,
+				C960DEC223C5EBDD00D1B4AD /* udns_init.c in Sources */,
+				C960DEC323C5EBDD00D1B4AD /* udns_rr_a.c in Sources */,
+				C960DEBD23C5EBDD00D1B4AD /* udns_bl.c in Sources */,
+				C960DEB923C5EBDD00D1B4AD /* udns_misc.c in Sources */,
+				C960DEC423C5EBDD00D1B4AD /* udns_jran.c in Sources */,
+				C960DEBE23C5EBDD00D1B4AD /* udns_rr_txt.c in Sources */,
+				C960DEC123C5EBDD00D1B4AD /* udns_rr_srv.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3364,11 +3686,28 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C9A19B69239537940075C049 /* wslay_net.c in Sources */,
-				C9A19B6A239537940075C049 /* wslay_frame.c in Sources */,
-				C9A19B6B239537940075C049 /* wslay_queue.c in Sources */,
-				C9A19B6C239537940075C049 /* wslay_stack.c in Sources */,
-				C9A19B6D239537940075C049 /* wslay_event.c in Sources */,
+				C960DE7723C5DB3F00D1B4AD /* nghttp2_option.c in Sources */,
+				C960DE6C23C5DB3F00D1B4AD /* nghttp2_hd_huffman_data.c in Sources */,
+				C960DE7B23C5DB3F00D1B4AD /* nghttp2_callbacks.c in Sources */,
+				C960DE7123C5DB3F00D1B4AD /* nghttp2_submit.c in Sources */,
+				C960DE7623C5DB3F00D1B4AD /* nghttp2_hd.c in Sources */,
+				C960DE6A23C5DB3F00D1B4AD /* nghttp2_map.c in Sources */,
+				C960DE6923C5DB3F00D1B4AD /* nghttp2_npn.c in Sources */,
+				C960DE6E23C5DB3F00D1B4AD /* nghttp2_outbound_item.c in Sources */,
+				C960DE7A23C5DB3F00D1B4AD /* nghttp2_pq.c in Sources */,
+				C960DE7923C5DB3F00D1B4AD /* nghttp2_http.c in Sources */,
+				C960DE7C23C5DB3F00D1B4AD /* nghttp2_version.c in Sources */,
+				C960DE7423C5DB3F00D1B4AD /* nghttp2_rcbuf.c in Sources */,
+				C960DE7323C5DB3F00D1B4AD /* nghttp2_debug.c in Sources */,
+				C960DE6D23C5DB3F00D1B4AD /* nghttp2_buf.c in Sources */,
+				C960DE7023C5DB3F00D1B4AD /* nghttp2_queue.c in Sources */,
+				C960DE7823C5DB3F00D1B4AD /* nghttp2_frame.c in Sources */,
+				C960DE6823C5DB3F00D1B4AD /* nghttp2_priority_spec.c in Sources */,
+				C960DE7D23C5DB3F00D1B4AD /* nghttp2_mem.c in Sources */,
+				C960DE7223C5DB3F00D1B4AD /* nghttp2_session.c in Sources */,
+				C960DE6B23C5DB3F00D1B4AD /* nghttp2_stream.c in Sources */,
+				C960DE6F23C5DB3F00D1B4AD /* nghttp2_helper.c in Sources */,
+				C960DE7523C5DB3F00D1B4AD /* nghttp2_hd_huffman.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3725,6 +4064,76 @@
 			};
 			name = Release;
 		};
+		C960DAD423C5D82F00D1B4AD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				HEADER_SEARCH_PATHS = (
+					../../../cpe/pal/include,
+					../../../cpe/utils/include,
+					../../depends/udns,
+					../../net_core/include,
+					../../dns_udns/include,
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C960DAD523C5D82F00D1B4AD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				HEADER_SEARCH_PATHS = (
+					../../../cpe/pal/include,
+					../../../cpe/utils/include,
+					../../depends/udns,
+					../../net_core/include,
+					../../dns_udns/include,
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		C960DE9123C5EBB500D1B4AD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
+				CLANG_WARN_STRICT_PROTOTYPES = NO;
+				CODE_SIGN_STYLE = Automatic;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					HAVE_INET_PTON_NTOP,
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
+				HEADER_SEARCH_PATHS = ../../depends/udns;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C960DE9223C5EBB500D1B4AD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
+				CLANG_WARN_STRICT_PROTOTYPES = NO;
+				CODE_SIGN_STYLE = Automatic;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					HAVE_INET_PTON_NTOP,
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
+				HEADER_SEARCH_PATHS = ../../depends/udns;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		C96A82DE21100505000CB30D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -3818,7 +4227,7 @@
 					../../../cpe/pal/include,
 					../../../cpe/utils/include,
 					../../depends/libevent/include,
-					../../buildtools/custom/libevent,
+					../../buildtools/custom/libevent/ios,
 					../../driver_sock/include,
 				);
 				OTHER_LDFLAGS = "-ObjC";
@@ -3837,7 +4246,7 @@
 					../../../cpe/pal/include,
 					../../../cpe/utils/include,
 					../../depends/libevent/include,
-					../../buildtools/custom/libevent,
+					../../buildtools/custom/libevent/ios,
 					../../driver_sock/include,
 				);
 				OTHER_LDFLAGS = "-ObjC";
@@ -4277,6 +4686,24 @@
 			buildConfigurations = (
 				C947726F23658EF5000589C8 /* Debug */,
 				C947727023658EF5000589C8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C960DAD323C5D82F00D1B4AD /* Build configuration list for PBXNativeTarget "net_dns_udns" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C960DAD423C5D82F00D1B4AD /* Debug */,
+				C960DAD523C5D82F00D1B4AD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C960DE9023C5EBB500D1B4AD /* Build configuration list for PBXNativeTarget "udns" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C960DE9123C5EBB500D1B4AD /* Debug */,
+				C960DE9223C5EBB500D1B4AD /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
