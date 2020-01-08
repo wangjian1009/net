@@ -197,7 +197,7 @@ void net_dns_udns_source_fini(net_dns_source_t source) {
 }
 
 void net_dns_udns_source_dump(write_stream_t ws, net_dns_source_t source) {
-    net_dns_udns_source_t udns = net_dns_source_data(source);
+    //net_dns_udns_source_t udns = net_dns_source_data(source);
     
     stream_printf(ws, "udns[");
     stream_printf(ws, "]");
