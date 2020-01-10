@@ -171,6 +171,7 @@ net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const c
 
     switch(method) {
     case net_trans_method_get:
+        if (curl_easy_setopt(task->m_handler, CURLOPT_CUSTOMREQUEST, "GET") != (int)CURLE_OK) goto CREATED_ERROR;
         break;
     case net_trans_method_post:
         if (curl_easy_setopt(task->m_handler, CURLOPT_POST, 1L) != (int)CURLE_OK) goto CREATED_ERROR;
