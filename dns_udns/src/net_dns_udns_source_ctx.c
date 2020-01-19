@@ -48,7 +48,8 @@ void net_dns_udns_source_ctx_query_v4_cb(struct dns_ctx *ctx, struct dns_rr_a4 *
             }
         } else {
             assert(result->dnsa4_nrr > 0);
-            for (int i = 0; i < result->dnsa4_nrr; i++) {
+            int i;
+            for (i = 0; i < result->dnsa4_nrr; i++) {
                 net_address_t result_address =
                     net_address_create_ipv4_from_data(schedule, (void *)(result->dnsa4_addr + i), 0u);
                 if (result_address == NULL) {
@@ -109,7 +110,8 @@ void net_dns_udns_source_ctx_query_v6_cb(struct dns_ctx *ctx, struct dns_rr_a6 *
             }
         } else {
             assert(result->dnsa6_nrr > 0);
-            for (int i = 0; i < result->dnsa6_nrr; i++) {
+            int i;
+            for (i = 0; i < result->dnsa6_nrr; i++) {
                 net_address_t result_address =
                     net_address_create_ipv6_from_data(schedule, (void *)(result->dnsa6_addr + i), 0u);
                 if (result_address == NULL) {
@@ -203,8 +205,9 @@ void net_dns_udns_source_ctx_cancel(net_dns_source_t source, net_dns_task_ctx_t 
     net_dns_udns_source_ctx_t udns_ctx = (net_dns_udns_source_ctx_t)net_dns_task_ctx_data(task_ctx);
 
     uint8_t query_count = 0;
-    
-    for (uint8_t i = 0; i < CPE_ARRAY_SIZE(udns_ctx->m_queries); ++i) {
+
+    uint8_t i;
+    for (i = 0; i < CPE_ARRAY_SIZE(udns_ctx->m_queries); ++i) {
         if (udns_ctx->m_queries[i] != NULL) {
             query_count++;
             dns_cancel(udns->m_dns_ctx, udns_ctx->m_queries[i]);
@@ -233,7 +236,8 @@ void net_dns_udns_source_ctx_active_cancel(net_dns_udns_source_ctx_t udns_ctx) {
     
     assert(!net_dns_udns_source_ctx_all_query_done(udns_ctx));
 
-    for (uint8_t i = 0; i < CPE_ARRAY_SIZE(udns_ctx->m_queries); ++i) {
+    uint8_t i;
+    for (i = 0; i < CPE_ARRAY_SIZE(udns_ctx->m_queries); ++i) {
         if (udns_ctx->m_queries[i] != NULL) {
             dns_cancel(udns->m_dns_ctx, udns_ctx->m_queries[i]);
             mem_free(udns->m_alloc, udns_ctx->m_queries[i]);
