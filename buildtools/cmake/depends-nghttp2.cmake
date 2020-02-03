@@ -33,7 +33,9 @@ set(nghttp2_compile_options
   )  
 endif ()
 
-set(nghttp2_compile_definitions NGHTTP2_STATICLIB)
+set(nghttp2_compile_definitions
+  NGHTTP2_STATICLIB
+  NOTHREADS=1)
 
 add_library(nghttp2 STATIC ${nghttp2_source})
 set_property(TARGET nghttp2 PROPERTY COMPILE_OPTIONS ${nghttp2_compile_options})
