@@ -6,8 +6,8 @@ NET_BEGIN_DECL
 
 enum net_endpoint_monitor_evt_type {
     net_endpoint_monitor_evt_state_changed,
-    net_endpoint_monitor_evt_write_blocked,
-    net_endpoint_monitor_evt_write_unblocked,
+    net_endpoint_monitor_evt_write_begin,
+    net_endpoint_monitor_evt_write_completed,
 };
 
 struct net_endpoint_monitor_evt {

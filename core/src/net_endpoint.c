@@ -56,7 +56,7 @@ net_endpoint_create(net_driver_t driver, net_protocol_t protocol, net_mem_group_
     endpoint->m_dft_block_size = 0;
     endpoint->m_options = 0;
     endpoint->m_expect_read = 1;
-    endpoint->m_write_blocked = 0;
+    endpoint->m_is_writing = 0;
     endpoint->m_state = net_endpoint_state_disable;
     endpoint->m_dns_query = NULL;
     endpoint->m_tb = NULL;
@@ -538,19 +538,19 @@ void net_endpoint_set_expect_read(net_endpoint_t endpoint, uint8_t expect_read) 
     }
 }
 
-uint8_t net_endpoint_write_blocked(net_endpoint_t endpoint) {
-    return endpoint->m_write_blocked;
+uint8_t net_endpoint_is_writing(net_endpoint_t endpoint) {
+    return endpoint->m_is_writing;
 }
 
-void net_endpoint_set_write_blocked(net_endpoint_t endpoint, uint8_t write_blocked) {
-    write_blocked = write_blocked ? 1 : 0;
+void net_endpoint_set_is_writing(net_endpoint_t endpoint, uint8_t is_writing) {
+    is_writing = is_writing ? 1 : 0;
     
-    if (endpoint->m_write_blocked == write_blocked) return;
+    if (endpoint->m_is_writing == is_writing) return;
 
-    endpoint->m_write_blocked = write_blocked;
+    endpoint->m_is_writing = is_writing;
 
     struct net_endpoint_monitor_evt evt;
-    evt.m_type = write_blocked ? net_endpoint_monitor_evt_write_blocked : net_endpoint_monitor_evt_write_unblocked;
+    evt.m_type = is_writing ? net_endpoint_monitor_evt_write_begin : net_endpoint_monitor_evt_write_completed;
     net_endpoint_send_evt(endpoint, &evt);
 }
 
