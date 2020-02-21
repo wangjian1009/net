@@ -529,6 +529,8 @@ uint8_t net_endpoint_expect_read(net_endpoint_t endpoint) {
 }
 
 void net_endpoint_set_expect_read(net_endpoint_t endpoint, uint8_t expect_read) {
+    expect_read = expect_read ? 1 : 0;
+    
     if (endpoint->m_expect_read == expect_read) return;
 
     endpoint->m_expect_read= expect_read;
