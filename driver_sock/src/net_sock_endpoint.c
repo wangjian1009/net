@@ -68,11 +68,6 @@ int net_sock_endpoint_update(net_endpoint_t base_endpoint) {
     assert(net_endpoint_state(base_endpoint) == net_endpoint_state_established);
     assert(endpoint->m_watcher != NULL);
 
-    CPE_INFO(
-        driver->m_em, "sock: %s: fd=%d: update, expect_read=%d!",
-        net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
-        net_endpoint_expect_read(base_endpoint));
-
     if (net_endpoint_expect_read(base_endpoint)) {
         if (!net_watcher_expect_read(endpoint->m_watcher)) { /*socket上没有等待读取的操作（当前有数据可以读取) */
             if (net_endpoint_driver_debug(base_endpoint) >= 3) {
@@ -357,7 +352,9 @@ int net_sock_endpoint_update_remote_address(net_sock_endpoint_t endpoint) {
 }
 
 static uint8_t net_sock_endpoint_on_read(net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint) {
-    while(net_endpoint_state(base_endpoint) == net_endpoint_state_established) { /*当前状态正确 */
+    while(net_endpoint_state(base_endpoint) == net_endpoint_state_established  /*当前状态正确 */
+          && net_endpoint_expect_read(base_endpoint))
+    {
         uint32_t capacity = 0;
         void * rbuf = net_endpoint_buf_alloc(base_endpoint, &capacity);
         if (rbuf == NULL) {
@@ -558,12 +555,6 @@ static void net_sock_endpoint_rw_cb(void * ctx, int fd, uint8_t do_read, uint8_t
     assert(net_endpoint_state(base_endpoint) == net_endpoint_state_established);
     
     if (do_read) {
-        if (net_endpoint_driver_debug(base_endpoint) >= 3) {
-            CPE_INFO(
-                driver->m_em, "sock: %s: fd=%d: net can read",
-                net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
-        }
-        
         if (net_sock_endpoint_on_read(driver, endpoint, base_endpoint) != 0) {
             net_endpoint_free(base_endpoint);
             return;
