@@ -31,6 +31,8 @@ int net_sock_endpoint_init(net_endpoint_t base_endpoint) {
     
     endpoint->m_fd = -1;
     endpoint->m_watcher = NULL;
+    endpoint->m_local_address_auto = NULL;
+    
     return 0;
 }
 
@@ -42,6 +44,11 @@ void net_sock_endpoint_fini(net_endpoint_t base_endpoint) {
 
     assert(endpoint->m_fd == -1);
     assert(endpoint->m_watcher == NULL);
+
+    if (endpoint->m_local_address_auto) {
+        net_address_free(endpoint->m_local_address_auto);
+        endpoint->m_local_address_auto = NULL;
+    }
 }
 
 int net_sock_endpoint_update(net_endpoint_t base_endpoint) {
@@ -317,7 +324,18 @@ int net_sock_endpoint_update_local_address(net_sock_endpoint_t endpoint) {
         return -1;
     }
 
-    net_endpoint_set_address(base_endpoint, address, 1);
+    if (net_endpoint_set_address(base_endpoint, address, 0) != 0) {
+        CPE_ERROR(
+            driver->m_em, "sock: %s: fd=%d: create local address fail",
+            net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
+        net_address_free(address);
+        return -1;
+    }
+
+    if (endpoint->m_local_address_auto) {
+        net_address_free(endpoint->m_local_address_auto);
+    }
+    endpoint->m_local_address_auto = address;
     
     return 0;
 }
@@ -747,6 +765,19 @@ static int net_sock_endpoint_start_connect(
     }
 
     net_address_t local_address = net_endpoint_address(base_endpoint);
+
+    if (endpoint->m_local_address_auto) {
+        uint8_t is_local_address_auto = net_address_cmp(endpoint->m_local_address_auto, local_address) == 0 ? 1 : 0;
+
+        net_address_free(endpoint->m_local_address_auto);
+        endpoint->m_local_address_auto = NULL;
+
+        if (is_local_address_auto) {
+            net_endpoint_set_address(base_endpoint, NULL, 0);
+            local_address = NULL;
+        }
+    }
+    
     if (local_address) {
         struct sockaddr_storage local_addr_sock;
         socklen_t local_addr_sock_len;
