@@ -74,13 +74,13 @@ net_endpoint_create(net_driver_t driver, net_protocol_t protocol, net_mem_group_
     TAILQ_INIT(&endpoint->m_monitors);
     TAILQ_INIT(&endpoint->m_nexts);
 
-    if (protocol->m_endpoint_init(endpoint) != 0) {
+    if (protocol->m_endpoint_init && protocol->m_endpoint_init(endpoint) != 0) {
         TAILQ_INSERT_TAIL(&driver->m_free_endpoints, endpoint, m_next_for_driver);
         return NULL;
     }
 
-    if (driver->m_endpoint_init(endpoint) != 0) {
-        protocol->m_endpoint_fini(endpoint);
+    if (driver->m_endpoint_init && driver->m_endpoint_init(endpoint) != 0) {
+        if (protocol->m_endpoint_fini) protocol->m_endpoint_fini(endpoint);
         TAILQ_INSERT_TAIL(&driver->m_free_endpoints, endpoint, m_next_for_driver);
         return NULL;
     }
@@ -88,8 +88,8 @@ net_endpoint_create(net_driver_t driver, net_protocol_t protocol, net_mem_group_
     cpe_hash_entry_init(&endpoint->m_hh);
     if (cpe_hash_table_insert_unique(&schedule->m_endpoints, endpoint) != 0) {
         CPE_ERROR(schedule->m_em, "endpoint: id duplicate!");
-        driver->m_endpoint_fini(endpoint);
-        protocol->m_endpoint_fini(endpoint);
+        if (driver->m_endpoint_fini) driver->m_endpoint_fini(endpoint);
+        if (protocol->m_endpoint_fini) protocol->m_endpoint_fini(endpoint);
         TAILQ_INSERT_TAIL(&driver->m_free_endpoints, endpoint, m_next_for_driver);
         return NULL;
     }
@@ -144,13 +144,13 @@ void net_endpoint_free(net_endpoint_t endpoint) {
         assert(endpoint->m_link == NULL);
     }
     
-    endpoint->m_driver->m_endpoint_fini(endpoint);
+    if (endpoint->m_driver->m_endpoint_fini) endpoint->m_driver->m_endpoint_fini(endpoint);
 	if (strlen(endpoint->m_protocol->m_name) >= 32) {
 		// TODO:
 		assert(0);
 	}
 	else {
-		endpoint->m_protocol->m_endpoint_fini(endpoint);
+		if (endpoint->m_protocol->m_endpoint_fini) endpoint->m_protocol->m_endpoint_fini(endpoint);
 	}
 
     if (endpoint->m_tb) {
@@ -204,7 +204,9 @@ void net_endpoint_free(net_endpoint_t endpoint) {
 int net_endpoint_set_protocol(net_endpoint_t endpoint, net_protocol_t protocol) {
     net_protocol_t old_protocol = endpoint->m_protocol;
 
-    endpoint->m_protocol->m_endpoint_fini(endpoint);
+    if (endpoint->m_protocol->m_endpoint_fini) {
+        endpoint->m_protocol->m_endpoint_fini(endpoint);
+    }
 
     endpoint->m_protocol = protocol;
     if (endpoint->m_protocol->m_endpoint_init(endpoint) != 0) goto SET_PROTOCOL_ERROR;
