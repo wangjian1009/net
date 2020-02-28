@@ -34,7 +34,9 @@ elseif (OS_NAME STREQUAL mac OR OS_NAME STREQUAL ios)
   list(APPEND libevent_source ${libevent_base}/kqueue.c)
 elseif (OS_NAME STREQUAL mingw)
   list(APPEND libevent_source
+    ${libevent_base}/bufferevent_async.c
     ${libevent_base}/event_iocp.c
+    ${libevent_base}/buffer_iocp.c
     ${libevent_base}/win32select.c)
   list(APPEND libevent_include_directories ${libevent_base}/compat)
 endif()
