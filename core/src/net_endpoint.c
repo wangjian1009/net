@@ -547,11 +547,19 @@ uint8_t net_endpoint_is_writing(net_endpoint_t endpoint) {
 }
 
 void net_endpoint_set_is_writing(net_endpoint_t endpoint, uint8_t is_writing) {
+    net_schedule_t schedule = endpoint->m_driver->m_schedule;
+
     is_writing = is_writing ? 1 : 0;
     
     if (endpoint->m_is_writing == is_writing) return;
 
     endpoint->m_is_writing = is_writing;
+
+    if (endpoint->m_driver_debug >= 2) {
+        CPE_INFO(
+            schedule->m_em, "%s: is-writing ==> %s",
+            net_endpoint_dump(&schedule->m_tmp_buffer, endpoint), is_writing ? "true" : "false");
+    }
 
     struct net_endpoint_monitor_evt evt;
     evt.m_type = is_writing ? net_endpoint_monitor_evt_write_begin : net_endpoint_monitor_evt_write_completed;
