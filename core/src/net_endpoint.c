@@ -535,9 +535,11 @@ void net_endpoint_set_expect_read(net_endpoint_t endpoint, uint8_t expect_read) 
     
     if (endpoint->m_expect_read == expect_read) return;
 
-    endpoint->m_expect_read= expect_read;
+    endpoint->m_expect_read = expect_read;
 
-    if (endpoint->m_driver->m_endpoint_update) {
+    if (endpoint->m_state == net_endpoint_state_established
+        && endpoint->m_driver->m_endpoint_update)
+    {
         endpoint->m_driver->m_endpoint_update(endpoint);
     }
 }
