@@ -531,12 +531,20 @@ uint8_t net_endpoint_expect_read(net_endpoint_t endpoint) {
 }
 
 void net_endpoint_set_expect_read(net_endpoint_t endpoint, uint8_t expect_read) {
+    net_schedule_t schedule = endpoint->m_driver->m_schedule;
+
     expect_read = expect_read ? 1 : 0;
     
     if (endpoint->m_expect_read == expect_read) return;
 
     endpoint->m_expect_read = expect_read;
 
+    if (endpoint->m_driver_debug >= 3) {
+        CPE_INFO(
+            schedule->m_em, "%s: expect-read ==> %s",
+            net_endpoint_dump(&schedule->m_tmp_buffer, endpoint), expect_read ? "true" : "false");
+    }
+    
     if (endpoint->m_state == net_endpoint_state_established
         && endpoint->m_driver->m_endpoint_update)
     {
