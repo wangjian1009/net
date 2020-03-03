@@ -557,7 +557,7 @@ void net_endpoint_set_is_writing(net_endpoint_t endpoint, uint8_t is_writing) {
 
     endpoint->m_is_writing = is_writing;
 
-    if (endpoint->m_driver_debug >= 2) {
+    if (endpoint->m_driver_debug >= 3) {
         CPE_INFO(
             schedule->m_em, "%s: is-writing ==> %s",
             net_endpoint_dump(&schedule->m_tmp_buffer, endpoint), is_writing ? "true" : "false");
