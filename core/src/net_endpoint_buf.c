@@ -555,6 +555,7 @@ int net_endpoint_buf_append_from_self(net_endpoint_t endpoint, net_endpoint_buf_
             net_mem_block_link(block, endpoint, buf_type);
             moved_size += block->m_len;
         }
+        assert(moved_size > 0);
     }
 
     if (endpoint->m_close_after_send && net_endpoint_is_active(endpoint) && !net_endpoint_have_any_data(endpoint)) {
@@ -571,7 +572,7 @@ int net_endpoint_buf_append_from_self(net_endpoint_t endpoint, net_endpoint_buf_
         return 0;
     }
     
-    return net_endpoint_buf_on_supply(schedule, endpoint, buf_type, size);
+    return net_endpoint_buf_on_supply(schedule, endpoint, buf_type, moved_size);
 }
 
 static int net_endpoint_buf_on_supply(net_schedule_t schedule, net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, uint32_t size) {
