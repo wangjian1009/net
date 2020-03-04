@@ -576,6 +576,8 @@ int net_endpoint_buf_append_from_self(net_endpoint_t endpoint, net_endpoint_buf_
 }
 
 static int net_endpoint_buf_on_supply(net_schedule_t schedule, net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, uint32_t size) {
+    assert(size > 0);
+    
     if (endpoint->m_data_watcher_fun) {
         endpoint->m_data_watcher_fun(endpoint->m_data_watcher_ctx, endpoint, buf_type, net_endpoint_data_supply, size);
     }
