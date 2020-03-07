@@ -20,7 +20,8 @@ net_proxy_http_svr_protocol_t net_proxy_http_svr_protocol_create(net_schedule_t 
             net_proxy_http_svr_endpoint_input,
             net_proxy_http_svr_endpoint_forward,
             NULL,
-            net_proxy_http_svr_endpoint_on_state_change);
+            net_proxy_http_svr_endpoint_on_state_change,
+            NULL);
     if (protocol == NULL) return NULL;
 
     net_proxy_http_svr_protocol_t proxy_http_svr = net_protocol_data(protocol);

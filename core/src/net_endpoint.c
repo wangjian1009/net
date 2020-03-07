@@ -716,6 +716,11 @@ void net_endpoint_print(write_stream_t ws, net_endpoint_t endpoint) {
         stream_printf(ws, "@");
         net_address_print(ws, endpoint->m_address);
     }
+
+    if (endpoint->m_protocol->m_endpoint_dump) {
+        endpoint->m_protocol->m_endpoint_dump(ws, endpoint);
+    }
+    
     stream_printf(ws, "]");
 }
 
