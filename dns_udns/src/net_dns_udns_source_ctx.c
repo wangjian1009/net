@@ -81,6 +81,7 @@ void net_dns_udns_source_ctx_query_v4_cb(struct dns_ctx *ctx, struct dns_rr_a4 *
     udns_ctx->m_queries[net_dns_udns_source_query_type_ipv4] = NULL; /* mark A query as being completed */
 
     if (net_dns_udns_source_ctx_all_query_done(udns_ctx)) {
+        TAILQ_REMOVE(&udns->m_source_ctxes, udns_ctx, m_next);
         if (udns_ctx->m_result_count > 0) {
             net_dns_task_ctx_set_success(task_ctx);
         }
@@ -144,6 +145,7 @@ void net_dns_udns_source_ctx_query_v6_cb(struct dns_ctx *ctx, struct dns_rr_a6 *
     udns_ctx->m_queries[net_dns_udns_source_query_type_ipv6] = NULL; /* mark A query as being completed */
 
     if (net_dns_udns_source_ctx_all_query_done(udns_ctx)) {
+        TAILQ_REMOVE(&udns->m_source_ctxes, udns_ctx, m_next);
         if (udns_ctx->m_result_count > 0) {
             net_dns_task_ctx_set_success(task_ctx);
         }
@@ -195,7 +197,7 @@ int net_dns_udns_source_ctx_start(net_dns_source_t source, net_dns_task_ctx_t ta
         return 0;
     }
     else {
-        TAILQ_INSERT_TAIL(&udns->m_queries, udns_ctx, m_next);
+        TAILQ_INSERT_TAIL(&udns->m_source_ctxes, udns_ctx, m_next);
         return 0;
     }
 }
@@ -217,7 +219,7 @@ void net_dns_udns_source_ctx_cancel(net_dns_source_t source, net_dns_task_ctx_t 
     }
 
     if (query_count) {
-        TAILQ_REMOVE(&udns->m_queries, udns_ctx, m_next);
+        TAILQ_REMOVE(&udns->m_source_ctxes, udns_ctx, m_next);
     }
 }
 
@@ -245,7 +247,7 @@ void net_dns_udns_source_ctx_active_cancel(net_dns_udns_source_ctx_t udns_ctx) {
         }
     }
 
-    TAILQ_REMOVE(&udns->m_queries, udns_ctx, m_next);
+    TAILQ_REMOVE(&udns->m_source_ctxes, udns_ctx, m_next);
 
     if (udns_ctx->m_result_count > 0) {
         net_dns_task_ctx_set_success(task_ctx);

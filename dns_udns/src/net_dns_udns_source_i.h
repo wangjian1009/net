@@ -22,7 +22,7 @@ struct net_dns_udns_source {
     struct dns_ctx * m_dns_ctx;
     net_watcher_t m_watcher;
     net_timer_t m_timeout;
-    net_dns_udns_source_ctx_list_t m_queries;
+    net_dns_udns_source_ctx_list_t m_source_ctxes;
 };
 
 NET_END_DECL
