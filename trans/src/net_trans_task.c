@@ -1107,6 +1107,17 @@ int net_trans_task_set_done(net_trans_task_t task, net_trans_task_result_t resul
             if (task->m_is_free) {
                 net_trans_task_free(task);
             }
+            else {
+                assert(task->m_handler);
+                curl_easy_cleanup(task->m_handler);
+                task->m_handler = NULL;
+
+                assert(task->m_watcher == NULL);
+                /* if (task->m_watcher) { */
+                /*     net_watcher_free(task->m_watcher); */
+                /*     task->m_watcher = NULL; */
+                /* } */
+            }
         }
     }
     else {
