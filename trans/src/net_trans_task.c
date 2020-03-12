@@ -1104,7 +1104,9 @@ int net_trans_task_set_done(net_trans_task_t task, net_trans_task_result_t resul
 
         if (tag_local) {
             task->m_in_callback = 0;
-            net_trans_task_free(task);
+            if (task->m_is_free) {
+                net_trans_task_free(task);
+            }
         }
     }
     else {
