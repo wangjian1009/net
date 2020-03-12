@@ -30,6 +30,9 @@
 #include "net_ebb_request_parser.h"
 #include "net_ebb_request_i.h"
 
+#if defined CALLBACK
+#undef CALLBACK
+#endif
 
 static int unhex[] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
                      ,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
