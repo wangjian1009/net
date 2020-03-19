@@ -208,11 +208,12 @@ static int net_proxy_http_svr_endpoint_tunnel_do_link(
     net_endpoint_set_remote_address(endpoint, address, 0);
 
     if (http_ep->m_on_connect_fun &&
-        http_ep->m_on_connect_fun(http_ep->m_on_connect_ctx, endpoint, address, 1) != 0)
+        http_ep->m_on_connect_fun(http_ep->m_on_connect_ctx, endpoint, address) != 0)
     {
         net_address_free(address);
         return -1;
     }
+    net_address_free(address);
 
     net_endpoint_t other = net_endpoint_other(endpoint);
     if (other == NULL) {

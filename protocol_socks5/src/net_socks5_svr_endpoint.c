@@ -236,11 +236,12 @@ int net_socks5_svr_endpoint_input(net_endpoint_t endpoint) {
                 }
 
                 if (ss_ep->m_on_connect_fun &&
-                    ss_ep->m_on_connect_fun(ss_ep->m_on_connect_ctx, endpoint, address, 1) != 0)
+                    ss_ep->m_on_connect_fun(ss_ep->m_on_connect_ctx, endpoint, address) != 0)
                 {
                     net_address_free(address);
                     return -1;
                 }
+                net_address_free(address);
             }
             else if (cmd == SOCKS5_CMD_BIND) {
                 CPE_ERROR(

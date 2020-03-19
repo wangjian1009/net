@@ -540,7 +540,7 @@ static int net_proxy_http_svr_endpoint_basic_forward_direct_remote(
 
     if (need_connect
         && http_ep->m_on_connect_fun
-        && http_ep->m_on_connect_fun(http_ep->m_on_connect_ctx, endpoint, host, 0) != 0)
+        && http_ep->m_on_connect_fun(http_ep->m_on_connect_ctx, endpoint, host) != 0)
     {
         return -1;
     }
