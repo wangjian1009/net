@@ -13,8 +13,8 @@
 static void net_sock_endpoint_rw_cb(void * ctx, int fd, uint8_t do_read, uint8_t do_write);
 static void net_sock_endpoint_connect_cb(void * ctx, int fd, uint8_t do_read, uint8_t do_write);
 
-static uint8_t net_sock_endpoint_on_read(net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint);
-static uint8_t net_sock_endpoint_on_write(net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint);
+static int net_sock_endpoint_on_read(net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint);
+static int net_sock_endpoint_on_write(net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint);
 
 static int net_sock_endpoint_start_connect(
     net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint, net_address_t remote_address);
@@ -376,7 +376,7 @@ int net_sock_endpoint_update_remote_address(net_sock_endpoint_t endpoint) {
     return 0;
 }
 
-static uint8_t net_sock_endpoint_on_read(net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint) {
+static int net_sock_endpoint_on_read(net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint) {
     while(net_endpoint_state(base_endpoint) == net_endpoint_state_established  /*当前状态正确 */
           && net_endpoint_expect_read(base_endpoint))
     {
@@ -481,7 +481,7 @@ static uint8_t net_sock_endpoint_on_read(net_sock_driver_t driver, net_sock_endp
     return 0;
 }
 
-static uint8_t net_sock_endpoint_on_write(net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint) {
+static int net_sock_endpoint_on_write(net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint) {
     while(net_endpoint_state(base_endpoint) == net_endpoint_state_established /*ep状态正确 */
           && !net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write) /*还有数据等待写入 */
         )
