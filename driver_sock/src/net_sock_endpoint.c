@@ -324,7 +324,7 @@ int net_sock_endpoint_update_local_address(net_sock_endpoint_t endpoint) {
         return -1;
     }
 
-    if (net_endpoint_set_address(base_endpoint, address, 0) != 0) {
+    if (net_endpoint_set_address(base_endpoint, address) != 0) {
         CPE_ERROR(
             driver->m_em, "sock: %s: fd=%d: create local address fail",
             net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
@@ -364,8 +364,15 @@ int net_sock_endpoint_update_remote_address(net_sock_endpoint_t endpoint) {
         return -1;
     }
 
-    net_endpoint_set_remote_address(base_endpoint, address, 1);
+    if (net_endpoint_set_remote_address(base_endpoint, address) != 0) {
+        CPE_ERROR(
+            driver->m_em, "sock: %s: fd=%d: set address fail",
+            net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
+        net_address_free(address);
+        return -1;
+    }
     
+    net_address_free(address);
     return 0;
 }
 
@@ -773,7 +780,7 @@ static int net_sock_endpoint_start_connect(
         endpoint->m_local_address_auto = NULL;
 
         if (is_local_address_auto) {
-            net_endpoint_set_address(base_endpoint, NULL, 0);
+            net_endpoint_set_address(base_endpoint, NULL);
             local_address = NULL;
         }
     }

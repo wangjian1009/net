@@ -205,7 +205,7 @@ static int net_proxy_http_svr_endpoint_tunnel_do_link(
             net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
             str_address);
     }
-    net_endpoint_set_remote_address(endpoint, address, 0);
+    net_endpoint_set_remote_address(endpoint, address);
 
     if (http_ep->m_on_connect_fun &&
         http_ep->m_on_connect_fun(http_ep->m_on_connect_ctx, endpoint, address) != 0)

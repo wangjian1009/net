@@ -4,7 +4,7 @@
 #include "net_protocol_i.h"
 #include "net_driver_i.h"
 
-int net_endpoint_link_direct(net_endpoint_t endpoint, net_address_t target_addr, uint8_t is_own) {
+int net_endpoint_link_direct(net_endpoint_t endpoint, net_address_t target_addr) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
 
     if (schedule->m_direct_driver == NULL) {
@@ -19,16 +19,14 @@ int net_endpoint_link_direct(net_endpoint_t endpoint, net_address_t target_addr,
         return -1;
     }
 
-    net_endpoint_set_remote_address(target, target_addr, is_own);
+    net_endpoint_set_remote_address(target, target_addr);
     if (net_endpoint_connect(target) != 0) {
-        if (is_own) target->m_remote_address = NULL;
         net_endpoint_free(target);
         return -1;
     }
 
     net_link_t link = net_link_create(endpoint, 0, target, 1);
     if (link == NULL) {
-        if (is_own) target->m_remote_address = NULL;
         net_endpoint_free(target);
         return -1;
     }

@@ -514,7 +514,7 @@ static int net_proxy_http_svr_endpoint_basic_forward_direct_remote(
     net_endpoint_t other = net_endpoint_other(endpoint);
     if (other == NULL) {
         need_connect = 1;
-        net_endpoint_set_remote_address(endpoint, host, 0);
+        net_endpoint_set_remote_address(endpoint, host);
 
         if (net_endpoint_protocol_debug(endpoint)) {
             CPE_INFO(
@@ -527,7 +527,7 @@ static int net_proxy_http_svr_endpoint_basic_forward_direct_remote(
         net_address_t cur_remote_address = net_endpoint_remote_address(endpoint);
         if (net_address_cmp(cur_remote_address, host) != 0) {
             need_connect = 1;
-            net_endpoint_set_remote_address(endpoint, host, 0);
+            net_endpoint_set_remote_address(endpoint, host);
 
             if (net_endpoint_protocol_debug(endpoint)) {
                 CPE_INFO(

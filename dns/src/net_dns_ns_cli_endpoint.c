@@ -161,7 +161,7 @@ int net_dns_ns_cli_endpoint_send(
     net_dns_manage_t manage = dns_cli->m_parser.m_manage;
 
     if (net_endpoint_remote_address(dns_cli->m_endpoint) == NULL) {
-        if (net_endpoint_set_remote_address(dns_cli->m_endpoint, address, 0) != 0) {
+        if (net_endpoint_set_remote_address(dns_cli->m_endpoint, address) != 0) {
             CPE_ERROR(
                 manage->m_em, "dns-cli: %s: --> set remote address fail",
                 net_endpoint_dump(net_dns_manage_tmp_buffer(manage), dns_cli->m_endpoint));

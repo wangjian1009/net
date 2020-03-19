@@ -467,20 +467,15 @@ uint8_t net_endpoint_have_error(net_endpoint_t endpoint) {
         : 1;
 }
 
-int net_endpoint_set_address(net_endpoint_t endpoint, net_address_t address, uint8_t is_own) {
+int net_endpoint_set_address(net_endpoint_t endpoint, net_address_t address) {
     if (endpoint->m_address) {
         net_address_free(endpoint->m_address);
         endpoint->m_address = NULL;
     }
 
     if (address) {
-        if (is_own) {
-            endpoint->m_address = address;
-        }
-        else {
-            endpoint->m_address = net_address_copy(endpoint->m_driver->m_schedule, address);
-            if (endpoint->m_address == NULL) return -1;
-        }
+        endpoint->m_address = net_address_copy(endpoint->m_driver->m_schedule, address);
+        if (endpoint->m_address == NULL) return -1;
 
         net_endpoint_update_debug_info(endpoint);
     }
@@ -492,7 +487,7 @@ net_address_t net_endpoint_remote_address(net_endpoint_t endpoint) {
     return endpoint->m_remote_address;
 }
 
-int net_endpoint_set_remote_address(net_endpoint_t endpoint, net_address_t address, uint8_t is_own) {
+int net_endpoint_set_remote_address(net_endpoint_t endpoint, net_address_t address) {
     if (endpoint->m_remote_address) {
         if (endpoint->m_dns_query) {
             net_dns_query_free(endpoint->m_dns_query);
@@ -504,13 +499,8 @@ int net_endpoint_set_remote_address(net_endpoint_t endpoint, net_address_t addre
     }
 
     if (address) {
-        if (is_own) {
-            endpoint->m_remote_address = address;
-        }
-        else {
-            endpoint->m_remote_address = net_address_copy(endpoint->m_driver->m_schedule, address);
-            if (endpoint->m_remote_address == NULL) return -1;
-        }
+        endpoint->m_remote_address = net_address_copy(endpoint->m_driver->m_schedule, address);
+        if (endpoint->m_remote_address == NULL) return -1;
 
         net_endpoint_update_debug_info(endpoint);
     }

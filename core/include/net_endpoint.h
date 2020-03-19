@@ -25,7 +25,7 @@ uint32_t net_endpoint_id(net_endpoint_t endpoint);
 net_endpoint_t net_endpoint_find(net_schedule_t schedule, uint32_t id);
 
 net_address_t net_endpoint_address(net_endpoint_t endpoint);
-int net_endpoint_set_address(net_endpoint_t endpoint, net_address_t address, uint8_t is_own);
+int net_endpoint_set_address(net_endpoint_t endpoint, net_address_t address);
 
 uint8_t net_endpoint_expect_read(net_endpoint_t endpoint);
 void net_endpoint_set_expect_read(net_endpoint_t endpoint, uint8_t expect_read);
@@ -34,7 +34,7 @@ uint8_t net_endpoint_is_writing(net_endpoint_t endpoint);
 void net_endpoint_set_is_writing(net_endpoint_t endpoint, uint8_t is_writing);
 
 net_address_t net_endpoint_remote_address(net_endpoint_t endpoint);
-int net_endpoint_set_remote_address(net_endpoint_t endpoint, net_address_t address, uint8_t is_own);
+int net_endpoint_set_remote_address(net_endpoint_t endpoint, net_address_t address);
 
 net_endpoint_state_t net_endpoint_state(net_endpoint_t endpoint);
 int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state);
@@ -68,7 +68,7 @@ const char * net_endpoint_error_msg(net_endpoint_t endpoint);
 uint8_t net_endpoint_have_error(net_endpoint_t endpoint);
 
 /*link*/
-int net_endpoint_link_direct(net_endpoint_t endpoint, net_address_t target_addr, uint8_t is_own);
+int net_endpoint_link_direct(net_endpoint_t endpoint, net_address_t target_addr);
 net_link_t net_endpoint_link(net_endpoint_t endpoint);
 net_endpoint_t net_endpoint_other(net_endpoint_t endpoint);
 
