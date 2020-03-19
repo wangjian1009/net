@@ -686,18 +686,6 @@ int net_endpoint_connect(net_endpoint_t endpoint) {
     }
 }
 
-int net_endpoint_direct(net_endpoint_t endpoint, net_address_t target_addr) {
-    if (endpoint->m_protocol->m_endpoint_direct == NULL) {
-        CPE_ERROR(
-            endpoint->m_driver->m_schedule->m_em,
-            "core: direct: protocol %s not support direct, can`t work with router!",
-            endpoint->m_protocol->m_name);
-        return -1;
-    }
-
-    return endpoint->m_protocol->m_endpoint_direct(endpoint, target_addr);
-}
-
 uint32_t net_endpoint_hash(net_endpoint_t o, void * user_data) {
     return o->m_id;
 }

@@ -18,7 +18,6 @@ net_protocol_create(
     net_protocol_endpoint_fini_fun_t endpoint_fini,
     net_protocol_endpoint_input_fun_t endpoint_input,
     net_protocol_endpoint_forward_fun_t endpoint_forward,
-    net_protocol_endpoint_direct_fun_t endpoint_direct,
     net_protocol_endpoint_on_state_change_fun_t endpoint_on_state_chagne,
     net_protocol_endpoint_dump_fun_t endpoint_dump)
 {
@@ -48,7 +47,6 @@ net_protocol_create(
     protocol->m_endpoint_fini = endpoint_fini;
     protocol->m_endpoint_input = endpoint_input;
     protocol->m_endpoint_forward = endpoint_forward;
-    protocol->m_endpoint_direct = endpoint_direct;
     protocol->m_endpoint_on_state_chagne = endpoint_on_state_chagne;
     protocol->m_endpoint_dump = endpoint_dump;
 
@@ -114,10 +112,6 @@ void net_protocol_set_debug(net_protocol_t protocol, uint8_t debug) {
 
 net_protocol_init_fun_t net_protocol_init_fun(net_protocol_t protocol) {
     return protocol->m_protocol_init;
-}
-
-uint8_t net_protocol_support_direct(net_protocol_t protocol) {
-    return protocol->m_endpoint_direct == NULL ? 0 : 1;
 }
 
 void * net_protocol_data(net_protocol_t protocol) {

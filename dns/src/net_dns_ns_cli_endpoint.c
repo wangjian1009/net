@@ -188,13 +188,15 @@ int net_dns_ns_cli_endpoint_send(
                 return -1;
             }
 
-            if (net_endpoint_direct(other, net_endpoint_remote_address(dns_cli->m_endpoint)) != 0) {
-                CPE_ERROR(
-                    manage->m_em, "dns-cli: %s: --> chanel direct fail",
-                    net_endpoint_dump(net_dns_manage_tmp_buffer(manage), dns_cli->m_endpoint));
-                net_endpoint_set_state(other, net_endpoint_state_logic_error);
-                return -1;
-            }
+            //TODO: 底层不再支持direct
+            assert(0);
+            /* if (net_endpoint_direct(other, net_endpoint_remote_address(dns_cli->m_endpoint)) != 0) { */
+            /*     CPE_ERROR( */
+            /*         manage->m_em, "dns-cli: %s: --> chanel direct fail", */
+            /*         net_endpoint_dump(net_dns_manage_tmp_buffer(manage), dns_cli->m_endpoint)); */
+            /*     net_endpoint_set_state(other, net_endpoint_state_logic_error); */
+            /*     return -1; */
+            /* } */
         }
 
         if (net_endpoint_buf_append(dns_cli->m_endpoint, net_ep_buf_forward, buf, buf_size) < 0

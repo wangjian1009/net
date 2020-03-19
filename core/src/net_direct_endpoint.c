@@ -40,6 +40,5 @@ net_direct_protocol_create(net_schedule_t schedule) {
         net_direct_endpoint_input,
         net_direct_endpoint_forward,
         NULL,
-        NULL,
         NULL);
 }
