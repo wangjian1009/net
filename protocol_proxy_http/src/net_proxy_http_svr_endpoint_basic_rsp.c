@@ -146,13 +146,14 @@ static int net_proxy_http_svr_endpoint_basic_backword_content_encoding_none(
                 http_protocol, http_ep, endpoint, proxy_http_svr_basic_rsp_state_header);
         }
         else {
-            if (net_endpoint_protocol_debug(endpoint)) {
-                CPE_INFO(
-                    http_protocol->m_em, "http-proxy-svr: %s: basic: connection is not keep-alive, close-on-send",
-                    net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint));
-            }
+            //TODO: 发送完成数据以后关闭连接
+            /* if (net_endpoint_protocol_debug(endpoint)) { */
+            /*     CPE_INFO( */
+            /*         http_protocol->m_em, "http-proxy-svr: %s: basic: connection is not keep-alive, close-on-send", */
+            /*         net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint)); */
+            /* } */
 
-            net_endpoint_set_close_after_send(endpoint, 1);
+            /* net_endpoint_set_close_after_send(endpoint, 1); */
         }
     }
     
@@ -314,13 +315,14 @@ static int net_proxy_http_svr_endpoint_basic_backword_content_encoding_trunked(
                     http_protocol, http_ep, endpoint, proxy_http_svr_basic_rsp_state_header);
             }
             else {
-                if (net_endpoint_protocol_debug(endpoint)) {
-                    CPE_INFO(
-                        http_protocol->m_em, "http-proxy-svr: %s: basic: <== trunked: connection is not keep-alive, close-on-send",
-                        net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint));
-                }
+                //TODO: 发送完成数据以后关闭连接
+                /* if (net_endpoint_protocol_debug(endpoint)) { */
+                /*     CPE_INFO( */
+                /*         http_protocol->m_em, "http-proxy-svr: %s: basic: <== trunked: connection is not keep-alive, close-on-send", */
+                /*         net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint)); */
+                /* } */
 
-                net_endpoint_set_close_after_send(endpoint, 1);
+                /* net_endpoint_set_close_after_send(endpoint, 1); */
             }
             return 0;
         }

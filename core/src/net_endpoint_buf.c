@@ -180,19 +180,6 @@ void net_endpoint_buf_consume(net_endpoint_t endpoint, net_endpoint_buf_type_t b
     net_endpoint_t other = net_endpoint_other(endpoint);
     
     if (!net_endpoint_is_active(endpoint)) return;
-
-    if (endpoint->m_close_after_send && !net_endpoint_have_any_data(endpoint)) {
-        if (endpoint->m_protocol_debug || endpoint->m_driver_debug) {
-            CPE_INFO(
-                schedule->m_em, "core: %s: auto close on consume(close-after-send)!",
-                net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
-        }
-
-        if (net_endpoint_set_state(endpoint, net_endpoint_state_disable) != 0) {
-            net_endpoint_set_state(endpoint, net_endpoint_state_deleting);
-        }
-        return;
-    }
 }
 
 void * net_endpoint_buf_peak(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, uint32_t * size) {
@@ -271,20 +258,6 @@ int net_endpoint_buf_recv(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_t
     if (received) {
         if (endpoint->m_data_watcher_fun) {
             endpoint->m_data_watcher_fun(endpoint->m_data_watcher_ctx, endpoint, buf_type, net_endpoint_data_consume, received);
-        }
-
-        if (endpoint->m_close_after_send && net_endpoint_is_active(endpoint) && !net_endpoint_have_any_data(endpoint)) {
-            if (endpoint->m_protocol_debug || endpoint->m_driver_debug) {
-                CPE_INFO(
-                    schedule->m_em, "core: %s: auto close on recv(close-after-send)!",
-                    net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
-            }
-
-            if (net_endpoint_set_state(endpoint, net_endpoint_state_disable) != 0) {
-                net_endpoint_set_state(endpoint, net_endpoint_state_deleting);
-            }
-
-            return 0;
         }
     }
     
@@ -489,18 +462,6 @@ int net_endpoint_buf_append_from_other(
         other->m_data_watcher_fun(other->m_data_watcher_ctx, other, from, net_endpoint_data_consume, moved_size);
     }
 
-    if (net_endpoint_is_active(other) && other->m_close_after_send && !net_endpoint_have_any_data(other)) {
-        if (other->m_protocol_debug || other->m_driver_debug) {
-            CPE_INFO(
-                schedule->m_em, "core: %s: auto close on append_from_other(close-after-send)!",
-                net_endpoint_dump(&schedule->m_tmp_buffer, other));
-        }
-
-        if (net_endpoint_set_state(other, net_endpoint_state_disable) != 0) {
-            net_endpoint_set_state(other, net_endpoint_state_deleting);
-        }
-    }
-
     /*处理Self */
     return net_endpoint_buf_on_supply(schedule, endpoint, buf_type, moved_size);
 }
@@ -558,20 +519,6 @@ int net_endpoint_buf_append_from_self(net_endpoint_t endpoint, net_endpoint_buf_
         assert(moved_size > 0);
     }
 
-    if (endpoint->m_close_after_send && net_endpoint_is_active(endpoint) && !net_endpoint_have_any_data(endpoint)) {
-        if (endpoint->m_protocol_debug || endpoint->m_driver_debug) {
-            CPE_INFO(
-                schedule->m_em, "core: %s: auto close on recv(close-after-send)!",
-                net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
-        }
-
-        if (net_endpoint_set_state(endpoint, net_endpoint_state_disable) != 0) {
-            net_endpoint_set_state(endpoint, net_endpoint_state_deleting);
-        }
-
-        return 0;
-    }
-    
     return net_endpoint_buf_on_supply(schedule, endpoint, buf_type, moved_size);
 }
 
