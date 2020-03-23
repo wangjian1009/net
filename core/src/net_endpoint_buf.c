@@ -516,7 +516,8 @@ int net_endpoint_buf_append_from_self(net_endpoint_t endpoint, net_endpoint_buf_
             net_mem_block_link(block, endpoint, buf_type);
             moved_size += block->m_len;
         }
-        assert(moved_size > 0);
+
+        if (moved_size == 0) return 0;
     }
 
     return net_endpoint_buf_on_supply(schedule, endpoint, buf_type, moved_size);
