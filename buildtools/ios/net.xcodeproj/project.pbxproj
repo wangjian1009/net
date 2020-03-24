@@ -342,8 +342,6 @@
 		C9C4B14D210862470045A1A3 /* net_dns_entry.c in Sources */ = {isa = PBXBuildFile; fileRef = C9C4B141210862470045A1A3 /* net_dns_entry.c */; };
 		C9C4B157210862550045A1A3 /* net_socks5_svr_endpoint.c in Sources */ = {isa = PBXBuildFile; fileRef = C9C4B150210862550045A1A3 /* net_socks5_svr_endpoint.c */; };
 		C9C4B158210862550045A1A3 /* net_socks5_svr.c in Sources */ = {isa = PBXBuildFile; fileRef = C9C4B153210862550045A1A3 /* net_socks5_svr.c */; };
-		C9C4B162210862630045A1A3 /* net_router_schedule.c in Sources */ = {isa = PBXBuildFile; fileRef = C9C4B15E210862630045A1A3 /* net_router_schedule.c */; };
-		C9C4B163210862630045A1A3 /* net_router.c in Sources */ = {isa = PBXBuildFile; fileRef = C9C4B161210862630045A1A3 /* net_router.c */; };
 		C9CA3C452189842400ACBEDB /* net_dns_svr_monitor.c in Sources */ = {isa = PBXBuildFile; fileRef = C9CA3C442189842400ACBEDB /* net_dns_svr_monitor.c */; };
 		C9CD6E252121252B00F6413D /* net_dns_svr_itf.c in Sources */ = {isa = PBXBuildFile; fileRef = C9CD6E242121252B00F6413D /* net_dns_svr_itf.c */; };
 		C9CD6E2B2121286800F6413D /* net_dns_svr_protocol.c in Sources */ = {isa = PBXBuildFile; fileRef = C9CD6E272121286800F6413D /* net_dns_svr_protocol.c */; };
@@ -501,15 +499,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		C9C4B106210861A70045A1A3 /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "include/$(PRODUCT_NAME)";
-			dstSubfolderSpec = 16;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		C9C4B113210861B50045A1A3 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "include/$(PRODUCT_NAME)";
@@ -1234,7 +1223,6 @@
 		C9C4313D219308AF00705EA9 /* net_dns_entry_alias_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_entry_alias_i.h; sourceTree = "<group>"; };
 		C9C4B0FB210861940045A1A3 /* libnet_dns.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_dns.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		C9C4B108210861A70045A1A3 /* libnet_protocol_socks5.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_protocol_socks5.a; sourceTree = BUILT_PRODUCTS_DIR; };
-		C9C4B115210861B50045A1A3 /* libnet_router.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libnet_router.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		C9C4B11F210862460045A1A3 /* net_dns_source.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_source.h; sourceTree = "<group>"; };
 		C9C4B121210862460045A1A3 /* net_dns_entry_item.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_entry_item.h; sourceTree = "<group>"; };
 		C9C4B122210862460045A1A3 /* net_dns_task_step.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_task_step.h; sourceTree = "<group>"; };
@@ -1445,13 +1433,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		C9C4B112210861B50045A1A3 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		C9E701E2236690E300F5B2B3 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -1631,7 +1612,6 @@
 				C9323A512105E2E3005DD3C0 /* libnet_core.a */,
 				C9C4B0FB210861940045A1A3 /* libnet_dns.a */,
 				C9C4B108210861A70045A1A3 /* libnet_protocol_socks5.a */,
-				C9C4B115210861B50045A1A3 /* libnet_router.a */,
 				C9F311452109433C006A7621 /* libwslay.a */,
 				C9F3117A21095931006A7621 /* libnet_protocol_ws.a */,
 				C96A82D821100505000CB30D /* libnet_driver_dq.a */,
@@ -3163,23 +3143,6 @@
 			productReference = C9C4B108210861A70045A1A3 /* libnet_protocol_socks5.a */;
 			productType = "com.apple.product-type.library.static";
 		};
-		C9C4B114210861B50045A1A3 /* net_router */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = C9C4B11B210861B50045A1A3 /* Build configuration list for PBXNativeTarget "net_router" */;
-			buildPhases = (
-				C9C4B111210861B50045A1A3 /* Sources */,
-				C9C4B112210861B50045A1A3 /* Frameworks */,
-				C9C4B113210861B50045A1A3 /* CopyFiles */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = net_router;
-			productName = net_router;
-			productReference = C9C4B115210861B50045A1A3 /* libnet_router.a */;
-			productType = "com.apple.product-type.library.static";
-		};
 		C9E701D9236690E300F5B2B3 /* net_ebb */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = C9E701E4236690E300F5B2B3 /* Build configuration list for PBXNativeTarget "net_ebb" */;
@@ -3261,9 +3224,6 @@
 					C9C4B107210861A70045A1A3 = {
 						CreatedOnToolsVersion = 9.4.1;
 					};
-					C9C4B114210861B50045A1A3 = {
-						CreatedOnToolsVersion = 9.4.1;
-					};
 					C9F311442109433C006A7621 = {
 						CreatedOnToolsVersion = 9.4.1;
 					};
@@ -3288,7 +3248,6 @@
 				C9323A502105E2E3005DD3C0 /* net_core */,
 				C9C4B0FA210861940045A1A3 /* net_dns */,
 				C9C4B107210861A70045A1A3 /* net_protocol_socks5 */,
-				C9C4B114210861B50045A1A3 /* net_router */,
 				C9F311442109433C006A7621 /* wslay */,
 				C9F3117921095931006A7621 /* net_protocol_ws */,
 				C96A82D721100505000CB30D /* net_driver_dq */,
@@ -3759,15 +3718,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		C9C4B111210861B50045A1A3 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				C9C4B163210862630045A1A3 /* net_router.c in Sources */,
-				C9C4B162210862630045A1A3 /* net_router_schedule.c in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		C9E701DA236690E300F5B2B3 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -4104,10 +4054,6 @@
 				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
 				CLANG_WARN_STRICT_PROTOTYPES = NO;
 				CODE_SIGN_STYLE = Automatic;
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"$(inherited)",
-					HAVE_INET_PTON_NTOP,
-				);
 				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
 				HEADER_SEARCH_PATHS = ../../depends/udns;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -4122,10 +4068,6 @@
 				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
 				CLANG_WARN_STRICT_PROTOTYPES = NO;
 				CODE_SIGN_STYLE = Automatic;
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"$(inherited)",
-					HAVE_INET_PTON_NTOP,
-				);
 				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
 				HEADER_SEARCH_PATHS = ../../depends/udns;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -4516,36 +4458,6 @@
 			};
 			name = Release;
 		};
-		C9C4B11C210861B50045A1A3 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				HEADER_SEARCH_PATHS = (
-					../../../cpe/pal/include,
-					../../../cpe/utils/include,
-					../../router/include,
-				);
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-		C9C4B11D210861B50045A1A3 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				HEADER_SEARCH_PATHS = (
-					../../../cpe/pal/include,
-					../../../cpe/utils/include,
-					../../router/include,
-				);
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Release;
-		};
 		C9E701E5236690E300F5B2B3 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -4794,15 +4706,6 @@
 			buildConfigurations = (
 				C9C4B10F210861A70045A1A3 /* Debug */,
 				C9C4B110210861A70045A1A3 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		C9C4B11B210861B50045A1A3 /* Build configuration list for PBXNativeTarget "net_router" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				C9C4B11C210861B50045A1A3 /* Debug */,
-				C9C4B11D210861B50045A1A3 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
