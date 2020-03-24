@@ -1258,13 +1258,6 @@
 		C9C4B153210862550045A1A3 /* net_socks5_svr.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_socks5_svr.c; sourceTree = "<group>"; };
 		C9C4B155210862550045A1A3 /* net_socks5_types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_socks5_types.h; sourceTree = "<group>"; };
 		C9C4B156210862550045A1A3 /* net_socks5_svr.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_socks5_svr.h; sourceTree = "<group>"; };
-		C9C4B15A210862630045A1A3 /* net_router_schedule.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_router_schedule.h; sourceTree = "<group>"; };
-		C9C4B15B210862630045A1A3 /* net_router.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_router.h; sourceTree = "<group>"; };
-		C9C4B15C210862630045A1A3 /* net_router_types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_router_types.h; sourceTree = "<group>"; };
-		C9C4B15E210862630045A1A3 /* net_router_schedule.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_router_schedule.c; sourceTree = "<group>"; };
-		C9C4B15F210862630045A1A3 /* net_router_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_router_i.h; sourceTree = "<group>"; };
-		C9C4B160210862630045A1A3 /* net_router_schedule_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_router_schedule_i.h; sourceTree = "<group>"; };
-		C9C4B161210862630045A1A3 /* net_router.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_router.c; sourceTree = "<group>"; };
 		C9CA3C432189842400ACBEDB /* net_dns_svr_monitor_i.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_svr_monitor_i.h; sourceTree = "<group>"; };
 		C9CA3C442189842400ACBEDB /* net_dns_svr_monitor.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = net_dns_svr_monitor.c; sourceTree = "<group>"; };
 		C9CA3C462189842D00ACBEDB /* net_dns_svr_monitor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = net_dns_svr_monitor.h; sourceTree = "<group>"; };
@@ -1596,7 +1589,6 @@
 				C9323A522105E2E3005DD3C0 /* core */,
 				C9C4B0FC210861940045A1A3 /* dns */,
 				C9C4B109210861A70045A1A3 /* protocol_socks5 */,
-				C9C4B116210861B50045A1A3 /* router */,
 				C9F3117B21095931006A7621 /* protocol_ws */,
 				C96A82D921100505000CB30D /* driver_dq */,
 				C9415A962121058E00400779 /* dns_svr */,
@@ -2615,16 +2607,6 @@
 			path = ../../protocol_socks5;
 			sourceTree = "<group>";
 		};
-		C9C4B116210861B50045A1A3 /* router */ = {
-			isa = PBXGroup;
-			children = (
-				C9C4B159210862630045A1A3 /* include */,
-				C9C4B15D210862630045A1A3 /* src */,
-			);
-			name = router;
-			path = ../../router;
-			sourceTree = "<group>";
-		};
 		C9C4B11E210862460045A1A3 /* include */ = {
 			isa = PBXGroup;
 			children = (
@@ -2708,27 +2690,6 @@
 				C9C4B156210862550045A1A3 /* net_socks5_svr.h */,
 			);
 			path = include;
-			sourceTree = "<group>";
-		};
-		C9C4B159210862630045A1A3 /* include */ = {
-			isa = PBXGroup;
-			children = (
-				C9C4B15A210862630045A1A3 /* net_router_schedule.h */,
-				C9C4B15B210862630045A1A3 /* net_router.h */,
-				C9C4B15C210862630045A1A3 /* net_router_types.h */,
-			);
-			path = include;
-			sourceTree = "<group>";
-		};
-		C9C4B15D210862630045A1A3 /* src */ = {
-			isa = PBXGroup;
-			children = (
-				C9C4B15E210862630045A1A3 /* net_router_schedule.c */,
-				C9C4B15F210862630045A1A3 /* net_router_i.h */,
-				C9C4B160210862630045A1A3 /* net_router_schedule_i.h */,
-				C9C4B161210862630045A1A3 /* net_router.c */,
-			);
-			path = src;
 			sourceTree = "<group>";
 		};
 		C9E701E82366911C00F5B2B3 /* ebb */ = {
@@ -4054,6 +4015,10 @@
 				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
 				CLANG_WARN_STRICT_PROTOTYPES = NO;
 				CODE_SIGN_STYLE = Automatic;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					HAVE_INET_PTON_NTOP,
+				);
 				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
 				HEADER_SEARCH_PATHS = ../../depends/udns;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -4068,6 +4033,10 @@
 				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
 				CLANG_WARN_STRICT_PROTOTYPES = NO;
 				CODE_SIGN_STYLE = Automatic;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					HAVE_INET_PTON_NTOP,
+				);
 				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
 				HEADER_SEARCH_PATHS = ../../depends/udns;
 				PRODUCT_NAME = "$(TARGET_NAME)";

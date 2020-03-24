@@ -48,19 +48,9 @@
 /* #undef EVENT__HAVE_ACCEPT4 */
 
 /* Define to 1 if you have the `arc4random' function. */
-#if CPE_OS_ANDROID
-#define EVENT__HAVE_ARC4RANDOM 1
-#define EVENT__HAVE_ARC4RANDOM_BUF 1
-#endif
-
-#if CPE_OS_LINUX
-#endif
-
-#if CPE_OS_MAC || CPE_OS_IOS
 #define EVENT__HAVE_ARC4RANDOM 1
 #define EVENT__HAVE_ARC4RANDOM_BUF 1
 #define EVENT__HAVE_ARC4RANDOM_ADDRANDOM 1
-#endif
 
 /* Define if clock_gettime is available in libc */
 #define EVENT__DNS_USE_CPU_CLOCK_FOR_ID 1
@@ -146,9 +136,7 @@
 /* #undef EVENT__HAVE_GETHOSTBYNAME_R_6_ARG */
 
 /* Define to 1 if you have the `getifaddrs' function. */
-#if CPE_OS_MAC || CPE_OS_IOS
 #define EVENT__HAVE_GETIFADDRS 1
-#endif
 
 /* Define to 1 if you have the `getnameinfo' function. */
 #define EVENT__HAVE_GETNAMEINFO 1
@@ -175,14 +163,10 @@
 #define EVENT__HAVE_INTTYPES_H 1
 
 /* Define to 1 if you have the `issetugid' function. */
-#if CPE_OS_MAC || CPE_OS_IOS
 #define EVENT__HAVE_ISSETUGID 1
-#endif
 
 /* Define to 1 if you have the `kqueue' function. */
-#if CPE_OS_MAC || CPE_OS_IOS
 #define EVENT__HAVE_KQUEUE 1
-#endif
 
 /* Define if the system has zlib */
 #define EVENT__HAVE_LIBZ 1
@@ -191,9 +175,7 @@
 #define EVENT__HAVE_MACH_ABSOLUTE_TIME 1
 
 /* Define to 1 if you have the <mach/mach_time.h> header file. */
-#if defined CPE_OS_MAC
 #define EVENT__HAVE_MACH_MACH_TIME_H 1
-#endif
 
 /* Define to 1 if you have the <memory.h> header file. */
 #define EVENT__HAVE_MEMORY_H 1
@@ -298,9 +280,7 @@
 #define EVENT__HAVE_STRING_H 1
 
 /* Define to 1 if you have the `strlcpy' function. */
-#if CPE_OS_MAC
 #define EVENT__HAVE_STRLCPY 1
-#endif
 
 /* Define to 1 if you have the `strsep' function. */
 #define EVENT__HAVE_STRSEP 1
@@ -333,9 +313,7 @@
 #define EVENT__HAVE_STRUCT_SOCKADDR_IN6 1
 
 /* Define to 1 if `sin6_len' is member of `struct sockaddr_in6'. */
-#if CPE_OS_MAC || CPE_OS_IOS
 #define EVENT__HAVE_STRUCT_SOCKADDR_IN6_SIN6_LEN 1
-#endif
 
 /* Define to 1 if `sin_len' is member of `struct sockaddr_in'. */
 /* #undef EVENT__HAVE_STRUCT_SOCKADDR_IN_SIN_LEN */
@@ -465,9 +443,7 @@
 #define EVENT__HAVE_VASPRINTF 1
 
 /* Define if kqueue works correctly with pipes */
-#if CPE_OS_MAC || CPE_OS_IOS
 #define EVENT__HAVE_WORKING_KQUEUE 1
-#endif
 
 #ifdef __USE_UNUSED_DEFINITIONS__
 /* Define to necessary symbol if this constant uses a non-standard name on your system. */
