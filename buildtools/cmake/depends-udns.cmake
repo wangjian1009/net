@@ -26,10 +26,12 @@ set(udns_compile_options
   )  
 endif ()
 
+set(udns_compile_definitions ${udns_compile_definitions} HAVE_IPv6)
+
 if (OS_NAME STREQUAL mingw)
-  set(udns_compile_definitions WINDOWS)
+  set(udns_compile_definitions ${udns_compile_definitions} WINDOWS)
 else()
-  set(udns_compile_definitions HAVE_INET_PTON_NTOP)
+  set(udns_compile_definitions ${udns_compile_definitions} HAVE_INET_PTON_NTOP)
 endif()
 
 add_library(udns STATIC ${udns_source})
