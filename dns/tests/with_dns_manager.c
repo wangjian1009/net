@@ -19,7 +19,7 @@ void with_dns_manager_setup(void) {
     cpe_error_monitor_init(&with_dns_manager->m_em_buf, cpe_error_log_to_consol, NULL);
 
     with_dns_manager->m_schedule = net_schedule_create(
-        with_dns_manager->m_alloc, &with_dns_manager->m_em_buf, 5 * 1024 * 1025);
+        with_dns_manager->m_alloc, &with_dns_manager->m_em_buf);
     ck_assert(with_dns_manager->m_schedule);
     
     with_dns_manager->m_dns = 
