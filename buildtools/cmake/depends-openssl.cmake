@@ -64,6 +64,11 @@ if (BUILD_OPENSSL)
 
   elseif (IOS)
     set(BUILD_ENV_TOOL ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_LIST_DIR}/scripts/building_env.py IOS)
+
+    set(COMMAND_CONFIGURE ./Configure iossimulator-xcrun --libdir=lib/libsimulator --prefix=${openssl_base})
+    BuildOpenSSL(PROJECT openssl-iossimulator OUTPUT ${openssl_base})
+    list(APPEND OPENSSL_LIBSSL_INPUTS ${openssl_base}/lib/libsimulator/libssl.a)
+    list(APPEND OPENSSL_LIBCRYPTO_INPUTS ${openssl_base}/lib/libsimulator/libcrypto.a)
     
     set(COMMAND_CONFIGURE ./Configure ios64-xcrun --libdir=lib/lib64 --prefix=${openssl_base})
     BuildOpenSSL(PROJECT openssl-ios64 OUTPUT ${openssl_base})
@@ -74,13 +79,14 @@ if (BUILD_OPENSSL)
     BuildOpenSSL(PROJECT openssl-ios32 OUTPUT ${openssl_base})
     list(APPEND OPENSSL_LIBSSL_INPUTS ${openssl_base}/lib/lib32/libssl.a)
     list(APPEND OPENSSL_LIBCRYPTO_INPUTS ${openssl_base}/lib/lib32/libcrypto.a)
-
+    
     add_custom_target(openssl
       COMMAND lipo -output ${OPENSSL_LIBSSL_PATH} -create ${OPENSSL_LIBSSL_INPUTS}
       COMMAND lipo -output ${OPENSSL_LIBCRYPTO_PATH} -create ${OPENSSL_LIBCRYPTO_INPUTS}
       )
     add_dependencies(openssl openssl-ios64)
     add_dependencies(openssl openssl-ios32)
+    add_dependencies(openssl openssl-iossimulator)
   elseif (MINGW)
     set(COMMAND_CONFIGURE ./Configure mingw64 --cross-compile-prefix=x86_64-w64-mingw32-
       --libdir=lib --prefix=${openssl_base})
