@@ -1,4 +1,4 @@
-set(openssl_base ${CMAKE_CURRENT_LIST_DIR}/../../depends/openssl/${OS_NAME})
+get_filename_component(openssl_base ${CMAKE_CURRENT_LIST_DIR}/../../depends/openssl/${OS_NAME} ABSOLUTE)
 
 #MinGW 准备工作
 # ln -s ../usr/bin/git.exe git.exe
@@ -19,21 +19,14 @@ target_include_directories(crypto BEFORE INTERFACE ${openssl_base}/include)
 
 if (BUILD_OPENSSL)
   include(ExternalProject)
-
+  include(${CMAKE_CURRENT_LIST_DIR}/scripts/BuildOpenSSL.cmake)
+  
   find_package(Git REQUIRED)
   find_package(PythonInterp 3 REQUIRED)
 
   set(OPENSSL_PREFIX ${openssl_base})
   set(OPENSSL_BUILD_VERSION 1.1.1d)
   set(OPENSSL_BUILD_HASH 1e3a91bc1f9dfce01af26026f856e064eab4c8ee0a8f457b5ae30b40b8b711f2)
-
-  add_library(ssl_lib STATIC IMPORTED GLOBAL)
-  add_library(crypto_lib STATIC IMPORTED GLOBAL)
-
-  target_link_libraries(ssl INTERFACE ssl_lib)
-  target_link_libraries(crypto INTERFACE crypto_lib)
-
-  set(PERL_PATH_FIX_INSTALL true)
 
   set(CONFIGURE_OPENSSL_MODULES
     no-stdio no-ui-console
@@ -43,121 +36,74 @@ if (BUILD_OPENSSL)
     no-srp no-rc2 no-shared no-asm no-threads no-dso no-dsa
     no-tests)
 
-  set(CONFIGURE_OPENSSL_PARAMS --libdir=lib --prefix=${openssl_base})
-  
+  find_program(MAKE_PROGRAM make)
+
   if (ANDROID)
-    find_program(MAKE_PROGRAM make)
     set(CONFIGURE_OPENSSL_MODULES ${CONFIGURE_OPENSSL_MODULES} no-hw)
 
     set(PATH ${ANDROID_TOOLCHAIN_ROOT}/bin/:${ANDROID_TOOLCHAIN_ROOT}/${ANDROID_TOOLCHAIN_NAME}/bin/)
 
     if (ANDROID_ABI MATCHES "arm64-v8a")
-      set(COMMAND_CONFIGURE ./Configure android-arm64 ${CONFIGURE_OPENSSL_PARAMS} ${CONFIGURE_OPENSSL_MODULES})
+      set(COMMAND_CONFIGURE ./Configure android-arm64 --libdir=lib --prefix=${openssl_basef})
     elseif (ANDROID_ABI MATCHES "armeabi-v7a")
-      set(COMMAND_CONFIGURE ./Configure android-arm ${CONFIGURE_OPENSSL_PARAMS} -march=armv7-a ${CONFIGURE_OPENSSL_MODULES})
+      set(COMMAND_CONFIGURE ./Configure android-arm --libdir=lib --prefix=${openssl_base} -march=armv7-a)
     endif()
 
     set(BUILD_ENV_TOOL ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_LIST_DIR}/scripts/building_env.py LINUX_CROSS_ANDROID)
+
+    # write environment to file, is picked up by python script
+    get_cmake_property(_variableNames VARIABLES)
+    foreach (_variableName ${_variableNames})
+      if (NOT _variableName MATCHES "lines")
+        set(OUT_FILE "${OUT_FILE}${_variableName}=\"${${_variableName}}\"\n")
+      endif()
+    endforeach()
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/buildenv.txt ${OUT_FILE})
+    
+    BuildOpenSSL(PROJECT openssl OUTPUT ${openssl_base})
+
   elseif (IOS)
-    find_program(MAKE_PROGRAM make)
-    set(COMMAND_CONFIGURE ./Configure ios64-xcrun ${CONFIGURE_OPENSSL_PARAMS} ${CONFIGURE_OPENSSL_MODULES})
     set(BUILD_ENV_TOOL ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_LIST_DIR}/scripts/building_env.py IOS)
+    
+    set(COMMAND_CONFIGURE ./Configure ios64-xcrun --libdir=lib/lib64 --prefix=${openssl_base})
+    BuildOpenSSL(PROJECT openssl-ios64 OUTPUT ${openssl_base})
+    list(APPEND OPENSSL_LIBSSL_INPUTS ${openssl_base}/lib/lib64/libssl.a)
+    list(APPEND OPENSSL_LIBCRYPTO_INPUTS ${openssl_base}/lib/lib64/libcrypto.a)
+    
+    set(COMMAND_CONFIGURE ./Configure ios-xcrun --libdir=lib/lib32 --prefix=${openssl_base})
+    BuildOpenSSL(PROJECT openssl-ios32 OUTPUT ${openssl_base})
+    list(APPEND OPENSSL_LIBSSL_INPUTS ${openssl_base}/lib/lib32/libssl.a)
+    list(APPEND OPENSSL_LIBCRYPTO_INPUTS ${openssl_base}/lib/lib32/libcrypto.a)
+
+    add_custom_target(openssl
+      COMMAND lipo -output ${OPENSSL_LIBSSL_PATH} -create ${OPENSSL_LIBSSL_INPUTS}
+      COMMAND lipo -output ${OPENSSL_LIBCRYPTO_PATH} -create ${OPENSSL_LIBCRYPTO_INPUTS}
+      )
+    add_dependencies(openssl openssl-ios64)
+    add_dependencies(openssl openssl-ios32)
   elseif (MINGW)
-    find_program(MAKE_PROGRAM make)
-    set(COMMAND_CONFIGURE ./Configure mingw64
-      --cross-compile-prefix=x86_64-w64-mingw32-
-      ${CONFIGURE_OPENSSL_PARAMS} ${CONFIGURE_OPENSSL_MODULES})
-    set(BUILD_ENV_TOOL
-      ${PYTHON_EXECUTABLE}
-      ${CMAKE_CURRENT_LIST_DIR}/scripts/building_env.py
+    set(COMMAND_CONFIGURE ./Configure mingw64 --cross-compile-prefix=x86_64-w64-mingw32-
+      --libdir=lib --prefix=${openssl_base})
+    set(BUILD_ENV_TOOL ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_LIST_DIR}/scripts/building_env.py
       WIN32 c:/msys64/usr/bin/bash.exe c:/msys64/mingw64)
+    BuildOpenSSL(PROJECT openssl OUTPUT ${openssl_base})
   else()
-    find_program(MAKE_PROGRAM make)
-    set(COMMAND_CONFIGURE ./config ${CONFIGURE_OPENSSL_PARAMS} ${CONFIGURE_OPENSSL_MODULES})
+    set(COMMAND_CONFIGURE ./config --libdir=lib --prefix=${openssl_base})
     set(BUILD_ENV_TOOL ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_LIST_DIR}/scripts/building_env.py UNIX)
+    BuildOpenSSL(PROJECT openssl OUTPUT ${openssl_base})
   endif()
 
+  add_library(ssl_lib STATIC IMPORTED GLOBAL)
+  add_library(crypto_lib STATIC IMPORTED GLOBAL)
 
-  # message(STATUS "COMMAND_CONFIGURE=${COMMAND_CONFIGURE}")
-  # message(STATUS "BUILD_ENV_TOOL=${BUILD_ENV_TOOL}")
-  # message(STATUS "MAKE_PROGRAM=${MAKE_PROGRAM}")
-
-  # add openssl target
-  ExternalProject_Add(openssl
-    PREFIX openssl
-    DOWNLOAD_DIR ${CMAKE_CURRENT_LIST_DIR}/../../build
-    INSTALL_DIR ${openssl_base}
-    URL https://mirror.viaduck.org/openssl/openssl-${OPENSSL_BUILD_VERSION}.tar.gz
-    URL_HASH SHA256=${OPENSSL_BUILD_HASH}
-
-    UPDATE_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> sed -i -e 's/return return/return/g' crypto/threads_none.c
-
-    CONFIGURE_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${COMMAND_CONFIGURE}
-
-    BUILD_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${MAKE_PROGRAM} -j ${NUM_JOBS}
-    BUILD_BYPRODUCTS ${OPENSSL_LIBSSL_PATH} ${OPENSSL_LIBCRYPTO_PATH}
-
-    # TEST_BEFORE_INSTALL 1
-    # TEST_COMMAND ${COMMAND_TEST}
-
-    INSTALL_COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${PERL_PATH_FIX_INSTALL}
-    COMMAND ${BUILD_ENV_TOOL} <SOURCE_DIR> ${MAKE_PROGRAM} install_sw #DESTDIR=${OPENSSL_PREFIX} 
-    COMMAND ${CMAKE_COMMAND} -G ${CMAKE_GENERATOR} ${CMAKE_BINARY_DIR}                    # force CMake-reload
-
-    LOG_INSTALL 1
-    )
-
-  # set git config values to openssl requirements (no impact on linux though)
-  ExternalProject_Add_Step(openssl setGitConfig
-    COMMAND ${GIT_EXECUTABLE} config --global core.autocrlf false
-    COMMAND ${GIT_EXECUTABLE} config --global core.eol lf
-    DEPENDEES
-    DEPENDERS download
-    ALWAYS ON
-    )
-
-  # set, don't abort if it fails (due to variables being empty). To realize this we must only call git if the configs
-  # are set globally, otherwise do a no-op command ("echo 1", since "true" is not available everywhere)
-  if (GIT_CORE_AUTOCRLF)
-    set (GIT_CORE_AUTOCRLF_CMD ${GIT_EXECUTABLE} config --global core.autocrlf ${GIT_CORE_AUTOCRLF})
-  else()
-    set (GIT_CORE_AUTOCRLF_CMD echo)
-  endif()
-  if (GIT_CORE_EOL)
-    set (GIT_CORE_EOL_CMD ${GIT_EXECUTABLE} config --global core.eol ${GIT_CORE_EOL})
-  else()
-    set (GIT_CORE_EOL_CMD echo)
-  endif()
-  ##
-
-  # set git config values to previous values
-  # ExternalProject_Add_Step(openssl restoreGitConfig
-  #   # unset first (is required, since old value could be omitted, which wouldn't take any effect in "set"
-  #   COMMAND ${GIT_EXECUTABLE} config --global --unset core.autocrlf
-  #   COMMAND ${GIT_EXECUTABLE} config --global --unset core.eol
-
-  #   COMMAND ${GIT_CORE_AUTOCRLF_CMD}
-  #   COMMAND ${GIT_CORE_EOL_CMD}
-
-  #   DEPENDEES download
-  #   DEPENDERS configure
-  #   ALWAYS ON
-  #   )
-
-  # write environment to file, is picked up by python script
-  get_cmake_property(_variableNames VARIABLES)
-  foreach (_variableName ${_variableNames})
-    if (NOT _variableName MATCHES "lines")
-      set(OUT_FILE "${OUT_FILE}${_variableName}=\"${${_variableName}}\"\n")
-    endif()
-  endforeach()
-  file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/buildenv.txt ${OUT_FILE})
-
+  target_link_libraries(ssl INTERFACE ssl_lib)
+  target_link_libraries(crypto INTERFACE crypto_lib)
   set_target_properties(ssl_lib PROPERTIES IMPORTED_LOCATION ${OPENSSL_LIBSSL_PATH})
   set_target_properties(crypto_lib PROPERTIES IMPORTED_LOCATION ${OPENSSL_LIBCRYPTO_PATH})
 
   add_dependencies(ssl_lib openssl)
   add_dependencies(crypto_lib openssl)
+
 else()
   target_link_libraries(ssl INTERFACE ${OPENSSL_LIBSSL_PATH})
   target_link_libraries(crypto INTERFACE ${OPENSSL_LIBCRYPTO_PATH})

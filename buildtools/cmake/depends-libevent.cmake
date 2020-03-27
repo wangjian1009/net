@@ -42,6 +42,8 @@ elseif (OS_NAME STREQUAL mingw)
 endif()
 
 add_library(libevent STATIC ${libevent_source})
+add_dependencies(libevent ssl)
+
 set_property(TARGET libevent PROPERTY COMPILE_OPTIONS ${libevent_compile_options})
 set_property(TARGET libevent PROPERTY COMPILE_DEFINITIONS ${libevent_compile_definitions})
 set_property(TARGET libevent PROPERTY INCLUDE_DIRECTORIES ${libevent_include_directories})
