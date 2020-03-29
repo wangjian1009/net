@@ -93,6 +93,8 @@ net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const c
 
     task->m_header = NULL;
     task->m_connect_to = NULL;
+    task->m_formpost = NULL;
+ 	task->m_formpost_last = NULL;
     task->m_cfg_protect_vpn = mgr->m_cfg_protect_vpn;
     task->m_cfg_explicit_dns = 0;
 #if TARGET_OS_IPHONE
@@ -282,6 +284,12 @@ void net_trans_task_free(net_trans_task_t task) {
         task->m_connect_to = NULL;
     }
 
+    if (task->m_formpost) {
+        curl_formfree(task->m_formpost);
+        task->m_formpost = NULL;
+        task->m_formpost_last = NULL;
+    }
+    
     if (task->m_error_addition) {
         mem_free(mgr->m_alloc,  task->m_error_addition);
         task->m_error_addition = NULL;
@@ -555,7 +563,7 @@ static int net_trans_task_trace(CURL *handle, curl_infotype type, char *data, si
  
     return 0;
 }
- 
+
 void net_trans_task_set_debug(net_trans_task_t task, uint8_t is_debug) {
     task->m_debug = is_debug;
 }
@@ -731,6 +739,38 @@ int net_trans_task_set_http_protocol(net_trans_task_t task, net_trans_http_versi
     return 0;
 }
 
+int net_trans_task_append_form_string(net_trans_task_t task, const char * name, const char * value) {
+    net_trans_manage_t mgr = task->m_mgr;
+
+	if (curl_formadd(
+            &task->m_formpost, &task->m_formpost_last,
+            CURLFORM_COPYNAME, name,
+            CURLFORM_COPYCONTENTS, value,
+            CURLFORM_END) != CURLE_OK)
+    {
+        CPE_ERROR(mgr->m_em, "trans: %s-%d: append form %s fail, value=%s", mgr->m_name, task->m_id, name, value);
+        return -1;
+    }
+
+    return 0;
+}
+
+int net_trans_task_append_form_stream(net_trans_task_t task, const char * name) {
+    net_trans_manage_t mgr = task->m_mgr;
+
+	if (curl_formadd(
+            &task->m_formpost, &task->m_formpost_last,
+            CURLFORM_COPYNAME, name,
+            CURLFORM_STREAM,
+            CURLFORM_END) != CURLE_OK)
+    {
+        CPE_ERROR(mgr->m_em, "trans: %s-%d: append form %s fail, from-stream", mgr->m_name, task->m_id, name);
+        return -1;
+    }
+
+    return 0;
+}
+
 int net_trans_task_set_protect_vpn(net_trans_task_t task, uint8_t protect_vpn) {
     task->m_cfg_protect_vpn = protect_vpn;
     return 0;
@@ -787,6 +827,10 @@ int net_trans_task_start(net_trans_task_t task) {
         curl_easy_setopt(task->m_handler, CURLOPT_VERBOSE, 0L);
     }
 
+    if (task->m_formpost) {
+        curl_easy_setopt(task->m_handler, CURLOPT_HTTPPOST, task->m_formpost);
+    }
+    
     if (task->m_cfg_protect_vpn) {
         curl_easy_setopt(task->m_handler, CURLOPT_SOCKOPTFUNCTION, net_trans_task_sock_config_cb);
         curl_easy_setopt(task->m_handler, CURLOPT_SOCKOPTDATA, task);

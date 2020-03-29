@@ -23,6 +23,9 @@ struct net_trans_task {
     char * m_error_addition;
     struct curl_slist * m_header;
     struct curl_slist * m_connect_to;
+    struct curl_httppost * m_formpost;
+ 	struct curl_httppost * m_formpost_last;
+
     struct mem_buffer m_buffer;
     net_address_t m_target_address;
 
