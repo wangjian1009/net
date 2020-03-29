@@ -26,10 +26,15 @@ struct net_trans_task {
     struct mem_buffer m_buffer;
     net_address_t m_target_address;
 
+    /*readd cb*/
+    net_trans_task_read_op_t m_read_cb;
+    void * m_read_ctx;
+    void (*m_read_ctx_free)(void *);
+    
     /*trace*/
     int64_t m_trace_begin_time_ms;
     int64_t m_trace_last_time_ms;
-
+    
     /*callback*/
     uint8_t m_in_callback;
     uint8_t m_is_free;

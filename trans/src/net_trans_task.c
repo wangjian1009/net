@@ -106,6 +106,10 @@ net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const c
         goto CREATED_ERROR;
     }
 
+    task->m_read_cb = NULL;
+    task->m_read_ctx = NULL;
+    task->m_read_ctx_free = NULL;
+
     task->m_trace_begin_time_ms = 0;
     task->m_trace_last_time_ms = 0;
     
@@ -248,7 +252,13 @@ void net_trans_task_free(net_trans_task_t task) {
         net_watcher_free(task->m_watcher);
         task->m_watcher = NULL;
     }
-    
+
+    if (task->m_read_ctx_free) {
+        task->m_read_ctx_free(task->m_read_ctx);
+        task->m_read_ctx = NULL;
+        task->m_read_ctx_free = NULL;
+    }
+
     if (task->m_ctx_free) {
         task->m_ctx_free(task->m_ctx);
         task->m_ctx = NULL;
@@ -548,6 +558,42 @@ static int net_trans_task_trace(CURL *handle, curl_infotype type, char *data, si
  
 void net_trans_task_set_debug(net_trans_task_t task, uint8_t is_debug) {
     task->m_debug = is_debug;
+}
+
+static size_t net_trans_task_read_cb(void * dest, size_t size, size_t nmemb, void * userp) {
+    net_trans_task_t task = userp;
+
+    uint32_t sz = size * nmemb;
+    switch(task->m_read_cb(task, task->m_read_ctx, dest, &sz)) {
+    case net_trans_task_read_op_success:
+        return sz;
+    case net_trans_task_read_op_abort:
+        return CURL_READFUNC_ABORT;
+    case net_trans_task_read_op_pause:
+        return CURL_READFUNC_PAUSE;
+    }
+}
+
+void net_trans_task_set_body_provider(
+    net_trans_task_t task,
+    net_trans_task_read_op_t read_cb, void * read_ctx, void (*read_ctx_free)(void *))
+{
+    if (task->m_read_ctx_free) {
+        task->m_read_ctx_free(task->m_read_ctx);
+    }
+
+    task->m_read_cb = read_cb;
+    task->m_read_ctx = read_ctx;
+    task->m_read_ctx_free = read_ctx_free;
+
+    if (task->m_read_cb) {
+        curl_easy_setopt(task->m_handler, CURLOPT_READFUNCTION, net_trans_task_read_cb);
+        curl_easy_setopt(task->m_handler, CURLOPT_READDATA, task);
+    }
+    else {
+        curl_easy_setopt(task->m_handler, CURLOPT_READFUNCTION, NULL);
+        curl_easy_setopt(task->m_handler, CURLOPT_READDATA, NULL);
+    }
 }
 
 void net_trans_task_clear_callback(net_trans_task_t task) {
