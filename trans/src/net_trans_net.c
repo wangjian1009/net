@@ -139,6 +139,11 @@ void net_trans_check_multi_info(net_trans_manage_t mgr) {
                     }
                     break;
                 }
+                case CURLE_ABORTED_BY_CALLBACK: {
+                    addition_msg = curl_easy_strerror(rc);
+                    err = net_trans_task_error_local_cancel;
+                    break;
+                }
                 default: {
                     addition_msg = curl_easy_strerror(rc);
 

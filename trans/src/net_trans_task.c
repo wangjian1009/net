@@ -886,6 +886,8 @@ const char * net_trans_task_error_str(net_trans_task_error_t err) {
         return "host-unreachable";
     case net_trans_task_error_connect:
         return "connect";
+    case net_trans_task_error_local_cancel:
+        return "local-cancel";
     case net_trans_task_error_internal:
         return "internal";
     }
