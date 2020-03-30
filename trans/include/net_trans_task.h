@@ -16,6 +16,7 @@ net_address_t net_trans_task_target_address(net_trans_task_t task);
 void net_trans_task_set_debug(net_trans_task_t task, uint8_t is_debug);
 
 /*req*/
+int net_trans_task_set_speed_upload_limit(net_trans_task_t task, uint32_t bps);
 int net_trans_task_set_timeout_ms(net_trans_task_t task, uint64_t timeout_ms);
 int net_trans_task_set_connection_timeout_ms(net_trans_task_t task, uint64_t timeout_ms);
 int net_trans_task_append_header(net_trans_task_t task, const char * name, const char * value);

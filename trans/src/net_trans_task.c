@@ -385,6 +385,25 @@ int net_trans_task_set_skip_data(net_trans_task_t task, ssize_t skip_length) {
     return 0;
 }
 
+int net_trans_task_set_speed_upload_limit(net_trans_task_t task, uint32_t bps) {
+    net_trans_manage_t mgr = task->m_mgr;
+
+	if (curl_easy_setopt(task->m_handler, CURLOPT_MAX_SEND_SPEED_LARGE, (curl_off_t)bps) != CURLE_OK) {
+        CPE_ERROR(
+            mgr->m_em, "trans: %s-%d: set upload limit %d error!",
+            mgr->m_name, task->m_id, bps);
+        return -1;
+    }
+
+    if (task->m_debug) {
+        CPE_INFO(
+            mgr->m_em, "trans: %s-%d: set upload limit %d bps!",
+            mgr->m_name, task->m_id, bps);
+    }
+
+    return 0;
+}
+
 int net_trans_task_set_timeout_ms(net_trans_task_t task, uint64_t timeout_ms) {
     net_trans_manage_t mgr = task->m_mgr;
 
