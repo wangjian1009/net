@@ -15,7 +15,7 @@ net_address_t net_trans_task_target_address(net_trans_task_t task);
 
 void net_trans_task_set_debug(net_trans_task_t task, uint8_t is_debug);
 
-/*req-basic*/
+/*req*/
 int net_trans_task_set_timeout_ms(net_trans_task_t task, uint64_t timeout_ms);
 int net_trans_task_set_connection_timeout_ms(net_trans_task_t task, uint64_t timeout_ms);
 int net_trans_task_append_header(net_trans_task_t task, const char * name, const char * value);
@@ -28,16 +28,20 @@ int net_trans_task_set_follow_location(net_trans_task_t task, uint8_t enable);
 int net_trans_task_set_proxy_http_1_1(net_trans_task_t task, net_address_t address);
 int net_trans_task_set_http_protocol(net_trans_task_t task, net_trans_http_version_t http_version);
 
-/*req-form*/
-int net_trans_task_append_form_string(net_trans_task_t task, const char * name, const char * value);
-int net_trans_task_append_form_stream(net_trans_task_t task, const char * name);
-
-/*req-provider*/
-void net_trans_task_set_body_provider(
+/*ds*/
+net_trans_task_ds_t
+net_trans_task_ds_create(
     net_trans_task_t task,
     net_trans_task_read_op_t read_cb, void * read_ctx, void (*read_ctx_free)(void *));
+    
+/*req-form*/
+int net_trans_task_append_form_string(net_trans_task_t task, const char * name, const char * value);
+int net_trans_task_append_form_ds(net_trans_task_t task, const char * name, net_trans_task_ds_t ds);
 
-/*callback*/
+/*req-provider*/
+void net_trans_task_set_body_ds(net_trans_task_t task, net_trans_task_ds_t ds);
+
+/*call*/
 void net_trans_task_clear_callback(net_trans_task_t task);
 void net_trans_task_set_callback(
     net_trans_task_t task,

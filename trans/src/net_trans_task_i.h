@@ -17,6 +17,7 @@ struct net_trans_task {
     uint8_t m_cfg_protect_vpn;
     uint8_t m_cfg_explicit_dns;
     uint32_t m_id;
+    net_trans_task_ds_list_t m_dses;
     net_trans_task_state_t m_state;
     net_trans_task_result_t m_result;
     net_trans_task_error_t m_error;
@@ -29,11 +30,6 @@ struct net_trans_task {
     struct mem_buffer m_buffer;
     net_address_t m_target_address;
 
-    /*readd cb*/
-    net_trans_task_read_op_t m_read_cb;
-    void * m_read_ctx;
-    void (*m_read_ctx_free)(void *);
-    
     /*trace*/
     int64_t m_trace_begin_time_ms;
     int64_t m_trace_last_time_ms;

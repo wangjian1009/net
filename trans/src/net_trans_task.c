@@ -15,10 +15,12 @@
 #include "net_endpoint.h"
 #include "net_watcher.h"
 #include "net_trans_task_i.h"
+#include "net_trans_task_ds_i.h"
 
 static size_t net_trans_task_write_cb(char *ptr, size_t size, size_t nmemb, void * userdata);
 static int net_trans_task_prog_cb(void *p, double dltotal, double dlnow, double ult, double uln);
 static size_t net_trans_task_header_cb(void *ptr, size_t size, size_t nmemb, void *stream);
+static size_t net_trans_task_read_cb(void * dest, size_t size, size_t nmemb, void * userp);
 static int net_trans_task_sock_config_cb(void *p, curl_socket_t curlfd, curlsocktype purpose);
 
 static int net_trans_task_setup_url_origin(net_trans_manage_t mgr, net_trans_task_t task, const char * uri);
@@ -29,6 +31,7 @@ static int net_trans_task_setup_url_ipv4(
     net_trans_manage_t mgr, net_trans_task_t task, const char * uri,
     const char * protocol, net_address_t host, const char * uri_left);
 static int net_trans_task_setup_dns(net_trans_manage_t mgr, net_trans_task_t task, net_local_ip_stack_t ip_stack);
+static const char * net_trans_task_form_add_error_str(CURLFORMcode code);
 
 net_trans_task_t
 net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const char * uri, uint8_t is_debug) {
@@ -108,10 +111,6 @@ net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const c
         goto CREATED_ERROR;
     }
 
-    task->m_read_cb = NULL;
-    task->m_read_ctx = NULL;
-    task->m_read_ctx_free = NULL;
-
     task->m_trace_begin_time_ms = 0;
     task->m_trace_last_time_ms = 0;
     
@@ -123,7 +122,8 @@ net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const c
     task->m_progress_op = NULL;
     task->m_ctx = NULL;
     task->m_ctx_free = NULL;
-
+    TAILQ_INIT(&task->m_dses);
+    
     net_trans_task_set_debug(task, is_debug);
 
     if (curl_easy_setopt(task->m_handler, CURLOPT_PRIVATE, task) != CURLE_OK
@@ -135,6 +135,7 @@ net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const c
         || curl_easy_setopt(task->m_handler, CURLOPT_NOPROGRESS, 0L) != CURLE_OK
         || curl_easy_setopt(task->m_handler, CURLOPT_PROGRESSFUNCTION, net_trans_task_prog_cb) != CURLE_OK
         || curl_easy_setopt(task->m_handler, CURLOPT_PROGRESSDATA, task) != CURLE_OK
+        || curl_easy_setopt(task->m_handler, CURLOPT_READFUNCTION, net_trans_task_read_cb) != CURLE_OK
         )
     {
         goto CREATED_ERROR;
@@ -255,12 +256,10 @@ void net_trans_task_free(net_trans_task_t task) {
         task->m_watcher = NULL;
     }
 
-    if (task->m_read_ctx_free) {
-        task->m_read_ctx_free(task->m_read_ctx);
-        task->m_read_ctx = NULL;
-        task->m_read_ctx_free = NULL;
+    while(!TAILQ_EMPTY(&task->m_dses)) {
+        net_trans_task_ds_free(TAILQ_FIRST(&task->m_dses));
     }
-
+    
     if (task->m_ctx_free) {
         task->m_ctx_free(task->m_ctx);
         task->m_ctx = NULL;
@@ -568,42 +567,6 @@ void net_trans_task_set_debug(net_trans_task_t task, uint8_t is_debug) {
     task->m_debug = is_debug;
 }
 
-static size_t net_trans_task_read_cb(void * dest, size_t size, size_t nmemb, void * userp) {
-    net_trans_task_t task = userp;
-
-    uint32_t sz = size * nmemb;
-    switch(task->m_read_cb(task, task->m_read_ctx, dest, &sz)) {
-    case net_trans_task_read_op_success:
-        return sz;
-    case net_trans_task_read_op_abort:
-        return CURL_READFUNC_ABORT;
-    case net_trans_task_read_op_pause:
-        return CURL_READFUNC_PAUSE;
-    }
-}
-
-void net_trans_task_set_body_provider(
-    net_trans_task_t task,
-    net_trans_task_read_op_t read_cb, void * read_ctx, void (*read_ctx_free)(void *))
-{
-    if (task->m_read_ctx_free) {
-        task->m_read_ctx_free(task->m_read_ctx);
-    }
-
-    task->m_read_cb = read_cb;
-    task->m_read_ctx = read_ctx;
-    task->m_read_ctx_free = read_ctx_free;
-
-    if (task->m_read_cb) {
-        curl_easy_setopt(task->m_handler, CURLOPT_READFUNCTION, net_trans_task_read_cb);
-        curl_easy_setopt(task->m_handler, CURLOPT_READDATA, task);
-    }
-    else {
-        curl_easy_setopt(task->m_handler, CURLOPT_READFUNCTION, NULL);
-        curl_easy_setopt(task->m_handler, CURLOPT_READDATA, NULL);
-    }
-}
-
 void net_trans_task_clear_callback(net_trans_task_t task) {
     if (task->m_ctx_free) {
         task->m_ctx_free(task->m_ctx);
@@ -742,29 +705,37 @@ int net_trans_task_set_http_protocol(net_trans_task_t task, net_trans_http_versi
 int net_trans_task_append_form_string(net_trans_task_t task, const char * name, const char * value) {
     net_trans_manage_t mgr = task->m_mgr;
 
-	if (curl_formadd(
+    CURLFORMcode rv =
+        curl_formadd(
             &task->m_formpost, &task->m_formpost_last,
             CURLFORM_COPYNAME, name,
             CURLFORM_COPYCONTENTS, value,
-            CURLFORM_END) != CURLE_OK)
-    {
-        CPE_ERROR(mgr->m_em, "trans: %s-%d: append form %s fail, value=%s", mgr->m_name, task->m_id, name, value);
+            CURLFORM_END);
+
+    if (rv != CURL_FORMADD_OK) {
+        CPE_ERROR(
+            mgr->m_em, "trans: %s-%d: add form %s = %s fail, error=%s",
+            mgr->m_name, task->m_id, name, value,
+            net_trans_task_form_add_error_str(rv));
         return -1;
     }
 
     return 0;
 }
 
-int net_trans_task_append_form_stream(net_trans_task_t task, const char * name) {
+int net_trans_task_append_form_ds(net_trans_task_t task, const char * name, net_trans_task_ds_t ds) {
     net_trans_manage_t mgr = task->m_mgr;
 
-	if (curl_formadd(
+    CURLFORMcode rv =
+        curl_formadd(
             &task->m_formpost, &task->m_formpost_last,
             CURLFORM_COPYNAME, name,
-            CURLFORM_STREAM,
-            CURLFORM_END) != CURLE_OK)
-    {
-        CPE_ERROR(mgr->m_em, "trans: %s-%d: append form %s fail, from-stream", mgr->m_name, task->m_id, name);
+            CURLFORM_STREAM, ds,
+            CURLFORM_END);
+    if (rv != CURL_FORMADD_OK) {
+        CPE_ERROR(
+            mgr->m_em, "trans: %s-%d: add form %s = <ds> fail, error=%s",
+            mgr->m_name, task->m_id, name, net_trans_task_form_add_error_str(rv));
         return -1;
     }
 
@@ -1378,4 +1349,42 @@ static int net_trans_task_sock_config_cb(void * p, curl_socket_t curlfd, curlsoc
     }
 
     return 0;
+}
+
+static size_t net_trans_task_read_cb(void * dest, size_t size, size_t nmemb, void * userp) {
+    net_trans_task_ds_t ds = userp;
+    net_trans_task_t task = ds->m_task;
+
+    uint32_t sz = size * nmemb;
+    switch(ds->m_read_cb(task->m_ctx, ds->m_read_ctx, dest, &sz)) {
+    case net_trans_task_read_op_success:
+        return sz;
+    case net_trans_task_read_op_abort:
+        return CURL_READFUNC_ABORT;
+    case net_trans_task_read_op_pause:
+        return CURL_READFUNC_PAUSE;
+    }
+}
+
+static const char * net_trans_task_form_add_error_str(CURLFORMcode code) {
+    switch(code) {
+    case CURL_FORMADD_OK:
+        return "ok";
+    case CURL_FORMADD_MEMORY:
+        return "memory";
+    case CURL_FORMADD_OPTION_TWICE:
+        return "option-twice";
+    case CURL_FORMADD_NULL:
+        return "null";
+    case CURL_FORMADD_UNKNOWN_OPTION:
+        return "unknown-options";
+    case CURL_FORMADD_INCOMPLETE:
+        return "incomplete";
+    case CURL_FORMADD_ILLEGAL_ARRAY:
+        return "illegal-array";
+    case CURL_FORMADD_DISABLED:
+        return "disabled";
+    default:
+        return "unknown";
+    }
 }

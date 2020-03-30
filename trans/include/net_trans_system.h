@@ -52,6 +52,7 @@ typedef enum net_trans_http_version {
 
 typedef struct net_trans_manage* net_trans_manage_t;
 typedef struct net_trans_task * net_trans_task_t;
+typedef struct net_trans_task_ds * net_trans_task_ds_t;
 typedef struct net_trans_task_cost_info * net_trans_task_cost_info_t;
 
 typedef enum  net_trans_task_read_op_result {
@@ -59,8 +60,8 @@ typedef enum  net_trans_task_read_op_result {
     net_trans_task_read_op_abort,
     net_trans_task_read_op_pause,
 } net_trans_task_read_op_result_t;
-typedef net_trans_task_read_op_result_t (*net_trans_task_read_op_t)(
-    net_trans_task_t task, void * ctx, void * data, uint32_t * data_sz);
+typedef net_trans_task_read_op_result_t
+(*net_trans_task_read_op_t)(void * ctx, void * ds_ctx, void * o_data, uint32_t * o_data_sz);
 
 typedef void (*net_trans_task_commit_op_t)(net_trans_task_t task, void * ctx, void * data, size_t data_size);
 typedef void (*net_trans_task_progress_op_t)(net_trans_task_t task, void * ctx, double dltotal, double dlnow);

@@ -6,6 +6,7 @@
 #include "net_timer.h"
 #include "net_trans_manage_i.h"
 #include "net_trans_task_i.h"
+#include "net_trans_task_ds_i.h"
 
 net_trans_manage_t net_trans_manage_create(
     mem_allocrator_t alloc, error_monitor_t em, net_schedule_t schedule, net_driver_t driver,
@@ -40,6 +41,7 @@ net_trans_manage_t net_trans_manage_create(
     manage->m_max_task_id = 0;
 
     TAILQ_INIT(&manage->m_free_tasks);
+    TAILQ_INIT(&manage->m_free_task_dses);
 
     curl_multi_setopt(manage->m_multi_handle, CURLMOPT_SOCKETFUNCTION, net_trans_sock_cb);
     curl_multi_setopt(manage->m_multi_handle, CURLMOPT_SOCKETDATA, manage);
@@ -82,6 +84,10 @@ void net_trans_manage_free(net_trans_manage_t mgr) {
     
     while(!TAILQ_EMPTY(&mgr->m_free_tasks)) {
         net_trans_task_real_free(TAILQ_FIRST(&mgr->m_free_tasks));
+    }
+
+    while(!TAILQ_EMPTY(&mgr->m_free_task_dses)) {
+        net_trans_task_ds_real_free(TAILQ_FIRST(&mgr->m_free_task_dses));
     }
 
     mem_free(mgr->m_alloc, mgr);
