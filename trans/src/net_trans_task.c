@@ -723,13 +723,19 @@ int net_trans_task_append_form_string(net_trans_task_t task, const char * name, 
     return 0;
 }
 
-int net_trans_task_append_form_ds(net_trans_task_t task, const char * name, net_trans_task_ds_t ds) {
+int net_trans_task_append_form_ds(
+    net_trans_task_t task,
+    const char * name,
+    const char * remtoename,
+    net_trans_task_ds_t ds)
+{
     net_trans_manage_t mgr = task->m_mgr;
 
     CURLFORMcode rv =
         curl_formadd(
             &task->m_formpost, &task->m_formpost_last,
             CURLFORM_COPYNAME, name,
+            CURLFORM_FILENAME, remtoename,
             CURLFORM_STREAM, ds,
             CURLFORM_END);
     if (rv != CURL_FORMADD_OK) {

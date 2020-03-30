@@ -36,7 +36,12 @@ net_trans_task_ds_create(
     
 /*req-form*/
 int net_trans_task_append_form_string(net_trans_task_t task, const char * name, const char * value);
-int net_trans_task_append_form_ds(net_trans_task_t task, const char * name, net_trans_task_ds_t ds);
+
+int net_trans_task_append_form_ds(
+    net_trans_task_t task,
+    const char * name,
+    const char * remote_name,
+    net_trans_task_ds_t ds);
 
 /*req-provider*/
 void net_trans_task_set_body_ds(net_trans_task_t task, net_trans_task_ds_t ds);
