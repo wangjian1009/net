@@ -19,6 +19,8 @@ net_trans_task_ds_create(
         }
     }
 
+    printf("xxxxx: ds create %p\n", task_ds);
+
     task_ds->m_task = task;
     task_ds->m_read_cb = read_cb;
     task_ds->m_read_ctx = read_ctx;

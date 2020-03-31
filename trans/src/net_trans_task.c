@@ -136,6 +136,7 @@ net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const c
         || curl_easy_setopt(task->m_handler, CURLOPT_PROGRESSFUNCTION, net_trans_task_prog_cb) != CURLE_OK
         || curl_easy_setopt(task->m_handler, CURLOPT_PROGRESSDATA, task) != CURLE_OK
         || curl_easy_setopt(task->m_handler, CURLOPT_READFUNCTION, net_trans_task_read_cb) != CURLE_OK
+        || curl_easy_setopt(task->m_handler, CURLOPT_READDATA, NULL) != CURLE_OK
         )
     {
         goto CREATED_ERROR;
@@ -1377,6 +1378,8 @@ static int net_trans_task_sock_config_cb(void * p, curl_socket_t curlfd, curlsoc
 }
 
 static size_t net_trans_task_read_cb(void * dest, size_t size, size_t nmemb, void * userp) {
+    if (userp == NULL) return 0;
+
     net_trans_task_ds_t ds = userp;
     net_trans_task_t task = ds->m_task;
 
