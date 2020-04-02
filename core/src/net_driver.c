@@ -34,6 +34,8 @@ net_driver_create(
     net_endpoint_connect_fun_t endpoint_connect,
     net_endpoint_close_fun_t endpoint_close,
     net_endpoint_update_fun_t endpoint_update,
+    net_endpoint_set_no_delay_fun_t endpoint_set_no_delay,
+    net_endpoint_get_mss_fun_t endpoint_get_mss,
     /*dgram*/
     uint16_t dgram_capacity,
     net_dgram_init_fun_t dgram_init,
@@ -82,6 +84,8 @@ net_driver_create(
     driver->m_endpoint_connect = endpoint_connect;
     driver->m_endpoint_close = endpoint_close;
     driver->m_endpoint_update = endpoint_update;
+    driver->m_endpoint_set_no_delay = endpoint_set_no_delay;
+    driver->m_endpoint_get_mss = endpoint_get_mss;
 
     /*dgram*/
     driver->m_dgram_capacity = dgram_capacity;

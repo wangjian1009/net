@@ -57,6 +57,9 @@ uint32_t net_endpoint_all_buf_size(net_endpoint_t endpoint);
 
 void net_endpoint_update_debug_info(net_endpoint_t endpoint);
 
+int net_endpoint_set_no_delay(net_endpoint_t endpoint, uint8_t is_enable);
+int net_endpoint_get_mss(net_endpoint_t endpoint, uint32_t * mss);
+
 /*error info*/
 void net_endpoint_set_error(net_endpoint_t endpoint, net_endpoint_error_source_t error_source, uint32_t error_no, const char * msg);
 net_endpoint_error_source_t net_endpoint_error_source(net_endpoint_t endpoint);
@@ -72,6 +75,7 @@ net_endpoint_t net_endpoint_other(net_endpoint_t endpoint);
 /*buf*/
 uint32_t net_endpoint_dft_block_size(net_endpoint_t endpoint);
 void net_endpoint_set_dft_block_size(net_endpoint_t endpoint, uint32_t read_block_size);
+int net_endpoint_set_dft_block_size_to_mss(net_endpoint_t endpoint);
 
 /*    check */
 uint32_t net_endpoint_buf_size(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type);

@@ -58,6 +58,8 @@ net_sock_driver_create(
         net_sock_endpoint_connect,
         net_sock_endpoint_close,
         net_sock_endpoint_update,
+        net_sock_endpoint_set_no_delay,
+        net_sock_endpoint_get_mss,
         /*dgram*/
         sizeof(struct net_sock_dgram),
         net_sock_dgram_init,

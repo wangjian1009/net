@@ -891,8 +891,8 @@ int net_sock_endpoint_fd(net_sock_endpoint_t endpoint) {
     return endpoint->m_fd;
 }
 
-int net_sock_endpoint_set_dft_block_size_to_mss(net_sock_endpoint_t endpoint) {
-    net_endpoint_t base_endpoint = net_endpoint_from_data(endpoint);
+int net_sock_endpoint_get_mss(net_endpoint_t base_endpoint, uint32_t * r_mss) {
+    net_sock_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     net_sock_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
     
     int mss = cpe_sock_get_tcp_mss(endpoint->m_fd);
@@ -901,23 +901,16 @@ int net_sock_endpoint_set_dft_block_size_to_mss(net_sock_endpoint_t endpoint) {
             driver->m_em, "sock: %s: fd=%d: get mss fail, errno=%d (%s)",
             net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-        assert(0);
         return -1;
     }
     else {
-        if (net_endpoint_driver_debug(base_endpoint)) {
-            CPE_INFO(
-                driver->m_em, "sock: %s: fd=%d: dft-block-size to mss %d",
-                net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd, mss);
-        }
-
-        net_endpoint_set_dft_block_size(base_endpoint, (uint32_t)mss);
+        *r_mss = (uint32_t)mss;
         return 0;
     }
 }
 
-int net_sock_endpoint_set_no_delay(net_sock_endpoint_t endpoint, uint8_t is_enable) {
-    net_endpoint_t base_endpoint = net_endpoint_from_data(endpoint);
+int net_sock_endpoint_set_no_delay(net_endpoint_t base_endpoint, uint8_t is_enable) {
+    net_sock_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     net_sock_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
 
     if (cpe_sock_set_no_delay(endpoint->m_fd, is_enable) != 0) {

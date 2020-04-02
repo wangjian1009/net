@@ -937,3 +937,57 @@ void net_endpoint_send_evt(net_endpoint_t endpoint, net_endpoint_monitor_evt_t e
         monitor = next_monitor;
     }
 }
+
+int net_endpoint_set_no_delay(net_endpoint_t endpoint, uint8_t is_enable) {
+    net_schedule_t schedule = endpoint->m_driver->m_schedule;
+
+    if (endpoint->m_driver->m_endpoint_set_no_delay) {
+        return endpoint->m_driver->m_endpoint_set_no_delay(endpoint, is_enable);
+    }
+    else {
+        if (net_endpoint_driver_debug(endpoint)) {
+            CPE_INFO(
+                schedule->m_em, "%s: set_no_delay: driver %s not support",
+                net_endpoint_dump(&schedule->m_tmp_buffer, endpoint),
+                net_driver_name(endpoint->m_driver));
+        }
+        return -1;
+    }
+}
+
+int net_endpoint_get_mss(net_endpoint_t endpoint, uint32_t * mss) {
+    net_schedule_t schedule = endpoint->m_driver->m_schedule;
+
+    if (endpoint->m_driver->m_endpoint_get_mss) {
+        return endpoint->m_driver->m_endpoint_get_mss(endpoint, mss);
+    }
+    else {
+        if (net_endpoint_driver_debug(endpoint)) {
+            CPE_INFO(
+                schedule->m_em, "%s: get_mss: driver %s not support",
+                net_endpoint_dump(&schedule->m_tmp_buffer, endpoint),
+                net_driver_name(endpoint->m_driver));
+        }
+        return -1;
+    }
+}
+
+int net_endpoint_set_dft_block_size_to_mss(net_endpoint_t endpoint) {
+    net_schedule_t schedule = endpoint->m_driver->m_schedule;
+
+    uint32_t mss = 0;
+    if (net_endpoint_get_mss(endpoint, &mss) != 0) {
+        return -1;
+    }
+    else {
+        if (net_endpoint_driver_debug(endpoint)) {
+            CPE_INFO(
+                schedule->m_em, "%s: dft-block-size to mss %d",
+                net_endpoint_dump(&schedule->m_tmp_buffer, endpoint),
+                mss);
+        }
+
+        net_endpoint_set_dft_block_size(endpoint, mss);
+        return 0;
+    }
+}

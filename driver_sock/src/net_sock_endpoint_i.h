@@ -14,6 +14,8 @@ void net_sock_endpoint_fini(net_endpoint_t base_endpoint);
 int net_sock_endpoint_connect(net_endpoint_t base_endpoint);
 void net_sock_endpoint_close(net_endpoint_t base_endpoint);
 int net_sock_endpoint_update(net_endpoint_t base_endpoint);
+int net_sock_endpoint_set_no_delay(net_endpoint_t endpoint, uint8_t is_enable);
+int net_sock_endpoint_get_mss(net_endpoint_t endpoint, uint32_t *mss);
 
 int net_sock_endpoint_set_established(net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint);
 int net_sock_endpoint_update_local_address(net_sock_endpoint_t endpoint);

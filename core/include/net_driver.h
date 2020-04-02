@@ -21,6 +21,8 @@ typedef void (*net_endpoint_fini_fun_t)(net_endpoint_t endpoint);
 typedef int (*net_endpoint_update_fun_t)(net_endpoint_t endpoint);
 typedef int (*net_endpoint_connect_fun_t)(net_endpoint_t endpoint);
 typedef void (*net_endpoint_close_fun_t)(net_endpoint_t endpoint);
+typedef int (*net_endpoint_set_no_delay_fun_t)(net_endpoint_t endpoint, uint8_t no_delay);
+typedef int (*net_endpoint_get_mss_fun_t)(net_endpoint_t endpoint, uint32_t * mss);
 
 typedef int (*net_dgram_init_fun_t)(net_dgram_t dgram);
 typedef void (*net_dgram_fini_fun_t)(net_dgram_t dgram);
@@ -56,6 +58,8 @@ net_driver_create(
     net_endpoint_connect_fun_t endpoint_connect,
     net_endpoint_close_fun_t endpoint_close,
     net_endpoint_update_fun_t endpoint_update,
+    net_endpoint_set_no_delay_fun_t endpoint_set_no_delay,
+    net_endpoint_get_mss_fun_t endpoint_get_mss,
     /*dgram*/
     uint16_t dgram_capacity,
     net_dgram_init_fun_t dgram_init,
