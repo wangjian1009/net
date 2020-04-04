@@ -25,6 +25,9 @@ uint8_t net_dns_task_state_is_complete(net_dns_task_state_t state);
 void net_dns_task_print(write_stream_t ws, net_dns_task_t task);
 const char * net_dns_task_dump(mem_buffer_t buffer, net_dns_task_t task);
 
+uint8_t net_dns_query_type_is_support_by_ip_stack(
+    net_dns_query_type_t query_type, net_local_ip_stack_t ip_stack);
+
 NET_END_DECL
 
 #endif

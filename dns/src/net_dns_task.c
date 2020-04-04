@@ -336,3 +336,18 @@ const char * net_dns_task_dump(mem_buffer_t buffer, net_dns_task_t task) {
     
     return mem_buffer_make_continuous(buffer, 0);
 }
+
+uint8_t net_dns_query_type_is_support_by_ip_stack(
+    net_dns_query_type_t query_type, net_local_ip_stack_t ip_stack)
+{
+    switch(query_type) {
+    case net_dns_query_ipv4:
+        return (ip_stack == net_local_ip_stack_ipv4 || ip_stack == net_local_ip_stack_dual) ? 1 : 0;
+    case net_dns_query_ipv6:
+        return (ip_stack == net_local_ip_stack_ipv6 || ip_stack == net_local_ip_stack_dual) ? 1 : 0;
+    case net_dns_query_ipv4v6:
+        return (ip_stack == net_local_ip_stack_none) ? 0 : 1;
+    case net_dns_query_domain:
+        return (ip_stack == net_local_ip_stack_none) ? 0 : 1;
+    }
+}

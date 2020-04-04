@@ -49,6 +49,7 @@ net_address_t net_address_create_ipv6_any(net_schedule_t schedule, uint16_t port
 net_address_t net_address_create_ipv6_from_data(net_schedule_t schedule, net_address_data_ipv6_t addr, uint16_t port);
 net_address_t net_address_create_ipv6_from_ipv4_map(net_schedule_t schedule, net_address_t addr_ipv4);
 net_address_t net_address_create_ipv6_from_ipv4_nat(net_schedule_t schedule, net_address_t addr_ipv4);
+net_address_t net_address_create_ipv6_from_ipv4_static_nat(net_schedule_t schedule, net_address_t addr_ipv4);
 
 net_address_t net_address_create_domain(
     net_schedule_t schedule, const char * url, uint16_t port, net_address_t resolved);
