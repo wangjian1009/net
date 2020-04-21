@@ -44,4 +44,4 @@ set_property(TARGET curl PROPERTY INCLUDE_DIRECTORIES
   ${openssl_base}/include
   )
 
-add_dependencies(curl openssl)
+add_dependencies(curl ssl)
