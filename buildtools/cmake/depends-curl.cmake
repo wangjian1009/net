@@ -43,3 +43,5 @@ set_property(TARGET curl PROPERTY INCLUDE_DIRECTORIES
   ${CMAKE_CURRENT_LIST_DIR}/../custom/nghttp2
   ${openssl_base}/include
   )
+
+add_dependencies(curl openssl)
