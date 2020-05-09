@@ -53,6 +53,7 @@ int net_sock_acceptor_init(net_acceptor_t base_acceptor) {
                     driver->m_em, "dq: acceptor: rm '%s' fail, errno=%d (%s)!",
                     path, cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
                 cpe_sock_close(acceptor->m_fd);
+                acceptor->m_fd = -1;
                 return -1;
             }
         }
@@ -63,6 +64,7 @@ int net_sock_acceptor_init(net_acceptor_t base_acceptor) {
                 em, "sock: acceptor: set sock reuseaddr fail, errno=%d (%s)!",
                 cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
             cpe_sock_close(acceptor->m_fd);
+            acceptor->m_fd = -1;
             return -1;
         }
     }
@@ -72,6 +74,7 @@ int net_sock_acceptor_init(net_acceptor_t base_acceptor) {
             em, "sock: acceptor: bind error, errno=%d (%s)",
             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
         cpe_sock_close(acceptor->m_fd);
+        acceptor->m_fd = -1;
         return -1;
     }
 
@@ -83,6 +86,7 @@ int net_sock_acceptor_init(net_acceptor_t base_acceptor) {
             em, "sock: acceptor: listen error, errno=%d (%s)",
             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
         cpe_sock_close(acceptor->m_fd);
+        acceptor->m_fd = -1;
         return -1;
     }
 
@@ -94,6 +98,7 @@ int net_sock_acceptor_init(net_acceptor_t base_acceptor) {
                 driver->m_em, "sock: acceptor: sockaddr error, errno=%d (%s)",
                 cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
             cpe_sock_close(acceptor->m_fd);
+            acceptor->m_fd = -1;
             return -1;
         }
 
@@ -109,6 +114,7 @@ int net_sock_acceptor_init(net_acceptor_t base_acceptor) {
     if (acceptor->m_watcher == NULL) {
         CPE_ERROR(driver->m_em, "sock: acceptor: create watcher fail");
         cpe_sock_close(acceptor->m_fd);
+        acceptor->m_fd = -1;
         return -1;
     }
     
