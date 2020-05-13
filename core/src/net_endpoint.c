@@ -45,6 +45,7 @@ net_endpoint_create(net_driver_t driver, net_protocol_t protocol, net_mem_group_
     endpoint->m_mem_group = mem_group ? mem_group : schedule->m_dft_mem_group;
     endpoint->m_prepare_connect = NULL;
     endpoint->m_prepare_connect_ctx = NULL;
+    endpoint->m_close_after_send = 0;
     endpoint->m_protocol_debug = protocol->m_debug;
     endpoint->m_driver_debug = driver->m_debug;
     endpoint->m_error_source = net_endpoint_error_source_network;
@@ -274,6 +275,27 @@ void net_endpoint_set_dft_block_size(net_endpoint_t endpoint, uint32_t block_siz
     endpoint->m_dft_block_size = block_size;
 }
 
+uint8_t net_endpoint_close_after_send(net_endpoint_t endpoint) {
+    return endpoint->m_close_after_send;
+}
+
+void net_endpoint_set_close_after_send(net_endpoint_t endpoint, uint8_t is_close_after_send) {
+    endpoint->m_close_after_send = is_close_after_send;
+
+    if (!net_endpoint_have_any_data(endpoint)) {
+        if (endpoint->m_protocol_debug || endpoint->m_driver_debug) {
+            net_schedule_t schedule = endpoint->m_driver->m_schedule;
+            CPE_INFO(
+                schedule->m_em, "core: %s: auto close on set close-after-send!",
+                net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
+        }
+
+        if (net_endpoint_set_state(endpoint, net_endpoint_state_disable) != 0) {
+            net_endpoint_set_state(endpoint, net_endpoint_state_deleting);
+        }
+    }
+}
+
 uint8_t net_endpoint_protocol_debug(net_endpoint_t endpoint) {
     return endpoint->m_protocol_debug;
 }
@@ -396,6 +418,7 @@ int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) 
     }
     
     if (state == net_endpoint_state_established) {
+        endpoint->m_close_after_send = 0;
         endpoint->m_error_source = net_endpoint_error_source_network;
         endpoint->m_error_no = 0;
         if (endpoint->m_error_msg) {

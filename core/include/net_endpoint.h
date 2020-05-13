@@ -47,6 +47,9 @@ int net_endpoint_set_prepare_connect(net_endpoint_t endpoint, net_endpoint_prepa
 uint8_t net_endpoint_is_active(net_endpoint_t endpoint);
 int net_endpoint_connect(net_endpoint_t endpoint);
 
+uint8_t net_endpoint_close_after_send(net_endpoint_t endpoint);
+void net_endpoint_set_close_after_send(net_endpoint_t endpoint, uint8_t is_close_after_send);
+
 uint8_t net_endpoint_protocol_debug(net_endpoint_t endpoint);
 void net_endpoint_set_protocol_debug(net_endpoint_t endpoint, uint8_t debug);
 
