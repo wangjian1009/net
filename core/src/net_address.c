@@ -735,6 +735,15 @@ const char * net_address_host(mem_buffer_t buffer, net_address_t address) {
     }
 }
 
+int net_address_cmp_opt(net_address_t l, net_address_t r) {
+    if (l == NULL) {
+        return r == NULL ? 0 : -1;
+    }
+    else {
+        return r == NULL ? 1 : net_address_cmp(l, r);
+    }
+}
+
 int net_address_cmp(net_address_t l, net_address_t r) {
     if (l->m_type != r->m_type) {
         return (int)l->m_type - (int)r->m_type;
