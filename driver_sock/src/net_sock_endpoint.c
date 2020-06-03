@@ -5,6 +5,7 @@
 #include "cpe/utils/string_utils.h"
 #include "cpe/utils_sock/sock_utils.h"
 #include "net_endpoint.h"
+#include "net_protocol.h"
 #include "net_address.h"
 #include "net_driver.h"
 #include "net_watcher.h"
@@ -774,7 +775,7 @@ static int net_sock_endpoint_start_connect(
     net_address_t local_address = net_endpoint_address(base_endpoint);
 
     if (endpoint->m_local_address_auto) {
-        uint8_t is_local_address_auto = net_address_cmp(endpoint->m_local_address_auto, local_address) == 0 ? 1 : 0;
+        uint8_t is_local_address_auto = net_address_cmp_opt(endpoint->m_local_address_auto, local_address) == 0 ? 1 : 0;
 
         net_address_free(endpoint->m_local_address_auto);
         endpoint->m_local_address_auto = NULL;
@@ -859,7 +860,15 @@ static int net_sock_endpoint_start_connect(
         return -1;
     }
 
-    return cpe_connect(endpoint->m_fd, (struct sockaddr *)&remote_addr_sock, remote_addr_sock_len);
+    int rv = cpe_connect(endpoint->m_fd, (struct sockaddr *)&remote_addr_sock, remote_addr_sock_len);
+    
+    /* if (strcmp("sfox-cli-ss+", net_protocol_name(net_endpoint_protocol(base_endpoint))) == 0) { */
+    /*     CPE_ERROR(driver->m_em, "xxxxxx: %s: mock error", net_protocol_name(net_endpoint_protocol(base_endpoint))); */
+    /*     errno = EHOSTDOWN; */
+    /*     return -1; */
+    /* } */
+
+    return rv;
 }
 
 static void net_sock_endpoint_close_sock(net_sock_driver_t driver, net_sock_endpoint_t endpoint) {
