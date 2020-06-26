@@ -32,10 +32,14 @@ set(nghttp2_compile_options
   -Wno-implicit-function-declaration
   )  
 endif ()
-
+    
 set(nghttp2_compile_definitions
   NGHTTP2_STATICLIB
   NOTHREADS=1)
+
+if (ANDROID)
+  set(nghttp2_compile_definitions ${nghttp2_compile_definitions} HAVE_NETINET_IN_H)
+endif ()
 
 add_library(nghttp2 STATIC ${nghttp2_source})
 set_property(TARGET nghttp2 PROPERTY COMPILE_OPTIONS ${nghttp2_compile_options})
