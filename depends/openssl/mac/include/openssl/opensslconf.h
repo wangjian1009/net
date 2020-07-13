@@ -64,9 +64,6 @@ extern "C" {
 #ifndef OPENSSL_NO_SRP
 # define OPENSSL_NO_SRP
 #endif
-#ifndef OPENSSL_THREADS
-# define OPENSSL_THREADS
-#endif
 #ifndef OPENSSL_RAND_SEED_OS
 # define OPENSSL_RAND_SEED_OS
 #endif
