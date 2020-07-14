@@ -1,5 +1,6 @@
 #include "cpe/pal/pal_socket.h"
 #include "cpe/pal/pal_errno.h"
+#include "cpe/pal/pal_strings.h"
 #include "cpe/utils_sock/getgateway.h"
 #include "cpe/utils_sock/getdnssvraddrs.h"
 #include "net_schedule_i.h"
@@ -136,6 +137,11 @@ static uint8_t net_schedule_local_ip_stack_test_connect(net_schedule_t schedule,
     do {
         ret = connect(s, addr, addrlen);
     } while (ret < 0 && errno == EINTR);
+
+    if (ret != 0 && schedule->m_debug) {
+        CPE_INFO(
+            schedule->m_em, "net_schedule_local_ip_stack_test_connect: errno=%d, %s", errno, strerror(errno));
+    }
 
     int success = (ret == 0);
     do {
