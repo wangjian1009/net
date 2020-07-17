@@ -1,5 +1,6 @@
 #include "cpe/pal/pal_socket.h"
 #include "cpe/pal/pal_errno.h"
+#include "cpe/pal/pal_string.h"
 #include "cpe/pal/pal_stdio.h"
 #include "cpe/utils_sock/getgateway.h"
 #include "cpe/utils_sock/getdnssvraddrs.h"
