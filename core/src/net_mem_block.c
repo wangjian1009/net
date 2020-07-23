@@ -227,7 +227,7 @@ void net_mem_block_append(net_mem_block_t block, void const * data, uint32_t siz
 void net_mem_block_set_size(net_mem_block_t block, uint32_t size) {
     net_endpoint_t endpoint = block->m_endpoint;
     if (endpoint) {
-        assert(endpoint->m_bufs[block->m_buf_type].m_size >= size);
+        assert(endpoint->m_bufs[block->m_buf_type].m_size >= block->m_len);
 
         endpoint->m_bufs[block->m_buf_type].m_size -= block->m_len;
         endpoint->m_bufs[block->m_buf_type].m_size += size;
