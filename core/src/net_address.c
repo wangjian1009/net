@@ -99,7 +99,7 @@ struct net_address_ipv4v6 *
 net_address_create_ipv4v6(net_schedule_t schedule, net_address_type_t type, uint16_t port) {
     struct net_address_ipv4v6 * address_ipv4v6;
 
-#if NET_ADDRESS_USE_CACHE    
+#if NET_ADDRESS_USE_CACHE
     address_ipv4v6 = (struct net_address_ipv4v6 *)TAILQ_FIRST(&schedule->m_free_addresses);
     if (address_ipv4v6) {
         TAILQ_REMOVE(&schedule->m_free_addresses, (struct net_address_in_cache *)address_ipv4v6, m_next);
@@ -111,7 +111,7 @@ net_address_create_ipv4v6(net_schedule_t schedule, net_address_type_t type, uint
             CPE_ERROR(schedule->m_em, "net_address_create_ipv4v6: alloc fail!");
             return NULL;
         }
-#if NET_ADDRESS_USE_CACHE    
+#if NET_ADDRESS_USE_CACHE
     }
 #endif
 
@@ -509,25 +509,33 @@ net_address_t net_address_copy(net_schedule_t schedule, net_address_t from) {
 }
 
 void net_address_free(net_address_t address) {
-    if (address->m_type == net_address_domain) {
+    switch(address->m_type) {
+    case net_address_domain: {
         struct net_address_domain * address_domain = (struct net_address_domain *)address;
         if (address_domain->m_resolved) {
             net_address_free(address_domain->m_resolved);
         }
         mem_free(address->m_schedule->m_alloc, address_domain);
+        break;
     }
-    else {
-#if NET_ADDRESS_USE_CACHE    
+    case net_address_local:
+        mem_free(address->m_schedule->m_alloc, address);
+        break;
+    case net_address_ipv4:
+    case net_address_ipv6: {
+#if NET_ADDRESS_USE_CACHE
         struct net_address_in_cache * address_in_cache = (struct net_address_in_cache *)address;
         TAILQ_INSERT_TAIL(&address_in_cache->m_schedule->m_free_addresses, address_in_cache, m_next);
 #else
         mem_free(address->m_schedule->m_alloc, address);
-#endif        
+#endif
+        break;
+    }
     }
 }
 
 void net_address_real_free(net_address_in_cache_t address) {
-#if NET_ADDRESS_USE_CACHE    
+#if NET_ADDRESS_USE_CACHE
     TAILQ_REMOVE(&address->m_schedule->m_free_addresses, address, m_next);
     mem_free(address->m_schedule->m_alloc, address);
 #else
