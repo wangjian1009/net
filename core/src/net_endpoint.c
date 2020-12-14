@@ -698,8 +698,8 @@ void net_endpoint_print(write_stream_t ws, net_endpoint_t endpoint) {
     if (endpoint->m_protocol->m_endpoint_dump) {
         endpoint->m_protocol->m_endpoint_dump(ws, endpoint);
     }
-    
-    stream_printf(ws, "]");
+
+    stream_printf(ws, "] (%c%c)", endpoint->m_expect_read ? 'R' : '-', endpoint->m_is_writing ? 'W' : '-');
 }
 
 const char * net_endpoint_dump(mem_buffer_t buff, net_endpoint_t endpoint) {
