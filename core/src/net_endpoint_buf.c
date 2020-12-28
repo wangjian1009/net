@@ -581,7 +581,7 @@ static int net_endpoint_buf_on_supply(net_schedule_t schedule, net_endpoint_t en
     }
 
     if (buf_type == net_ep_buf_read) {
-        if (endpoint->m_protocol->m_endpoint_input(endpoint, buf_type) != 0) return -1;
+        if (endpoint->m_protocol->m_endpoint_input(endpoint) != 0) return -1;
     }
 
     if (buf_type == net_ep_buf_write) {

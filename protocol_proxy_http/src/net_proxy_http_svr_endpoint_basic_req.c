@@ -499,53 +499,53 @@ static void process_context_type(void * ctx, const char * value) {
 static int net_proxy_http_svr_endpoint_basic_forward_direct_remote(
     net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep, net_endpoint_t endpoint, net_address_t host)
 {
-    /*设定remote */
-    if (host == NULL) {
-        CPE_ERROR(
-            http_protocol->m_em, "http-proxy-svr: %s: basic: no host in header!",
-            net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint));
-        return -1;
-    }
+    /* /\*设定remote *\/ */
+    /* if (host == NULL) { */
+    /*     CPE_ERROR( */
+    /*         http_protocol->m_em, "http-proxy-svr: %s: basic: no host in header!", */
+    /*         net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint)); */
+    /*     return -1; */
+    /* } */
     
-    char str_address[128];
-    cpe_str_dup(
-        str_address, sizeof(str_address),
-        net_address_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), host));
+    /* char str_address[128]; */
+    /* cpe_str_dup( */
+    /*     str_address, sizeof(str_address), */
+    /*     net_address_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), host)); */
 
-    uint8_t need_connect = 0;
-    net_endpoint_t other = net_endpoint_other(endpoint);
-    if (other == NULL) {
-        need_connect = 1;
-        net_endpoint_set_remote_address(endpoint, host);
+    /* uint8_t need_connect = 0; */
+    /* net_endpoint_t other = net_endpoint_other(endpoint); */
+    /* if (other == NULL) { */
+    /*     need_connect = 1; */
+    /*     net_endpoint_set_remote_address(endpoint, host); */
 
-        if (net_endpoint_protocol_debug(endpoint)) {
-            CPE_INFO(
-                http_protocol->m_em, "http-proxy-svr: %s: request first connect to %s!",
-                net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
-                str_address);
-        }
-    }
-    else {
-        net_address_t cur_remote_address = net_endpoint_remote_address(endpoint);
-        if (net_address_cmp(cur_remote_address, host) != 0) {
-            need_connect = 1;
-            net_endpoint_set_remote_address(endpoint, host);
+    /*     if (net_endpoint_protocol_debug(endpoint)) { */
+    /*         CPE_INFO( */
+    /*             http_protocol->m_em, "http-proxy-svr: %s: request first connect to %s!", */
+    /*             net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint), */
+    /*             str_address); */
+    /*     } */
+    /* } */
+    /* else { */
+    /*     net_address_t cur_remote_address = net_endpoint_remote_address(endpoint); */
+    /*     if (net_address_cmp(cur_remote_address, host) != 0) { */
+    /*         need_connect = 1; */
+    /*         net_endpoint_set_remote_address(endpoint, host); */
 
-            if (net_endpoint_protocol_debug(endpoint)) {
-                CPE_INFO(
-                    http_protocol->m_em, "http-proxy-svr: %s: request re connect to %s!",
-                    net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint),
-                    str_address);
-            }
-        }
-    }
+    /*         if (net_endpoint_protocol_debug(endpoint)) { */
+    /*             CPE_INFO( */
+    /*                 http_protocol->m_em, "http-proxy-svr: %s: request re connect to %s!", */
+    /*                 net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint), */
+    /*                 str_address); */
+    /*         } */
+    /*     } */
+    /* } */
 
-    if (need_connect
-        && http_ep->m_on_connect_fun
-        && http_ep->m_on_connect_fun(http_ep->m_on_connect_ctx, endpoint, host) != 0)
-    {
-        return -1;
-    }
+    /* if (need_connect */
+    /*     && http_ep->m_on_connect_fun */
+    /*     && http_ep->m_on_connect_fun(http_ep->m_on_connect_ctx, endpoint, host) != 0) */
+    /* { */
+    /*     return -1; */
+    /* } */
 
     return 0;
 }

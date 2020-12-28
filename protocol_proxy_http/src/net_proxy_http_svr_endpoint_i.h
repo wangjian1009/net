@@ -97,7 +97,7 @@ struct net_proxy_http_svr_endpoint {
 
 int net_proxy_http_svr_endpoint_init(net_endpoint_t endpoint);
 void net_proxy_http_svr_endpoint_fini(net_endpoint_t endpoint);
-int net_proxy_http_svr_endpoint_input(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type);
+int net_proxy_http_svr_endpoint_input(net_endpoint_t endpoint);
 int net_proxy_http_svr_endpoint_on_state_change(net_endpoint_t endpoint, net_endpoint_state_t from_state);
 
 uint8_t net_proxy_http_svr_endpoint_is_mine_text(const char * mine);

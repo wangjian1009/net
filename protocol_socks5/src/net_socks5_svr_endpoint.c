@@ -47,7 +47,7 @@ void net_socks5_svr_endpoint_set_connect_fun(
         return -1;                                                      \
     }                                                                   \
 
-int net_socks5_svr_endpoint_input(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type) {
+int net_socks5_svr_endpoint_input(net_endpoint_t endpoint) {
     net_schedule_t schedule = net_endpoint_schedule(endpoint);
     error_monitor_t em = net_schedule_em(schedule);
     net_socks5_svr_t socks5_svr = net_protocol_data(net_endpoint_protocol(endpoint));
@@ -55,9 +55,9 @@ int net_socks5_svr_endpoint_input(net_endpoint_t endpoint, net_endpoint_buf_type
     void * data;
 
     uint32_t left_size;
-    for(left_size = net_endpoint_buf_size(endpoint, buf_type);
+    for(left_size = net_endpoint_buf_size(endpoint, net_ep_buf_read);
         left_size > 0;
-        left_size = net_endpoint_buf_size(endpoint, buf_type)
+        left_size = net_endpoint_buf_size(endpoint, net_ep_buf_read)
         )
     {
         if (ss_ep->m_stage == net_socks5_svr_endpoint_stage_stream) {
@@ -121,7 +121,7 @@ int net_socks5_svr_endpoint_input(net_endpoint_t endpoint, net_endpoint_buf_type
                 }
 
                 ss_ep->m_stage = net_socks5_svr_endpoint_stage_handshake;
-                net_endpoint_buf_consume(endpoint, buf_type, select_request_len);
+                net_endpoint_buf_consume(endpoint, net_ep_buf_read, select_request_len);
             }
         }
         else if (ss_ep->m_stage == net_socks5_svr_endpoint_stage_handshake
@@ -141,7 +141,7 @@ int net_socks5_svr_endpoint_input(net_endpoint_t endpoint, net_endpoint_buf_type
 
                 if (version == SOCKS4_SVERSION) {
                     uint32_t peak_data_size;
-                    data = net_endpoint_buf_peak(endpoint, buf_type, &peak_data_size);
+                    data = net_endpoint_buf_peak(endpoint, net_ep_buf_read, &peak_data_size);
                     assert(data);
 
                     uint32_t pos;
@@ -228,7 +228,7 @@ int net_socks5_svr_endpoint_input(net_endpoint_t endpoint, net_endpoint_buf_type
                 if (address == NULL) return -1;
 
                 ss_ep->m_stage = net_socks5_svr_endpoint_stage_stream;
-                net_endpoint_buf_consume(endpoint, buf_type, used_len);
+                net_endpoint_buf_consume(endpoint, net_ep_buf_read, used_len);
 
                 if (net_endpoint_protocol_debug(endpoint) >= 2) {
                     CPE_INFO(

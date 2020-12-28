@@ -11,7 +11,7 @@ typedef void (*net_protocol_fini_fun_t)(net_protocol_t protocol);
 typedef int (*net_protocol_endpoint_init_fun_t)(net_endpoint_t endpoint);
 typedef void (*net_protocol_endpoint_fini_fun_t)(net_endpoint_t endpoint);
 typedef int (*net_protocol_endpoint_on_state_change_fun_t)(net_endpoint_t endpoint, net_endpoint_state_t from_state);
-typedef int (*net_protocol_endpoint_input_fun_t)(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type);
+typedef int (*net_protocol_endpoint_input_fun_t)(net_endpoint_t endpoint);
 typedef void (*net_protocol_endpoint_dump_fun_t)(write_stream_t ws, net_endpoint_t endpoint);
 
 net_protocol_t
