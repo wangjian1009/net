@@ -7,7 +7,6 @@
 #include "net_driver_i.h"
 #include "net_schedule_i.h"
 #include "net_protocol_i.h"
-#include "net_link_i.h"
 
 #define net_endpoint_driver_update(__ep) ((__ep)->m_driver->m_endpoint_update((__ep)))
 
@@ -177,8 +176,6 @@ void net_endpoint_buf_consume(net_endpoint_t endpoint, net_endpoint_buf_type_t b
         endpoint->m_data_watcher_fun(endpoint->m_data_watcher_ctx, endpoint, buf_type, net_endpoint_data_consume, size);
     }
 
-    net_endpoint_t other = net_endpoint_other(endpoint);
-    
     if (!net_endpoint_is_active(endpoint)) return;
 
     if (endpoint->m_close_after_send && !net_endpoint_have_any_data(endpoint)) {
@@ -584,7 +581,7 @@ static int net_endpoint_buf_on_supply(net_schedule_t schedule, net_endpoint_t en
     }
 
     if (buf_type == net_ep_buf_read) {
-        if (endpoint->m_protocol->m_endpoint_input(endpoint) != 0) return -1;
+        if (endpoint->m_protocol->m_endpoint_input(endpoint, buf_type) != 0) return -1;
     }
 
     if (buf_type == net_ep_buf_write) {

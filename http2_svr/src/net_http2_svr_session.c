@@ -63,7 +63,7 @@ void net_http2_svr_session_fini(net_endpoint_t base_endpoint) {
     }
 }
 
-int net_http2_svr_session_input(net_endpoint_t base_endpoint) {
+int net_http2_svr_session_input(net_endpoint_t base_endpoint, net_endpoint_buf_type_t buf_type) {
     net_http2_svr_service_t service = net_protocol_data(net_endpoint_protocol(base_endpoint));
     net_http2_svr_session_t session = net_endpoint_data(base_endpoint);
 

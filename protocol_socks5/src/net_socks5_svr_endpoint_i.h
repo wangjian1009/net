@@ -23,8 +23,7 @@ struct net_socks5_svr_endpoint {
 
 int net_socks5_svr_endpoint_init(net_endpoint_t endpoint);
 void net_socks5_svr_endpoint_fini(net_endpoint_t endpoint);
-int net_socks5_svr_endpoint_input(net_endpoint_t endpoint);
-int net_socks5_svr_endpoint_forward(net_endpoint_t endpoint, net_endpoint_t from);
+int net_socks5_svr_endpoint_input(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type);
 
 NET_END_DECL
 

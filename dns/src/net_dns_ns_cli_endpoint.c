@@ -130,12 +130,8 @@ static int net_dns_ns_cli_process_data(
     return 0;
 }
     
-int net_dns_ns_cli_endpoint_forward(net_endpoint_t base_endpoint, net_endpoint_t from) {
-    return net_dns_ns_cli_process_data(base_endpoint, from, net_ep_buf_forward);
-}
-
-int net_dns_ns_cli_endpoint_input(net_endpoint_t base_endpoint) {
-    return net_dns_ns_cli_process_data(base_endpoint, base_endpoint, net_ep_buf_read);
+int net_dns_ns_cli_endpoint_input(net_endpoint_t base_endpoint, net_endpoint_buf_type_t buf_type) {
+    return net_dns_ns_cli_process_data(base_endpoint, base_endpoint, buf_type);
 }
 
 int net_dns_ns_cli_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoint_state_t from_state) {
@@ -177,52 +173,53 @@ int net_dns_ns_cli_endpoint_send(
             return -1;
         }
     }
-    
-    net_endpoint_t other = net_endpoint_other(dns_cli->m_endpoint);
-    if (other) {
-        if (!net_endpoint_is_active(other)) {
-            if (net_endpoint_connect(other) != 0) {
-                CPE_ERROR(
-                    manage->m_em, "dns-cli: %s: --> chanel connect fail",
-                    net_endpoint_dump(net_dns_manage_tmp_buffer(manage), dns_cli->m_endpoint));
-                return -1;
-            }
 
-            //TODO: 底层不再支持direct
-            assert(0);
-            /* if (net_endpoint_direct(other, net_endpoint_remote_address(dns_cli->m_endpoint)) != 0) { */
-            /*     CPE_ERROR( */
-            /*         manage->m_em, "dns-cli: %s: --> chanel direct fail", */
-            /*         net_endpoint_dump(net_dns_manage_tmp_buffer(manage), dns_cli->m_endpoint)); */
-            /*     net_endpoint_set_state(other, net_endpoint_state_logic_error); */
-            /*     return -1; */
-            /* } */
-        }
+    //TODO: Loki
+    /* net_endpoint_t other = net_endpoint_other(dns_cli->m_endpoint); */
+    /* if (other) { */
+    /*     if (!net_endpoint_is_active(other)) { */
+    /*         if (net_endpoint_connect(other) != 0) { */
+    /*             CPE_ERROR( */
+    /*                 manage->m_em, "dns-cli: %s: --> chanel connect fail", */
+    /*                 net_endpoint_dump(net_dns_manage_tmp_buffer(manage), dns_cli->m_endpoint)); */
+    /*             return -1; */
+    /*         } */
 
-        if (net_endpoint_buf_append(dns_cli->m_endpoint, net_ep_buf_forward, buf, buf_size) < 0
-            || net_endpoint_forward(dns_cli->m_endpoint) != 0)
-        {
-            CPE_ERROR(
-                manage->m_em, "dns-cli: %s: --> fbuf append fail",
-                net_endpoint_dump(net_dns_manage_tmp_buffer(manage), dns_cli->m_endpoint));
-            return -1;
-        }
-    }
-    else {
-        if (!net_endpoint_is_active(dns_cli->m_endpoint)) {
-            CPE_ERROR(
-                manage->m_em, "dns-cli: %s: --> not active!",
-                net_endpoint_dump(net_dns_manage_tmp_buffer(manage), dns_cli->m_endpoint));
-            return -1;
-        }
+    /*         //TODO: 底层不再支持direct */
+    /*         assert(0); */
+    /*         /\* if (net_endpoint_direct(other, net_endpoint_remote_address(dns_cli->m_endpoint)) != 0) { *\/ */
+    /*         /\*     CPE_ERROR( *\/ */
+    /*         /\*         manage->m_em, "dns-cli: %s: --> chanel direct fail", *\/ */
+    /*         /\*         net_endpoint_dump(net_dns_manage_tmp_buffer(manage), dns_cli->m_endpoint)); *\/ */
+    /*         /\*     net_endpoint_set_state(other, net_endpoint_state_logic_error); *\/ */
+    /*         /\*     return -1; *\/ */
+    /*         /\* } *\/ */
+    /*     } */
+
+    /*     if (net_endpoint_buf_append(dns_cli->m_endpoint, net_ep_buf_forward, buf, buf_size) < 0 */
+    /*         || net_endpoint_forward(dns_cli->m_endpoint) != 0) */
+    /*     { */
+    /*         CPE_ERROR( */
+    /*             manage->m_em, "dns-cli: %s: --> fbuf append fail", */
+    /*             net_endpoint_dump(net_dns_manage_tmp_buffer(manage), dns_cli->m_endpoint)); */
+    /*         return -1; */
+    /*     } */
+    /* } */
+    /* else { */
+    /*     if (!net_endpoint_is_active(dns_cli->m_endpoint)) { */
+    /*         CPE_ERROR( */
+    /*             manage->m_em, "dns-cli: %s: --> not active!", */
+    /*             net_endpoint_dump(net_dns_manage_tmp_buffer(manage), dns_cli->m_endpoint)); */
+    /*         return -1; */
+    /*     } */
     
-        if (net_endpoint_buf_append(dns_cli->m_endpoint, net_ep_buf_write, buf, buf_size) < 0) {
-            CPE_ERROR(
-                manage->m_em, "dns-cli: %s: --> wbuf append fail",
-                net_endpoint_dump(net_dns_manage_tmp_buffer(manage), dns_cli->m_endpoint));
-            return -1;
-        }
-    }
+    /*     if (net_endpoint_buf_append(dns_cli->m_endpoint, net_ep_buf_write, buf, buf_size) < 0) { */
+    /*         CPE_ERROR( */
+    /*             manage->m_em, "dns-cli: %s: --> wbuf append fail", */
+    /*             net_endpoint_dump(net_dns_manage_tmp_buffer(manage), dns_cli->m_endpoint)); */
+    /*         return -1; */
+    /*     } */
+    /* } */
 
     if (net_endpoint_protocol_debug(dns_cli->m_endpoint) >= 2) {
         CPE_INFO(

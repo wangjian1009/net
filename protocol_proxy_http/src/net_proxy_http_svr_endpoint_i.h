@@ -97,8 +97,7 @@ struct net_proxy_http_svr_endpoint {
 
 int net_proxy_http_svr_endpoint_init(net_endpoint_t endpoint);
 void net_proxy_http_svr_endpoint_fini(net_endpoint_t endpoint);
-int net_proxy_http_svr_endpoint_input(net_endpoint_t endpoint);
-int net_proxy_http_svr_endpoint_forward(net_endpoint_t endpoint, net_endpoint_t from);
+int net_proxy_http_svr_endpoint_input(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type);
 int net_proxy_http_svr_endpoint_on_state_change(net_endpoint_t endpoint, net_endpoint_state_t from_state);
 
 uint8_t net_proxy_http_svr_endpoint_is_mine_text(const char * mine);
@@ -121,7 +120,8 @@ int net_proxy_http_svr_endpoint_tunnel_on_connect(
 int net_proxy_http_svr_endpoint_tunnel_forward(
     net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep, net_endpoint_t endpoint);
 int net_proxy_http_svr_endpoint_tunnel_backword(
-    net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep, net_endpoint_t endpoint, net_endpoint_t from);
+    net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep,
+    net_endpoint_t endpoint, net_endpoint_t from);
 
 NET_END_DECL
 

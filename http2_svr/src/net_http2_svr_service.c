@@ -32,7 +32,6 @@ net_http2_svr_service_create(net_schedule_t schedule, const char * protocol_name
             net_http2_svr_session_fini,
             net_http2_svr_session_input,
             NULL,
-            NULL,
             NULL);
     if (protocol == NULL) {
         CPE_ERROR(net_schedule_em(schedule), "nghttp2: %s: create protocol fail!", protocol_name);

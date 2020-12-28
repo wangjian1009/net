@@ -11,7 +11,6 @@
 #include "net_driver_i.h"
 #include "net_schedule_i.h"
 #include "net_address_i.h"
-#include "net_link_i.h"
 #include "net_dns_query_i.h"
 #include "net_endpoint_next_i.h"
 
@@ -51,7 +50,6 @@ net_endpoint_create(net_driver_t driver, net_protocol_t protocol, net_mem_group_
     endpoint->m_error_source = net_endpoint_error_source_network;
     endpoint->m_error_no = 0;
     endpoint->m_error_msg = NULL;
-    endpoint->m_link = NULL;
     endpoint->m_id = schedule->m_endpoint_max_id + 1;
     endpoint->m_dft_block_size = 0;
     endpoint->m_options = 0;
@@ -131,17 +129,6 @@ void net_endpoint_free(net_endpoint_t endpoint) {
     if (endpoint->m_dns_query) {
         net_dns_query_free(endpoint->m_dns_query);
         endpoint->m_dns_query = NULL;
-    }
-    
-    if (endpoint->m_link) {
-        if (endpoint->m_link->m_local == endpoint) {
-            endpoint->m_link->m_local_is_tie = 0;
-        }
-        else if (endpoint->m_link->m_remote == endpoint) {
-            endpoint->m_link->m_remote_is_tie = 0;
-        }
-        net_link_free(endpoint->m_link);
-        assert(endpoint->m_link == NULL);
     }
     
     if (endpoint->m_driver->m_endpoint_fini) endpoint->m_driver->m_endpoint_fini(endpoint);
@@ -400,17 +387,6 @@ int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) 
     }
 
     if (state == net_endpoint_state_deleting) {
-        if (endpoint->m_link) {
-            if (endpoint->m_link->m_local == endpoint) {
-                endpoint->m_link->m_local_is_tie = 0;
-            }
-            else if (endpoint->m_link->m_remote == endpoint) {
-                endpoint->m_link->m_remote_is_tie = 0;
-            }
-            net_link_free(endpoint->m_link);
-            assert(endpoint->m_link == NULL);
-        }
-        
         TAILQ_REMOVE(&endpoint->m_driver->m_endpoints, endpoint, m_next_for_driver);
         TAILQ_INSERT_TAIL(&endpoint->m_driver->m_deleting_endpoints, endpoint, m_next_for_driver);
         net_schedule_start_delay_process(schedule);
@@ -570,22 +546,6 @@ void net_endpoint_set_is_writing(net_endpoint_t endpoint, uint8_t is_writing) {
     net_endpoint_send_evt(endpoint, &evt);
 }
 
-net_link_t net_endpoint_link(net_endpoint_t endpoint) {
-    return endpoint->m_link;
-}
-
-net_endpoint_t net_endpoint_other(net_endpoint_t endpoint) {
-    net_link_t link = endpoint->m_link;
-    
-    if (link == NULL) return NULL;
-
-    return link->m_local == endpoint
-        ? link->m_remote
-        : link->m_remote == endpoint
-        ? link->m_local
-        : NULL;
-}
-
 int net_endpoint_connect(net_endpoint_t endpoint) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
 
@@ -720,27 +680,6 @@ void * net_endpoint_protocol_data(net_endpoint_t endpoint) {
     return ((char*)(endpoint + 1)) + endpoint->m_driver->m_endpoint_capacity;
 }
 
-int net_endpoint_forward(net_endpoint_t endpoint) {
-    net_endpoint_t other = net_endpoint_other(endpoint);
-    if (other == NULL) {
-        net_schedule_t schedule = endpoint->m_driver->m_schedule;
-        CPE_ERROR(
-            schedule->m_em, "%s: forward: no other endpoint",
-            net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
-        return -1;
-    }
-
-    if (other->m_state == net_endpoint_state_deleting) {
-        net_schedule_t schedule = endpoint->m_driver->m_schedule;
-        CPE_ERROR(
-            schedule->m_em, "%s: forward: other endpoint is deleting",
-            net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
-        return -1;
-    }
-    
-    return other->m_protocol->m_endpoint_forward(other, endpoint);
-}
-
 void net_endpoint_set_data_watcher(
     net_endpoint_t endpoint,
     void * watcher_ctx,
@@ -775,8 +714,6 @@ const char * net_endpoint_buf_type_str(net_endpoint_buf_type_t buf_type) {
     switch(buf_type) {
     case net_ep_buf_read:
         return "read";
-    case net_ep_buf_forward:
-        return "forward";
     case net_ep_buf_write:
         return "write";
     case net_ep_buf_user1:

@@ -59,7 +59,7 @@ void net_ebb_connection_fini(net_endpoint_t base_endpoint) {
     }
 }
 
-int net_ebb_connection_input(net_endpoint_t base_endpoint) {
+int net_ebb_connection_input(net_endpoint_t base_endpoint, net_endpoint_buf_type_t buf_type) {
     net_ebb_service_t service = net_protocol_data(net_endpoint_protocol(base_endpoint));
     net_ebb_connection_t connection = net_endpoint_data(base_endpoint);
 
@@ -67,14 +67,14 @@ int net_ebb_connection_input(net_endpoint_t base_endpoint) {
 
     while(net_endpoint_state(base_endpoint) == net_endpoint_state_established) {
         uint32_t data_size = 0;
-        void* data = net_endpoint_buf_peak(base_endpoint, net_ep_buf_read, &data_size);
+        void* data = net_endpoint_buf_peak(base_endpoint, buf_type, &data_size);
         if (data == NULL || data_size == 0) return 0;
 
         net_ebb_request_parser_execute(&connection->parser, data, data_size);
 
         if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return -1;
         
-        net_endpoint_buf_consume(base_endpoint, net_ep_buf_read, data_size);
+        net_endpoint_buf_consume(base_endpoint, buf_type, data_size);
         
         /* parse error? just drop the client. screw the 400 response */
         if (net_ebb_request_parser_has_error(&connection->parser)) {

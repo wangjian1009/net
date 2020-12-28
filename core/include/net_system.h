@@ -10,7 +10,6 @@ typedef struct net_mem_group * net_mem_group_t;
 typedef struct net_local_ip_stack_monitor * net_local_ip_stack_monitor_t;
 typedef struct net_driver * net_driver_t;
 typedef struct net_protocol * net_protocol_t;
-typedef struct net_link * net_link_t;
 typedef struct net_timer * net_timer_t;
 typedef struct net_watcher * net_watcher_t;
 typedef struct net_watcher_it * net_watcher_it_t;
@@ -45,7 +44,6 @@ typedef enum net_address_type {
 
 typedef enum net_endpoint_buf_type {
     net_ep_buf_read,
-    net_ep_buf_forward,
     net_ep_buf_write,
     net_ep_buf_user1,
     net_ep_buf_user2,

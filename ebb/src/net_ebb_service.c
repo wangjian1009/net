@@ -29,7 +29,6 @@ net_ebb_service_create(net_schedule_t schedule, const char * protocol_name) {
             net_ebb_connection_fini,
             net_ebb_connection_input,
             NULL,
-            NULL,
             NULL);
     if (protocol == NULL) {
         CPE_ERROR(net_schedule_em(schedule), "ebb: %s: create protocol fail!", protocol_name);

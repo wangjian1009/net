@@ -70,11 +70,6 @@ uint32_t net_endpoint_error_no(net_endpoint_t endpoint);
 const char * net_endpoint_error_msg(net_endpoint_t endpoint);
 uint8_t net_endpoint_have_error(net_endpoint_t endpoint);
 
-/*link*/
-int net_endpoint_link_direct(net_endpoint_t endpoint, net_address_t target_addr);
-net_link_t net_endpoint_link(net_endpoint_t endpoint);
-net_endpoint_t net_endpoint_other(net_endpoint_t endpoint);
-
 /*buf*/
 uint32_t net_endpoint_dft_block_size(net_endpoint_t endpoint);
 void net_endpoint_set_dft_block_size(net_endpoint_t endpoint, uint32_t read_block_size);
@@ -114,9 +109,6 @@ int net_endpoint_buf_append_from_other(
 
 int net_endpoint_buf_append_from_self(
     net_endpoint_t endpoint, net_endpoint_buf_type_t to, net_endpoint_buf_type_t from, uint32_t size);
-
-/*forward*/
-int net_endpoint_forward(net_endpoint_t endpoint);
 
 /*dump*/
 void net_endpoint_print(write_stream_t ws, net_endpoint_t endpoint);

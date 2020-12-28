@@ -15,7 +15,6 @@ struct net_endpoint {
     net_mem_group_t m_mem_group;
     net_endpoint_prepare_connect_fun_t m_prepare_connect;
     void * m_prepare_connect_ctx;
-    net_link_t m_link;
     uint32_t m_id;
     uint32_t m_options;
     uint32_t m_dft_block_size;

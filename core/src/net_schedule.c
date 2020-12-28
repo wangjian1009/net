@@ -12,8 +12,6 @@
 #include "net_address_matcher_i.h"
 #include "net_address_rule_i.h"
 #include "net_timer_i.h"
-#include "net_link_i.h"
-#include "net_direct_endpoint_i.h"
 #include "net_dns_query_i.h"
 #include "net_debug_setup_i.h"
 #include "net_debug_condition_i.h"
@@ -53,10 +51,8 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em) {
     TAILQ_INIT(&schedule->m_debug_setups);
     TAILQ_INIT(&schedule->m_drivers);
     TAILQ_INIT(&schedule->m_protocols);
-    TAILQ_INIT(&schedule->m_links);
     TAILQ_INIT(&schedule->m_free_local_ip_stack_monitors);
     TAILQ_INIT(&schedule->m_free_addresses);
-    TAILQ_INIT(&schedule->m_free_links);
     TAILQ_INIT(&schedule->m_free_dns_querys);
     TAILQ_INIT(&schedule->m_free_endpoint_monitors);
     TAILQ_INIT(&schedule->m_free_endpoint_nexts);
@@ -98,12 +94,6 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em) {
 
     mem_buffer_init(&schedule->m_tmp_buffer, alloc);
 
-    schedule->m_direct_protocol = net_direct_protocol_create(schedule);
-    if (schedule->m_direct_protocol == NULL) {
-        net_schedule_free(schedule);
-        return NULL;
-    }
-    
     return schedule;
 }
 
@@ -125,10 +115,6 @@ void net_schedule_free(net_schedule_t schedule) {
         net_local_ip_stack_monitor_free(TAILQ_FIRST(&schedule->m_local_ip_stack_monitors));
     }
     
-    while(!TAILQ_EMPTY(&schedule->m_links)) {
-        net_link_free(TAILQ_FIRST(&schedule->m_links));
-    }
-
     while(!TAILQ_EMPTY(&schedule->m_drivers)) {
         net_driver_free(TAILQ_LAST(&schedule->m_drivers, net_driver_list));
     }
@@ -164,10 +150,6 @@ void net_schedule_free(net_schedule_t schedule) {
         net_address_real_free(TAILQ_FIRST(&schedule->m_free_addresses));
     }
     
-    while(!TAILQ_EMPTY(&schedule->m_free_links)) {
-        net_link_real_free(TAILQ_FIRST(&schedule->m_free_links));
-    }
-
     while(!TAILQ_EMPTY(&schedule->m_free_dns_querys)) {
         net_dns_query_real_free(TAILQ_FIRST(&schedule->m_free_dns_querys));
     }

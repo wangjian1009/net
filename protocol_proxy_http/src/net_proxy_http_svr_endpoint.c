@@ -49,7 +49,7 @@ void * net_proxy_http_svr_endpoint_connect_ctx(net_proxy_http_svr_endpoint_t htt
     return http_ep->m_on_connect_ctx;
 }
 
-int net_proxy_http_svr_endpoint_input(net_endpoint_t endpoint) {
+int net_proxy_http_svr_endpoint_input(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type) {
     net_proxy_http_svr_protocol_t http_protocol = net_protocol_data(net_endpoint_protocol(endpoint));
     net_proxy_http_svr_endpoint_t http_ep = net_endpoint_protocol_data(endpoint);
 
@@ -66,23 +66,6 @@ CHECK_AGAIN:
     }
     
     return 0;
-}
-
-int net_proxy_http_svr_endpoint_forward(net_endpoint_t endpoint, net_endpoint_t from) {
-    net_proxy_http_svr_endpoint_t http_ep = net_endpoint_protocol_data(endpoint);
-    net_proxy_http_svr_protocol_t http_protocol = net_protocol_data(net_endpoint_protocol(endpoint));
-    
-    switch(http_ep->m_way) {
-    case net_proxy_http_way_unknown:
-        CPE_ERROR(
-            http_protocol->m_em, "http-proxy-svr: %s: forward on way unknown",
-            net_endpoint_dump(net_proxy_http_svr_protocol_tmp_buffer(http_protocol), endpoint));
-        return -1;
-    case net_proxy_http_way_tunnel:
-        return net_proxy_http_svr_endpoint_tunnel_backword(http_protocol, http_ep, endpoint, from);
-    case net_proxy_http_way_basic:
-        return net_proxy_http_svr_endpoint_basic_backword(http_protocol, http_ep, endpoint, from);
-    }
 }
 
 net_proxy_http_way_t net_proxy_http_svr_endpoint_way(net_proxy_http_svr_endpoint_t http_ep) {
