@@ -15,7 +15,7 @@ struct net_ebb_connection {
 
 int net_ebb_connection_init(net_endpoint_t endpoint);
 void net_ebb_connection_fini(net_endpoint_t endpoint);
-int net_ebb_connection_input(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type);
+int net_ebb_connection_input(net_endpoint_t endpoint);
 
 void net_ebb_connection_timeout_reset(net_ebb_connection_t connection);
 void net_ebb_connection_schedule_close(net_ebb_connection_t connection);
