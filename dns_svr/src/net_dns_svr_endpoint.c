@@ -103,6 +103,6 @@ static int net_dns_svr_endpoint_process_data(
     return 0;
 }
 
-int net_dns_svr_endpoint_input(net_endpoint_t base_endpoint, net_endpoint_buf_type_t buf_type) {
-    return net_dns_svr_endpoint_process_data(base_endpoint, base_endpoint, buf_type);
+int net_dns_svr_endpoint_input(net_endpoint_t base_endpoint) {
+    return net_dns_svr_endpoint_process_data(base_endpoint, base_endpoint, net_ep_buf_read);
 }
