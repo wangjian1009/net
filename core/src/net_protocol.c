@@ -48,7 +48,7 @@ net_protocol_create(
     protocol->m_endpoint_on_state_chagne = endpoint_on_state_chagne;
     protocol->m_endpoint_dump = endpoint_dump;
 
-    if (protocol->m_protocol_init(protocol) != 0) {
+    if (protocol->m_protocol_init && protocol->m_protocol_init(protocol) != 0) {
         mem_free(schedule->m_alloc, protocol);
         return NULL;
     }
@@ -70,12 +70,10 @@ void net_protocol_free(net_protocol_t protocol) {
     while(!TAILQ_EMPTY(&protocol->m_endpoints)) {
         net_endpoint_free(TAILQ_FIRST(&protocol->m_endpoints));
     }
-    
-    if (schedule->m_direct_protocol == protocol) {
-        schedule->m_direct_protocol = NULL;
+
+    if (protocol->m_protocol_fini) {
+        protocol->m_protocol_fini(protocol);
     }
-    
-    protocol->m_protocol_fini(protocol);
     
     TAILQ_REMOVE(&schedule->m_protocols, protocol, m_next_for_schedule);
 

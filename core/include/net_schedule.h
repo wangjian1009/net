@@ -16,10 +16,7 @@ mem_buffer_t net_schedule_tmp_buffer(net_schedule_t schedule);
 uint8_t net_schedule_debug(net_schedule_t schedule);
 void net_schedule_set_debug(net_schedule_t schedule, uint8_t debug);
 
-net_protocol_t net_schedule_direct_protocol(net_schedule_t schedule);
-
-net_driver_t net_schedule_direct_driver(net_schedule_t schedule);
-void net_schedule_set_direct_driver(net_schedule_t schedule, net_driver_t driver);
+net_protocol_t net_schedule_noop_protocol(net_schedule_t schedule);
 
 uint8_t net_schedule_is_domain_address_valid(net_schedule_t schedule, const char * str_address);
 uint8_t net_schedule_is_domain_address_arpa(net_schedule_t schedule, const char * str_address, net_address_t * address);

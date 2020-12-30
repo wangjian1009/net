@@ -133,10 +133,6 @@ net_driver_create(
 void net_driver_free(net_driver_t driver) {
     net_schedule_t schedule = driver->m_schedule;
 
-    if (schedule->m_direct_driver == driver) {
-        schedule->m_direct_driver = NULL;
-    }
-    
     while(!TAILQ_EMPTY(&driver->m_acceptors)) {
         net_acceptor_free(TAILQ_FIRST(&driver->m_acceptors));
     }
