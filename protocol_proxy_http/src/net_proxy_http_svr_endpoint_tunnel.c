@@ -76,9 +76,9 @@ int net_proxy_http_svr_endpoint_tunnel_on_connect(
 }
 
 
-/* int net_proxy_http_svr_endpoint_tunnel_forward( */
-/*     net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep, net_endpoint_t endpoint) */
-/* { */
+int net_proxy_http_svr_endpoint_tunnel_forward(
+    net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep, net_endpoint_t endpoint)
+{
 /*     if (net_endpoint_link(endpoint) == NULL) { */
 /*         CPE_ERROR( */
 /*             http_protocol->m_em, "proxy-http-svr: %s: no link!", */
@@ -105,8 +105,8 @@ int net_proxy_http_svr_endpoint_tunnel_on_connect(
     
 /*     if (net_endpoint_buf_append_from_self(endpoint, net_ep_buf_forward, net_ep_buf_read, 0) != 0) return -1; */
 /*     if (net_endpoint_forward(endpoint) != 0) return -1; */
-/*     return 0; */
-/* } */
+    return 0;
+}
 
 int net_proxy_http_svr_endpoint_tunnel_backword(
     net_proxy_http_svr_protocol_t http_protocol, net_proxy_http_svr_endpoint_t http_ep, net_endpoint_t endpoint, net_endpoint_t from)
