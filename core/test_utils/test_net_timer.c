@@ -1,0 +1,18 @@
+#include "test_net_timer.h"
+
+int test_net_timer_init(net_timer_t base_timer) {
+    return 0;
+}
+
+void test_net_timer_fini(net_timer_t base_timer) {
+}
+
+void test_net_timer_active(net_timer_t base_timer, uint64_t delay_milliseconds) {
+}
+
+void test_net_timer_cancel(net_timer_t base_timer) {
+}
+
+uint8_t test_net_timer_is_active(net_timer_t base_timer) {
+    return 0;
+}
