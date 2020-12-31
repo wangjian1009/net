@@ -3,7 +3,7 @@
 #include "test_net_driver.h"
 
 struct test_net_acceptor {
-    test_net_driver_t m_driver;
+    TAILQ_ENTRY(test_net_acceptor) m_next;
 };
 
 int test_net_acceptor_init(net_acceptor_t base_acceptor);

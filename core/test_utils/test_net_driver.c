@@ -1,3 +1,6 @@
+#include "cmocka_all.h"
+#include "cpe/utils/time_utils.h"
+#include "test_memory.h"
 #include "test_net_driver.h"
 #include "test_net_timer.h"
 #include "test_net_endpoint.h"
@@ -61,9 +64,30 @@ void test_net_driver_free(test_net_driver_t driver) {
 static int test_net_driver_init(net_driver_t base_driver) {
     test_net_driver_t driver = net_driver_data(base_driver);
     driver->m_em = NULL;
+    TAILQ_INIT(&driver->m_timers);
+    TAILQ_INIT(&driver->m_acceptors);
+    TAILQ_INIT(&driver->m_endpoints);
+    TAILQ_INIT(&driver->m_dgrams);
+    TAILQ_INIT(&driver->m_watchers);
+
+    driver->m_cur_time_ms = cur_time_ms();
+    TAILQ_INIT(&driver->m_tl_ops);
+
+    mem_buffer_init(&driver->m_setup_buffer, test_allocrator());
+
     return 0;
 }
 
 static void test_net_driver_fini(net_driver_t base_driver) {
+    test_net_driver_t driver = net_driver_data(base_driver);
+
+    assert_true(TAILQ_EMPTY(&driver->m_timers));
+    assert_true(TAILQ_EMPTY(&driver->m_acceptors));
+    assert_true(TAILQ_EMPTY(&driver->m_endpoints));
+    assert_true(TAILQ_EMPTY(&driver->m_dgrams));
+    assert_true(TAILQ_EMPTY(&driver->m_watchers));
+    assert_true(TAILQ_EMPTY(&driver->m_tl_ops));
+    
+    mem_buffer_clear(&driver->m_setup_buffer);
 }
 

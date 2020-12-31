@@ -5,6 +5,8 @@
 
 struct test_net_timer {
     test_net_driver_t m_driver;
+    TAILQ_ENTRY(test_net_timer) m_next;
+    test_net_tl_op_t m_tl_op;
 };
 
 int test_net_timer_init(net_timer_t base_timer);

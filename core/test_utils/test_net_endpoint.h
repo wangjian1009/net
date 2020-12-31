@@ -4,7 +4,8 @@
 #include "test_net_driver.h"
 
 struct test_net_endpoint {
-    test_net_driver_t m_driver;
+    TAILQ_ENTRY(test_net_endpoint) m_next;
+    test_net_tl_op_t m_op_connect;
 };
 
 int test_net_endpoint_init(net_endpoint_t base_endpoint);

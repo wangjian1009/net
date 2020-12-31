@@ -74,6 +74,7 @@ void const * net_address_data(net_address_t address);
 
 void net_address_print(write_stream_t ws, net_address_t address);
 const char * net_address_dump(mem_buffer_t buffer, net_address_t address);
+const char * net_address_to_string(void * buf, uint32_t capacity, net_address_t address);
 
 const char * net_address_host(mem_buffer_t buffer, net_address_t address);
 

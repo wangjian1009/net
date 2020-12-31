@@ -4,7 +4,7 @@
 #include "test_net_driver.h"
 
 struct test_net_dgram {
-    test_net_driver_t m_driver;
+    TAILQ_ENTRY(test_net_dgram) m_next;
 };
 
 int test_net_dgram_init(net_dgram_t base_dgram);
