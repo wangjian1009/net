@@ -691,6 +691,36 @@ void net_endpoint_set_data_watcher(
     endpoint->m_data_watcher_fini = watcher_ctx_fini;
 }
 
+const char * net_endpoint_network_errno_str(net_endpoint_network_errno_t error) {
+    switch(error) {
+    case net_endpoint_network_errno_none:
+        return "none";
+    case net_endpoint_network_errno_remote_closed:
+        return "remote-closed";
+    case net_endpoint_network_errno_dns_error:
+        return "dns-error";
+    case net_endpoint_network_errno_connect_error:
+        return "connect-error";
+    case net_endpoint_network_errno_network_error:
+        return "network-error";
+    case net_endpoint_network_errno_user_closed:
+        return "user-closed";
+    case net_endpoint_network_errno_logic:
+        return "logic";
+    }
+}
+
+const char * net_endpoint_error_source_str(net_endpoint_error_source_t source) {
+    switch(source) {
+    case net_endpoint_error_source_network:
+        return "network";
+    case net_endpoint_error_source_protocol:
+        return "protocol";
+    case net_endpoint_error_source_user:
+        return "user";
+    }
+}
+
 const char * net_endpoint_state_str(net_endpoint_state_t state) {
     switch(state) {
     case net_endpoint_state_disable:

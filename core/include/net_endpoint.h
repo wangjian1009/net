@@ -128,6 +128,8 @@ void net_endpoint_clear_monitor_by_ctx(net_endpoint_t endpoint, void * ctx);
 void * net_endpoint_protocol_data(net_endpoint_t endpoint);
 
 /**/
+const char * net_endpoint_network_errno_str(net_endpoint_network_errno_t error);
+const char * net_endpoint_error_source_str(net_endpoint_error_source_t source);
 const char * net_endpoint_state_str(net_endpoint_state_t state);
 const char * net_endpoint_buf_type_str(net_endpoint_buf_type_t buf_type);
 const char * net_endpoint_data_event_str(net_endpoint_data_event_t data_evt);
