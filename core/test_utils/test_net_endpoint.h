@@ -5,7 +5,6 @@
 
 struct test_net_endpoint {
     TAILQ_ENTRY(test_net_endpoint) m_next;
-    test_net_tl_op_t m_op_connect;
 };
 
 int test_net_endpoint_init(net_endpoint_t base_endpoint);

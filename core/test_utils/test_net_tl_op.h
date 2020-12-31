@@ -25,4 +25,6 @@ void test_net_tl_op_free(test_net_tl_op_t op);
 
 void * test_net_tl_op_data(test_net_tl_op_t op);
 
+void test_net_tl_op_cb_free(void * ctx, test_net_tl_op_t op);
+
 #endif

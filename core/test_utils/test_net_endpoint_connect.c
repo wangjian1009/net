@@ -1,4 +1,6 @@
 #include "cmocka_all.h"
+#include "test_memory.h"
+#include "cpe/utils/string_utils.h"
 #include "net_endpoint.h"
 #include "net_address.h"
 #include "test_net_endpoint.h"
@@ -47,7 +49,34 @@ int test_net_endpoint_connect(net_endpoint_t base_endpoint) {
     return test_net_endpoint_connect_apply_setup(base_endpoint, setup);
 }
 
-void test_net_driver_expect_connect_success(test_net_driver_t driver, const char * target, int64_t delay_ms) {
+void test_net_endpoint_connect_cb_by_remote_addr(void * ctx, test_net_tl_op_t op) {
+    struct test_net_endpoint_connect_setup * setup = test_net_tl_op_data(op);
+    const char * str_remote_addr = ctx;
+    
+    /* if (test_net_endpoint_connect_apply_setup(base_endpoint, setup) != 0) { */
+    /*     net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting); */
+    /* } */
+}
+
+void test_net_endpoint_connect_delay_process(
+    test_net_driver_t driver, const char * remote_addr, int64_t delay_ms,
+    net_endpoint_state_t state,
+    net_endpoint_error_source_t error_source, uint32_t error_no, const char * error_msg)
+{
+    test_net_tl_op_t op = test_net_tl_op_create(
+        driver, delay_ms, sizeof(struct test_net_endpoint_connect_setup),
+        test_net_endpoint_connect_cb_by_remote_addr,
+        cpe_str_mem_dup(test_allocrator(), remote_addr),
+        test_net_tl_op_cb_free);
+    
+    struct test_net_endpoint_connect_setup * setup = test_net_tl_op_data(op);
+    setup->m_state = state;
+    setup->m_error_source = error_source;
+    setup->m_error_no = error_no;
+    setup->m_error_msg = error_msg;
+}
+
+void test_net_driver_expect_connect_to_remote_success(test_net_driver_t driver, const char * target, int64_t delay_ms) {
     expect_string(test_net_endpoint_connect, remote_addr, target);
 
     if (delay_ms == 0) {
@@ -58,5 +87,8 @@ void test_net_driver_expect_connect_success(test_net_driver_t driver, const char
         test_net_endpoint_connect_will_return(
             driver, net_endpoint_state_connecting, net_endpoint_error_source_user, 0, NULL);
 
+        test_net_endpoint_connect_delay_process(
+            driver, target, delay_ms,
+            net_endpoint_state_established, net_endpoint_error_source_user, 0, NULL);
     }
 }
