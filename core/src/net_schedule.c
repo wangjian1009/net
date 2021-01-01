@@ -18,6 +18,7 @@
 #include "net_mem_group_i.h"
 #include "net_mem_block_i.h"
 #include "net_protocol_noop.h"
+#include "net_protocol_null.h"
 
 static void net_schedule_do_delay_process(net_timer_t timer, void * input_ctx);
 
@@ -42,6 +43,7 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em) {
     schedule->m_dns_query_fini_fun = NULL;
     schedule->m_dns_max_query_id = 0;
     schedule->m_noop_protocol = NULL;
+    schedule->m_null_protocol = NULL;
     schedule->m_endpoint_max_id = 0;
     schedule->m_endpoint_protocol_capacity = 0;
     schedule->m_local_ip_stack = net_local_ip_stack_ipv4;
@@ -95,6 +97,7 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em) {
     mem_buffer_init(&schedule->m_tmp_buffer, alloc);
 
     schedule->m_noop_protocol = net_protocol_noop_create(schedule);
+    schedule->m_null_protocol = net_protocol_null_create(schedule);
     
     return schedule;
 }
@@ -124,6 +127,11 @@ void net_schedule_free(net_schedule_t schedule) {
     if (schedule->m_noop_protocol) {
         net_protocol_free(schedule->m_noop_protocol);
         schedule->m_noop_protocol = NULL;
+    }
+
+    if (schedule->m_null_protocol) {
+        net_protocol_free(schedule->m_null_protocol);
+        schedule->m_null_protocol = NULL;
     }
 
     if (schedule->m_dft_mem_group) {
@@ -197,6 +205,10 @@ mem_buffer_t net_schedule_tmp_buffer(net_schedule_t schedule) {
 
 net_protocol_t net_schedule_noop_protocol(net_schedule_t schedule) {
     return schedule->m_noop_protocol;
+}
+
+net_protocol_t net_schedule_null_protocol(net_schedule_t schedule) {
+    return schedule->m_null_protocol;
 }
 
 uint8_t net_schedule_debug(net_schedule_t schedule) {

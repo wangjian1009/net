@@ -17,6 +17,7 @@ uint8_t net_schedule_debug(net_schedule_t schedule);
 void net_schedule_set_debug(net_schedule_t schedule, uint8_t debug);
 
 net_protocol_t net_schedule_noop_protocol(net_schedule_t schedule);
+net_protocol_t net_schedule_null_protocol(net_schedule_t schedule);
 
 uint8_t net_schedule_is_domain_address_valid(net_schedule_t schedule, const char * str_address);
 uint8_t net_schedule_is_domain_address_arpa(net_schedule_t schedule, const char * str_address, net_address_t * address);
