@@ -73,7 +73,7 @@ void test_net_driver_expect_set_no_delay(uint8_t is_enable) {
     will_return(test_net_endpoint_set_no_delay, 0);
 }
 
-void test_net_driver_expect_close(uint8_t is_enable) {
+void test_net_driver_expect_close() {
     expect_any(test_net_endpoint_close, id);
     expect_function_call(test_net_endpoint_close);
 }

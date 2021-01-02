@@ -377,8 +377,10 @@ int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) 
             net_dns_query_free(endpoint->m_dns_query);
             endpoint->m_dns_query = NULL;
         }
-        
-        endpoint->m_driver->m_endpoint_close(endpoint);
+
+        if (endpoint->m_state != net_endpoint_state_deleting) {
+            endpoint->m_driver->m_endpoint_close(endpoint);
+        }
 
         if (endpoint->m_address) {
             net_address_free(endpoint->m_address);
