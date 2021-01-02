@@ -7,6 +7,7 @@
 #include "test_net_dgram.h"
 #include "test_net_acceptor.h"
 #include "test_net_watcher.h"
+#include "test_net_tl_op.h"
 
 static int test_net_driver_init(net_driver_t driver);
 static void test_net_driver_fini(net_driver_t driver);
@@ -86,7 +87,10 @@ static void test_net_driver_fini(net_driver_t base_driver) {
     assert_true(TAILQ_EMPTY(&driver->m_endpoints));
     assert_true(TAILQ_EMPTY(&driver->m_dgrams));
     assert_true(TAILQ_EMPTY(&driver->m_watchers));
-    assert_true(TAILQ_EMPTY(&driver->m_tl_ops));
+
+    while(!TAILQ_EMPTY(&driver->m_tl_ops)) {
+        test_net_tl_op_free(TAILQ_FIRST(&driver->m_tl_ops));
+    }
     
     mem_buffer_clear(&driver->m_setup_buffer);
 }
