@@ -55,7 +55,12 @@ net_timer_t net_timer_auto_create(
 
 void net_timer_free(net_timer_t timer) {
     net_driver_t driver = timer->m_driver;
-
+    net_schedule_t schedule = driver->m_schedule;
+    
+    if (schedule->m_delay_processor == timer) {
+        schedule->m_delay_processor = NULL;
+    }
+    
     driver->m_timer_fini(timer);
     timer->m_process_fun = NULL;
     timer->m_process_ctx = NULL;
