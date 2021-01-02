@@ -39,4 +39,7 @@ test_net_driver_t test_net_driver_create(net_schedule_t schedule, error_monitor_
 void test_net_driver_free(test_net_driver_t driver);
 int64_t test_net_driver_run(test_net_driver_t driver, int64_t duration_ms);
 
+net_endpoint_t
+test_net_driver_find_endpoint_by_remote_addr(test_net_driver_t driver, net_address_t address);
+
 #endif

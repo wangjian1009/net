@@ -211,6 +211,10 @@ net_protocol_t net_schedule_null_protocol(net_schedule_t schedule) {
     return schedule->m_null_protocol;
 }
 
+uint32_t net_schedule_next_endpoint_id(net_schedule_t schedule) {
+    return schedule->m_endpoint_max_id + 1;
+}
+
 uint8_t net_schedule_debug(net_schedule_t schedule) {
     return schedule->m_debug;
 }

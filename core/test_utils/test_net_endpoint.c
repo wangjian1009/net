@@ -1,6 +1,7 @@
 #include <assert.h>
 #include "cmocka_all.h"
 #include "net_endpoint.h"
+#include "net_address.h"
 #include "test_net_endpoint.h"
 #include "test_net_tl_op.h"
 
@@ -64,13 +65,19 @@ int test_net_endpoint_get_mss(net_endpoint_t base_endpoint, uint32_t *mss) {
     uint32_t id = net_endpoint_id(base_endpoint);
     check_expected(id);
     *mss = mock_type(uint32_t);
-    return mock_type(int);
+    //return mock_type(int);
+    return 0;
 }
 
 void test_net_driver_expect_set_no_delay(uint8_t is_enable) {
     expect_any(test_net_endpoint_set_no_delay, id);
     expect_value(test_net_endpoint_set_no_delay, is_enable, is_enable);
     will_return(test_net_endpoint_set_no_delay, 0);
+}
+
+void test_net_driver_expect_get_mss(uint32_t mss) {
+    expect_any(test_net_endpoint_get_mss, id);
+    will_return(test_net_endpoint_get_mss, mss);
 }
 
 void test_net_driver_expect_close() {
@@ -83,3 +90,16 @@ void test_net_endpoint_expect_close(net_endpoint_t base_endpoint) {
     expect_value(test_net_endpoint_close, id, id);
     expect_function_call(test_net_endpoint_close);
 }
+
+net_endpoint_t
+test_net_driver_find_endpoint_by_remote_addr(test_net_driver_t driver, net_address_t address) {
+    test_net_endpoint_t endpoint;
+
+    TAILQ_FOREACH(endpoint, &driver->m_endpoints, m_next) {
+        net_endpoint_t base_endpoint = net_endpoint_from_data(endpoint);
+        if (net_address_cmp_opt(net_endpoint_remote_address(base_endpoint), address) == 0) return base_endpoint;
+    }
+    
+    return NULL;
+}
+

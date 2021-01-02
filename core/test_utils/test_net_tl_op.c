@@ -62,13 +62,13 @@ int64_t test_net_driver_run(test_net_driver_t driver, int64_t duration_ms) {
     test_net_tl_op_t op;
     
     while((op = TAILQ_FIRST(&driver->m_tl_ops)) != NULL) {
-        if (op->m_execute_at_ms >= end_time_ms) break;
+        if (op->m_execute_at_ms > end_time_ms) break;
 
         assert_true(!op->m_is_processing);
         assert_true(!op->m_is_free);
-        assert_true(driver->m_cur_time_ms >= op->m_execute_at_ms);
         
         driver->m_cur_time_ms = op->m_execute_at_ms;
+
         op->m_is_processing = 1;
         op->m_cb_fun(op->m_cb_ctx, op);
         op->m_is_processing = 0;
