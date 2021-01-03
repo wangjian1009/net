@@ -9,6 +9,7 @@ typedef struct test_net_driver * test_net_driver_t;
 typedef struct test_net_timer * test_net_timer_t;
 typedef struct test_net_acceptor * test_net_acceptor_t;
 typedef struct test_net_endpoint * test_net_endpoint_t;
+typedef struct test_net_endpoint_link * test_net_endpoint_link_t;
 typedef struct test_net_dgram * test_net_dgram_t;
 typedef struct test_net_watcher * test_net_watcher_t;
 typedef struct test_net_tl_op * test_net_tl_op_t;

@@ -20,6 +20,7 @@ struct test_net_endpoint_write_policy {
 
 struct test_net_endpoint {
     TAILQ_ENTRY(test_net_endpoint) m_next;
+    test_net_endpoint_link_t m_link;
     struct test_net_endpoint_write_policy m_write_policy;
     int64_t m_write_duration_ms;
     test_net_tl_op_t m_writing_op;

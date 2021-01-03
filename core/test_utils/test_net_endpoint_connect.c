@@ -15,11 +15,13 @@ enum test_net_endpoint_connect_setup_type {
 struct test_net_endpoint_connect_setup {
     enum test_net_endpoint_connect_setup_type m_type;
     union {
-        net_endpoint_state_t m_state;
-        net_endpoint_error_source_t m_error_source;
-        uint32_t m_error_no;
-        char * m_error_msg;
-    } m_local;
+        struct {
+            net_endpoint_state_t m_state;
+            net_endpoint_error_source_t m_error_source;
+            uint32_t m_error_no;
+            char * m_error_msg;
+        } m_local;
+    };
     char * m_address;
 };
 
@@ -71,7 +73,7 @@ int test_net_endpoint_connect_apply_setup(
         net_acceptor_t base_acceptor = test_net_driver_find_acceptor_by_addr(driver, address);
         assert_true(base_acceptor != NULL);
 
-        return 0;
+        return net_sock_acceptor_accept(base_acceptor, base_endpoint);
     }
 }
 

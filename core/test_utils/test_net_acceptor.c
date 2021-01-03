@@ -3,6 +3,8 @@
 #include "net_address.h"
 #include "net_endpoint.h"
 #include "test_net_acceptor.h"
+#include "test_net_endpoint.h"
+#include "test_net_endpoint_link.h"
 
 int test_net_acceptor_init(net_acceptor_t base_acceptor) {
     test_net_driver_t driver = net_driver_data(net_acceptor_driver(base_acceptor));
@@ -29,11 +31,13 @@ int net_sock_acceptor_accept(net_acceptor_t base_acceptor, net_endpoint_t remote
 
     net_endpoint_set_remote_address(base_endpoint, net_endpoint_address(remote_ep));
 
+    test_net_endpoint_link_create(net_endpoint_data(remote_ep), endpoint);
+    
     if (net_endpoint_set_state(base_endpoint, net_endpoint_state_established) != 0) {
         net_endpoint_free(base_endpoint);
         return -1;
     }
-    
+
     if (net_acceptor_on_new_endpoint(base_acceptor, base_endpoint) != 0) {
         net_endpoint_free(base_endpoint);
         return -1;
