@@ -3,8 +3,25 @@
 #include "net_endpoint.h"
 #include "test_net_driver.h"
 
+typedef enum test_net_endpoint_write_policy_type {
+    test_net_endpoint_write_mock,
+    test_net_endpoint_write_keep,
+    test_net_endpoint_write_remove,
+} test_net_endpoint_write_policy_type_t;
+
+struct test_net_endpoint_write_policy {
+    test_net_endpoint_write_policy_type_t m_type;
+    union {
+        struct {
+            net_endpoint_buf_type_t m_buf_type;
+        } m_keep;
+    };
+};
+
 struct test_net_endpoint {
     TAILQ_ENTRY(test_net_endpoint) m_next;
+    struct test_net_endpoint_write_policy m_write_policy;
+    int64_t m_write_duration_ms;
     test_net_tl_op_t m_writing_op;
 };
 
@@ -25,8 +42,11 @@ void test_net_driver_expect_get_mss(uint32_t mss);
 void test_net_driver_expect_close();
 
 /*utils.write*/
-void test_net_driver_expect_next_endpoint_write_noop(test_net_driver_t driver, int64_t duration_ms);
-void test_net_endpoint_expect_write_noop(net_endpoint_t base_endpoint, int64_t duration_ms);
+void test_net_driver_expect_next_endpoint_write_keep(
+    test_net_driver_t driver, net_endpoint_buf_type_t keep_buf, int64_t duration_ms);
+
+void test_net_endpoint_expect_write_keep(
+    net_endpoint_t base_endpoint, net_endpoint_buf_type_t keep_buf, int64_t duration_ms);
 
 /*utils.buf*/
 void test_net_driver_expect_write_memory(

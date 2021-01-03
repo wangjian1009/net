@@ -10,6 +10,8 @@ int test_net_endpoint_init(net_endpoint_t base_endpoint) {
     test_net_endpoint_t endpoint = net_endpoint_data(base_endpoint);
 
     TAILQ_INSERT_TAIL(&driver->m_endpoints, endpoint, m_next);
+    endpoint->m_write_policy.m_type = test_net_endpoint_write_mock;
+    endpoint->m_write_duration_ms = 0;
     endpoint->m_writing_op = NULL;
     
     return 0;
