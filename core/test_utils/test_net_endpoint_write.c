@@ -1,3 +1,4 @@
+#include <assert.h>
 #include "cmocka_all.h"
 #include "net_schedule.h"
 #include "net_endpoint.h"
@@ -35,7 +36,6 @@ void test_net_endpoint_write(net_endpoint_t base_endpoint) {
 PROCESS_AGAIN:    
     if (endpoint->m_write_policy.m_type == test_net_endpoint_write_mock) {
         uint32_t id = net_endpoint_id(base_endpoint);
-        printf("xxxx write 111: %d\n", id);
         check_expected(id);
 
         struct test_net_endpoint_write_setup * setup = mock_type(struct test_net_endpoint_write_setup *);
@@ -54,24 +54,42 @@ PROCESS_AGAIN:
             assert_memory_equal(buf_data, setup->m_expect_buf, setup->m_expect_size);
 
             net_endpoint_buf_consume(base_endpoint, net_ep_buf_write, setup->m_expect_size);
-            
-            if (endpoint->m_write_duration_ms == 0) {
-                if (net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write)) {
-                    net_endpoint_set_is_writing(base_endpoint, 0);
-                    return;
-                }
-                else {
-                    goto PROCESS_AGAIN;
-                }
-            }
-            else {
-                
-            }
-
-            return;
+            goto PROCESSED;
         }
     }
 
+    switch(endpoint->m_write_policy.m_type) {
+    case test_net_endpoint_write_mock:
+        assert(0);
+        break;
+    case test_net_endpoint_write_keep:
+        assert_return_code(
+            net_endpoint_buf_append_from_self(
+                base_endpoint, endpoint->m_write_policy.m_keep.m_buf_type,
+                net_ep_buf_write, 0),
+            0);
+        break;
+    case test_net_endpoint_write_remove:
+        net_endpoint_buf_consume(
+            base_endpoint, net_ep_buf_write,
+            net_endpoint_buf_size(base_endpoint, net_ep_buf_write));
+        break;
+    }
+
+PROCESSED:
+    if (endpoint->m_write_duration_ms == 0) {
+        if (net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write)) {
+            net_endpoint_set_is_writing(base_endpoint, 0);
+            return;
+        } else {
+            goto PROCESS_AGAIN;
+        }
+    } else {
+        endpoint->m_writing_op =
+            test_net_tl_op_create(
+                driver, endpoint->m_write_duration_ms, 0,
+                test_net_endpoint_write_op_cb, endpoint, NULL);
+    }
 }
 
 static void test_net_driver_do_expect_write_keep(
