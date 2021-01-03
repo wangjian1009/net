@@ -37,6 +37,7 @@ void test_net_endpoint_write(net_endpoint_t base_endpoint);
 /*utils.connect*/
 void test_net_driver_expect_connect_to_remote_success(test_net_driver_t driver, const char * target, int64_t delay_ms);
 void test_net_driver_expect_connect_to_remote_error(test_net_driver_t driver, const char * target, int64_t delay_ms);
+void test_net_driver_expect_connect_to_acceptor(test_net_driver_t driver, const char * target, int64_t delay_ms);
 void test_net_driver_expect_set_no_delay(uint8_t is_enable);
 void test_net_driver_expect_get_mss(uint32_t mss);
 void test_net_driver_expect_close();

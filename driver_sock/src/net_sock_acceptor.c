@@ -172,13 +172,13 @@ static void net_sock_acceptor_cb(void * ctx, int fd, uint8_t do_read, uint8_t do
         return;
     }
 
-    if (net_acceptor_on_new_endpoint(base_acceptor, base_endpoint) != 0) {
-        CPE_ERROR(em, "sock: accept: on new endpoint fail");
+    if (net_sock_endpoint_set_established(driver, endpoint, base_endpoint) != 0) {
         net_endpoint_free(base_endpoint);
         return;
     }
-
-    if (net_sock_endpoint_set_established(driver, endpoint, base_endpoint) != 0) {
+    
+    if (net_acceptor_on_new_endpoint(base_acceptor, base_endpoint) != 0) {
+        CPE_ERROR(em, "sock: accept: on new endpoint fail");
         net_endpoint_free(base_endpoint);
         return;
     }

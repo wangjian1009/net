@@ -9,4 +9,5 @@ struct test_net_acceptor {
 int test_net_acceptor_init(net_acceptor_t base_acceptor);
 void test_net_acceptor_fini(net_acceptor_t base_acceptor);
 
+
 #endif
