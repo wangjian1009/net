@@ -295,10 +295,15 @@ int net_sock_endpoint_set_established(net_sock_driver_t driver, net_sock_endpoin
             net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
         return -1;
     }
-        
+
     if (net_endpoint_set_state(base_endpoint, net_endpoint_state_established) != 0) return -1;
 
-    return net_sock_endpoint_update(base_endpoint);
+    if (net_endpoint_state(base_endpoint) == net_endpoint_state_established) {
+        return net_sock_endpoint_update(base_endpoint);
+    }
+    else {
+        return 0;
+    }
 }
 
 int net_sock_endpoint_update_local_address(net_sock_endpoint_t endpoint) {
