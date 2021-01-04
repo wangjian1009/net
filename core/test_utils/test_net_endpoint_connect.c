@@ -66,9 +66,12 @@ int test_net_endpoint_connect_apply_setup(
 
         return net_sock_acceptor_accept(base_acceptor, base_endpoint);
     }
-    case test_net_endpoint_connect_setup_endpoint:
-        test_net_endpoint_link_create(net_endpoint_data(base_endpoint), net_endpoint_data(setup->m_endpoint.m_endpoint));
-        return 0;
+    case test_net_endpoint_connect_setup_endpoint: {
+        test_net_endpoint_link_t link =
+            test_net_endpoint_link_create(net_endpoint_data(base_endpoint), net_endpoint_data(setup->m_endpoint.m_endpoint));
+        if (link == NULL) return -1;
+        return net_endpoint_set_state(base_endpoint, net_endpoint_state_established);
+    }
     }
 }
 
