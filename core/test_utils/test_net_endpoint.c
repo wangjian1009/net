@@ -11,7 +11,6 @@ int test_net_endpoint_init(net_endpoint_t base_endpoint) {
     test_net_endpoint_t endpoint = net_endpoint_data(base_endpoint);
 
     TAILQ_INSERT_TAIL(&driver->m_endpoints, endpoint, m_next);
-    endpoint->m_link = NULL;
     endpoint->m_write_policy.m_type = test_net_endpoint_write_mock;
     endpoint->m_write_duration_ms = 0;
     endpoint->m_writing_op = NULL;
@@ -22,12 +21,7 @@ int test_net_endpoint_init(net_endpoint_t base_endpoint) {
 void test_net_endpoint_fini(net_endpoint_t base_endpoint) {
     test_net_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
     test_net_endpoint_t endpoint = net_endpoint_data(base_endpoint);
-
-    if (endpoint->m_link) {
-        test_net_endpoint_link_free(endpoint->m_link);
-        assert(endpoint->m_link == NULL);
-    }
-    
+    test_net_endpoint_write_policy_clear(endpoint);
     TAILQ_REMOVE(&driver->m_endpoints, endpoint, m_next);
 }
 

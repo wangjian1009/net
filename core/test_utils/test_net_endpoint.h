@@ -7,6 +7,7 @@ typedef enum test_net_endpoint_write_policy_type {
     test_net_endpoint_write_mock,
     test_net_endpoint_write_keep,
     test_net_endpoint_write_remove,
+    test_net_endpoint_write_link,
 } test_net_endpoint_write_policy_type_t;
 
 struct test_net_endpoint_write_policy {
@@ -15,12 +16,14 @@ struct test_net_endpoint_write_policy {
         struct {
             net_endpoint_buf_type_t m_buf_type;
         } m_keep;
+        struct {
+            test_net_endpoint_link_t m_link;
+        } m_link;
     };
 };
 
 struct test_net_endpoint {
     TAILQ_ENTRY(test_net_endpoint) m_next;
-    test_net_endpoint_link_t m_link;
     struct test_net_endpoint_write_policy m_write_policy;
     int64_t m_write_duration_ms;
     test_net_tl_op_t m_writing_op;
@@ -35,10 +38,14 @@ int test_net_endpoint_set_no_delay(net_endpoint_t endpoint, uint8_t is_enable);
 int test_net_endpoint_get_mss(net_endpoint_t endpoint, uint32_t *mss);
 void test_net_endpoint_write(net_endpoint_t base_endpoint);
 
+void test_net_endpoint_write_policy_clear(test_net_endpoint_t base_endpoint);
+
 /*utils.connect*/
 void test_net_driver_expect_connect_to_remote_success(test_net_driver_t driver, const char * target, int64_t delay_ms);
 void test_net_driver_expect_connect_to_remote_error(test_net_driver_t driver, const char * target, int64_t delay_ms);
 void test_net_driver_expect_connect_to_acceptor(test_net_driver_t driver, const char * target, int64_t delay_ms);
+void test_net_driver_expect_connect_to_endpoint(
+    test_net_driver_t driver, const char * target, net_endpoint_t other, int64_t delay_ms);
 void test_net_driver_expect_set_no_delay(uint8_t is_enable);
 void test_net_driver_expect_get_mss(uint32_t mss);
 void test_net_driver_expect_close();
