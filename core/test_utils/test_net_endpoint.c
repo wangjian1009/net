@@ -67,9 +67,14 @@ int test_net_endpoint_set_no_delay(net_endpoint_t base_endpoint, uint8_t is_enab
 int test_net_endpoint_get_mss(net_endpoint_t base_endpoint, uint32_t *mss) {
     uint32_t id = net_endpoint_id(base_endpoint);
     check_expected(id);
-    *mss = mock_type(uint32_t);
-    //return mock_type(int);
-    return 0;
+    int rv = mock_type(int);
+    if (rv >= 0) {
+        *mss = (uint32_t)rv;
+        return 0;
+    }
+    else {
+        return -1;
+    }
 }
 
 int test_net_driver_read_from_other(net_endpoint_t base_endpoint, net_endpoint_t from, net_endpoint_buf_type_t buf_type) {
