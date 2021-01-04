@@ -50,6 +50,10 @@ void test_net_driver_expect_next_endpoint_write_keep(
 void test_net_endpoint_expect_write_keep(
     net_endpoint_t base_endpoint, net_endpoint_buf_type_t keep_buf, int64_t duration_ms);
 
+/*utils.read*/
+int test_net_driver_read_from_other(
+    net_endpoint_t base_endpoint, net_endpoint_t from, net_endpoint_buf_type_t buf_type);
+
 /*utils.buf*/
 void test_net_driver_expect_write_memory(
     net_endpoint_t base_endpoint,

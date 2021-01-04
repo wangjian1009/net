@@ -3,6 +3,7 @@
 #include "net_schedule.h"
 #include "net_endpoint.h"
 #include "test_net_endpoint.h"
+#include "test_net_endpoint_link.h"
 #include "test_net_tl_op.h"
 
 struct test_net_endpoint_write_setup {
@@ -33,47 +34,54 @@ void test_net_endpoint_write(net_endpoint_t base_endpoint) {
 
     assert_true(endpoint->m_writing_op == NULL);
 
-PROCESS_AGAIN:    
-    if (endpoint->m_write_policy.m_type == test_net_endpoint_write_mock) {
-        uint32_t id = net_endpoint_id(base_endpoint);
-        check_expected(id);
-
-        struct test_net_endpoint_write_setup * setup = mock_type(struct test_net_endpoint_write_setup *);
-        assert_ptr_not_equal(setup, NULL);
-
-        endpoint->m_write_policy = setup->m_write_policy;
-        endpoint->m_write_duration_ms = setup->m_duration_ms;
-
-        if (endpoint->m_write_policy.m_type == test_net_endpoint_write_mock) {
-            uint32_t buf_size = net_endpoint_buf_size(base_endpoint, net_ep_buf_write);
-            assert_true(buf_size <= setup->m_expect_size);
-            void * buf_data = NULL;
-            assert_return_code(
-                net_endpoint_buf_peak_with_size(base_endpoint, net_ep_buf_write, setup->m_expect_size, &buf_data),
-                0);
-            assert_memory_equal(buf_data, setup->m_expect_buf, setup->m_expect_size);
-
-            net_endpoint_buf_consume(base_endpoint, net_ep_buf_write, setup->m_expect_size);
-            goto PROCESSED;
-        }
+PROCESS_AGAIN:
+    if (endpoint->m_link) {
+        test_net_endpoint_t other = test_net_endpoint_link_other(endpoint->m_link, endpoint);
+        net_endpoint_t base_other_endpoint = net_endpoint_from_data(other);
+        test_net_driver_read_from_other(net_endpoint_from_data(other), base_endpoint, net_ep_buf_write);
     }
+    else {
+        if (endpoint->m_write_policy.m_type == test_net_endpoint_write_mock) {
+            uint32_t id = net_endpoint_id(base_endpoint);
+            check_expected(id);
 
-    switch(endpoint->m_write_policy.m_type) {
-    case test_net_endpoint_write_mock:
-        assert(0);
-        break;
-    case test_net_endpoint_write_keep:
-        assert_return_code(
-            net_endpoint_buf_append_from_self(
-                base_endpoint, endpoint->m_write_policy.m_keep.m_buf_type,
-                net_ep_buf_write, 0),
-            0);
-        break;
-    case test_net_endpoint_write_remove:
-        net_endpoint_buf_consume(
-            base_endpoint, net_ep_buf_write,
-            net_endpoint_buf_size(base_endpoint, net_ep_buf_write));
-        break;
+            struct test_net_endpoint_write_setup * setup = mock_type(struct test_net_endpoint_write_setup *);
+            assert_ptr_not_equal(setup, NULL);
+
+            endpoint->m_write_policy = setup->m_write_policy;
+            endpoint->m_write_duration_ms = setup->m_duration_ms;
+
+            if (endpoint->m_write_policy.m_type == test_net_endpoint_write_mock) {
+                uint32_t buf_size = net_endpoint_buf_size(base_endpoint, net_ep_buf_write);
+                assert_true(buf_size <= setup->m_expect_size);
+                void * buf_data = NULL;
+                assert_return_code(
+                    net_endpoint_buf_peak_with_size(base_endpoint, net_ep_buf_write, setup->m_expect_size, &buf_data),
+                    0);
+                assert_memory_equal(buf_data, setup->m_expect_buf, setup->m_expect_size);
+
+                net_endpoint_buf_consume(base_endpoint, net_ep_buf_write, setup->m_expect_size);
+                goto PROCESSED;
+            }
+        }
+
+        switch (endpoint->m_write_policy.m_type) {
+        case test_net_endpoint_write_mock:
+            assert(0);
+            break;
+        case test_net_endpoint_write_keep:
+            assert_return_code(
+                net_endpoint_buf_append_from_self(
+                    base_endpoint, endpoint->m_write_policy.m_keep.m_buf_type,
+                    net_ep_buf_write, 0),
+                0);
+            break;
+        case test_net_endpoint_write_remove:
+            net_endpoint_buf_consume(
+                base_endpoint, net_ep_buf_write,
+                net_endpoint_buf_size(base_endpoint, net_ep_buf_write));
+            break;
+        }
     }
 
 PROCESSED:

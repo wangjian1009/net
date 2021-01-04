@@ -78,6 +78,27 @@ int test_net_endpoint_get_mss(net_endpoint_t base_endpoint, uint32_t *mss) {
     return 0;
 }
 
+int test_net_driver_read_from_other(net_endpoint_t base_endpoint, net_endpoint_t from, net_endpoint_buf_type_t buf_type) {
+    if (net_endpoint_buf_append_from_other(base_endpoint, net_ep_buf_read, from, buf_type, 0) != 0) {
+        if (net_endpoint_is_active(base_endpoint)) {
+            if (!net_endpoint_have_error(base_endpoint)) {
+                net_endpoint_set_error(
+                    base_endpoint,
+                    net_endpoint_error_source_network,
+                    net_endpoint_network_errno_logic, NULL);
+            }
+
+            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_logic_error) != 0) {
+                net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+            }
+        }
+
+        return -1;
+    }
+
+    return 0;
+}
+
 void test_net_driver_expect_set_no_delay(uint8_t is_enable) {
     expect_any(test_net_endpoint_set_no_delay, id);
     expect_value(test_net_endpoint_set_no_delay, is_enable, is_enable);
