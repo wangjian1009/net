@@ -106,6 +106,7 @@ net_endpoint_create(net_driver_t driver, net_protocol_t protocol, net_mem_group_
 void net_endpoint_free(net_endpoint_t endpoint) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
 
+    uint8_t need_fini = endpoint->m_state == net_endpoint_state_deleting ? 0 : 1;
     if (endpoint->m_state == net_endpoint_state_deleting) {
         TAILQ_REMOVE(&endpoint->m_driver->m_deleting_endpoints, endpoint, m_next_for_driver);
     }
@@ -114,7 +115,7 @@ void net_endpoint_free(net_endpoint_t endpoint) {
     }
 
     TAILQ_REMOVE(&endpoint->m_protocol->m_endpoints, endpoint, m_next_for_protocol);
-    
+
     if (endpoint->m_state == net_endpoint_state_established) {
         endpoint->m_state = net_endpoint_state_deleting;
     }
@@ -130,15 +131,11 @@ void net_endpoint_free(net_endpoint_t endpoint) {
         net_dns_query_free(endpoint->m_dns_query);
         endpoint->m_dns_query = NULL;
     }
-    
-    if (endpoint->m_driver->m_endpoint_fini) endpoint->m_driver->m_endpoint_fini(endpoint);
-	if (strlen(endpoint->m_protocol->m_name) >= 32) {
-		// TODO:
-		assert(0);
-	}
-	else {
-		if (endpoint->m_protocol->m_endpoint_fini) endpoint->m_protocol->m_endpoint_fini(endpoint);
-	}
+
+    if (need_fini) {
+        if (endpoint->m_driver->m_endpoint_fini) endpoint->m_driver->m_endpoint_fini(endpoint);
+        if (endpoint->m_protocol->m_endpoint_fini) endpoint->m_protocol->m_endpoint_fini(endpoint);
+    }
 
     if (endpoint->m_tb) {
         net_mem_block_free(endpoint->m_tb);
@@ -391,6 +388,8 @@ int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) 
     if (state == net_endpoint_state_deleting) {
         TAILQ_REMOVE(&endpoint->m_driver->m_endpoints, endpoint, m_next_for_driver);
         TAILQ_INSERT_TAIL(&endpoint->m_driver->m_deleting_endpoints, endpoint, m_next_for_driver);
+        if (endpoint->m_driver->m_endpoint_fini) endpoint->m_driver->m_endpoint_fini(endpoint);
+        if (endpoint->m_protocol->m_endpoint_fini) endpoint->m_protocol->m_endpoint_fini(endpoint);
         net_schedule_start_delay_process(schedule);
         return 0;
     }
