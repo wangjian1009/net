@@ -147,7 +147,7 @@ void test_net_endpoint_connect_delay_process_local(
         test_net_endpoint_connect_setup_op_ctx_free);
 }
 
-void test_net_driver_expect_connect_to_remote_success(test_net_driver_t driver, const char * target, int64_t delay_ms) {
+void test_net_driver_expect_connect_success(test_net_driver_t driver, const char * target, int64_t delay_ms) {
     expect_string(test_net_endpoint_connect, remote_addr, target);
 
     if (delay_ms == 0) {
