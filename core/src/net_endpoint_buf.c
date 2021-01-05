@@ -502,7 +502,9 @@ int net_endpoint_buf_append_from_other(
     return net_endpoint_buf_on_supply(schedule, endpoint, buf_type, moved_size);
 }
 
-int net_endpoint_buf_append_from_self(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, net_endpoint_buf_type_t from, uint32_t size) {
+int net_endpoint_buf_append_from_self(
+    net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, net_endpoint_buf_type_t from, uint32_t size)
+{
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
 
     assert(buf_type < net_ep_buf_count);
