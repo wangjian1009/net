@@ -660,6 +660,28 @@ uint8_t net_address_domain_is_valid(net_address_t address) {
     }
 }
 
+const char * net_address_domain_url(net_address_t address) {
+    switch(address->m_type) {
+    case net_address_ipv4:
+    case net_address_ipv6:
+    case net_address_local:
+        return NULL;
+    case net_address_domain:
+        return ((struct net_address_domain *)address)->m_url;
+    }
+}
+
+const char * net_address_local_path(net_address_t address) {
+    switch(address->m_type) {
+    case net_address_ipv4:
+    case net_address_ipv6:
+    case net_address_domain:
+        return NULL;
+    case net_address_local:
+        return ((struct net_address_local *)address)->m_path;
+    }
+}
+
 void net_address_print(write_stream_t ws, net_address_t address) {
     switch(address->m_type) {
     case net_address_ipv4: {
@@ -749,6 +771,23 @@ const char * net_address_host(mem_buffer_t buffer, net_address_t address) {
     case net_address_ipv6:
         mem_buffer_clear_data(buffer);
         buf = mem_buffer_alloc(buffer, INET6_ADDRSTRLEN);
+        inet_ntop(AF_INET6, &((struct net_address_ipv4v6 *)address)->m_ipv6, buf, INET6_ADDRSTRLEN);
+        return buf;
+    case net_address_domain:
+        return ((struct net_address_domain *)address)->m_url;
+    case net_address_local:
+        return ((struct net_address_local *)address)->m_path;
+    }
+}
+
+const char * net_address_host_inline(void * buf, uint32_t capacity, net_address_t address) {
+    switch(address->m_type) {
+    case net_address_ipv4:
+        assert(capacity >= INET_ADDRSTRLEN);
+        inet_ntop(AF_INET, &((struct net_address_ipv4v6 *)address)->m_ipv4, buf, capacity);
+        return buf;
+    case net_address_ipv6:
+        assert(capacity >= INET6_ADDRSTRLEN);
         inet_ntop(AF_INET6, &((struct net_address_ipv4v6 *)address)->m_ipv6, buf, INET6_ADDRSTRLEN);
         return buf;
     case net_address_domain:
