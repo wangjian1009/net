@@ -104,8 +104,19 @@ void test_net_driver_expect_set_no_delay(uint8_t is_enable) {
     will_return(test_net_endpoint_set_no_delay, 0);
 }
 
+void test_net_endpoint_expect_set_no_delay(net_endpoint_t base_endpoint, uint8_t is_enable) {
+    expect_value(test_net_endpoint_set_no_delay, id, net_endpoint_id(base_endpoint));
+    expect_value(test_net_endpoint_set_no_delay, is_enable, is_enable);
+    will_return(test_net_endpoint_set_no_delay, 0);
+}
+
 void test_net_driver_expect_get_mss(uint32_t mss) {
     expect_any(test_net_endpoint_get_mss, id);
+    will_return(test_net_endpoint_get_mss, mss);
+}
+
+void test_net_endpoint_expect_get_mss(net_endpoint_t base_endpoint, uint32_t mss) {
+    expect_value(test_net_endpoint_get_mss, id, net_endpoint_id(base_endpoint));
     will_return(test_net_endpoint_get_mss, mss);
 }
 

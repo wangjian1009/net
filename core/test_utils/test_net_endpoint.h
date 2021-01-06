@@ -50,6 +50,9 @@ void test_net_driver_expect_set_no_delay(uint8_t is_enable);
 void test_net_driver_expect_get_mss(uint32_t mss);
 void test_net_driver_expect_close();
 
+void test_net_endpoint_expect_set_no_delay(net_endpoint_t base_endpoint, uint8_t is_enable);
+void test_net_endpoint_expect_get_mss(net_endpoint_t base_endpoint, uint32_t mss);
+
 /*utils.write*/
 void test_net_driver_expect_next_endpoint_write_keep(
     test_net_driver_t driver, net_endpoint_buf_type_t keep_buf, int64_t duration_ms);
