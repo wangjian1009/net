@@ -55,9 +55,9 @@ uint8_t net_address_matcher_match(net_address_matcher_t matcher, net_address_t a
     case net_address_ipv6:
         return net_ipset_contains_ipv6(matcher->m_ipset_ipv6, (net_address_data_ipv6_t)net_address_data(address));
     case net_address_domain:
-        return net_address_rule_lookup(matcher, net_address_data(address)) ? 1 : 0;
+        return net_address_rule_lookup(matcher, net_address_domain_url(address)) ? 1 : 0;
     case net_address_local:
-        return 0;
+        return net_address_rule_lookup(matcher, net_address_local_path(address)) ? 1 : 0;
     }
 }
 

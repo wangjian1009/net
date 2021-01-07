@@ -13,7 +13,7 @@ set_property(TARGET tests_net_core PROPERTY INCLUDE_DIRECTORIES
 
 set(tests_net_core_libraries
   test_utils_cpe_utils
-  net_core cpe_utils_yaml cpe_utils cpe_pal yaml pcre2 check cmocka)
+  net_core cpe_utils_yaml cpe_utils_sock cpe_utils cpe_pal yaml pcre2 check cmocka)
 
 if (OS_NAME STREQUAL linux32 OR OS_NAME STREQUAL linux64)
   set(tests_net_core_libraries ${tests_net_core_libraries} m)
