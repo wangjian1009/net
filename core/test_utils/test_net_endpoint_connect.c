@@ -164,6 +164,27 @@ void test_net_driver_expect_connect_success(test_net_driver_t driver, const char
     }
 }
 
+void test_net_driver_expect_connect_error(
+    test_net_driver_t driver, const char * target,
+    net_endpoint_error_source_t error_source, uint32_t error_no, const char * msg,
+    int64_t delay_ms)
+{
+    expect_string(test_net_endpoint_connect, remote_addr, target);
+
+    if (delay_ms == 0) {
+        test_net_endpoint_connect_will_return(
+            driver, net_endpoint_state_network_error, error_source, error_no, msg);
+    }
+    else {
+        test_net_endpoint_connect_will_return(
+            driver, net_endpoint_state_connecting, net_endpoint_error_source_user, 0, NULL);
+
+        test_net_endpoint_connect_delay_process_local(
+            driver, target, delay_ms,
+            net_endpoint_state_network_error, error_source, error_no, msg);
+    }
+}
+
 void test_net_driver_expect_connect_to_acceptor(test_net_driver_t driver, const char * target, int64_t delay_ms) {
     expect_string(test_net_endpoint_connect, remote_addr, target);
 

@@ -42,7 +42,10 @@ void test_net_endpoint_write_policy_clear(test_net_endpoint_t base_endpoint);
 
 /*utils.connect*/
 void test_net_driver_expect_connect_success(test_net_driver_t driver, const char * target, int64_t delay_ms);
-void test_net_driver_expect_connect_error(test_net_driver_t driver, const char * target, int64_t delay_ms);
+void test_net_driver_expect_connect_error(
+    test_net_driver_t driver, const char * target,
+    net_endpoint_error_source_t error_source, uint32_t error_no, const char * msg,
+    int64_t delay_ms);
 void test_net_driver_expect_connect_to_acceptor(test_net_driver_t driver, const char * target, int64_t delay_ms);
 void test_net_driver_expect_connect_to_endpoint(
     test_net_driver_t driver, const char * target, net_endpoint_t other, int64_t delay_ms);
