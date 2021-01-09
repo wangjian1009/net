@@ -22,6 +22,7 @@ struct test_net_endpoint_connect_setup {
             net_endpoint_error_source_t m_error_source;
             uint32_t m_error_no;
             char * m_error_msg;
+            int m_rv;
         } m_local;
         struct {
             net_endpoint_t m_endpoint;
@@ -33,7 +34,7 @@ struct test_net_endpoint_connect_setup {
 void test_net_endpoint_connect_will_return(
     test_net_driver_t driver,
     net_endpoint_state_t state,
-    net_endpoint_error_source_t error_source, uint32_t error_no, const char * error_msg)
+    net_endpoint_error_source_t error_source, uint32_t error_no, const char * error_msg, int rv)
 {
     struct test_net_endpoint_connect_setup * setup =
         mem_buffer_alloc(&driver->m_setup_buffer, sizeof(struct test_net_endpoint_connect_setup));
@@ -43,6 +44,7 @@ void test_net_endpoint_connect_will_return(
     setup->m_local.m_error_source = error_source;
     setup->m_local.m_error_no = error_no;
     setup->m_local.m_error_msg = error_msg ? mem_buffer_strdup(&driver->m_setup_buffer, error_msg) : NULL;
+    setup->m_local.m_rv = rv;
     setup->m_address = NULL;
 
     will_return(test_net_endpoint_connect, setup);
@@ -54,7 +56,8 @@ int test_net_endpoint_connect_apply_setup(
     switch (setup->m_type) {
     case test_net_endpoint_connect_setup_local:
         net_endpoint_set_error(base_endpoint, setup->m_local.m_error_source, setup->m_local.m_error_no, setup->m_local.m_error_msg);
-        return net_endpoint_set_state(base_endpoint, setup->m_local.m_state);
+        if (net_endpoint_set_state(base_endpoint, setup->m_local.m_state) != 0) return -1;
+        return setup->m_local.m_rv;
     case test_net_endpoint_connect_setup_acceptor: {
         net_address_t address = net_endpoint_remote_address(base_endpoint);
         assert_true(address != NULL);
@@ -136,6 +139,7 @@ void test_net_endpoint_connect_delay_process_local(
     setup->m_local.m_error_source = error_source;
     setup->m_local.m_error_no = error_no;
     setup->m_local.m_error_msg = error_msg ? cpe_str_mem_dup(test_allocrator(), error_msg) : NULL;
+    setup->m_local.m_rv = 0;
 
     setup->m_address = cpe_str_mem_dup(test_allocrator(), remote_addr);
     
@@ -152,11 +156,11 @@ void test_net_driver_expect_connect_success(test_net_driver_t driver, const char
 
     if (delay_ms == 0) {
         test_net_endpoint_connect_will_return(
-            driver, net_endpoint_state_established, net_endpoint_error_source_user, 0, NULL);
+            driver, net_endpoint_state_established, net_endpoint_error_source_user, 0, NULL, 0);
     }
     else {
         test_net_endpoint_connect_will_return(
-            driver, net_endpoint_state_connecting, net_endpoint_error_source_user, 0, NULL);
+            driver, net_endpoint_state_connecting, net_endpoint_error_source_user, 0, NULL, 0);
 
         test_net_endpoint_connect_delay_process_local(
             driver, target, delay_ms,
@@ -173,11 +177,11 @@ void test_net_driver_expect_connect_error(
 
     if (delay_ms == 0) {
         test_net_endpoint_connect_will_return(
-            driver, net_endpoint_state_network_error, error_source, error_no, msg);
+            driver, net_endpoint_state_network_error, error_source, error_no, msg, -1);
     }
     else {
         test_net_endpoint_connect_will_return(
-            driver, net_endpoint_state_connecting, net_endpoint_error_source_user, 0, NULL);
+            driver, net_endpoint_state_connecting, net_endpoint_error_source_user, 0, NULL, 0);
 
         test_net_endpoint_connect_delay_process_local(
             driver, target, delay_ms,
@@ -197,7 +201,7 @@ void test_net_driver_expect_connect_to_acceptor(test_net_driver_t driver, const 
     }
     else {
         test_net_endpoint_connect_will_return(
-            driver, net_endpoint_state_connecting, net_endpoint_error_source_user, 0, NULL);
+            driver, net_endpoint_state_connecting, net_endpoint_error_source_user, 0, NULL, 0);
 
         struct test_net_endpoint_connect_setup * setup =
             mem_alloc(test_allocrator(), sizeof(struct test_net_endpoint_connect_setup));
@@ -228,7 +232,7 @@ void test_net_driver_expect_connect_to_endpoint(
     }
     else {
         test_net_endpoint_connect_will_return(
-            driver, net_endpoint_state_connecting, net_endpoint_error_source_user, 0, NULL);
+            driver, net_endpoint_state_connecting, net_endpoint_error_source_user, 0, NULL, 0);
 
         struct test_net_endpoint_connect_setup * setup =
             mem_alloc(test_allocrator(), sizeof(struct test_net_endpoint_connect_setup));
