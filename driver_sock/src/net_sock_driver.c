@@ -1,6 +1,7 @@
 #include "cpe/pal/pal_socket.h"
 #include "cpe/pal/pal_string.h"
 #include "cpe/pal/pal_strings.h"
+#include "cpe/utils/time_utils.h"
 #include "net_schedule.h"
 #include "net_driver.h"
 #include "net_sock_driver_i.h"
@@ -9,6 +10,7 @@
 #include "net_sock_dgram.h"
 
 static void net_sock_driver_fini(net_driver_t driver);
+static int64_t net_sock_driver_time(net_driver_t driver);
 
 net_sock_driver_t
 net_sock_driver_create(
@@ -40,6 +42,7 @@ net_sock_driver_create(
         sizeof(struct net_sock_driver) + driver_capacity,
         net_sock_driver_init,
         net_sock_driver_fini,
+        net_sock_driver_time,
         /*timer*/
         timer_capacity,
         timer_init,
@@ -107,6 +110,10 @@ static void net_sock_driver_fini(net_driver_t base_driver) {
 
     driver->m_init = NULL;
     driver->m_fini = NULL;
+}
+
+static int64_t net_sock_driver_time(net_driver_t driver) {
+    return cur_time_ms();
 }
 
 void net_sock_driver_free(net_sock_driver_t driver) {

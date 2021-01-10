@@ -6,6 +6,7 @@ NET_BEGIN_DECL
 
 typedef int (*net_driver_init_fun_t)(net_driver_t driver);
 typedef void (*net_driver_fini_fun_t)(net_driver_t driver);
+typedef int64_t (*net_driver_time_fun_t)(net_driver_t driver);
 
 typedef int (*net_timer_init_fun_t)(net_timer_t timer);
 typedef void (*net_timer_fini_fun_t)(net_timer_t timer);
@@ -40,6 +41,7 @@ net_driver_create(
     uint16_t driver_capacity,
     net_driver_init_fun_t driver_init,
     net_driver_fini_fun_t driver_fini,
+    net_driver_time_fun_t driver_time,
     /*timer*/
     uint16_t timer_capacity,
     net_timer_init_fun_t timer_init,

@@ -24,6 +24,8 @@ uint32_t net_schedule_next_endpoint_id(net_schedule_t schedule);
 uint8_t net_schedule_is_domain_address_valid(net_schedule_t schedule, const char * str_address);
 uint8_t net_schedule_is_domain_address_arpa(net_schedule_t schedule, const char * str_address, net_address_t * address);
 
+int64_t net_schedule_cur_time_ms(net_schedule_t schedule);
+
 /*dns*/
 typedef int (*net_schedule_dns_local_query_fun_t)(void * ctx, net_address_t hostname, net_address_it_t resolved_it, uint8_t recursive);
 typedef int (*net_schedule_dns_query_init_fun_t)(

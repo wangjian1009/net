@@ -11,6 +11,7 @@
 
 static int test_net_driver_init(net_driver_t driver);
 static void test_net_driver_fini(net_driver_t driver);
+static int64_t test_net_driver_time(net_driver_t driver);
 
 test_net_driver_t
 test_net_driver_create(net_schedule_t schedule, error_monitor_t em) {
@@ -21,6 +22,7 @@ test_net_driver_create(net_schedule_t schedule, error_monitor_t em) {
         sizeof(struct test_net_driver),
         test_net_driver_init,
         test_net_driver_fini,
+        test_net_driver_time,
         /*timer*/
         sizeof(struct test_net_timer),
         test_net_timer_init,
@@ -95,3 +97,7 @@ static void test_net_driver_fini(net_driver_t base_driver) {
     mem_buffer_clear(&driver->m_setup_buffer);
 }
 
+static int64_t test_net_driver_time(net_driver_t base_driver) {
+    test_net_driver_t driver = net_driver_data(base_driver);
+    return driver->m_cur_time_ms;
+}

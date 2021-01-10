@@ -16,6 +16,7 @@ net_driver_create(
     uint16_t driver_capacity,
     net_driver_init_fun_t driver_init,
     net_driver_fini_fun_t driver_fini,
+    net_driver_time_fun_t driver_time,
     /*timer*/
     uint16_t timer_capacity,
     net_timer_init_fun_t timer_init,
@@ -63,6 +64,7 @@ net_driver_create(
     driver->m_driver_capacity = driver_capacity;
     driver->m_driver_init = driver_init;
     driver->m_driver_fini = driver_fini;
+    driver->m_driver_time = driver_time;
 
     /*timer*/
     driver->m_timer_capacity = timer_capacity;
@@ -195,6 +197,18 @@ net_driver_find(net_schedule_t schedule, const char * driver_name) {
     }
 
     return NULL;
+}
+
+int64_t net_schedule_cur_time_ms(net_schedule_t schedule) {
+    net_driver_t driver;
+
+    TAILQ_FOREACH(driver, &schedule->m_drivers, m_next_for_schedule) {
+        if (driver->m_driver_time) {
+            return driver->m_driver_time(driver);
+        }
+    }
+
+    return 0;
 }
 
 net_schedule_t net_driver_schedule(net_driver_t driver) {
