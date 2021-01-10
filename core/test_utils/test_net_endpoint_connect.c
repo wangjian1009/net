@@ -67,7 +67,10 @@ int test_net_endpoint_connect_apply_setup(
         net_acceptor_t base_acceptor = test_net_driver_find_acceptor_by_addr(driver, address);
         assert_true(base_acceptor != NULL);
 
-        return net_sock_acceptor_accept(base_acceptor, base_endpoint);
+        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_established) != 0) return -1;
+        if (net_sock_acceptor_accept(base_acceptor, base_endpoint) != 0) return -1;
+
+        return 0;
     }
     case test_net_endpoint_connect_setup_endpoint: {
         test_net_endpoint_link_t link =
