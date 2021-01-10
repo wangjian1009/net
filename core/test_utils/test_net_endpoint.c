@@ -2,6 +2,7 @@
 #include "cmocka_all.h"
 #include "net_endpoint.h"
 #include "net_address.h"
+#include "net_schedule.h"
 #include "test_net_endpoint.h"
 #include "test_net_endpoint_link.h"
 #include "test_net_tl_op.h"
@@ -98,8 +99,9 @@ int test_net_driver_read_from_other(net_endpoint_t base_endpoint, net_endpoint_t
     return 0;
 }
 
-void test_net_driver_expect_set_no_delay(uint8_t is_enable) {
-    expect_any(test_net_endpoint_set_no_delay, id);
+void test_net_next_endpoint_expect_set_no_delay(test_net_driver_t driver, uint8_t is_enable) {
+    net_schedule_t schedule = net_driver_schedule(net_driver_from_data(driver));
+    expect_value(test_net_endpoint_set_no_delay, id, net_schedule_next_endpoint_id(schedule));
     expect_value(test_net_endpoint_set_no_delay, is_enable, is_enable);
     will_return(test_net_endpoint_set_no_delay, 0);
 }
@@ -110,8 +112,9 @@ void test_net_endpoint_expect_set_no_delay(net_endpoint_t base_endpoint, uint8_t
     will_return(test_net_endpoint_set_no_delay, 0);
 }
 
-void test_net_driver_expect_get_mss(uint32_t mss) {
-    expect_any(test_net_endpoint_get_mss, id);
+void test_net_next_endpoint_expect_get_mss(test_net_driver_t driver, uint32_t mss) {
+    net_schedule_t schedule = net_driver_schedule(net_driver_from_data(driver));
+    expect_value(test_net_endpoint_get_mss, id, net_schedule_next_endpoint_id(schedule));
     will_return(test_net_endpoint_get_mss, mss);
 }
 
@@ -120,8 +123,9 @@ void test_net_endpoint_expect_get_mss(net_endpoint_t base_endpoint, uint32_t mss
     will_return(test_net_endpoint_get_mss, mss);
 }
 
-void test_net_driver_expect_close() {
-    expect_any(test_net_endpoint_close, id);
+void test_net_next_endpoint_expect_close(test_net_driver_t driver) {
+    net_schedule_t schedule = net_driver_schedule(net_driver_from_data(driver));
+    expect_value(test_net_endpoint_close, id, net_schedule_next_endpoint_id(schedule));
     expect_function_call(test_net_endpoint_close);
 }
 

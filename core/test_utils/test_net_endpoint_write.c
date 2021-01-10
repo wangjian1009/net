@@ -129,7 +129,7 @@ static void test_net_driver_do_expect_write_keep(
     will_return(test_net_endpoint_write, setup);
 }
 
-void test_net_driver_expect_next_endpoint_write_keep(
+void test_net_next_endpoint_expect_write_keep(
     test_net_driver_t driver, net_endpoint_buf_type_t buf_type, int64_t duration_ms)
 {
     net_schedule_t schedule = net_driver_schedule(net_driver_from_data(driver));

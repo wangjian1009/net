@@ -40,24 +40,38 @@ void test_net_endpoint_write(net_endpoint_t base_endpoint);
 
 void test_net_endpoint_write_policy_clear(test_net_endpoint_t base_endpoint);
 
-/*utils.connect*/
-void test_net_driver_expect_connect_success(test_net_driver_t driver, const char * target, int64_t delay_ms);
-void test_net_driver_expect_connect_error(
+/*next-endpoint*/
+void test_net_next_endpoint_expect_connect_success(test_net_driver_t driver, const char * target, int64_t delay_ms);
+void test_net_next_endpoint_expect_connect_error(
     test_net_driver_t driver, const char * target,
     net_endpoint_error_source_t error_source, uint32_t error_no, const char * msg,
     int64_t delay_ms);
-void test_net_driver_expect_connect_to_acceptor(test_net_driver_t driver, const char * target, int64_t delay_ms);
-void test_net_driver_expect_connect_to_endpoint(
+void test_net_next_endpoint_expect_connect_to_acceptor(
+    test_net_driver_t driver, const char * target, int64_t delay_ms);
+void test_net_next_endpoint_expect_connect_to_endpoint(
     test_net_driver_t driver, const char * target, net_endpoint_t other, int64_t delay_ms);
-void test_net_driver_expect_set_no_delay(uint8_t is_enable);
-void test_net_driver_expect_get_mss(uint32_t mss);
-void test_net_driver_expect_close();
+void test_net_next_endpoint_expect_set_no_delay(test_net_driver_t driver, uint8_t is_enable);
+void test_net_next_endpoint_expect_get_mss(test_net_driver_t driver, uint32_t mss);
+void test_net_next_endpoint_expect_close(test_net_driver_t driver);
 
+/*endpoint*/
+void test_net_endpoint_expect_connect_success(net_endpoint_t base_endpoint, const char * target, int64_t delay_ms);
+void test_net_endpoint_expect_connect_error(
+    net_endpoint_t base_endpoint, const char * target,
+    net_endpoint_error_source_t error_source, uint32_t error_no, const char * msg,
+    int64_t delay_ms);
+void test_net_endpoint_expect_connect_to_acceptor(
+    net_endpoint_t base_endpoint, const char * target, int64_t delay_ms);
+void test_net_endpoint_expect_connect_to_endpoint(
+    net_endpoint_t base_endpoint, const char * target, net_endpoint_t other, int64_t delay_ms);
+void test_net_endpoint_expect_set_no_delay(net_endpoint_t endpoint, uint8_t is_enable);
+void test_net_endpoint_expect_get_mss(net_endpoint_t endpoint, uint32_t mss);
+void test_net_endpoint_expect_close(net_endpoint_t endpoint);
 void test_net_endpoint_expect_set_no_delay(net_endpoint_t base_endpoint, uint8_t is_enable);
 void test_net_endpoint_expect_get_mss(net_endpoint_t base_endpoint, uint32_t mss);
 
 /*utils.write*/
-void test_net_driver_expect_next_endpoint_write_keep(
+void test_net_next_endpoint_expect_write_keep(
     test_net_driver_t driver, net_endpoint_buf_type_t keep_buf, int64_t duration_ms);
 
 void test_net_endpoint_expect_write_keep(
@@ -72,8 +86,6 @@ void test_net_driver_expect_write_memory(
     net_endpoint_t base_endpoint,
     const char * data, uint32_t data_size,
     int64_t duration_ms);
-
-void test_net_endpoint_expect_close(net_endpoint_t ep);
 
 #define test_net_endpoint_assert_buf_memory(__ep, __buf, __data, __size)               \
     do {                                                                               \

@@ -1,6 +1,7 @@
 #include "cmocka_all.h"
 #include "test_memory.h"
 #include "cpe/utils/string_utils.h"
+#include "net_schedule.h"
 #include "net_endpoint.h"
 #include "net_address.h"
 #include "test_net_endpoint.h"
@@ -28,11 +29,11 @@ struct test_net_endpoint_connect_setup {
             net_endpoint_t m_endpoint;
         } m_endpoint;
     };
-    char * m_address;
+    uint32_t m_ep_id;
 };
 
-void test_net_endpoint_connect_will_return(
-    test_net_driver_t driver,
+static void test_net_endpoint_connect_will_return(
+    test_net_driver_t driver, uint32_t ep_id,
     net_endpoint_state_t state,
     net_endpoint_error_source_t error_source, uint32_t error_no, const char * error_msg, int rv)
 {
@@ -45,12 +46,12 @@ void test_net_endpoint_connect_will_return(
     setup->m_local.m_error_no = error_no;
     setup->m_local.m_error_msg = error_msg ? mem_buffer_strdup(&driver->m_setup_buffer, error_msg) : NULL;
     setup->m_local.m_rv = rv;
-    setup->m_address = NULL;
+    setup->m_ep_id = ep_id;
 
     will_return(test_net_endpoint_connect, setup);
 }
 
-int test_net_endpoint_connect_apply_setup(
+static int test_net_endpoint_connect_apply_setup(
     net_endpoint_t base_endpoint, struct test_net_endpoint_connect_setup * setup)
 {
     switch (setup->m_type) {
@@ -82,9 +83,11 @@ int test_net_endpoint_connect_apply_setup(
 }
 
 int test_net_endpoint_connect(net_endpoint_t base_endpoint) {
+    uint32_t id = net_endpoint_id(base_endpoint);
     char remote_addr[256];
     net_address_to_string(remote_addr, sizeof(remote_addr), net_endpoint_remote_address(base_endpoint));
-    
+
+    check_expected(id);
     check_expected(remote_addr);
 
     struct test_net_endpoint_connect_setup * setup = mock_type(struct test_net_endpoint_connect_setup *);
@@ -93,16 +96,13 @@ int test_net_endpoint_connect(net_endpoint_t base_endpoint) {
     return test_net_endpoint_connect_apply_setup(base_endpoint, setup);
 }
 
-void test_net_endpoint_connect_cb_by_remote_addr(void * ctx, test_net_tl_op_t op) {
+static void test_net_endpoint_connect_cb(void * ctx, test_net_tl_op_t op) {
     struct test_net_endpoint_connect_setup * setup = ctx;
 
-    assert_true(setup->m_address != NULL);
-    
-    net_schedule_t schedule = net_driver_schedule(net_driver_from_data(op->m_driver));
-    net_address_t address = net_address_create_auto(schedule, setup->m_address);
-    net_endpoint_t base_endpoint = test_net_driver_find_endpoint_by_remote_addr(op->m_driver, address);
-    net_address_free(address);
+    assert_true(setup->m_ep_id != 0);
 
+    net_schedule_t schedule = net_driver_schedule(net_driver_from_data(op->m_driver));
+    net_endpoint_t base_endpoint = net_endpoint_find(schedule, setup->m_ep_id);
     if (base_endpoint) {
         if (test_net_endpoint_connect_apply_setup(base_endpoint, setup) != 0) {
             net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
@@ -110,7 +110,7 @@ void test_net_endpoint_connect_cb_by_remote_addr(void * ctx, test_net_tl_op_t op
     }
 }
 
-void test_net_endpoint_connect_setup_op_ctx_free(void * ctx, test_net_tl_op_t op) {
+static void test_net_endpoint_connect_setup_op_ctx_free(void * ctx, test_net_tl_op_t op) {
     struct test_net_endpoint_connect_setup * setup = ctx;
 
     if (setup->m_type == test_net_endpoint_connect_setup_local) {
@@ -121,16 +121,12 @@ void test_net_endpoint_connect_setup_op_ctx_free(void * ctx, test_net_tl_op_t op
     } else {
     }
 
-    if (setup->m_address) {
-        mem_free(test_allocrator(), setup->m_address);
-    }
-
     mem_free(test_allocrator(), setup);
 }
 
-void test_net_endpoint_connect_delay_process_local(
-    test_net_driver_t driver, const char * remote_addr, int64_t delay_ms,
-    net_endpoint_state_t state,
+static void test_net_endpoint_connect_delay_process(
+    test_net_driver_t driver, uint32_t ep_id, const char * remote_addr, int64_t delay_ms,
+    net_endpoint_state_t state, 
     net_endpoint_error_source_t error_source, uint32_t error_no, const char * error_msg)
 {
     assert_true(remote_addr != NULL);
@@ -143,86 +139,95 @@ void test_net_endpoint_connect_delay_process_local(
     setup->m_local.m_error_no = error_no;
     setup->m_local.m_error_msg = error_msg ? cpe_str_mem_dup(test_allocrator(), error_msg) : NULL;
     setup->m_local.m_rv = 0;
-
-    setup->m_address = cpe_str_mem_dup(test_allocrator(), remote_addr);
+    setup->m_ep_id = ep_id;
     
     test_net_tl_op_t op = test_net_tl_op_create(
         driver, delay_ms,
         0,
-        test_net_endpoint_connect_cb_by_remote_addr,
+        test_net_endpoint_connect_cb,
         setup,
         test_net_endpoint_connect_setup_op_ctx_free);
 }
 
-void test_net_driver_expect_connect_success(test_net_driver_t driver, const char * target, int64_t delay_ms) {
+static void test_net_endpoint_do_expect_connect_success(
+    test_net_driver_t driver, uint32_t ep_id, const char * target, int64_t delay_ms)
+{
+    expect_value(test_net_endpoint_connect, id, ep_id);
     expect_string(test_net_endpoint_connect, remote_addr, target);
 
     if (delay_ms == 0) {
         test_net_endpoint_connect_will_return(
-            driver, net_endpoint_state_established, net_endpoint_error_source_user, 0, NULL, 0);
+            driver, ep_id, net_endpoint_state_established, net_endpoint_error_source_user, 0, NULL, 0);
     }
     else {
         test_net_endpoint_connect_will_return(
-            driver, net_endpoint_state_connecting, net_endpoint_error_source_user, 0, NULL, 0);
+            driver, ep_id, net_endpoint_state_connecting, net_endpoint_error_source_user, 0, NULL, 0);
 
-        test_net_endpoint_connect_delay_process_local(
-            driver, target, delay_ms,
+        test_net_endpoint_connect_delay_process(
+            driver, ep_id, target, delay_ms,
             net_endpoint_state_established, net_endpoint_error_source_user, 0, NULL);
     }
 }
 
-void test_net_driver_expect_connect_error(
-    test_net_driver_t driver, const char * target,
+static void test_net_endpoint_do_expect_connect_error(
+    test_net_driver_t driver, uint32_t ep_id, const char * target,
     net_endpoint_error_source_t error_source, uint32_t error_no, const char * msg,
     int64_t delay_ms)
 {
+    expect_value(test_net_endpoint_connect, id, ep_id);
     expect_string(test_net_endpoint_connect, remote_addr, target);
 
     if (delay_ms == 0) {
         test_net_endpoint_connect_will_return(
-            driver, net_endpoint_state_network_error, error_source, error_no, msg, -1);
+            driver, ep_id, net_endpoint_state_network_error, error_source, error_no, msg, -1);
     }
     else {
         test_net_endpoint_connect_will_return(
-            driver, net_endpoint_state_connecting, net_endpoint_error_source_user, 0, NULL, 0);
+            driver, ep_id, net_endpoint_state_connecting, net_endpoint_error_source_user, 0, NULL, 0);
 
-        test_net_endpoint_connect_delay_process_local(
-            driver, target, delay_ms,
+        test_net_endpoint_connect_delay_process(
+            driver, ep_id, target, delay_ms,
             net_endpoint_state_network_error, error_source, error_no, msg);
     }
 }
 
-void test_net_driver_expect_connect_to_acceptor(test_net_driver_t driver, const char * target, int64_t delay_ms) {
+static void test_net_endpoint_do_expect_connect_to_acceptor(
+    test_net_driver_t driver, uint32_t ep_id,
+    const char * target, int64_t delay_ms)
+{
+    expect_value(test_net_endpoint_connect, id, ep_id);
     expect_string(test_net_endpoint_connect, remote_addr, target);
 
     if (delay_ms == 0) {
         struct test_net_endpoint_connect_setup * setup
             = mem_buffer_alloc(&driver->m_setup_buffer, sizeof(struct test_net_endpoint_connect_setup));
         setup->m_type = test_net_endpoint_connect_setup_acceptor;
-        setup->m_address = NULL;
+        setup->m_ep_id = ep_id;
         will_return(test_net_endpoint_connect, setup);
     }
     else {
         test_net_endpoint_connect_will_return(
-            driver, net_endpoint_state_connecting, net_endpoint_error_source_user, 0, NULL, 0);
+            driver, ep_id, net_endpoint_state_connecting, net_endpoint_error_source_user, 0, NULL, 0);
 
         struct test_net_endpoint_connect_setup * setup =
             mem_alloc(test_allocrator(), sizeof(struct test_net_endpoint_connect_setup));
         setup->m_type = test_net_endpoint_connect_setup_acceptor;
-        setup->m_address = cpe_str_mem_dup(test_allocrator(), target);
-
+        setup->m_ep_id = ep_id;
+    
         test_net_tl_op_t op = test_net_tl_op_create(
             driver, delay_ms,
             0,
-            test_net_endpoint_connect_cb_by_remote_addr,
+            test_net_endpoint_connect_cb,
             setup,
             test_net_endpoint_connect_setup_op_ctx_free);
     }
 }
 
-void test_net_driver_expect_connect_to_endpoint(
-    test_net_driver_t driver, const char * target, net_endpoint_t endpoint, int64_t delay_ms)
+static void test_net_endpoint_do_expect_connect_to_endpoint(
+    test_net_driver_t driver, uint32_t ep_id,
+    const char * target, net_endpoint_t endpoint, int64_t delay_ms)
 {
+    expect_value(test_net_endpoint_connect, id, ep_id);
     expect_string(test_net_endpoint_connect, remote_addr, target);
 
     if (delay_ms == 0) {
@@ -230,24 +235,94 @@ void test_net_driver_expect_connect_to_endpoint(
             = mem_buffer_alloc(&driver->m_setup_buffer, sizeof(struct test_net_endpoint_connect_setup));
         setup->m_type = test_net_endpoint_connect_setup_endpoint;
         setup->m_endpoint.m_endpoint = endpoint;
-        setup->m_address = NULL;
+        setup->m_ep_id = ep_id;
         will_return(test_net_endpoint_connect, setup);
     }
     else {
         test_net_endpoint_connect_will_return(
-            driver, net_endpoint_state_connecting, net_endpoint_error_source_user, 0, NULL, 0);
+            driver, ep_id, net_endpoint_state_connecting, net_endpoint_error_source_user, 0, NULL, 0);
 
         struct test_net_endpoint_connect_setup * setup =
             mem_alloc(test_allocrator(), sizeof(struct test_net_endpoint_connect_setup));
         setup->m_type = test_net_endpoint_connect_setup_endpoint;
         setup->m_endpoint.m_endpoint = endpoint;
-        setup->m_address = cpe_str_mem_dup(test_allocrator(), target);
-
+        setup->m_ep_id = ep_id;
+    
         test_net_tl_op_t op = test_net_tl_op_create(
             driver, delay_ms,
             0,
-            test_net_endpoint_connect_cb_by_remote_addr,
+            test_net_endpoint_connect_cb,
             setup,
             test_net_endpoint_connect_setup_op_ctx_free);
     }
+}
+
+void test_net_next_endpoint_expect_connect_success(test_net_driver_t driver, const char * target, int64_t delay_ms) {
+    net_schedule_t schedule = net_driver_schedule(net_driver_from_data(driver));
+
+    test_net_endpoint_do_expect_connect_success(
+        driver, net_schedule_next_endpoint_id(schedule), target, delay_ms);
+}
+
+void test_net_next_endpoint_expect_connect_error(
+    test_net_driver_t driver, const char * target,
+    net_endpoint_error_source_t error_source, uint32_t error_no, const char * msg,
+    int64_t delay_ms)
+{
+    net_schedule_t schedule = net_driver_schedule(net_driver_from_data(driver));
+
+    test_net_endpoint_do_expect_connect_error(
+        driver, net_schedule_next_endpoint_id(schedule),
+        target, error_source, error_no, msg, delay_ms);
+}
+
+void test_net_next_endpoint_expect_connect_to_acceptor(test_net_driver_t driver, const char * target, int64_t delay_ms) {
+    net_schedule_t schedule = net_driver_schedule(net_driver_from_data(driver));
+    test_net_endpoint_do_expect_connect_to_acceptor(
+        driver, net_schedule_next_endpoint_id(schedule),
+        target, delay_ms);
+}
+
+void test_net_next_endpoint_expect_connect_to_endpoint(
+    test_net_driver_t driver, const char * target, net_endpoint_t other, int64_t delay_ms)
+{
+    net_schedule_t schedule = net_driver_schedule(net_driver_from_data(driver));
+    test_net_endpoint_do_expect_connect_to_endpoint(
+        driver, net_schedule_next_endpoint_id(schedule),
+        target, other, delay_ms);
+}
+
+void test_net_endpoint_expect_connect_success(net_endpoint_t base_endpoint, const char * target, int64_t delay_ms) {
+    test_net_endpoint_do_expect_connect_success(
+        net_driver_data(net_endpoint_driver(base_endpoint)),
+        net_endpoint_id(base_endpoint), target, delay_ms);
+}
+
+void test_net_endpoint_expect_connect_error(
+    net_endpoint_t base_endpoint, const char * target,
+    net_endpoint_error_source_t error_source, uint32_t error_no, const char * msg,
+    int64_t delay_ms)
+{
+    test_net_endpoint_do_expect_connect_error(
+        net_driver_data(net_endpoint_driver(base_endpoint)),
+        net_endpoint_id(base_endpoint),
+        target, error_source, error_no, msg, delay_ms);
+}
+
+void test_net_endpoint_expect_connect_to_acceptor(
+    net_endpoint_t base_endpoint, const char * target, int64_t delay_ms)
+{
+    test_net_endpoint_do_expect_connect_to_acceptor(
+        net_driver_data(net_endpoint_driver(base_endpoint)),
+        net_endpoint_id(base_endpoint),
+        target, delay_ms);
+}
+
+void test_net_endpoint_expect_connect_to_endpoint(
+    net_endpoint_t base_endpoint, const char * target, net_endpoint_t other, int64_t delay_ms)
+{
+    test_net_endpoint_do_expect_connect_to_endpoint(
+        net_driver_data(net_endpoint_driver(base_endpoint)),
+        net_endpoint_id(base_endpoint),
+        target, other, delay_ms);
 }
