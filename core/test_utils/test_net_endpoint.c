@@ -99,40 +99,53 @@ int test_net_driver_read_from_other(net_endpoint_t base_endpoint, net_endpoint_t
     return 0;
 }
 
-void test_net_next_endpoint_expect_set_no_delay(test_net_driver_t driver, uint8_t is_enable) {
-    net_schedule_t schedule = net_driver_schedule(net_driver_from_data(driver));
-    expect_value(test_net_endpoint_set_no_delay, id, net_schedule_next_endpoint_id(schedule));
+void test_net_endpoint_id_expect_set_no_delay(test_net_driver_t driver, uint32_t ep_id, uint8_t is_enable) {
+    expect_value(test_net_endpoint_set_no_delay, id, ep_id);
     expect_value(test_net_endpoint_set_no_delay, is_enable, is_enable);
     will_return(test_net_endpoint_set_no_delay, 0);
 }
 
+void test_net_next_endpoint_expect_set_no_delay(test_net_driver_t driver, uint8_t is_enable) {
+    net_schedule_t schedule = net_driver_schedule(net_driver_from_data(driver));
+    test_net_endpoint_id_expect_set_no_delay(driver, net_schedule_next_endpoint_id(schedule), is_enable);
+}
+
 void test_net_endpoint_expect_set_no_delay(net_endpoint_t base_endpoint, uint8_t is_enable) {
-    expect_value(test_net_endpoint_set_no_delay, id, net_endpoint_id(base_endpoint));
-    expect_value(test_net_endpoint_set_no_delay, is_enable, is_enable);
-    will_return(test_net_endpoint_set_no_delay, 0);
+    test_net_endpoint_id_expect_set_no_delay(
+        net_driver_data(net_endpoint_driver(base_endpoint)),
+        net_endpoint_id(base_endpoint), is_enable);
+}
+
+void test_net_endpoint_id_expect_get_mss(test_net_driver_t driver, uint32_t ep_id, uint32_t mss) {
+    expect_value(test_net_endpoint_get_mss, id, ep_id);
+    will_return(test_net_endpoint_get_mss, mss);
 }
 
 void test_net_next_endpoint_expect_get_mss(test_net_driver_t driver, uint32_t mss) {
     net_schedule_t schedule = net_driver_schedule(net_driver_from_data(driver));
-    expect_value(test_net_endpoint_get_mss, id, net_schedule_next_endpoint_id(schedule));
-    will_return(test_net_endpoint_get_mss, mss);
+    test_net_endpoint_id_expect_get_mss(driver, net_schedule_next_endpoint_id(schedule), mss);
 }
 
 void test_net_endpoint_expect_get_mss(net_endpoint_t base_endpoint, uint32_t mss) {
-    expect_value(test_net_endpoint_get_mss, id, net_endpoint_id(base_endpoint));
-    will_return(test_net_endpoint_get_mss, mss);
+    test_net_endpoint_id_expect_get_mss(
+        net_driver_data(net_endpoint_driver(base_endpoint)),
+        net_endpoint_id(base_endpoint), mss);
+}
+
+void test_net_endpoint_id_expect_close(test_net_driver_t driver, uint32_t ep_id) {
+    expect_value(test_net_endpoint_close, id, ep_id);
+    expect_function_call(test_net_endpoint_close);
 }
 
 void test_net_next_endpoint_expect_close(test_net_driver_t driver) {
     net_schedule_t schedule = net_driver_schedule(net_driver_from_data(driver));
-    expect_value(test_net_endpoint_close, id, net_schedule_next_endpoint_id(schedule));
-    expect_function_call(test_net_endpoint_close);
+    test_net_endpoint_id_expect_close(driver, net_schedule_next_endpoint_id(schedule));
 }
 
 void test_net_endpoint_expect_close(net_endpoint_t base_endpoint) {
-    uint32_t id = net_endpoint_id(base_endpoint);
-    expect_value(test_net_endpoint_close, id, id);
-    expect_function_call(test_net_endpoint_close);
+    test_net_endpoint_id_expect_close(
+        net_driver_data(net_endpoint_driver(base_endpoint)),
+        net_endpoint_id(base_endpoint));
 }
 
 net_endpoint_t

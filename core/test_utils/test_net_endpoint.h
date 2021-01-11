@@ -57,6 +57,12 @@ void test_net_endpoint_id_expect_connect_to_endpoint(
     test_net_driver_t driver, uint32_t ep_id,
     const char * target, net_endpoint_t endpoint, int64_t delay_ms);
 
+void test_net_endpoint_id_expect_set_no_delay(test_net_driver_t driver, uint32_t ep_id, uint8_t is_enable);
+
+void test_net_endpoint_id_expect_get_mss(test_net_driver_t driver, uint32_t ep_id, uint32_t mss);
+
+void test_net_endpoint_id_expect_close(test_net_driver_t driver, uint32_t ep_id);
+
 /*next-endpoint*/
 void test_net_next_endpoint_expect_connect_success(
     test_net_driver_t driver, const char * target, int64_t delay_ms);
