@@ -129,8 +129,6 @@ static void test_net_endpoint_connect_delay_process(
     net_endpoint_state_t state, 
     net_endpoint_error_source_t error_source, uint32_t error_no, const char * error_msg)
 {
-    assert_true(remote_addr != NULL);
-
     struct test_net_endpoint_connect_setup * setup =
         mem_alloc(test_allocrator(), sizeof(struct test_net_endpoint_connect_setup));
     setup->m_type = test_net_endpoint_connect_setup_local;
@@ -153,7 +151,12 @@ void test_net_endpoint_id_expect_connect_success(
     test_net_driver_t driver, uint32_t ep_id, const char * target, int64_t delay_ms)
 {
     expect_value(test_net_endpoint_connect, id, ep_id);
-    expect_string(test_net_endpoint_connect, remote_addr, target);
+    if (target) {
+        expect_string(test_net_endpoint_connect, remote_addr, target);
+    }
+    else {
+        expect_any(test_net_endpoint_connect, remote_addr);
+    }
 
     if (delay_ms == 0) {
         test_net_endpoint_connect_will_return(
@@ -175,7 +178,12 @@ void test_net_endpoint_id_expect_connect_error(
     int64_t delay_ms)
 {
     expect_value(test_net_endpoint_connect, id, ep_id);
-    expect_string(test_net_endpoint_connect, remote_addr, target);
+    if (target) {
+        expect_string(test_net_endpoint_connect, remote_addr, target);
+    }
+    else {
+        expect_any(test_net_endpoint_connect, remote_addr);
+    }
 
     if (delay_ms == 0) {
         test_net_endpoint_connect_will_return(
@@ -196,7 +204,12 @@ void test_net_endpoint_id_expect_connect_to_acceptor(
     const char * target, int64_t delay_ms)
 {
     expect_value(test_net_endpoint_connect, id, ep_id);
-    expect_string(test_net_endpoint_connect, remote_addr, target);
+    if (target) {
+        expect_string(test_net_endpoint_connect, remote_addr, target);
+    }
+    else {
+        expect_any(test_net_endpoint_connect, remote_addr);
+    }
 
     if (delay_ms == 0) {
         struct test_net_endpoint_connect_setup * setup
@@ -228,7 +241,12 @@ void test_net_endpoint_id_expect_connect_to_endpoint(
     const char * target, net_endpoint_t endpoint, int64_t delay_ms)
 {
     expect_value(test_net_endpoint_connect, id, ep_id);
-    expect_string(test_net_endpoint_connect, remote_addr, target);
+    if (target) {
+        expect_string(test_net_endpoint_connect, remote_addr, target);
+    }
+    else {
+        expect_any(test_net_endpoint_connect, remote_addr);
+    }
 
     if (delay_ms == 0) {
         struct test_net_endpoint_connect_setup * setup
