@@ -4,7 +4,7 @@
 #include "net_ssl_cli_driver_i.h"
 
 struct net_ssl_cli_endpoint {
-    
+    net_endpoint_t m_underline;
 };
 
 int net_ssl_cli_endpoint_init(net_endpoint_t endpoint);

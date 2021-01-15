@@ -1,4 +1,5 @@
 #include "cmocka_all.h"
+#include "net_endpoint.h"
 #include "net_ssl_tests.h"
 #include "net_ssl_testenv.h"
 
@@ -16,6 +17,8 @@ static int teardown(void **state) {
 
 static void net_ssl_pair_basic(void **state) {
     net_ssl_testenv_t env = *state;
+
+    net_endpoint_t endpoint = net_ssl_testenv_create_cli_ep(env);
 }
 
 int net_ssl_pair_basic_tests() {
