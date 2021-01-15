@@ -5,7 +5,7 @@
 
 NET_BEGIN_DECL
 
-typedef struct net_ssl_cli_protocol * net_ssl_cli_protocol_t;
+typedef struct net_ssl_cli_driver * net_ssl_cli_driver_t;
 typedef struct net_ssl_cli_endpoint * net_ssl_cli_endpoint_t;
 
 typedef struct net_ssl_svr_protocol * net_ssl_svr_protocol_t;
