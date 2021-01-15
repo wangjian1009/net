@@ -5,7 +5,9 @@
 NET_BEGIN_DECL
 
 net_ssl_cli_protocol_t
-net_ssl_cli_protocol_create(net_schedule_t schedule, mem_allocrator_t alloc, error_monitor_t em);
+net_ssl_cli_protocol_create(
+    net_schedule_t schedule, net_protocol_t underline_protocol,
+    mem_allocrator_t alloc, error_monitor_t em);
 
 void net_ssl_cli_protocol_free(net_ssl_cli_protocol_t cli_protocol);
 

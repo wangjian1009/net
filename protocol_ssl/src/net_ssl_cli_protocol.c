@@ -7,7 +7,10 @@ static int net_ssl_cli_protocol_init(net_protocol_t protocol);
 static void net_ssl_cli_protocol_fini(net_protocol_t protocol);
 
 net_ssl_cli_protocol_t
-net_ssl_cli_protocol_create(net_schedule_t schedule, mem_allocrator_t alloc, error_monitor_t em) {
+net_ssl_cli_protocol_create(
+    net_schedule_t schedule, net_protocol_t underline_protocol,
+    mem_allocrator_t alloc, error_monitor_t em)
+{
     net_protocol_t base_protocol =
         net_protocol_create(
             schedule,
@@ -29,7 +32,8 @@ net_ssl_cli_protocol_create(net_schedule_t schedule, mem_allocrator_t alloc, err
 
     ssl_protocol->m_alloc = alloc;
     ssl_protocol->m_em = em;
-    
+    ssl_protocol->m_underline_protocol = underline_protocol;
+
     return ssl_protocol;
 }
 
