@@ -1,3 +1,4 @@
+#include "cpe/utils/error.h"
 #include "net_schedule.h"
 #include "net_driver.h"
 #include "net_endpoint.h"
@@ -8,7 +9,30 @@ int net_ssl_cli_endpoint_init(net_endpoint_t base_endpoint) {
     net_ssl_cli_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
     net_ssl_cli_endpoint_t endpoint = net_endpoint_data(base_endpoint);
 
-    endpoint->m_underline = net_endpoint_create(net_schedule_noop_protocol(schedule), driver->m_underline_driver);
+    endpoint->m_ssl = SSL_new(driver->m_ssl_ctx);
+    if(endpoint->m_ssl == NULL) {
+        CPE_ERROR(driver->m_em, "net: ssl: cli: endpoint init: create ssl fail");
+        return -1;
+    }
+
+    BIO * bio = BIO_new(driver->m_bio_method);
+    if (bio == NULL) {
+        CPE_ERROR(driver->m_em, "net: ssl: cli: endpoint init: create bio fail");
+        SSL_free(endpoint->m_ssl);
+        return -1;
+    }
+	BIO_set_init(bio, 1);
+	BIO_set_data(bio, endpoint);
+	BIO_set_shutdown(bio, 0);
+    
+    endpoint->m_underline =
+        net_endpoint_create(
+            driver->m_underline_driver, net_schedule_noop_protocol(schedule), NULL);
+    if (endpoint->m_underline == NULL) {
+        CPE_ERROR(driver->m_em, "net: ssl: cli: endpoint init: create inner driver fail");
+        return -1;
+    }
+
     return 0;
 }
 
@@ -18,6 +42,11 @@ void net_ssl_cli_endpoint_fini(net_endpoint_t base_endpoint) {
     if (endpoint->m_underline) {
         net_endpoint_free(endpoint->m_underline);
         endpoint->m_underline = NULL;
+    }
+
+    if (endpoint->m_ssl) {
+        SSL_free(endpoint->m_ssl);
+        endpoint->m_ssl = NULL;
     }
 }
 

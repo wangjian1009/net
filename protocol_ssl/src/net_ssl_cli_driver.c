@@ -1,7 +1,9 @@
+#include "cpe/utils/error.h"
 #include "net_driver.h"
 #include "net_schedule.h"
 #include "net_ssl_cli_driver_i.h"
 #include "net_ssl_cli_endpoint_i.h"
+#include "net_ssl_cli_bio.h"
 
 static int net_ssl_cli_driver_init(net_driver_t driver);
 static void net_ssl_cli_driver_fini(net_driver_t driver);
@@ -73,13 +75,48 @@ net_ssl_cli_driver_find(net_schedule_t schedule, const char * addition_name) {
     return driver ? net_driver_data(driver) : NULL;
 }
 
-static int net_ssl_cli_driver_init(net_driver_t driver) {
-    net_ssl_cli_driver_t ssl_driver = net_driver_data(driver);
-    ssl_driver->m_alloc = NULL;
-    ssl_driver->m_em = NULL;
+static int net_ssl_cli_driver_init(net_driver_t base_driver) {
+    net_ssl_cli_driver_t driver = net_driver_data(base_driver);
+    driver->m_alloc = NULL;
+    driver->m_em = NULL;
+
+    driver->m_bio_method = BIO_meth_new(58, "net-ssl-cli");
+    if (driver->m_bio_method == NULL) {
+        CPE_ERROR(
+            net_schedule_em(net_driver_schedule(base_driver)),
+            "net: ssl: driver: init: create bio method fail");
+        return -1;
+    }
+    BIO_meth_set_write(driver->m_bio_method, net_ssl_cli_endpoint_bio_write);
+    BIO_meth_set_read(driver->m_bio_method, net_ssl_cli_endpoint_bio_read);
+    BIO_meth_set_puts(driver->m_bio_method, net_ssl_cli_endpoint_bio_puts);
+    BIO_meth_set_ctrl(driver->m_bio_method, net_ssl_cli_endpoint_bio_ctrl);
+    BIO_meth_set_create(driver->m_bio_method, net_ssl_cli_endpoint_bio_new);
+    BIO_meth_set_destroy(driver->m_bio_method, net_ssl_cli_endpoint_bio_free);
+    
+    driver->m_ssl_ctx = SSL_CTX_new(SSLv23_method());
+    if(driver->m_ssl_ctx == NULL) {
+        CPE_ERROR(
+            net_schedule_em(net_driver_schedule(base_driver)),
+            "net: ssl: driver: init: create ssl ctx fail");
+        BIO_meth_free(driver->m_bio_method);
+        return -1;
+    }
+
     return 0;
 }
 
-static void net_ssl_cli_driver_fini(net_driver_t driver) {
+static void net_ssl_cli_driver_fini(net_driver_t base_driver) {
+    net_ssl_cli_driver_t driver = net_driver_data(base_driver);
+
+    if (driver->m_bio_method) {
+        BIO_meth_free(driver->m_bio_method);
+        driver->m_bio_method = NULL;
+    }
+
+    if (driver->m_ssl_ctx) {
+        SSL_CTX_free(driver->m_ssl_ctx);
+        driver->m_ssl_ctx = NULL;
+    }
 }
 

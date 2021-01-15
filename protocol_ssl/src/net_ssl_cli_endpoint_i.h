@@ -5,6 +5,7 @@
 
 struct net_ssl_cli_endpoint {
     net_endpoint_t m_underline;
+	SSL * m_ssl;
 };
 
 int net_ssl_cli_endpoint_init(net_endpoint_t endpoint);
