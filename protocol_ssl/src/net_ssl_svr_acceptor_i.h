@@ -5,7 +5,7 @@
 NET_BEGIN_DECL
 
 struct net_ssl_svr_acceptor {
-    net_acceptor_t m_acceptor;
+    net_acceptor_t m_underline;
 };
 
 int net_ssl_svr_acceptor_init(net_acceptor_t acceptor);

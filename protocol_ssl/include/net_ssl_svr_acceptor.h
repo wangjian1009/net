@@ -1,0 +1,10 @@
+#ifndef NET_SSL_SVR_ACCEPTOR_H_INCLEDED
+#define NET_SSL_SVR_ACCEPTOR_H_INCLEDED
+#include "net_ssl_types.h"
+
+NET_BEGIN_DECL
+
+
+NET_END_DECL
+
+#endif

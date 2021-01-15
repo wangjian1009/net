@@ -18,7 +18,8 @@ static int teardown(void **state) {
 static void net_ssl_pair_basic(void **state) {
     net_ssl_testenv_t env = *state;
 
-    net_endpoint_t endpoint = net_ssl_testenv_create_cli_ep(env);
+    net_endpoint_t cli_ep = net_ssl_testenv_create_cli_ep(env);
+    net_acceptor_t svr_acceptor = net_ssl_testenv_create_svr_acceptor(env, "1.2.3.4:5678");
 }
 
 int net_ssl_pair_basic_tests() {
