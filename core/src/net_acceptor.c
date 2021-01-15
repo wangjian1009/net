@@ -6,7 +6,7 @@
 net_acceptor_t
 net_acceptor_create(
     net_driver_t driver, net_protocol_t protocol,
-    net_address_t address, uint8_t is_own, uint32_t accept_queue_size,
+    net_address_t address, uint32_t accept_queue_size,
     net_acceptor_on_new_endpoint_fun_t on_new_endpoint, void * on_new_endpoint_ctx)
 {
     net_schedule_t schedule = driver->m_schedule;
@@ -35,21 +35,16 @@ net_acceptor_create(
     acceptor->m_on_new_endpoint = on_new_endpoint;
     acceptor->m_on_new_endpoint_ctx = on_new_endpoint_ctx;
 
-    if (is_own) {
-        acceptor->m_address = address;
+    acceptor->m_address = net_address_copy(schedule, address);
+    if (acceptor->m_address == NULL) {
+        CPE_ERROR(schedule->m_em, "core: acceptor: dup address fail");
+        TAILQ_INSERT_TAIL(&driver->m_free_acceptors, acceptor, m_next_for_driver);
+        return NULL;
     }
-    else {
-        acceptor->m_address = net_address_copy(schedule, address);
-        if (acceptor->m_address == NULL) {
-            CPE_ERROR(schedule->m_em, "core: acceptor: dup address fail");
-            TAILQ_INSERT_TAIL(&driver->m_free_acceptors, acceptor, m_next_for_driver);
-            return NULL;
-        }
-    }
-    
+
     if (driver->m_acceptor_init(acceptor) != 0) {
         CPE_ERROR(schedule->m_em, "core: acceptor: external init fail");
-        if (!is_own) net_address_free(acceptor->m_address);
+        net_address_free(acceptor->m_address);
         TAILQ_INSERT_TAIL(&driver->m_free_acceptors, acceptor, m_next_for_driver);
         return NULL;
     }

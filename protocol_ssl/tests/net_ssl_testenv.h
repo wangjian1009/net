@@ -4,6 +4,7 @@
 #include "test_error.h"
 #include "net_ssl_types.h"
 #include "net_ssl_cli_driver.h"
+#include "net_ssl_svr_driver.h"
 #include "test_net_driver.h"
 
 typedef struct net_ssl_testenv * net_ssl_testenv_t;
@@ -14,6 +15,7 @@ struct net_ssl_testenv {
     net_schedule_t m_schedule;
     test_net_driver_t m_tdriver;
     net_ssl_cli_driver_t m_cli_driver;
+    net_ssl_svr_driver_t m_svr_driver;
 };
 
 net_ssl_testenv_t net_ssl_testenv_create();
@@ -21,5 +23,9 @@ void net_ssl_testenv_free(net_ssl_testenv_t env);
 
 /*cli*/
 net_endpoint_t net_ssl_testenv_create_cli_ep(net_ssl_testenv_t env);
+
+/*svr*/
+net_acceptor_t net_ssl_testenv_create_svr_acceptor(
+    net_ssl_testenv_t env, const char * address);
 
 #endif

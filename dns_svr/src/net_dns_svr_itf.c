@@ -36,7 +36,7 @@ net_dns_svr_itf_create(net_dns_svr_t dns_svr, net_dns_svr_itf_type_t type, net_a
     case net_dns_svr_itf_tcp:
         dns_itf->m_acceptor = net_acceptor_create(
             driver, dns_svr->m_dns_protocol,
-            address, 0, 0,
+            address, 0,
             net_dns_svr_acceptor_on_new_endpoint, dns_itf);
         if (dns_itf->m_acceptor == NULL) {
             CPE_ERROR(dns_svr->m_em, "dns-svr: create acceptor fail");
