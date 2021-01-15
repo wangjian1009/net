@@ -1,2 +1,2 @@
-#include "net_ssl_cli_endpoint.h"
+#include "net_ssl_cli_endpoint_i.h"
 
