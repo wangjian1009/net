@@ -14,8 +14,8 @@ set_property(TARGET tests_net_protocol_ssl PROPERTY INCLUDE_DIRECTORIES
   )
 
 set(tests_net_protocol_ssl_libraries
-  test_utils_cpe_utils
-  net_protocol_ssl net_core cpe_utils_yaml cpe_utils_sock cpe_utils cpe_pal pcre2 cmocka)
+  test_utils_cpe_utils test_utils_net_core
+  net_protocol_ssl net_core  cpe_utils_yaml cpe_utils_sock cpe_utils cpe_pal pcre2 cmocka)
 
 if (OS_NAME STREQUAL linux32 OR OS_NAME STREQUAL linux64)
   set(tests_net_protocol_ssl_libraries ${tests_net_protocol_ssl_libraries} m)
