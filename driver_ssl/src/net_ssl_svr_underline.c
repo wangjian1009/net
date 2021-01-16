@@ -24,6 +24,16 @@ void net_ssl_svr_underline_fini(net_endpoint_t base_underline) {
 }
 
 int net_ssl_svr_underline_input(net_endpoint_t base_underline) {
+    net_ssl_svr_undline_t undline = net_endpoint_protocol_data(base_underline);
+    if (undline->m_ssl_endpoint == NULL) return -1;
+
+    assert(undline->m_ssl_endpoint->m_underline == base_underline);
+
+    net_endpoint_t base_endpoint = net_endpoint_from_data(undline->m_ssl_endpoint);
+    net_ssl_svr_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
+    net_ssl_svr_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+
+    CPE_ERROR(driver->m_em, "xxxxx: undline input");
     return 0;
 }
 
