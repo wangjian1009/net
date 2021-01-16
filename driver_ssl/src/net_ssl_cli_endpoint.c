@@ -152,9 +152,6 @@ int net_ssl_cli_endpoint_get_mss(net_endpoint_t base_endpoint, uint32_t * mss) {
 }
 
 int net_ssl_cli_endpoint_handshake_start(net_endpoint_t base_endpoint, net_ssl_cli_endpoint_t endpoint) {
-    net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
-    CPE_ERROR(net_schedule_em(schedule), "xxxxx: handshake");
-
     ERR_clear_error();
     SSL_set_connect_state(endpoint->m_ssl);
     int r = SSL_do_handshake(endpoint->m_ssl);

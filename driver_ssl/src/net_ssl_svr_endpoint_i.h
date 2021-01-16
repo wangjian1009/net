@@ -15,4 +15,6 @@ int net_ssl_svr_endpoint_update(net_endpoint_t endpoint);
 int net_ssl_svr_endpoint_set_no_delay(net_endpoint_t endpoint, uint8_t no_delay);
 int net_ssl_svr_endpoint_get_mss(net_endpoint_t endpoint, uint32_t * mss);
 
+void net_ssl_svr_endpoint_dump_error(net_endpoint_t base_endpoint, int val);
+
 #endif

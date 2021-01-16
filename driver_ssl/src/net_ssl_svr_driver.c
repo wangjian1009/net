@@ -58,6 +58,7 @@ net_ssl_svr_driver_create(
     ssl_driver->m_alloc = alloc;
     ssl_driver->m_em = em;
     ssl_driver->m_underline_driver = underline_driver;
+    ssl_driver->m_underline_protocol = net_ssl_svr_underline_protocol_create(schedule, name);
 
     return ssl_driver;
 }
