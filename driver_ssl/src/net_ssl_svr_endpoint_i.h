@@ -2,8 +2,14 @@
 #define NET_SSL_SVR_ENDPOINT_I_H_INCLEDED
 #include "net_ssl_svr_driver_i.h"
 
+enum net_ssl_svr_endpoint_ssl_state {
+    net_ssl_svr_endpoint_ssl_handshake,
+    net_ssl_svr_endpoint_ssl_established,
+};
+
 struct net_ssl_svr_endpoint {
     net_endpoint_t m_underline;
+    net_ssl_svr_endpoint_ssl_state_t m_state;
 	SSL * m_ssl;
 };
 

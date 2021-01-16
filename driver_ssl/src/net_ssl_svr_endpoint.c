@@ -12,6 +12,8 @@ int net_ssl_svr_endpoint_init(net_endpoint_t base_endpoint) {
     net_ssl_svr_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
     net_ssl_svr_endpoint_t endpoint = net_endpoint_data(base_endpoint);
 
+    endpoint->m_state = net_ssl_svr_endpoint_ssl_handshake;
+    
     endpoint->m_ssl = SSL_new(driver->m_ssl_ctx);
     if(endpoint->m_ssl == NULL) {
         CPE_ERROR(driver->m_em, "net: ssl: svr: endpoint init: create ssl fail");
@@ -19,6 +21,7 @@ int net_ssl_svr_endpoint_init(net_endpoint_t base_endpoint) {
     }
     SSL_set_msg_callback(endpoint->m_ssl, net_ssl_svr_endpoint_trace_cb);
     SSL_set_msg_callback_arg(endpoint->m_ssl, base_endpoint);
+    SSL_set_accept_state(endpoint->m_ssl);
 
     BIO * bio = BIO_new(driver->m_bio_method);
     if (bio == NULL) {

@@ -40,9 +40,16 @@ int net_ssl_cli_endpoint_bio_read(BIO *b, char *out, int outlen) {
     net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
     net_ssl_cli_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
     net_ssl_cli_endpoint_t endpoint = net_endpoint_data(base_endpoint);
-    
-    uint32_t length = net_endpoint_buf_size(base_endpoint, net_ep_buf_read);
-    if (net_endpoint_buf_size(base_endpoint, net_ep_buf_read) == 0) {
+
+    if (endpoint->m_underline == NULL) {
+        CPE_ERROR(
+            driver->m_em, "net: ssl: %s: bio: read: no underline!",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+        return -1;
+    }
+
+    uint32_t length = net_endpoint_buf_size(endpoint->m_underline, net_ep_buf_read);
+    if (length == 0) {
 		/* If there's no data to read, say so. */
 		BIO_set_retry_read(b);
 		return -1;
@@ -60,7 +67,7 @@ int net_ssl_cli_endpoint_bio_read(BIO *b, char *out, int outlen) {
     }
 
     void * data = NULL;
-    if (net_endpoint_buf_peak_with_size(base_endpoint, net_ep_buf_read, length, &data) != 0) {
+    if (net_endpoint_buf_peak_with_size(endpoint->m_underline, net_ep_buf_read, length, &data) != 0) {
         CPE_ERROR(
             driver->m_em, "net: ssl: %s: bio: read: peak data fail, length=%d",
             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
@@ -68,7 +75,9 @@ int net_ssl_cli_endpoint_bio_read(BIO *b, char *out, int outlen) {
         return -1;
     }
 
-    net_endpoint_buf_consume(base_endpoint, net_ep_buf_read, length);
+    memcpy(out, data, length);
+    
+    net_endpoint_buf_consume(endpoint->m_underline, net_ep_buf_read, length);
 
     return length;
 }
@@ -117,8 +126,18 @@ long net_ssl_cli_endpoint_bio_ctrl(BIO *b, int cmd, long num, void *ptr) {
     net_endpoint_t base_endpoint = BIO_get_data(b);
     if (base_endpoint == NULL) return -1;
 
+    net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
+    net_ssl_cli_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
+    net_ssl_cli_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+    
+    if (endpoint->m_underline == NULL) {
+        CPE_ERROR(
+            driver->m_em, "net: ssl: %s: bio: ctrl: no underline!",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+        return -1;
+    }
+    
 	long ret = 1;
-
     switch (cmd) {
     case BIO_CTRL_GET_CLOSE:
         ret = BIO_get_shutdown(b);
@@ -127,10 +146,10 @@ long net_ssl_cli_endpoint_bio_ctrl(BIO *b, int cmd, long num, void *ptr) {
         BIO_set_shutdown(b, (int)num);
         break;
     case BIO_CTRL_PENDING:
-        ret = net_endpoint_buf_size(base_endpoint, net_ep_buf_read) != 0;
+        ret = net_endpoint_buf_size(endpoint->m_underline, net_ep_buf_read) != 0;
         break;
     case BIO_CTRL_WPENDING:
-        ret = net_endpoint_buf_size(base_endpoint, net_ep_buf_read) != 0;
+        ret = net_endpoint_buf_size(endpoint->m_underline, net_ep_buf_write) != 0;
         break;
     /* XXXX These two are given a special-case treatment because
 	 * of cargo-cultism.  I should come up with a better reason. */

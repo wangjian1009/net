@@ -6,6 +6,7 @@
 
 typedef struct net_ssl_svr_acceptor * net_ssl_svr_acceptor_t;
 typedef struct net_ssl_svr_undline * net_ssl_svr_undline_t;
+typedef enum net_ssl_svr_endpoint_ssl_state net_ssl_svr_endpoint_ssl_state_t;
 
 struct net_ssl_svr_driver {
     mem_allocrator_t m_alloc;

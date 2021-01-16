@@ -33,7 +33,14 @@ int net_ssl_svr_underline_input(net_endpoint_t base_underline) {
     net_ssl_svr_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
     net_ssl_svr_endpoint_t endpoint = net_endpoint_data(base_endpoint);
 
-    CPE_ERROR(driver->m_em, "xxxxx: undline input");
+    switch(endpoint->m_state) {
+    case net_ssl_svr_endpoint_ssl_handshake:
+        assert(0);
+        break;
+    case net_ssl_svr_endpoint_ssl_established:
+        break;
+    };
+    
     return 0;
 }
 
