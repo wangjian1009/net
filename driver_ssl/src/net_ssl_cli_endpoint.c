@@ -3,6 +3,7 @@
 #include "net_driver.h"
 #include "net_endpoint.h"
 #include "net_ssl_cli_endpoint_i.h"
+#include "net_ssl_cli_underline_i.h"
 
 int net_ssl_cli_endpoint_init(net_endpoint_t base_endpoint) {
     net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
@@ -27,12 +28,14 @@ int net_ssl_cli_endpoint_init(net_endpoint_t base_endpoint) {
     
     endpoint->m_underline =
         net_endpoint_create(
-            driver->m_underline_driver, net_schedule_noop_protocol(schedule), NULL);
+            driver->m_underline_driver, driver->m_undline_protocol, NULL);
     if (endpoint->m_underline == NULL) {
         CPE_ERROR(driver->m_em, "net: ssl: cli: endpoint init: create inner driver fail");
         return -1;
     }
-
+    net_ssl_cli_undline_t underline = net_endpoint_protocol_data(endpoint->m_underline);
+    underline->m_ssl_endpoint = endpoint;
+    
     return 0;
 }
 

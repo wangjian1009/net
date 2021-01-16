@@ -5,6 +5,8 @@
 #include <openssl/err.h>
 #include "net_ssl_cli_driver.h"
 
+typedef struct net_ssl_cli_undline * net_ssl_cli_undline_t;
+
 struct net_ssl_cli_driver {
     mem_allocrator_t m_alloc;
     error_monitor_t m_em;
