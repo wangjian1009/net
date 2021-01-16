@@ -16,4 +16,7 @@ int net_ssl_cli_endpoint_update(net_endpoint_t endpoint);
 int net_ssl_cli_endpoint_set_no_delay(net_endpoint_t endpoint, uint8_t no_delay);
 int net_ssl_cli_endpoint_get_mss(net_endpoint_t endpoint, uint32_t * mss);
 
+int net_ssl_cli_endpoint_handshake_start(net_endpoint_t base_endpoint, net_ssl_cli_endpoint_t endpoint);
+void net_ssl_cli_endpoint_dump_error(net_endpoint_t base_endpoint, int val);
+
 #endif

@@ -90,7 +90,7 @@ int net_ssl_cli_endpoint_connect(net_endpoint_t base_endpoint) {
         break;
     case net_endpoint_state_established:
         if (net_endpoint_set_state(base_endpoint, net_endpoint_state_connecting) != 0) return -1;
-        //TODO
+        if (net_ssl_cli_endpoint_handshake_start(base_endpoint, endpoint) != 0) return -1;
         break;
     case net_endpoint_state_logic_error:
         net_endpoint_set_error(
@@ -145,6 +145,31 @@ int net_ssl_cli_endpoint_get_mss(net_endpoint_t base_endpoint, uint32_t * mss) {
     return net_endpoint_get_mss(base_endpoint, mss);
 }
 
+int net_ssl_cli_endpoint_handshake_start(net_endpoint_t base_endpoint, net_ssl_cli_endpoint_t endpoint) {
+    ERR_clear_error();
+    int r = SSL_do_handshake(endpoint->m_ssl);
+
+    if (r != 1) {
+        int err = SSL_get_error(endpoint->m_ssl, r);
+        net_ssl_cli_endpoint_dump_error(base_endpoint, err);
+        /* switch (err) { */
+        /* case SSL_ERROR_WANT_WRITE: */
+        /*     stop_reading(bev_ssl); */
+        /*     return start_writing(bev_ssl); */
+        /* case SSL_ERROR_WANT_READ: */
+        /*     stop_writing(bev_ssl); */
+        /*     return start_reading(bev_ssl); */
+        /* default: */
+        /*     conn_closed(bev_ssl, BEV_EVENT_READING, err, r); */
+        /*     return -1; */
+        /* } */
+
+        return -1;
+    }
+
+    return 0;
+}
+
 void net_ssl_cli_endpoint_trace_cb(
     int write_p, int version, int content_type, const void *buf, size_t len, SSL *ssl, void *arg)
 {
@@ -158,4 +183,25 @@ void net_ssl_cli_endpoint_trace_cb(
             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
         net_ssl_dump_tls_info(schedule, prefix, write_p, version, content_type, buf, len, ssl);
     }
+}
+
+void net_ssl_cli_endpoint_dump_error(net_endpoint_t base_endpoint, int val) {
+    net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
+    net_ssl_cli_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
+
+    CPE_ERROR(
+        driver->m_em, "net: ssl: %s: SSL: Error was %d!",
+        net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint), val);
+
+    int err;
+	while ((err = ERR_get_error())) {
+		const char *msg = (const char*)ERR_reason_error_string(err);
+		const char *lib = (const char*)ERR_lib_error_string(err);
+		const char *func = (const char*)ERR_func_error_string(err);
+
+        CPE_ERROR(
+            driver->m_em, "net: ssl: %s: SSL:     %s in %s %s",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
+            msg, lib, func);
+	}
 }
