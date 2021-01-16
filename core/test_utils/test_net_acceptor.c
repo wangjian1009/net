@@ -19,7 +19,7 @@ void test_net_acceptor_fini(net_acceptor_t base_acceptor) {
     TAILQ_REMOVE(&driver->m_acceptors, acceptor, m_next);
 }
 
-int net_sock_acceptor_accept(net_acceptor_t base_acceptor, net_endpoint_t remote_ep) {
+int test_net_acceptor_accept(net_acceptor_t base_acceptor, net_endpoint_t remote_ep) {
     net_acceptor_t acceptor = net_acceptor_data(base_acceptor);
     test_net_driver_t driver = net_driver_data(net_acceptor_driver(base_acceptor));
 
