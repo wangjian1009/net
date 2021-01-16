@@ -144,11 +144,33 @@ int net_ssl_cli_endpoint_update(net_endpoint_t base_endpoint) {
 }
 
 int net_ssl_cli_endpoint_set_no_delay(net_endpoint_t base_endpoint, uint8_t no_delay) {
-    return net_endpoint_set_no_delay(base_endpoint, no_delay);
+    net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
+    net_ssl_cli_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
+    net_ssl_cli_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+
+    if (endpoint->m_underline == NULL) {
+        CPE_ERROR(
+            driver->m_em, "net: ssl: %s: set no delay: no underline!",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+        return -1;
+    }
+
+    return net_endpoint_set_no_delay(endpoint->m_underline, no_delay);
 }
 
 int net_ssl_cli_endpoint_get_mss(net_endpoint_t base_endpoint, uint32_t * mss) {
-    return net_endpoint_get_mss(base_endpoint, mss);
+    net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
+    net_ssl_cli_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
+    net_ssl_cli_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+
+    if (endpoint->m_underline == NULL) {
+        CPE_ERROR(
+            driver->m_em, "net: ssl: %s: get mss: no undline",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+        return -1;
+    }
+
+    return net_endpoint_get_mss(endpoint->m_underline, mss);
 }
 
 int net_ssl_cli_endpoint_handshake_start(net_endpoint_t base_endpoint, net_ssl_cli_endpoint_t endpoint) {

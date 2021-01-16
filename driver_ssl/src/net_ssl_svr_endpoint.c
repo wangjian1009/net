@@ -63,6 +63,15 @@ int net_ssl_svr_endpoint_connect(net_endpoint_t base_endpoint) {
 }
 
 void net_ssl_svr_endpoint_close(net_endpoint_t base_endpoint) {
+    net_ssl_svr_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+
+    if (endpoint->m_underline) {
+        if (net_endpoint_is_active(endpoint->m_underline)) {
+            if (net_endpoint_set_state(endpoint->m_underline, net_endpoint_state_disable) != 0) {
+                net_endpoint_set_state(endpoint->m_underline, net_endpoint_state_deleting);
+            }
+        }
+    }
 }
 
 int net_ssl_svr_endpoint_update(net_endpoint_t base_endpoint) {
@@ -70,7 +79,7 @@ int net_ssl_svr_endpoint_update(net_endpoint_t base_endpoint) {
 }
 
 int net_ssl_svr_endpoint_set_no_delay(net_endpoint_t base_endpoint, uint8_t no_delay) {
-    return 0;
+    return net_endpoint_set_no_delay(base_endpoint, no_delay);
 }
 
 int net_ssl_svr_endpoint_get_mss(net_endpoint_t base_endpoint, uint32_t * mss) {
