@@ -1,25 +1,24 @@
 #include "cmocka_all.h"
 #include "net_endpoint.h"
 #include "net_ssl_tests.h"
-#include "net_ssl_testenv.h"
+#include "net_ssl_pair_testenv.h"
 
 static int setup(void **state) {
-    net_ssl_testenv_t env = net_ssl_testenv_create();
+    net_ssl_pair_testenv_t env = net_ssl_pair_testenv_create();
     *state = env;
     return 0;
 }
 
 static int teardown(void **state) {
-    net_ssl_testenv_t env = *state;
-    net_ssl_testenv_free(env);
+    net_ssl_pair_testenv_t env = *state;
+    net_ssl_pair_testenv_free(env);
     return 0;
 }
 
 static void net_ssl_pair_basic(void **state) {
-    net_ssl_testenv_t env = *state;
-
-    net_endpoint_t cli_ep = net_ssl_testenv_create_cli_ep(env);
-    net_acceptor_t svr_acceptor = net_ssl_testenv_create_svr_acceptor(env, "1.2.3.4:5678");
+    net_ssl_pair_testenv_t env = *state;
+    net_endpoint_t cli_ep = net_ssl_testenv_create_cli_ep(env->m_env);
+    
 }
 
 int net_ssl_pair_basic_tests() {

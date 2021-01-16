@@ -11,6 +11,7 @@ struct net_ssl_cli_driver {
     BIO_METHOD * m_bio_method;
     SSL_CTX * m_ssl_ctx;
     net_driver_t m_underline_driver;
+    net_protocol_t m_undline_protocol;
 };
 
 #endif

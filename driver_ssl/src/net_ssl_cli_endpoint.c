@@ -51,6 +51,7 @@ void net_ssl_cli_endpoint_fini(net_endpoint_t base_endpoint) {
 }
 
 int net_ssl_cli_endpoint_connect(net_endpoint_t base_endpoint) {
+    net_ssl_cli_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     return 0;
 }
 
@@ -69,3 +70,6 @@ int net_ssl_cli_endpoint_get_mss(net_endpoint_t base_endpoint, uint32_t * mss) {
     return 0;
 }
 
+int net_ssl_cli_endpoint_underline_input(net_endpoint_t endpoint) {
+    return 0;
+}

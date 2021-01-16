@@ -41,7 +41,10 @@ net_endpoint_t net_ssl_testenv_create_cli_ep(net_ssl_testenv_t env) {
 }
 
 net_acceptor_t
-net_ssl_testenv_create_svr_acceptor(net_ssl_testenv_t env, const char * str_address) {
+net_ssl_testenv_create_svr_acceptor(
+    net_ssl_testenv_t env, const char * str_address,
+    net_acceptor_on_new_endpoint_fun_t on_new_endpoint, void * on_new_endpoint_ctx)
+{
     net_address_t address = net_address_create_auto(env->m_schedule, str_address);
     assert_true(address != NULL);
 
@@ -49,7 +52,8 @@ net_ssl_testenv_create_svr_acceptor(net_ssl_testenv_t env, const char * str_addr
         net_acceptor_create(
             net_driver_from_data(env->m_cli_driver),
             net_schedule_noop_protocol(env->m_schedule),
-            address, 0, NULL, NULL);
+            address, 0,
+            on_new_endpoint, on_new_endpoint_ctx);
 
     net_address_free(address);
 

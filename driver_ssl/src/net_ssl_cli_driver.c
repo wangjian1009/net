@@ -1,8 +1,10 @@
 #include "cpe/utils/error.h"
-#include "net_driver.h"
 #include "net_schedule.h"
+#include "net_driver.h"
+#include "net_protocol.h"
 #include "net_ssl_cli_driver_i.h"
 #include "net_ssl_cli_endpoint_i.h"
+#include "net_ssl_cli_underline_i.h"
 #include "net_ssl_cli_bio.h"
 
 static int net_ssl_cli_driver_init(net_driver_t driver);
@@ -53,6 +55,7 @@ net_ssl_cli_driver_create(
     ssl_driver->m_alloc = alloc;
     ssl_driver->m_em = em;
     ssl_driver->m_underline_driver = underline_driver;
+    ssl_driver->m_undline_protocol = net_ssl_cli_underline_protocol_create(schedule, name);
 
     return ssl_driver;
 }
@@ -79,6 +82,8 @@ static int net_ssl_cli_driver_init(net_driver_t base_driver) {
     net_ssl_cli_driver_t driver = net_driver_data(base_driver);
     driver->m_alloc = NULL;
     driver->m_em = NULL;
+    driver->m_underline_driver = NULL;
+    driver->m_undline_protocol = NULL;
 
     driver->m_bio_method = BIO_meth_new(58, "net-ssl-cli");
     if (driver->m_bio_method == NULL) {
@@ -109,6 +114,11 @@ static int net_ssl_cli_driver_init(net_driver_t base_driver) {
 static void net_ssl_cli_driver_fini(net_driver_t base_driver) {
     net_ssl_cli_driver_t driver = net_driver_data(base_driver);
 
+    if (driver->m_undline_protocol) {
+        net_protocol_free(driver->m_undline_protocol);
+        driver->m_undline_protocol = NULL;
+    }
+    
     if (driver->m_bio_method) {
         BIO_meth_free(driver->m_bio_method);
         driver->m_bio_method = NULL;
