@@ -43,6 +43,7 @@ int net_ssl_cli_endpoint_init(net_endpoint_t base_endpoint) {
     net_ssl_cli_undline_t underline = net_endpoint_protocol_data(endpoint->m_underline);
     underline->m_ssl_endpoint = endpoint;
 
+    endpoint->m_state = net_ssl_cli_endpoint_ssl_init;
     return 0;
 }
 
@@ -91,7 +92,11 @@ int net_ssl_cli_endpoint_connect(net_endpoint_t base_endpoint) {
         break;
     case net_endpoint_state_established:
         if (net_endpoint_set_state(base_endpoint, net_endpoint_state_connecting) != 0) return -1;
-        if (net_ssl_cli_endpoint_handshake_start(base_endpoint, endpoint) != 0) return -1;
+
+        if (endpoint->m_state == net_ssl_cli_endpoint_ssl_init) {
+            endpoint->m_state = net_ssl_cli_endpoint_ssl_handshake;
+            if (net_ssl_cli_endpoint_handshake_start(base_endpoint, endpoint) != 0) return -1;
+        }
         break;
     case net_endpoint_state_logic_error:
         net_endpoint_set_error(
@@ -147,13 +152,15 @@ int net_ssl_cli_endpoint_get_mss(net_endpoint_t base_endpoint, uint32_t * mss) {
 }
 
 int net_ssl_cli_endpoint_handshake_start(net_endpoint_t base_endpoint, net_ssl_cli_endpoint_t endpoint) {
+    net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
+    CPE_ERROR(net_schedule_em(schedule), "xxxxx: handshake");
+
     ERR_clear_error();
     SSL_set_connect_state(endpoint->m_ssl);
     int r = SSL_do_handshake(endpoint->m_ssl);
 
     if (r != 1) {
         int err = SSL_get_error(endpoint->m_ssl, r);
-        net_ssl_cli_endpoint_dump_error(base_endpoint, err);
         switch (err) {
         case SSL_ERROR_WANT_WRITE:
             //stop_reading(bev_ssl);
@@ -162,10 +169,10 @@ int net_ssl_cli_endpoint_handshake_start(net_endpoint_t base_endpoint, net_ssl_c
         case SSL_ERROR_WANT_READ:
             //stop_writing(bev_ssl);
             //return start_reading(bev_ssl);
-            break;
+            return 0;
         default:
-            //conn_closed(bev_ssl, BEV_EVENT_READING, err, r);
-            //return -1;
+            net_ssl_cli_endpoint_dump_error(base_endpoint, err);
+            net_endpoint_set_error(base_endpoint, net_endpoint_error_source_protocol, -1, "handshake start fail");
             break;
         }
 
@@ -195,8 +202,9 @@ void net_ssl_cli_endpoint_dump_error(net_endpoint_t base_endpoint, int val) {
     net_ssl_cli_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
 
     CPE_ERROR(
-        driver->m_em, "net: ssl: %s: SSL: Error was %d!",
-        net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint), val);
+        driver->m_em, "net: ssl: %s: SSL: Error was %s!",
+        net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
+        net_ssl_errno_str(val));
 
     int err;
 	while ((err = ERR_get_error())) {

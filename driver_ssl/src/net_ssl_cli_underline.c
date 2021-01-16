@@ -49,7 +49,10 @@ int net_ssl_cli_underline_on_state_change(net_endpoint_t base_underline, net_end
         break;
     case net_endpoint_state_established:
         if (net_endpoint_set_state(base_endpoint, net_endpoint_state_connecting) != 0) return -1;
-        if (net_ssl_cli_endpoint_handshake_start(base_endpoint, endpoint) != 0) return -1;
+        if (endpoint->m_state == net_ssl_cli_endpoint_ssl_init) {
+            endpoint->m_state = net_ssl_cli_endpoint_ssl_handshake;
+            if (net_ssl_cli_endpoint_handshake_start(base_endpoint, endpoint) != 0) return -1;
+        }
         break;
     case net_endpoint_state_logic_error:
         net_endpoint_set_error(
