@@ -84,7 +84,8 @@ int net_ssl_cli_endpoint_connect(net_endpoint_t base_endpoint) {
         if (net_endpoint_set_state(base_endpoint, net_endpoint_state_connecting) != 0) return -1;
         break;
     case net_endpoint_state_established:
-        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_established) != 0) return -1;
+        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_connecting) != 0) return -1;
+        //TODO
         break;
     case net_endpoint_state_logic_error:
         net_endpoint_set_error(

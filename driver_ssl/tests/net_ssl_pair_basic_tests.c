@@ -19,12 +19,13 @@ static void net_ssl_pair_basic(void **state) {
     net_ssl_pair_testenv_t env = *state;
     net_endpoint_t cli_ep = net_ssl_testenv_cli_ep_create(env->m_env);
     net_endpoint_set_remote_address(cli_ep, net_acceptor_address(env->m_acceptor));
-    net_endpoint_connect(cli_ep);
 
     net_endpoint_t cli_underline = net_ssl_testenv_cli_ep_undline(cli_ep);
     assert_true(cli_underline != NULL);
 
     test_net_endpoint_expect_connect_to_acceptor(cli_underline, "1.2.3.4:5678", 0);
+    
+    net_endpoint_connect(cli_ep);
 }
 
 int net_ssl_pair_basic_tests() {
