@@ -29,6 +29,7 @@ int net_ssl_cli_endpoint_init(net_endpoint_t base_endpoint) {
 	BIO_set_init(bio, 1);
 	BIO_set_data(bio, base_endpoint);
 	BIO_set_shutdown(bio, 0);
+    SSL_set_bio(endpoint->m_ssl, bio, bio);
     
     endpoint->m_underline =
         net_endpoint_create(

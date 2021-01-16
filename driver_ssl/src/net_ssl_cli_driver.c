@@ -108,6 +108,19 @@ static int net_ssl_cli_driver_init(net_driver_t base_driver) {
         return -1;
     }
 
+    SSL_CTX_set_options(
+        driver->m_ssl_ctx,
+        SSL_OP_ALL
+        | SSL_OP_NO_SSLv2
+        | SSL_OP_NO_SSLv3
+        | SSL_OP_NO_COMPRESSION
+        | SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION);
+
+    //SSL_CTX_set_next_proto_select_cb(driver->m_ssl_ctx, sfox_sfox_protocol_select_next_proto_cb, driver);
+
+    SSL_CTX_set_alpn_protos(driver->m_ssl_ctx, (const unsigned char *)"\x02h2", 3);
+    
+    
     return 0;
 }
 

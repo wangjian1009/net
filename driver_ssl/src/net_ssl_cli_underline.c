@@ -38,6 +38,7 @@ int net_ssl_cli_underline_on_state_change(net_endpoint_t base_underline, net_end
 
     net_endpoint_t base_endpoint = net_endpoint_from_data(undline->m_ssl_endpoint);
     net_ssl_cli_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
+    net_ssl_cli_endpoint_t endpoint = net_endpoint_data(base_endpoint);
 
     switch(net_endpoint_state(base_underline)) {
     case net_endpoint_state_resolving:
@@ -48,7 +49,7 @@ int net_ssl_cli_underline_on_state_change(net_endpoint_t base_underline, net_end
         break;
     case net_endpoint_state_established:
         if (net_endpoint_set_state(base_endpoint, net_endpoint_state_connecting) != 0) return -1;
-        //TODO:
+        if (net_ssl_cli_endpoint_handshake_start(base_endpoint, endpoint) != 0) return -1;
         break;
     case net_endpoint_state_logic_error:
         net_endpoint_set_error(

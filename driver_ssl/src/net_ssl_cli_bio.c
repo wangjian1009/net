@@ -74,9 +74,6 @@ int net_ssl_cli_endpoint_bio_read(BIO *b, char *out, int outlen) {
 }
 
 int net_ssl_cli_endpoint_bio_write(BIO *b, const char *in, int inlen) {
-	/* struct evbuffer *output; */
-	/* size_t outlen; */
-
 	BIO_clear_retry_flags(b);
 
     net_endpoint_t base_endpoint = BIO_get_data(b);
@@ -86,12 +83,23 @@ int net_ssl_cli_endpoint_bio_write(BIO *b, const char *in, int inlen) {
     net_ssl_cli_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
     net_ssl_cli_endpoint_t endpoint = net_endpoint_data(base_endpoint);
 
-    CPE_ERROR(driver->m_em, "xxxxx: bio write xxx");
-	/* output = bufferevent_get_output(bufev); */
-	/* outlen = evbuffer_get_length(output); */
+    if (endpoint->m_underline == NULL) {
+        CPE_ERROR(
+            driver->m_em, "net: ssl: %s: bio: write: no underline!",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+        return -1;
+    }
 
-	/* /\* Copy only as much data onto the output buffer as can fit under the */
-	/*  * high-water mark. *\/ */
+    uint32_t write_size = inlen;
+    if (net_endpoint_buf_append(endpoint->m_underline, net_ep_buf_write, in, write_size) != 0) {
+        CPE_ERROR(
+            driver->m_em, "net: ssl: %s: bio: write: append buf fail, len=%d!",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint), write_size);
+        return -1;
+    }
+
+	/* Copy only as much data onto the output buffer as can fit under the
+	 * high-water mark. */
 	/* if (bufev->wm_write.high && bufev->wm_write.high <= (outlen+inlen)) { */
 	/* 	if (bufev->wm_write.high <= outlen) { */
 	/* 		/\* If no data can fit, we'll need to retry later. *\/ */
@@ -101,10 +109,7 @@ int net_ssl_cli_endpoint_bio_write(BIO *b, const char *in, int inlen) {
 	/* 	inlen = bufev->wm_write.high - outlen; */
 	/* } */
 
-	/* EVUTIL_ASSERT(inlen > 0); */
-	/* evbuffer_add(output, in, inlen); */
-	/* return inlen; */
-    return 0;
+    return (int)write_size;
 }
 
 /* Called to handle various requests */
