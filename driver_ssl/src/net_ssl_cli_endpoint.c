@@ -26,16 +26,8 @@ int net_ssl_cli_endpoint_init(net_endpoint_t base_endpoint) {
 	BIO_set_data(bio, endpoint);
 	BIO_set_shutdown(bio, 0);
     
-    endpoint->m_underline =
-        net_endpoint_create(
-            driver->m_underline_driver, driver->m_undline_protocol, NULL);
-    if (endpoint->m_underline == NULL) {
-        CPE_ERROR(driver->m_em, "net: ssl: cli: endpoint init: create inner driver fail");
-        return -1;
-    }
-    net_ssl_cli_undline_t underline = net_endpoint_protocol_data(endpoint->m_underline);
-    underline->m_ssl_endpoint = endpoint;
-    
+    endpoint->m_underline = NULL;
+
     return 0;
 }
 
@@ -54,8 +46,44 @@ void net_ssl_cli_endpoint_fini(net_endpoint_t base_endpoint) {
 }
 
 int net_ssl_cli_endpoint_connect(net_endpoint_t base_endpoint) {
+    net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
+    net_ssl_cli_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
     net_ssl_cli_endpoint_t endpoint = net_endpoint_data(base_endpoint);
-    return 0;
+
+    if (endpoint->m_underline) {
+        if (net_endpoint_is_active(endpoint->m_underline)) {
+            CPE_ERROR(
+                driver->m_em, "net: ssl: %s: connect: inner ep is active, state=%s, can`t connect again",
+                net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
+                net_endpoint_state_str(net_endpoint_state(endpoint->m_underline)));
+            return -1;
+        }
+        net_endpoint_free(endpoint->m_underline);
+        endpoint->m_underline = NULL;
+    }
+    
+    endpoint->m_underline =
+        net_endpoint_create(
+            driver->m_underline_driver, driver->m_undline_protocol, NULL);
+    if (endpoint->m_underline == NULL) {
+        CPE_ERROR(
+            driver->m_em, "net: ssl: %s: connect: create inner ep fail",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+        return -1;
+    }
+    net_ssl_cli_undline_t underline = net_endpoint_protocol_data(endpoint->m_underline);
+    underline->m_ssl_endpoint = endpoint;
+
+    if (net_endpoint_set_remote_address(endpoint->m_underline, net_endpoint_remote_address(base_endpoint)) != 0) {
+        CPE_ERROR(
+            driver->m_em, "net: ssl: %s: connect: set remote address to underline fail",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+        return -1;
+    }
+
+    int rv = net_endpoint_connect(endpoint->m_underline);
+    
+    return rv;
 }
 
 void net_ssl_cli_endpoint_close(net_endpoint_t base_endpoint) {
@@ -66,13 +94,9 @@ int net_ssl_cli_endpoint_update(net_endpoint_t base_endpoint) {
 }
 
 int net_ssl_cli_endpoint_set_no_delay(net_endpoint_t base_endpoint, uint8_t no_delay) {
-    return 0;
+    return net_endpoint_set_no_delay(base_endpoint, no_delay);
 }
 
 int net_ssl_cli_endpoint_get_mss(net_endpoint_t base_endpoint, uint32_t * mss) {
-    return 0;
-}
-
-int net_ssl_cli_endpoint_underline_input(net_endpoint_t endpoint) {
-    return 0;
+    return net_endpoint_get_mss(base_endpoint, mss);
 }

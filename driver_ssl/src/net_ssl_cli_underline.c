@@ -1,3 +1,4 @@
+#include <assert.h>
 #include "cpe/utils/error.h"
 #include "net_schedule.h"
 #include "net_protocol.h"
@@ -5,13 +6,21 @@
 #include "net_ssl_cli_underline_i.h"
 
 int net_ssl_cli_underline_init(net_endpoint_t base_endpoint) {
+    net_ssl_cli_undline_t undline = net_endpoint_protocol_data(base_endpoint);
+    undline->m_ssl_endpoint = NULL;
     return 0;
 }
 
 void net_ssl_cli_underline_fini(net_endpoint_t base_endpoint) {
+    net_ssl_cli_undline_t undline = net_endpoint_protocol_data(base_endpoint);
+    undline->m_ssl_endpoint = NULL;
 }
 
 int net_ssl_cli_underline_input(net_endpoint_t base_endpoint) {
+    net_ssl_cli_undline_t undline = net_endpoint_protocol_data(base_endpoint);
+    assert(undline->m_ssl_endpoint);
+    assert(undline->m_ssl_endpoint->m_underline == base_endpoint);
+    
     return 0;
 }
 

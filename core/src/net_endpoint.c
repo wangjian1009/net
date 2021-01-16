@@ -50,7 +50,7 @@ net_endpoint_create(net_driver_t driver, net_protocol_t protocol, net_mem_group_
     endpoint->m_error_source = net_endpoint_error_source_network;
     endpoint->m_error_no = 0;
     endpoint->m_error_msg = NULL;
-    endpoint->m_id = schedule->m_endpoint_max_id + 1;
+    endpoint->m_id = ++schedule->m_endpoint_max_id;
     endpoint->m_dft_block_size = 0;
     endpoint->m_options = 0;
     endpoint->m_expect_read = 1;
@@ -92,7 +92,6 @@ net_endpoint_create(net_driver_t driver, net_protocol_t protocol, net_mem_group_
         return NULL;
     }
 
-    schedule->m_endpoint_max_id++;
     TAILQ_INSERT_TAIL(&driver->m_endpoints, endpoint, m_next_for_driver);
     TAILQ_INSERT_TAIL(&protocol->m_endpoints, endpoint, m_next_for_protocol);
 

@@ -50,7 +50,7 @@ net_ssl_testenv_create_svr_acceptor(
 
     net_acceptor_t acceptor =
         net_acceptor_create(
-            net_driver_from_data(env->m_cli_driver),
+            net_driver_from_data(env->m_svr_driver),
             net_schedule_noop_protocol(env->m_schedule),
             address, 0,
             on_new_endpoint, on_new_endpoint_ctx);

@@ -1,5 +1,6 @@
 #ifndef TEST_NET_SSL_PAIR_TESTENV_H_INCLEDED
 #define TEST_NET_SSL_PAIR_TESTENV_H_INCLEDED
+#include "net_acceptor.h"
 #include "net_ssl_testenv.h"
 
 typedef struct net_ssl_pair_testenv * net_ssl_pair_testenv_t;
