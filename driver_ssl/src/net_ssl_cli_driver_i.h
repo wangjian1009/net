@@ -1,9 +1,7 @@
 #ifndef NET_SSL_CLI_DRIVER_I_H_INCLEDED
 #define NET_SSL_CLI_DRIVER_I_H_INCLEDED
-#include <openssl/ssl.h>
-#include <openssl/bio.h>
-#include <openssl/err.h>
 #include "cpe/utils/error.h"
+#include "net_ssl_utils.h"
 #include "net_ssl_cli_driver.h"
 
 typedef struct net_ssl_cli_undline * net_ssl_cli_undline_t;

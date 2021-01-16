@@ -4,6 +4,9 @@
 #include "net_ssl_cli_endpoint_i.h"
 #include "net_ssl_cli_underline_i.h"
 
+static void net_ssl_cli_endpoint_trace_cb(
+    int write_p, int version, int content_type, const void *buf, size_t len, SSL *ssl, void *arg);
+
 int net_ssl_cli_endpoint_init(net_endpoint_t base_endpoint) {
     net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
     net_ssl_cli_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
@@ -14,6 +17,8 @@ int net_ssl_cli_endpoint_init(net_endpoint_t base_endpoint) {
         CPE_ERROR(driver->m_em, "net: ssl: cli: endpoint init: create ssl fail");
         return -1;
     }
+    SSL_set_msg_callback(endpoint->m_ssl, net_ssl_cli_endpoint_trace_cb);
+    SSL_set_msg_callback_arg(endpoint->m_ssl, base_endpoint);
 
     BIO * bio = BIO_new(driver->m_bio_method);
     if (bio == NULL) {
@@ -120,7 +125,11 @@ void net_ssl_cli_endpoint_close(net_endpoint_t base_endpoint) {
     net_ssl_cli_endpoint_t endpoint = net_endpoint_data(base_endpoint);
 
     if (endpoint->m_underline) {
-        //net_endpoint_close(endpoint->m_underline);
+        if (net_endpoint_is_active(endpoint->m_underline)) {
+            if (net_endpoint_set_state(endpoint->m_underline, net_endpoint_state_disable) != 0) {
+                net_endpoint_set_state(endpoint->m_underline, net_endpoint_state_deleting);
+            }
+        }
     }
 }
 
@@ -134,4 +143,19 @@ int net_ssl_cli_endpoint_set_no_delay(net_endpoint_t base_endpoint, uint8_t no_d
 
 int net_ssl_cli_endpoint_get_mss(net_endpoint_t base_endpoint, uint32_t * mss) {
     return net_endpoint_get_mss(base_endpoint, mss);
+}
+
+void net_ssl_cli_endpoint_trace_cb(
+    int write_p, int version, int content_type, const void *buf, size_t len, SSL *ssl, void *arg)
+{
+    net_endpoint_t base_endpoint = arg;
+    net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
+    
+    if (net_endpoint_driver_debug(base_endpoint) >= 2) {
+        char prefix[256];
+        snprintf(
+            prefix, sizeof(prefix), "net: ssl: %s: SSL: ",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+        net_ssl_dump_tls_info(schedule, prefix, write_p, version, content_type, buf, len, ssl);
+    }
 }

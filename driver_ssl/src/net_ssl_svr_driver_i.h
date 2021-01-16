@@ -1,10 +1,8 @@
 #ifndef NET_SSL_SVR_DRIVER_I_H_INCLEDED
 #define NET_SSL_SVR_DRIVER_I_H_INCLEDED
-#include <openssl/ssl.h>
-#include <openssl/bio.h>
-#include <openssl/err.h>
 #include "cpe/utils/error.h"
 #include "net_ssl_svr_driver.h"
+#include "net_ssl_utils.h"
 
 typedef struct net_ssl_svr_acceptor * net_ssl_svr_acceptor_t;
 
