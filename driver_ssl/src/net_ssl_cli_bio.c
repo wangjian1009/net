@@ -81,7 +81,12 @@ int net_ssl_cli_endpoint_bio_write(BIO *b, const char *in, int inlen) {
 
     net_endpoint_t base_endpoint = BIO_get_data(b);
     if (base_endpoint == NULL) return -1;
-    
+
+    net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
+    net_ssl_cli_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
+    net_ssl_cli_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+
+    CPE_ERROR(driver->m_em, "xxxxx: bio write xxx");
 	/* output = bufferevent_get_output(bufev); */
 	/* outlen = evbuffer_get_length(output); */
 

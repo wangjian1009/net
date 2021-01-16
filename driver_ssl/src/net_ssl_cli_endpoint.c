@@ -147,22 +147,26 @@ int net_ssl_cli_endpoint_get_mss(net_endpoint_t base_endpoint, uint32_t * mss) {
 
 int net_ssl_cli_endpoint_handshake_start(net_endpoint_t base_endpoint, net_ssl_cli_endpoint_t endpoint) {
     ERR_clear_error();
+    SSL_set_connect_state(endpoint->m_ssl);
     int r = SSL_do_handshake(endpoint->m_ssl);
 
     if (r != 1) {
         int err = SSL_get_error(endpoint->m_ssl, r);
         net_ssl_cli_endpoint_dump_error(base_endpoint, err);
-        /* switch (err) { */
-        /* case SSL_ERROR_WANT_WRITE: */
-        /*     stop_reading(bev_ssl); */
-        /*     return start_writing(bev_ssl); */
-        /* case SSL_ERROR_WANT_READ: */
-        /*     stop_writing(bev_ssl); */
-        /*     return start_reading(bev_ssl); */
-        /* default: */
-        /*     conn_closed(bev_ssl, BEV_EVENT_READING, err, r); */
-        /*     return -1; */
-        /* } */
+        switch (err) {
+        case SSL_ERROR_WANT_WRITE:
+            //stop_reading(bev_ssl);
+            //return start_writing(bev_ssl);
+            break;
+        case SSL_ERROR_WANT_READ:
+            //stop_writing(bev_ssl);
+            //return start_reading(bev_ssl);
+            break;
+        default:
+            //conn_closed(bev_ssl, BEV_EVENT_READING, err, r);
+            //return -1;
+            break;
+        }
 
         return -1;
     }
