@@ -1,4 +1,3 @@
-#include "cpe/utils/error.h"
 #include "net_schedule.h"
 #include "net_driver.h"
 #include "net_endpoint.h"

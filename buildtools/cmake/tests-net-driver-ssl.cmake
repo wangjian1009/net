@@ -12,6 +12,7 @@ set_property(TARGET tests_net_driver_ssl PROPERTY INCLUDE_DIRECTORIES
   ${net_core_base}/include
   ${net_core_base}/test_utils
   ${net_driver_ssl_base}/include
+  ${net_driver_ssl_base}/src
   )
 
 set(tests_net_driver_ssl_libraries

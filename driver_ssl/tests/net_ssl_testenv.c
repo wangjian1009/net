@@ -4,6 +4,7 @@
 #include "net_acceptor.h"
 #include "net_address.h"
 #include "net_ssl_testenv.h"
+#include "net_ssl_cli_endpoint_i.h"
 
 net_ssl_testenv_t net_ssl_testenv_create() {
     net_ssl_testenv_t env = mem_alloc(test_allocrator(), sizeof(struct net_ssl_testenv));
@@ -30,14 +31,21 @@ void net_ssl_testenv_free(net_ssl_testenv_t env) {
     mem_free(test_allocrator(), env);
 }
 
-net_endpoint_t net_ssl_testenv_create_cli_ep(net_ssl_testenv_t env) {
+net_endpoint_t net_ssl_testenv_cli_ep_create(net_ssl_testenv_t env) {
     net_endpoint_t endpoint =
         net_endpoint_create(
             net_driver_from_data(env->m_cli_driver),
             net_schedule_noop_protocol(env->m_schedule),
             NULL);
 
+    net_endpoint_set_driver_debug(endpoint, 2);
+
     return endpoint;
+}
+
+net_endpoint_t net_ssl_testenv_cli_ep_undline(net_endpoint_t ep) {
+    net_ssl_cli_endpoint_t ssl_ep = net_endpoint_data(ep);
+    return ssl_ep->m_underline;
 }
 
 net_acceptor_t

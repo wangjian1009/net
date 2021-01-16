@@ -3,6 +3,7 @@
 #include <openssl/ssl.h>
 #include <openssl/bio.h>
 #include <openssl/err.h>
+#include "cpe/utils/error.h"
 #include "net_ssl_svr_driver.h"
 
 typedef struct net_ssl_svr_acceptor * net_ssl_svr_acceptor_t;

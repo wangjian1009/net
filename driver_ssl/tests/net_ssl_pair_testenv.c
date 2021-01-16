@@ -14,7 +14,7 @@ net_ssl_pair_testenv_create() {
     
     env->m_acceptor =
         net_ssl_testenv_create_svr_acceptor(
-            env->m_env, "1.2.3.4.:5678",
+            env->m_env, "1.2.3.4:5678",
             net_ssl_pair_testenv_acceptor_on_new_endpoint, env);
     
     return env;
