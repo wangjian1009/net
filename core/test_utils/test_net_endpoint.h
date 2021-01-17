@@ -26,8 +26,6 @@ struct test_net_endpoint_write_policy {
 struct test_net_endpoint {
     TAILQ_ENTRY(test_net_endpoint) m_next;
     struct test_net_endpoint_write_policy m_write_policy;
-    int64_t m_write_duration_ms;
-    test_net_tl_op_t m_writing_op;
 };
 
 int test_net_endpoint_init(net_endpoint_t base_endpoint);
@@ -97,10 +95,10 @@ void test_net_endpoint_expect_get_mss(net_endpoint_t base_endpoint, uint32_t mss
 
 /*utils.write*/
 void test_net_next_endpoint_expect_write_keep(
-    test_net_driver_t driver, net_endpoint_buf_type_t keep_buf, int64_t duration_ms);
+    test_net_driver_t driver, net_endpoint_buf_type_t keep_buf);
 
 void test_net_endpoint_expect_write_keep(
-    net_endpoint_t base_endpoint, net_endpoint_buf_type_t keep_buf, int64_t duration_ms);
+    net_endpoint_t base_endpoint, net_endpoint_buf_type_t keep_buf);
 
 /*utils.read*/
 int test_net_driver_read_from_other(

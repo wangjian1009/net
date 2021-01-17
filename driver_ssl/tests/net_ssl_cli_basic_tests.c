@@ -29,7 +29,7 @@ static void net_ssl_cli_connect_success(void **state) {
     assert_true(underline != NULL);
 
     test_net_endpoint_expect_connect_success(underline, "1.2.3.4:5678", 0);
-    test_net_endpoint_expect_write_keep(underline, net_ep_buf_user1, 0);
+    test_net_endpoint_expect_write_keep(underline, net_ep_buf_user1);
 
     assert_true(net_endpoint_connect(ep) == 0);
 
@@ -59,7 +59,7 @@ static void net_ssl_cli_connect_success_delay(void **state) {
         net_endpoint_state_str(net_endpoint_state(ep)),
         net_endpoint_state_str(net_endpoint_state_connecting));
 
-    test_net_endpoint_expect_write_keep(underline, net_ep_buf_user1, 0);
+    test_net_endpoint_expect_write_keep(underline, net_ep_buf_user1);
     test_net_driver_run(env->m_tdriver, 100);
     
     assert_int_equal(net_endpoint_error_no(ep), 0);

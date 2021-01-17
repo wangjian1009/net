@@ -44,7 +44,7 @@ static void net_ssl_pair_delay(void **state) {
     net_endpoint_t cli_underline = net_ssl_testenv_cli_ep_undline(cli_ep);
     assert_true(cli_underline != NULL);
 
-    test_net_endpoint_expect_connect_to_acceptor(cli_underline, "1.2.3.4:5678", 100, 0);
+    test_net_endpoint_expect_connect_to_acceptor(cli_underline, "1.2.3.4:5678", 100, 100);
     
     assert_true(net_endpoint_connect(cli_ep) == 0);
 
@@ -52,7 +52,7 @@ static void net_ssl_pair_delay(void **state) {
         net_endpoint_state_str(net_endpoint_state(cli_ep)),
         net_endpoint_state_str(net_endpoint_state_connecting));
 
-    test_net_driver_run(env->m_env->m_tdriver, 100);
+    test_net_driver_run(env->m_env->m_tdriver, 500);
     
     assert_string_equal(
         net_endpoint_state_str(net_endpoint_state(cli_ep)),

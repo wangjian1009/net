@@ -13,8 +13,6 @@ int test_net_endpoint_init(net_endpoint_t base_endpoint) {
 
     TAILQ_INSERT_TAIL(&driver->m_endpoints, endpoint, m_next);
     endpoint->m_write_policy.m_type = test_net_endpoint_write_mock;
-    endpoint->m_write_duration_ms = 0;
-    endpoint->m_writing_op = NULL;
     
     return 0;
 }
@@ -39,9 +37,7 @@ int test_net_endpoint_update(net_endpoint_t base_endpoint) {
 
     assert_true(net_endpoint_state(base_endpoint) == net_endpoint_state_established);
 
-    if (!net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write) /*有数据等待写入 */
-        && endpoint->m_writing_op == NULL) /*socket没有等待可以写入的操作（当前可以写入数据到socket) */
-    {
+    if (!net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write)) { /*有数据等待写入 */
         net_endpoint_set_is_writing(base_endpoint, 1);
         test_net_endpoint_write(base_endpoint);
         if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return 0;

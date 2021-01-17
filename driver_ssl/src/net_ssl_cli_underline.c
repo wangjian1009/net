@@ -27,7 +27,19 @@ int net_ssl_cli_underline_input(net_endpoint_t base_underline) {
     net_ssl_cli_undline_t undline = net_endpoint_protocol_data(base_underline);
     assert(undline->m_ssl_endpoint);
     assert(undline->m_ssl_endpoint->m_underline == base_underline);
-    
+
+    net_endpoint_t base_endpoint = net_endpoint_from_data(undline->m_ssl_endpoint);
+    net_ssl_cli_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
+    net_ssl_cli_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+
+    if (net_endpoint_state(base_endpoint) == net_endpoint_state_connecting) {
+        if (net_ssl_cli_endpoint_do_handshake(base_endpoint, endpoint) != 0) return -1;
+    }
+
+    if (net_endpoint_state(base_endpoint) == net_endpoint_state_established) {
+        //TODO:
+    }
+
     return 0;
 }
 

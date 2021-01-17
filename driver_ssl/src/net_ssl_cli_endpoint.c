@@ -20,6 +20,7 @@ int net_ssl_cli_endpoint_init(net_endpoint_t base_endpoint) {
     }
     SSL_set_msg_callback(endpoint->m_ssl, net_ssl_cli_endpoint_trace_cb);
     SSL_set_msg_callback_arg(endpoint->m_ssl, base_endpoint);
+    SSL_set_connect_state(endpoint->m_ssl);
 
     BIO * bio = BIO_new(driver->m_bio_method);
     if (bio == NULL) {
@@ -174,7 +175,6 @@ int net_ssl_cli_endpoint_get_mss(net_endpoint_t base_endpoint, uint32_t * mss) {
 
 int net_ssl_cli_endpoint_do_handshake(net_endpoint_t base_endpoint, net_ssl_cli_endpoint_t endpoint) {
     ERR_clear_error();
-    SSL_set_connect_state(endpoint->m_ssl);
 
     assert(net_endpoint_state(base_endpoint) == net_endpoint_state_connecting);
     
