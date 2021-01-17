@@ -6,6 +6,8 @@
 static int setup(void **state) {
     net_ssl_pair_testenv_t env = net_ssl_pair_testenv_create();
     *state = env;
+    assert_true(
+        net_ssl_svr_driver_prepaired(env->m_env->m_svr_driver) == 0);
     return 0;
 }
 

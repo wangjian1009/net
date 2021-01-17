@@ -81,83 +81,26 @@ EVP_PKEY * net_ssl_pkey_generate(error_monitor_t em) {
     return pkey;
 }
 
-int net_ssl_cert_load_from_string(error_monitor_t em, SSL_CTX * ssl_ctx, const char * cert) {
-    pem_password_cb * passwd_callback = SSL_CTX_get_default_passwd_cb(ssl_ctx);
-    void * passwd_callback_userdata = SSL_CTX_get_default_passwd_cb_userdata(ssl_ctx);
+void net_ssl_print_cert_info(write_stream_t ws, X509 * cert) {
+    char line[128];
+
+    stream_printf(
+        ws, "subject=[%s]",
+        X509_NAME_oneline(X509_get_subject_name(cert), line, sizeof(line)));
+
+    stream_printf(
+        ws, ", issuer=[%s]",
+        X509_NAME_oneline(X509_get_issuer_name(cert), line, sizeof(line)));
+}
+
+const char * net_ssl_dump_cert_info(mem_buffer_t buffer, X509 * cert) {
+    struct write_stream_buffer stream = CPE_WRITE_STREAM_BUFFER_INITIALIZER(buffer);
+
+    mem_buffer_clear_data(buffer);
+    net_ssl_print_cert_info((write_stream_t)&stream, cert);
+    stream_putc((write_stream_t)&stream, 0);
     
-    ERR_clear_error(); /* clear error stack for SSL_CTX_use_certificate() */
-    
-    BIO * cert_bio = BIO_new_mem_buf(cert, (int)strlen(cert));
-    if (cert_bio == NULL) {
-        CPE_ERROR(
-            em,
-            "net: ssl: cert load from string: init cert bio failed: %s",
-            ERR_error_string(ERR_get_error(), NULL));
-        return -1;
-    }
-    
-    X509 * x = PEM_read_bio_X509_AUX(cert_bio, NULL, passwd_callback, passwd_callback_userdata);
-    if (x == NULL) {
-        CPE_ERROR(
-            em, "net: ssl: cert load from string: read cert failed: %s\n%s",
-            ERR_error_string(ERR_get_error(), NULL), cert);
-        BIO_free(cert_bio);
-        return -1;
-    }
-
-    /* CPE_INFO( */
-    /*     em, "net: ssl: cert load from string: load cert: %s", */
-    /*     sfox_sfox_ssl_dump_cert_info(sfox_sfox_protocol_tmp_buffer(sfox_protocol), x)); */
-
-    if (SSL_CTX_use_certificate(ssl_ctx, x) != 1 || ERR_peek_error() != 0) {
-        CPE_ERROR(
-            em, "net: ssl: cert load from string: read cert failed: %s",
-            ERR_error_string(ERR_get_error(), NULL));
-        goto PROCESS_ERROR;
-    }
-
-    /*
-     * If we could set up our certificate, now proceed to the CA
-     * certificates.
-     */
-    if (SSL_CTX_clear_chain_certs(ssl_ctx) != 1) {
-        CPE_ERROR(
-            em, "net: ssl: cert load from string: clear chain certs fail: %s",
-            ERR_error_string(ERR_get_error(), NULL));
-        goto PROCESS_ERROR;
-    }
-
-    X509 *ca;
-    while ((ca = PEM_read_bio_X509(cert_bio, NULL, passwd_callback, passwd_callback_userdata)) != NULL) {
-        if (!SSL_CTX_add0_chain_cert(ssl_ctx, ca)) {
-            CPE_ERROR(
-                em, "net: ssl: cert load from string: add ca cert fail: %s",
-                ERR_error_string(ERR_get_error(), NULL));
-            X509_free(ca);
-            goto PROCESS_ERROR;
-        }
-    }
-
-    /* When the while loop ends, it's usually just EOF. */
-    unsigned long err = ERR_peek_last_error();
-    if (ERR_GET_LIB(err) == ERR_LIB_PEM && ERR_GET_REASON(err) == PEM_R_NO_START_LINE) {
-        ERR_clear_error();
-    }
-    else {
-        CPE_ERROR(
-            em, "net: ssl: cert load from string: last found error: %s",
-            ERR_error_string(err, NULL));
-        goto PROCESS_ERROR;
-    }
-
-    BIO_free(cert_bio);
-    X509_free(x);
-    return 0;
-
-PROCESS_ERROR:
-    BIO_free(cert_bio);
-    X509_free(x);
-    return -1;
+    return mem_buffer_make_continuous(buffer, 0);
 }
 
 const char * net_ssl_dump_data(mem_buffer_t buffer, void const * buf, size_t size) {

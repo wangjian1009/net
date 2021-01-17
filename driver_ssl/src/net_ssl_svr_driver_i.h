@@ -15,7 +15,7 @@ struct net_ssl_svr_driver {
     SSL_CTX * m_ssl_ctx;
     net_driver_t m_underline_driver;
     net_protocol_t m_underline_protocol;
-    uint8_t m_pkey_loaded;
+    EVP_PKEY * m_pkey;
     uint8_t m_cert_loaded;
 };
 

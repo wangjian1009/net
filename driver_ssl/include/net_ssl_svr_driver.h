@@ -15,8 +15,8 @@ net_ssl_svr_driver_t
 net_ssl_svr_driver_find(net_schedule_t schedule, const char * addition_name);
 
 int net_ssl_svr_driver_use_pkey_from_string(net_ssl_svr_driver_t driver, const char * pkey);
-
 int net_ssl_svr_driver_use_cert_from_string(net_ssl_svr_driver_t driver, const char * pkey);
+int net_ssl_svr_driver_prepaired(net_ssl_svr_driver_t driver);
 
 NET_END_DECL
 

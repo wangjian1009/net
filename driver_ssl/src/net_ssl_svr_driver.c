@@ -93,7 +93,7 @@ static int net_ssl_svr_driver_init(net_driver_t base_driver) {
     driver->m_em = NULL;
     driver->m_underline_driver = NULL;
     driver->m_underline_protocol = NULL;
-    driver->m_pkey_loaded = 0;
+    driver->m_pkey = NULL;
     driver->m_cert_loaded = 0;
 
     driver->m_bio_method = BIO_meth_new(58, "net-ssl-svr");
@@ -145,57 +145,57 @@ static void net_ssl_svr_driver_fini(net_driver_t base_driver) {
         SSL_CTX_free(driver->m_ssl_ctx);
         driver->m_ssl_ctx = NULL;
     }
+
+    if (driver->m_pkey) {
+        EVP_PKEY_free(driver->m_pkey);
+        driver->m_pkey = NULL;
+    }
 }
 
 int net_ssl_svr_driver_use_pkey_from_string(net_ssl_svr_driver_t driver, const char * key) {
     net_driver_t base_driver = net_driver_from_data(driver);
 
-    if (driver->m_pkey_loaded) {
+    if (driver->m_pkey != NULL) {
         CPE_ERROR(
             driver->m_em, "net: ssl: svr: %s: use pkey: already setted!",
             net_driver_name(base_driver));
         return -1;
     }
 
-    EVP_PKEY * pkey = net_ssl_pkey_from_string(driver->m_em, key);
-    if (pkey == NULL) return -1;
+    driver->m_pkey = net_ssl_pkey_from_string(driver->m_em, key);
+    if (driver->m_pkey == NULL) return -1;
 
-    if (SSL_CTX_use_PrivateKey(driver->m_ssl_ctx, pkey) <= 0) {
+    if (SSL_CTX_use_PrivateKey(driver->m_ssl_ctx, driver->m_pkey) <= 0) {
         CPE_ERROR(
             driver->m_em, "net: ssl: svr: %s: use pkey failed, %s",
             net_driver_name(base_driver), ERR_error_string(ERR_get_error(), NULL));
-        EVP_PKEY_free(pkey);
         return -1;
     }
 
-    driver->m_pkey_loaded = 1;
-    EVP_PKEY_free(pkey);
     return 0;
 }
 
 int net_ssl_svr_driver_confirm_pkey(net_ssl_svr_driver_t driver) {
     net_driver_t base_driver = net_driver_from_data(driver);
     
-    if (driver->m_pkey_loaded) return 0;
+    if (driver->m_pkey != NULL) return 0;
 
-    EVP_PKEY * pkey = net_ssl_pkey_generate(driver->m_em);
-    if (pkey == NULL) return -1;
+    driver->m_pkey = net_ssl_pkey_generate(driver->m_em);
+    if (driver->m_pkey == NULL) return -1;
 
-    if (SSL_CTX_use_PrivateKey(driver->m_ssl_ctx, pkey) <= 0) {
+    if (SSL_CTX_use_PrivateKey(driver->m_ssl_ctx, driver->m_pkey) <= 0) {
         CPE_ERROR(
             driver->m_em, "net: ssl: svr: %s: use pkey failed, %s",
             net_driver_name(base_driver), ERR_error_string(ERR_get_error(), NULL));
-        EVP_PKEY_free(pkey);
         return -1;
     }
 
-    driver->m_pkey_loaded = 1;
-    EVP_PKEY_free(pkey);
     return 0;
 }
 
 int net_ssl_svr_driver_use_cert_from_string(net_ssl_svr_driver_t driver, const char * cert) {
     net_driver_t base_driver = net_driver_from_data(driver);
+    net_schedule_t schedule = net_driver_schedule(base_driver);
 
     if (driver->m_cert_loaded) {
         CPE_ERROR(
@@ -228,9 +228,10 @@ int net_ssl_svr_driver_use_cert_from_string(net_ssl_svr_driver_t driver, const c
         return -1;
     }
 
-    /* CPE_INFO( */
-    /*     driver->m_em, "sfox: sfox-http2: share: load cert: %s", */
-    /*     sfox_sfox_ssl_dump_cert_info(sfox_sfox_protocol_tmp_buffer(sfox_protocol), x)); */
+    CPE_INFO(
+        driver->m_em, "net: ssl: svr: %s: load cert: %s",
+        net_driver_name(base_driver),
+        net_ssl_dump_cert_info(net_schedule_tmp_buffer(schedule), x));
         
     if (SSL_CTX_use_certificate(driver->m_ssl_ctx, x) != 1 || ERR_peek_error() != 0) {
         CPE_ERROR(
@@ -289,8 +290,68 @@ PROCESS_ERROR:
 
 int net_ssl_svr_driver_confirm_cert(net_ssl_svr_driver_t driver) {
     net_driver_t base_driver = net_driver_from_data(driver);
+    net_schedule_t schedule = net_driver_schedule(base_driver);
     
-    if (driver->m_pkey_loaded) return 0;
+    if (driver->m_cert_loaded) return 0;
 
+    X509 * x509 = NULL;
+
+    ERR_clear_error(); /* clear error stack for SSL_CTX_use_certificate() */
+    x509 = X509_new();
+    if (x509 == NULL) {
+        CPE_ERROR(
+            driver->m_em, "net: ssl: svr: %s: generate cert: X509_new error: %s",
+            net_driver_name(base_driver), ERR_error_string(ERR_get_error(), NULL));
+        goto PROCESS_ERROR;
+    }
+    ASN1_INTEGER_set(X509_get_serialNumber(x509), 1);
+
+    X509_gmtime_adj(X509_getm_notBefore(x509), 0);
+    X509_gmtime_adj(X509_getm_notAfter(x509), 31536000L);
+
+    X509_set_pubkey(x509, driver->m_pkey);
+
+    X509_NAME * name = X509_get_subject_name(x509);
+    X509_NAME_add_entry_by_txt(name, "C", MBSTRING_ASC, (unsigned char *)"CA", -1, -1, 0);
+    X509_NAME_add_entry_by_txt(name, "O", MBSTRING_ASC, (unsigned char *)"sfox.org", -1, -1, 0);
+    X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_ASC, (unsigned char *)"localhost", -1, -1, 0);
+
+    /* Now set the issuer name. */
+    X509_set_issuer_name(x509, name);
+
+    /* Actually sign the certificate with our key. */
+    if (!X509_sign(x509, driver->m_pkey, EVP_sha1())) {
+        CPE_ERROR(
+            driver->m_em, "net: ssl: svr: %s: generate cert: sign error: %s",
+            net_driver_name(base_driver), ERR_error_string(ERR_get_error(), NULL));
+        goto PROCESS_ERROR;
+    }
+
+    if (SSL_CTX_use_certificate(driver->m_ssl_ctx, x509) != 1 || ERR_peek_error() != 0) {
+        CPE_ERROR(
+            driver->m_em, "net: ssl: svr: %s: generate cert: SSL_CTX_use_certificate failed: %s",
+            net_driver_name(base_driver), ERR_error_string(ERR_get_error(), NULL));
+        goto PROCESS_ERROR;
+    }
+    
+    CPE_INFO(
+        driver->m_em, "net: ssl: svr: %s: generate cert: %s",
+        net_driver_name(base_driver),
+        net_ssl_dump_cert_info(net_schedule_tmp_buffer(schedule), x509));
+        
+    X509_free(x509);
+    return 0;
+
+PROCESS_ERROR:
+    if (x509) {
+        X509_free(x509);
+    }
+    
+    return -1;
+}
+
+int net_ssl_svr_driver_prepaired(net_ssl_svr_driver_t driver) {
+    if (net_ssl_svr_driver_confirm_pkey(driver) != 0) return -1;
+    if (net_ssl_svr_driver_confirm_cert(driver) != 0) return -1;
     return 0;
 }
