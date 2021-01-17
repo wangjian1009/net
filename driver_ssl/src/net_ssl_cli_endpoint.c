@@ -44,7 +44,6 @@ int net_ssl_cli_endpoint_init(net_endpoint_t base_endpoint) {
     net_ssl_cli_undline_t underline = net_endpoint_protocol_data(endpoint->m_underline);
     underline->m_ssl_endpoint = endpoint;
 
-    endpoint->m_state = net_ssl_cli_endpoint_ssl_init;
     return 0;
 }
 
@@ -83,47 +82,6 @@ int net_ssl_cli_endpoint_connect(net_endpoint_t base_endpoint) {
     }
 
     int rv = net_endpoint_connect(endpoint->m_underline);
-
-    switch(net_endpoint_state(endpoint->m_underline)) {
-    case net_endpoint_state_resolving:
-        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_resolving) != 0) return -1;
-        break;
-    case net_endpoint_state_connecting:
-        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_connecting) != 0) return -1;
-        break;
-    case net_endpoint_state_established:
-        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_connecting) != 0) return -1;
-
-        if (endpoint->m_state == net_ssl_cli_endpoint_ssl_init) {
-            endpoint->m_state = net_ssl_cli_endpoint_ssl_handshake;
-            if (net_ssl_cli_endpoint_handshake_start(base_endpoint, endpoint) != 0) return -1;
-        }
-        break;
-    case net_endpoint_state_logic_error:
-        net_endpoint_set_error(
-            base_endpoint,
-            net_endpoint_error_source(endpoint->m_underline),
-            net_endpoint_error_no(endpoint->m_underline),
-            net_endpoint_error_msg(endpoint->m_underline));
-        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_logic_error) != 0) return -1;
-        break;
-    case net_endpoint_state_network_error:
-        net_endpoint_set_error(
-            base_endpoint,
-            net_endpoint_error_source(endpoint->m_underline),
-            net_endpoint_error_no(endpoint->m_underline),
-            net_endpoint_error_msg(endpoint->m_underline));
-        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) return -1;
-        break;
-    case net_endpoint_state_disable:
-    case net_endpoint_state_deleting:
-        net_endpoint_set_error(
-            base_endpoint,
-            net_endpoint_error_source_network,
-            net_endpoint_network_errno_logic,
-            "underline ep state error");
-        return -1;
-    }
 
     return rv;
 }
@@ -214,15 +172,21 @@ int net_ssl_cli_endpoint_get_mss(net_endpoint_t base_endpoint, uint32_t * mss) {
     return net_endpoint_get_mss(endpoint->m_underline, mss);
 }
 
-int net_ssl_cli_endpoint_handshake_start(net_endpoint_t base_endpoint, net_ssl_cli_endpoint_t endpoint) {
+int net_ssl_cli_endpoint_do_handshake(net_endpoint_t base_endpoint, net_ssl_cli_endpoint_t endpoint) {
     ERR_clear_error();
     SSL_set_connect_state(endpoint->m_ssl);
-    int r = SSL_do_handshake(endpoint->m_ssl);
 
-    if (r != 1) {
+    assert(net_endpoint_state(base_endpoint) == net_endpoint_state_connecting);
+    
+    int r = SSL_do_handshake(endpoint->m_ssl);
+    if (r == 1) {
+        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_established) != 0) return -1;
+    }
+    else {
         int err = SSL_get_error(endpoint->m_ssl, r);
         switch (err) {
         case SSL_ERROR_WANT_WRITE:
+            net_ssl_cli_endpoint_dump_error(base_endpoint, err);
             //stop_reading(bev_ssl);
             //return start_writing(bev_ssl);
             break;

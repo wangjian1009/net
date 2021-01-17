@@ -29,7 +29,11 @@ static void net_ssl_pair_basic(void **state) {
     
     assert_true(net_endpoint_connect(cli_ep) == 0);
 
-    assert_true(net_endpoint_buf_append(cli_ep, net_ep_buf_write, "abcd", 4) == -1);
+    assert_string_equal(
+        net_endpoint_state_str(net_endpoint_state(cli_ep)),
+        net_endpoint_state_str(net_endpoint_state_established));
+        
+    //assert_true(net_endpoint_buf_append(cli_ep, net_ep_buf_write, "abcd", 4) == -1);
 }
 
 int net_ssl_pair_basic_tests() {

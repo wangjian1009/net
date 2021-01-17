@@ -3,15 +3,8 @@
 #include "net_ssl_cli_endpoint.h"
 #include "net_ssl_cli_driver_i.h"
 
-enum net_ssl_cli_endpoint_ssl_state {
-    net_ssl_cli_endpoint_ssl_init,
-    net_ssl_cli_endpoint_ssl_handshake,
-    net_ssl_cli_endpoint_ssl_established,
-};
-
 struct net_ssl_cli_endpoint {
     net_endpoint_t m_underline;
-    enum net_ssl_cli_endpoint_ssl_state m_state;
 	SSL * m_ssl;
 };
 
@@ -23,7 +16,7 @@ int net_ssl_cli_endpoint_update(net_endpoint_t endpoint);
 int net_ssl_cli_endpoint_set_no_delay(net_endpoint_t endpoint, uint8_t no_delay);
 int net_ssl_cli_endpoint_get_mss(net_endpoint_t endpoint, uint32_t * mss);
 
-int net_ssl_cli_endpoint_handshake_start(net_endpoint_t base_endpoint, net_ssl_cli_endpoint_t endpoint);
+int net_ssl_cli_endpoint_do_handshake(net_endpoint_t base_endpoint, net_ssl_cli_endpoint_t endpoint);
 void net_ssl_cli_endpoint_dump_error(net_endpoint_t base_endpoint, int val);
 
 #endif
