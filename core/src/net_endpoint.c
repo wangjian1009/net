@@ -98,7 +98,8 @@ net_endpoint_create(net_driver_t driver, net_protocol_t protocol, net_mem_group_
     if (endpoint->m_protocol_debug || endpoint->m_driver_debug || schedule->m_debug >= 2) {
         CPE_INFO(schedule->m_em, "core: %s created!", net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
     }
-    
+
+    CPE_ERROR(schedule->m_em, "xxxxx: create ep %d", endpoint->m_id);
     return endpoint;
 }
 

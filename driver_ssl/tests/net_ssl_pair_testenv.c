@@ -1,9 +1,11 @@
 #include "cmocka_all.h"
 #include "net_address.h"
 #include "net_acceptor.h"
+#include "net_endpoint.h"
 #include "net_ssl_pair_testenv.h"
 
 int net_ssl_pair_testenv_acceptor_on_new_endpoint(void * ctx, net_endpoint_t endpoint) {
+    net_endpoint_set_driver_debug(endpoint, 2);
     return 0;
 }
 

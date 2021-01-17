@@ -157,7 +157,7 @@ int net_ssl_svr_driver_use_pkey_from_string(net_ssl_svr_driver_t driver, const c
 
     if (driver->m_pkey != NULL) {
         CPE_ERROR(
-            driver->m_em, "net: ssl: svr: %s: use pkey: already setted!",
+            driver->m_em, "net: ssl: %s: use pkey: already setted!",
             net_driver_name(base_driver));
         return -1;
     }
@@ -167,7 +167,7 @@ int net_ssl_svr_driver_use_pkey_from_string(net_ssl_svr_driver_t driver, const c
 
     if (SSL_CTX_use_PrivateKey(driver->m_ssl_ctx, driver->m_pkey) <= 0) {
         CPE_ERROR(
-            driver->m_em, "net: ssl: svr: %s: use pkey failed, %s",
+            driver->m_em, "net: ssl: %s: use pkey failed, %s",
             net_driver_name(base_driver), ERR_error_string(ERR_get_error(), NULL));
         return -1;
     }
@@ -185,7 +185,7 @@ int net_ssl_svr_driver_confirm_pkey(net_ssl_svr_driver_t driver) {
 
     if (SSL_CTX_use_PrivateKey(driver->m_ssl_ctx, driver->m_pkey) <= 0) {
         CPE_ERROR(
-            driver->m_em, "net: ssl: svr: %s: use pkey failed, %s",
+            driver->m_em, "net: ssl: %s: use pkey failed, %s",
             net_driver_name(base_driver), ERR_error_string(ERR_get_error(), NULL));
         return -1;
     }
@@ -199,7 +199,7 @@ int net_ssl_svr_driver_use_cert_from_string(net_ssl_svr_driver_t driver, const c
 
     if (driver->m_cert_loaded) {
         CPE_ERROR(
-            driver->m_em, "net: ssl: svr: %s: use cert: already setted!",
+            driver->m_em, "net: ssl: %s: use cert: already setted!",
             net_driver_name(base_driver));
         return -1;
     }
@@ -211,17 +211,15 @@ int net_ssl_svr_driver_use_cert_from_string(net_ssl_svr_driver_t driver, const c
     BIO * cert_bio = BIO_new_mem_buf(cert, (int)strlen(cert));
     if (cert_bio == NULL) {
         CPE_ERROR(
-            driver->m_em,
-            "net: ssl: svr: %s: init cert bio failed: %s",
-            net_driver_name(base_driver),
-            ERR_error_string(ERR_get_error(), NULL));
+            driver->m_em, "net: ssl: %s: init cert bio failed: %s",
+            net_driver_name(base_driver), ERR_error_string(ERR_get_error(), NULL));
         return -1;
     }
     
     X509 * x = PEM_read_bio_X509_AUX(cert_bio, NULL, passwd_callback, passwd_callback_userdata);
     if (x == NULL) {
         CPE_ERROR(
-            driver->m_em, "net: ssl: svr: %s: read cert failed: %s\n%s",
+            driver->m_em, "net: ssl: %s: read cert failed: %s\n%s",
             net_driver_name(base_driver),
             ERR_error_string(ERR_get_error(), NULL), cert);
         BIO_free(cert_bio);
@@ -229,13 +227,13 @@ int net_ssl_svr_driver_use_cert_from_string(net_ssl_svr_driver_t driver, const c
     }
 
     CPE_INFO(
-        driver->m_em, "net: ssl: svr: %s: load cert: %s",
+        driver->m_em, "net: ssl: %s: load cert: %s",
         net_driver_name(base_driver),
         net_ssl_dump_cert_info(net_schedule_tmp_buffer(schedule), x));
         
     if (SSL_CTX_use_certificate(driver->m_ssl_ctx, x) != 1 || ERR_peek_error() != 0) {
         CPE_ERROR(
-            driver->m_em, "net: ssl: svr: %s: read cert failed: %s",
+            driver->m_em, "net: ssl: %s: read cert failed: %s",
             net_driver_name(base_driver),
             ERR_error_string(ERR_get_error(), NULL));
         goto PROCESS_ERROR;
@@ -247,7 +245,7 @@ int net_ssl_svr_driver_use_cert_from_string(net_ssl_svr_driver_t driver, const c
      */
     if (SSL_CTX_clear_chain_certs(driver->m_ssl_ctx) != 1) {
         CPE_ERROR(
-            driver->m_em, "net: ssl: svr: %s: clear chain certs fail: %s",
+            driver->m_em, "net: ssl: %s: clear chain certs fail: %s",
             net_driver_name(base_driver),
             ERR_error_string(ERR_get_error(), NULL));
         goto PROCESS_ERROR;
@@ -257,7 +255,7 @@ int net_ssl_svr_driver_use_cert_from_string(net_ssl_svr_driver_t driver, const c
     while ((ca = PEM_read_bio_X509(cert_bio, NULL, passwd_callback, passwd_callback_userdata)) != NULL) {
         if (!SSL_CTX_add0_chain_cert(driver->m_ssl_ctx, ca)) {
             CPE_ERROR(
-                driver->m_em, "net: ssl: svr: %s: add ca cert fail: %s",
+                driver->m_em, "net: ssl: %s: add ca cert fail: %s",
                 net_driver_name(base_driver), ERR_error_string(ERR_get_error(), NULL));
             X509_free(ca);
             goto PROCESS_ERROR;
@@ -271,7 +269,7 @@ int net_ssl_svr_driver_use_cert_from_string(net_ssl_svr_driver_t driver, const c
     }
     else {
         CPE_ERROR(
-            driver->m_em, "net: ssl: svr: %s: last found error: %s",
+            driver->m_em, "net: ssl: %s: last found error: %s",
             net_driver_name(base_driver), ERR_error_string(err, NULL));
         goto PROCESS_ERROR;
     }
@@ -300,7 +298,7 @@ int net_ssl_svr_driver_confirm_cert(net_ssl_svr_driver_t driver) {
     x509 = X509_new();
     if (x509 == NULL) {
         CPE_ERROR(
-            driver->m_em, "net: ssl: svr: %s: generate cert: X509_new error: %s",
+            driver->m_em, "net: ssl: %s: generate cert: X509_new error: %s",
             net_driver_name(base_driver), ERR_error_string(ERR_get_error(), NULL));
         goto PROCESS_ERROR;
     }
@@ -322,20 +320,20 @@ int net_ssl_svr_driver_confirm_cert(net_ssl_svr_driver_t driver) {
     /* Actually sign the certificate with our key. */
     if (!X509_sign(x509, driver->m_pkey, EVP_sha1())) {
         CPE_ERROR(
-            driver->m_em, "net: ssl: svr: %s: generate cert: sign error: %s",
+            driver->m_em, "net: ssl: %s: generate cert: sign error: %s",
             net_driver_name(base_driver), ERR_error_string(ERR_get_error(), NULL));
         goto PROCESS_ERROR;
     }
 
     if (SSL_CTX_use_certificate(driver->m_ssl_ctx, x509) != 1 || ERR_peek_error() != 0) {
         CPE_ERROR(
-            driver->m_em, "net: ssl: svr: %s: generate cert: SSL_CTX_use_certificate failed: %s",
+            driver->m_em, "net: ssl: %s: generate cert: SSL_CTX_use_certificate failed: %s",
             net_driver_name(base_driver), ERR_error_string(ERR_get_error(), NULL));
         goto PROCESS_ERROR;
     }
     
     CPE_INFO(
-        driver->m_em, "net: ssl: svr: %s: generate cert: %s",
+        driver->m_em, "net: ssl: %s: generate cert: %s",
         net_driver_name(base_driver),
         net_ssl_dump_cert_info(net_schedule_tmp_buffer(schedule), x509));
         

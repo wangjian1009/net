@@ -11,31 +11,46 @@
 
 int net_ssl_svr_acceptor_on_new_endpoint(void * ctx, net_endpoint_t base_underline) {
     net_acceptor_t base_acceptor = ctx;
-    net_ssl_svr_driver_t driver = net_driver_data(net_acceptor_driver(base_acceptor));
+    net_driver_t base_driver = net_acceptor_driver(base_acceptor);
+    net_ssl_svr_driver_t driver = net_driver_data(base_driver);
     net_schedule_t schedule = net_endpoint_schedule(base_underline);
 
     net_ssl_svr_undline_t underline = net_endpoint_protocol_data(base_underline);
     assert(underline->m_ssl_endpoint == NULL);
-           
-    net_endpoint_t base_endpoint =
+
+    net_endpoint_t new_base_endpoint =
         net_endpoint_create(
             net_acceptor_driver(base_acceptor),
             net_acceptor_protocol(base_acceptor),
             NULL);
-    if (base_endpoint == NULL) {
-        CPE_ERROR(driver->m_em, "net: ssl: on new endpoint: create endpoint error!");
+    if (new_base_endpoint == NULL) {
+        CPE_ERROR(
+            driver->m_em, "net: ssl: %s: on new endpoint: create endpoint error!",
+            net_driver_name(base_driver));
         return -1;
     }
 
-    net_ssl_svr_endpoint_t endpoint = net_endpoint_data(base_endpoint);
-    endpoint->m_underline = base_underline;
-    underline->m_ssl_endpoint = endpoint;
+    net_ssl_svr_endpoint_t new_endpoint = net_endpoint_data(new_base_endpoint);
+    new_endpoint->m_underline = base_underline;
+    underline->m_ssl_endpoint = new_endpoint;
 
-    if (net_endpoint_set_state(base_endpoint, net_endpoint_state_established) != 0) {
-        CPE_ERROR(driver->m_em, "net: ssl: on new endpoint: set established failed!");
-        endpoint->m_underline = NULL;
+    if (net_endpoint_set_state(new_base_endpoint, net_endpoint_state_established) != 0) {
+        CPE_ERROR(
+            driver->m_em, "net: ssl: %s: on new endpoint: set established failed!",
+            net_driver_name(base_driver));
+        new_endpoint->m_underline = NULL;
         underline->m_ssl_endpoint = NULL;
-        net_endpoint_free(base_endpoint);
+        net_endpoint_free(new_base_endpoint);
+        return -1;
+    }
+
+    if (net_acceptor_on_new_endpoint(base_acceptor, new_base_endpoint) != 0) {
+        CPE_ERROR(
+            driver->m_em, "net: ssl: %s: on new endpoint: set established failed!",
+            net_driver_name(base_driver));
+        new_endpoint->m_underline = NULL;
+        underline->m_ssl_endpoint = NULL;
+        net_endpoint_free(new_base_endpoint);
         return -1;
     }
     
