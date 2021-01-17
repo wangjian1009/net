@@ -69,7 +69,6 @@ static int test_net_endpoint_connect_apply_setup(
         assert_true(base_acceptor != NULL);
 
         if (test_net_acceptor_accept(base_acceptor, base_endpoint) != 0) return -1;
-
         if (net_endpoint_set_state(base_endpoint, net_endpoint_state_established) != 0) return -1;
         
         return 0;

@@ -30,8 +30,9 @@ int net_ssl_svr_endpoint_init(net_endpoint_t base_endpoint) {
         return -1;
     }
 	BIO_set_init(bio, 1);
-	BIO_set_data(bio, endpoint);
+	BIO_set_data(bio, base_endpoint);
 	BIO_set_shutdown(bio, 0);
+    SSL_set_bio(endpoint->m_ssl, bio, bio);
     
     endpoint->m_underline = NULL;
 
@@ -73,6 +74,33 @@ int net_ssl_svr_endpoint_set_no_delay(net_endpoint_t base_endpoint, uint8_t no_d
 }
 
 int net_ssl_svr_endpoint_get_mss(net_endpoint_t base_endpoint, uint32_t * mss) {
+    return 0;
+}
+
+int net_ssl_svr_endpoint_do_handshake(net_endpoint_t base_endpoint, net_ssl_svr_endpoint_t endpoint) {
+    ERR_clear_error();
+    int r = SSL_do_handshake(endpoint->m_ssl);
+
+    if (r != 1) {
+        int err = SSL_get_error(endpoint->m_ssl, r);
+        switch (err) {
+        case SSL_ERROR_WANT_WRITE:
+            //stop_reading(bev_ssl);
+            //return start_writing(bev_ssl);
+            break;
+        case SSL_ERROR_WANT_READ:
+            //stop_writing(bev_ssl);
+            //return start_reading(bev_ssl);
+            return 0;
+        default:
+            net_ssl_svr_endpoint_dump_error(base_endpoint, err);
+            net_endpoint_set_error(base_endpoint, net_endpoint_error_source_protocol, -1, "handshake start fail");
+            break;
+        }
+
+        return -1;
+    }
+
     return 0;
 }
 

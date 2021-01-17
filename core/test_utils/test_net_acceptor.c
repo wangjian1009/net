@@ -2,6 +2,7 @@
 #include "net_acceptor.h"
 #include "net_address.h"
 #include "net_endpoint.h"
+#include "net_protocol.h"
 #include "test_net_acceptor.h"
 #include "test_net_endpoint.h"
 #include "test_net_endpoint_link.h"
@@ -23,23 +24,23 @@ int test_net_acceptor_accept(net_acceptor_t base_acceptor, net_endpoint_t remote
     net_acceptor_t acceptor = net_acceptor_data(base_acceptor);
     test_net_driver_t driver = net_driver_data(net_acceptor_driver(base_acceptor));
 
-    net_endpoint_t base_endpoint =
+    net_endpoint_t new_base_endpoint =
         net_endpoint_create(net_driver_from_data(driver), net_acceptor_protocol(base_acceptor), NULL);
-    assert_true(base_endpoint != NULL);
+    assert_true(new_base_endpoint != NULL);
 
-    test_net_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+    test_net_endpoint_t new_endpoint = net_endpoint_data(new_base_endpoint);
 
-    net_endpoint_set_remote_address(base_endpoint, net_endpoint_address(remote_ep));
+    net_endpoint_set_remote_address(new_base_endpoint, net_endpoint_address(remote_ep));
 
-    test_net_endpoint_link_create(net_endpoint_data(remote_ep), endpoint);
+    test_net_endpoint_link_create(net_endpoint_data(remote_ep), new_endpoint);
     
-    if (net_endpoint_set_state(base_endpoint, net_endpoint_state_established) != 0) {
-        net_endpoint_free(base_endpoint);
+    if (net_endpoint_set_state(new_base_endpoint, net_endpoint_state_established) != 0) {
+        net_endpoint_free(new_base_endpoint);
         return -1;
     }
 
-    if (net_acceptor_on_new_endpoint(base_acceptor, base_endpoint) != 0) {
-        net_endpoint_free(base_endpoint);
+    if (net_acceptor_on_new_endpoint(base_acceptor, new_base_endpoint) != 0) {
+        net_endpoint_free(new_base_endpoint);
         return -1;
     }
 
