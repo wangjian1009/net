@@ -52,16 +52,6 @@ void net_ssl_svr_endpoint_fini(net_endpoint_t base_endpoint) {
     }
 }
 
-int net_ssl_svr_endpoint_connect(net_endpoint_t base_endpoint) {
-    net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
-    net_ssl_svr_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
-
-    CPE_ERROR(
-        driver->m_em, "net: ssl: %s: connect: not support connect",
-        net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
-    return -1;
-}
-
 void net_ssl_svr_endpoint_close(net_endpoint_t base_endpoint) {
     net_ssl_svr_endpoint_t endpoint = net_endpoint_data(base_endpoint);
 

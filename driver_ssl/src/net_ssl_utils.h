@@ -9,6 +9,7 @@ void net_ssl_dump_tls_info(
     int direction, int ssl_ver, int content_type, const void *buf, size_t len, SSL *ssl);
 
 const char * net_ssl_errno_str(int e);
+const char * net_ssl_bio_ctrl_cmd_str(int cmd);
 
 #endif
 

@@ -22,7 +22,7 @@ int net_ssl_cli_endpoint_bio_free(BIO *b) {
     
     if (net_endpoint_driver_debug(base_endpoint) >= 2) {
         CPE_INFO(
-            driver->m_em, "net: ssl: %s: bio: free success",
+            driver->m_em, "net: ssl: %s: cli: bio: free success",
             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
     }
     
@@ -43,7 +43,7 @@ int net_ssl_cli_endpoint_bio_read(BIO *b, char *out, int outlen) {
 
     if (endpoint->m_underline == NULL) {
         CPE_ERROR(
-            driver->m_em, "net: ssl: %s: bio: read: no underline!",
+            driver->m_em, "net: ssl: %s: cli: bio: read: no underline!",
             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
         return -1;
     }
@@ -58,7 +58,7 @@ int net_ssl_cli_endpoint_bio_read(BIO *b, char *out, int outlen) {
     if (length > outlen) {
         if (net_endpoint_driver_debug(base_endpoint) >= 2) {
             CPE_INFO(
-                driver->m_em, "net: ssl: %s: bio: read: out-len=%d, buf-len=%d, read part",
+                driver->m_em, "net: ssl: %s: cli: bio: read: out-len=%d, buf-len=%d, read part",
                 net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
                 outlen, length);
         }
@@ -69,7 +69,7 @@ int net_ssl_cli_endpoint_bio_read(BIO *b, char *out, int outlen) {
     void * data = NULL;
     if (net_endpoint_buf_peak_with_size(endpoint->m_underline, net_ep_buf_read, length, &data) != 0) {
         CPE_ERROR(
-            driver->m_em, "net: ssl: %s: bio: read: peak data fail, length=%d",
+            driver->m_em, "net: ssl: %s: cli: bio: read: peak data fail, length=%d",
             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
             length);
         return -1;
@@ -94,7 +94,7 @@ int net_ssl_cli_endpoint_bio_write(BIO *b, const char *in, int inlen) {
 
     if (endpoint->m_underline == NULL) {
         CPE_ERROR(
-            driver->m_em, "net: ssl: %s: bio: write: no underline!",
+            driver->m_em, "net: ssl: %s: cli: bio: write: no underline!",
             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
         return -1;
     }
@@ -102,7 +102,7 @@ int net_ssl_cli_endpoint_bio_write(BIO *b, const char *in, int inlen) {
     uint32_t write_size = inlen;
     if (net_endpoint_buf_append(endpoint->m_underline, net_ep_buf_write, in, write_size) != 0) {
         CPE_ERROR(
-            driver->m_em, "net: ssl: %s: bio: write: append buf fail, len=%d!",
+            driver->m_em, "net: ssl: %s: cli: bio: write: append buf fail, len=%d!",
             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint), write_size);
         return -1;
     }
@@ -131,10 +131,20 @@ long net_ssl_cli_endpoint_bio_ctrl(BIO *b, int cmd, long num, void *ptr) {
     net_ssl_cli_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     
     if (endpoint->m_underline == NULL) {
-        CPE_ERROR(
-            driver->m_em, "net: ssl: %s: bio: ctrl: no underline!",
-            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+        if (net_endpoint_driver_debug(base_endpoint)) {
+            CPE_INFO(
+                driver->m_em, "net: ssl: %s: cli: bio: cmd %s: no underline!",
+                net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
+                net_ssl_bio_ctrl_cmd_str(cmd));
+        }
         return -1;
+    }
+
+    if (net_endpoint_driver_debug(base_endpoint) >= 2) {
+        CPE_INFO(
+            driver->m_em, "net: ssl: %s: cli: bio: cmd %s",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
+            net_ssl_bio_ctrl_cmd_str(cmd));
     }
     
 	long ret = 1;

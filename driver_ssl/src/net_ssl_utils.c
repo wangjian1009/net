@@ -244,3 +244,47 @@ const char * net_ssl_errno_str(int e) {
         return buf;
     }
 }
+
+const char * net_ssl_bio_ctrl_cmd_str(int cmd) {
+    static char buf[32];
+
+    switch(cmd) {
+    case BIO_CTRL_RESET:
+        return "BIO_CTRL_RESET";
+    case BIO_CTRL_EOF:
+        return "BIO_CTRL_EOF";
+    case BIO_CTRL_INFO:
+        return "BIO_CTRL_INFO";
+    case BIO_CTRL_SET:
+        return "BIO_CTRL_SET";
+    case BIO_CTRL_GET:
+        return "BIO_CTRL_GET";
+    case BIO_CTRL_PUSH:
+        return "BIO_CTRL_PUSH";
+    case BIO_CTRL_POP:
+        return "BIO_CTRL_POP";
+    case BIO_CTRL_GET_CLOSE:
+        return "BIO_CTRL_GET_CLOSE";
+    case BIO_CTRL_SET_CLOSE:
+        return "BIO_CTRL_SET_CLOSE";
+    case BIO_CTRL_PENDING:
+        return "BIO_CTRL_PENDING";
+    case BIO_CTRL_FLUSH:
+        return "BIO_CTRL_FLUSH";
+    case BIO_CTRL_DUP:
+        return "BIO_CTRL_DUP";
+    case BIO_CTRL_WPENDING:
+        return "BIO_CTRL_WPENDING";
+    case BIO_CTRL_SET_CALLBACK:
+        return "BIO_CTRL_SET_CALLBACK";
+    case BIO_CTRL_GET_CALLBACK:
+        return "BIO_CTRL_GET_CALLBACK";
+    case BIO_CTRL_PEEK:
+        return "BIO_CTRL_PEEK";
+    case BIO_CTRL_SET_FILENAME:
+        return "BIO_CTRL_SET_FILENAME";
+    default:
+        snprintf(buf, sizeof(buf), "unknown bio cmd %d", cmd);
+        return buf;
+    }
+}

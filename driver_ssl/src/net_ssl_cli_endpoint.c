@@ -1,3 +1,4 @@
+#include <assert.h>
 #include "net_schedule.h"
 #include "net_driver.h"
 #include "net_endpoint.h"
@@ -140,6 +141,46 @@ void net_ssl_cli_endpoint_close(net_endpoint_t base_endpoint) {
 }
 
 int net_ssl_cli_endpoint_update(net_endpoint_t base_endpoint) {
+    net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
+    net_ssl_cli_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
+    net_ssl_cli_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+
+    if (endpoint->m_underline == NULL) {
+        CPE_ERROR(
+            driver->m_em, "net: ssl: %s: set no delay: no underline!",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+        return -1;
+    }
+    if (!net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write)) { /*有数据等待写入 */
+        /* if (net_sock_endpoint_on_write(driver, endpoint, base_endpoint) != 0) return -1; */
+        if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return 0;
+    }
+
+    assert(net_endpoint_state(base_endpoint) == net_endpoint_state_established);
+
+    if (net_endpoint_expect_read(base_endpoint)) {
+        /* if (!net_watcher_expect_read(endpoint->m_watcher)) { /\*socket上没有等待读取的操作（当前有数据可以读取) *\/ */
+        /*     if (net_endpoint_driver_debug(base_endpoint) >= 3) { */
+        /*         CPE_INFO( */
+        /*             driver->m_em, "sock: %s: fd=%d: read begin!", */
+        /*             net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd); */
+        /*     } */
+
+        /*     net_watcher_update_read(endpoint->m_watcher, 1); */
+        /* } */
+    }
+    else {
+        /* if (net_watcher_expect_read(endpoint->m_watcher)) { */
+        /*     if (net_endpoint_driver_debug(base_endpoint) >= 3) { */
+        /*         CPE_INFO( */
+        /*             driver->m_em, "sock: %s: fd=%d: read stop!", */
+        /*             net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd); */
+        /*     } */
+
+        /*     net_watcher_update_read(endpoint->m_watcher, 0); */
+        /* } */
+    }
+    
     return 0;
 }
 

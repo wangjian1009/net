@@ -43,7 +43,7 @@ net_ssl_svr_driver_create(
             sizeof(struct net_ssl_svr_endpoint),
             net_ssl_svr_endpoint_init,
             net_ssl_svr_endpoint_fini,
-            net_ssl_svr_endpoint_connect,
+            NULL,
             net_ssl_svr_endpoint_close,
             net_ssl_svr_endpoint_update,
             net_ssl_svr_endpoint_set_no_delay,

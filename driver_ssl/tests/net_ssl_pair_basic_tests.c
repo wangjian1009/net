@@ -25,7 +25,7 @@ static void net_ssl_pair_basic(void **state) {
 
     test_net_endpoint_expect_connect_to_acceptor(cli_underline, "1.2.3.4:5678", 0);
     
-    net_endpoint_connect(cli_ep);
+    assert_true(net_endpoint_connect(cli_ep) == 0);
 }
 
 int net_ssl_pair_basic_tests() {
