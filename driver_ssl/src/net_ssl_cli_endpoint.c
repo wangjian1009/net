@@ -249,14 +249,15 @@ void net_ssl_cli_endpoint_trace_cb(
     net_ssl_cli_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
     net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
     
-    if (net_endpoint_driver_debug(base_endpoint) >= 2) {
+    if (net_endpoint_driver_debug(base_endpoint)) {
         char prefix[256];
         snprintf(
             prefix, sizeof(prefix), "net: ssl: %s: SSL: ",
             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
         net_ssl_dump_tls_info(
-            driver->m_em, net_schedule_tmp_buffer(schedule),
-            prefix, write_p, version, content_type, buf, len, ssl);
+            driver->m_em, net_schedule_tmp_buffer(schedule), prefix,
+            net_endpoint_driver_debug(base_endpoint) >= 2,
+            write_p, version, content_type, buf, len, ssl);
     }
 }
 

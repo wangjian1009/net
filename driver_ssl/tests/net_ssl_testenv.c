@@ -38,7 +38,7 @@ net_endpoint_t net_ssl_testenv_cli_ep_create(net_ssl_testenv_t env) {
             net_schedule_noop_protocol(env->m_schedule),
             NULL);
 
-    net_endpoint_set_driver_debug(endpoint, 2);
+    net_endpoint_set_driver_debug(endpoint, 1);
 
     return endpoint;
 }

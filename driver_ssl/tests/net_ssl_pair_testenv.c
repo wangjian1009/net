@@ -5,7 +5,7 @@
 #include "net_ssl_pair_testenv.h"
 
 int net_ssl_pair_testenv_acceptor_on_new_endpoint(void * ctx, net_endpoint_t endpoint) {
-    net_endpoint_set_driver_debug(endpoint, 2);
+    net_endpoint_set_driver_debug(endpoint, 1);
     return 0;
 }
 

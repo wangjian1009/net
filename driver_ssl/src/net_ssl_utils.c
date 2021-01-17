@@ -212,7 +212,7 @@ static const char * net_ssl_msg_type(int ssl_ver, int msg) {
 }
 
 void net_ssl_dump_tls_info(
-    error_monitor_t em, mem_buffer_t buffer, const char * prefix,
+    error_monitor_t em, mem_buffer_t buffer, const char * prefix, uint8_t with_data,
     int direction, int ssl_ver, int content_type, const void *buf, size_t len, SSL *ssl)
 {
     if (direction != 0 && direction != 1) return;
@@ -304,11 +304,13 @@ void net_ssl_dump_tls_info(
         }
     }
 
-    CPE_INFO(
-        em, "%s%s %d bytes\n%s",
-        prefix, direction == 1 ? "==>" : "<==",
-        (int)len,
-        net_ssl_dump_data(buffer, buf, len));
+    if (with_data) {
+        CPE_INFO(
+            em, "%s%s %d bytes\n%s", prefix, direction == 1 ? "==>" : "<==", (int)len,
+            net_ssl_dump_data(buffer, buf, len));
+    } else {
+        CPE_INFO(em, "%s%s %d bytes", prefix, direction == 1 ? "==>" : "<==", (int)len);
+    }
 }
 
 const char * net_ssl_errno_str(int e) {

@@ -11,7 +11,7 @@ EVP_PKEY * net_ssl_pkey_generate(error_monitor_t em);
 const char * net_ssl_dump_cert_info(mem_buffer_t buffer, X509 * cert);
 
 void net_ssl_dump_tls_info(
-    error_monitor_t em, mem_buffer_t buffer, const char * prefix,
+    error_monitor_t em, mem_buffer_t buffer, const char * prefix, uint8_t with_data,
     int direction, int ssl_ver, int content_type, const void *buf, size_t len, SSL *ssl);
 
 const char * net_ssl_errno_str(int e);

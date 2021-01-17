@@ -9,14 +9,17 @@ static void net_ssl_svr_endpoint_trace_cb(
 
 int net_ssl_svr_endpoint_init(net_endpoint_t base_endpoint) {
     net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
-    net_ssl_svr_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
+    net_driver_t base_driver = net_endpoint_driver(base_endpoint);
+    net_ssl_svr_driver_t driver = net_driver_data(base_driver);
     net_ssl_svr_endpoint_t endpoint = net_endpoint_data(base_endpoint);
 
     endpoint->m_state = net_ssl_svr_endpoint_ssl_handshake;
     
     endpoint->m_ssl = SSL_new(driver->m_ssl_ctx);
     if(endpoint->m_ssl == NULL) {
-        CPE_ERROR(driver->m_em, "net: ssl: svr: endpoint init: create ssl fail");
+        CPE_ERROR(
+            driver->m_em, "net: ssl: %s: endpoint init: create ssl fail",
+            net_driver_name(base_driver));
         return -1;
     }
     SSL_set_msg_callback(endpoint->m_ssl, net_ssl_svr_endpoint_trace_cb);
@@ -25,7 +28,9 @@ int net_ssl_svr_endpoint_init(net_endpoint_t base_endpoint) {
 
     BIO * bio = BIO_new(driver->m_bio_method);
     if (bio == NULL) {
-        CPE_ERROR(driver->m_em, "net: ssl: svr: endpoint init: create bio fail");
+        CPE_ERROR(
+            driver->m_em, "net: ssl: %s: endpoint init: create bio fail",
+            net_driver_name(base_driver));
         SSL_free(endpoint->m_ssl);
         return -1;
     }
@@ -33,7 +38,7 @@ int net_ssl_svr_endpoint_init(net_endpoint_t base_endpoint) {
 	BIO_set_data(bio, base_endpoint);
 	BIO_set_shutdown(bio, 0);
     SSL_set_bio(endpoint->m_ssl, bio, bio);
-    
+
     endpoint->m_underline = NULL;
 
     return 0;
@@ -111,14 +116,15 @@ void net_ssl_svr_endpoint_trace_cb(
     net_ssl_svr_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
     net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
 
-    if (net_endpoint_driver_debug(base_endpoint) >= 2) {
+    if (net_endpoint_driver_debug(base_endpoint)) {
         char prefix[256];
         snprintf(
             prefix, sizeof(prefix), "net: ssl: %s: SSL: ",
             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
         net_ssl_dump_tls_info(
-            driver->m_em, net_schedule_tmp_buffer(schedule),
-            prefix, write_p, version, content_type, buf, len, ssl);
+            driver->m_em, net_schedule_tmp_buffer(schedule), prefix,
+            net_endpoint_driver_debug(base_endpoint) >= 2,
+            write_p, version, content_type, buf, len, ssl);
     }
 }
 
