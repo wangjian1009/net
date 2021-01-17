@@ -7,7 +7,10 @@ struct test_net_endpoint_link {
     test_net_endpoint_t m_z;
 };
 
-test_net_endpoint_link_t test_net_endpoint_link_create(test_net_endpoint_t a, test_net_endpoint_t b);
+test_net_endpoint_link_t
+test_net_endpoint_link_create(
+    test_net_endpoint_t a, test_net_endpoint_t b, int64_t write_delay_ms);
+
 void test_net_endpoint_link_free(test_net_endpoint_link_t link);
 
 test_net_endpoint_t test_net_endpoint_link_other(test_net_endpoint_link_t link, test_net_endpoint_t ep);

@@ -4,7 +4,7 @@
 #include "test_net_endpoint_link.h"
 
 test_net_endpoint_link_t
-test_net_endpoint_link_create(test_net_endpoint_t a, test_net_endpoint_t z) {
+test_net_endpoint_link_create(test_net_endpoint_t a, test_net_endpoint_t z, int64_t write_delay_ms) {
     test_net_endpoint_link_t link = mem_alloc(test_allocrator(), sizeof(struct test_net_endpoint_link));
 
     test_net_endpoint_write_policy_clear(a);
@@ -12,10 +12,12 @@ test_net_endpoint_link_create(test_net_endpoint_t a, test_net_endpoint_t z) {
 
     a->m_write_policy.m_type = test_net_endpoint_write_link;
     a->m_write_policy.m_link.m_link = link;
+    a->m_write_policy.m_link.m_write_delay_ms = write_delay_ms;
     link->m_a = a;
 
     z->m_write_policy.m_type = test_net_endpoint_write_link;
     z->m_write_policy.m_link.m_link = link;
+    z->m_write_policy.m_link.m_write_delay_ms = write_delay_ms;
     link->m_z = z;
     
     return link;

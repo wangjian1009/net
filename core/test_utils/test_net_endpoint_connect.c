@@ -26,7 +26,11 @@ struct test_net_endpoint_connect_setup {
             int m_rv;
         } m_local;
         struct {
+            int64_t m_write_delay_ms;
+        } m_acceptor;
+        struct {
             net_endpoint_t m_endpoint;
+            int64_t m_write_delay_ms;
         } m_endpoint;
     };
     uint32_t m_ep_id;
@@ -68,14 +72,17 @@ static int test_net_endpoint_connect_apply_setup(
         net_acceptor_t base_acceptor = test_net_driver_find_acceptor_by_addr(driver, address);
         assert_true(base_acceptor != NULL);
 
-        if (test_net_acceptor_accept(base_acceptor, base_endpoint) != 0) return -1;
+        if (test_net_acceptor_accept(base_acceptor, base_endpoint, setup->m_acceptor.m_write_delay_ms) != 0) return -1;
         if (net_endpoint_set_state(base_endpoint, net_endpoint_state_established) != 0) return -1;
         
         return 0;
     }
     case test_net_endpoint_connect_setup_endpoint: {
         test_net_endpoint_link_t link =
-            test_net_endpoint_link_create(net_endpoint_data(base_endpoint), net_endpoint_data(setup->m_endpoint.m_endpoint));
+            test_net_endpoint_link_create(
+                net_endpoint_data(base_endpoint),
+                net_endpoint_data(setup->m_endpoint.m_endpoint),
+                setup->m_endpoint.m_write_delay_ms);
         if (link == NULL) return -1;
         return net_endpoint_set_state(base_endpoint, net_endpoint_state_established);
     }
@@ -201,7 +208,7 @@ void test_net_endpoint_id_expect_connect_error(
 
 void test_net_endpoint_id_expect_connect_to_acceptor(
     test_net_driver_t driver, uint32_t ep_id,
-    const char * target, int64_t delay_ms)
+    const char * target, int64_t delay_ms, int64_t write_delay_ms)
 {
     expect_value(test_net_endpoint_connect, id, ep_id);
     if (target) {
@@ -215,6 +222,7 @@ void test_net_endpoint_id_expect_connect_to_acceptor(
         struct test_net_endpoint_connect_setup * setup
             = mem_buffer_alloc(&driver->m_setup_buffer, sizeof(struct test_net_endpoint_connect_setup));
         setup->m_type = test_net_endpoint_connect_setup_acceptor;
+        setup->m_acceptor.m_write_delay_ms = write_delay_ms;
         setup->m_ep_id = ep_id;
         will_return(test_net_endpoint_connect, setup);
     }
@@ -225,6 +233,7 @@ void test_net_endpoint_id_expect_connect_to_acceptor(
         struct test_net_endpoint_connect_setup * setup =
             mem_alloc(test_allocrator(), sizeof(struct test_net_endpoint_connect_setup));
         setup->m_type = test_net_endpoint_connect_setup_acceptor;
+        setup->m_acceptor.m_write_delay_ms = write_delay_ms;
         setup->m_ep_id = ep_id;
     
         test_net_tl_op_t op = test_net_tl_op_create(
@@ -238,7 +247,7 @@ void test_net_endpoint_id_expect_connect_to_acceptor(
 
 void test_net_endpoint_id_expect_connect_to_endpoint(
     test_net_driver_t driver, uint32_t ep_id,
-    const char * target, net_endpoint_t endpoint, int64_t delay_ms)
+    const char * target, net_endpoint_t endpoint, int64_t delay_ms, int64_t write_delay_ms)
 {
     expect_value(test_net_endpoint_connect, id, ep_id);
     if (target) {
@@ -253,6 +262,7 @@ void test_net_endpoint_id_expect_connect_to_endpoint(
             = mem_buffer_alloc(&driver->m_setup_buffer, sizeof(struct test_net_endpoint_connect_setup));
         setup->m_type = test_net_endpoint_connect_setup_endpoint;
         setup->m_endpoint.m_endpoint = endpoint;
+        setup->m_endpoint.m_write_delay_ms = write_delay_ms;
         setup->m_ep_id = ep_id;
         will_return(test_net_endpoint_connect, setup);
     }
@@ -264,6 +274,7 @@ void test_net_endpoint_id_expect_connect_to_endpoint(
             mem_alloc(test_allocrator(), sizeof(struct test_net_endpoint_connect_setup));
         setup->m_type = test_net_endpoint_connect_setup_endpoint;
         setup->m_endpoint.m_endpoint = endpoint;
+        setup->m_endpoint.m_write_delay_ms = write_delay_ms;
         setup->m_ep_id = ep_id;
     
         test_net_tl_op_t op = test_net_tl_op_create(
@@ -294,20 +305,22 @@ void test_net_next_endpoint_expect_connect_error(
         target, error_source, error_no, msg, delay_ms);
 }
 
-void test_net_next_endpoint_expect_connect_to_acceptor(test_net_driver_t driver, const char * target, int64_t delay_ms) {
+void test_net_next_endpoint_expect_connect_to_acceptor(
+    test_net_driver_t driver, const char * target, int64_t delay_ms, int64_t write_delay_ms)
+{
     net_schedule_t schedule = net_driver_schedule(net_driver_from_data(driver));
     test_net_endpoint_id_expect_connect_to_acceptor(
         driver, net_schedule_next_endpoint_id(schedule),
-        target, delay_ms);
+        target, delay_ms, write_delay_ms);
 }
 
 void test_net_next_endpoint_expect_connect_to_endpoint(
-    test_net_driver_t driver, const char * target, net_endpoint_t other, int64_t delay_ms)
+    test_net_driver_t driver, const char * target, net_endpoint_t other, int64_t delay_ms, int64_t write_delay_ms)
 {
     net_schedule_t schedule = net_driver_schedule(net_driver_from_data(driver));
     test_net_endpoint_id_expect_connect_to_endpoint(
         driver, net_schedule_next_endpoint_id(schedule),
-        target, other, delay_ms);
+        target, other, delay_ms, write_delay_ms);
 }
 
 void test_net_endpoint_expect_connect_success(net_endpoint_t base_endpoint, const char * target, int64_t delay_ms) {
@@ -328,19 +341,19 @@ void test_net_endpoint_expect_connect_error(
 }
 
 void test_net_endpoint_expect_connect_to_acceptor(
-    net_endpoint_t base_endpoint, const char * target, int64_t delay_ms)
+    net_endpoint_t base_endpoint, const char * target, int64_t delay_ms, int64_t write_delay_ms)
 {
     test_net_endpoint_id_expect_connect_to_acceptor(
         net_driver_data(net_endpoint_driver(base_endpoint)),
         net_endpoint_id(base_endpoint),
-        target, delay_ms);
+        target, delay_ms, write_delay_ms);
 }
 
 void test_net_endpoint_expect_connect_to_endpoint(
-    net_endpoint_t base_endpoint, const char * target, net_endpoint_t other, int64_t delay_ms)
+    net_endpoint_t base_endpoint, const char * target, net_endpoint_t other, int64_t delay_ms, int64_t write_delay_ms)
 {
     test_net_endpoint_id_expect_connect_to_endpoint(
         net_driver_data(net_endpoint_driver(base_endpoint)),
         net_endpoint_id(base_endpoint),
-        target, other, delay_ms);
+        target, other, delay_ms, write_delay_ms);
 }

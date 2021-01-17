@@ -20,7 +20,7 @@ void test_net_acceptor_fini(net_acceptor_t base_acceptor) {
     TAILQ_REMOVE(&driver->m_acceptors, acceptor, m_next);
 }
 
-int test_net_acceptor_accept(net_acceptor_t base_acceptor, net_endpoint_t remote_ep) {
+int test_net_acceptor_accept(net_acceptor_t base_acceptor, net_endpoint_t remote_ep, int64_t write_delay_ms) {
     net_acceptor_t acceptor = net_acceptor_data(base_acceptor);
     test_net_driver_t driver = net_driver_data(net_acceptor_driver(base_acceptor));
 
@@ -32,7 +32,7 @@ int test_net_acceptor_accept(net_acceptor_t base_acceptor, net_endpoint_t remote
 
     net_endpoint_set_remote_address(new_base_endpoint, net_endpoint_address(remote_ep));
 
-    test_net_endpoint_link_create(net_endpoint_data(remote_ep), new_endpoint);
+    test_net_endpoint_link_create(net_endpoint_data(remote_ep), new_endpoint, write_delay_ms);
     
     if (net_endpoint_set_state(new_base_endpoint, net_endpoint_state_established) != 0) {
         net_endpoint_free(new_base_endpoint);
