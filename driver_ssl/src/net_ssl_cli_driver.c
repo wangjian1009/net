@@ -99,7 +99,7 @@ static int net_ssl_cli_driver_init(net_driver_t base_driver) {
     BIO_meth_set_create(driver->m_bio_method, net_ssl_cli_endpoint_bio_new);
     BIO_meth_set_destroy(driver->m_bio_method, net_ssl_cli_endpoint_bio_free);
     
-    driver->m_ssl_ctx = SSL_CTX_new(SSLv23_method());
+    driver->m_ssl_ctx = SSL_CTX_new(SSLv23_client_method());
     if(driver->m_ssl_ctx == NULL) {
         CPE_ERROR(
             net_schedule_em(net_driver_schedule(base_driver)),

@@ -1,7 +1,164 @@
+#include "openssl/ssl.h"
+#include "openssl/rsa.h"
+#include "openssl/bn.h"
+#include "openssl/evp.h"
+#include "openssl/pem.h"
+#include "openssl/x509.h"
+#include "openssl/err.h"
+#include "cpe/pal/pal_string.h"
 #include "cpe/utils/stream_buffer.h"
 #include "cpe/utils/error.h"
 #include "net_schedule.h"
 #include "net_ssl_utils.h"
+
+EVP_PKEY * net_ssl_pkey_from_string(error_monitor_t em, const char * key) {
+    BIO * pkey_bio = BIO_new_mem_buf(key, (int)strlen(key));
+    if (pkey_bio == NULL) {
+        CPE_ERROR(
+            em, "net: ssl: pkey from string: create bio failed: %s",
+            ERR_error_string(ERR_get_error(), NULL));
+        return NULL;
+    }
+
+    EVP_PKEY * pkey = PEM_read_bio_PrivateKey(pkey_bio, NULL, NULL, NULL);
+    BIO_free(pkey_bio);
+    if (pkey == NULL) {
+        CPE_ERROR(
+            em, "net: ssl: read pkey failed: %s\n%s",
+            ERR_error_string(ERR_get_error(), NULL), key);
+        return NULL;
+    }
+
+    return pkey;
+}
+
+EVP_PKEY * net_ssl_pkey_generate(error_monitor_t em) {
+    BIGNUM *a = BN_new();
+    if (a == NULL) {
+        CPE_ERROR(
+            em, "net: ssl: generate pkey: BN_new failed\n%s",
+            ERR_error_string(ERR_get_error(), NULL));
+        return NULL;
+    }
+    BN_set_word(a, 65537);
+
+    RSA *rsa = RSA_new();
+    if (rsa == NULL) {
+        CPE_ERROR(
+            em, "net: ssl: generate pkey: RSA_new failed\n%s",
+            ERR_error_string(ERR_get_error(), NULL));
+        BN_free(a);
+        return NULL;
+    }
+    
+    if (RSA_generate_key_ex(rsa, 2048, a, NULL) != 1) {
+        CPE_ERROR(
+            em, "sfox: sfox-http2: generate pkey: generate key failed\n%s",
+            ERR_error_string(ERR_get_error(), NULL));
+        BN_free(a);
+        RSA_free(rsa);
+        return NULL;
+    }
+    BN_free(a);
+
+    EVP_PKEY* pkey = EVP_PKEY_new();
+    if (pkey == NULL) {
+        CPE_ERROR(
+            em, "net: ssl: generate pkey: PKEY_new failed\n%s",
+            ERR_error_string(ERR_get_error(), NULL));
+        RSA_free(rsa);
+        return NULL;
+    }
+    
+    if (EVP_PKEY_assign_RSA(pkey, rsa) != 1) {
+        CPE_ERROR(
+            em, "net: ssl: generate pkey: PKEY_assign_RSA failed\n%s",
+            ERR_error_string(ERR_get_error(), NULL));
+        EVP_PKEY_free(pkey);
+        return NULL;
+    }
+    
+    return pkey;
+}
+
+int net_ssl_cert_load_from_string(error_monitor_t em, SSL_CTX * ssl_ctx, const char * cert) {
+    pem_password_cb * passwd_callback = SSL_CTX_get_default_passwd_cb(ssl_ctx);
+    void * passwd_callback_userdata = SSL_CTX_get_default_passwd_cb_userdata(ssl_ctx);
+    
+    ERR_clear_error(); /* clear error stack for SSL_CTX_use_certificate() */
+    
+    BIO * cert_bio = BIO_new_mem_buf(cert, (int)strlen(cert));
+    if (cert_bio == NULL) {
+        CPE_ERROR(
+            em,
+            "net: ssl: cert load from string: init cert bio failed: %s",
+            ERR_error_string(ERR_get_error(), NULL));
+        return -1;
+    }
+    
+    X509 * x = PEM_read_bio_X509_AUX(cert_bio, NULL, passwd_callback, passwd_callback_userdata);
+    if (x == NULL) {
+        CPE_ERROR(
+            em, "net: ssl: cert load from string: read cert failed: %s\n%s",
+            ERR_error_string(ERR_get_error(), NULL), cert);
+        BIO_free(cert_bio);
+        return -1;
+    }
+
+    /* CPE_INFO( */
+    /*     em, "net: ssl: cert load from string: load cert: %s", */
+    /*     sfox_sfox_ssl_dump_cert_info(sfox_sfox_protocol_tmp_buffer(sfox_protocol), x)); */
+
+    if (SSL_CTX_use_certificate(ssl_ctx, x) != 1 || ERR_peek_error() != 0) {
+        CPE_ERROR(
+            em, "net: ssl: cert load from string: read cert failed: %s",
+            ERR_error_string(ERR_get_error(), NULL));
+        goto PROCESS_ERROR;
+    }
+
+    /*
+     * If we could set up our certificate, now proceed to the CA
+     * certificates.
+     */
+    if (SSL_CTX_clear_chain_certs(ssl_ctx) != 1) {
+        CPE_ERROR(
+            em, "net: ssl: cert load from string: clear chain certs fail: %s",
+            ERR_error_string(ERR_get_error(), NULL));
+        goto PROCESS_ERROR;
+    }
+
+    X509 *ca;
+    while ((ca = PEM_read_bio_X509(cert_bio, NULL, passwd_callback, passwd_callback_userdata)) != NULL) {
+        if (!SSL_CTX_add0_chain_cert(ssl_ctx, ca)) {
+            CPE_ERROR(
+                em, "net: ssl: cert load from string: add ca cert fail: %s",
+                ERR_error_string(ERR_get_error(), NULL));
+            X509_free(ca);
+            goto PROCESS_ERROR;
+        }
+    }
+
+    /* When the while loop ends, it's usually just EOF. */
+    unsigned long err = ERR_peek_last_error();
+    if (ERR_GET_LIB(err) == ERR_LIB_PEM && ERR_GET_REASON(err) == PEM_R_NO_START_LINE) {
+        ERR_clear_error();
+    }
+    else {
+        CPE_ERROR(
+            em, "net: ssl: cert load from string: last found error: %s",
+            ERR_error_string(err, NULL));
+        goto PROCESS_ERROR;
+    }
+
+    BIO_free(cert_bio);
+    X509_free(x);
+    return 0;
+
+PROCESS_ERROR:
+    BIO_free(cert_bio);
+    X509_free(x);
+    return -1;
+}
 
 const char * net_ssl_dump_data(mem_buffer_t buffer, void const * buf, size_t size) {
     mem_buffer_clear_data(buffer);
@@ -112,7 +269,7 @@ static const char * net_ssl_msg_type(int ssl_ver, int msg) {
 }
 
 void net_ssl_dump_tls_info(
-    net_schedule_t schedule, const char * prefix,
+    error_monitor_t em, mem_buffer_t buffer, const char * prefix,
     int direction, int ssl_ver, int content_type, const void *buf, size_t len, SSL *ssl)
 {
     if (direction != 0 && direction != 1) return;
@@ -200,15 +357,15 @@ void net_ssl_dump_tls_info(
             ssl_buf, sizeof(ssl_buf), "%s (%s), %s, %s (%d):",
             verstr, direction ? "OUT" : "IN", tls_rt_name, msg_name, msg_type);
         if (0 <= txt_len && (unsigned)txt_len < sizeof(ssl_buf)) {
-            CPE_INFO(net_schedule_em(schedule), "%s%.*s", prefix, (int)txt_len, ssl_buf);
+            CPE_INFO(em, "%s%.*s", prefix, (int)txt_len, ssl_buf);
         }
     }
 
     CPE_INFO(
-        net_schedule_em(schedule), "%s%s %d bytes\n%s",
+        em, "%s%s %d bytes\n%s",
         prefix, direction == 1 ? "==>" : "<==",
         (int)len,
-        net_ssl_dump_data(net_schedule_tmp_buffer(schedule), buf, len));
+        net_ssl_dump_data(buffer, buf, len));
 }
 
 const char * net_ssl_errno_str(int e) {
