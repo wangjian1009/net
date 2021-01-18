@@ -21,7 +21,7 @@ int net_ssl_cli_underline_bio_free(BIO *b) {
     net_ssl_cli_underline_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_underline));
     net_ssl_cli_driver_t driver = protocol->m_driver;
     
-    if (net_endpoint_driver_debug(base_underline) >= 2) {
+    if (net_endpoint_protocol_debug(base_underline) >= 2) {
         CPE_INFO(
             driver->m_em, "net: ssl: %s: cli: bio: free success",
             net_endpoint_dump(net_ssl_cli_driver_tmp_buffer(driver), base_underline));
@@ -50,7 +50,7 @@ int net_ssl_cli_underline_bio_read(BIO *b, char *out, int outlen) {
 	}
 
     if (length > outlen) {
-        if (net_endpoint_driver_debug(base_underline) >= 2) {
+        if (net_endpoint_protocol_debug(base_underline) >= 2) {
             CPE_INFO(
                 driver->m_em, "net: ssl: %s: cli: bio: read: out-len=%d, buf-len=%d, read part",
                 net_endpoint_dump(net_ssl_cli_driver_tmp_buffer(driver), base_underline),
@@ -117,7 +117,7 @@ long net_ssl_cli_underline_bio_ctrl(BIO *b, int cmd, long num, void *ptr) {
     net_ssl_cli_underline_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_underline));
     net_ssl_cli_driver_t driver = protocol->m_driver;
     
-    if (net_endpoint_driver_debug(base_underline) >= 2) {
+    if (net_endpoint_protocol_debug(base_underline) >= 2) {
         CPE_INFO(
             driver->m_em, "net: ssl: %s: cli: bio: cmd %s",
             net_endpoint_dump(net_ssl_cli_driver_tmp_buffer(driver), base_underline),

@@ -1,6 +1,5 @@
 #include <assert.h>
 #include "cpe/utils/error.h"
-#include "net_schedule.h"
 #include "net_protocol.h"
 #include "net_driver.h"
 #include "net_endpoint.h"
@@ -87,86 +86,17 @@ int net_ssl_cli_underline_input(net_endpoint_t base_underline) {
     ERR_clear_error();
     int r = SSL_read(underline->m_ssl, data, data_size);
     if (r > 0) {
-        if (net_endpoint_driver_debug(base_underline)) {
+        if (net_endpoint_protocol_debug(base_underline)) {
+            CPE_INFO(
+                driver->m_em, "net: ssl: %s: read %d data!",
+                net_endpoint_dump(net_ssl_cli_driver_tmp_buffer(driver), base_underline),
+                data_size);
         }
     }
     else {
         int err = SSL_get_error(underline->m_ssl, r);
-        switch (err) {
-        case SSL_ERROR_WANT_READ:
-            /* Can't read until underlying has more data. */
-            /* if (bev_ssl->read_blocked_on_write) */
-            /*     if (clear_rbow(bev_ssl) < 0) */
-            /*         return OP_ERR | result; */
-            break;
-        case SSL_ERROR_WANT_WRITE:
-            /* This read operation requires a write, and the
-				 * underlying is full */
-            /* if (!bev_ssl->read_blocked_on_write) */
-            /*     if (set_rbow(bev_ssl) < 0) */
-            /*         return OP_ERR | result; */
-            break;
-        case SSL_ERROR_ZERO_RETURN:
-            /* 	/\* Possibly a clean shutdown. *\/ */
-            /* 	if (SSL_get_shutdown(bev_ssl->ssl) & SSL_RECEIVED_SHUTDOWN) */
-            /* 		event = BEV_EVENT_EOF; */
-            /* 	else */
-            /* 		dirty_shutdown = 1; */
-            if (net_endpoint_set_state(base_underline, net_endpoint_state_disable) != 0) {
-            }
-            break;
-        case SSL_ERROR_SYSCALL:
-            /* 	/\* IO error; possibly a dirty shutdown. *\/ */
-            /* 	if ((ret == 0 || ret == -1) && ERR_peek_error() == 0) */
-            /* 		dirty_shutdown = 1; */
-            /* 	put_error(bev_ssl, errcode); */
-            break;
-        default:
-            net_ssl_cli_underline_dump_error(base_underline, err);
-            net_endpoint_set_error(base_underline, net_endpoint_error_source_protocol, -1, "handshake start fail");
-            //conn_closed(bev_ssl, BEV_EVENT_READING, err, r);
-            break;
-        }
+        return net_ssl_cli_underline_update_error(base_underline, err, r);
     }
-    
-	/* 	if (r & (OP_BLOCKED|OP_ERR)) */
-	/* 		break; */
-
-	/* 	if (bev_ssl->bev.read_suspended) */
-	/* 		break; */
-
-	/* 	/\* Read all pending data.  This won't hit the network */
-	/* 	 * again, and will (most importantly) put us in a state */
-	/* 	 * where we don't need to read anything else until the */
-	/* 	 * socket is readable again.  It'll potentially make us */
-	/* 	 * overrun our read high-watermark (somewhat */
-	/* 	 * regrettable).  The damage to the rate-limit has */
-	/* 	 * already been done, since OpenSSL went and read a */
-	/* 	 * whole SSL record anyway. *\/ */
-	/* 	n_to_read = SSL_pending(bev_ssl->ssl); */
-
-	/* 	/\* XXX This if statement is actually a bad bug, added to avoid */
-	/* 	 * XXX a worse bug. */
-	/* 	 * */
-	/* 	 * The bad bug: It can potentially cause resource unfairness */
-	/* 	 * by reading too much data from the underlying bufferevent; */
-	/* 	 * it can potentially cause read looping if the underlying */
-	/* 	 * bufferevent is a bufferevent_pair and deferred callbacks */
-	/* 	 * aren't used. */
-	/* 	 * */
-	/* 	 * The worse bug: If we didn't do this, then we would */
-	/* 	 * potentially not read any more from bev_ssl->underlying */
-	/* 	 * until more data arrived there, which could lead to us */
-	/* 	 * waiting forever. */
-	/* 	 *\/ */
-	/* 	if (!n_to_read && bev_ssl->underlying) */
-	/* 		n_to_read = bytes_to_read(bev_ssl); */
-	/* } */
-
-	/* if (all_result_flags & OP_MADE_PROGRESS) { */
-	/* 	struct bufferevent *bev = &bev_ssl->bev.bev; */
-
-	/* 	bufferevent_trigger_nolock_(bev, EV_READ, 0); */
     
     return 0;
 }
@@ -240,7 +170,7 @@ int net_ssl_cli_underline_write(
     case net_endpoint_state_disable:
     case net_endpoint_state_resolving:
     case net_endpoint_state_connecting:
-        if (net_endpoint_driver_debug(base_underline)) {
+        if (net_endpoint_protocol_debug(base_underline)) {
             CPE_INFO(
                 driver->m_em, "net: ssl: %s: write: cache %d data in state %s!",
                 net_endpoint_dump(net_ssl_cli_driver_tmp_buffer(driver), base_underline),
@@ -252,7 +182,7 @@ int net_ssl_cli_underline_write(
     case net_endpoint_state_established:
         switch(underline->m_state) {
         case net_ssl_cli_underline_ssl_handshake:
-            if (net_endpoint_driver_debug(base_underline)) {
+            if (net_endpoint_protocol_debug(base_underline)) {
                 CPE_INFO(
                     driver->m_em, "net: ssl: %s: write: cache %d data in state %s.handshake!",
                     net_endpoint_dump(net_ssl_cli_driver_tmp_buffer(driver), base_underline),
@@ -330,22 +260,7 @@ int net_ssl_cli_underline_do_handshake(net_endpoint_t base_underline, net_ssl_cl
     }
     else {
         int err = SSL_get_error(underline->m_ssl, r);
-        switch (err) {
-        case SSL_ERROR_WANT_WRITE:
-            net_ssl_cli_underline_dump_error(base_underline, err);
-            //stop_reading(bev_ssl);
-            //return start_writing(bev_ssl);
-            break;
-        case SSL_ERROR_WANT_READ:
-            //stop_writing(bev_ssl);
-            //return start_reading(bev_ssl);
-            return 0;
-        default:
-            net_ssl_cli_underline_dump_error(base_underline, err);
-            break;
-        }
-
-        return -1;
+        return net_ssl_cli_underline_update_error(base_underline, err, r);
     }
 
     return 0;
@@ -356,27 +271,25 @@ void net_ssl_cli_underline_trace_cb(
 {
     net_endpoint_t base_underline = arg;
     net_ssl_cli_driver_t driver = net_driver_data(net_endpoint_driver(base_underline));
-    net_schedule_t schedule = net_endpoint_schedule(base_underline);
     
-    if (net_endpoint_driver_debug(base_underline)) {
+    if (net_endpoint_protocol_debug(base_underline)) {
         char prefix[256];
         snprintf(
             prefix, sizeof(prefix), "net: ssl: %s: SSL: ",
-            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_underline));
+            net_endpoint_dump(net_ssl_cli_driver_tmp_buffer(driver), base_underline));
         net_ssl_dump_tls_info(
-            driver->m_em, net_schedule_tmp_buffer(schedule), prefix,
-            net_endpoint_driver_debug(base_underline) >= 2,
+            driver->m_em, net_ssl_cli_driver_tmp_buffer(driver), prefix,
+            net_endpoint_protocol_debug(base_underline) >= 2,
             write_p, version, content_type, buf, len, ssl);
     }
 }
 
 void net_ssl_cli_underline_dump_error(net_endpoint_t base_underline, int val) {
-    net_schedule_t schedule = net_endpoint_schedule(base_underline);
     net_ssl_cli_driver_t driver = net_driver_data(net_endpoint_driver(base_underline));
 
     CPE_ERROR(
         driver->m_em, "net: ssl: %s: SSL: Error was %s!",
-        net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_underline),
+        net_endpoint_dump(net_ssl_cli_driver_tmp_buffer(driver), base_underline),
         ERR_error_string(val, NULL));
 
     int err;
@@ -387,12 +300,47 @@ void net_ssl_cli_underline_dump_error(net_endpoint_t base_underline, int val) {
 
         CPE_ERROR(
             driver->m_em, "net: ssl: %s: SSL:     %s in %s %s",
-            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_underline),
+            net_endpoint_dump(net_ssl_cli_driver_tmp_buffer(driver), base_underline),
             msg, lib, func);
 	}
 }
 
 static int net_ssl_cli_underline_update_error(net_endpoint_t base_underline, int err, int r) {
-    net_endpoint_set_error(base_underline, net_endpoint_error_source_protocol, -1, "handshake start fail");
+    net_ssl_cli_underline_t underline = net_endpoint_protocol_data(base_underline);
+    net_ssl_cli_underline_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_underline));
+    net_ssl_cli_driver_t driver = protocol->m_driver;
+
+    uint8_t dirty_shutdown = 0;
+    
+    switch (err) {
+    case SSL_ERROR_WANT_READ:
+        return 0;
+    case SSL_ERROR_WANT_WRITE:
+        return 0;
+    case SSL_ERROR_ZERO_RETURN:
+        /* Possibly a clean shutdown. */
+        if (SSL_get_shutdown(underline->m_ssl) & SSL_RECEIVED_SHUTDOWN) {
+            return net_endpoint_set_state(base_underline, net_endpoint_state_disable);
+        }
+        else {
+            dirty_shutdown = 1;
+        }
+        break;
+    case SSL_ERROR_SYSCALL:
+        /* IO error; possibly a dirty shutdown. */
+        if ((r == 0 || r == -1) && ERR_peek_error() == 0) {
+            dirty_shutdown = 1;
+        }
+        /* 	put_error(bev_ssl, errcode); */
+        break;
+    default:
+        net_ssl_cli_underline_dump_error(base_underline, err);
+        net_endpoint_set_error(
+            base_underline,
+            net_endpoint_error_source_protocol,
+            -1,
+            "handshake start fail");
+        return net_endpoint_set_state(base_underline, net_endpoint_state_logic_error);
+    }
     return 0;
 }

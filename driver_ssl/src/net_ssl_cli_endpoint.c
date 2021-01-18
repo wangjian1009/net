@@ -47,12 +47,8 @@ int net_ssl_cli_endpoint_connect(net_endpoint_t base_endpoint) {
         return -1;
     }
 
-    if (net_endpoint_protocol_debug(base_endpoint) > net_endpoint_protocol_debug(endpoint->m_underline)) {
-        net_endpoint_set_protocol_debug(endpoint->m_underline, net_endpoint_protocol_debug(base_endpoint));
-    }
-    
-    if (net_endpoint_driver_debug(base_endpoint) > net_endpoint_driver_debug(endpoint->m_underline)) {
-        net_endpoint_set_driver_debug(endpoint->m_underline, net_endpoint_driver_debug(base_endpoint));
+    if (net_endpoint_driver_debug(base_endpoint) > net_endpoint_protocol_debug(endpoint->m_underline)) {
+        net_endpoint_set_protocol_debug(endpoint->m_underline, net_endpoint_driver_debug(base_endpoint));
     }
     
     net_address_t target_addr = net_endpoint_remote_address(base_endpoint);
