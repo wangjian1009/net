@@ -5,6 +5,9 @@
 #include "net_endpoint.h"
 #include "net_ssl_cli_underline_i.h"
 
+#define net_ssl_cli_underline_ep_write_cache net_ep_buf_user1
+#define net_ssl_cli_underline_ep_read_cache net_ep_buf_user2
+
 static void net_ssl_cli_underline_trace_cb(
     int write_p, int version, int content_type, const void *buf, size_t len, SSL *ssl, void *arg);
 
@@ -70,30 +73,59 @@ int net_ssl_cli_underline_input(net_endpoint_t base_underline) {
         if (net_ssl_cli_underline_do_handshake(base_underline, underline) != 0) return -1;
     }
 
+READ_AGAIN:    
     if (net_endpoint_state(base_underline) != net_endpoint_state_established) return -1;
 
-	uint32_t data_size = net_endpoint_buf_size(base_underline, net_ep_buf_read);
-    if (data_size == 0) return 0;
-    
-    void * data = NULL;
-    if (net_endpoint_buf_peak_with_size(base_underline, net_ep_buf_read, data_size, &data) != 0) {
+    uint32_t input_data_size = net_endpoint_buf_size(base_underline, net_ep_buf_read);
+    if (input_data_size == 0) return 0;
+
+    void * data = net_endpoint_buf_alloc(base_underline, &input_data_size);
+    if (data == NULL) {
         CPE_ERROR(
-            driver->m_em, "net: ssl: %s: peak data failed, size=%d!",
-            net_endpoint_dump(net_ssl_cli_driver_tmp_buffer(driver), base_underline), data_size);
+            driver->m_em, "net: ssl: %s: input: alloc data for read fail",
+            net_endpoint_dump(net_ssl_cli_driver_tmp_buffer(driver), base_underline));
         return -1;
     }
-    
+
     ERR_clear_error();
-    int r = SSL_read(underline->m_ssl, data, data_size);
+    int r = SSL_read(underline->m_ssl, data, input_data_size);
     if (r > 0) {
-        if (net_endpoint_protocol_debug(base_underline)) {
-            CPE_INFO(
-                driver->m_em, "net: ssl: %s: read %d data!",
-                net_endpoint_dump(net_ssl_cli_driver_tmp_buffer(driver), base_underline),
-                data_size);
+        if (net_endpoint_buf_supply(base_underline, net_ssl_cli_underline_ep_read_cache, r) != 0) {
+            CPE_ERROR(
+                driver->m_em, "net: ssl: %s: input: load data to input cache fail",
+                net_endpoint_dump(net_ssl_cli_driver_tmp_buffer(driver), base_underline));
+            return -1;
+        }
+
+        net_endpoint_t base_endpoint =
+            underline->m_ssl_endpoint ? net_endpoint_from_data(underline->m_ssl_endpoint) : NULL;
+
+        if (base_endpoint
+            && net_endpoint_state(base_endpoint) == net_endpoint_state_established)
+        {
+            if (net_endpoint_buf_append_from_other(
+                    base_endpoint, net_ep_buf_read,
+                    base_underline, net_ssl_cli_underline_ep_read_cache, 0) != 0)
+            {
+                CPE_ERROR(
+                    driver->m_em, "net: ssl: %s: input: forward data to ssl ep fail",
+                    net_endpoint_dump(net_ssl_cli_driver_tmp_buffer(driver), base_underline));
+                return -1;
+            }
+            else {
+                goto READ_AGAIN;
+            }
+        }
+        else {
+            net_endpoint_buf_clear(base_underline, net_ssl_cli_underline_ep_read_cache);
+            CPE_ERROR(
+                driver->m_em, "net: ssl: %s: input: no established ssl endpoint, clear cached data",
+                net_endpoint_dump(net_ssl_cli_driver_tmp_buffer(driver), base_underline));
         }
     }
     else {
+        net_endpoint_buf_release(base_underline);
+
         int err = SSL_get_error(underline->m_ssl, r);
         return net_ssl_cli_underline_update_error(base_underline, err, r);
     }
@@ -177,8 +209,15 @@ int net_ssl_cli_underline_write(
                 net_endpoint_buf_size(from_ep, from_buf),
                 net_endpoint_state_str(net_endpoint_state(base_underline)));
         }
-        return net_endpoint_buf_append_from_other(
-            base_underline, net_ep_buf_user1, from_ep, from_buf, 0);
+
+        if (base_underline == from_ep) {
+            return net_endpoint_buf_append_from_self(
+                base_underline, net_ssl_cli_underline_ep_write_cache, from_buf, 0);
+        }
+        else {
+            return net_endpoint_buf_append_from_other(
+                base_underline, net_ssl_cli_underline_ep_write_cache, from_ep, from_buf, 0);
+        }
     case net_endpoint_state_established:
         switch(underline->m_state) {
         case net_ssl_cli_underline_ssl_handshake:
@@ -189,8 +228,15 @@ int net_ssl_cli_underline_write(
                     net_endpoint_buf_size(from_ep, from_buf),
                     net_endpoint_state_str(net_endpoint_state(base_underline)));
             }
-            return net_endpoint_buf_append_from_other(
-                base_underline, net_ep_buf_user1, from_ep, from_buf, 0);
+
+            if (base_underline == from_ep) {
+                return net_endpoint_buf_append_from_self(
+                    base_underline, net_ssl_cli_underline_ep_write_cache, from_buf, 0);
+            }
+            else {
+                return net_endpoint_buf_append_from_other(
+                    base_underline, net_ssl_cli_underline_ep_write_cache, from_ep, from_buf, 0);
+            }
         case net_ssl_cli_underline_ssl_open:
             break;
         }
@@ -215,6 +261,8 @@ int net_ssl_cli_underline_write(
             net_endpoint_dump(net_ssl_cli_driver_tmp_buffer(driver), base_underline));
         return -1;
     }
+
+    CPE_ERROR(driver->m_em, "xxxxxx: write begin %d", data_size);
     
     int r = SSL_write(underline->m_ssl, data, data_size);
     if (r < 0) {
@@ -264,7 +312,7 @@ int net_ssl_cli_underline_do_handshake(net_endpoint_t base_underline, net_ssl_cl
     int r = SSL_do_handshake(underline->m_ssl);
     if (r == 1) {
         underline->m_state = net_ssl_cli_underline_ssl_open;
-        if (net_ssl_cli_underline_write(base_underline, base_underline, net_ep_buf_user1) != 0) return -1;
+        if (net_ssl_cli_underline_write(base_underline, base_underline, net_ssl_cli_underline_ep_write_cache) != 0) return -1;
 
         if (underline->m_ssl_endpoint) {
             if (net_endpoint_set_state(
