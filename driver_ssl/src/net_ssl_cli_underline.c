@@ -36,10 +36,62 @@ int net_ssl_cli_underline_input(net_endpoint_t base_underline) {
         if (net_ssl_cli_endpoint_do_handshake(base_endpoint, endpoint) != 0) return -1;
     }
 
-    if (net_endpoint_state(base_endpoint) == net_endpoint_state_established) {
-        //TODO:
-    }
+    if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return -1;
 
+
+	int r;
+	int all_result_flags = 0;
+
+	uint32_t n_to_read = net_endpoint_buf_size(base_underline, net_ep_buf_read);
+    CPE_ERROR(
+        driver->m_em, "xxxx: %s: input %d",
+        net_endpoint_dump(net_ssl_cli_driver_tmp_buffer(driver), base_underline), n_to_read);
+    
+	while(n_to_read) {
+        n_to_read = 0;
+	/* 	r = do_read(bev_ssl, n_to_read); */
+	/* 	all_result_flags |= r; */
+
+	/* 	if (r & (OP_BLOCKED|OP_ERR)) */
+	/* 		break; */
+
+	/* 	if (bev_ssl->bev.read_suspended) */
+	/* 		break; */
+
+	/* 	/\* Read all pending data.  This won't hit the network */
+	/* 	 * again, and will (most importantly) put us in a state */
+	/* 	 * where we don't need to read anything else until the */
+	/* 	 * socket is readable again.  It'll potentially make us */
+	/* 	 * overrun our read high-watermark (somewhat */
+	/* 	 * regrettable).  The damage to the rate-limit has */
+	/* 	 * already been done, since OpenSSL went and read a */
+	/* 	 * whole SSL record anyway. *\/ */
+	/* 	n_to_read = SSL_pending(bev_ssl->ssl); */
+
+	/* 	/\* XXX This if statement is actually a bad bug, added to avoid */
+	/* 	 * XXX a worse bug. */
+	/* 	 * */
+	/* 	 * The bad bug: It can potentially cause resource unfairness */
+	/* 	 * by reading too much data from the underlying bufferevent; */
+	/* 	 * it can potentially cause read looping if the underlying */
+	/* 	 * bufferevent is a bufferevent_pair and deferred callbacks */
+	/* 	 * aren't used. */
+	/* 	 * */
+	/* 	 * The worse bug: If we didn't do this, then we would */
+	/* 	 * potentially not read any more from bev_ssl->underlying */
+	/* 	 * until more data arrived there, which could lead to us */
+	/* 	 * waiting forever. */
+	/* 	 *\/ */
+	/* 	if (!n_to_read && bev_ssl->underlying) */
+	/* 		n_to_read = bytes_to_read(bev_ssl); */
+	/* } */
+
+	/* if (all_result_flags & OP_MADE_PROGRESS) { */
+	/* 	struct bufferevent *bev = &bev_ssl->bev.bev; */
+
+	/* 	bufferevent_trigger_nolock_(bev, EV_READ, 0); */
+	}
+    
     return 0;
 }
 

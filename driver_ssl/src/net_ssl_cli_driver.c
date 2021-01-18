@@ -143,3 +143,6 @@ static void net_ssl_cli_driver_fini(net_driver_t base_driver) {
     }
 }
 
+mem_buffer_t net_ssl_cli_driver_tmp_buffer(net_ssl_cli_driver_t driver) {
+    return net_schedule_tmp_buffer(net_driver_schedule(net_driver_from_data(driver)));
+}

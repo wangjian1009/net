@@ -15,4 +15,6 @@ struct net_ssl_cli_driver {
     net_protocol_t m_undline_protocol;
 };
 
+mem_buffer_t net_ssl_cli_driver_tmp_buffer(net_ssl_cli_driver_t driver);
+
 #endif
