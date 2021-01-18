@@ -217,7 +217,19 @@ int net_ssl_cli_underline_write(
     }
     
     int r = SSL_write(underline->m_ssl, data, data_size);
+    if (r < 0) {
+        int err = SSL_get_error(underline->m_ssl, r);
+        return net_ssl_cli_underline_update_error(base_underline, err, r);
+    }
+    
+    net_endpoint_buf_consume(from_ep, from_buf, r);
 
+    if (net_endpoint_protocol_debug(base_underline)) {
+        CPE_INFO(
+            driver->m_em, "net: ssl: %s: ==> %d data!",
+            net_endpoint_dump(net_ssl_cli_driver_tmp_buffer(driver), base_underline), r);
+    }
+    
     return 0;
 }
 
@@ -252,6 +264,8 @@ int net_ssl_cli_underline_do_handshake(net_endpoint_t base_underline, net_ssl_cl
     int r = SSL_do_handshake(underline->m_ssl);
     if (r == 1) {
         underline->m_state = net_ssl_cli_underline_ssl_open;
+        if (net_ssl_cli_underline_write(base_underline, base_underline, net_ep_buf_user1) != 0) return -1;
+
         if (underline->m_ssl_endpoint) {
             if (net_endpoint_set_state(
                     net_endpoint_from_data(underline->m_ssl_endpoint),
