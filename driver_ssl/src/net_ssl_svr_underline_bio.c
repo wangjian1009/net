@@ -19,9 +19,9 @@ int net_ssl_svr_underline_bio_free(BIO *b) {
     net_ssl_svr_underline_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_underline));
     net_ssl_svr_driver_t driver = protocol->m_driver;
     
-    if (net_endpoint_driver_debug(base_underline) >= 2) {
+    if (net_endpoint_protocol_debug(base_underline) >= 2) {
         CPE_INFO(
-            driver->m_em, "net: ssl: %s: svr: bio: free success",
+            driver->m_em, "net: ssl: %s: bio: free success",
             net_endpoint_dump(net_ssl_svr_driver_tmp_buffer(driver), base_underline));
     }
     
@@ -47,9 +47,9 @@ int net_ssl_svr_underline_bio_read(BIO *b, char *out, int outlen) {
 	}
 
     if (length > outlen) {
-        if (net_endpoint_driver_debug(base_underline) >= 2) {
+        if (net_endpoint_protocol_debug(base_underline) >= 2) {
             CPE_INFO(
-                driver->m_em, "net: ssl: %s: svr: bio: read: out-len=%d, buf-len=%d, read part",
+                driver->m_em, "net: ssl: %s: bio: read: out-len=%d, buf-len=%d, read part",
                 net_endpoint_dump(net_ssl_svr_driver_tmp_buffer(driver), base_underline),
                 outlen, length);
         }
@@ -60,7 +60,7 @@ int net_ssl_svr_underline_bio_read(BIO *b, char *out, int outlen) {
     void * data = NULL;
     if (net_endpoint_buf_peak_with_size(base_underline, net_ep_buf_read, length, &data) != 0) {
         CPE_ERROR(
-            driver->m_em, "net: ssl: %s: svr: bio: read: peak data fail, length=%d",
+            driver->m_em, "net: ssl: %s: bio: read: peak data fail, length=%d",
             net_endpoint_dump(net_ssl_svr_driver_tmp_buffer(driver), base_underline),
             length);
         return -1;
@@ -85,7 +85,7 @@ int net_ssl_svr_underline_bio_write(BIO *b, const char *in, int inlen) {
     uint32_t write_size = inlen;
     if (net_endpoint_buf_append(base_underline, net_ep_buf_write, in, write_size) != 0) {
         CPE_ERROR(
-            driver->m_em, "net: ssl: %s: svr: bio: write: append buf fail, len=%d!",
+            driver->m_em, "net: ssl: %s: bio: write: append buf fail, len=%d!",
             net_endpoint_dump(net_ssl_svr_driver_tmp_buffer(driver), base_underline), write_size);
         return -1;
     }
@@ -112,9 +112,9 @@ long net_ssl_svr_underline_bio_ctrl(BIO *b, int cmd, long num, void *ptr) {
     net_ssl_svr_underline_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_underline));
     net_ssl_svr_driver_t driver = protocol->m_driver;
     
-    if (net_endpoint_driver_debug(base_underline) >= 2) {
+    if (net_endpoint_protocol_debug(base_underline) >= 2) {
         CPE_INFO(
-            driver->m_em, "net: ssl: %s: svr: bio: cmd %s",
+            driver->m_em, "net: ssl: %s: bio: cmd %s",
             net_endpoint_dump(net_ssl_svr_driver_tmp_buffer(driver), base_underline),
             net_ssl_bio_ctrl_cmd_str(cmd));
     }

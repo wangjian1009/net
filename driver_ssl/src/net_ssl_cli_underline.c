@@ -270,8 +270,9 @@ void net_ssl_cli_underline_trace_cb(
     int write_p, int version, int content_type, const void *buf, size_t len, SSL *ssl, void *arg)
 {
     net_endpoint_t base_underline = arg;
-    net_ssl_cli_driver_t driver = net_driver_data(net_endpoint_driver(base_underline));
-    
+    net_ssl_cli_underline_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_underline));
+    net_ssl_cli_driver_t driver = protocol->m_driver;
+
     if (net_endpoint_protocol_debug(base_underline)) {
         char prefix[256];
         snprintf(
@@ -285,7 +286,8 @@ void net_ssl_cli_underline_trace_cb(
 }
 
 void net_ssl_cli_underline_dump_error(net_endpoint_t base_underline, int val) {
-    net_ssl_cli_driver_t driver = net_driver_data(net_endpoint_driver(base_underline));
+    net_ssl_cli_underline_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_underline));
+    net_ssl_cli_driver_t driver = protocol->m_driver;
 
     CPE_ERROR(
         driver->m_em, "net: ssl: %s: SSL: Error was %s!",

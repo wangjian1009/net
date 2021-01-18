@@ -23,6 +23,10 @@ int net_ssl_cli_endpoint_init(net_endpoint_t base_endpoint) {
     net_ssl_cli_underline_t underline = net_endpoint_protocol_data(endpoint->m_underline);
     underline->m_ssl_endpoint = endpoint;
 
+    if (net_endpoint_driver_debug(base_endpoint) > net_endpoint_protocol_debug(endpoint->m_underline)) {
+        net_endpoint_set_protocol_debug(endpoint->m_underline, net_endpoint_driver_debug(base_endpoint));
+    }
+
     return 0;
 }
 

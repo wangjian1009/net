@@ -184,14 +184,14 @@ void net_ssl_svr_underline_trace_cb(
     net_ssl_svr_underline_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_underline));
     net_ssl_svr_driver_t driver = protocol->m_driver;
 
-    if (net_endpoint_driver_debug(base_underline)) {
+    if (net_endpoint_protocol_debug(base_underline)) {
         char prefix[256];
         snprintf(
             prefix, sizeof(prefix), "net: ssl: %s: SSL: ",
             net_endpoint_dump(net_ssl_svr_driver_tmp_buffer(driver), base_underline));
         net_ssl_dump_tls_info(
             driver->m_em, net_ssl_svr_driver_tmp_buffer(driver), prefix,
-            net_endpoint_driver_debug(base_underline) >= 2,
+            net_endpoint_protocol_debug(base_underline) >= 2,
             write_p, version, content_type, buf, len, ssl);
     }
 }

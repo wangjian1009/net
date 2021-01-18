@@ -53,7 +53,11 @@ int net_ssl_svr_acceptor_on_new_endpoint(void * ctx, net_endpoint_t base_underli
         net_endpoint_free(new_base_endpoint);
         return -1;
     }
-    
+
+    if (net_endpoint_driver_debug(new_base_endpoint) > net_endpoint_protocol_debug(base_underline)) {
+        net_endpoint_set_protocol_debug(base_underline, net_endpoint_driver_debug(new_base_endpoint));
+    }
+
     return 0;
 }
 
