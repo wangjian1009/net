@@ -156,3 +156,15 @@ test_net_driver_find_endpoint_by_remote_addr(test_net_driver_t driver, net_addre
     return NULL;
 }
 
+net_endpoint_t
+test_net_endpoint_linked_other(test_net_driver_t driver, net_endpoint_t base_endpoint) {
+    assert_true(net_endpoint_driver(base_endpoint) == net_driver_from_data(driver));
+
+    test_net_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+    assert_true(endpoint->m_write_policy.m_type == test_net_endpoint_write_link);
+
+    test_net_endpoint_t other_ep = test_net_endpoint_link_other(endpoint->m_write_policy.m_link.m_link, endpoint);
+    assert_true(other_ep != NULL);
+
+    return net_endpoint_from_data(other_ep);
+}
