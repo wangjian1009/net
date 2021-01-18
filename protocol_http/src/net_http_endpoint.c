@@ -16,7 +16,6 @@
 #include "net_http_req_i.h"
 
 static void net_http_endpoint_reset_data(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_res_result_t result);
-static void net_http_endpoint_do_connect(net_timer_t timer, void * ctx);
 static int net_http_endpoint_notify_state_changed(net_http_endpoint_t http_ep, net_http_state_t old_state);
 
 net_http_endpoint_t
@@ -55,14 +54,6 @@ net_schedule_t net_http_endpoint_schedule(net_http_endpoint_t http_ep) {
 
 net_endpoint_t net_http_endpoint_net_ep(net_http_endpoint_t http_ep) {
     return http_ep->m_endpoint;
-}
-
-uint32_t net_http_endpoint_reconnect_span_ms(net_http_endpoint_t http_ep) {
-    return http_ep->m_reconnect_span_ms;
-}
-
-void net_http_endpoint_set_reconnect_span_ms(net_http_endpoint_t http_ep, uint32_t span_ms) {
-    http_ep->m_reconnect_span_ms = span_ms;
 }
 
 net_http_protocol_t net_http_endpoint_protocol(net_http_endpoint_t http_ep) {
@@ -148,19 +139,6 @@ int net_http_endpoint_set_remote(net_http_endpoint_t http_ep, const char * url) 
     return 0;
 }
 
-void net_http_endpoint_enable(net_http_endpoint_t http_ep) {
-    net_timer_active(http_ep->m_connect_timer, 0);
-}
-
-int net_http_endpoint_disable(net_http_endpoint_t http_ep) {
-    assert(http_ep);
-    assert(http_ep->m_endpoint);
-    
-    if (net_endpoint_set_state(http_ep->m_endpoint, net_endpoint_state_disable) != 0) return -1;
-    net_timer_cancel(http_ep->m_connect_timer);
-    return 0;
-}
-
 int net_http_endpoint_set_state(net_http_endpoint_t http_ep, net_http_state_t state) {
     if (http_ep->m_state == state) return 0;
     
@@ -208,16 +186,9 @@ int net_http_endpoint_init(net_endpoint_t endpoint) {
     http_ep->m_endpoint = endpoint;
     http_ep->m_state = net_http_state_disable;
     http_ep->m_connection_type = net_http_connection_type_keep_alive;
-    http_ep->m_reconnect_span_ms = 0;
     http_ep->m_request_id_tag = NULL;
     http_ep->m_req_count = 0;
     TAILQ_INIT(&http_ep->m_reqs);
-    
-    http_ep->m_connect_timer = net_timer_auto_create(schedule, net_http_endpoint_do_connect, http_ep);
-    if (http_ep->m_connect_timer == NULL) {
-        CPE_ERROR(http_protocol->m_em, "http: ???: init: create connect timer fail!");
-        return -1;
-    }
     
     return 0;
 }
@@ -233,11 +204,6 @@ void net_http_endpoint_fini(net_endpoint_t endpoint) {
     if (http_ep->m_request_id_tag) {
         mem_free(http_protocol->m_alloc, http_ep->m_request_id_tag);
         http_ep->m_request_id_tag = NULL;
-    }
-
-    if (http_ep->m_connect_timer) {
-        net_timer_free(http_ep->m_connect_timer);
-        http_ep->m_connect_timer = NULL;
     }
 
     http_ep->m_endpoint = NULL;
@@ -318,40 +284,14 @@ int net_http_endpoint_on_state_change(net_endpoint_t endpoint, net_endpoint_stat
     case net_endpoint_state_disable:
         if (net_http_endpoint_set_state(http_ep, net_http_state_disable) != 0) return -1;
         net_http_endpoint_reset_data(http_protocol, http_ep, net_http_res_canceled);
-        if (http_ep->m_reconnect_span_ms) {
-            net_timer_active(
-                http_ep->m_connect_timer,
-                old_state == net_endpoint_state_established
-                ? 0
-                : (int32_t)http_ep->m_reconnect_span_ms);
-        }
         break;
     case net_endpoint_state_network_error:
         if (net_http_endpoint_set_state(http_ep, net_http_state_error) != 0) return -1;
         net_http_endpoint_reset_data(http_protocol, http_ep, net_http_res_disconnected);
-        if (http_ep->m_reconnect_span_ms) {
-            net_timer_active(
-                http_ep->m_connect_timer,
-                old_state == net_endpoint_state_established
-                ? 0
-                : (int32_t)http_ep->m_reconnect_span_ms);
-        }
         break;
     case net_endpoint_state_logic_error:
         if (net_http_endpoint_set_state(http_ep, net_http_state_error) != 0) return -1;
         net_http_endpoint_reset_data(http_protocol, http_ep, net_http_res_canceled);
-        if (http_ep->m_reconnect_span_ms) {
-            int64_t ct = cur_time_ms();
-            if (http_ep->m_connecting_time_ms
-                && ct > http_ep->m_connecting_time_ms
-                && ((ct - http_ep->m_connecting_time_ms) < http_ep->m_reconnect_span_ms))
-            {
-                net_timer_active(http_ep->m_connect_timer, http_ep->m_reconnect_span_ms);
-            }
-            else {
-                net_timer_active(http_ep->m_connect_timer, 0);
-            }
-        }
         break;
     case net_endpoint_state_resolving:
         if (net_http_endpoint_set_state(http_ep, net_http_state_connecting) != 0) return -1;
@@ -532,16 +472,6 @@ static void net_http_endpoint_reset_data(net_http_protocol_t http_protocol, net_
         }
 
         net_http_req_free_i(req, 1);
-    }
-}
-
-static void net_http_endpoint_do_connect(net_timer_t timer, void * ctx) {
-    net_http_endpoint_t http_ep = ctx;
-
-    if (net_endpoint_connect(http_ep->m_endpoint) != 0) {
-        if (http_ep->m_reconnect_span_ms) {
-            net_timer_active(timer, (int32_t)http_ep->m_reconnect_span_ms);
-        }
     }
 }
 

@@ -171,4 +171,3 @@ const char * net_http_req_state_str(net_http_req_state_t req_state) {
         return "http-req-completed";
     }
 }
-

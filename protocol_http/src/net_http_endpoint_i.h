@@ -8,12 +8,10 @@ NET_BEGIN_DECL
 struct net_http_endpoint {
     net_endpoint_t m_endpoint;
     net_http_connection_type_t m_connection_type;
-    uint32_t m_reconnect_span_ms;
 
     /*runtime*/
     int64_t m_connecting_time_ms;
     net_http_state_t m_state;
-    net_timer_t m_connect_timer;
     net_timer_t m_process_timer;
 
     char * m_request_id_tag;

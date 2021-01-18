@@ -6,11 +6,15 @@
 static int net_http_protocol_init(net_protocol_t protocol);
 static void net_http_protocol_fini(net_protocol_t protocol);
 
-net_http_protocol_t net_http_protocol_create(net_schedule_t schedule) {
+net_http_protocol_t
+net_http_protocol_create(net_schedule_t schedule, const char * name_postfix) {
+    char name[64];
+    snprintf(name, sizeof(name), "http-%s", name_postfix);
+
     net_protocol_t protocol =
         net_protocol_create(
             schedule,
-            "http",
+            name,
             /*protocol*/
             sizeof(struct net_http_protocol),
             net_http_protocol_init,
@@ -27,7 +31,6 @@ net_http_protocol_t net_http_protocol_create(net_schedule_t schedule) {
     }
 
     net_http_protocol_t http_protocol = net_protocol_data(protocol);
-    
     return http_protocol;
 }
 
@@ -45,7 +48,6 @@ static int net_http_protocol_init(net_protocol_t protocol) {
     http_protocol->m_max_req_id = 0;
     
     TAILQ_INIT(&http_protocol->m_free_reqs);
-    TAILQ_INIT(&http_protocol->m_free_ssl_ctxes);
     
     return 0;
 }
@@ -74,11 +76,10 @@ net_schedule_t net_http_protocol_schedule(net_http_protocol_t http_protocol) {
     return net_protocol_schedule(net_protocol_from_data(http_protocol));
 }
 
-net_http_protocol_t net_http_protocol_find(net_schedule_t schedule, const char * protocol_name) {
-    net_protocol_t base_protocol = net_protocol_find(schedule, protocol_name);
-    if (base_protocol == NULL) return NULL;
-
-    if (net_protocol_init_fun(base_protocol) != net_http_protocol_init) return NULL;
-
-    return net_protocol_data(base_protocol);
+net_http_protocol_t net_http_protocol_find(net_schedule_t schedule, const char * name_postfix) {
+    char name[64];
+    snprintf(name, sizeof(name), "http-%s", name_postfix);
+    
+    net_protocol_t base_protocol = net_protocol_find(schedule, name);
+    return base_protocol ? net_protocol_data(base_protocol) : NULL;
 }
