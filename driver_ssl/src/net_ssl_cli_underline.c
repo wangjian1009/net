@@ -14,6 +14,8 @@ static int net_ssl_cli_underline_do_handshake(
 
 static void net_ssl_cli_underline_dump_error(net_endpoint_t base_underline, int val);
 
+static int net_ssl_cli_underline_update_error(net_endpoint_t base_underline, int err, int r);
+
 int net_ssl_cli_underline_init(net_endpoint_t base_underline) {
     net_ssl_cli_underline_t underline = net_endpoint_protocol_data(base_underline);
     net_ssl_cli_underline_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_underline));
@@ -77,7 +79,7 @@ int net_ssl_cli_underline_input(net_endpoint_t base_underline) {
     void * data = NULL;
     if (net_endpoint_buf_peak_with_size(base_underline, net_ep_buf_read, data_size, &data) != 0) {
         CPE_ERROR(
-            driver->m_em, "net: ssl: %s: underline: peak data failed, size=%d!",
+            driver->m_em, "net: ssl: %s: peak data failed, size=%d!",
             net_endpoint_dump(net_ssl_cli_driver_tmp_buffer(driver), base_underline), data_size);
         return -1;
     }
@@ -85,6 +87,8 @@ int net_ssl_cli_underline_input(net_endpoint_t base_underline) {
     ERR_clear_error();
     int r = SSL_read(underline->m_ssl, data, data_size);
     if (r > 0) {
+        if (net_endpoint_driver_debug(base_underline)) {
+        }
     }
     else {
         int err = SSL_get_error(underline->m_ssl, r);
@@ -225,6 +229,68 @@ int net_ssl_cli_underline_on_state_change(net_endpoint_t base_underline, net_end
     return 0;
 }
 
+int net_ssl_cli_underline_write(
+    net_endpoint_t base_underline, net_endpoint_t from_ep, net_endpoint_buf_type_t from_buf)
+{
+    net_ssl_cli_underline_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_underline));
+    net_ssl_cli_driver_t driver = protocol->m_driver;
+    net_ssl_cli_underline_t underline = net_endpoint_protocol_data(base_underline);
+    
+    switch(net_endpoint_state(base_underline)) {
+    case net_endpoint_state_disable:
+    case net_endpoint_state_resolving:
+    case net_endpoint_state_connecting:
+        if (net_endpoint_driver_debug(base_underline)) {
+            CPE_INFO(
+                driver->m_em, "net: ssl: %s: write: cache %d data in state %s!",
+                net_endpoint_dump(net_ssl_cli_driver_tmp_buffer(driver), base_underline),
+                net_endpoint_buf_size(from_ep, from_buf),
+                net_endpoint_state_str(net_endpoint_state(base_underline)));
+        }
+        return net_endpoint_buf_append_from_other(
+            base_underline, net_ep_buf_user1, from_ep, from_buf, 0);
+    case net_endpoint_state_established:
+        switch(underline->m_state) {
+        case net_ssl_cli_underline_ssl_handshake:
+            if (net_endpoint_driver_debug(base_underline)) {
+                CPE_INFO(
+                    driver->m_em, "net: ssl: %s: write: cache %d data in state %s.handshake!",
+                    net_endpoint_dump(net_ssl_cli_driver_tmp_buffer(driver), base_underline),
+                    net_endpoint_buf_size(from_ep, from_buf),
+                    net_endpoint_state_str(net_endpoint_state(base_underline)));
+            }
+            return net_endpoint_buf_append_from_other(
+                base_underline, net_ep_buf_user1, from_ep, from_buf, 0);
+        case net_ssl_cli_underline_ssl_open:
+            break;
+        }
+        break;
+    case net_endpoint_state_logic_error:
+    case net_endpoint_state_network_error:
+    case net_endpoint_state_deleting:
+        CPE_ERROR(
+            driver->m_em, "net: ssl: %s: write: can`t write in state %s!",
+            net_endpoint_dump(net_ssl_cli_driver_tmp_buffer(driver), base_underline),
+            net_endpoint_state_str(net_endpoint_state(base_underline)));
+        return -1;
+    }
+
+    uint32_t data_size = net_endpoint_buf_size(from_ep, from_buf);
+    if (data_size == 0) return 0;
+
+    void * data = NULL;
+    if (net_endpoint_buf_peak_with_size(from_ep, from_buf, data_size, &data) != 0) {
+        CPE_ERROR(
+            driver->m_em, "net: ssl: %s: write: peak data fail!",
+            net_endpoint_dump(net_ssl_cli_driver_tmp_buffer(driver), base_underline));
+        return -1;
+    }
+    
+    int r = SSL_write(underline->m_ssl, data, data_size);
+
+    return 0;
+}
+
 net_protocol_t
 net_ssl_cli_underline_protocol_create(
     net_schedule_t schedule, const char * name, net_ssl_cli_driver_t driver)
@@ -276,7 +342,6 @@ int net_ssl_cli_underline_do_handshake(net_endpoint_t base_underline, net_ssl_cl
             return 0;
         default:
             net_ssl_cli_underline_dump_error(base_underline, err);
-            net_endpoint_set_error(base_underline, net_endpoint_error_source_protocol, -1, "handshake start fail");
             break;
         }
 
@@ -312,7 +377,7 @@ void net_ssl_cli_underline_dump_error(net_endpoint_t base_underline, int val) {
     CPE_ERROR(
         driver->m_em, "net: ssl: %s: SSL: Error was %s!",
         net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_underline),
-        net_ssl_errno_str(val));
+        ERR_error_string(val, NULL));
 
     int err;
 	while ((err = ERR_get_error())) {
@@ -325,4 +390,9 @@ void net_ssl_cli_underline_dump_error(net_endpoint_t base_underline, int val) {
             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_underline),
             msg, lib, func);
 	}
+}
+
+static int net_ssl_cli_underline_update_error(net_endpoint_t base_underline, int err, int r) {
+    net_endpoint_set_error(base_underline, net_endpoint_error_source_protocol, -1, "handshake start fail");
+    return 0;
 }

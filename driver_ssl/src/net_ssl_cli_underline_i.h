@@ -21,4 +21,7 @@ net_protocol_t
 net_ssl_cli_underline_protocol_create(
     net_schedule_t schedule, const char * name, net_ssl_cli_driver_t driver);
 
+int net_ssl_cli_underline_write(
+    net_endpoint_t base_underline, net_endpoint_t from_ep, net_endpoint_buf_type_t from_buf);
+
 #endif

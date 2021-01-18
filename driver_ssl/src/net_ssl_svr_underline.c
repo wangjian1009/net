@@ -203,7 +203,7 @@ void net_ssl_svr_underline_dump_error(net_endpoint_t base_underline, int val) {
     CPE_ERROR(
         driver->m_em, "net: ssl: %s: SSL: Error was %s!",
         net_endpoint_dump(net_ssl_svr_driver_tmp_buffer(driver), base_underline),
-        net_ssl_errno_str(val));
+        ERR_error_string(val, NULL));
 
     int err;
 	while ((err = ERR_get_error())) {
