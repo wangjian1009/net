@@ -262,8 +262,6 @@ int net_ssl_cli_underline_write(
         return -1;
     }
 
-    CPE_ERROR(driver->m_em, "xxxxxx: write begin %d", data_size);
-    
     int r = SSL_write(underline->m_ssl, data, data_size);
     if (r < 0) {
         int err = SSL_get_error(underline->m_ssl, r);
