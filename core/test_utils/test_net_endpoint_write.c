@@ -116,14 +116,9 @@ PROCESS_AGAIN:
     case test_net_endpoint_write_link: {
         test_net_endpoint_t other = test_net_endpoint_link_other(endpoint->m_write_policy.m_link.m_link, endpoint);
         net_endpoint_t base_other_endpoint = net_endpoint_from_data(other);
-        if (endpoint->m_write_policy.m_link.m_write_delay_ms == 0) {
-            test_net_driver_read_from_other(net_endpoint_from_data(other), base_endpoint, net_ep_buf_write);
-        }
-        else {
-            test_net_endpoint_write_delay(
-                driver, base_endpoint, base_other_endpoint,
-                endpoint->m_write_policy.m_link.m_write_delay_ms);
-        }
+        test_net_endpoint_write_delay(
+            driver, base_endpoint, base_other_endpoint,
+            endpoint->m_write_policy.m_link.m_write_delay_ms);
         break;
     }
     }

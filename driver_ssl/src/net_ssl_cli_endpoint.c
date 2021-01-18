@@ -173,11 +173,14 @@ int net_ssl_cli_endpoint_get_mss(net_endpoint_t base_endpoint, uint32_t * mss) {
     return net_endpoint_get_mss(endpoint->m_underline, mss);
 }
 
+static uint8_t ppp = 0;
 int net_ssl_cli_endpoint_do_handshake(net_endpoint_t base_endpoint, net_ssl_cli_endpoint_t endpoint) {
-    ERR_clear_error();
-
+    net_ssl_cli_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
     assert(net_endpoint_state(base_endpoint) == net_endpoint_state_connecting);
-    
+
+    assert(++ppp < 100);
+
+    ERR_clear_error();
     int r = SSL_do_handshake(endpoint->m_ssl);
     if (r == 1) {
         if (net_endpoint_set_state(base_endpoint, net_endpoint_state_established) != 0) return -1;
