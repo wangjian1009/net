@@ -5,8 +5,8 @@
 #include "net_ssl_utils.h"
 
 typedef struct net_ssl_svr_acceptor * net_ssl_svr_acceptor_t;
-typedef struct net_ssl_svr_undline * net_ssl_svr_undline_t;
-typedef enum net_ssl_svr_endpoint_ssl_state net_ssl_svr_endpoint_ssl_state_t;
+typedef struct net_ssl_svr_underline * net_ssl_svr_underline_t;
+typedef struct net_ssl_svr_underline_protocol * net_ssl_svr_underline_protocol_t;
 
 struct net_ssl_svr_driver {
     mem_allocrator_t m_alloc;
@@ -18,6 +18,8 @@ struct net_ssl_svr_driver {
     EVP_PKEY * m_pkey;
     uint8_t m_cert_loaded;
 };
+
+mem_buffer_t net_ssl_svr_driver_tmp_buffer(net_ssl_svr_driver_t driver);
 
 int net_ssl_svr_driver_confirm_pkey(net_ssl_svr_driver_t driver);
 int net_ssl_svr_driver_confirm_cert(net_ssl_svr_driver_t driver);

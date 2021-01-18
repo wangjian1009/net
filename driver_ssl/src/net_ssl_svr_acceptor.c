@@ -15,7 +15,7 @@ int net_ssl_svr_acceptor_on_new_endpoint(void * ctx, net_endpoint_t base_underli
     net_ssl_svr_driver_t driver = net_driver_data(base_driver);
     net_schedule_t schedule = net_endpoint_schedule(base_underline);
 
-    net_ssl_svr_undline_t underline = net_endpoint_protocol_data(base_underline);
+    net_ssl_svr_underline_t underline = net_endpoint_protocol_data(base_underline);
     assert(underline->m_ssl_endpoint == NULL);
 
     net_endpoint_t new_base_endpoint =

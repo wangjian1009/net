@@ -8,7 +8,7 @@
 #include "net_ssl_svr_acceptor_i.h"
 #include "net_ssl_svr_endpoint_i.h"
 #include "net_ssl_svr_underline_i.h"
-#include "net_ssl_svr_bio.h"
+#include "net_ssl_svr_underline_bio.h"
 #include "net_ssl_utils.h"
 
 static int net_ssl_svr_driver_init(net_driver_t driver);
@@ -64,7 +64,7 @@ net_ssl_svr_driver_create(
     ssl_driver->m_alloc = alloc;
     ssl_driver->m_em = em;
     ssl_driver->m_underline_driver = underline_driver;
-    ssl_driver->m_underline_protocol = net_ssl_svr_underline_protocol_create(schedule, name);
+    ssl_driver->m_underline_protocol = net_ssl_svr_underline_protocol_create(schedule, name, ssl_driver);
 
     return ssl_driver;
 }
@@ -103,12 +103,12 @@ static int net_ssl_svr_driver_init(net_driver_t base_driver) {
             "net: ssl: driver: init: create bio method fail");
         return -1;
     }
-    BIO_meth_set_write(driver->m_bio_method, net_ssl_svr_endpoint_bio_write);
-    BIO_meth_set_read(driver->m_bio_method, net_ssl_svr_endpoint_bio_read);
-    BIO_meth_set_puts(driver->m_bio_method, net_ssl_svr_endpoint_bio_puts);
-    BIO_meth_set_ctrl(driver->m_bio_method, net_ssl_svr_endpoint_bio_ctrl);
-    BIO_meth_set_create(driver->m_bio_method, net_ssl_svr_endpoint_bio_new);
-    BIO_meth_set_destroy(driver->m_bio_method, net_ssl_svr_endpoint_bio_free);
+    BIO_meth_set_write(driver->m_bio_method, net_ssl_svr_underline_bio_write);
+    BIO_meth_set_read(driver->m_bio_method, net_ssl_svr_underline_bio_read);
+    BIO_meth_set_puts(driver->m_bio_method, net_ssl_svr_underline_bio_puts);
+    BIO_meth_set_ctrl(driver->m_bio_method, net_ssl_svr_underline_bio_ctrl);
+    BIO_meth_set_create(driver->m_bio_method, net_ssl_svr_underline_bio_new);
+    BIO_meth_set_destroy(driver->m_bio_method, net_ssl_svr_underline_bio_free);
     
     driver->m_ssl_ctx = SSL_CTX_new(SSLv23_server_method());
     if(driver->m_ssl_ctx == NULL) {
@@ -352,4 +352,8 @@ int net_ssl_svr_driver_prepaired(net_ssl_svr_driver_t driver) {
     if (net_ssl_svr_driver_confirm_pkey(driver) != 0) return -1;
     if (net_ssl_svr_driver_confirm_cert(driver) != 0) return -1;
     return 0;
+}
+
+mem_buffer_t net_ssl_svr_driver_tmp_buffer(net_ssl_svr_driver_t driver) {
+    return net_schedule_tmp_buffer(net_driver_schedule(net_driver_from_data(driver)));
 }

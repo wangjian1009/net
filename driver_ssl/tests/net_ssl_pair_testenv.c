@@ -45,7 +45,7 @@ net_endpoint_t net_ssl_pair_testenv_get_svr_ep(
     net_endpoint_t svr_underline_base =  test_net_endpoint_linked_other(env->m_env->m_tdriver, cli_ep->m_underline);
     assert_true(svr_underline_base != NULL);
 
-    net_ssl_svr_undline_t svr_undline = net_endpoint_protocol_data(svr_underline_base);
+    net_ssl_svr_underline_t svr_undline = net_endpoint_protocol_data(svr_underline_base);
     assert_true(svr_undline->m_ssl_endpoint != NULL);
     
     net_endpoint_t svr_base_endpoint = net_endpoint_from_data(svr_undline->m_ssl_endpoint);
