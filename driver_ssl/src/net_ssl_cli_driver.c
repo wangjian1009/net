@@ -5,7 +5,7 @@
 #include "net_ssl_cli_driver_i.h"
 #include "net_ssl_cli_endpoint_i.h"
 #include "net_ssl_cli_underline_i.h"
-#include "net_ssl_cli_bio.h"
+#include "net_ssl_cli_underline_bio.h"
 
 static int net_ssl_cli_driver_init(net_driver_t driver);
 static void net_ssl_cli_driver_fini(net_driver_t driver);
@@ -55,7 +55,8 @@ net_ssl_cli_driver_create(
     ssl_driver->m_alloc = alloc;
     ssl_driver->m_em = em;
     ssl_driver->m_underline_driver = underline_driver;
-    ssl_driver->m_undline_protocol = net_ssl_cli_underline_protocol_create(schedule, name);
+    ssl_driver->m_underline_protocol =
+        net_ssl_cli_underline_protocol_create(schedule, name, ssl_driver);
 
     return ssl_driver;
 }
@@ -83,7 +84,7 @@ static int net_ssl_cli_driver_init(net_driver_t base_driver) {
     driver->m_alloc = NULL;
     driver->m_em = NULL;
     driver->m_underline_driver = NULL;
-    driver->m_undline_protocol = NULL;
+    driver->m_underline_protocol = NULL;
 
     driver->m_bio_method = BIO_meth_new(58, "net-ssl-cli");
     if (driver->m_bio_method == NULL) {
@@ -92,12 +93,12 @@ static int net_ssl_cli_driver_init(net_driver_t base_driver) {
             "net: ssl: driver: init: create bio method fail");
         return -1;
     }
-    BIO_meth_set_write(driver->m_bio_method, net_ssl_cli_endpoint_bio_write);
-    BIO_meth_set_read(driver->m_bio_method, net_ssl_cli_endpoint_bio_read);
-    BIO_meth_set_puts(driver->m_bio_method, net_ssl_cli_endpoint_bio_puts);
-    BIO_meth_set_ctrl(driver->m_bio_method, net_ssl_cli_endpoint_bio_ctrl);
-    BIO_meth_set_create(driver->m_bio_method, net_ssl_cli_endpoint_bio_new);
-    BIO_meth_set_destroy(driver->m_bio_method, net_ssl_cli_endpoint_bio_free);
+    BIO_meth_set_write(driver->m_bio_method, net_ssl_cli_underline_bio_write);
+    BIO_meth_set_read(driver->m_bio_method, net_ssl_cli_underline_bio_read);
+    BIO_meth_set_puts(driver->m_bio_method, net_ssl_cli_underline_bio_puts);
+    BIO_meth_set_ctrl(driver->m_bio_method, net_ssl_cli_underline_bio_ctrl);
+    BIO_meth_set_create(driver->m_bio_method, net_ssl_cli_underline_bio_new);
+    BIO_meth_set_destroy(driver->m_bio_method, net_ssl_cli_underline_bio_free);
     
     driver->m_ssl_ctx = SSL_CTX_new(SSLv23_client_method());
     if(driver->m_ssl_ctx == NULL) {
@@ -127,9 +128,9 @@ static int net_ssl_cli_driver_init(net_driver_t base_driver) {
 static void net_ssl_cli_driver_fini(net_driver_t base_driver) {
     net_ssl_cli_driver_t driver = net_driver_data(base_driver);
 
-    if (driver->m_undline_protocol) {
-        net_protocol_free(driver->m_undline_protocol);
-        driver->m_undline_protocol = NULL;
+    if (driver->m_underline_protocol) {
+        net_protocol_free(driver->m_underline_protocol);
+        driver->m_underline_protocol = NULL;
     }
     
     if (driver->m_bio_method) {
