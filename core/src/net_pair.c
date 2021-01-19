@@ -5,6 +5,8 @@
 #include "net_timer.h"
 #include "net_pair_i.h"
 
+void net_pair_endpoint_delay_process(net_timer_t timer, void * ctx);
+
 net_driver_t net_schedule_pair_driver(net_schedule_t schedule) {
     return schedule->m_pair_driver;
 }
@@ -162,10 +164,42 @@ int net_pair_endpoint_update(net_endpoint_t base_endpoint) {
     net_pair_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
 
-    if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return -1;
+    if (endpoint->m_is_writing) return 0;
 
-    if (endpoint->m_other == NULL) {
-        //CPE_ERROR("core: pair: %s: write
+    while(!net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write)) {
+        if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return -1;
+
+        if (endpoint->m_other == NULL) {
+            CPE_ERROR(
+                schedule->m_em, "core: pair: %s: other end disconnected",
+                net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+            net_endpoint_set_error(
+                base_endpoint,
+                net_endpoint_error_source_network, net_endpoint_network_errno_logic,
+                "pair other disconnected");
+            return net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error);
+        }
+
+        if (endpoint->m_other->m_is_writing) {
+            if (endpoint->m_delay_processor == NULL) {
+                endpoint->m_delay_processor =
+                    net_timer_auto_create(schedule, net_pair_endpoint_delay_process, base_endpoint);
+                if (endpoint->m_delay_processor == NULL) {
+                    CPE_ERROR(
+                        schedule->m_em, "core: pair: %s: create delay processor failed",
+                        net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+                    return -1;
+                }
+            }
+            net_timer_active(endpoint->m_delay_processor, 0);
+            return 0;
+        }
+
+        net_endpoint_t base_other = net_endpoint_from_data(endpoint->m_other);
+        endpoint->m_is_writing = 1;
+        int rv = net_endpoint_buf_append_from_other(base_other, net_ep_buf_read, base_endpoint, net_ep_buf_write, 0);
+        endpoint->m_is_writing = 0;
+        if (rv != 0) return rv;
     }
     
     return 0;
@@ -197,6 +231,22 @@ int net_pair_endpoint_set_no_delay(net_endpoint_t base_endpoint, uint8_t no_dela
 int net_pair_endpoint_get_mss(net_endpoint_t base_endpoint, uint32_t * mss) {
     *mss = 0;
     return 0;
+}
+
+void net_pair_endpoint_delay_process(net_timer_t timer, void * ctx) {
+    net_endpoint_t base_endpoint = ctx;
+
+    if (net_pair_endpoint_update(base_endpoint) != 0) {
+        if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) {
+            net_endpoint_set_error(
+                base_endpoint,
+                net_endpoint_error_source_network, net_endpoint_network_errno_logic,
+                "unknown error in delay process");
+            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_logic_error) != 0) {
+                net_endpoint_free(base_endpoint);
+            }
+        }
+    }
 }
 
 net_driver_t net_pair_driver_create(net_schedule_t schedule) {
