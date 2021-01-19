@@ -96,7 +96,12 @@ int test_net_driver_read_from_other(net_endpoint_t base_endpoint, net_endpoint_t
 }
 
 void test_net_endpoint_id_expect_set_no_delay(test_net_driver_t driver, uint32_t ep_id, uint8_t is_enable) {
-    expect_value(test_net_endpoint_set_no_delay, id, ep_id);
+    if (ep_id == 0) {
+        expect_any(test_net_endpoint_set_no_delay, id);
+    }
+    else {
+        expect_value(test_net_endpoint_set_no_delay, id, ep_id);
+    }
     expect_value(test_net_endpoint_set_no_delay, is_enable, is_enable);
     will_return(test_net_endpoint_set_no_delay, 0);
 }
