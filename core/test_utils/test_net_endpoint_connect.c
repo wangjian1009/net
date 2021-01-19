@@ -157,7 +157,13 @@ static void test_net_endpoint_connect_delay_process(
 void test_net_endpoint_id_expect_connect_success(
     test_net_driver_t driver, uint32_t ep_id, const char * target, int64_t delay_ms)
 {
-    expect_value(test_net_endpoint_connect, id, ep_id);
+    if (ep_id == 0) {
+        expect_any(test_net_endpoint_connect, id);
+    }
+    else {
+        expect_value(test_net_endpoint_connect, id, ep_id);
+    }
+
     if (target) {
         expect_string(test_net_endpoint_connect, remote_addr, target);
     }

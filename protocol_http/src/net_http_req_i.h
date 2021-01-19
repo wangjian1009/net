@@ -18,7 +18,6 @@ struct net_http_req {
     uint32_t m_head_size;
     uint32_t m_body_size;
     uint32_t m_flushed_size;
-    net_timer_t m_timeout_timer;
     
     /*res*/
     void * m_res_ctx;

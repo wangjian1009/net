@@ -67,7 +67,7 @@ int net_pair_endpoint_link(net_endpoint_t base_a, net_endpoint_t base_z) {
         return -1;
     }
 
-    if (net_endpoint_state(base_a) != net_endpoint_state_established) {
+    if (net_endpoint_state(base_a) != net_endpoint_state_disable) {
         CPE_ERROR(
             schedule->m_em, "core: pair: link: %s: state is %s, can`t link",
             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_a),
@@ -92,7 +92,7 @@ int net_pair_endpoint_link(net_endpoint_t base_a, net_endpoint_t base_z) {
         return -1;
     }
 
-    if (net_endpoint_state(base_z) != net_endpoint_state_established) {
+    if (net_endpoint_state(base_z) != net_endpoint_state_disable) {
         CPE_ERROR(
             schedule->m_em, "core: pair: link: %s: state is %s, can`t link",
             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_z),

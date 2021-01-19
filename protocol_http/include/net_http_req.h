@@ -12,8 +12,6 @@ net_http_endpoint_t net_http_req_ep(net_http_req_t req);
 
 net_http_req_t net_http_req_find(net_http_endpoint_t http_ep, uint16_t req_id);
 
-int net_http_req_start_timeout(net_http_req_t req, uint32_t timeout_ms);
-
 void net_http_req_cancel_and_free(net_http_req_t req);
 void net_http_req_cancel_and_free_by_id(net_http_endpoint_t http_ep, uint16_t req_id);
     
@@ -32,7 +30,7 @@ net_http_res_state_t net_http_req_res_state(net_http_req_t req);
 typedef enum net_http_res_op_result {
     net_http_res_op_success,
     net_http_res_op_ignore,
-    net_http_res_op_error_and_reconnect,
+    net_http_res_op_error_and_close,
 } net_http_res_op_result_t;
 
 typedef enum net_http_res_result {

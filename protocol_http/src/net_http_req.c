@@ -49,7 +49,6 @@ net_http_req_create(net_http_endpoint_t http_ep, net_http_req_method_t method, c
     req->m_head_size = 0;
     req->m_body_size = 0;
     req->m_flushed_size = 0;
-    req->m_timeout_timer = NULL;
 
     req->m_res_ignore = 0;
     req->m_res_ctx = NULL;
@@ -81,11 +80,6 @@ void net_http_req_free_i(net_http_req_t req, uint8_t force) {
     req->m_res_on_head = NULL;
     req->m_res_on_body = NULL;
     req->m_res_on_complete = NULL;
-
-    if (req->m_timeout_timer) {
-        net_timer_free(req->m_timeout_timer);
-        req->m_timeout_timer = NULL;
-    }
 
     if (!force) {
         if (http_ep->m_state == net_http_state_connecting || http_ep->m_state == net_http_state_established) { /*在正常连接的过程中 */
@@ -175,22 +169,6 @@ int net_http_req_set_reader(
     req->m_res_on_head = on_head;
     req->m_res_on_body = on_body;
     req->m_res_on_complete = on_complete;
-    
-    return 0;
-}
-
-int net_http_req_start_timeout(net_http_req_t req, uint32_t timeout_ms) {
-    net_http_protocol_t http_protocol = net_http_endpoint_protocol(req->m_http_ep);
-
-    if (req->m_timeout_timer == NULL) {
-        req->m_timeout_timer = net_timer_auto_create(net_http_endpoint_schedule(req->m_http_ep), net_http_req_on_timeout, req);
-        if (req->m_timeout_timer == NULL) {
-            CPE_ERROR(http_protocol->m_em, "http: req: create: create timer fail!");
-            return -1;
-        }
-    }
-    
-    net_timer_active(req->m_timeout_timer, timeout_ms);
     
     return 0;
 }

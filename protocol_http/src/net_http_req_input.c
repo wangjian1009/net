@@ -199,7 +199,7 @@ static int net_http_req_process_response_head_line(
                 case net_http_res_op_ignore:
                     req->m_res_ignore = 1;
                     break;
-                case net_http_res_op_error_and_reconnect:
+                case net_http_res_op_error_and_close:
                     CPE_ERROR(
                         http_protocol->m_em, "http: %s: req %d: <== process res begin fail, version=%s, code=%d, msg=%s",
                         net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
@@ -272,7 +272,7 @@ static int net_http_req_process_response_head_line(
             case net_http_res_op_ignore:
                 req->m_res_ignore = 1;
                 break;
-            case net_http_res_op_error_and_reconnect:
+            case net_http_res_op_error_and_close:
                 CPE_ERROR(
                     http_protocol->m_em, "http: %s: req %d: <== process head fail, %s: %s",
                     net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
@@ -302,7 +302,7 @@ static int net_http_req_input_body_set_complete(
             req->m_res_ignore = 1;
             http_ep->m_current_res.m_req = NULL;
             break;
-        case net_http_res_op_error_and_reconnect:
+        case net_http_res_op_error_and_close:
             CPE_ERROR(
                 http_protocol->m_em, "http: %s: req %d: <== on complete fail",
                 net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
@@ -347,7 +347,7 @@ static int net_http_endpoint_input_body_consume_body_part(
         case net_http_res_op_ignore:
             req->m_res_ignore = 1;
             break;
-        case net_http_res_op_error_and_reconnect:
+        case net_http_res_op_error_and_close:
             CPE_ERROR(
                 http_protocol->m_em, "http: %s: req %d: <== process body fail, size=%d",
                 net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
