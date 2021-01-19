@@ -34,7 +34,6 @@ net_timer_t net_timer_create(
     
     TAILQ_INSERT_TAIL(&driver->m_timers, timer, m_next_for_driver);
 
-    CPE_ERROR(schedule->m_em, "xxxxx: timer %p create", timer);
     return timer;
 }
 
