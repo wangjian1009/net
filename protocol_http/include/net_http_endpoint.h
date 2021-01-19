@@ -4,10 +4,6 @@
 
 NET_BEGIN_DECL
 
-#define net_ep_buf_http_in net_ep_buf_user1
-#define net_ep_buf_http_out net_ep_buf_user2
-#define net_ep_buf_http_body net_ep_buf_user3
-
 net_http_endpoint_t net_http_endpoint_create(
     net_driver_t driver, net_http_protocol_t http_protocol);
 void net_http_endpoint_free(net_http_endpoint_t http_ep);

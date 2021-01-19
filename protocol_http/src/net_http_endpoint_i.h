@@ -3,6 +3,10 @@
 #include "net_http_endpoint.h"
 #include "net_http_protocol_i.h"
 
+#define net_ep_buf_http_in net_ep_buf_user1
+#define net_ep_buf_http_out net_ep_buf_user2
+#define net_ep_buf_http_body net_ep_buf_user3
+
 NET_BEGIN_DECL
 
 struct net_http_endpoint {
