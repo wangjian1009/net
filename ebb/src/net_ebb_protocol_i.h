@@ -6,7 +6,7 @@
 #include "cpe/utils/buffer.h"
 #include "net_ebb_protocol.h"
 
-typedef TAILQ_HEAD(net_ebb_connection_list, net_ebb_connection) net_ebb_connection_list_t;
+typedef TAILQ_HEAD(net_ebb_endpoint_list, net_ebb_endpoint) net_ebb_endpoint_list_t;
 typedef TAILQ_HEAD(net_ebb_request_list, net_ebb_request) net_ebb_request_list_t;
 typedef TAILQ_HEAD(net_ebb_request_header_list, net_ebb_request_header) net_ebb_request_header_list_t;
 typedef TAILQ_HEAD(net_ebb_response_list, net_ebb_response) net_ebb_response_list_t;
@@ -23,7 +23,7 @@ struct net_ebb_protocol {
     uint32_t m_request_sz;
     
     uint32_t m_max_request_id;
-    net_ebb_connection_list_t m_connections;
+    net_ebb_endpoint_list_t m_connections;
 
     struct mem_buffer m_data_buffer; 
     struct mem_buffer m_search_path_buffer;

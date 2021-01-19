@@ -6,7 +6,7 @@
 
 net_ebb_request_header_t
 net_ebb_request_header_create(net_ebb_request_t request, uint16_t index, const char * name, size_t name_len) {
-    net_ebb_protocol_t service = net_ebb_connection_service(request->m_connection);
+    net_ebb_protocol_t service = net_ebb_endpoint_service(request->m_connection);
     net_endpoint_t base_endpoint = net_endpoint_from_data(request->m_connection);
 
     net_ebb_request_header_t header = TAILQ_FIRST(&service->m_free_request_headers);
@@ -51,7 +51,7 @@ net_ebb_request_header_create(net_ebb_request_t request, uint16_t index, const c
 
 void net_ebb_request_header_free(net_ebb_request_header_t header) {
     net_ebb_request_t request = header->m_request;
-    net_ebb_protocol_t service = net_ebb_connection_service(request->m_connection);
+    net_ebb_protocol_t service = net_ebb_endpoint_service(request->m_connection);
 
     if (header->m_name) {
         if (header->m_name < header->m_buf || header->m_name >= (header->m_buf + sizeof(header->m_buf))) {
@@ -81,7 +81,7 @@ void net_ebb_request_header_real_free(net_ebb_request_header_t header) {
 
 int net_ebb_request_header_set_value(net_ebb_request_header_t header, const char * value, size_t value_len) {
     net_ebb_request_t request = header->m_request;
-    net_ebb_protocol_t service = net_ebb_connection_service(request->m_connection);
+    net_ebb_protocol_t service = net_ebb_endpoint_service(request->m_connection);
     net_endpoint_t base_endpoint = net_endpoint_from_data(request->m_connection);
 
     if (header->m_value) {

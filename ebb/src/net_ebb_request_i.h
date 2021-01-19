@@ -1,13 +1,13 @@
 #ifndef NET_EBB_REQUEST_H_I_INCLEDED
 #define NET_EBB_REQUEST_H_I_INCLEDED
 #include "net_ebb_request.h"
-#include "net_ebb_connection_i.h"
+#include "net_ebb_endpoint_i.h"
 
 typedef void (*net_ebb_header_cb)(net_ebb_request_t, const char* at, size_t length, int header_index);
 typedef void (*net_ebb_element_cb)(net_ebb_request_t, const char* at, size_t length);
 
 struct net_ebb_request {
-    net_ebb_connection_t m_connection;
+    net_ebb_endpoint_t m_connection;
     TAILQ_ENTRY(net_ebb_request) m_next_for_connection;
     net_ebb_processor_t m_processor;
     TAILQ_ENTRY(net_ebb_request) m_next_for_processor;
@@ -29,7 +29,7 @@ struct net_ebb_request {
     net_ebb_response_t m_response;
 };
 
-net_ebb_request_t net_ebb_request_create(net_ebb_connection_t connection);
+net_ebb_request_t net_ebb_request_create(net_ebb_endpoint_t connection);
 void net_ebb_request_real_free(net_ebb_request_t request);
 
 uint8_t net_ebb_request_should_keep_alive(net_ebb_request_t request);

@@ -3,7 +3,7 @@
 #include "net_protocol.h"
 #include "net_schedule.h"
 #include "net_ebb_protocol_i.h"
-#include "net_ebb_connection_i.h"
+#include "net_ebb_endpoint_i.h"
 #include "net_ebb_request_i.h"
 #include "net_ebb_request_header_i.h"
 #include "net_ebb_mount_point_i.h"
@@ -24,10 +24,10 @@ net_ebb_protocol_create(net_schedule_t schedule, const char * protocol_name) {
             net_ebb_protocol_init,
             net_ebb_protocol_fini,
             /*endpoint*/
-            sizeof(struct net_ebb_connection),
-            net_ebb_connection_init,
-            net_ebb_connection_fini,
-            net_ebb_connection_input,
+            sizeof(struct net_ebb_endpoint),
+            net_ebb_endpoint_init,
+            net_ebb_endpoint_fini,
+            net_ebb_endpoint_input,
             NULL,
             NULL);
     if (protocol == NULL) {
