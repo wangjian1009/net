@@ -7,7 +7,7 @@
 
 net_ebb_mount_point_t
 net_ebb_mount_point_create(
-    net_ebb_service_t service, const char * name, const char * name_end, net_ebb_mount_point_t parent, 
+    net_ebb_protocol_t service, const char * name, const char * name_end, net_ebb_mount_point_t parent, 
     void * processor_env, net_ebb_processor_t processor)
 {
     net_ebb_mount_point_t mount_point;
@@ -54,7 +54,7 @@ net_ebb_mount_point_create(
 }
 
 void net_ebb_mount_point_free(net_ebb_mount_point_t mount_point) {
-    net_ebb_service_t service = mount_point->m_service;
+    net_ebb_protocol_t service = mount_point->m_service;
 
     net_ebb_mount_point_set_bridger_to(mount_point, NULL);
     
@@ -129,7 +129,7 @@ int net_ebb_mount_point_set_bridger_to_by_path(net_ebb_mount_point_t mp, const c
     return net_ebb_mount_point_set_bridger_to(mp, to);
 }
 
-net_ebb_mount_point_t net_ebb_mount_point_find_by_path(net_ebb_service_t service, const char * * path) {
+net_ebb_mount_point_t net_ebb_mount_point_find_by_path(net_ebb_protocol_t service, const char * * path) {
     return net_ebb_mount_point_find_child_by_path(service->m_root, path);
 }
 
@@ -295,7 +295,7 @@ void net_ebb_mount_point_clear_path(net_ebb_mount_point_t mount_point) {
 
 net_ebb_mount_point_t
 net_ebb_mount_point_mount(net_ebb_mount_point_t from, const char * path, void * processor_env, net_ebb_processor_t processor) {
-    net_ebb_service_t service = from->m_service;
+    net_ebb_protocol_t service = from->m_service;
     const char * sep;
     net_ebb_mount_point_t mp = from;
 
@@ -332,7 +332,7 @@ net_ebb_mount_point_mount(net_ebb_mount_point_t from, const char * path, void * 
 }
 
 int net_ebb_mount_point_unmount(net_ebb_mount_point_t from, const char * path) {
-    net_ebb_service_t service = from->m_service;
+    net_ebb_protocol_t service = from->m_service;
     net_ebb_mount_point_t mp = from;
 
     mp = net_ebb_mount_point_child_find_by_path_ex(from, path, path + strlen(path));

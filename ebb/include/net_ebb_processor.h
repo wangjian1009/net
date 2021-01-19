@@ -12,7 +12,7 @@ typedef void (*net_ebb_processor_env_clear_fun_t)(void * ctx, void * env);
 
 net_ebb_processor_t
 net_ebb_processor_create(
-    net_ebb_service_t service, const char * name, void * ctx,
+    net_ebb_protocol_t service, const char * name, void * ctx,
     /*env*/
     net_ebb_processor_env_clear_fun_t env_clear,
     /*request*/
@@ -24,7 +24,7 @@ net_ebb_processor_create(
 
 void net_ebb_processor_free(net_ebb_processor_t processor);
 
-net_ebb_processor_t net_ebb_processor_find_by_name(net_ebb_service_t service, const char * name);
+net_ebb_processor_t net_ebb_processor_find_by_name(net_ebb_protocol_t service, const char * name);
 
 void * net_ebb_processor_ctx(net_ebb_processor_t processor);
 

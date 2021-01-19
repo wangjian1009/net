@@ -7,7 +7,7 @@
 
 net_ebb_processor_t
 net_ebb_processor_create(
-    net_ebb_service_t service, const char * name, void * ctx,
+    net_ebb_protocol_t service, const char * name, void * ctx,
     /*env*/
     net_ebb_processor_env_clear_fun_t env_clear,
     /*request*/
@@ -58,7 +58,7 @@ net_ebb_processor_create(
 }
 
 void net_ebb_processor_free(net_ebb_processor_t processor) {
-    net_ebb_service_t service = processor->m_service;
+    net_ebb_protocol_t service = processor->m_service;
 
     while(!TAILQ_EMPTY(&processor->m_requests)) {
         net_ebb_request_free(TAILQ_FIRST(&processor->m_requests));
@@ -72,7 +72,7 @@ void net_ebb_processor_free(net_ebb_processor_t processor) {
     mem_free(service->m_alloc, processor);
 }
     
-net_ebb_processor_t net_ebb_processor_find_by_name(net_ebb_service_t service, const char * name) {
+net_ebb_processor_t net_ebb_processor_find_by_name(net_ebb_protocol_t service, const char * name) {
     net_ebb_processor_t processor;
 
     TAILQ_FOREACH(processor, &service->m_processors, m_next) {

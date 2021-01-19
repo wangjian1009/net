@@ -4,7 +4,7 @@
 #include "cpe/utils/memory.h"
 #include "cpe/utils/error.h"
 #include "cpe/utils/buffer.h"
-#include "net_ebb_service.h"
+#include "net_ebb_protocol.h"
 
 typedef TAILQ_HEAD(net_ebb_connection_list, net_ebb_connection) net_ebb_connection_list_t;
 typedef TAILQ_HEAD(net_ebb_request_list, net_ebb_request) net_ebb_request_list_t;
@@ -13,7 +13,7 @@ typedef TAILQ_HEAD(net_ebb_response_list, net_ebb_response) net_ebb_response_lis
 typedef TAILQ_HEAD(net_ebb_processor_list, net_ebb_processor) net_ebb_processor_list_t;
 typedef TAILQ_HEAD(net_ebb_mount_point_list, net_ebb_mount_point) net_ebb_mount_point_list_t;
 
-struct net_ebb_service {
+struct net_ebb_protocol {
     error_monitor_t m_em;
     mem_allocrator_t m_alloc;
     uint32_t m_cfg_connection_timeout_ms;
@@ -34,6 +34,6 @@ struct net_ebb_service {
     net_ebb_mount_point_list_t m_free_mount_points;
 };
 
-mem_buffer_t net_ebb_service_tmp_buffer(net_ebb_service_t service);
+mem_buffer_t net_ebb_protocol_tmp_buffer(net_ebb_protocol_t service);
 
 #endif

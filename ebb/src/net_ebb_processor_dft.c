@@ -6,7 +6,7 @@ static void net_ebb_processor_dft_on_head_complete(void * ctx, net_ebb_request_t
 static void net_ebb_processor_dft_on_complete(void * ctx, net_ebb_request_t request) {
 }
 
-net_ebb_processor_t net_ebb_processor_create_dft(net_ebb_service_t service) {
+net_ebb_processor_t net_ebb_processor_create_dft(net_ebb_protocol_t service) {
     net_ebb_processor_t processor = net_ebb_processor_create(
         service, "default", service, 
         /*env*/

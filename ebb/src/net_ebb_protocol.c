@@ -2,7 +2,7 @@
 #include "cpe/pal/pal_string.h"
 #include "net_protocol.h"
 #include "net_schedule.h"
-#include "net_ebb_service_i.h"
+#include "net_ebb_protocol_i.h"
 #include "net_ebb_connection_i.h"
 #include "net_ebb_request_i.h"
 #include "net_ebb_request_header_i.h"
@@ -10,19 +10,19 @@
 #include "net_ebb_processor_i.h"
 #include "net_ebb_response_i.h"
 
-static int net_ebb_service_init(net_protocol_t protocol);
-static void net_ebb_service_fini(net_protocol_t protocol);
+static int net_ebb_protocol_init(net_protocol_t protocol);
+static void net_ebb_protocol_fini(net_protocol_t protocol);
 
-net_ebb_service_t
-net_ebb_service_create(net_schedule_t schedule, const char * protocol_name) {
+net_ebb_protocol_t
+net_ebb_protocol_create(net_schedule_t schedule, const char * protocol_name) {
     net_protocol_t protocol =
         net_protocol_create(
             schedule,
             protocol_name,
             /*protocol*/
-            sizeof(struct net_ebb_service),
-            net_ebb_service_init,
-            net_ebb_service_fini,
+            sizeof(struct net_ebb_protocol),
+            net_ebb_protocol_init,
+            net_ebb_protocol_fini,
             /*endpoint*/
             sizeof(struct net_ebb_connection),
             net_ebb_connection_init,
@@ -36,30 +36,30 @@ net_ebb_service_create(net_schedule_t schedule, const char * protocol_name) {
     }
     net_protocol_set_debug(protocol, 2);
 
-    net_ebb_service_t service = net_protocol_data(protocol);
+    net_ebb_protocol_t service = net_protocol_data(protocol);
     
     return service;
 }
 
-void net_ebb_service_free(net_ebb_service_t service) {
+void net_ebb_protocol_free(net_ebb_protocol_t service) {
     net_protocol_free(net_protocol_from_data(service));
 }
 
-net_protocol_t net_ebb_service_to_protocol(net_ebb_service_t service) {
+net_protocol_t net_ebb_protocol_to_protocol(net_ebb_protocol_t service) {
     return net_protocol_from_data(service);
 }
 
-net_ebb_mount_point_t net_ebb_service_root(net_ebb_service_t service) {
+net_ebb_mount_point_t net_ebb_protocol_root(net_ebb_protocol_t service) {
     return service->m_root;
 }
 
-mem_buffer_t net_ebb_service_tmp_buffer(net_ebb_service_t service) {
-    net_protocol_t protocol = net_ebb_service_to_protocol(service);
+mem_buffer_t net_ebb_protocol_tmp_buffer(net_ebb_protocol_t service) {
+    net_protocol_t protocol = net_ebb_protocol_to_protocol(service);
     return net_schedule_tmp_buffer(net_protocol_schedule(protocol));
 }
 
-static int net_ebb_service_init(net_protocol_t protocol) {
-    net_ebb_service_t service = net_protocol_data(protocol);
+static int net_ebb_protocol_init(net_protocol_t protocol) {
+    net_ebb_protocol_t service = net_protocol_data(protocol);
 
     service->m_em = net_schedule_em(net_protocol_schedule(protocol));
     service->m_alloc = net_schedule_allocrator(net_protocol_schedule(protocol));
@@ -97,8 +97,8 @@ static int net_ebb_service_init(net_protocol_t protocol) {
     return 0;
 }
 
-static void net_ebb_service_fini(net_protocol_t protocol) {
-    net_ebb_service_t service = net_protocol_data(protocol);
+static void net_ebb_protocol_fini(net_protocol_t protocol) {
+    net_ebb_protocol_t service = net_protocol_data(protocol);
     assert(TAILQ_EMPTY(&service->m_connections));
 
     if (service->m_root) {
@@ -179,7 +179,7 @@ struct {
     , { "video/x-msvideo", "avi" }
 };
 
-const char * net_ebb_service_mine_from_postfix(net_ebb_service_t service, const char * postfix) {
+const char * net_ebb_protocol_mine_from_postfix(net_ebb_protocol_t service, const char * postfix) {
     uint16_t i;
     for(i = 0; i < CPE_ARRAY_SIZE(s_common_mine_type_defs); ++i) {
         if (strcasecmp(postfix, s_common_mine_type_defs[i].m_postfix) == 0) {

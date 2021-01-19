@@ -9,24 +9,23 @@ static void net_ebb_connection_timeout_cb(net_timer_t timer, void * ctx);
 static void net_ebb_connection_close_cb(net_timer_t timer, void * ctx);
 
 int net_ebb_connection_init(net_endpoint_t base_endpoint) {
-    net_ebb_service_t service = net_protocol_data(net_endpoint_protocol(base_endpoint));
+    net_ebb_protocol_t service = net_protocol_data(net_endpoint_protocol(base_endpoint));
     net_ebb_connection_t connection = net_endpoint_data(base_endpoint);
-
-    CPE_ERROR(service->m_em, "xxxx: connection create %p", connection);
 
     connection->m_timer_timeout = net_timer_auto_create(net_endpoint_schedule(base_endpoint), net_ebb_connection_timeout_cb, connection);
     if (connection->m_timer_timeout == NULL) {
         CPE_ERROR(
             service->m_em, "ebb: %s: create timeout timer fail", 
-            net_endpoint_dump(net_ebb_service_tmp_buffer(service), base_endpoint));
+            net_endpoint_dump(net_ebb_protocol_tmp_buffer(service), base_endpoint));
         return -1;
     }
+    CPE_ERROR(service->m_em, "xxxxx: create timer=%p", connection->m_timer_timeout);
 
     connection->m_timer_close = net_timer_auto_create(net_endpoint_schedule(base_endpoint), net_ebb_connection_close_cb, connection);
     if (connection->m_timer_close == NULL) {
         CPE_ERROR(
             service->m_em, "ebb: %s: create close timer fail", 
-            net_endpoint_dump(net_ebb_service_tmp_buffer(service), base_endpoint));
+            net_endpoint_dump(net_ebb_protocol_tmp_buffer(service), base_endpoint));
         net_timer_free(connection->m_timer_timeout);
         return -1;
     }
@@ -43,13 +42,14 @@ int net_ebb_connection_init(net_endpoint_t base_endpoint) {
 }
 
 void net_ebb_connection_fini(net_endpoint_t base_endpoint) {
-    net_ebb_service_t service = net_protocol_data(net_endpoint_protocol(base_endpoint));
+    net_ebb_protocol_t service = net_protocol_data(net_endpoint_protocol(base_endpoint));
     net_ebb_connection_t connection = net_endpoint_data(base_endpoint);
 
     while(!TAILQ_EMPTY(&connection->m_requests)) {
         net_ebb_request_free(TAILQ_FIRST(&connection->m_requests));
     }
 
+    CPE_ERROR(service->m_em, "xxxxx: free timer=%p", connection->m_timer_timeout);
     if (connection->m_timer_timeout) {
         net_timer_free(connection->m_timer_timeout);
         connection->m_timer_timeout = NULL;
@@ -62,7 +62,7 @@ void net_ebb_connection_fini(net_endpoint_t base_endpoint) {
 }
 
 int net_ebb_connection_input(net_endpoint_t base_endpoint) {
-    net_ebb_service_t service = net_protocol_data(net_endpoint_protocol(base_endpoint));
+    net_ebb_protocol_t service = net_protocol_data(net_endpoint_protocol(base_endpoint));
     net_ebb_connection_t connection = net_endpoint_data(base_endpoint);
 
     net_ebb_connection_timeout_reset(connection);
@@ -82,7 +82,7 @@ int net_ebb_connection_input(net_endpoint_t base_endpoint) {
         if (net_ebb_request_parser_has_error(&connection->parser)) {
             CPE_ERROR(
                 service->m_em, "ebb: %s: request parser has error, auto close!",
-                net_endpoint_dump(net_ebb_service_tmp_buffer(service), base_endpoint));
+                net_endpoint_dump(net_ebb_protocol_tmp_buffer(service), base_endpoint));
             return -1;
         }
     }
@@ -90,7 +90,7 @@ int net_ebb_connection_input(net_endpoint_t base_endpoint) {
     return -1;
 }
 
-net_ebb_service_t net_ebb_connection_service(net_ebb_connection_t connection) {
+net_ebb_protocol_t net_ebb_connection_service(net_ebb_connection_t connection) {
     net_endpoint_t base_endpoint = net_endpoint_from_data(connection);
     return net_protocol_data(net_endpoint_protocol(base_endpoint));
 }
@@ -103,31 +103,31 @@ static net_ebb_request_t net_ebb_connection_new_request(void *data) {
 static void net_ebb_connection_timeout_cb(net_timer_t timer, void * ctx) {
     net_ebb_connection_t connection = ctx;
     net_endpoint_t base_endpoint = net_endpoint_from_data(connection);
-    net_ebb_service_t service = net_protocol_data(net_endpoint_protocol(base_endpoint));
+    net_ebb_protocol_t service = net_protocol_data(net_endpoint_protocol(base_endpoint));
 
     if (net_endpoint_protocol_debug(base_endpoint)) {
         CPE_INFO(
             service->m_em, "ebb: %s: timeout",
-            net_endpoint_dump(net_ebb_service_tmp_buffer(service), base_endpoint));
+            net_endpoint_dump(net_ebb_protocol_tmp_buffer(service), base_endpoint));
     }
 
     net_endpoint_set_state(base_endpoint, net_endpoint_state_disable);
 }
 
 void net_ebb_connection_timeout_reset(net_ebb_connection_t connection) {
-    net_ebb_service_t service = net_ebb_connection_service(connection);
+    net_ebb_protocol_t service = net_ebb_connection_service(connection);
     net_timer_active(connection->m_timer_timeout, service->m_cfg_connection_timeout_ms);
 }
 
 static void net_ebb_connection_close_cb(net_timer_t timer, void * ctx) {
     net_ebb_connection_t connection = ctx;
     net_endpoint_t base_endpoint = net_endpoint_from_data(connection);
-    net_ebb_service_t service = net_protocol_data(net_endpoint_protocol(base_endpoint));
+    net_ebb_protocol_t service = net_protocol_data(net_endpoint_protocol(base_endpoint));
 
     if (net_endpoint_protocol_debug(base_endpoint)) {
         CPE_INFO(
             service->m_em, "ebb: %s: do close",
-            net_endpoint_dump(net_ebb_service_tmp_buffer(service), base_endpoint));
+            net_endpoint_dump(net_ebb_protocol_tmp_buffer(service), base_endpoint));
     }
 
     net_endpoint_set_state(base_endpoint, net_endpoint_state_disable);

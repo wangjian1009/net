@@ -1,6 +1,6 @@
 #ifndef NET_EBB_REQUEST_PARSER_H
 #define NET_EBB_REQUEST_PARSER_H
-#include "net_ebb_service_i.h"
+#include "net_ebb_protocol_i.h"
 
 typedef struct net_ebb_request_parser net_ebb_request_parser;
 

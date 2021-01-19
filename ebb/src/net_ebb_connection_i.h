@@ -1,7 +1,7 @@
 #ifndef NET_EBB_CONNECTION_H_I_INCLEDED
 #define NET_EBB_CONNECTION_H_I_INCLEDED
 #include "net_ebb_connection.h"
-#include "net_ebb_service_i.h"
+#include "net_ebb_protocol_i.h"
 #include "net_ebb_request_parser.h"
 
 struct net_ebb_connection {

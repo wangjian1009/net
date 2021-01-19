@@ -6,7 +6,7 @@
 
 net_ebb_request_header_t
 net_ebb_request_header_create(net_ebb_request_t request, uint16_t index, const char * name, size_t name_len) {
-    net_ebb_service_t service = net_ebb_connection_service(request->m_connection);
+    net_ebb_protocol_t service = net_ebb_connection_service(request->m_connection);
     net_endpoint_t base_endpoint = net_endpoint_from_data(request->m_connection);
 
     net_ebb_request_header_t header = TAILQ_FIRST(&service->m_free_request_headers);
@@ -18,7 +18,7 @@ net_ebb_request_header_create(net_ebb_request_t request, uint16_t index, const c
         if (header == NULL) {
             CPE_ERROR(
                 service->m_em, "ebb: %s: header %s: alloc fail!",
-                net_endpoint_dump(net_ebb_service_tmp_buffer(service), base_endpoint), name);
+                net_endpoint_dump(net_ebb_protocol_tmp_buffer(service), base_endpoint), name);
             return NULL;
         }
     }
@@ -32,7 +32,7 @@ net_ebb_request_header_create(net_ebb_request_t request, uint16_t index, const c
         if (header->m_name == NULL) {
             CPE_ERROR(
                 service->m_em, "ebb: %s: header %.*s: dup name fail!",
-                net_endpoint_dump(net_ebb_service_tmp_buffer(service), base_endpoint), (int)name_len, name);
+                net_endpoint_dump(net_ebb_protocol_tmp_buffer(service), base_endpoint), (int)name_len, name);
             header->m_request = (net_ebb_request_t)service;
             TAILQ_INSERT_TAIL(&service->m_free_request_headers, header, m_next);
             return NULL;
@@ -51,7 +51,7 @@ net_ebb_request_header_create(net_ebb_request_t request, uint16_t index, const c
 
 void net_ebb_request_header_free(net_ebb_request_header_t header) {
     net_ebb_request_t request = header->m_request;
-    net_ebb_service_t service = net_ebb_connection_service(request->m_connection);
+    net_ebb_protocol_t service = net_ebb_connection_service(request->m_connection);
 
     if (header->m_name) {
         if (header->m_name < header->m_buf || header->m_name >= (header->m_buf + sizeof(header->m_buf))) {
@@ -74,14 +74,14 @@ void net_ebb_request_header_free(net_ebb_request_header_t header) {
 }
 
 void net_ebb_request_header_real_free(net_ebb_request_header_t header) {
-    net_ebb_service_t service = (net_ebb_service_t)header->m_request;
+    net_ebb_protocol_t service = (net_ebb_protocol_t)header->m_request;
     TAILQ_REMOVE(&service->m_free_request_headers, header, m_next);
     mem_free(service->m_alloc, header);
 }
 
 int net_ebb_request_header_set_value(net_ebb_request_header_t header, const char * value, size_t value_len) {
     net_ebb_request_t request = header->m_request;
-    net_ebb_service_t service = net_ebb_connection_service(request->m_connection);
+    net_ebb_protocol_t service = net_ebb_connection_service(request->m_connection);
     net_endpoint_t base_endpoint = net_endpoint_from_data(request->m_connection);
 
     if (header->m_value) {
@@ -106,7 +106,7 @@ int net_ebb_request_header_set_value(net_ebb_request_header_t header, const char
         if (header->m_value == NULL) {
             CPE_ERROR(
                 service->m_em, "ebb: %s: header %s: dup value %s fail!",
-                net_endpoint_dump(net_ebb_service_tmp_buffer(service), base_endpoint), header->m_name, value);
+                net_endpoint_dump(net_ebb_protocol_tmp_buffer(service), base_endpoint), header->m_name, value);
             return -1;
         }
     }

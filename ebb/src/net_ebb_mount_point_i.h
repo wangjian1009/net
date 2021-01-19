@@ -1,10 +1,10 @@
 #ifndef NET_EBB_MOUNT_POINT_I_H
 #define NET_EBB_MOUNT_POINT_I_H
 #include "net_ebb_mount_point.h"
-#include "net_ebb_service_i.h"
+#include "net_ebb_protocol_i.h"
 
 struct net_ebb_mount_point {
-    net_ebb_service_t m_service;
+    net_ebb_protocol_t m_service;
     char m_name[32];
     size_t m_name_len;
 
@@ -25,7 +25,7 @@ struct net_ebb_mount_point {
 };
 
 net_ebb_mount_point_t net_ebb_mount_point_create(
-    net_ebb_service_t service, const char * name, const char * name_end, net_ebb_mount_point_t parent, void * processor_env, net_ebb_processor_t processor);
+    net_ebb_protocol_t service, const char * name, const char * name_end, net_ebb_mount_point_t parent, void * processor_env, net_ebb_processor_t processor);
 void net_ebb_mount_point_free(net_ebb_mount_point_t mount_point);
 void net_ebb_mount_point_real_free(net_ebb_mount_point_t mount_point);
     
