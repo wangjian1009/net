@@ -118,7 +118,7 @@ net_driver_create(
     TAILQ_INIT(&driver->m_free_timers);
     TAILQ_INIT(&driver->m_timers);
     
-    if (driver_init(driver) != 0) {
+    if (driver_init && driver_init(driver) != 0) {
         mem_free(schedule->m_alloc, driver);
         return NULL;
     }

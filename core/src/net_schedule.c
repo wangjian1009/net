@@ -19,6 +19,7 @@
 #include "net_mem_block_i.h"
 #include "net_protocol_noop.h"
 #include "net_protocol_null.h"
+#include "net_pair_i.h"
 
 static void net_schedule_do_delay_process(net_timer_t timer, void * input_ctx);
 
@@ -42,6 +43,7 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em) {
     schedule->m_dns_query_init_fun = NULL;
     schedule->m_dns_query_fini_fun = NULL;
     schedule->m_dns_max_query_id = 0;
+    schedule->m_pair_driver = NULL;
     schedule->m_noop_protocol = NULL;
     schedule->m_null_protocol = NULL;
     schedule->m_endpoint_max_id = 0;
@@ -98,7 +100,8 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em) {
 
     schedule->m_noop_protocol = net_protocol_noop_create(schedule);
     schedule->m_null_protocol = net_protocol_null_create(schedule);
-    
+    schedule->m_pair_driver = net_pair_driver_create(schedule);
+
     return schedule;
 }
 
@@ -118,6 +121,11 @@ void net_schedule_free(net_schedule_t schedule) {
 
     while(!TAILQ_EMPTY(&schedule->m_local_ip_stack_monitors)) {
         net_local_ip_stack_monitor_free(TAILQ_FIRST(&schedule->m_local_ip_stack_monitors));
+    }
+    
+    if (schedule->m_pair_driver) {
+        net_driver_free(schedule->m_pair_driver);
+        schedule->m_pair_driver = NULL;
     }
     
     while(!TAILQ_EMPTY(&schedule->m_drivers)) {

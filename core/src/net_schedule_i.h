@@ -61,6 +61,9 @@ struct net_schedule {
     net_protocol_t m_null_protocol;
 
     net_protocol_list_t m_protocols;
+
+    /**/
+    net_driver_t m_pair_driver;
     net_driver_list_t m_drivers;
 
     uint32_t m_endpoint_max_id;
