@@ -21,7 +21,7 @@ net_endpoint_t
 net_endpoint_create(net_driver_t driver, net_protocol_t protocol, net_mem_group_t mem_group) {
     net_schedule_t schedule = driver->m_schedule;
     net_endpoint_t endpoint;
-    uint16_t capacity = sizeof(struct net_endpoint) + driver->m_endpoint_capacity + schedule->m_endpoint_protocol_capacity;
+    uint16_t capacity = sizeof(struct net_endpoint) + schedule->m_endpoint_driver_capacity + schedule->m_endpoint_protocol_capacity;
         
     endpoint = TAILQ_FIRST(&driver->m_free_endpoints);
     if (endpoint) {
@@ -677,7 +677,9 @@ const char * net_endpoint_dump(mem_buffer_t buff, net_endpoint_t endpoint) {
 }
 
 void * net_endpoint_protocol_data(net_endpoint_t endpoint) {
-    return ((char*)(endpoint + 1)) + endpoint->m_driver->m_endpoint_capacity;
+    net_schedule_t schedule = endpoint->m_driver->m_schedule;
+    
+    return ((char*)(endpoint + 1)) + schedule->m_endpoint_driver_capacity;
 }
 
 void net_endpoint_set_data_watcher(

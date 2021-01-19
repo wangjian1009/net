@@ -33,7 +33,8 @@ net_timer_t net_timer_create(
     }
     
     TAILQ_INSERT_TAIL(&driver->m_timers, timer, m_next_for_driver);
-    
+
+    CPE_ERROR(schedule->m_em, "xxxxx: timer %p create", timer);
     return timer;
 }
 
@@ -49,14 +50,13 @@ net_timer_t net_timer_auto_create(
         }
     }
     
-    CPE_ERROR(schedule->m_em, "net_timer_auto_create: no driver support timer");
     return NULL;
 }
 
 void net_timer_free(net_timer_t timer) {
     net_driver_t driver = timer->m_driver;
     net_schedule_t schedule = driver->m_schedule;
-    
+
     if (schedule->m_delay_processor == timer) {
         schedule->m_delay_processor = NULL;
     }

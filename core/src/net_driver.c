@@ -49,6 +49,11 @@ net_driver_create(
     net_watcher_update_fun_t watcher_update)
 {
     net_driver_t driver;
+
+    if (schedule->m_endpoint_max_id != 0) {
+        CPE_ERROR(schedule->m_em, "core: driver: already have endpoint created!");
+        return NULL;
+    }
     
     driver = mem_alloc(schedule->m_alloc, sizeof(struct net_driver) + driver_capacity);
     if (driver == NULL) {
@@ -121,6 +126,10 @@ net_driver_create(
     if (driver_init && driver_init(driver) != 0) {
         mem_free(schedule->m_alloc, driver);
         return NULL;
+    }
+
+    if (endpoint_capacity > schedule->m_endpoint_driver_capacity) {
+        schedule->m_endpoint_driver_capacity = endpoint_capacity;
     }
     
     TAILQ_INSERT_TAIL(&schedule->m_drivers, driver, m_next_for_schedule);

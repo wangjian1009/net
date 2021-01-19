@@ -48,6 +48,7 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em) {
     schedule->m_null_protocol = NULL;
     schedule->m_endpoint_max_id = 0;
     schedule->m_endpoint_protocol_capacity = 0;
+    schedule->m_endpoint_driver_capacity = 0;
     schedule->m_local_ip_stack = net_local_ip_stack_ipv4;
     schedule->m_domain_address_rule = NULL;
 

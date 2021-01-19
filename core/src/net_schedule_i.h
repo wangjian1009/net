@@ -56,6 +56,7 @@ struct net_schedule {
 
     /**/
     uint16_t m_endpoint_protocol_capacity;
+    uint16_t m_endpoint_driver_capacity;
 
     net_protocol_t m_noop_protocol;
     net_protocol_t m_null_protocol;
