@@ -101,8 +101,8 @@ static net_ebb_request_t net_ebb_endpoint_new_request(void *data) {
 }
 
 static void net_ebb_endpoint_timeout_cb(net_timer_t timer, void * ctx) {
-    net_ebb_endpoint_t connection = ctx;
-    net_endpoint_t base_endpoint = net_endpoint_from_data(connection);
+    net_endpoint_t base_endpoint = ctx;
+    net_ebb_endpoint_t connection = net_endpoint_protocol_data(base_endpoint);
     net_ebb_protocol_t service = net_ebb_endpoint_service(base_endpoint);
 
     if (net_endpoint_protocol_debug(base_endpoint)) {
