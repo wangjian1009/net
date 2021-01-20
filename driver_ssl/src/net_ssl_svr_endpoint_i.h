@@ -1,5 +1,6 @@
 #ifndef NET_SSL_SVR_ENDPOINT_I_H_INCLEDED
 #define NET_SSL_SVR_ENDPOINT_I_H_INCLEDED
+#include "net_ssl_svr_endpoint.h"
 #include "net_ssl_svr_driver_i.h"
 
 struct net_ssl_svr_endpoint {
