@@ -6,7 +6,7 @@
 #include "net_pair_i.h"
 
 void net_pair_endpoint_delay_process(net_timer_t timer, void * ctx);
-
+    
 net_driver_t net_schedule_pair_driver(net_schedule_t schedule) {
     return schedule->m_pair_driver;
 }
@@ -67,14 +67,6 @@ int net_pair_endpoint_link(net_endpoint_t base_a, net_endpoint_t base_z) {
         return -1;
     }
 
-    if (net_endpoint_state(base_a) != net_endpoint_state_disable) {
-        CPE_ERROR(
-            schedule->m_em, "core: pair: link: %s: state is %s, can`t link",
-            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_a),
-            net_endpoint_state_str(net_endpoint_state(base_a)));
-        return -1;
-    }
-
     net_pair_endpoint_t a = net_endpoint_data(base_a);
     if (a->m_other != NULL) {
         CPE_ERROR(
@@ -92,14 +84,6 @@ int net_pair_endpoint_link(net_endpoint_t base_a, net_endpoint_t base_z) {
         return -1;
     }
 
-    if (net_endpoint_state(base_z) != net_endpoint_state_disable) {
-        CPE_ERROR(
-            schedule->m_em, "core: pair: link: %s: state is %s, can`t link",
-            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_z),
-            net_endpoint_state_str(net_endpoint_state(base_z)));
-        return -1;
-    }
-    
     net_pair_endpoint_t z = net_endpoint_data(base_z);
     if (z->m_other != NULL) {
         CPE_ERROR(
@@ -114,18 +98,13 @@ int net_pair_endpoint_link(net_endpoint_t base_a, net_endpoint_t base_z) {
     assert(z->m_other == NULL);
     z->m_other = a;
 
-    if (net_endpoint_set_state(base_a, net_endpoint_state_established) != 0) {
-        a->m_other = NULL;
-        z->m_other = NULL;
-        return -1;
+    if (net_endpoint_driver_debug(base_a) > net_endpoint_driver_debug(base_z)) {
+        net_endpoint_set_driver_debug(base_z, net_endpoint_driver_debug(base_a));
+    }
+    else if (net_endpoint_driver_debug(base_z) > net_endpoint_driver_debug(base_a)) {
+        net_endpoint_set_driver_debug(base_a, net_endpoint_driver_debug(base_z));
     }
 
-    if (net_endpoint_set_state(base_z, net_endpoint_state_established) != 0) {
-        a->m_other = NULL;
-        z->m_other = NULL;
-        return -1;
-    }
-    
     return 0;
 }
 
@@ -152,11 +131,14 @@ void net_pair_endpoint_fini(net_endpoint_t base_endpoint) {
         
         other->m_other = NULL;
         endpoint->m_other = NULL;
-        
-        if (net_endpoint_set_state(base_other, net_endpoint_state_disable) != 0) {
-            net_endpoint_set_state(base_other, net_endpoint_state_deleting);
+
+        if (net_endpoint_is_active(base_other)) {
+            if (net_endpoint_set_state(base_other, net_endpoint_state_disable) != 0) {
+                net_endpoint_set_state(base_other, net_endpoint_state_deleting);
+            }
         }
     }
+
     assert(endpoint->m_other == NULL);
 }
 
@@ -165,10 +147,9 @@ int net_pair_endpoint_update(net_endpoint_t base_endpoint) {
     net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
 
     if (endpoint->m_is_writing) return 0;
+    if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return 0;
 
     while(!net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write)) {
-        if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return -1;
-
         if (endpoint->m_other == NULL) {
             CPE_ERROR(
                 schedule->m_em, "core: pair: %s: other end disconnected",
@@ -177,9 +158,31 @@ int net_pair_endpoint_update(net_endpoint_t base_endpoint) {
                 base_endpoint,
                 net_endpoint_error_source_network, net_endpoint_network_errno_logic,
                 "pair other disconnected");
-            return net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error);
+            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
+                net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+                return -1;
+            }
         }
 
+        net_endpoint_t base_other = net_endpoint_from_data(endpoint->m_other);
+
+        switch(net_endpoint_state(base_other)) {
+        case net_endpoint_state_resolving:
+        case net_endpoint_state_connecting:
+            return 0;
+        case net_endpoint_state_established:
+            break;
+        case net_endpoint_state_disable:
+        case net_endpoint_state_logic_error:
+        case net_endpoint_state_network_error:
+        case net_endpoint_state_deleting:
+            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_disable) != 0) {
+                net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+                return -1;
+            }
+            break;
+        }
+        
         if (endpoint->m_other->m_is_writing) {
             if (endpoint->m_delay_processor == NULL) {
                 endpoint->m_delay_processor =
@@ -195,11 +198,26 @@ int net_pair_endpoint_update(net_endpoint_t base_endpoint) {
             return 0;
         }
 
-        net_endpoint_t base_other = net_endpoint_from_data(endpoint->m_other);
         endpoint->m_is_writing = 1;
         int rv = net_endpoint_buf_append_from_other(base_other, net_ep_buf_read, base_endpoint, net_ep_buf_write, 0);
         endpoint->m_is_writing = 0;
-        if (rv != 0) return rv;
+
+        if (rv != 0) {
+            if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) {
+                CPE_ERROR(
+                    schedule->m_em, "core: pair: %s: write to other faild",
+                    net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+                net_endpoint_set_error(
+                    base_endpoint,
+                    net_endpoint_error_source_network, net_endpoint_network_errno_logic,
+                    "pair other write error");
+                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
+                    net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+                    return -1;
+                }
+            }
+            return 0;
+        }
     }
     
     return 0;
