@@ -4,7 +4,7 @@
 
 NET_BEGIN_DECL
 
-net_ebb_protocol_t net_ebb_endpoint_service(net_ebb_endpoint_t connection);
+net_ebb_protocol_t net_ebb_endpoint_service(net_endpoint_t base_endpoint);
 
 NET_END_DECL
 
