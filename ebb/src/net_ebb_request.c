@@ -186,7 +186,7 @@ void net_ebb_request_set_state(net_ebb_request_t request, net_ebb_request_state_
     request->m_state = state;
 }
 
-void net_ebb_request_print(write_stream_t ws, net_ebb_request_t request) {
+void net_ebb_request_print_full(write_stream_t ws, net_ebb_request_t request) {
     stream_printf(
         ws, "%s %d.%d", 
         net_ebb_request_method_str(request->m_method),
@@ -206,6 +206,29 @@ void net_ebb_request_print(write_stream_t ws, net_ebb_request_t request) {
     }
 }
 
+const char * net_ebb_request_dump_full(mem_buffer_t buffer, net_ebb_request_t request) {
+    struct write_stream_buffer stream = CPE_WRITE_STREAM_BUFFER_INITIALIZER(buffer);
+    mem_buffer_clear_data(buffer);
+    net_ebb_request_print_full((write_stream_t)&stream, request);
+    stream_putc((write_stream_t)&stream, 0);
+    return mem_buffer_make_continuous(buffer, 0);
+}
+
+void net_ebb_request_print(write_stream_t ws, net_ebb_request_t request) {
+    stream_printf(
+        ws, "%s %d.%d", 
+        net_ebb_request_method_str(request->m_method),
+        request->m_version_major, request->m_version_minor);
+    
+    if (request->m_processor) {
+        stream_printf(
+            ws, " %s[%s]", 
+            request->m_processor->m_name, request->m_path_to_processor);
+    }
+    
+    stream_printf(ws, " (%s)", request->m_path);
+}
+
 const char * net_ebb_request_dump(mem_buffer_t buffer, net_ebb_request_t request) {
     struct write_stream_buffer stream = CPE_WRITE_STREAM_BUFFER_INITIALIZER(buffer);
     mem_buffer_clear_data(buffer);
@@ -218,7 +241,7 @@ void net_ebb_request_on_path(net_ebb_request_t request, const char* at, size_t l
     net_endpoint_t base_endpoint = request->m_base_endpoint;
     net_ebb_endpoint_t connection = net_endpoint_protocol_data(base_endpoint);
     net_ebb_protocol_t service = net_ebb_endpoint_service(base_endpoint);
-    
+
     assert(request->m_path == NULL);
     
     request->m_path = cpe_str_mem_dup_len(service->m_alloc, at, length);
@@ -271,7 +294,7 @@ void net_ebb_request_on_uri(net_ebb_request_t request, const char* at, size_t le
     net_ebb_endpoint_t connection = net_endpoint_protocol_data(base_endpoint);
     net_ebb_protocol_t service = net_ebb_endpoint_service(base_endpoint);
     
-    if (net_endpoint_protocol_debug(base_endpoint) >= 2) {
+    if (net_endpoint_protocol_debug(base_endpoint)) {
         CPE_INFO(
             service->m_em, "ebb: %s: req %d: uri: %.*s",
             net_endpoint_dump(net_ebb_protocol_tmp_buffer(service), base_endpoint),
@@ -388,7 +411,12 @@ void net_ebb_request_on_complete(net_ebb_request_t request) {
     if (request->m_state == net_ebb_request_state_reading) {
         net_ebb_request_set_state(request, net_ebb_request_state_processing);
     }
-    
+
+    if (request->m_state == net_ebb_request_state_processing) {
+        if (request->m_processor == NULL) {
+        }
+    }
+
     net_ebb_endpoint_check_remove_done_requests(connection);
 }
 

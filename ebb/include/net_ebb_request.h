@@ -50,6 +50,9 @@ const char * net_ebb_request_relative_path(net_ebb_request_t request);
 net_ebb_request_state_t net_ebb_request_state(net_ebb_request_t request);
 void net_ebb_request_schedule_close_connection(net_ebb_request_t request);
 
+void net_ebb_request_print_full(write_stream_t ws, net_ebb_request_t request);
+const char * net_ebb_request_dump_full(mem_buffer_t buffer, net_ebb_request_t request);
+
 void net_ebb_request_print(write_stream_t ws, net_ebb_request_t request);
 const char * net_ebb_request_dump(mem_buffer_t buffer, net_ebb_request_t request);
 

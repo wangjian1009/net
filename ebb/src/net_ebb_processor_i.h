@@ -19,6 +19,6 @@ struct net_ebb_processor {
     net_ebb_request_list_t m_requests;
 };
 
-net_ebb_processor_t net_ebb_processor_create_dft(net_ebb_protocol_t service);
+net_ebb_processor_t net_ebb_processor_create_root(net_ebb_protocol_t service);
 
 #endif

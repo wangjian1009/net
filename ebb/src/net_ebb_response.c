@@ -16,9 +16,8 @@ net_ebb_response_create(net_ebb_request_t request) {
 
     if (request->m_response != NULL) {
         CPE_ERROR(
-            service->m_em, "ebb: %s: req %d: request already have response!",
-            net_endpoint_dump(net_ebb_protocol_tmp_buffer(service), base_endpoint),
-            request->m_request_id);
+            service->m_em, "ebb: %s: already have response!",
+            net_ebb_request_dump(net_ebb_protocol_tmp_buffer(service), request));
         net_ebb_request_schedule_close_connection(request);
         return NULL;
     }

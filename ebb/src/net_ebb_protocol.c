@@ -79,7 +79,7 @@ static int net_ebb_protocol_init(net_protocol_t protocol) {
     mem_buffer_init(&service->m_data_buffer, NULL);
     mem_buffer_init(&service->m_search_path_buffer, NULL);
 
-    net_ebb_processor_t dft_processor = net_ebb_processor_create_dft(service);
+    net_ebb_processor_t dft_processor = net_ebb_processor_create_root(service);
     if (dft_processor == NULL) {
         CPE_ERROR(service->m_em, "ebb: %s: create dft processor fail!", net_protocol_name(protocol));
         return -1;

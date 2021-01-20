@@ -142,6 +142,59 @@ void net_pair_endpoint_fini(net_endpoint_t base_endpoint) {
     assert(endpoint->m_other == NULL);
 }
 
+int net_pair_endpoint_connect(net_endpoint_t base_endpoint) {
+    net_pair_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+    net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
+
+    if (endpoint->m_other == NULL) {
+        CPE_ERROR(
+            schedule->m_em, "core: pair: %s: connect: other end disconnected",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+        net_endpoint_set_error(
+            base_endpoint,
+            net_endpoint_error_source_network, net_endpoint_network_errno_logic,
+            "pair other disconnected");
+        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
+            if (net_endpoint_driver_debug(base_endpoint) >= 2) {
+                CPE_INFO(
+                    schedule->m_em, "core: pair: %s: connect: free for process fail!",
+                    net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+            }
+            net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+            return 0;
+        }
+        return -1;
+    }
+
+    net_endpoint_t base_other = net_endpoint_from_data(endpoint->m_other);
+    if (net_endpoint_set_state(base_other, net_endpoint_state_established) != 0) {
+        CPE_ERROR(
+            schedule->m_em, "core: pair: %s: connect: set other established fail",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+        net_endpoint_set_error(
+            base_endpoint,
+            net_endpoint_error_source_network, net_endpoint_network_errno_logic,
+            "pair other disconnected");
+        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
+            if (net_endpoint_driver_debug(base_endpoint) >= 2) {
+                CPE_INFO(
+                    schedule->m_em, "core: pair: %s: connect: free for process fail!",
+                    net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+            }
+            net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+            return 0;
+        }
+        return -1;
+    }
+
+    if (net_endpoint_set_state(base_endpoint, net_endpoint_state_established) != 0) {
+        net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+        return 0;
+    }
+
+    return 0;
+}
+
 int net_pair_endpoint_update(net_endpoint_t base_endpoint) {
     net_pair_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
@@ -198,15 +251,18 @@ int net_pair_endpoint_update(net_endpoint_t base_endpoint) {
             return 0;
         }
 
+        uint32_t data_size = net_endpoint_buf_size(base_endpoint, net_ep_buf_write);
+        
         endpoint->m_is_writing = 1;
         int rv = net_endpoint_buf_append_from_other(base_other, net_ep_buf_read, base_endpoint, net_ep_buf_write, 0);
         endpoint->m_is_writing = 0;
 
         if (rv != 0) {
+            CPE_ERROR(
+                schedule->m_em, "core: pair: %s: write to other faild",
+                net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+
             if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) {
-                CPE_ERROR(
-                    schedule->m_em, "core: pair: %s: write to other faild",
-                    net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
                 net_endpoint_set_error(
                     base_endpoint,
                     net_endpoint_error_source_network, net_endpoint_network_errno_logic,
@@ -217,6 +273,13 @@ int net_pair_endpoint_update(net_endpoint_t base_endpoint) {
                 }
             }
             return 0;
+        }
+
+        if (net_endpoint_driver_debug(base_endpoint)) {
+            CPE_INFO(
+                schedule->m_em, "core: pair: %s: forward %d data",
+                net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
+                data_size);
         }
     }
     
@@ -281,7 +344,7 @@ net_driver_t net_pair_driver_create(net_schedule_t schedule) {
         sizeof(struct net_pair_endpoint),
         net_pair_endpoint_init,
         net_pair_endpoint_fini,
-        NULL,
+        net_pair_endpoint_connect,
         net_pair_endpoint_close,
         net_pair_endpoint_update,
         net_pair_endpoint_set_no_delay,
