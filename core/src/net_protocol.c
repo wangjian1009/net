@@ -110,6 +110,10 @@ net_protocol_init_fun_t net_protocol_init_fun(net_protocol_t protocol) {
     return protocol->m_protocol_init;
 }
 
+net_protocol_endpoint_init_fun_t net_protocol_endpoint_init_fun(net_protocol_t protocol) {
+    return protocol->m_endpoint_init;
+}
+
 void * net_protocol_data(net_protocol_t protocol) {
     return protocol + 1;
 }

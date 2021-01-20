@@ -248,4 +248,8 @@ net_driver_init_fun_t net_driver_init_fun(net_driver_t driver) {
     return driver->m_driver_init;
 }
 
+net_endpoint_init_fun_t net_driver_endpoint_init_fun(net_driver_t driver) {
+    return driver->m_endpoint_init;
+}
+
 

@@ -44,6 +44,7 @@ uint8_t net_protocol_debug(net_protocol_t protocol);
 void net_protocol_set_debug(net_protocol_t protocol, uint8_t debug);
 
 net_protocol_init_fun_t net_protocol_init_fun(net_protocol_t protocol);
+net_protocol_endpoint_init_fun_t net_protocol_endpoint_init_fun(net_protocol_t protocol);
 
 void net_protocol_endpoints(net_protocol_t protocol, net_endpoint_it_t endpoint_it);
 

@@ -4,6 +4,7 @@
 
 NET_BEGIN_DECL
 
+net_endpoint_t net_ssl_cli_endpoint_underline(net_endpoint_t ssl_endpoint);
 
 NET_END_DECL
 

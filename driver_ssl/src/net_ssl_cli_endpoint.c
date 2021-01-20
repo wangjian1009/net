@@ -134,3 +134,14 @@ int net_ssl_cli_endpoint_get_mss(net_endpoint_t base_endpoint, uint32_t * mss) {
     return net_endpoint_get_mss(endpoint->m_underline, mss);
 }
 
+net_endpoint_t
+net_ssl_cli_endpoint_underline(net_endpoint_t base_endpoint) {
+    net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
+
+    if (net_driver_endpoint_init_fun(net_endpoint_driver(base_endpoint)) != net_ssl_cli_endpoint_init) {
+        return NULL;
+    }
+
+    net_ssl_cli_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+    return endpoint->m_underline ? net_endpoint_from_data(endpoint->m_underline) : NULL;
+}
