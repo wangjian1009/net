@@ -282,26 +282,30 @@ int net_http_endpoint_on_state_change(net_endpoint_t endpoint, net_endpoint_stat
 
     switch(net_endpoint_state(endpoint)) {
     case net_endpoint_state_disable:
-        if (net_http_endpoint_set_state(http_ep, net_http_state_disable) != 0) return -1;
+        net_http_endpoint_set_state(http_ep, net_http_state_disable);
         net_http_endpoint_reset_data(http_protocol, http_ep, net_http_res_canceled);
         break;
     case net_endpoint_state_network_error:
-        if (net_http_endpoint_set_state(http_ep, net_http_state_error) != 0) return -1;
+        net_http_endpoint_set_state(http_ep, net_http_state_error);
         net_http_endpoint_reset_data(http_protocol, http_ep, net_http_res_disconnected);
         break;
     case net_endpoint_state_logic_error:
-        if (net_http_endpoint_set_state(http_ep, net_http_state_error) != 0) return -1;
+        net_http_endpoint_set_state(http_ep, net_http_state_error);
         net_http_endpoint_reset_data(http_protocol, http_ep, net_http_res_canceled);
         break;
     case net_endpoint_state_resolving:
-        if (net_http_endpoint_set_state(http_ep, net_http_state_connecting) != 0) return -1;
+        if (net_http_endpoint_set_state(http_ep, net_http_state_connecting) != 0) {
+            net_http_endpoint_set_state(http_ep, net_http_state_error);
+        }
         break;
     case net_endpoint_state_connecting:
         http_ep->m_connecting_time_ms = cur_time_ms();
-        if (net_http_endpoint_set_state(http_ep, net_http_state_connecting) != 0) return -1;
+        if (net_http_endpoint_set_state(http_ep, net_http_state_connecting) != 0) {
+            net_http_endpoint_set_state(http_ep, net_http_state_error);
+        }
         break;
     case net_endpoint_state_established:
-        if (net_http_endpoint_set_state(http_ep, net_http_state_established) != 0) return -1;
+        net_http_endpoint_set_state(http_ep, net_http_state_established);
         break;
     case net_endpoint_state_deleting:
         assert(0);
