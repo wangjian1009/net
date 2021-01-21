@@ -197,7 +197,6 @@ int net_pair_endpoint_update(net_endpoint_t base_endpoint) {
     net_pair_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
 
-b
     if (endpoint->m_is_writing) return 0;
     if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return 0;
 
