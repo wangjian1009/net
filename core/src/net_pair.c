@@ -197,6 +197,7 @@ int net_pair_endpoint_update(net_endpoint_t base_endpoint) {
     net_pair_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
 
+b
     if (endpoint->m_is_writing) return 0;
     if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return 0;
 
@@ -260,7 +261,7 @@ int net_pair_endpoint_update(net_endpoint_t base_endpoint) {
                 schedule->m_em, "core: pair: %s: write to other faild",
                 net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
 
-            if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) {
+            if (net_endpoint_state(base_endpoint) == net_endpoint_state_established) {
                 net_endpoint_set_error(
                     base_endpoint,
                     net_endpoint_error_source_network, net_endpoint_network_errno_logic,
