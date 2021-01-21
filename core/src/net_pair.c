@@ -133,9 +133,7 @@ void net_pair_endpoint_fini(net_endpoint_t base_endpoint) {
         endpoint->m_other = NULL;
 
         if (net_endpoint_is_active(base_other)) {
-            if (net_endpoint_set_state(base_other, net_endpoint_state_disable) != 0) {
-                net_endpoint_set_state(base_other, net_endpoint_state_deleting);
-            }
+            net_endpoint_set_close_after_send(base_other, 1);
         }
     }
 
