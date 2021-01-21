@@ -6,6 +6,7 @@
 #include "net_ssl_cli_driver.h"
 #include "net_ssl_svr_driver.h"
 #include "test_net_driver.h"
+#include "test_net_protocol_endpoint.h"
 
 typedef struct net_ssl_testenv * net_ssl_testenv_t;
 
@@ -13,6 +14,7 @@ struct net_ssl_testenv {
     test_error_monitor_t m_tem;
     error_monitor_t m_em;
     net_schedule_t m_schedule;
+    net_protocol_t m_test_protocol;
     test_net_driver_t m_tdriver;
     net_ssl_cli_driver_t m_cli_driver;
     net_ssl_svr_driver_t m_svr_driver;

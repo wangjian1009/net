@@ -11,6 +11,7 @@ net_ssl_testenv_t net_ssl_testenv_create() {
     env->m_tem = test_error_monitor_create();
     env->m_em = test_error_monitor_em(env->m_tem);
     env->m_schedule = net_schedule_create(test_allocrator(), env->m_em);
+    env->m_test_protocol = test_net_protocol_create(env->m_schedule, "test-protocol");
     env->m_tdriver = test_net_driver_create(env->m_schedule, env->m_em);
 
     env->m_cli_driver = net_ssl_cli_driver_create(
@@ -35,7 +36,7 @@ net_endpoint_t net_ssl_testenv_cli_ep_create(net_ssl_testenv_t env) {
     net_endpoint_t endpoint =
         net_endpoint_create(
             net_driver_from_data(env->m_cli_driver),
-            net_schedule_noop_protocol(env->m_schedule),
+            env->m_test_protocol,
             NULL);
 
     net_endpoint_set_driver_debug(endpoint, 1);
@@ -59,7 +60,7 @@ net_ssl_testenv_create_svr_acceptor(
     net_acceptor_t acceptor =
         net_acceptor_create(
             net_driver_from_data(env->m_svr_driver),
-            net_schedule_noop_protocol(env->m_schedule),
+            env->m_test_protocol,
             address, 0,
             on_new_endpoint, on_new_endpoint_ctx);
 

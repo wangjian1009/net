@@ -17,6 +17,11 @@ static int teardown(void **state) {
     return 0;
 }
 
+static void net_ssl_cli_undline_established(void **state) {
+    net_ssl_testenv_t env = *state;
+    net_endpoint_t ep = net_ssl_testenv_cli_ep_create(env);
+}
+
 static void net_ssl_cli_connect_success(void **state) {
     net_ssl_testenv_t env = *state;
     net_endpoint_t ep = net_ssl_testenv_cli_ep_create(env);
@@ -144,6 +149,7 @@ static void net_ssl_cli_connect_error_delay(void **state) {
 
 int net_ssl_cli_basic_tests() {
 	const struct CMUnitTest ssl_basic_tests[] = {
+		cmocka_unit_test_setup_teardown(net_ssl_cli_undline_established, setup, teardown),
 		cmocka_unit_test_setup_teardown(net_ssl_cli_connect_success, setup, teardown),
 		cmocka_unit_test_setup_teardown(net_ssl_cli_connect_success_delay, setup, teardown),
 		cmocka_unit_test_setup_teardown(net_ssl_cli_connect_error, setup, teardown),
@@ -151,4 +157,3 @@ int net_ssl_cli_basic_tests() {
 	};
 	return cmocka_run_group_tests(ssl_basic_tests, NULL, NULL);
 }
-

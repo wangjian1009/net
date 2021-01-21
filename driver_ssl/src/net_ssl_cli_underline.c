@@ -119,8 +119,9 @@ READ_AGAIN:
         else {
             net_endpoint_buf_clear(base_underline, net_ssl_cli_underline_ep_read_cache);
             CPE_ERROR(
-                driver->m_em, "net: ssl: %s: input: no established ssl endpoint, clear cached data",
-                net_endpoint_dump(net_ssl_cli_driver_tmp_buffer(driver), base_underline));
+                driver->m_em, "net: ssl: %s: input: no established ssl endpoint(state=%s), clear cached data",
+                net_endpoint_dump(net_ssl_cli_driver_tmp_buffer(driver), base_underline),
+                net_endpoint_state_str(net_endpoint_state(base_underline)));
         }
     }
     else {

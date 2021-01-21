@@ -1,0 +1,20 @@
+#ifndef TEST_UTILS_NET_PROTOCOL_ENDPOINT_LINK_H_INCLEDED
+#define TEST_UTILS_NET_PROTOCOL_ENDPOINT_LINK_H_INCLEDED
+#include "test_net_protocol_endpoint.h"
+
+struct test_net_protocol_endpoint_link {
+    test_net_protocol_endpoint_t m_a;
+    test_net_protocol_endpoint_t m_z;
+};
+
+test_net_protocol_endpoint_link_t
+test_net_protocol_endpoint_link_create(
+    test_net_protocol_endpoint_t a, test_net_protocol_endpoint_t b, int64_t write_delay_ms);
+
+void test_net_protocol_endpoint_link_free(test_net_protocol_endpoint_link_t link);
+
+test_net_protocol_endpoint_t
+test_net_protocol_endpoint_link_other(
+    test_net_protocol_endpoint_link_t link, test_net_protocol_endpoint_t ep);
+
+#endif
