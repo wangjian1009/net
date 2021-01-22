@@ -25,7 +25,6 @@ void net_ssl_testenv_free(net_ssl_testenv_t env);
 
 /*cli*/
 net_endpoint_t net_ssl_testenv_cli_ep_create(net_ssl_testenv_t env);
-net_endpoint_t net_ssl_testenv_cli_ep_undline(net_endpoint_t ep);
 
 /*svr*/
 net_acceptor_t

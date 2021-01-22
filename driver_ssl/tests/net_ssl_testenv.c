@@ -44,11 +44,6 @@ net_endpoint_t net_ssl_testenv_cli_ep_create(net_ssl_testenv_t env) {
     return endpoint;
 }
 
-net_endpoint_t net_ssl_testenv_cli_ep_undline(net_endpoint_t ep) {
-    net_ssl_cli_endpoint_t ssl_ep = net_endpoint_data(ep);
-    return ssl_ep->m_underline;
-}
-
 net_acceptor_t
 net_ssl_testenv_create_svr_acceptor(
     net_ssl_testenv_t env, const char * str_address,
