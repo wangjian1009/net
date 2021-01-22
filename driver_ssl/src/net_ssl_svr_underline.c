@@ -341,6 +341,15 @@ int net_ssl_svr_underline_do_handshake(net_endpoint_t base_underline, net_ssl_sv
     int r = SSL_do_handshake(underline->m_ssl);
     if (r == 1) {
         underline->m_state = net_ssl_svr_underline_ssl_open;
+
+        if (underline->m_ssl_endpoint) {
+            net_endpoint_t ssl_endpoint = net_endpoint_from_data(underline->m_ssl_endpoint);
+            if (net_endpoint_set_state(ssl_endpoint, net_endpoint_state_established) != 0) {
+                net_endpoint_set_state(ssl_endpoint, net_endpoint_state_deleting);
+            }
+        }
+
+        return 0;
     }
     else {
         int err = SSL_get_error(underline->m_ssl, r);

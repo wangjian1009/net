@@ -34,7 +34,7 @@ int net_ssl_svr_acceptor_on_new_endpoint(void * ctx, net_endpoint_t base_underli
     new_endpoint->m_underline = base_underline;
     underline->m_ssl_endpoint = new_endpoint;
 
-    if (net_endpoint_set_state(new_base_endpoint, net_endpoint_state_established) != 0) {
+    if (net_endpoint_set_state(new_base_endpoint, net_endpoint_state_connecting) != 0) {
         CPE_ERROR(
             driver->m_em, "net: ssl: %s: on new endpoint: set established failed!",
             net_driver_name(base_driver));
