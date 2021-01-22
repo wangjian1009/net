@@ -4,6 +4,8 @@
 
 int net_ssl_cli_basic_tests();
 
+int net_ssl_svr_basic_tests();
+
 int net_ssl_pair_basic_tests();
 
 #endif

@@ -5,6 +5,7 @@
 #include "net_address.h"
 #include "net_ssl_testenv.h"
 #include "net_ssl_cli_endpoint_i.h"
+#include "net_ssl_svr_endpoint_i.h"
 
 net_ssl_testenv_t net_ssl_testenv_create() {
     net_ssl_testenv_t env = mem_alloc(test_allocrator(), sizeof(struct net_ssl_testenv));
@@ -62,4 +63,13 @@ net_ssl_testenv_create_svr_acceptor(
     net_address_free(address);
 
     return acceptor;
+}
+
+net_endpoint_t net_ssl_testenv_create_svr_endpoint(net_ssl_testenv_t env) {
+    net_endpoint_t endpoint =
+        net_ssl_svr_endpoint_create(env->m_svr_driver, env->m_test_protocol);
+
+    net_endpoint_set_driver_debug(endpoint, 1);
+
+    return endpoint;
 }

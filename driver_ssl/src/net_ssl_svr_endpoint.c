@@ -114,8 +114,9 @@ net_ssl_svr_endpoint_underline(net_endpoint_t base_endpoint) {
 
     if (net_driver_endpoint_init_fun(net_endpoint_driver(base_endpoint)) != net_ssl_svr_endpoint_init) {
         CPE_ERROR(
-            net_schedule_em(schedule), "net: ssl: %s: is not ssl endpoint: no underline",
-            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+            net_schedule_em(schedule), "net: ssl: %s: is not ssl endpoint(dirver=%s), no underline",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
+            net_driver_name(net_endpoint_driver(base_endpoint)));
         return NULL;
     }
 

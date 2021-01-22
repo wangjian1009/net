@@ -140,53 +140,91 @@ READ_AGAIN:
 }
 
 int net_ssl_svr_underline_on_state_change(net_endpoint_t base_underline, net_endpoint_state_t from_state) {
+    net_schedule_t schedule = net_endpoint_schedule(base_underline);
+
     switch(net_endpoint_state(base_underline)) {
     case net_endpoint_state_resolving:
     case net_endpoint_state_connecting:
+        CPE_ERROR(
+            net_schedule_em(schedule),
+            "net: ssl: %s: state update: not support state %s",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_underline),
+            net_endpoint_state_str(net_endpoint_state(base_underline)));
         assert(0);
-        break;
-    case net_endpoint_state_established:
         return 0;
     default:
         break;
     }
         
     net_ssl_svr_underline_t underline = net_endpoint_protocol_data(base_underline);
-    if (underline->m_ssl_endpoint == NULL) return -1;
-    
-    assert(underline->m_ssl_endpoint->m_underline == base_underline);
 
-    net_endpoint_t base_endpoint = net_endpoint_from_data(underline->m_ssl_endpoint);
-    net_ssl_svr_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
-    net_ssl_svr_endpoint_t endpoint = net_endpoint_data(base_endpoint);
-
-    switch(net_endpoint_state(base_underline)) {
-    case net_endpoint_state_resolving:
-    case net_endpoint_state_connecting:
-    case net_endpoint_state_established:
-        assert(0);
-        return 0;
-    case net_endpoint_state_logic_error:
-        net_endpoint_set_error(
-            base_endpoint, net_endpoint_error_source(base_underline),
-            net_endpoint_error_no(base_underline), net_endpoint_error_msg(base_underline));
-        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_logic_error) != 0) return -1;
-        break;
-    case net_endpoint_state_network_error:
-        net_endpoint_set_error(
-            base_endpoint, net_endpoint_error_source(base_underline),
-            net_endpoint_error_no(base_underline), net_endpoint_error_msg(base_underline));
-        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) return -1;
-        break;
-    case net_endpoint_state_disable:
-    case net_endpoint_state_deleting:
-        net_endpoint_set_error(
-            base_endpoint,
-            net_endpoint_error_source_network, net_endpoint_network_errno_logic, "underline ep state error");
-        return -1;
+    if (underline->m_ssl_endpoint == NULL) {
+        switch (net_endpoint_state(base_underline)) {
+        case net_endpoint_state_resolving:
+        case net_endpoint_state_connecting:
+        case net_endpoint_state_deleting:
+            assert(0);
+            return 0;
+        case net_endpoint_state_established:
+            /*在acceptor的情况下，undliner提前进入establish，此处保护*/
+            return 0;
+        case net_endpoint_state_logic_error:
+        case net_endpoint_state_network_error:
+        case net_endpoint_state_disable:
+            CPE_ERROR(
+                net_schedule_em(schedule),
+                "net: ssl: %s: state updated: no ssl endpoint %s",
+                net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_underline),
+                net_endpoint_state_str(net_endpoint_state(base_underline)));
+            return -1;
+        }
     }
-    
-    return 0;
+    else {
+        net_endpoint_t base_endpoint = net_endpoint_from_data(underline->m_ssl_endpoint);
+        net_ssl_svr_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
+        net_ssl_svr_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+
+        switch (net_endpoint_state(base_underline)) {
+        case net_endpoint_state_resolving:
+        case net_endpoint_state_connecting:
+        case net_endpoint_state_deleting:
+            assert(0);
+            return 0;
+        case net_endpoint_state_established:
+            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_connecting) != 0) {
+                net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+                return 0;
+            }
+            return 0;
+        case net_endpoint_state_logic_error:
+            net_endpoint_set_error(
+                base_endpoint, net_endpoint_error_source(base_underline),
+                net_endpoint_error_no(base_underline), net_endpoint_error_msg(base_underline));
+
+            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_logic_error) != 0) {
+                net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+            }
+
+            return 0;
+        case net_endpoint_state_network_error:
+            net_endpoint_set_error(
+                base_endpoint, net_endpoint_error_source(base_underline),
+                net_endpoint_error_no(base_underline), net_endpoint_error_msg(base_underline));
+
+            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
+                net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+            }
+
+            return 0;
+        case net_endpoint_state_disable:
+            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_disable) != 0) {
+                net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+                return 0;
+            }
+            
+            return 0;
+        }
+    }
 }
 
 int net_ssl_svr_underline_write(

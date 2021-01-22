@@ -32,4 +32,6 @@ net_ssl_testenv_create_svr_acceptor(
     net_ssl_testenv_t env, const char * address,
     net_acceptor_on_new_endpoint_fun_t on_new_endpoint, void * on_new_endpoint_ctx);
 
+net_endpoint_t net_ssl_testenv_create_svr_endpoint(net_ssl_testenv_t env);
+
 #endif
