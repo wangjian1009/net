@@ -124,12 +124,21 @@ int net_http_req_write_commit(net_http_req_t http_req) {
 int net_http_req_do_send_first_line(
     net_http_protocol_t http_protocol, net_http_req_t http_req, net_http_req_method_t method, const char * url)
 {
-    char buf[256];
-    int n = snprintf(
-        buf, sizeof(buf), "%s %s HTTP/1.1\r\n",
-        method == net_http_req_method_get ? "GET" : "POST",
-        url);
-
+    const char * str_method = NULL;
+    switch(method) {
+    case net_http_req_method_get:
+        str_method = "GET";
+        break;
+    case net_http_req_method_post:
+        str_method = "POST";
+        break;
+    case net_http_req_method_head:
+        str_method = "HEAD";
+        break;
+    }
+    
+    char buf[512];
+    int n = snprintf(buf, sizeof(buf), "%s %s HTTP/1.1\r\n", str_method, url);
     if (net_http_endpoint_write(http_protocol, http_req->m_http_ep, http_req, buf, (uint32_t)n) != 0) return -1;
 
     http_req->m_head_size += n;

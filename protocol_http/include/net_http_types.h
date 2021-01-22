@@ -30,6 +30,7 @@ typedef enum net_http_req_state {
 typedef enum net_http_req_method {
     net_http_req_method_get,
     net_http_req_method_post,
+    net_http_req_method_head,
 } net_http_req_method_t;
 
 typedef enum net_http_res_state {
