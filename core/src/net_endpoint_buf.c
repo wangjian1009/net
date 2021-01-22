@@ -8,8 +8,6 @@
 #include "net_schedule_i.h"
 #include "net_protocol_i.h"
 
-#define net_endpoint_driver_update(__ep) ((__ep)->m_driver->m_endpoint_update((__ep)))
-
 #define net_endpoint_have_limit(__ep, __buf_type)                       \
     (((__ep)->m_bufs[(__buf_type)].m_limit != NET_ENDPOINT_NO_LIMIT)    \
      || ((__ep)->m_all_buf_limit != NET_ENDPOINT_NO_LIMIT)              \
@@ -588,12 +586,12 @@ static int net_endpoint_buf_on_supply(net_schedule_t schedule, net_endpoint_t en
 
     if (buf_type == net_ep_buf_write) {
         if (endpoint->m_state == net_endpoint_state_established) {
-            if (net_endpoint_driver_update(endpoint) != 0) return -1;
+            if (endpoint->m_driver->m_endpoint_update(endpoint) != 0) return -1;
         }
     }
 
     if (buf_type == net_ep_buf_write && endpoint->m_state == net_endpoint_state_established) {
-        if (net_endpoint_driver_update(endpoint) != 0) return -1;
+        if (endpoint->m_driver->m_endpoint_update(endpoint) != 0) return -1;
     }
     
     return 0;

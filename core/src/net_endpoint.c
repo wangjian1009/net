@@ -403,7 +403,15 @@ int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) 
         }
     }
     
-    return net_endpoint_notify_state_changed(endpoint, old_state);
+    if (net_endpoint_notify_state_changed(endpoint, old_state) != 0) return -1;
+
+    if (net_endpoint_state(endpoint) == net_endpoint_state_established
+        && !net_endpoint_buf_is_empty(endpoint, net_ep_buf_write))
+    {
+        if (endpoint->m_driver->m_endpoint_update(endpoint) != 0) return -1;
+    }
+
+    return 0;
 }
 
 net_address_t net_endpoint_address(net_endpoint_t endpoint) {

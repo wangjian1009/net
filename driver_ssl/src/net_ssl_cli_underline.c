@@ -198,7 +198,7 @@ int net_ssl_cli_underline_write(
     net_ssl_cli_underline_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_underline));
     net_ssl_cli_driver_t driver = protocol->m_driver;
     net_ssl_cli_underline_t underline = net_endpoint_protocol_data(base_underline);
-    
+
     switch(net_endpoint_state(base_underline)) {
     case net_endpoint_state_disable:
     case net_endpoint_state_resolving:
