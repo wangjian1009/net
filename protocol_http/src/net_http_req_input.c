@@ -19,6 +19,8 @@ static int net_http_endpoint_do_parse_request_id(const char * tag, uint32_t * re
 static int net_http_req_process_response_head_line(
     net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t req,
     net_endpoint_t endpoint, char * line, uint32_t line_num);
+static int net_http_req_input_body_set_complete(
+    net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_endpoint_t endpoint, net_http_res_result_t result);
 
 int net_http_endpoint_do_process(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_endpoint_t endpoint) {
     void * buf;
@@ -104,7 +106,14 @@ int net_http_endpoint_do_process(net_http_protocol_t http_protocol, net_http_end
         net_endpoint_buf_consume(endpoint, net_ep_buf_http_in, buf_size);
 
         http_ep->m_current_res.m_req = req;
-        http_ep->m_current_res.m_state = net_http_res_state_reading_body;
+        if (req->m_req_method == net_http_req_method_head) {
+            if (net_http_req_input_body_set_complete(http_protocol, http_ep, endpoint, net_http_res_complete) != 0) {
+                return -1;
+            }
+        }
+        else {
+            http_ep->m_current_res.m_state = net_http_res_state_reading_body;
+        }
     }
 
     if (http_ep->m_current_res.m_state == net_http_res_state_reading_body) {

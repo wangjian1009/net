@@ -13,6 +13,7 @@ struct net_http_req {
     uint8_t m_free_after_processed;
 
     /*req*/
+    net_http_req_method_t m_req_method;
     net_http_req_state_t m_req_state;
     uint8_t m_req_have_keep_alive;
     uint32_t m_head_size;

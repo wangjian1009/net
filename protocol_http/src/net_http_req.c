@@ -44,6 +44,7 @@ net_http_req_create(net_http_endpoint_t http_ep, net_http_req_method_t method, c
     req->m_data_sended = 0;
     req->m_free_after_processed = 0;
 
+    req->m_req_method = method;
     req->m_req_state = net_http_req_state_prepare_head;
     req->m_req_have_keep_alive = 0;
     req->m_head_size = 0;
