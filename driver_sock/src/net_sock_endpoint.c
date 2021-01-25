@@ -380,7 +380,7 @@ static int net_sock_endpoint_on_read(net_sock_driver_t driver, net_sock_endpoint
           && net_endpoint_expect_read(base_endpoint))
     {
         uint32_t capacity = 0;
-        void * rbuf = net_endpoint_buf_alloc(base_endpoint, &capacity);
+        void * rbuf = net_endpoint_buf_alloc_at_least(base_endpoint, &capacity);
         if (rbuf == NULL) {
             net_sock_endpoint_close_sock(driver, endpoint);
             

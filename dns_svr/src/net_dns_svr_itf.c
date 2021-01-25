@@ -189,7 +189,7 @@ int net_dns_svr_itf_send_response(net_dns_svr_itf_t dns_itf, net_dns_svr_query_t
         uint32_t capacity = net_dns_svr_query_calc_response_size(query);
         capacity += sizeof(uint16_t); /*长度字段 */
         
-        void * output_buf = net_endpoint_buf_alloc(query->m_endpoint, &capacity);
+        void * output_buf = net_endpoint_buf_alloc_at_least(query->m_endpoint, &capacity);
         if (output_buf == NULL) {
             CPE_ERROR(
                 svr->m_em, "dns-svr: %s: tcp >>> alloc buf fail, capacity=%d!",

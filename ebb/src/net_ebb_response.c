@@ -338,7 +338,7 @@ int net_ebb_response_append_body_identity_from_stream(net_ebb_response_t respons
     
     while(left_sz > 0 && net_endpoint_state(base_endpoint) == net_endpoint_state_established) {
         uint32_t buf_size = 0;
-        void* buf = net_endpoint_buf_alloc(base_endpoint, &buf_size);
+        void* buf = net_endpoint_buf_alloc_at_least(base_endpoint, &buf_size);
         if (buf == NULL) {
             CPE_ERROR(
                 service->m_em, "ebb: %s: req %d: append body: alloc ep buf fail!",

@@ -79,7 +79,7 @@ READ_AGAIN:
     uint32_t input_data_size = net_endpoint_buf_size(base_underline, net_ep_buf_read);
     if (input_data_size == 0) return 0;
 
-    void * data = net_endpoint_buf_alloc(base_underline, &input_data_size);
+    void * data = net_endpoint_buf_alloc_at_least(base_underline, &input_data_size);
     if (data == NULL) {
         CPE_ERROR(
             driver->m_em, "net: ssl: %s: input: alloc data for read fail",

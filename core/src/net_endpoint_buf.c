@@ -60,7 +60,11 @@ net_mem_block_t net_endpoint_block_alloc(net_endpoint_t endpoint, uint32_t capac
     return endpoint->m_tb;
 }
 
-void * net_endpoint_buf_alloc(net_endpoint_t endpoint, uint32_t * inout_size) {
+void * net_endpoint_buf_alloc(net_endpoint_t endpoint, uint32_t size) {
+    return net_endpoint_buf_alloc_at_least(endpoint, &size);
+}
+
+void * net_endpoint_buf_alloc_at_least(net_endpoint_t endpoint, uint32_t * inout_size) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
 
     assert(inout_size);

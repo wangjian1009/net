@@ -90,7 +90,7 @@ int net_endpoint_writer_append(net_endpoint_writer_t writer, void const * data, 
             assert(writer->m_size == 0);
             assert(writer->m_capacity == 0);
                    
-            writer->m_wp = net_endpoint_buf_alloc(writer->m_o_ep, &writer->m_capacity);
+            writer->m_wp = net_endpoint_buf_alloc_at_least(writer->m_o_ep, &writer->m_capacity);
             if (writer->m_wp == NULL) {
                 CPE_ERROR(
                     schedule->m_em, "core: %s: writer append: alloc fail",
