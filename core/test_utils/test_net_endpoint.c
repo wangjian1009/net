@@ -11,6 +11,10 @@ int test_net_endpoint_init(net_endpoint_t base_endpoint) {
     test_net_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
     test_net_endpoint_t endpoint = net_endpoint_data(base_endpoint);
 
+    if (net_endpoint_driver_debug(base_endpoint) < 2) {
+        net_endpoint_set_driver_debug(base_endpoint, 2);
+    }
+    
     TAILQ_INSERT_TAIL(&driver->m_endpoints, endpoint, m_next);
     endpoint->m_write_policy.m_type = test_net_endpoint_write_mock;
     
@@ -35,15 +39,16 @@ int test_net_endpoint_update(net_endpoint_t base_endpoint) {
     test_net_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
     test_net_endpoint_t endpoint = net_endpoint_data(base_endpoint);
 
-    assert_true(net_endpoint_state(base_endpoint) == net_endpoint_state_established);
+    assert_true(
+        net_endpoint_state(base_endpoint) == net_endpoint_state_established
+        || net_endpoint_state(base_endpoint) == net_endpoint_state_read_closed
+        || net_endpoint_state(base_endpoint) == net_endpoint_state_write_closed);
 
     if (!net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write)) { /*有数据等待写入 */
         net_endpoint_set_is_writing(base_endpoint, 1);
         test_net_endpoint_write(base_endpoint);
         if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return 0;
     }
-
-    assert_true(net_endpoint_state(base_endpoint) == net_endpoint_state_established);
 
     /* if (net_endpoint_expect_read(base_endpoint)) { */
     /*     net_watcher_update_read(endpoint->m_watcher, 1); */

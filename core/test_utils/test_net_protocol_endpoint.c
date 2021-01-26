@@ -10,6 +10,10 @@ extern int test_net_protocol_endpoint_input(net_endpoint_t endpoint);
 int test_net_protocol_endpoint_init(net_endpoint_t base_endpoint) {
     test_net_protocol_endpoint_t endpoint = net_endpoint_protocol_data(base_endpoint);
 
+    if (net_endpoint_protocol_debug(base_endpoint) < 2) {
+        net_endpoint_set_protocol_debug(base_endpoint, 2);
+    }
+    
     endpoint->m_input_policy.m_type = test_net_protocol_endpoint_input_mock;
     endpoint->m_state_change_policy = test_net_protocol_endpoint_state_change_noop;
 
