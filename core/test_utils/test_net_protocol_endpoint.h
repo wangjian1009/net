@@ -25,8 +25,14 @@ struct test_net_protocol_endpoint_input_policy {
     };
 };
 
+typedef enum test_net_protocol_endpoint_state_change_policy_type {
+    test_net_protocol_endpoint_state_change_noop,
+    test_net_protocol_endpoint_state_change_mock,
+} test_net_protocol_endpoint_state_change_policy_type_t;
+
 struct test_net_protocol_endpoint {
     struct test_net_protocol_endpoint_input_policy m_input_policy;
+    test_net_protocol_endpoint_state_change_policy_type_t m_state_change_policy;
 };
 
 void test_net_protocol_endpoint_input_policy_clear(test_net_protocol_endpoint_t base_endpoint);
@@ -35,5 +41,7 @@ void test_net_protocol_endpoint_expect_input_keep(
     net_endpoint_t base_endpoint, net_endpoint_buf_type_t buf_type);
 
 net_protocol_t test_net_protocol_create(net_schedule_t schedule, const char * name);
+
+void test_net_protocol_endpoint_expect_on_state_change(net_endpoint_t base_endpoint, net_endpoint_state_t state, int rv);
 
 #endif
