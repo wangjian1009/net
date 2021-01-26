@@ -11,6 +11,7 @@ struct net_http_req {
     uint16_t m_id;
     uint8_t m_data_sended;
     uint8_t m_free_after_processed;
+    uint8_t m_on_complete_processed;
 
     /*req*/
     net_http_req_method_t m_req_method;

@@ -303,7 +303,12 @@ static int net_http_req_input_body_set_complete(
     http_ep->m_current_res.m_state = net_http_res_state_completed;
 
     net_http_req_t req = http_ep->m_current_res.m_req;
-    if (req && !req->m_res_ignore && req->m_res_on_complete) {
+    if (req
+        && !req->m_res_ignore
+        && !req->m_on_complete_processed
+        && req->m_res_on_complete)
+    {
+        req->m_on_complete_processed = 1;
         switch(req->m_res_on_complete(req->m_res_ctx, req, result)) {
         case net_http_res_op_success:
             break;

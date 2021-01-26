@@ -43,6 +43,8 @@ net_http_req_create(net_http_endpoint_t http_ep, net_http_req_method_t method, c
     req->m_id = ++http_protocol->m_max_req_id;
     req->m_data_sended = 0;
     req->m_free_after_processed = 0;
+    req->m_on_complete_processed = 0;
+    req->m_on_complete_processed = 0;
 
     req->m_req_method = method;
     req->m_req_state = net_http_req_state_prepare_head;
@@ -193,7 +195,8 @@ uint32_t net_http_req_res_length(net_http_req_t req) {
 }
 
 void net_http_req_cancel_and_free_i(net_http_req_t req, uint8_t force) {
-    if (!req->m_res_ignore && req->m_res_on_complete) {
+    if (!req->m_res_ignore && !req->m_on_complete_processed && req->m_res_on_complete) {
+        req->m_on_complete_processed = 1;
         req->m_res_on_complete(req->m_res_ctx, req, net_http_res_canceled);
     }
     net_http_req_free_i(req, force);
@@ -237,7 +240,11 @@ const char * net_http_res_result_str(net_http_res_result_t res_result) {
 static void net_http_req_on_timeout(net_timer_t timer, void * ctx) {
     net_http_req_t req = ctx;
 
-    if (!req->m_res_ignore && req->m_res_on_complete) {
+    if (!req->m_res_ignore
+        && !req->m_on_complete_processed
+        && req->m_res_on_complete)
+    {
+        req->m_on_complete_processed = 1;
         req->m_res_on_complete(req->m_res_ctx, req, net_http_res_timeout);
     }
 

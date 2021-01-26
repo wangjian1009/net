@@ -471,7 +471,11 @@ static void net_http_endpoint_reset_data(net_http_protocol_t http_protocol, net_
     while(!TAILQ_EMPTY(&http_ep->m_reqs)) {
         net_http_req_t req = TAILQ_FIRST(&http_ep->m_reqs);
 
-        if (!req->m_res_ignore && req->m_res_on_complete) {
+        if (!req->m_res_ignore
+            && !req->m_on_complete_processed
+            && req->m_res_on_complete)
+        {
+            req->m_on_complete_processed = 1;
             req->m_res_on_complete(req->m_res_ctx, req, result);
         }
 
