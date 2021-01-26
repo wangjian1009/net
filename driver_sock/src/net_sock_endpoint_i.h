@@ -5,6 +5,8 @@
 
 struct net_sock_endpoint {
     int m_fd;
+    uint8_t m_read_closed;
+    uint8_t m_write_closed;
     net_watcher_t m_watcher;
     net_address_t m_local_address_auto;
 };

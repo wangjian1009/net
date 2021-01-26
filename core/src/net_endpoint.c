@@ -425,8 +425,9 @@ int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) 
     
     if (net_endpoint_notify_state_changed(endpoint, old_state) != 0) return -1;
 
-    if (net_endpoint_state(endpoint) == net_endpoint_state_established
-        && !net_endpoint_buf_is_empty(endpoint, net_ep_buf_write))
+    if (state == net_endpoint_state_read_closed
+        || state == net_endpoint_state_write_closed
+        || (state == net_endpoint_state_established && !net_endpoint_buf_is_empty(endpoint, net_ep_buf_write)))
     {
         if (endpoint->m_driver->m_endpoint_update(endpoint) != 0) return -1;
     }
