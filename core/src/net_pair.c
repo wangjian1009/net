@@ -197,126 +197,168 @@ int net_pair_endpoint_update(net_endpoint_t base_endpoint) {
     net_pair_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
 
-    if (endpoint->m_is_writing) return 0;
-    if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return 0;
+    switch(net_endpoint_state(base_endpoint)) {
+    case net_endpoint_state_read_closed:
+        if (endpoint->m_other) {
+            net_pair_endpoint_t other = endpoint->m_other;
+            net_endpoint_t base_other = net_endpoint_from_data(other);
 
-    while(!net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write)) {
-        if (endpoint->m_other == NULL) {
-            CPE_ERROR(
-                schedule->m_em, "core: pair: %s: other end disconnected",
-                net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
-            net_endpoint_set_error(
-                base_endpoint,
-                net_endpoint_error_source_network, net_endpoint_network_errno_logic,
-                "pair other disconnected");
-            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
-                net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
-                return -1;
-            }
-        }
+            assert(other->m_other == endpoint);
 
-        net_endpoint_t base_other = net_endpoint_from_data(endpoint->m_other);
+            if (net_endpoint_set_state(base_other, net_endpoint_state_write_closed) != 0) {
+                other->m_other = NULL;
+                endpoint->m_other = NULL;
 
-        switch(net_endpoint_state(base_other)) {
-        case net_endpoint_state_resolving:
-        case net_endpoint_state_connecting:
-            return 0;
-        case net_endpoint_state_established:
-            break;
-        case net_endpoint_state_read_closed:
-            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_write_closed) != 0) {
-                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_disable) != 0) {
-                    net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
-                }
-                return -1;
-            }
-            break;
-        case net_endpoint_state_write_closed:
-            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_read_closed) != 0) {
-                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_disable) != 0) {
-                    net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
-                }
-                return -1;
-            }
-            break;
-        case net_endpoint_state_disable:
-        case net_endpoint_state_logic_error:
-        case net_endpoint_state_network_error:
-        case net_endpoint_state_deleting:
-            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_disable) != 0) {
-                net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
-                return -1;
-            }
-            break;
-        }
-        
-        if (endpoint->m_other->m_is_writing) {
-            if (endpoint->m_delay_processor == NULL) {
-                endpoint->m_delay_processor =
-                    net_timer_auto_create(schedule, net_pair_endpoint_delay_process, base_endpoint);
-                if (endpoint->m_delay_processor == NULL) {
-                    CPE_ERROR(
-                        schedule->m_em, "core: pair: %s: create delay processor failed",
-                        net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
-                    return -1;
+                if (net_endpoint_set_state(base_other, net_endpoint_state_disable) != 0) {
+                    net_endpoint_set_state(base_other, net_endpoint_state_deleting);
                 }
             }
-            net_timer_active(endpoint->m_delay_processor, 0);
             return 0;
         }
+        else {
+            return -1;
+        }
+    case net_endpoint_state_write_closed:
+        if (endpoint->m_other) {
+            net_pair_endpoint_t other = endpoint->m_other;
+            net_endpoint_t base_other = net_endpoint_from_data(other);
 
-        uint32_t data_size = net_endpoint_buf_size(base_endpoint, net_ep_buf_write);
-        
-        endpoint->m_is_writing = 1;
-        int rv = net_endpoint_buf_append_from_other(base_other, net_ep_buf_read, base_endpoint, net_ep_buf_write, 0);
-        endpoint->m_is_writing = 0;
+            assert(other->m_other == endpoint);
 
-        if (rv != 0) {
-            CPE_ERROR(
-                schedule->m_em, "core: pair: %s: write to other faild",
-                net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+            if (net_endpoint_set_state(base_other, net_endpoint_state_read_closed) != 0) {
+                other->m_other = NULL;
+                endpoint->m_other = NULL;
 
-            if (net_endpoint_state(base_endpoint) == net_endpoint_state_established) {
+                if (net_endpoint_set_state(base_other, net_endpoint_state_disable) != 0) {
+                    net_endpoint_set_state(base_other, net_endpoint_state_deleting);
+                }
+            }
+            return 0;
+        }
+        else {
+            return -1;
+        }
+    case net_endpoint_state_disable:
+        if (endpoint->m_other) {
+            net_pair_endpoint_t other = endpoint->m_other;
+            net_endpoint_t base_other = net_endpoint_from_data(other);
+
+            assert(other->m_other == endpoint);
+
+            other->m_other = NULL;
+            endpoint->m_other = NULL;
+
+            if (net_endpoint_set_state(base_other, net_endpoint_state_disable) != 0) {
+                net_endpoint_set_state(base_other, net_endpoint_state_deleting);
+            }
+        }
+        assert(endpoint->m_other == NULL);
+        return 0;
+    case net_endpoint_state_established:
+        if (endpoint->m_is_writing) return 0;
+        if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return 0;
+
+        while (!net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write)) {
+            if (endpoint->m_other == NULL) {
+                CPE_ERROR(
+                    schedule->m_em, "core: pair: %s: other end disconnected",
+                    net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
                 net_endpoint_set_error(
                     base_endpoint,
                     net_endpoint_error_source_network, net_endpoint_network_errno_logic,
-                    "pair other write error");
+                    "pair other disconnected");
                 if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
                     net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
                     return -1;
                 }
             }
-            return 0;
+
+            net_endpoint_t base_other = net_endpoint_from_data(endpoint->m_other);
+
+            switch (net_endpoint_state(base_other)) {
+            case net_endpoint_state_resolving:
+            case net_endpoint_state_connecting:
+                return 0;
+            case net_endpoint_state_established:
+                break;
+            case net_endpoint_state_read_closed:
+                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_write_closed) != 0) {
+                    if (net_endpoint_set_state(base_endpoint, net_endpoint_state_disable) != 0) {
+                        net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+                    }
+                    return -1;
+                }
+                break;
+            case net_endpoint_state_write_closed:
+                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_read_closed) != 0) {
+                    if (net_endpoint_set_state(base_endpoint, net_endpoint_state_disable) != 0) {
+                        net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+                    }
+                    return -1;
+                }
+                break;
+            case net_endpoint_state_disable:
+            case net_endpoint_state_logic_error:
+            case net_endpoint_state_network_error:
+            case net_endpoint_state_deleting:
+                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_disable) != 0) {
+                    net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+                    return -1;
+                }
+                break;
+            }
+
+            if (endpoint->m_other->m_is_writing) {
+                if (endpoint->m_delay_processor == NULL) {
+                    endpoint->m_delay_processor = net_timer_auto_create(schedule, net_pair_endpoint_delay_process, base_endpoint);
+                    if (endpoint->m_delay_processor == NULL) {
+                        CPE_ERROR(
+                            schedule->m_em, "core: pair: %s: create delay processor failed",
+                            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+                        return -1;
+                    }
+                }
+                net_timer_active(endpoint->m_delay_processor, 0);
+                return 0;
+            }
+
+            uint32_t data_size = net_endpoint_buf_size(base_endpoint, net_ep_buf_write);
+
+            endpoint->m_is_writing = 1;
+            int rv = net_endpoint_buf_append_from_other(base_other, net_ep_buf_read, base_endpoint, net_ep_buf_write, 0);
+            endpoint->m_is_writing = 0;
+
+            if (rv != 0) {
+                CPE_ERROR(
+                    schedule->m_em, "core: pair: %s: write to other faild",
+                    net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+
+                if (net_endpoint_state(base_endpoint) == net_endpoint_state_established) {
+                    net_endpoint_set_error(
+                        base_endpoint,
+                        net_endpoint_error_source_network, net_endpoint_network_errno_logic,
+                        "pair other write error");
+                    if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
+                        net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+                        return -1;
+                    }
+                }
+                return 0;
+            }
+
+            if (net_endpoint_driver_debug(base_endpoint)) {
+                CPE_INFO(
+                    schedule->m_em, "core: pair: %s: forward %d data",
+                    net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
+                    data_size);
+            }
         }
 
-        if (net_endpoint_driver_debug(base_endpoint)) {
-            CPE_INFO(
-                schedule->m_em, "core: pair: %s: forward %d data",
-                net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
-                data_size);
-        }
+        return 0;
+    default:
+        assert(0);
+        return -1;
     }
-    
-    return 0;
-}
-
-void net_pair_endpoint_close(net_endpoint_t base_endpoint) {
-    net_pair_endpoint_t endpoint = net_endpoint_data(base_endpoint);
-
-    if (endpoint->m_other) {
-        net_pair_endpoint_t other = endpoint->m_other;
-        net_endpoint_t base_other = net_endpoint_from_data(other);
-        
-        assert(other->m_other == endpoint);
-        
-        other->m_other = NULL;
-        endpoint->m_other = NULL;
-        
-        if (net_endpoint_set_state(base_other, net_endpoint_state_disable) != 0) {
-            net_endpoint_set_state(base_other, net_endpoint_state_deleting);
-        }
-    }
-    assert(endpoint->m_other == NULL);
 }
 
 int net_pair_endpoint_set_no_delay(net_endpoint_t base_endpoint, uint8_t no_delay) {
@@ -359,7 +401,6 @@ net_driver_t net_pair_driver_create(net_schedule_t schedule) {
         net_pair_endpoint_init,
         net_pair_endpoint_fini,
         net_pair_endpoint_connect,
-        net_pair_endpoint_close,
         net_pair_endpoint_update,
         net_pair_endpoint_set_no_delay,
         net_pair_endpoint_get_mss,

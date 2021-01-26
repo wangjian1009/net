@@ -23,18 +23,6 @@ void net_ssl_svr_endpoint_fini(net_endpoint_t base_endpoint) {
     }
 }
 
-void net_ssl_svr_endpoint_close(net_endpoint_t base_endpoint) {
-    net_ssl_svr_endpoint_t endpoint = net_endpoint_data(base_endpoint);
-
-    if (endpoint->m_underline) {
-        if (net_endpoint_is_active(endpoint->m_underline)) {
-            if (net_endpoint_set_state(endpoint->m_underline, net_endpoint_state_disable) != 0) {
-                net_endpoint_set_state(endpoint->m_underline, net_endpoint_state_deleting);
-            }
-        }
-    }
-}
-
 int net_ssl_svr_endpoint_update(net_endpoint_t base_endpoint) {
     net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
     net_ssl_svr_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
@@ -46,14 +34,32 @@ int net_ssl_svr_endpoint_update(net_endpoint_t base_endpoint) {
             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
         return -1;
     }
-    if (!net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write)) { /*有数据等待写入 */
-        if (net_ssl_svr_underline_write(endpoint->m_underline, base_endpoint, net_ep_buf_write) != 0) return -1;
-        if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return 0;
+
+    switch(net_endpoint_state(base_endpoint)) {
+    case net_endpoint_state_read_closed:
+        return 0;
+    case net_endpoint_state_write_closed:
+        return 0;
+    case net_endpoint_state_disable:
+        if (net_endpoint_is_active(endpoint->m_underline)) {
+            if (net_endpoint_set_state(endpoint->m_underline, net_endpoint_state_disable) != 0) {
+                net_endpoint_set_state(endpoint->m_underline, net_endpoint_state_deleting);
+            }
+        }
+        return 0;
+    case net_endpoint_state_established:
+        if (!net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write)) { /*有数据等待写入 */
+            if (net_ssl_svr_underline_write(endpoint->m_underline, base_endpoint, net_ep_buf_write) != 0) return -1;
+            if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return 0;
+        }
+
+        assert(net_endpoint_state(base_endpoint) == net_endpoint_state_established);
+
+        return 0;
+    default:
+        assert(0);
+        return -1;
     }
-
-    assert(net_endpoint_state(base_endpoint) == net_endpoint_state_established);
-
-    return 0;
 }
 
 int net_ssl_svr_endpoint_set_no_delay(net_endpoint_t base_endpoint, uint8_t no_delay) {

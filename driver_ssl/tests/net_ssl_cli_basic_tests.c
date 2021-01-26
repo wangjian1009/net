@@ -146,7 +146,6 @@ static void net_ssl_cli_connect_error_delay(void **state) {
         net_endpoint_state_str(net_endpoint_state(ep)),
         net_endpoint_state_str(net_endpoint_state_connecting));
 
-    test_net_endpoint_expect_close(underline);
     test_net_driver_run(env->m_tdriver, 100);
 
     assert_string_equal(

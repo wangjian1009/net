@@ -273,7 +273,7 @@ void net_endpoint_set_close_after_send(net_endpoint_t endpoint, uint8_t is_close
                 net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
         }
 
-        if (net_endpoint_set_state(endpoint, net_endpoint_state_disable) != 0) {
+        if (net_endpoint_set_state(endpoint, net_endpoint_state_write_closed) != 0) {
             net_endpoint_set_state(endpoint, net_endpoint_state_deleting);
         }
     }
@@ -394,10 +394,6 @@ int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) 
             endpoint->m_dns_query = NULL;
         }
 
-        if (endpoint->m_state != net_endpoint_state_deleting) {
-            endpoint->m_driver->m_endpoint_close(endpoint);
-        }
-
         if (endpoint->m_address) {
             net_address_free(endpoint->m_address);
             endpoint->m_address = NULL;
@@ -425,9 +421,13 @@ int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) 
     
     if (net_endpoint_notify_state_changed(endpoint, old_state) != 0) return -1;
 
-    if (state == net_endpoint_state_read_closed
-        || state == net_endpoint_state_write_closed
-        || (state == net_endpoint_state_established && !net_endpoint_buf_is_empty(endpoint, net_ep_buf_write)))
+    if (net_endpoint_state(endpoint) == state
+        && (state == net_endpoint_state_disable
+            || state == net_endpoint_state_read_closed
+            || state == net_endpoint_state_write_closed
+            || (state == net_endpoint_state_established && !net_endpoint_buf_is_empty(endpoint, net_ep_buf_write))
+            )
+        )
     {
         if (endpoint->m_driver->m_endpoint_update(endpoint) != 0) return -1;
     }

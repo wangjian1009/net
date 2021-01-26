@@ -41,7 +41,6 @@ net_ssl_cli_driver_create(
             net_ssl_cli_endpoint_init,
             net_ssl_cli_endpoint_fini,
             net_ssl_cli_endpoint_connect,
-            net_ssl_cli_endpoint_close,
             net_ssl_cli_endpoint_update,
             net_ssl_cli_endpoint_set_no_delay,
             net_ssl_cli_endpoint_get_mss,

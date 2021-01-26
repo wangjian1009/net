@@ -61,6 +61,9 @@ net_protocol_t test_net_protocol_create(net_schedule_t schedule, const char * na
 }
 
 void test_net_protocol_endpoint_expect_on_state_change(net_endpoint_t base_endpoint, net_endpoint_state_t state, int rv) {
+    test_net_protocol_endpoint_t endpoint = net_endpoint_protocol_data(base_endpoint);
+    endpoint->m_state_change_policy = test_net_protocol_endpoint_state_change_mock;
+    
     expect_value(test_net_protocol_endpoint_on_state_change, id, net_endpoint_id(base_endpoint));
     expect_string(test_net_protocol_endpoint_on_state_change, state, net_endpoint_state_str(state));
     expect_any(test_net_protocol_endpoint_on_state_change, from_state);

@@ -35,7 +35,6 @@ struct net_driver {
     net_endpoint_init_fun_t m_endpoint_init;
     net_endpoint_fini_fun_t m_endpoint_fini;
     net_endpoint_connect_fun_t m_endpoint_connect;
-    net_endpoint_close_fun_t m_endpoint_close;
     net_endpoint_update_fun_t m_endpoint_update;
     net_endpoint_set_no_delay_fun_t m_endpoint_set_no_delay;
     net_endpoint_get_mss_fun_t m_endpoint_get_mss;

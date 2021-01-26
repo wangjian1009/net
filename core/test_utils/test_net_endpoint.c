@@ -17,7 +17,9 @@ int test_net_endpoint_init(net_endpoint_t base_endpoint) {
     
     TAILQ_INSERT_TAIL(&driver->m_endpoints, endpoint, m_next);
     endpoint->m_write_policy.m_type = test_net_endpoint_write_mock;
-    
+    endpoint->m_set_no_delay_mock = 0;
+    endpoint->m_get_mss_mock = 0;
+
     return 0;
 }
 
@@ -28,45 +30,46 @@ void test_net_endpoint_fini(net_endpoint_t base_endpoint) {
     TAILQ_REMOVE(&driver->m_endpoints, endpoint, m_next);
 }
 
-void test_net_endpoint_close(net_endpoint_t base_endpoint) {
-    test_net_endpoint_t endpoint = net_endpoint_data(base_endpoint);
-    uint32_t id = net_endpoint_id(base_endpoint);
-    check_expected(id);
-    function_called();
-}
-
 int test_net_endpoint_update(net_endpoint_t base_endpoint) {
     test_net_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
     test_net_endpoint_t endpoint = net_endpoint_data(base_endpoint);
 
-    assert_true(
+    assert(
         net_endpoint_state(base_endpoint) == net_endpoint_state_established
         || net_endpoint_state(base_endpoint) == net_endpoint_state_read_closed
         || net_endpoint_state(base_endpoint) == net_endpoint_state_write_closed);
 
-    if (!net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write)) { /*有数据等待写入 */
-        net_endpoint_set_is_writing(base_endpoint, 1);
-        test_net_endpoint_write(base_endpoint);
-        if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return 0;
-    }
+    if (net_endpoint_state(base_endpoint) == net_endpoint_state_established) {
+        if (!net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write)) { /*有数据等待写入 */
+            net_endpoint_set_is_writing(base_endpoint, 1);
+            test_net_endpoint_write(base_endpoint);
+            if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return 0;
+        }
 
-    /* if (net_endpoint_expect_read(base_endpoint)) { */
-    /*     net_watcher_update_read(endpoint->m_watcher, 1); */
-    /* } else { */
-    /*     net_watcher_update_read(endpoint->m_watcher, 0); *\/ */
-    /* } */
+        /* if (net_endpoint_expect_read(base_endpoint)) { */
+        /*     net_watcher_update_read(endpoint->m_watcher, 1); */
+        /* } else { */
+        /*     net_watcher_update_read(endpoint->m_watcher, 0); *\/ */
+        /* } */
+    }
 
     return 0;
 }
 
-int test_net_endpoint_set_no_delay(net_endpoint_t base_endpoint, uint8_t is_enable) {
+int test_net_endpoint_set_no_delay(net_endpoint_t base_endpoint, uint8_t no_delay) {
+    test_net_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+    if (!endpoint->m_set_no_delay_mock) return 0;
+
     uint32_t id = net_endpoint_id(base_endpoint);
     check_expected(id);
-    check_expected(is_enable);
+    check_expected(no_delay);
     return mock_type(int);
 }
 
 int test_net_endpoint_get_mss(net_endpoint_t base_endpoint, uint32_t *mss) {
+    test_net_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+    if (!endpoint->m_get_mss_mock) return 0;
+
     uint32_t id = net_endpoint_id(base_endpoint);
     check_expected(id);
     int rv = mock_type(int);
@@ -100,58 +103,20 @@ int test_net_driver_read_from_other(net_endpoint_t base_endpoint, net_endpoint_t
     return 0;
 }
 
-void test_net_endpoint_id_expect_set_no_delay(test_net_driver_t driver, uint32_t ep_id, uint8_t is_enable) {
-    if (ep_id == 0) {
-        expect_any(test_net_endpoint_set_no_delay, id);
-    }
-    else {
-        expect_value(test_net_endpoint_set_no_delay, id, ep_id);
-    }
-    expect_value(test_net_endpoint_set_no_delay, is_enable, is_enable);
+void test_net_endpoint_expect_set_no_delay(net_endpoint_t base_endpoint, uint8_t no_delay) {
+    test_net_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+    endpoint->m_set_no_delay_mock = 1;
+
+    expect_value(test_net_endpoint_set_no_delay, id, net_endpoint_id(base_endpoint));
+    expect_value(test_net_endpoint_set_no_delay, no_delay, no_delay);
     will_return(test_net_endpoint_set_no_delay, 0);
 }
 
-void test_net_next_endpoint_expect_set_no_delay(test_net_driver_t driver, uint8_t is_enable) {
-    net_schedule_t schedule = net_driver_schedule(net_driver_from_data(driver));
-    test_net_endpoint_id_expect_set_no_delay(driver, net_schedule_next_endpoint_id(schedule), is_enable);
-}
-
-void test_net_endpoint_expect_set_no_delay(net_endpoint_t base_endpoint, uint8_t is_enable) {
-    test_net_endpoint_id_expect_set_no_delay(
-        net_driver_data(net_endpoint_driver(base_endpoint)),
-        net_endpoint_id(base_endpoint), is_enable);
-}
-
-void test_net_endpoint_id_expect_get_mss(test_net_driver_t driver, uint32_t ep_id, uint32_t mss) {
-    expect_value(test_net_endpoint_get_mss, id, ep_id);
-    will_return(test_net_endpoint_get_mss, mss);
-}
-
-void test_net_next_endpoint_expect_get_mss(test_net_driver_t driver, uint32_t mss) {
-    net_schedule_t schedule = net_driver_schedule(net_driver_from_data(driver));
-    test_net_endpoint_id_expect_get_mss(driver, net_schedule_next_endpoint_id(schedule), mss);
-}
-
 void test_net_endpoint_expect_get_mss(net_endpoint_t base_endpoint, uint32_t mss) {
-    test_net_endpoint_id_expect_get_mss(
-        net_driver_data(net_endpoint_driver(base_endpoint)),
-        net_endpoint_id(base_endpoint), mss);
-}
-
-void test_net_endpoint_id_expect_close(test_net_driver_t driver, uint32_t ep_id) {
-    expect_value(test_net_endpoint_close, id, ep_id);
-    expect_function_call(test_net_endpoint_close);
-}
-
-void test_net_next_endpoint_expect_close(test_net_driver_t driver) {
-    net_schedule_t schedule = net_driver_schedule(net_driver_from_data(driver));
-    test_net_endpoint_id_expect_close(driver, net_schedule_next_endpoint_id(schedule));
-}
-
-void test_net_endpoint_expect_close(net_endpoint_t base_endpoint) {
-    test_net_endpoint_id_expect_close(
-        net_driver_data(net_endpoint_driver(base_endpoint)),
-        net_endpoint_id(base_endpoint));
+    test_net_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+    endpoint->m_get_mss_mock = 1;
+    expect_value(test_net_endpoint_get_mss, id, net_endpoint_id(base_endpoint));
+    will_return(test_net_endpoint_get_mss, mss);
 }
 
 net_endpoint_t

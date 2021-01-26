@@ -50,7 +50,6 @@ net_ssl_svr_driver_create(
             net_ssl_svr_endpoint_init,
             net_ssl_svr_endpoint_fini,
             NULL,
-            net_ssl_svr_endpoint_close,
             net_ssl_svr_endpoint_update,
             net_ssl_svr_endpoint_set_no_delay,
             net_ssl_svr_endpoint_get_mss,

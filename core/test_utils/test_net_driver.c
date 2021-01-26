@@ -39,7 +39,6 @@ test_net_driver_create(net_schedule_t schedule, error_monitor_t em) {
         test_net_endpoint_init,
         test_net_endpoint_fini,
         test_net_endpoint_connect,
-        test_net_endpoint_close,
         test_net_endpoint_update,
         test_net_endpoint_set_no_delay,
         test_net_endpoint_get_mss,

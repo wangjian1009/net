@@ -187,7 +187,7 @@ void net_endpoint_buf_consume(net_endpoint_t endpoint, net_endpoint_buf_type_t b
                 net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
         }
 
-        if (net_endpoint_set_state(endpoint, net_endpoint_state_disable) != 0) {
+        if (net_endpoint_set_state(endpoint, net_endpoint_state_write_closed) != 0) {
             net_endpoint_set_state(endpoint, net_endpoint_state_deleting);
         }
         return;
@@ -279,7 +279,7 @@ int net_endpoint_buf_recv(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_t
                     net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
             }
 
-            if (net_endpoint_set_state(endpoint, net_endpoint_state_disable) != 0) {
+            if (net_endpoint_set_state(endpoint, net_endpoint_state_write_closed) != 0) {
                 net_endpoint_set_state(endpoint, net_endpoint_state_deleting);
             }
 
@@ -495,7 +495,7 @@ int net_endpoint_buf_append_from_other(
                 net_endpoint_dump(&schedule->m_tmp_buffer, other));
         }
 
-        if (net_endpoint_set_state(other, net_endpoint_state_disable) != 0) {
+        if (net_endpoint_set_state(other, net_endpoint_state_write_closed) != 0) {
             net_endpoint_set_state(other, net_endpoint_state_deleting);
         }
     }
@@ -567,7 +567,7 @@ int net_endpoint_buf_append_from_self(
                 net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
         }
 
-        if (net_endpoint_set_state(endpoint, net_endpoint_state_disable) != 0) {
+        if (net_endpoint_set_state(endpoint, net_endpoint_state_write_closed) != 0) {
             net_endpoint_set_state(endpoint, net_endpoint_state_deleting);
         }
 

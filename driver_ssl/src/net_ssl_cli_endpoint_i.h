@@ -10,7 +10,6 @@ struct net_ssl_cli_endpoint {
 int net_ssl_cli_endpoint_init(net_endpoint_t endpoint);
 void net_ssl_cli_endpoint_fini(net_endpoint_t endpoint);
 int net_ssl_cli_endpoint_connect(net_endpoint_t endpoint);
-void net_ssl_cli_endpoint_close(net_endpoint_t endpoint);
 int net_ssl_cli_endpoint_update(net_endpoint_t endpoint);
 int net_ssl_cli_endpoint_set_no_delay(net_endpoint_t endpoint, uint8_t no_delay);
 int net_ssl_cli_endpoint_get_mss(net_endpoint_t endpoint, uint32_t * mss);
