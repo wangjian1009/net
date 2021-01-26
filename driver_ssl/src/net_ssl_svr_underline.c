@@ -171,6 +171,8 @@ int net_ssl_svr_underline_on_state_change(net_endpoint_t base_underline, net_end
         case net_endpoint_state_logic_error:
         case net_endpoint_state_network_error:
         case net_endpoint_state_disable:
+        case net_endpoint_state_read_closed:
+        case net_endpoint_state_write_closed:
             CPE_ERROR(
                 net_schedule_em(schedule),
                 "net: ssl: %s: state updated: no ssl endpoint %s",
@@ -216,6 +218,10 @@ int net_ssl_svr_underline_on_state_change(net_endpoint_t base_underline, net_end
             }
 
             return 0;
+        case net_endpoint_state_read_closed:
+            return 0;
+        case net_endpoint_state_write_closed:
+            return 0;
         case net_endpoint_state_disable:
             if (net_endpoint_set_state(base_endpoint, net_endpoint_state_disable) != 0) {
                 net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
@@ -236,6 +242,8 @@ int net_ssl_svr_underline_write(
     
     switch(net_endpoint_state(base_underline)) {
     case net_endpoint_state_disable:
+    case net_endpoint_state_read_closed:
+    case net_endpoint_state_write_closed:
     case net_endpoint_state_resolving:
     case net_endpoint_state_connecting:
         if (net_endpoint_protocol_debug(base_underline)) {

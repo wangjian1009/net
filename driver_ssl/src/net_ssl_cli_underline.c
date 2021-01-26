@@ -177,6 +177,8 @@ int net_ssl_cli_underline_on_state_change(net_endpoint_t base_underline, net_end
             if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) return -1;
         }
         break;
+    case net_endpoint_state_read_closed:
+    case net_endpoint_state_write_closed:
     case net_endpoint_state_disable:
     case net_endpoint_state_deleting:
         if (base_endpoint) {
@@ -244,6 +246,8 @@ int net_ssl_cli_underline_write(
         break;
     case net_endpoint_state_logic_error:
     case net_endpoint_state_network_error:
+    case net_endpoint_state_read_closed:
+    case net_endpoint_state_write_closed:
     case net_endpoint_state_deleting:
         CPE_ERROR(
             driver->m_em, "net: ssl: %s: write: can`t write in state %s!",

@@ -45,6 +45,8 @@ net_endpoint_t net_endpoint_from_data(void * data);
 int net_endpoint_set_prepare_connect(net_endpoint_t endpoint, net_endpoint_prepare_connect_fun_t fun, void * ctx);
 
 uint8_t net_endpoint_is_active(net_endpoint_t endpoint);
+uint8_t net_endpoint_is_readable(net_endpoint_t endpoint);
+uint8_t net_endpoint_is_writeable(net_endpoint_t endpoint);
 int net_endpoint_connect(net_endpoint_t endpoint);
 
 uint8_t net_endpoint_close_after_send(net_endpoint_t endpoint);

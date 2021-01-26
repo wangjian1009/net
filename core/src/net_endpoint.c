@@ -337,6 +337,26 @@ uint8_t net_endpoint_is_active(net_endpoint_t endpoint) {
     }
 }
 
+uint8_t net_endpoint_is_readable(net_endpoint_t endpoint) {
+    switch(endpoint->m_state) {
+    case net_endpoint_state_established:
+    case net_endpoint_state_write_closed:
+            return 1;
+    default:
+        return 0;
+    }
+}
+
+uint8_t net_endpoint_is_writeable(net_endpoint_t endpoint) {
+    switch(endpoint->m_state) {
+    case net_endpoint_state_established:
+    case net_endpoint_state_read_closed:
+        return 1;
+    default:
+        return 0;
+    }
+}
+
 int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) {
     if (endpoint->m_state == state) return 0;
 
@@ -745,6 +765,10 @@ const char * net_endpoint_state_str(net_endpoint_state_t state) {
         return "logic-error";
     case net_endpoint_state_network_error:
         return "network-error";
+    case net_endpoint_state_read_closed:
+        return "read-closed";
+    case net_endpoint_state_write_closed:
+        return "write-closed";
     case net_endpoint_state_deleting:
         return "deleting";
     }

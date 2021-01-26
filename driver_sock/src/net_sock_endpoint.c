@@ -376,7 +376,7 @@ int net_sock_endpoint_update_remote_address(net_sock_endpoint_t endpoint) {
 }
 
 static int net_sock_endpoint_on_read(net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint) {
-    while(net_endpoint_state(base_endpoint) == net_endpoint_state_established  /*当前状态正确 */
+    while(net_endpoint_is_readable(base_endpoint) /*当前状态正确 */
           && net_endpoint_expect_read(base_endpoint))
     {
         uint32_t capacity = 0;
@@ -404,7 +404,7 @@ static int net_sock_endpoint_on_read(net_sock_driver_t driver, net_sock_endpoint
             }
         }
 
-        if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) break;
+        if (!net_endpoint_is_readable(base_endpoint)) break;
         
         assert(endpoint->m_fd != -1);
         ssize_t bytes = cpe_recv(endpoint->m_fd, rbuf, capacity, 0);
@@ -438,13 +438,21 @@ static int net_sock_endpoint_on_read(net_sock_driver_t driver, net_sock_endpoint
         }
         else if (bytes == 0) {
             net_endpoint_buf_release(base_endpoint);
+
             if (net_endpoint_driver_debug(base_endpoint)) {
                 CPE_INFO(
-                    driver->m_em, "sock: %s: fd=%d: remote disconnected(recv 0)!",
+                    driver->m_em, "sock: %s: fd=%d: read finished!",
                     net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
             }
                 
             net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_remote_closed, NULL);
+
+            if (net_endpoint_state(base_endpoint) == net_endpoint_state_established) {
+                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_read_closed) == 0) {
+                    return 0;
+                }
+            }
+            
             net_sock_endpoint_close_sock(driver, endpoint);
             if (net_endpoint_set_state(base_endpoint, net_endpoint_state_disable) != 0) return -1;
             return 0;

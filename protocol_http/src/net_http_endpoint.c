@@ -281,6 +281,9 @@ int net_http_endpoint_on_state_change(net_endpoint_t endpoint, net_endpoint_stat
     net_http_protocol_t http_protocol = net_http_endpoint_protocol(http_ep);
 
     switch(net_endpoint_state(endpoint)) {
+    case net_endpoint_state_read_closed:
+    case net_endpoint_state_write_closed:
+        break;
     case net_endpoint_state_disable:
         net_http_endpoint_set_state(http_ep, net_http_state_disable);
         net_http_endpoint_reset_data(http_protocol, http_ep, net_http_res_canceled);

@@ -223,6 +223,22 @@ int net_pair_endpoint_update(net_endpoint_t base_endpoint) {
             return 0;
         case net_endpoint_state_established:
             break;
+        case net_endpoint_state_read_closed:
+            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_write_closed) != 0) {
+                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_disable) != 0) {
+                    net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+                }
+                return -1;
+            }
+            break;
+        case net_endpoint_state_write_closed:
+            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_read_closed) != 0) {
+                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_disable) != 0) {
+                    net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+                }
+                return -1;
+            }
+            break;
         case net_endpoint_state_disable:
         case net_endpoint_state_logic_error:
         case net_endpoint_state_network_error:
