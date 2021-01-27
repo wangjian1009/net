@@ -16,6 +16,7 @@
 
 static void net_endpoint_dns_query_callback(void * ctx, net_address_t main_address, net_address_it_t it);
 static int net_endpoint_notify_state_changed(net_endpoint_t endpoint, net_endpoint_state_t old_state);
+static void net_endpoint_clear_data_watcher(net_endpoint_t endpoint);
 
 net_endpoint_t
 net_endpoint_create(net_driver_t driver, net_protocol_t protocol, net_mem_group_t mem_group) {
@@ -118,13 +119,6 @@ void net_endpoint_free(net_endpoint_t endpoint) {
     if (endpoint->m_state == net_endpoint_state_established) {
         endpoint->m_state = net_endpoint_state_deleting;
     }
-    
-    if (endpoint->m_data_watcher_fini) {
-        endpoint->m_data_watcher_fini(endpoint->m_data_watcher_ctx, endpoint);
-    }
-    endpoint->m_data_watcher_ctx = NULL;
-    endpoint->m_data_watcher_fini = NULL;
-    endpoint->m_data_watcher_fun = NULL;
 
     if (endpoint->m_dns_query) {
         net_dns_query_free(endpoint->m_dns_query);
@@ -132,6 +126,7 @@ void net_endpoint_free(net_endpoint_t endpoint) {
     }
 
     if (need_fini) {
+        net_endpoint_clear_data_watcher(endpoint);
         if (endpoint->m_driver->m_endpoint_fini) endpoint->m_driver->m_endpoint_fini(endpoint);
         if (endpoint->m_protocol->m_endpoint_fini) endpoint->m_protocol->m_endpoint_fini(endpoint);
     }
@@ -403,6 +398,8 @@ int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) 
     if (state == net_endpoint_state_deleting) {
         TAILQ_REMOVE(&endpoint->m_driver->m_endpoints, endpoint, m_next_for_driver);
         TAILQ_INSERT_TAIL(&endpoint->m_driver->m_deleting_endpoints, endpoint, m_next_for_driver);
+
+        net_endpoint_clear_data_watcher(endpoint);
         if (endpoint->m_driver->m_endpoint_fini) endpoint->m_driver->m_endpoint_fini(endpoint);
         if (endpoint->m_protocol->m_endpoint_fini) endpoint->m_protocol->m_endpoint_fini(endpoint);
         net_schedule_start_delay_process(schedule);
@@ -937,6 +934,23 @@ static int net_endpoint_notify_state_changed(net_endpoint_t endpoint, net_endpoi
     net_endpoint_send_evt(endpoint, &evt);
     
     return rv;
+}
+
+static void net_endpoint_clear_data_watcher(net_endpoint_t endpoint) {
+    if (endpoint->m_data_watcher_fini) {
+        net_endpoint_data_watch_ctx_fini_fun_t fini = endpoint->m_data_watcher_fini;
+        void * ctx = endpoint->m_data_watcher_ctx;
+
+        endpoint->m_data_watcher_ctx = NULL;
+        endpoint->m_data_watcher_fini = NULL;
+        endpoint->m_data_watcher_fun = NULL;
+
+        fini(ctx, endpoint);
+    }
+    else {
+        endpoint->m_data_watcher_ctx = NULL;
+        endpoint->m_data_watcher_fun = NULL;
+    }
 }
 
 void net_endpoint_send_evt(net_endpoint_t endpoint, net_endpoint_monitor_evt_t evt) {
