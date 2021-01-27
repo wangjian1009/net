@@ -14,8 +14,8 @@
 static void net_sock_endpoint_rw_cb(void * ctx, int fd, uint8_t do_read, uint8_t do_write);
 static void net_sock_endpoint_connect_cb(void * ctx, int fd, uint8_t do_read, uint8_t do_write);
 
-static int net_sock_endpoint_on_read(net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint);
-static int net_sock_endpoint_on_write(net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint);
+static void net_sock_endpoint_on_read(net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint);
+static void net_sock_endpoint_on_write(net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint);
 
 static int net_sock_endpoint_start_connect(
     net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint, net_address_t remote_address);
@@ -153,35 +153,34 @@ int net_sock_endpoint_update(net_endpoint_t base_endpoint) {
         if (!net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write) /*有数据等待写入 */
             && !net_watcher_expect_write(endpoint->m_watcher)) /*socket没有等待可以写入的操作（当前可以写入数据到socket) */
         {
-            if (net_sock_endpoint_on_write(driver, endpoint, base_endpoint) != 0) return -1;
-            if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return 0;
+            net_sock_endpoint_on_write(driver, endpoint, base_endpoint);
         }
 
-        assert(net_endpoint_state(base_endpoint) == net_endpoint_state_established);
-        assert(endpoint->m_watcher != NULL);
+        if (net_endpoint_is_readable(base_endpoint)) {
+            assert(endpoint->m_watcher != NULL);
 
-        if (net_endpoint_expect_read(base_endpoint)) {
-            if (!net_watcher_expect_read(endpoint->m_watcher)) { /*socket上没有等待读取的操作（当前有数据可以读取) */
-                if (net_endpoint_driver_debug(base_endpoint) >= 3) {
-                    CPE_INFO(
-                        driver->m_em, "sock: %s: fd=%d: read begin!",
-                        net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
+            if (net_endpoint_expect_read(base_endpoint)) {
+                if (!net_watcher_expect_read(endpoint->m_watcher)) { /*socket上没有等待读取的操作（当前有数据可以读取) */
+                    if (net_endpoint_driver_debug(base_endpoint) >= 3) {
+                        CPE_INFO(
+                            driver->m_em, "sock: %s: fd=%d: read begin!",
+                            net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
+                    }
+
+                    net_watcher_update_read(endpoint->m_watcher, 1);
                 }
+            } else {
+                if (net_watcher_expect_read(endpoint->m_watcher)) {
+                    if (net_endpoint_driver_debug(base_endpoint) >= 3) {
+                        CPE_INFO(
+                            driver->m_em, "sock: %s: fd=%d: read stop!",
+                            net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
+                    }
 
-                net_watcher_update_read(endpoint->m_watcher, 1);
-            }
-        } else {
-            if (net_watcher_expect_read(endpoint->m_watcher)) {
-                if (net_endpoint_driver_debug(base_endpoint) >= 3) {
-                    CPE_INFO(
-                        driver->m_em, "sock: %s: fd=%d: read stop!",
-                        net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
+                    net_watcher_update_read(endpoint->m_watcher, 0);
                 }
-
-                net_watcher_update_read(endpoint->m_watcher, 0);
             }
         }
-
         return 0;
     default:
         assert(0);
@@ -458,37 +457,20 @@ int net_sock_endpoint_update_remote_address(net_sock_endpoint_t endpoint) {
     return 0;
 }
 
-static int net_sock_endpoint_on_read(net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint) {
+static void net_sock_endpoint_on_read(net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint) {
     while(net_endpoint_is_readable(base_endpoint) /*当前状态正确 */
           && net_endpoint_expect_read(base_endpoint))
     {
         uint32_t capacity = 0;
         void * rbuf = net_endpoint_buf_alloc_at_least(base_endpoint, &capacity);
         if (rbuf == NULL) {
-            net_sock_endpoint_close_sock(driver, endpoint);
-            
-            if (net_endpoint_state(base_endpoint) == net_endpoint_state_deleting) {
-                return -1;
+            net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_logic, NULL);
+            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
+                net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
             }
-            else {
-                CPE_ERROR(
-                    driver->m_em, "sock: %s: fd=%d: on read: endpoint rbuf full!",
-                    net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
-
-                if (net_endpoint_is_active(base_endpoint)) {
-                    if (!net_endpoint_have_error(base_endpoint)) {
-                        net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_logic, NULL);
-                    }
-                
-                    if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) return -1;
-                }
-
-                return 0;
-            }
+            return;
         }
 
-        if (!net_endpoint_is_readable(base_endpoint)) break;
-        
         assert(endpoint->m_fd != -1);
         ssize_t bytes = cpe_recv(endpoint->m_fd, rbuf, capacity, 0);
         if (bytes > 0) {
@@ -500,21 +482,16 @@ static int net_sock_endpoint_on_read(net_sock_driver_t driver, net_sock_endpoint
             }
 
             if (net_endpoint_buf_supply(base_endpoint, net_ep_buf_read, (uint32_t)bytes) != 0) {
-                net_sock_endpoint_close_sock(driver, endpoint);
-                
                 if (net_endpoint_is_active(base_endpoint)) {
                     if (!net_endpoint_have_error(base_endpoint)) {
                         net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_logic, NULL);
                     }
+
                     if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
-                        if (net_endpoint_driver_debug(base_endpoint)) {
-                            CPE_INFO(
-                                driver->m_em, "sock: %s: fd=%d: free for process fail!",
-                                net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
-                        }
-                        return -1;
+                        net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
                     }
                 }
+                return;
             }
 
             continue;
@@ -532,14 +509,17 @@ static int net_sock_endpoint_on_read(net_sock_driver_t driver, net_sock_endpoint
             net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_remote_closed, NULL);
 
             if (net_endpoint_state(base_endpoint) == net_endpoint_state_established) {
-                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_read_closed) == 0) {
-                    return 0;
+                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_read_closed) != 0) {
+                    net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
                 }
             }
-            
-            net_sock_endpoint_close_sock(driver, endpoint);
-            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_disable) != 0) return -1;
-            return 0;
+            else {
+                assert(net_endpoint_state(base_endpoint) == net_endpoint_state_write_closed);
+                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_disable) != 0) {
+                    net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+                }
+            }
+            return;
         }
         else {
             assert(bytes == -1);
@@ -561,18 +541,17 @@ static int net_sock_endpoint_on_read(net_sock_driver_t driver, net_sock_endpoint
                     base_endpoint, net_endpoint_error_source_network,
                     net_endpoint_network_errno_network_error, cpe_sock_errstr(cpe_sock_errno()));
 
-                net_sock_endpoint_close_sock(driver, endpoint);
-                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) return -1;
-                return 0;
+                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
+                    net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+                }
+                return;
             }
         }
         assert(0);
     }
-
-    return 0;
 }
 
-static int net_sock_endpoint_on_write(net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint) {
+static void net_sock_endpoint_on_write(net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint) {
     while(net_endpoint_is_writeable(base_endpoint) /*ep状态正确 */
           && !net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write) /*还有数据等待写入 */
         )
@@ -605,9 +584,10 @@ static int net_sock_endpoint_on_write(net_sock_driver_t driver, net_sock_endpoin
 
             endpoint->m_write_closed = 1;
             net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_remote_closed, NULL);
-            net_sock_endpoint_close_sock(driver, endpoint);
-            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) return -1;
-            return 0;
+            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
+                net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+            }
+            return;
         }
         else {
             int err = cpe_sock_errno();
@@ -625,7 +605,7 @@ static int net_sock_endpoint_on_write(net_sock_driver_t driver, net_sock_endpoin
                     net_watcher_update_write(endpoint->m_watcher, 1);
                 }
                 assert(net_watcher_expect_write(endpoint->m_watcher));
-                return 0;
+                return;
             }
         
             if (err == EINTR) continue;
@@ -650,14 +630,16 @@ static int net_sock_endpoint_on_write(net_sock_driver_t driver, net_sock_endpoin
                     base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_network_error, cpe_sock_errstr(err));
             }
 
-            net_sock_endpoint_close_sock(driver, endpoint);
-            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) return -1;
-
-            if (net_endpoint_is_writing(base_endpoint)) {
-                net_endpoint_set_is_writing(base_endpoint, 0);
+            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
+                net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+            }
+            else {
+                if (net_endpoint_is_writing(base_endpoint)) {
+                    net_endpoint_set_is_writing(base_endpoint, 0);
+                }
             }
             
-            return 0;
+            return;
         }
     }
 
@@ -677,8 +659,6 @@ static int net_sock_endpoint_on_write(net_sock_driver_t driver, net_sock_endpoin
             net_endpoint_set_is_writing(base_endpoint, 0);
         }
     }
-
-    return 0;
 }
 
 static void net_sock_endpoint_rw_cb(void * ctx, int fd, uint8_t do_read, uint8_t do_write) {
@@ -687,22 +667,17 @@ static void net_sock_endpoint_rw_cb(void * ctx, int fd, uint8_t do_read, uint8_t
     net_sock_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
 
     assert(endpoint->m_watcher);
-    assert(net_endpoint_state(base_endpoint) == net_endpoint_state_established);
+    assert(
+        net_endpoint_state(base_endpoint) == net_endpoint_state_established
+        || net_endpoint_state(base_endpoint) == net_endpoint_state_read_closed
+        || net_endpoint_state(base_endpoint) == net_endpoint_state_write_closed);
     
     if (do_read) {
-        if (net_sock_endpoint_on_read(driver, endpoint, base_endpoint) != 0) {
-            net_endpoint_free(base_endpoint);
-            return;
-        }
-
-        if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return;
+        net_sock_endpoint_on_read(driver, endpoint, base_endpoint);
     }
 
     if (do_write) {
-        if (net_sock_endpoint_on_write(driver, endpoint, base_endpoint) != 0) {
-            net_endpoint_free(base_endpoint);
-            return;
-        }
+        net_sock_endpoint_on_write(driver, endpoint, base_endpoint);
     }
 }
 
