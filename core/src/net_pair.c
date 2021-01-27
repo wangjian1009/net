@@ -152,7 +152,7 @@ int net_pair_endpoint_connect(net_endpoint_t base_endpoint) {
             base_endpoint,
             net_endpoint_error_source_network, net_endpoint_network_errno_logic,
             "pair other disconnected");
-        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
+        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
             if (net_endpoint_driver_debug(base_endpoint) >= 2) {
                 CPE_INFO(
                     schedule->m_em, "core: pair: %s: connect: free for process fail!",
@@ -173,7 +173,7 @@ int net_pair_endpoint_connect(net_endpoint_t base_endpoint) {
             base_endpoint,
             net_endpoint_error_source_network, net_endpoint_network_errno_logic,
             "pair other disconnected");
-        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
+        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
             if (net_endpoint_driver_debug(base_endpoint) >= 2) {
                 CPE_INFO(
                     schedule->m_em, "core: pair: %s: connect: free for process fail!",
@@ -267,7 +267,7 @@ int net_pair_endpoint_update(net_endpoint_t base_endpoint) {
                     base_endpoint,
                     net_endpoint_error_source_network, net_endpoint_network_errno_logic,
                     "pair other disconnected");
-                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
+                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
                     net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
                     return -1;
                 }
@@ -298,8 +298,7 @@ int net_pair_endpoint_update(net_endpoint_t base_endpoint) {
                 }
                 break;
             case net_endpoint_state_disable:
-            case net_endpoint_state_logic_error:
-            case net_endpoint_state_network_error:
+            case net_endpoint_state_error:
             case net_endpoint_state_deleting:
                 if (net_endpoint_set_state(base_endpoint, net_endpoint_state_disable) != 0) {
                     net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
@@ -338,7 +337,7 @@ int net_pair_endpoint_update(net_endpoint_t base_endpoint) {
                         base_endpoint,
                         net_endpoint_error_source_network, net_endpoint_network_errno_logic,
                         "pair other write error");
-                    if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
+                    if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
                         net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
                         return -1;
                     }
@@ -379,7 +378,7 @@ void net_pair_endpoint_delay_process(net_timer_t timer, void * ctx) {
                 base_endpoint,
                 net_endpoint_error_source_network, net_endpoint_network_errno_logic,
                 "unknown error in delay process");
-            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_logic_error) != 0) {
+            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
                 net_endpoint_free(base_endpoint);
             }
         }

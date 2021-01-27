@@ -258,19 +258,51 @@ uint8_t net_endpoint_close_after_send(net_endpoint_t endpoint) {
 }
 
 void net_endpoint_set_close_after_send(net_endpoint_t endpoint, uint8_t is_close_after_send) {
-    endpoint->m_close_after_send = is_close_after_send;
+    net_schedule_t schedule = endpoint->m_driver->m_schedule;
 
-    if (!net_endpoint_have_any_data(endpoint)) {
+    switch(endpoint->m_state) {
+    case net_endpoint_state_resolving:
+    case net_endpoint_state_connecting:
+    case net_endpoint_state_read_closed:
+        endpoint->m_close_after_send = is_close_after_send;
+        if (net_endpoint_have_any_data(endpoint)) return;
+
         if (endpoint->m_protocol_debug || endpoint->m_driver_debug) {
-            net_schedule_t schedule = endpoint->m_driver->m_schedule;
             CPE_INFO(
-                schedule->m_em, "core: %s: auto close on set close-after-send!",
-                net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
+                schedule->m_em, "core: %s: auto disable on set close-after-send, state=%s!",
+                net_endpoint_dump(&schedule->m_tmp_buffer, endpoint),
+                net_endpoint_state_str(endpoint->m_state));
         }
+        
+        if (net_endpoint_set_state(endpoint, net_endpoint_state_disable) != 0) {
+            net_endpoint_set_state(endpoint, net_endpoint_state_deleting);
+        }
+        break;
+    case net_endpoint_state_established:
+        endpoint->m_close_after_send = is_close_after_send;
+        if (net_endpoint_have_any_data(endpoint)) return;
 
+        if (endpoint->m_protocol_debug || endpoint->m_driver_debug) {
+            CPE_INFO(
+                schedule->m_em, "core: %s: auto shutdown write set close-after-send, state=%s!",
+                net_endpoint_dump(&schedule->m_tmp_buffer, endpoint),
+                net_endpoint_state_str(endpoint->m_state));
+        }
+        
         if (net_endpoint_set_state(endpoint, net_endpoint_state_write_closed) != 0) {
             net_endpoint_set_state(endpoint, net_endpoint_state_deleting);
         }
+        break;
+    case net_endpoint_state_write_closed:
+        break;
+    case net_endpoint_state_error:
+    case net_endpoint_state_deleting:
+    case net_endpoint_state_disable:
+        CPE_ERROR(
+            schedule->m_em, "core: %s: can`t set auto close on send in state %s!",
+            net_endpoint_dump(&schedule->m_tmp_buffer, endpoint),
+            net_endpoint_state_str(endpoint->m_state));
+        break;
     }
 }
 
@@ -323,8 +355,7 @@ int net_endpoint_set_prepare_connect(net_endpoint_t endpoint, net_endpoint_prepa
 uint8_t net_endpoint_is_active(net_endpoint_t endpoint) {
     switch(endpoint->m_state) {
     case net_endpoint_state_disable:
-    case net_endpoint_state_logic_error:
-    case net_endpoint_state_network_error:
+    case net_endpoint_state_error:
     case net_endpoint_state_deleting:
         return 0;
     default:
@@ -422,9 +453,9 @@ int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) 
         && (state == net_endpoint_state_disable
             || state == net_endpoint_state_read_closed
             || state == net_endpoint_state_write_closed
-            || (state == net_endpoint_state_established && !net_endpoint_buf_is_empty(endpoint, net_ep_buf_write))
-            )
-        )
+            || state == net_endpoint_state_error
+            || state == net_endpoint_state_error
+            || state == net_endpoint_state_established))
     {
         if (endpoint->m_driver->m_endpoint_update(endpoint) != 0) return -1;
     }
@@ -759,10 +790,8 @@ const char * net_endpoint_state_str(net_endpoint_state_t state) {
         return "connecting";
     case net_endpoint_state_established:
         return "established";
-    case net_endpoint_state_logic_error:
-        return "logic-error";
-    case net_endpoint_state_network_error:
-        return "network-error";
+    case net_endpoint_state_error:
+        return "error";
     case net_endpoint_state_read_closed:
         return "read-closed";
     case net_endpoint_state_write_closed:
@@ -811,7 +840,7 @@ static void net_endpoint_dns_query_callback(void * ctx, net_address_t address, n
         net_endpoint_set_error(
             endpoint, net_endpoint_error_source_network,
             net_endpoint_network_errno_dns_error, "dns resolve error");
-        if (net_endpoint_set_state(endpoint, net_endpoint_state_network_error) != 0) {
+        if (net_endpoint_set_state(endpoint, net_endpoint_state_error) != 0) {
             net_endpoint_free(endpoint);
         }
         return;
@@ -822,7 +851,7 @@ static void net_endpoint_dns_query_callback(void * ctx, net_address_t address, n
         CPE_ERROR(
             schedule->m_em, "%s: resolve: set resolve result fail!",
             net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
-        if (net_endpoint_set_state(endpoint, net_endpoint_state_logic_error) != 0) {
+        if (net_endpoint_set_state(endpoint, net_endpoint_state_error) != 0) {
             net_endpoint_free(endpoint);
         }
         return;
@@ -863,7 +892,7 @@ static void net_endpoint_dns_query_callback(void * ctx, net_address_t address, n
         }
         else {
             if (endpoint->m_state != net_endpoint_state_deleting) {
-                if (net_endpoint_set_state(endpoint, net_endpoint_state_network_error) != 0) {
+                if (net_endpoint_set_state(endpoint, net_endpoint_state_error) != 0) {
                     net_endpoint_set_state(endpoint, net_endpoint_state_deleting);
                 }
             }

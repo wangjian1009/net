@@ -168,8 +168,7 @@ int net_ssl_svr_underline_on_state_change(net_endpoint_t base_underline, net_end
         case net_endpoint_state_established:
             /*在acceptor的情况下，undliner提前进入establish，此处保护*/
             return 0;
-        case net_endpoint_state_logic_error:
-        case net_endpoint_state_network_error:
+        case net_endpoint_state_error:
         case net_endpoint_state_disable:
         case net_endpoint_state_read_closed:
         case net_endpoint_state_write_closed:
@@ -198,22 +197,12 @@ int net_ssl_svr_underline_on_state_change(net_endpoint_t base_underline, net_end
                 return 0;
             }
             return 0;
-        case net_endpoint_state_logic_error:
+        case net_endpoint_state_error:
             net_endpoint_set_error(
                 base_endpoint, net_endpoint_error_source(base_underline),
                 net_endpoint_error_no(base_underline), net_endpoint_error_msg(base_underline));
 
-            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_logic_error) != 0) {
-                net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
-            }
-
-            return 0;
-        case net_endpoint_state_network_error:
-            net_endpoint_set_error(
-                base_endpoint, net_endpoint_error_source(base_underline),
-                net_endpoint_error_no(base_underline), net_endpoint_error_msg(base_underline));
-
-            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_network_error) != 0) {
+            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
                 net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
             }
 
@@ -285,8 +274,7 @@ int net_ssl_svr_underline_write(
             break;
         }
         break;
-    case net_endpoint_state_logic_error:
-    case net_endpoint_state_network_error:
+    case net_endpoint_state_error:
     case net_endpoint_state_deleting:
         CPE_ERROR(
             driver->m_em, "net: ssl: %s: write: can`t write in state %s!",
@@ -443,7 +431,7 @@ static int net_ssl_svr_underline_update_error(net_endpoint_t base_underline, int
             net_endpoint_error_source_protocol,
             -1,
             "handshake start fail");
-        return net_endpoint_set_state(base_underline, net_endpoint_state_logic_error);
+        return net_endpoint_set_state(base_underline, net_endpoint_state_error);
     }
     return 0;
 }

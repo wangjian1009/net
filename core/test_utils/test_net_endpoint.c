@@ -37,7 +37,10 @@ int test_net_endpoint_update(net_endpoint_t base_endpoint) {
     assert(
         net_endpoint_state(base_endpoint) == net_endpoint_state_established
         || net_endpoint_state(base_endpoint) == net_endpoint_state_read_closed
-        || net_endpoint_state(base_endpoint) == net_endpoint_state_write_closed);
+        || net_endpoint_state(base_endpoint) == net_endpoint_state_write_closed
+        || net_endpoint_state(base_endpoint) == net_endpoint_state_disable
+        || net_endpoint_state(base_endpoint) == net_endpoint_state_error
+        || net_endpoint_state(base_endpoint) == net_endpoint_state_error);
 
     if (net_endpoint_state(base_endpoint) == net_endpoint_state_established) {
         if (!net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write)) { /*有数据等待写入 */
@@ -92,7 +95,7 @@ int test_net_driver_read_from_other(net_endpoint_t base_endpoint, net_endpoint_t
                     net_endpoint_network_errno_logic, NULL);
             }
 
-            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_logic_error) != 0) {
+            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
                 net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
             }
         }

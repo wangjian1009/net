@@ -58,8 +58,7 @@ typedef enum net_endpoint_state {
     net_endpoint_state_established,
     net_endpoint_state_read_closed,
     net_endpoint_state_write_closed,
-    net_endpoint_state_logic_error,
-    net_endpoint_state_network_error,
+    net_endpoint_state_error,
     net_endpoint_state_deleting,
 } net_endpoint_state_t;
 

@@ -117,6 +117,13 @@ int net_ssl_cli_endpoint_update(net_endpoint_t base_endpoint) {
 
         assert(net_endpoint_state(base_endpoint) == net_endpoint_state_established);
         return 0;
+    case net_endpoint_state_error:
+        if (net_endpoint_is_active(endpoint->m_underline)) {
+            if (net_endpoint_set_state(endpoint->m_underline, net_endpoint_state_error) != 0) {
+                net_endpoint_set_state(endpoint->m_underline, net_endpoint_state_deleting);
+            }
+        }
+        return 0;
     default:
         assert(0);
         return -1;

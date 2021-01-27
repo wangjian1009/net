@@ -200,7 +200,7 @@ void test_net_endpoint_id_expect_connect_error(
 
     if (delay_ms == 0) {
         test_net_endpoint_connect_will_return(
-            driver, ep_id, net_endpoint_state_network_error, error_source, error_no, msg, -1);
+            driver, ep_id, net_endpoint_state_error, error_source, error_no, msg, -1);
     }
     else {
         test_net_endpoint_connect_will_return(
@@ -208,7 +208,7 @@ void test_net_endpoint_id_expect_connect_error(
 
         test_net_endpoint_connect_delay_process(
             driver, ep_id, target, delay_ms,
-            net_endpoint_state_network_error, error_source, error_no, msg);
+            net_endpoint_state_error, error_source, error_no, msg);
     }
 }
 

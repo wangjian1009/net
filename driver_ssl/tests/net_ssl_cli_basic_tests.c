@@ -109,7 +109,7 @@ static void net_ssl_cli_connect_error(void **state) {
 
     assert_string_equal(
         net_endpoint_state_str(net_endpoint_state(ep)),
-        net_endpoint_state_str(net_endpoint_state_network_error));
+        net_endpoint_state_str(net_endpoint_state_error));
 
     assert_string_equal(
         net_endpoint_error_source_str(net_endpoint_error_source(ep)),
@@ -150,7 +150,7 @@ static void net_ssl_cli_connect_error_delay(void **state) {
 
     assert_string_equal(
         net_endpoint_state_str(net_endpoint_state(ep)),
-        net_endpoint_state_str(net_endpoint_state_network_error));
+        net_endpoint_state_str(net_endpoint_state_error));
 
     assert_string_equal(
         net_endpoint_error_source_str(net_endpoint_error_source(ep)),
