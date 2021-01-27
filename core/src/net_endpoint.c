@@ -445,8 +445,8 @@ int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) 
     }
     
     if (net_endpoint_notify_state_changed(endpoint, old_state) != 0) return -1;
-
-    if (net_endpoint_state(endpoint) == state
+    
+    if (endpoint->m_state == state
         && (state == net_endpoint_state_disable
             || state == net_endpoint_state_read_closed
             || state == net_endpoint_state_write_closed
