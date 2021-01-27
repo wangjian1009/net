@@ -131,7 +131,7 @@ static void net_ebb_endpoint_close_cb(net_timer_t timer, void * ctx) {
             net_endpoint_dump(net_ebb_protocol_tmp_buffer(service), base_endpoint));
     }
 
-    net_endpoint_set_close_after_send(base_endpoint, 1);
+    net_endpoint_set_close_after_send(base_endpoint);
 }
 
 void net_ebb_endpoint_schedule_close(net_endpoint_t base_endpoint) {

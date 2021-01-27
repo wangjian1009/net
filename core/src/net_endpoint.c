@@ -257,29 +257,11 @@ uint8_t net_endpoint_close_after_send(net_endpoint_t endpoint) {
     return endpoint->m_close_after_send;
 }
 
-void net_endpoint_set_close_after_send(net_endpoint_t endpoint, uint8_t is_close_after_send) {
+void net_endpoint_set_close_after_send(net_endpoint_t endpoint) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
 
-    switch(endpoint->m_state) {
-    case net_endpoint_state_resolving:
-    case net_endpoint_state_connecting:
-    case net_endpoint_state_read_closed:
-        endpoint->m_close_after_send = is_close_after_send;
-        if (!net_endpoint_buf_is_empty(endpoint, net_ep_buf_write)) return;
-
-        if (endpoint->m_protocol_debug || endpoint->m_driver_debug) {
-            CPE_INFO(
-                schedule->m_em, "core: %s: auto disable on set close-after-send, state=%s!",
-                net_endpoint_dump(&schedule->m_tmp_buffer, endpoint),
-                net_endpoint_state_str(endpoint->m_state));
-        }
-        
-        if (net_endpoint_set_state(endpoint, net_endpoint_state_disable) != 0) {
-            net_endpoint_set_state(endpoint, net_endpoint_state_deleting);
-        }
-        break;
-    case net_endpoint_state_established:
-        endpoint->m_close_after_send = is_close_after_send;
+    if (net_endpoint_is_active(endpoint)) {
+        endpoint->m_close_after_send = 1;
         if (!net_endpoint_buf_is_empty(endpoint, net_ep_buf_write)) return;
 
         if (endpoint->m_protocol_debug || endpoint->m_driver_debug) {
@@ -288,21 +270,21 @@ void net_endpoint_set_close_after_send(net_endpoint_t endpoint, uint8_t is_close
                 net_endpoint_dump(&schedule->m_tmp_buffer, endpoint),
                 net_endpoint_state_str(endpoint->m_state));
         }
-        
-        if (net_endpoint_set_state(endpoint, net_endpoint_state_write_closed) != 0) {
+
+        if (net_endpoint_set_state(
+                endpoint,
+                endpoint->m_state == net_endpoint_state_established
+                ? net_endpoint_state_write_closed
+                : net_endpoint_state_disable) != 0)
+        {
             net_endpoint_set_state(endpoint, net_endpoint_state_deleting);
         }
-        break;
-    case net_endpoint_state_write_closed:
-        break;
-    case net_endpoint_state_error:
-    case net_endpoint_state_deleting:
-    case net_endpoint_state_disable:
+    }
+    else {
         CPE_ERROR(
             schedule->m_em, "core: %s: can`t set auto close on send in state %s!",
             net_endpoint_dump(&schedule->m_tmp_buffer, endpoint),
             net_endpoint_state_str(endpoint->m_state));
-        break;
     }
 }
 
