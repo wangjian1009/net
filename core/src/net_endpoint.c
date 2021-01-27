@@ -265,7 +265,7 @@ void net_endpoint_set_close_after_send(net_endpoint_t endpoint, uint8_t is_close
     case net_endpoint_state_connecting:
     case net_endpoint_state_read_closed:
         endpoint->m_close_after_send = is_close_after_send;
-        if (net_endpoint_have_any_data(endpoint)) return;
+        if (!net_endpoint_buf_is_empty(endpoint, net_ep_buf_write)) return;
 
         if (endpoint->m_protocol_debug || endpoint->m_driver_debug) {
             CPE_INFO(
@@ -280,7 +280,7 @@ void net_endpoint_set_close_after_send(net_endpoint_t endpoint, uint8_t is_close
         break;
     case net_endpoint_state_established:
         endpoint->m_close_after_send = is_close_after_send;
-        if (net_endpoint_have_any_data(endpoint)) return;
+        if (!net_endpoint_buf_is_empty(endpoint, net_ep_buf_write)) return;
 
         if (endpoint->m_protocol_debug || endpoint->m_driver_debug) {
             CPE_INFO(
@@ -423,7 +423,8 @@ int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) 
         }
     }
 
-    if (state == net_endpoint_state_deleting) {
+    switch(state) {
+    case net_endpoint_state_deleting:
         TAILQ_REMOVE(&endpoint->m_driver->m_endpoints, endpoint, m_next_for_driver);
         TAILQ_INSERT_TAIL(&endpoint->m_driver->m_deleting_endpoints, endpoint, m_next_for_driver);
 
@@ -432,18 +433,31 @@ int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) 
         if (endpoint->m_protocol->m_endpoint_fini) endpoint->m_protocol->m_endpoint_fini(endpoint);
         net_schedule_start_delay_process(schedule);
         return 0;
-    }
-    
-    if (state == net_endpoint_state_established) {
-        endpoint->m_close_after_send = 0;
+    case net_endpoint_state_established:
         endpoint->m_error_source = net_endpoint_error_source_network;
         endpoint->m_error_no = 0;
         if (endpoint->m_error_msg) {
             mem_free(schedule->m_alloc, endpoint->m_error_msg);
             endpoint->m_error_msg = NULL;
         }
+        break;
+    case net_endpoint_state_disable:
+        endpoint->m_close_after_send = 0;
+        break;
+    case net_endpoint_state_resolving:
+        break;
+    case net_endpoint_state_connecting:
+        break;
+    case net_endpoint_state_read_closed:
+        break;
+    case net_endpoint_state_write_closed:
+        endpoint->m_close_after_send = 0;
+        break;
+    case net_endpoint_state_error:
+        endpoint->m_close_after_send = 0;
+        break;
     }
-    
+
     if (net_endpoint_notify_state_changed(endpoint, old_state) != 0) return -1;
     
     if (endpoint->m_state == state
