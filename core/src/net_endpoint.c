@@ -344,9 +344,6 @@ net_endpoint_state_t net_endpoint_state(net_endpoint_t endpoint) {
 }
 
 int net_endpoint_set_prepare_connect(net_endpoint_t endpoint, net_endpoint_prepare_connect_fun_t fun, void * ctx) {
-    if (net_endpoint_is_active(endpoint)) {
-    }
-        
     endpoint->m_prepare_connect = fun;
     endpoint->m_prepare_connect_ctx = ctx;
     return 0;
