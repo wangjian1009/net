@@ -216,7 +216,7 @@ int net_pair_endpoint_update(net_endpoint_t base_endpoint) {
             return 0;
         }
         else {
-            return -1;
+            return 0;
         }
     case net_endpoint_state_write_closed:
         if (endpoint->m_other) {
@@ -236,7 +236,7 @@ int net_pair_endpoint_update(net_endpoint_t base_endpoint) {
             return 0;
         }
         else {
-            return -1;
+            return 0;
         }
     case net_endpoint_state_disable:
         if (endpoint->m_other) {

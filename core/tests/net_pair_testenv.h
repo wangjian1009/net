@@ -13,5 +13,6 @@ net_pair_testenv_t net_pair_testenv_create();
 void net_pair_testenv_free(net_pair_testenv_t env);
 
 void net_pair_testenv_make_pair(net_pair_testenv_t env, net_endpoint_t ep[2]);
+void net_pair_testenv_make_pair_established(net_pair_testenv_t env, net_endpoint_t ep[2]);
 
 #endif

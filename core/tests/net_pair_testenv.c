@@ -21,3 +21,9 @@ void net_pair_testenv_make_pair(net_pair_testenv_t env, net_endpoint_t ep[2]) {
             env->m_env->m_tprotocol, env->m_env->m_tprotocol, 
             ep) == 0);
 }
+
+void net_pair_testenv_make_pair_established(net_pair_testenv_t env, net_endpoint_t ep[2]) {
+    net_pair_testenv_make_pair(env, ep);
+    net_endpoint_set_state(ep[0], net_endpoint_state_established);
+    net_endpoint_set_state(ep[1], net_endpoint_state_established);
+}
