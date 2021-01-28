@@ -118,25 +118,20 @@ int net_sock_endpoint_update(net_endpoint_t base_endpoint) {
     case net_endpoint_state_disable:  {
         if (endpoint->m_fd == -1) return 0;
 
-        assert(!endpoint->m_read_closed || !endpoint->m_write_closed);
+        if (!endpoint->m_read_closed || !endpoint->m_write_closed) {
+            if (cpe_sock_shutdown(endpoint->m_fd, endpoint->m_read_closed ? SHUT_WR : SHUT_WR) < 0) {
+                CPE_ERROR(
+                    driver->m_em, "sock: %s: fd=%d: shutdown error, errno=%d (%s)",
+                    net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
+                    cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+                return -1;
+            }
 
-        if (cpe_sock_shutdown(
-                endpoint->m_fd,
-                endpoint->m_read_closed
-                ? SHUT_WR
-                : SHUT_WR) < 0)
-        {
-            CPE_ERROR(
-                driver->m_em, "sock: %s: fd=%d: shutdown error, errno=%d (%s)",
-                net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
-                cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-            return -1;
-        }
-
-        if (net_endpoint_driver_debug(base_endpoint)) {
-            CPE_INFO(
-                driver->m_em, "sock: %s: fd=%d: shutdown both success!",
-                net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
+            if (net_endpoint_driver_debug(base_endpoint)) {
+                CPE_INFO(
+                    driver->m_em, "sock: %s: fd=%d: shutdown both success!",
+                    net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
+            }
         }
 
         if (endpoint->m_watcher) {
@@ -506,7 +501,9 @@ static void net_sock_endpoint_on_read(net_sock_driver_t driver, net_sock_endpoin
             }
 
             endpoint->m_read_closed = 1;
-            net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_remote_closed, NULL);
+            if (net_endpoint_error_no(base_endpoint) == 0) {
+                net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_remote_closed, NULL);
+            }
 
             if (net_endpoint_state(base_endpoint) == net_endpoint_state_established) {
                 if (net_endpoint_set_state(base_endpoint, net_endpoint_state_read_closed) != 0) {
@@ -537,9 +534,11 @@ static void net_sock_endpoint_on_read(net_sock_driver_t driver, net_sock_endpoin
                     net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
                     cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
 
-                net_endpoint_set_error(
-                    base_endpoint, net_endpoint_error_source_network,
-                    net_endpoint_network_errno_network_error, cpe_sock_errstr(cpe_sock_errno()));
+                if (net_endpoint_error_no(base_endpoint) == 0) {
+                    net_endpoint_set_error(
+                        base_endpoint, net_endpoint_error_source_network,
+                        net_endpoint_network_errno_network_error, cpe_sock_errstr(cpe_sock_errno()));
+                }
 
                 if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
                     net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
@@ -583,7 +582,9 @@ static void net_sock_endpoint_on_write(net_sock_driver_t driver, net_sock_endpoi
             }
 
             endpoint->m_write_closed = 1;
-            net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_remote_closed, NULL);
+            if (net_endpoint_error_no(base_endpoint) == 0) {
+                net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_remote_closed, NULL);
+            }
             if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
                 net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
             }
