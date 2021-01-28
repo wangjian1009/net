@@ -410,6 +410,11 @@ int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) 
         TAILQ_REMOVE(&endpoint->m_driver->m_endpoints, endpoint, m_next_for_driver);
         TAILQ_INSERT_TAIL(&endpoint->m_driver->m_deleting_endpoints, endpoint, m_next_for_driver);
 
+        if (endpoint->m_dns_query) {
+            net_dns_query_free(endpoint->m_dns_query);
+            endpoint->m_dns_query = NULL;
+        }
+
         net_endpoint_clear_data_watcher(endpoint);
         if (endpoint->m_driver->m_endpoint_fini) endpoint->m_driver->m_endpoint_fini(endpoint);
         if (endpoint->m_protocol->m_endpoint_fini) endpoint->m_protocol->m_endpoint_fini(endpoint);
