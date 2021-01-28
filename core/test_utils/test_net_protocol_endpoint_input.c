@@ -16,7 +16,8 @@ struct test_net_protocol_endpoint_input_op {
     uint32_t m_data_size;
 };
 
-int test_net_protocol_endpoint_input(net_endpoint_t endpoint) {
+int test_net_protocol_endpoint_input(net_endpoint_t base_endpoint) {
+    test_net_protocol_endpoint_t endpoint = net_endpoint_protocol_data(base_endpoint);
     return 0;
 }
 
@@ -27,8 +28,10 @@ void test_net_protocol_endpoint_input_policy_clear(test_net_protocol_endpoint_t 
     case test_net_protocol_endpoint_input_remove:
         break;
     case test_net_protocol_endpoint_input_link:
-        test_net_protocol_endpoint_link_free(endpoint->m_input_policy.m_link.m_link);
-        assert(endpoint->m_input_policy.m_link.m_link == NULL);
+        if (endpoint->m_input_policy.m_link.m_link) {
+            test_net_protocol_endpoint_link_free(endpoint->m_input_policy.m_link.m_link);
+            assert(endpoint->m_input_policy.m_link.m_link == NULL);
+        }
         break;
     }
 

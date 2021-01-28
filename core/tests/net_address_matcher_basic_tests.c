@@ -42,7 +42,7 @@ static void rule_basic(void **state) {
         net_address_rule_lookup(ctx->m_address_matcher, "www.google.com") != NULL);
 }
 
-int net_core_address_matcher_basic_tests() {
+int net_address_matcher_basic_tests() {
 	const struct CMUnitTest address_matcher_basic_tests[] = {
 		cmocka_unit_test_setup_teardown(rule_basic, setup, teardown),
 	};
