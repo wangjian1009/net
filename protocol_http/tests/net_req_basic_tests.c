@@ -14,13 +14,17 @@ static int teardown(void **state) {
     return 0;
 }
 
-static void http_init(void **state) {
+static void http_req_basic(void **state) {
     net_http_testenv_t env = *state;
+
+    net_http_endpoint_t ep = net_http_testenv_create_ep(env);
+
+    //net_http_req_t req = net_http_req_
 }
 
 int net_req_basic_tests() {
 	const struct CMUnitTest tests[] = {
-		cmocka_unit_test_setup_teardown(http_init, setup, teardown),
+		cmocka_unit_test_setup_teardown(http_req_basic, setup, teardown),
 	};
 	return cmocka_run_group_tests(tests, NULL, NULL);
 }

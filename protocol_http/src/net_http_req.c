@@ -176,6 +176,14 @@ int net_http_req_set_reader(
     return 0;
 }
 
+void net_http_req_clear_reader(net_http_req_t req) {
+    req->m_res_ctx = NULL;
+    req->m_res_on_begin = NULL;
+    req->m_res_on_head = NULL;
+    req->m_res_on_body = NULL;
+    req->m_res_on_complete = NULL;
+}
+
 uint16_t net_http_req_res_code(net_http_req_t req) {
     return req->m_res_code;
 }

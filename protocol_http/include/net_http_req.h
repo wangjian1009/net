@@ -25,8 +25,6 @@ int net_http_req_write_commit(net_http_req_t http_req);
 const char * net_http_req_state_str(net_http_req_state_t req_state);
 
 /*read*/
-net_http_res_state_t net_http_req_res_state(net_http_req_t req);
-
 typedef enum net_http_res_op_result {
     net_http_res_op_success,
     net_http_res_op_ignore,
@@ -52,6 +50,8 @@ int net_http_req_set_reader(
     net_http_req_on_res_head_fun_t on_head,
     net_http_req_on_res_body_fun_t on_body,
     net_http_req_on_res_complete_fun_t on_complete);
+
+void net_http_req_clear_reader(net_http_req_t req);
 
 uint16_t net_http_req_res_code(net_http_req_t req);
 const char * net_http_req_res_message(net_http_req_t req);
