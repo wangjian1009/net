@@ -168,6 +168,16 @@ int net_http_endpoint_input(net_endpoint_t endpoint) {
     net_http_endpoint_t http_ep = net_endpoint_protocol_data(endpoint);
     net_http_protocol_t http_protocol = net_protocol_data(net_endpoint_protocol(endpoint));
 
+    /* uint32_t isz = net_endpoint_buf_size(http_ep->m_endpoint, net_ep_buf_read); */
+    /* void * idata = NULL; */
+    /* net_endpoint_buf_peak_with_size(http_ep->m_endpoint, net_ep_buf_read, isz, &idata); */
+
+    /* CPE_ERROR( */
+    /*     http_protocol->m_em, */
+    /*     "http: <<< input buf %d\n%s", */
+    /*     isz, */
+    /*     mem_buffer_dump_data(net_http_protocol_tmp_buffer(http_protocol), idata, isz, 0)); */
+    
     if (net_endpoint_buf_append_from_self(http_ep->m_endpoint, net_ep_buf_http_in, net_ep_buf_read, 0) != 0) {
         CPE_ERROR(
             http_protocol->m_em,
@@ -177,6 +187,8 @@ int net_http_endpoint_input(net_endpoint_t endpoint) {
     }
 
     while(!net_endpoint_buf_is_empty(endpoint, net_ep_buf_http_in)) {
+        uint32_t before_process_size = net_endpoint_buf_size(endpoint, net_ep_buf_http_in);
+
         if (http_ep->m_connection_type != net_http_connection_type_upgrade) {
             if (net_http_endpoint_do_process(http_protocol, http_ep, endpoint) != 0) return -1;
 
@@ -199,7 +211,6 @@ int net_http_endpoint_input(net_endpoint_t endpoint) {
                 }
                 else {
                     //if (net_http_endpoint_flush(http_ep) != 0) return -1;
-                    continue;
                 }
             }
             else {
@@ -225,6 +236,17 @@ int net_http_endpoint_input(net_endpoint_t endpoint) {
             /* else { */
             /*     return 0; */
             /* } */
+        }
+
+        if (net_endpoint_state(endpoint) == net_endpoint_state_deleting) break;
+        
+        if (before_process_size == net_endpoint_buf_size(endpoint, net_ep_buf_http_in)) {
+            CPE_ERROR(
+                http_protocol->m_em,
+                "http: %s: process http input, buf-size=%d, no any processed",
+                net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint),
+                before_process_size);
+            break;
         }
     }
 
