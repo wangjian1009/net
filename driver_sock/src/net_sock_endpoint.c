@@ -71,7 +71,10 @@ int net_sock_endpoint_update(net_endpoint_t base_endpoint) {
             return -1;
         }
         endpoint->m_read_closed = 1;
-
+        if (endpoint->m_watcher) {
+            net_watcher_update_read(endpoint->m_watcher, 0);
+        }
+        
         assert(!endpoint->m_write_closed);
         
         if (net_endpoint_driver_debug(base_endpoint)) {
@@ -80,10 +83,6 @@ int net_sock_endpoint_update(net_endpoint_t base_endpoint) {
                 net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
         }
 
-        if (endpoint->m_watcher) {
-            net_watcher_update_read(endpoint->m_watcher, 0);
-        }
-        
         return 0;
     case net_endpoint_state_write_closed:
         if (endpoint->m_fd == -1) return 0;
@@ -501,6 +500,10 @@ static void net_sock_endpoint_on_read(net_sock_driver_t driver, net_sock_endpoin
             }
 
             endpoint->m_read_closed = 1;
+            if (endpoint->m_watcher) {
+                net_watcher_update_read(endpoint->m_watcher, 0);
+            }
+
             if (net_endpoint_error_no(base_endpoint) == 0) {
                 net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_remote_closed, NULL);
             }
