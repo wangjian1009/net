@@ -14,7 +14,6 @@ net_http_protocol_t net_http_endpoint_protocol(net_http_endpoint_t http_ep);
 net_endpoint_t net_http_endpoint_net_ep(net_http_endpoint_t http_ep);
 net_schedule_t net_http_endpoint_schedule(net_http_endpoint_t http_ep);
 
-net_http_state_t net_http_endpoint_state(net_http_endpoint_t http_ep);
 net_endpoint_t net_http_endpoint_net_ep(net_http_endpoint_t http_ep);
 
 uint32_t net_http_endpoint_reconnect_span_ms(net_http_endpoint_t http_ep);
@@ -36,8 +35,6 @@ int net_http_endpoint_flush(net_http_endpoint_t http_ep);
 
 void * net_http_endpoint_data(net_http_endpoint_t http_ep);
 net_http_endpoint_t net_http_endpoint_from_data(void * data);
-
-const char * net_http_state_str(net_http_state_t state);
 
 NET_END_DECL
 

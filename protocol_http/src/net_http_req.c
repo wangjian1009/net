@@ -85,21 +85,19 @@ void net_http_req_free_i(net_http_req_t req, uint8_t force) {
     req->m_res_on_complete = NULL;
 
     if (!force) {
-        if (http_ep->m_state == net_http_state_connecting || http_ep->m_state == net_http_state_established) { /*在正常连接的过程中 */
-            if (req->m_flushed_size < (req->m_head_size + req->m_body_size)) {
-                /*数据还没有发送，则标记后返回，等待后续清理 */
-                req->m_free_after_processed = 1;
-                return;
-            }
-            
-            if (http_ep->m_request_id_tag == NULL) {
-                /*没有根据ID匹配的规则，则必须等待响应接收完成以后才能释放 */
-                req->m_free_after_processed = 1;
-                return;
-            }
+        if (req->m_flushed_size < (req->m_head_size + req->m_body_size)) {
+            /*数据还没有发送，则标记后返回，等待后续清理 */
+            req->m_free_after_processed = 1;
+            return;
+        }
+
+        if (http_ep->m_request_id_tag == NULL) {
+            /*没有根据ID匹配的规则，则必须等待响应接收完成以后才能释放 */
+            req->m_free_after_processed = 1;
+            return;
         }
     }
-    
+
     if (http_ep->m_current_res.m_req == req) {
         http_ep->m_current_res.m_req = NULL;
     }

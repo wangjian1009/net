@@ -16,7 +16,6 @@
 #include "net_http_req_i.h"
 
 static void net_http_endpoint_reset_data(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_res_result_t result);
-static int net_http_endpoint_notify_state_changed(net_http_endpoint_t http_ep, net_http_state_t old_state);
 
 net_http_endpoint_t
 net_http_endpoint_create(net_driver_t driver, net_http_protocol_t http_protocol) {
@@ -44,10 +43,6 @@ net_http_endpoint_t net_http_endpoint_from_data(void * data) {
     return ((net_http_endpoint_t)data) - 1;
 }
 
-net_http_state_t net_http_endpoint_state(net_http_endpoint_t http_ep) {
-    return http_ep->m_state;
-}
-
 net_schedule_t net_http_endpoint_schedule(net_http_endpoint_t http_ep) {
     return net_endpoint_schedule(http_ep->m_endpoint);
 }
@@ -67,12 +62,12 @@ net_http_connection_type_t net_http_endpoint_connection_type(net_http_endpoint_t
 int net_http_endpoint_set_remote(net_http_endpoint_t http_ep, const char * url) {
     net_http_protocol_t http_protocol = net_http_endpoint_protocol(http_ep);;
 
-    if (http_ep->m_state != net_http_state_disable) {
+    if (net_endpoint_state(http_ep->m_endpoint) != net_endpoint_state_disable) {
         CPE_ERROR(
             http_protocol->m_em,
             "http: %s: set remote and path: can`t set remote in state %s",
             net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint),
-            net_http_state_str(http_ep->m_state));
+            net_endpoint_state_str(net_endpoint_state(http_ep->m_endpoint)));
         return -1;
     }
     
@@ -139,48 +134,12 @@ int net_http_endpoint_set_remote(net_http_endpoint_t http_ep, const char * url) 
     return 0;
 }
 
-int net_http_endpoint_set_state(net_http_endpoint_t http_ep, net_http_state_t state) {
-    if (http_ep->m_state == state) return 0;
-    
-    if (net_endpoint_protocol_debug(http_ep->m_endpoint) >= 1) {
-        net_http_protocol_t http_protocol = net_http_endpoint_protocol(http_ep);;
-        CPE_INFO(
-            http_protocol->m_em, "http: %s: state %s ==> %s",
-            net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint),
-            net_http_state_str(http_ep->m_state),
-            net_http_state_str(state));
-    }
-
-    net_http_state_t old_state = http_ep->m_state;
-    
-    http_ep->m_state = state;
-
-    switch (http_ep->m_state) {
-    case net_http_state_disable:
-    case net_http_state_error:
-        http_ep->m_connection_type = net_http_connection_type_keep_alive;
-        break;
-    default:
-        break;
-    }
-    
-    if (net_http_endpoint_notify_state_changed(http_ep, old_state) != 0) return -1;
-
-    return 0;
-}
-
-static int net_http_endpoint_notify_state_changed(net_http_endpoint_t http_ep, net_http_state_t old_state) {
-    net_http_protocol_t http_protocol = net_http_endpoint_protocol(http_ep);;
-    return 0;
-}
-
 int net_http_endpoint_init(net_endpoint_t endpoint) {
     net_http_endpoint_t http_ep = net_endpoint_protocol_data(endpoint);
     net_http_protocol_t http_protocol = net_protocol_data(net_endpoint_protocol(endpoint));
     net_schedule_t schedule = net_endpoint_schedule(endpoint);
 
     http_ep->m_endpoint = endpoint;
-    http_ep->m_state = net_http_state_disable;
     http_ep->m_connection_type = net_http_connection_type_keep_alive;
     http_ep->m_request_id_tag = NULL;
     http_ep->m_req_count = 0;
@@ -217,10 +176,10 @@ int net_http_endpoint_input(net_endpoint_t endpoint) {
         return -1;
     }
 
-    while(http_ep->m_state == net_http_state_established && !net_endpoint_buf_is_empty(endpoint, net_ep_buf_http_in)) {
+    while(!net_endpoint_buf_is_empty(endpoint, net_ep_buf_http_in)) {
         if (http_ep->m_connection_type != net_http_connection_type_upgrade) {
             if (net_http_endpoint_do_process(http_protocol, http_ep, endpoint) != 0) return -1;
-            
+
             if (http_ep->m_current_res.m_state == net_http_res_state_completed) {
                 if (http_ep->m_current_res.m_req) {
                     net_http_req_free_i(http_ep->m_current_res.m_req, 1);
@@ -269,7 +228,7 @@ int net_http_endpoint_input(net_endpoint_t endpoint) {
         }
     }
 
-    return http_ep->m_state == net_http_state_established ? 0 : -1;
+    return 0;
 }
 
 int net_http_endpoint_on_state_change(net_endpoint_t endpoint, net_endpoint_state_t old_state) {
@@ -281,26 +240,17 @@ int net_http_endpoint_on_state_change(net_endpoint_t endpoint, net_endpoint_stat
     case net_endpoint_state_write_closed:
         break;
     case net_endpoint_state_disable:
-        net_http_endpoint_set_state(http_ep, net_http_state_disable);
         net_http_endpoint_reset_data(http_protocol, http_ep, net_http_res_canceled);
         break;
     case net_endpoint_state_error:
-        net_http_endpoint_set_state(http_ep, net_http_state_error);
         net_http_endpoint_reset_data(http_protocol, http_ep, net_http_res_canceled);
         break;
     case net_endpoint_state_resolving:
-        if (net_http_endpoint_set_state(http_ep, net_http_state_connecting) != 0) {
-            net_http_endpoint_set_state(http_ep, net_http_state_error);
-        }
         break;
     case net_endpoint_state_connecting:
         http_ep->m_connecting_time_ms = cur_time_ms();
-        if (net_http_endpoint_set_state(http_ep, net_http_state_connecting) != 0) {
-            net_http_endpoint_set_state(http_ep, net_http_state_error);
-        }
         break;
     case net_endpoint_state_established:
-        net_http_endpoint_set_state(http_ep, net_http_state_established);
         break;
     case net_endpoint_state_deleting:
         assert(0);
@@ -388,16 +338,18 @@ int net_http_endpoint_flush(net_http_endpoint_t http_ep) {
                 if (req->m_head_size > 4 && req_sz >= req->m_head_size) {
                     char * p = buf + req->m_head_size - 4;
                     *p = 0;
-                        
-                    CPE_INFO(
-                        http_protocol->m_em, "http: %s: req %d: >>> head=%d/%d, body=%d/%d\n%s",
-                        net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), req->m_http_ep->m_endpoint),
-                        req->m_id,
-                        req->m_head_size,
-                        req->m_head_size,
-                        req_sz - req->m_head_size,
-                        req->m_body_size,
-                        buf);
+
+                    if (net_endpoint_protocol_debug(http_ep->m_endpoint) >= 2) {
+                        CPE_INFO(
+                            http_protocol->m_em, "http: %s: req %d: >>> head=%d/%d, body=%d/%d\n%s",
+                            net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), req->m_http_ep->m_endpoint),
+                            req->m_id,
+                            req->m_head_size,
+                            req->m_head_size,
+                            req_sz - req->m_head_size,
+                            req->m_body_size,
+                            buf);
+                    }
 
                     *p = '\r';
                 }
@@ -473,18 +425,5 @@ static void net_http_endpoint_reset_data(net_http_protocol_t http_protocol, net_
         }
 
         net_http_req_free_i(req, 1);
-    }
-}
-
-const char * net_http_state_str(net_http_state_t state) {
-    switch(state) {
-    case net_http_state_disable:
-        return "http-disable";
-    case net_http_state_connecting:
-        return "http-connecting";
-    case net_http_state_established:
-        return "http-established";
-    case net_http_state_error:
-        return "http-error";
     }
 }

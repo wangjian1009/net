@@ -32,5 +32,6 @@ net_http_endpoint_t net_http_testenv_create_ep_established(net_http_testenv_t en
 net_http_testenv_response_t net_http_testenv_req_commit(net_http_testenv_t env, net_http_req_t req);
 
 const char * net_http_testenv_ep_recv_write(net_http_testenv_t env, net_http_endpoint_t ep);
+int net_http_testenv_ep_send_response(net_http_testenv_t env, net_http_endpoint_t ep, const char * response);
     
 #endif

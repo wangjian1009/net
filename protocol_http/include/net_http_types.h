@@ -8,13 +8,6 @@ typedef struct net_http_protocol * net_http_protocol_t;
 typedef struct net_http_endpoint * net_http_endpoint_t;
 typedef struct net_http_req * net_http_req_t;
 
-typedef enum net_http_state {
-    net_http_state_disable,
-    net_http_state_connecting,
-    net_http_state_established,
-    net_http_state_error,
-} net_http_state_t;
-
 typedef enum net_http_connection_type {
     net_http_connection_type_keep_alive,
     net_http_connection_type_close,

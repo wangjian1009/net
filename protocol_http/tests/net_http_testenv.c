@@ -1,3 +1,4 @@
+#include "cpe/pal/pal_string.h"
 #include "cmocka_all.h"
 #include "net_schedule.h"
 #include "net_http_testenv.h"
@@ -83,4 +84,13 @@ net_http_testenv_ep_recv_write(net_http_testenv_t env, net_http_endpoint_t http_
 
     o_buf[sz] = 0;
     return o_buf;
+}
+
+int net_http_testenv_ep_send_response(net_http_testenv_t env, net_http_endpoint_t http_ep, const char * response) {
+    net_endpoint_t ep = net_endpoint_from_protocol_data(env->m_schedule, http_ep);
+
+    uint32_t sz = strlen(response);
+    if (sz == 0) return 0;
+    
+    return net_endpoint_buf_append(ep, net_ep_buf_read, response, sz);
 }

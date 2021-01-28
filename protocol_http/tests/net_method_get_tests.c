@@ -16,7 +16,7 @@ static int teardown(void **state) {
     return 0;
 }
 
-static void http_req_get_no_body(void **state) {
+static void http_get_req_no_body(void **state) {
     net_http_testenv_t env = *state;
 
     net_http_endpoint_t ep = net_http_testenv_create_ep(env);
@@ -35,9 +35,9 @@ static void http_req_get_no_body(void **state) {
         );
 }
 
-int net_req_basic_tests() {
+int net_http_method_get_tests() {
 	const struct CMUnitTest tests[] = {
-		cmocka_unit_test_setup_teardown(http_req_get_no_body, setup, teardown),
+		cmocka_unit_test_setup_teardown(http_get_req_no_body, setup, teardown),
 	};
 	return cmocka_run_group_tests(tests, NULL, NULL);
 }
