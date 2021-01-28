@@ -732,6 +732,10 @@ void * net_endpoint_protocol_data(net_endpoint_t endpoint) {
     return ((char*)(endpoint + 1)) + schedule->m_endpoint_driver_capacity;
 }
 
+net_endpoint_t net_endpoint_from_protocol_data(net_schedule_t schedule, void * data) {
+    return (net_endpoint_t)(((char*)data) - schedule->m_endpoint_driver_capacity) - 1;
+}
+
 void net_endpoint_set_data_watcher(
     net_endpoint_t endpoint,
     void * watcher_ctx,

@@ -20,13 +20,17 @@ struct net_http_testenv {
     net_protocol_t m_tprotocol;
     net_http_protocol_t m_http_protocol;
     net_http_testenv_response_list_t m_responses;
+    struct mem_buffer m_tmp_buffer;
 };
 
 net_http_testenv_t net_http_testenv_create();
 void net_http_testenv_free(net_http_testenv_t env);
 
 net_http_endpoint_t net_http_testenv_create_ep(net_http_testenv_t env);
+net_http_endpoint_t net_http_testenv_create_ep_established(net_http_testenv_t env);
 
 net_http_testenv_response_t net_http_testenv_req_commit(net_http_testenv_t env, net_http_req_t req);
 
+const char * net_http_testenv_ep_recv_write(net_http_testenv_t env, net_http_endpoint_t ep);
+    
 #endif

@@ -129,6 +129,7 @@ void net_endpoint_clear_monitor_by_ctx(net_endpoint_t endpoint, void * ctx);
 
 /*protocol*/
 void * net_endpoint_protocol_data(net_endpoint_t endpoint);
+net_endpoint_t net_endpoint_from_protocol_data(net_schedule_t schedule, void * data);
 
 /**/
 const char * net_endpoint_network_errno_str(net_endpoint_network_errno_t error);

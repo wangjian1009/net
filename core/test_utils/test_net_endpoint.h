@@ -5,6 +5,7 @@
 
 typedef enum test_net_endpoint_write_policy_type {
     test_net_endpoint_write_mock,
+    test_net_endpoint_write_noop,
     test_net_endpoint_write_keep,
     test_net_endpoint_write_remove,
     test_net_endpoint_write_link,
@@ -84,12 +85,16 @@ void test_net_endpoint_expect_connect_to_endpoint(
 void test_net_endpoint_expect_set_no_delay(net_endpoint_t endpoint, uint8_t no_delay);
 void test_net_endpoint_expect_get_mss(net_endpoint_t endpoint, uint32_t mss);
 
-/*utils.write*/
+/*utils.write.keep*/
 void test_net_next_endpoint_expect_write_keep(
     test_net_driver_t driver, net_endpoint_buf_type_t keep_buf);
 
 void test_net_endpoint_expect_write_keep(
     net_endpoint_t base_endpoint, net_endpoint_buf_type_t keep_buf);
+
+/*utils.write.noop*/
+void test_net_next_endpoint_expect_write_noop(test_net_driver_t driver);
+void test_net_endpoint_expect_write_noop(net_endpoint_t base_endpoint);
 
 /*utils.read*/
 int test_net_driver_read_from_other(

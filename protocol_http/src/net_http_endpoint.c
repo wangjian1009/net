@@ -166,10 +166,6 @@ int net_http_endpoint_set_state(net_http_endpoint_t http_ep, net_http_state_t st
     
     if (net_http_endpoint_notify_state_changed(http_ep, old_state) != 0) return -1;
 
-    if (http_ep->m_state == net_http_state_established) {
-        if (net_http_endpoint_flush(http_ep) != 0) return -1;
-    }
-
     return 0;
 }
 
@@ -334,8 +330,6 @@ int net_http_endpoint_write(
 
 int net_http_endpoint_flush(net_http_endpoint_t http_ep) {
     net_http_protocol_t http_protocol = net_http_endpoint_protocol(http_ep);
-
-    if (http_ep->m_state != net_http_state_established) return 0;
 
     if (http_ep->m_connection_type == net_http_connection_type_upgrade) {
         if (net_endpoint_buf_append_from_self(http_ep->m_endpoint, net_ep_buf_write, net_ep_buf_http_out, 0) != 0) {
