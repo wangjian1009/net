@@ -103,25 +103,20 @@ int net_http_endpoint_do_process(net_http_protocol_t http_protocol, net_http_end
             }
         }
         
-        CPE_ERROR(http_protocol->m_em, "xxxx 1");
         net_endpoint_buf_consume(endpoint, net_ep_buf_http_in, buf_size);
 
         http_ep->m_current_res.m_req = req;
         if (req->m_req_method == net_http_req_method_head) {
-            CPE_ERROR(http_protocol->m_em, "xxxx 2");
             if (net_http_req_input_body_set_complete(http_protocol, http_ep, endpoint, net_http_res_complete) != 0) {
                 return -1;
             }
         }
         else {
-            CPE_ERROR(http_protocol->m_em, "xxxx 3");
             http_ep->m_current_res.m_state = net_http_res_state_reading_body;
         }
     }
 
-    CPE_ERROR(http_protocol->m_em, "xxxx 4");
     if (http_ep->m_current_res.m_state == net_http_res_state_reading_body) {
-        CPE_ERROR(http_protocol->m_em, "xxxx 5");
         switch(http_ep->m_current_res.m_trans_encoding) {
         case net_http_trans_encoding_none:
             if (net_http_endpoint_input_body_encoding_none(http_protocol, http_ep, endpoint) != 0) return -1;
@@ -132,7 +127,6 @@ int net_http_endpoint_do_process(net_http_protocol_t http_protocol, net_http_end
         }
     }
 
-    CPE_ERROR(http_protocol->m_em, "xxxx 6");
     return 0;
 }
 
