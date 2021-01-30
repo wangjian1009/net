@@ -14,6 +14,21 @@ extern struct wslay_event_callbacks s_net_ws_cli_endpoint_callbacks;
 
 int net_ws_cli_endpoint_send_handshake(net_endpoint_t base_endpoint, net_ws_cli_endpoint_t endpoint);
 
+net_ws_cli_endpoint_t
+net_ws_cli_endoint_cast(net_endpoint_t base_endpoint) {
+    net_protocol_t protocol = net_endpoint_protocol(base_endpoint);
+    return net_protocol_endpoint_init_fun(protocol) == net_ws_cli_endpoint_init
+        ? net_endpoint_protocol_data(base_endpoint)
+        : NULL;
+}
+
+net_endpoint_t net_ws_cli_endpoint_stream(net_endpoint_t base_endpoint) {
+    net_ws_cli_endpoint_t endpoint = net_ws_cli_endoint_cast(base_endpoint);
+    if (endpoint == NULL) return NULL;
+    if (endpoint->m_stream == NULL) return NULL;
+    return net_endpoint_from_data(endpoint->m_stream);
+}
+
 int net_ws_cli_endpoint_init(net_endpoint_t base_endpoint) {
     net_ws_cli_endpoint_t endpoint = net_endpoint_protocol_data(base_endpoint);
     net_ws_cli_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));

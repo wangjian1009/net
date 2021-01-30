@@ -33,7 +33,7 @@ static void net_ws_stream_pair_basic(void **state) {
         net_endpoint_state_str(net_endpoint_state(cli_ep)),
         net_endpoint_state_str(net_endpoint_state_established));
 
-    net_endpoint_t svr_ep = net_ws_stream_pair_testenv_get_svr_ep(env, cli_ep);
+    net_endpoint_t svr_ep = net_ws_stream_pair_testenv_get_svr_stream(env, cli_ep);
     assert_true(svr_ep != NULL);
 
     /*client -> server*/
@@ -98,7 +98,7 @@ static void net_ws_stream_pair_input_handshake(void **state) {
         net_endpoint_state_str(net_endpoint_state(cli_ep)),
         net_endpoint_state_str(net_endpoint_state_established));
 
-    net_endpoint_t svr_ep = net_ws_stream_pair_testenv_get_svr_ep(env, cli_ep);
+    net_endpoint_t svr_ep = net_ws_stream_pair_testenv_get_svr_stream(env, cli_ep);
     assert_true(svr_ep != NULL);
     
     test_net_endpoint_assert_buf_memory(svr_ep, net_ep_buf_read, "abcd", 4);
@@ -129,7 +129,7 @@ static void net_ws_stream_pair_input_connecting(void **state) {
         net_endpoint_state_str(net_endpoint_state(cli_ep)),
         net_endpoint_state_str(net_endpoint_state_established));
 
-    net_endpoint_t svr_ep = net_ws_stream_pair_testenv_get_svr_ep(env, cli_ep);
+    net_endpoint_t svr_ep = net_ws_stream_pair_testenv_get_svr_stream(env, cli_ep);
     assert_true(svr_ep != NULL);
     
     test_net_endpoint_assert_buf_memory(svr_ep, net_ep_buf_read, "abcd", 4);

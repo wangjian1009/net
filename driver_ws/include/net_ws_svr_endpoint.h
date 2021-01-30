@@ -4,11 +4,8 @@
 
 NET_BEGIN_DECL
 
-net_endpoint_t
-net_ws_svr_endpoint_create(
-    net_ws_svr_driver_t driver, net_protocol_t protocol);
-
-net_endpoint_t net_ws_svr_endpoint_underline(net_endpoint_t ws_endpoint);
+net_ws_svr_endpoint_t net_ws_svr_endpoint_cast(net_endpoint_t endpoint);
+net_endpoint_t net_ws_svr_endpoint_stream(net_endpoint_t endpoint);
 
 NET_END_DECL
 

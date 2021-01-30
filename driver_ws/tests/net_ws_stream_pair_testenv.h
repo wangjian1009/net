@@ -13,7 +13,7 @@ struct net_ws_stream_pair_testenv {
 net_ws_stream_pair_testenv_t net_ws_stream_pair_testenv_create();
 void net_ws_stream_pair_testenv_free(net_ws_stream_pair_testenv_t env);
 
-net_endpoint_t net_ws_stream_pair_testenv_get_svr_ep(
+net_endpoint_t net_ws_stream_pair_testenv_get_svr_stream(
     net_ws_stream_pair_testenv_t env, net_endpoint_t client_ep);
     
 #endif

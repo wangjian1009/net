@@ -8,7 +8,7 @@ struct net_ws_cli_stream_driver {
     mem_allocrator_t m_alloc;
     error_monitor_t m_em;
     net_driver_t m_underline_driver;
-    net_ws_cli_protocol_t m_underline_protocol;
+    net_protocol_t m_underline_protocol;
 };
 
 mem_buffer_t net_ws_cli_driver_tmp_buffer(net_ws_cli_stream_driver_t driver);

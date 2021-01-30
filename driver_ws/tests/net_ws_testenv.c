@@ -6,8 +6,8 @@
 #include "net_ws_testenv.h"
 #include "net_ws_cli_protocol.h"
 #include "net_ws_cli_stream_driver.h"
-#include "net_ws_cli_endpoint_i.h"
-#include "net_ws_svr_endpoint_i.h"
+#include "net_ws_svr_protocol.h"
+#include "net_ws_svr_stream_driver.h"
 
 net_ws_testenv_t net_ws_testenv_create() {
     net_ws_testenv_t env = mem_alloc(test_allocrator(), sizeof(struct net_ws_testenv));
@@ -21,11 +21,14 @@ net_ws_testenv_t net_ws_testenv_create() {
     
     env->m_cli_stream_driver = net_ws_cli_stream_driver_create(
         env->m_schedule, NULL,
-        env->m_cli_protocol, net_driver_from_data(env->m_tdriver),
+        net_driver_from_data(env->m_tdriver),
         test_allocrator(), env->m_em);
 
-    env->m_svr_driver = net_ws_svr_driver_create(
-        env->m_schedule, NULL, net_driver_from_data(env->m_tdriver),
+    env->m_svr_protocol = net_ws_svr_protocol_create(env->m_schedule, NULL, test_allocrator(), env->m_em);
+
+    env->m_svr_driver = net_ws_svr_stream_driver_create(
+        env->m_schedule, NULL,
+        net_driver_from_data(env->m_tdriver),
         test_allocrator(), env->m_em);
     
     return env;
@@ -70,9 +73,9 @@ net_ws_testenv_create_svr_acceptor(
     return acceptor;
 }
 
-net_endpoint_t net_ws_testenv_create_svr_endpoint(net_ws_testenv_t env) {
+net_endpoint_t net_ws_testenv_create_svr_stream(net_ws_testenv_t env) {
     net_endpoint_t endpoint =
-        net_ws_svr_endpoint_create(env->m_svr_driver, env->m_test_protocol);
+        net_ws_svr_stream_endpoint_create(env->m_svr_driver, env->m_test_protocol);
 
     net_endpoint_set_driver_debug(endpoint, 1);
 

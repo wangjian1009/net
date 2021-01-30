@@ -11,10 +11,17 @@ static void net_ws_cli_stream_driver_fini(net_driver_t driver);
 
 net_ws_cli_stream_driver_t
 net_ws_cli_stream_driver_create(
-    net_schedule_t schedule, const char * addition_name,
-    net_ws_cli_protocol_t underline_protocol, net_driver_t underline_driver,
+    net_schedule_t schedule, const char * addition_name, net_driver_t underline_driver,
     mem_allocrator_t alloc, error_monitor_t em)
 {
+    net_ws_cli_protocol_t underline_protocol = net_ws_cli_protocol_find(schedule, addition_name);
+    if (underline_protocol == NULL) {
+        underline_protocol = net_ws_cli_protocol_create(schedule, addition_name, alloc, em);
+        if (underline_protocol == NULL) {
+            return NULL;
+        }
+    }
+    
     char name[64];
     if (addition_name) {
         snprintf(name, sizeof(name), "ws-cli-%s", addition_name);
@@ -54,7 +61,7 @@ net_ws_cli_stream_driver_create(
     ws_driver->m_alloc = alloc;
     ws_driver->m_em = em;
     ws_driver->m_underline_driver = underline_driver;
-    ws_driver->m_underline_protocol = underline_protocol;
+    ws_driver->m_underline_protocol = net_protocol_from_data(underline_protocol);
 
     return ws_driver;
 }

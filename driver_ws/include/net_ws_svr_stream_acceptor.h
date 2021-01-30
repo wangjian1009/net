@@ -1,0 +1,10 @@
+#ifndef NET_WS_SVR_STREAM_ACCEPTOR_H_INCLEDED
+#define NET_WS_SVR_STREAM_ACCEPTOR_H_INCLEDED
+#include "net_ws_types.h"
+
+NET_BEGIN_DECL
+
+
+NET_END_DECL
+
+#endif
