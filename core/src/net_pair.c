@@ -29,7 +29,7 @@ int net_pair_endpoint_make(net_schedule_t schedule, net_protocol_t p0, net_proto
         return -1;
     }
 
-    if (net_pair_endpoint_link(endpoint_a, endpoint_z, 0) != 0) {
+    if (net_pair_endpoint_link(endpoint_a, endpoint_z) != 0) {
         net_endpoint_free(endpoint_a);
         net_endpoint_free(endpoint_z);
         return -1;
@@ -55,7 +55,7 @@ net_endpoint_t net_pair_endpoint_other(net_endpoint_t base_endpoint) {
     return endpoint->m_other ? net_endpoint_from_data(endpoint->m_other) : NULL;
 }
 
-int net_pair_endpoint_link(net_endpoint_t base_a, net_endpoint_t base_z, uint8_t state_bind) {
+int net_pair_endpoint_link(net_endpoint_t base_a, net_endpoint_t base_z) {
     net_schedule_t schedule = net_endpoint_schedule(base_a);
 
     /*检查a*/
@@ -94,11 +94,16 @@ int net_pair_endpoint_link(net_endpoint_t base_a, net_endpoint_t base_z, uint8_t
 
     assert(a->m_other == NULL);
     a->m_other = z;
-    a->m_is_state_bind = state_bind;
     
     assert(z->m_other == NULL);
     z->m_other = a;
-    z->m_is_state_bind = state_bind;
+
+    if (net_endpoint_state(base_a) == net_endpoint_state_established
+        && net_endpoint_state(base_z) == net_endpoint_state_established)
+    {
+        a->m_is_state_bind = 1;
+        z->m_is_state_bind = 1;
+    }
 
     if (net_endpoint_driver_debug(base_a) > net_endpoint_driver_debug(base_z)) {
         net_endpoint_set_driver_debug(base_z, net_endpoint_driver_debug(base_a));
@@ -108,15 +113,6 @@ int net_pair_endpoint_link(net_endpoint_t base_a, net_endpoint_t base_z, uint8_t
     }
 
     return 0;
-}
-
-void net_pair_endpoint_set_state_bind(net_endpoint_t base_endpoint, uint8_t connected) {
-    net_pair_endpoint_t endpoint = net_endpoint_data(base_endpoint);
-    endpoint->m_is_state_bind = connected;
-
-    if (endpoint->m_other) {
-        endpoint->m_other->m_is_state_bind = connected;
-    }
 }
 
 int net_pair_endpoint_init(net_endpoint_t base_endpoint) {
@@ -201,7 +197,6 @@ int net_pair_endpoint_connect(net_endpoint_t base_endpoint) {
         net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
         return 0;
     }
-    net_pair_endpoint_set_state_bind(base_endpoint, 1);
 
     return 0;
 }
@@ -209,15 +204,14 @@ int net_pair_endpoint_connect(net_endpoint_t base_endpoint) {
 int net_pair_endpoint_update(net_endpoint_t base_endpoint) {
     net_pair_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
+    net_endpoint_t base_other = endpoint->m_other ? net_endpoint_from_data(endpoint->m_other) : NULL;
 
+    assert(endpoint->m_other == NULL
+           || endpoint->m_other->m_other == endpoint);
+    
     switch(net_endpoint_state(base_endpoint)) {
     case net_endpoint_state_read_closed:
-        if (endpoint->m_is_state_bind && endpoint->m_other) {
-            net_pair_endpoint_t other = endpoint->m_other;
-            net_endpoint_t base_other = net_endpoint_from_data(other);
-
-            assert(other->m_other == endpoint);
-
+        if (endpoint->m_is_state_bind && base_other) {
             if (net_endpoint_set_state(base_other, net_endpoint_state_write_closed) != 0) {
                 if (net_endpoint_set_state(base_other, net_endpoint_state_disable) != 0) {
                     net_endpoint_set_state(base_other, net_endpoint_state_deleting);
@@ -229,12 +223,7 @@ int net_pair_endpoint_update(net_endpoint_t base_endpoint) {
             return 0;
         }
     case net_endpoint_state_write_closed:
-        if (endpoint->m_is_state_bind && endpoint->m_other) {
-            net_pair_endpoint_t other = endpoint->m_other;
-            net_endpoint_t base_other = net_endpoint_from_data(other);
-
-            assert(other->m_other == endpoint);
-
+        if (endpoint->m_is_state_bind && base_other) {
             if (net_endpoint_set_state(base_other, net_endpoint_state_read_closed) != 0) {
                 if (net_endpoint_set_state(base_other, net_endpoint_state_disable) != 0) {
                     net_endpoint_set_state(base_other, net_endpoint_state_deleting);
@@ -250,8 +239,6 @@ int net_pair_endpoint_update(net_endpoint_t base_endpoint) {
             endpoint->m_other->m_is_state_bind = 0;
 
             if (endpoint->m_is_state_bind) {
-                net_endpoint_t base_other = net_endpoint_from_data(endpoint->m_other);
-                assert(endpoint->m_other->m_other == endpoint);
                 if (net_endpoint_set_state(base_other, net_endpoint_state_disable) != 0) {
                     net_endpoint_set_state(base_other, net_endpoint_state_deleting);
                 }
@@ -280,6 +267,11 @@ int net_pair_endpoint_update(net_endpoint_t base_endpoint) {
         endpoint->m_is_state_bind = 0;
         return 0;
     case net_endpoint_state_established:
+        if (base_other && net_endpoint_state(base_other) == net_endpoint_state_established) {
+            endpoint->m_is_state_bind = 1;
+            endpoint->m_other->m_is_state_bind = 1;
+        }
+        
         if (endpoint->m_is_writing) return 0;
 
         while (!net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write)) {
