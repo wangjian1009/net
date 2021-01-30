@@ -3,7 +3,8 @@
 #include "test_memory.h"
 #include "test_error.h"
 #include "net_ws_types.h"
-#include "net_ws_cli_driver.h"
+#include "net_ws_cli_protocol.h"
+#include "net_ws_cli_stream_driver.h"
 #include "net_ws_svr_driver.h"
 #include "test_net_driver.h"
 #include "test_net_protocol_endpoint.h"
@@ -16,15 +17,16 @@ struct net_ws_testenv {
     net_schedule_t m_schedule;
     net_protocol_t m_test_protocol;
     test_net_driver_t m_tdriver;
-    net_ws_cli_driver_t m_cli_driver;
+    net_ws_cli_protocol_t m_cli_protocol;
+    net_ws_cli_stream_driver_t m_cli_stream_driver;
     net_ws_svr_driver_t m_svr_driver;
 };
 
 net_ws_testenv_t net_ws_testenv_create();
 void net_ws_testenv_free(net_ws_testenv_t env);
 
-/*cli*/
-net_endpoint_t net_ws_testenv_cli_ep_create(net_ws_testenv_t env);
+/*cli-stream*/
+net_endpoint_t net_ws_testenv_cli_stream_ep_create(net_ws_testenv_t env);
 
 /*svr*/
 net_acceptor_t

@@ -1,5 +1,6 @@
 #ifndef NET_WS_SVR_DRIVER_I_H_INCLEDED
 #define NET_WS_SVR_DRIVER_I_H_INCLEDED
+#include <wslay/wslay.h>
 #include "cpe/utils/error.h"
 #include "net_ws_svr_driver.h"
 

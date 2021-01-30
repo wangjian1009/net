@@ -116,8 +116,11 @@ typedef enum net_endpoint_network_errno {
 } net_endpoint_network_errno_t;
 
 typedef enum net_endpoint_error_source {
+    net_endpoint_error_source_none,
     net_endpoint_error_source_network,
-    net_endpoint_error_source_protocol,
+    net_endpoint_error_source_http,
+    net_endpoint_error_source_ssl,
+    net_endpoint_error_source_websocket,
     net_endpoint_error_source_user,
 } net_endpoint_error_source_t;
 

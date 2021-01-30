@@ -428,7 +428,7 @@ static int net_ssl_svr_underline_update_error(net_endpoint_t base_underline, int
         net_ssl_svr_underline_dump_error(base_underline, err);
         net_endpoint_set_error(
             base_underline,
-            net_endpoint_error_source_protocol,
+            net_endpoint_error_source_ssl,
             -1,
             "handshake start fail");
         return net_endpoint_set_state(base_underline, net_endpoint_state_error);

@@ -48,7 +48,7 @@ net_endpoint_create(net_driver_t driver, net_protocol_t protocol, net_mem_group_
     endpoint->m_close_after_send = 0;
     endpoint->m_protocol_debug = protocol->m_debug;
     endpoint->m_driver_debug = driver->m_debug;
-    endpoint->m_error_source = net_endpoint_error_source_network;
+    endpoint->m_error_source = net_endpoint_error_source_none;
     endpoint->m_error_no = 0;
     endpoint->m_error_msg = NULL;
     endpoint->m_id = ++schedule->m_endpoint_max_id;
@@ -773,10 +773,16 @@ const char * net_endpoint_network_errno_str(net_endpoint_network_errno_t error) 
 
 const char * net_endpoint_error_source_str(net_endpoint_error_source_t source) {
     switch(source) {
+    case net_endpoint_error_source_none:
+        return "network";
     case net_endpoint_error_source_network:
         return "network";
-    case net_endpoint_error_source_protocol:
-        return "protocol";
+    case net_endpoint_error_source_http:
+        return "http";
+    case net_endpoint_error_source_ssl:
+        return "ssl";
+    case net_endpoint_error_source_websocket:
+        return "websocket";
     case net_endpoint_error_source_user:
         return "user";
     }

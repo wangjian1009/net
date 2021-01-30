@@ -5,8 +5,10 @@
 
 NET_BEGIN_DECL
 
-typedef struct net_ws_cli_driver * net_ws_cli_driver_t;
+typedef struct net_ws_cli_protocol * net_ws_cli_protocol_t;
 typedef struct net_ws_cli_endpoint * net_ws_cli_endpoint_t;
+typedef struct net_ws_cli_stream_driver * net_ws_cli_stream_driver_t;
+typedef struct net_ws_cli_stream_endpoint * net_ws_cli_stream_endpoint_t;
 
 typedef struct net_ws_svr_driver * net_ws_svr_driver_t;
 typedef struct net_ws_svr_endpoint * net_ws_svr_endpoint_t;

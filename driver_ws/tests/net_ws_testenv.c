@@ -4,6 +4,8 @@
 #include "net_acceptor.h"
 #include "net_address.h"
 #include "net_ws_testenv.h"
+#include "net_ws_cli_protocol.h"
+#include "net_ws_cli_stream_driver.h"
 #include "net_ws_cli_endpoint_i.h"
 #include "net_ws_svr_endpoint_i.h"
 
@@ -15,8 +17,11 @@ net_ws_testenv_t net_ws_testenv_create() {
     env->m_test_protocol = test_net_protocol_create(env->m_schedule, "test-protocol");
     env->m_tdriver = test_net_driver_create(env->m_schedule, env->m_em);
 
-    env->m_cli_driver = net_ws_cli_driver_create(
-        env->m_schedule, NULL, net_driver_from_data(env->m_tdriver),
+    env->m_cli_protocol = net_ws_cli_protocol_create(env->m_schedule, NULL, test_allocrator(), env->m_em);
+    
+    env->m_cli_stream_driver = net_ws_cli_stream_driver_create(
+        env->m_schedule, NULL,
+        env->m_cli_protocol, net_driver_from_data(env->m_tdriver),
         test_allocrator(), env->m_em);
 
     env->m_svr_driver = net_ws_svr_driver_create(
@@ -33,10 +38,10 @@ void net_ws_testenv_free(net_ws_testenv_t env) {
     mem_free(test_allocrator(), env);
 }
 
-net_endpoint_t net_ws_testenv_cli_ep_create(net_ws_testenv_t env) {
+net_endpoint_t net_ws_testenv_cli_stream_ep_create(net_ws_testenv_t env) {
     net_endpoint_t endpoint =
         net_endpoint_create(
-            net_driver_from_data(env->m_cli_driver),
+            net_driver_from_data(env->m_cli_stream_driver),
             env->m_test_protocol,
             NULL);
 
