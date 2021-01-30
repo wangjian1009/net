@@ -63,7 +63,8 @@ int net_ws_svr_stream_acceptor_on_new_endpoint(void * ctx, net_endpoint_t base_u
 
 int net_ws_svr_stream_acceptor_init(net_acceptor_t base_acceptor) {
     net_ws_svr_stream_acceptor_t acceptor = net_acceptor_data(base_acceptor);
-    net_ws_svr_stream_driver_t driver = net_driver_data(net_acceptor_driver(base_acceptor));
+    net_driver_t base_driver = net_acceptor_driver(base_acceptor);
+    net_ws_svr_stream_driver_t driver = net_driver_data(base_driver);
 
     acceptor->m_underline =
         net_acceptor_create(
@@ -74,6 +75,10 @@ int net_ws_svr_stream_acceptor_init(net_acceptor_t base_acceptor) {
             net_ws_svr_stream_acceptor_on_new_endpoint,
             base_acceptor);
     if (acceptor->m_underline == NULL) {
+        CPE_ERROR(
+            driver->m_em, "net: ws: %s: stream acceptor: init: create base acceptor failed!",
+            net_driver_name(base_driver));
+        return -1;
     }
 
     return 0;
