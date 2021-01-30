@@ -15,7 +15,9 @@ int net_pair_endpoint_make(
 
 net_endpoint_t net_pair_endpoint_other(net_endpoint_t endpoint);
 
-int net_pair_endpoint_link(net_endpoint_t a, net_endpoint_t z);
+int net_pair_endpoint_link(net_endpoint_t a, net_endpoint_t z, uint8_t state_bind);
+
+void net_pair_endpoint_set_state_bind(net_endpoint_t endpoint, uint8_t connected);
 
 NET_END_DECL
 

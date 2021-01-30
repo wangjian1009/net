@@ -4,7 +4,7 @@
 
 NET_BEGIN_DECL
 
-net_ws_cli_endpoint_t net_ws_cli_endoint_cast(net_endpoint_t endpoint);
+net_ws_cli_endpoint_t net_ws_cli_endpoint_cast(net_endpoint_t endpoint);
 net_endpoint_t net_ws_cli_endpoint_stream(net_endpoint_t endpoint);
 
 const char * net_ws_cli_endpoint_path(net_ws_cli_endpoint_t endpoint);

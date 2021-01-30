@@ -8,6 +8,7 @@
 #include "net_ws_svr_endpoint.h"
 #include "net_ws_svr_stream_endpoint.h"
 #include "test_net_driver.h"
+#include "test_net_endpoint.h"
 #include "test_net_protocol_endpoint.h"
 
 typedef struct net_ws_testenv * net_ws_testenv_t;
@@ -29,6 +30,15 @@ void net_ws_testenv_free(net_ws_testenv_t env);
 
 /*cli-stream*/
 net_endpoint_t net_ws_testenv_cli_stream_ep_create(net_ws_testenv_t env);
+
+/*pair*/
+void net_ws_testenv_cli_create_pair(
+    net_ws_testenv_t env, net_endpoint_t  * cli, net_endpoint_t  * svr,
+    const char * address, const char * path);
+
+void net_ws_testenv_cli_create_pair_established(
+    net_ws_testenv_t env, net_endpoint_t  * cli, net_endpoint_t  * svr,
+    const char * address, const char * path);
 
 /*svr*/
 net_acceptor_t

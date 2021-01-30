@@ -121,83 +121,44 @@ READ_AGAIN:
 
 int net_ws_svr_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoint_state_t from_state) {
     net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
-
-    switch(net_endpoint_state(base_endpoint)) {
+    net_ws_svr_endpoint_t endpoint = net_endpoint_protocol_data(base_endpoint);
+    net_endpoint_t base_stream = endpoint->m_stream ? net_endpoint_from_data(endpoint->m_stream) : NULL;
+    
+    switch (net_endpoint_state(base_endpoint)) {
     case net_endpoint_state_resolving:
     case net_endpoint_state_connecting:
-        CPE_ERROR(
-            net_schedule_em(schedule),
-            "net: ws: %s: state update: not support state %s",
-            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
-            net_endpoint_state_str(net_endpoint_state(base_endpoint)));
-        assert(0);
+    case net_endpoint_state_deleting:
         return 0;
-    default:
-        break;
-    }
-        
-    net_ws_svr_endpoint_t endpoint = net_endpoint_protocol_data(base_endpoint);
-
-    if (endpoint->m_stream == NULL) {
-        switch (net_endpoint_state(base_endpoint)) {
-        case net_endpoint_state_resolving:
-        case net_endpoint_state_connecting:
-        case net_endpoint_state_deleting:
-            assert(0);
-            return 0;
-        case net_endpoint_state_established:
-            /*在acceptor的情况下，undliner提前进入establish，此处保护*/
-            return 0;
-        case net_endpoint_state_error:
-        case net_endpoint_state_disable:
-        case net_endpoint_state_read_closed:
-        case net_endpoint_state_write_closed:
-            CPE_ERROR(
-                net_schedule_em(schedule),
-                "net: ws: %s: state updated: no ws endpoint %s",
-                net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
-                net_endpoint_state_str(net_endpoint_state(base_endpoint)));
-            return -1;
-        }
-    }
-    else {
-        net_endpoint_t base_endpoint = net_endpoint_from_data(endpoint->m_stream);
-        net_ws_svr_endpoint_t endpoint = net_endpoint_data(base_endpoint);
-
-        switch (net_endpoint_state(base_endpoint)) {
-        case net_endpoint_state_resolving:
-        case net_endpoint_state_connecting:
-        case net_endpoint_state_deleting:
-            assert(0);
-            return 0;
-        case net_endpoint_state_established:
-            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_connecting) != 0) {
-                net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
-                return 0;
+    case net_endpoint_state_established:
+        if (base_stream) {
+            if (net_endpoint_set_state(base_stream, net_endpoint_state_connecting) != 0) {
+                net_endpoint_set_state(base_stream, net_endpoint_state_deleting);
             }
-            return 0;
-        case net_endpoint_state_error:
+        }
+        return 0;
+    case net_endpoint_state_error:
+        if (base_stream) {
             net_endpoint_set_error(
-                base_endpoint, net_endpoint_error_source(base_endpoint),
-                net_endpoint_error_no(base_endpoint), net_endpoint_error_msg(base_endpoint));
+                base_stream, net_endpoint_error_source(base_stream),
+                net_endpoint_error_no(base_stream), net_endpoint_error_msg(base_stream));
 
-            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
-                net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+            if (net_endpoint_set_state(base_stream, net_endpoint_state_error) != 0) {
+                net_endpoint_set_state(base_stream, net_endpoint_state_deleting);
             }
-
-            return 0;
-        case net_endpoint_state_read_closed:
-            return 0;
-        case net_endpoint_state_write_closed:
-            return 0;
-        case net_endpoint_state_disable:
-            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_disable) != 0) {
-                net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+        }
+        return 0;
+    case net_endpoint_state_disable:
+        if (base_stream) {
+            if (net_endpoint_set_state(base_stream, net_endpoint_state_disable) != 0) {
+                net_endpoint_set_state(base_stream, net_endpoint_state_deleting);
                 return 0;
             }
-            
-            return 0;
         }
+        return 0;
+    case net_endpoint_state_read_closed:
+        return 0;
+    case net_endpoint_state_write_closed:
+        return 0;
     }
 }
 

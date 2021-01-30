@@ -10,6 +10,7 @@ enum net_ws_cli_handshake_state {
 };
 
 struct net_ws_cli_endpoint {
+    net_endpoint_t m_base_endpoint;
     net_ws_cli_stream_endpoint_t m_stream;
     enum net_ws_cli_handshake_state m_handshake_state;
     wslay_event_context_ptr m_ctx;

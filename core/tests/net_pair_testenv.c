@@ -26,4 +26,5 @@ void net_pair_testenv_make_pair_established(net_pair_testenv_t env, net_endpoint
     net_pair_testenv_make_pair(env, ep);
     net_endpoint_set_state(ep[0], net_endpoint_state_established);
     net_endpoint_set_state(ep[1], net_endpoint_state_established);
+    net_pair_endpoint_set_state_bind(ep[0], 1);
 }

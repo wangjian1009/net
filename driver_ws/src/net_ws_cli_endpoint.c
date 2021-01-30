@@ -4,6 +4,7 @@
 #include "cpe/utils/base64.h"
 #include "cpe/utils/random.h"
 #include "cpe/utils/stream_mem.h"
+#include "cpe/utils/string_utils.h"
 #include "net_protocol.h"
 #include "net_endpoint.h"
 #include "net_address.h"
@@ -16,7 +17,7 @@ extern struct wslay_event_callbacks s_net_ws_cli_endpoint_callbacks;
 int net_ws_cli_endpoint_send_handshake(net_endpoint_t base_endpoint, net_ws_cli_endpoint_t endpoint);
 
 net_ws_cli_endpoint_t
-net_ws_cli_endoint_cast(net_endpoint_t base_endpoint) {
+net_ws_cli_endpoint_cast(net_endpoint_t base_endpoint) {
     net_protocol_t protocol = net_endpoint_protocol(base_endpoint);
     return net_protocol_endpoint_init_fun(protocol) == net_ws_cli_endpoint_init
         ? net_endpoint_protocol_data(base_endpoint)
@@ -24,16 +25,46 @@ net_ws_cli_endoint_cast(net_endpoint_t base_endpoint) {
 }
 
 net_endpoint_t net_ws_cli_endpoint_stream(net_endpoint_t base_endpoint) {
-    net_ws_cli_endpoint_t endpoint = net_ws_cli_endoint_cast(base_endpoint);
+    net_ws_cli_endpoint_t endpoint = net_ws_cli_endpoint_cast(base_endpoint);
     if (endpoint == NULL) return NULL;
     if (endpoint->m_stream == NULL) return NULL;
     return net_endpoint_from_data(endpoint->m_stream);
+}
+
+const char * net_ws_cli_endpoint_path(net_ws_cli_endpoint_t endpoint) {
+    return endpoint->m_path;
+}
+
+int net_ws_cli_endpoint_set_path(net_ws_cli_endpoint_t endpoint, const char * path) {
+    net_ws_cli_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
+    
+    if (endpoint->m_path) {
+        mem_free(protocol->m_alloc, endpoint->m_path);
+        endpoint->m_path = NULL;
+    }
+
+    if (path) {
+        endpoint->m_path = cpe_str_mem_dup(protocol->m_alloc, path);
+        if (endpoint->m_path == NULL) {
+            net_endpoint_t base_endpoint =
+                net_endpoint_from_protocol_data(
+                    net_protocol_schedule(net_protocol_from_data(protocol)),
+                    endpoint);
+            CPE_ERROR(
+                protocol->m_em, "net: ws: %s: set path: dup failed",
+                net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(protocol), base_endpoint));
+            return -1;
+        }
+    }
+    
+    return 0;
 }
 
 int net_ws_cli_endpoint_init(net_endpoint_t base_endpoint) {
     net_ws_cli_endpoint_t endpoint = net_endpoint_protocol_data(base_endpoint);
     net_ws_cli_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
 
+    endpoint->m_base_endpoint = base_endpoint;
     endpoint->m_stream = NULL;
     endpoint->m_handshake_state = net_ws_cli_handshake_processing;
     endpoint->m_path = NULL;
@@ -79,25 +110,25 @@ int net_ws_cli_endpoint_input(net_endpoint_t base_endpoint) {
 
 int net_ws_cli_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoint_state_t from_state) {
     net_ws_cli_endpoint_t endpoint = net_endpoint_protocol_data(base_endpoint);
-    net_ws_cli_endpoint_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
+    net_ws_cli_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
 
     net_endpoint_t base_stream =
         endpoint->m_stream ? net_endpoint_from_data(endpoint->m_stream) : NULL;
         
     switch(net_endpoint_state(base_endpoint)) {
     case net_endpoint_state_resolving:
-        if (base_endpoint) {
-            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_resolving) != 0) return -1;
+        if (base_stream) {
+            if (net_endpoint_set_state(base_stream, net_endpoint_state_resolving) != 0) return -1;
         }
         break;
     case net_endpoint_state_connecting:
-        if (base_endpoint) {
-            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_connecting) != 0) return -1;
+        if (base_stream) {
+            if (net_endpoint_set_state(base_stream, net_endpoint_state_connecting) != 0) return -1;
         }
         break;
     case net_endpoint_state_established:
-        if (base_endpoint) {
-            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_connecting) != 0) return -1;
+        if (base_stream) {
+            if (net_endpoint_set_state(base_stream, net_endpoint_state_connecting) != 0) return -1;
         }
         if (net_ws_cli_endpoint_send_handshake(base_endpoint, endpoint) != 0) return -1;
         break;
@@ -114,9 +145,9 @@ int net_ws_cli_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoi
     case net_endpoint_state_write_closed:
     case net_endpoint_state_disable:
     case net_endpoint_state_deleting:
-        if (base_endpoint) {
+        if (base_stream) {
             net_endpoint_set_error(
-                base_endpoint,
+                base_stream,
                 net_endpoint_error_source_network,
                 net_endpoint_network_errno_logic,
                 "endpoint ep state error");
@@ -130,8 +161,8 @@ int net_ws_cli_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoi
 int net_ws_cli_endpoint_write(
     net_endpoint_t base_endpoint, net_endpoint_t from_ep, net_endpoint_buf_type_t from_buf)
 {
-    net_ws_cli_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
     net_ws_cli_endpoint_t endpoint = net_endpoint_protocol_data(base_endpoint);
+    net_ws_cli_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
 
     switch(net_endpoint_state(base_endpoint)) {
     case net_endpoint_state_disable:

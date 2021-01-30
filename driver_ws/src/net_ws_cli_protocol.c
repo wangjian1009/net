@@ -15,9 +15,17 @@ void net_ws_cli_protocol_fini(net_protocol_t protocol) {
 
 net_ws_cli_protocol_t
 net_ws_cli_protocol_create(
-    net_schedule_t schedule, const char * name,
+    net_schedule_t schedule, const char * addition_name,
     mem_allocrator_t alloc, error_monitor_t em)
 {
+    char name[64];
+    if (addition_name) {
+        snprintf(name, sizeof(name), "ws-cli-%s", addition_name);
+    }
+    else {
+        snprintf(name, sizeof(name), "ws-cli");
+    }
+
     net_protocol_t base_protocol =
         net_protocol_create(
             schedule,

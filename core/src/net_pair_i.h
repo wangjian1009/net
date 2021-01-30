@@ -9,6 +9,7 @@ struct net_pair_endpoint {
     net_pair_endpoint_t m_other;
     net_timer_t m_delay_processor;
     uint8_t m_is_writing;
+    uint8_t m_is_state_bind;
 };
 
 net_driver_t net_pair_driver_create(net_schedule_t schedule);

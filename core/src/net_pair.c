@@ -29,7 +29,7 @@ int net_pair_endpoint_make(net_schedule_t schedule, net_protocol_t p0, net_proto
         return -1;
     }
 
-    if (net_pair_endpoint_link(endpoint_a, endpoint_z) != 0) {
+    if (net_pair_endpoint_link(endpoint_a, endpoint_z, 0) != 0) {
         net_endpoint_free(endpoint_a);
         net_endpoint_free(endpoint_z);
         return -1;
@@ -55,7 +55,7 @@ net_endpoint_t net_pair_endpoint_other(net_endpoint_t base_endpoint) {
     return endpoint->m_other ? net_endpoint_from_data(endpoint->m_other) : NULL;
 }
 
-int net_pair_endpoint_link(net_endpoint_t base_a, net_endpoint_t base_z) {
+int net_pair_endpoint_link(net_endpoint_t base_a, net_endpoint_t base_z, uint8_t state_bind) {
     net_schedule_t schedule = net_endpoint_schedule(base_a);
 
     /*检查a*/
@@ -94,9 +94,11 @@ int net_pair_endpoint_link(net_endpoint_t base_a, net_endpoint_t base_z) {
 
     assert(a->m_other == NULL);
     a->m_other = z;
-
+    a->m_is_state_bind = state_bind;
+    
     assert(z->m_other == NULL);
     z->m_other = a;
+    z->m_is_state_bind = state_bind;
 
     if (net_endpoint_driver_debug(base_a) > net_endpoint_driver_debug(base_z)) {
         net_endpoint_set_driver_debug(base_z, net_endpoint_driver_debug(base_a));
@@ -108,11 +110,21 @@ int net_pair_endpoint_link(net_endpoint_t base_a, net_endpoint_t base_z) {
     return 0;
 }
 
+void net_pair_endpoint_set_state_bind(net_endpoint_t base_endpoint, uint8_t connected) {
+    net_pair_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+    endpoint->m_is_state_bind = connected;
+
+    if (endpoint->m_other) {
+        endpoint->m_other->m_is_state_bind = connected;
+    }
+}
+
 int net_pair_endpoint_init(net_endpoint_t base_endpoint) {
     net_pair_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     endpoint->m_other = NULL;
     endpoint->m_delay_processor = NULL;
     endpoint->m_is_writing = 0;
+    endpoint->m_is_state_bind = 0;
     return 0;
 }
 
@@ -189,6 +201,7 @@ int net_pair_endpoint_connect(net_endpoint_t base_endpoint) {
         net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
         return 0;
     }
+    net_pair_endpoint_set_state_bind(base_endpoint, 1);
 
     return 0;
 }
@@ -199,16 +212,13 @@ int net_pair_endpoint_update(net_endpoint_t base_endpoint) {
 
     switch(net_endpoint_state(base_endpoint)) {
     case net_endpoint_state_read_closed:
-        if (endpoint->m_other) {
+        if (endpoint->m_is_state_bind && endpoint->m_other) {
             net_pair_endpoint_t other = endpoint->m_other;
             net_endpoint_t base_other = net_endpoint_from_data(other);
 
             assert(other->m_other == endpoint);
 
             if (net_endpoint_set_state(base_other, net_endpoint_state_write_closed) != 0) {
-                other->m_other = NULL;
-                endpoint->m_other = NULL;
-
                 if (net_endpoint_set_state(base_other, net_endpoint_state_disable) != 0) {
                     net_endpoint_set_state(base_other, net_endpoint_state_deleting);
                 }
@@ -219,16 +229,13 @@ int net_pair_endpoint_update(net_endpoint_t base_endpoint) {
             return 0;
         }
     case net_endpoint_state_write_closed:
-        if (endpoint->m_other) {
+        if (endpoint->m_is_state_bind && endpoint->m_other) {
             net_pair_endpoint_t other = endpoint->m_other;
             net_endpoint_t base_other = net_endpoint_from_data(other);
 
             assert(other->m_other == endpoint);
 
             if (net_endpoint_set_state(base_other, net_endpoint_state_read_closed) != 0) {
-                other->m_other = NULL;
-                endpoint->m_other = NULL;
-
                 if (net_endpoint_set_state(base_other, net_endpoint_state_disable) != 0) {
                     net_endpoint_set_state(base_other, net_endpoint_state_deleting);
                 }
@@ -240,23 +247,40 @@ int net_pair_endpoint_update(net_endpoint_t base_endpoint) {
         }
     case net_endpoint_state_disable:
         if (endpoint->m_other) {
-            net_pair_endpoint_t other = endpoint->m_other;
-            net_endpoint_t base_other = net_endpoint_from_data(other);
+            endpoint->m_other->m_is_state_bind = 0;
 
-            assert(other->m_other == endpoint);
-
-            other->m_other = NULL;
-            endpoint->m_other = NULL;
-
-            if (net_endpoint_set_state(base_other, net_endpoint_state_disable) != 0) {
-                net_endpoint_set_state(base_other, net_endpoint_state_deleting);
+            if (endpoint->m_is_state_bind) {
+                net_endpoint_t base_other = net_endpoint_from_data(endpoint->m_other);
+                assert(endpoint->m_other->m_other == endpoint);
+                if (net_endpoint_set_state(base_other, net_endpoint_state_disable) != 0) {
+                    net_endpoint_set_state(base_other, net_endpoint_state_deleting);
+                }
             }
         }
-        assert(endpoint->m_other == NULL);
+        endpoint->m_is_state_bind = 0;
+        return 0;
+    case net_endpoint_state_error:
+        if (endpoint->m_other) {
+            endpoint->m_other->m_is_state_bind = 0;
+
+            if (endpoint->m_is_state_bind) {
+                net_endpoint_t base_other = net_endpoint_from_data(endpoint->m_other);
+                assert(endpoint->m_other->m_other == endpoint);
+
+                if (net_endpoint_error_source(base_other) == net_endpoint_error_source_none) {
+                    net_endpoint_set_error(
+                        base_other, net_endpoint_error_source_network, net_endpoint_network_errno_logic, NULL);
+                }
+                
+                if (net_endpoint_set_state(base_other, net_endpoint_state_error) != 0) {
+                    net_endpoint_set_state(base_other, net_endpoint_state_deleting);
+                }
+            }
+        }
+        endpoint->m_is_state_bind = 0;
         return 0;
     case net_endpoint_state_established:
         if (endpoint->m_is_writing) return 0;
-        if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return 0;
 
         while (!net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write)) {
             if (endpoint->m_other == NULL) {

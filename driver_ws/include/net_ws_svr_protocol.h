@@ -6,7 +6,7 @@ NET_BEGIN_DECL
 
 net_ws_svr_protocol_t
 net_ws_svr_protocol_create(
-    net_schedule_t schedule, const char * name, mem_allocrator_t alloc, error_monitor_t em);
+    net_schedule_t schedule, const char * addition_name, mem_allocrator_t alloc, error_monitor_t em);
 
 void net_ws_svr_protocol_free(net_ws_svr_protocol_t protocol);
 

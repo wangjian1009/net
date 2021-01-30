@@ -5,11 +5,12 @@ int main(void) {
     int rv = 0;
 
     /*basic*/
+    if (net_ws_pair_basic_tests() != 0) rv = -1;
     
     /*stream*/
-    if (net_ws_stream_cli_basic_tests() != 0) rv = -1;
-    if (net_ws_stream_svr_basic_tests() != 0) rv = -1;
-    if (net_ws_stream_pair_basic_tests() != 0) rv = -1;
+    /* if (net_ws_stream_cli_basic_tests() != 0) rv = -1; */
+    /* if (net_ws_stream_svr_basic_tests() != 0) rv = -1; */
+    /* if (net_ws_stream_pair_basic_tests() != 0) rv = -1; */
 
     return rv;
 }
