@@ -22,7 +22,7 @@ struct net_ws_testenv {
     net_ws_cli_protocol_t m_cli_protocol;
     net_ws_cli_stream_driver_t m_cli_stream_driver;
     net_ws_svr_protocol_t m_svr_protocol;
-    net_ws_svr_stream_driver_t m_svr_driver;
+    net_ws_svr_stream_driver_t m_svr_stream_driver;
 };
 
 net_ws_testenv_t net_ws_testenv_create();

@@ -1,5 +1,7 @@
 #include "cmocka_all.h"
 #include "net_schedule.h"
+#include "net_driver.h"
+#include "net_protocol.h"
 #include "net_endpoint.h"
 #include "net_acceptor.h"
 #include "net_address.h"
@@ -22,7 +24,8 @@ net_ws_testenv_t net_ws_testenv_create() {
     
     env->m_cli_protocol =
         net_ws_cli_protocol_create(env->m_schedule, addition_name, test_allocrator(), env->m_em);
-    
+    net_protocol_set_debug(net_protocol_from_data(env->m_cli_protocol), 2);
+
     env->m_cli_stream_driver =
         net_ws_cli_stream_driver_create(
             env->m_schedule, addition_name,
@@ -31,12 +34,14 @@ net_ws_testenv_t net_ws_testenv_create() {
 
     env->m_svr_protocol =
         net_ws_svr_protocol_create(env->m_schedule, addition_name, test_allocrator(), env->m_em);
+    net_protocol_set_debug(net_protocol_from_data(env->m_svr_protocol), 2);
 
-    env->m_svr_driver =
+    env->m_svr_stream_driver =
         net_ws_svr_stream_driver_create(
             env->m_schedule, addition_name,
             net_driver_from_data(env->m_tdriver),
             test_allocrator(), env->m_em);
+    net_driver_set_debug(net_driver_from_data(env->m_svr_stream_driver), 2);
     
     return env;
 }
@@ -116,7 +121,7 @@ net_ws_testenv_create_svr_acceptor(
 
     net_acceptor_t acceptor =
         net_acceptor_create(
-            net_driver_from_data(env->m_svr_driver),
+            net_driver_from_data(env->m_svr_stream_driver),
             env->m_test_protocol,
             address, 0,
             on_new_endpoint, on_new_endpoint_ctx);
@@ -128,7 +133,7 @@ net_ws_testenv_create_svr_acceptor(
 
 net_endpoint_t net_ws_testenv_create_svr_stream(net_ws_testenv_t env) {
     net_endpoint_t endpoint =
-        net_ws_svr_stream_endpoint_create(env->m_svr_driver, env->m_test_protocol);
+        net_ws_svr_stream_endpoint_create(env->m_svr_stream_driver, env->m_test_protocol);
 
     net_endpoint_set_driver_debug(endpoint, 1);
 

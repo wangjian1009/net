@@ -95,9 +95,13 @@ void net_endpoint_buf_release(net_endpoint_t endpoint) {
 uint8_t net_endpoint_buf_validate(net_endpoint_t endpoint, void const * buf, uint32_t capacity) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
 
-    if (endpoint->m_tb == NULL) return 0;
-
-    assert(endpoint->m_tb);
+    if (endpoint->m_tb == NULL) {
+        CPE_ERROR(
+            schedule->m_em, "core: %s: buf validate, state=%s",
+            net_endpoint_dump(&schedule->m_tmp_buffer, endpoint),
+            net_endpoint_state_str(endpoint->m_state));
+        return -1;
+    }
 
     if (buf < (void *)endpoint->m_tb->m_data
         || ((const uint8_t *)buf) + capacity > endpoint->m_tb->m_data + endpoint->m_tb->m_capacity) return 0;
@@ -110,7 +114,14 @@ int net_endpoint_buf_supply(net_endpoint_t endpoint, net_endpoint_buf_type_t buf
 
     assert(buf_type < net_ep_buf_count);
 
-    if (endpoint->m_tb == NULL) return 0;
+    if (endpoint->m_tb == NULL) {
+        CPE_ERROR(
+            schedule->m_em, "core: %s: %s: supply no buffer, state=%s",
+            net_endpoint_dump(&schedule->m_tmp_buffer, endpoint),
+            net_endpoint_buf_type_str(buf_type),
+            net_endpoint_state_str(endpoint->m_state));
+        return -1;
+    }
     
     if (size > 0) {
         assert(size <= endpoint->m_tb->m_capacity);
@@ -370,7 +381,9 @@ static uint8_t net_endpoint_block_match_forward(
     return 0;
 }
 
-int net_endpoint_buf_by_str(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, const char * str, void * * r_data, uint32_t * r_size) {
+int net_endpoint_buf_by_str(
+    net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, const char * str, void * * r_data, uint32_t * r_size)
+{
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
     uint32_t str_len = (uint32_t)strlen(str);
     if (str_len == 0) return -1;
@@ -382,6 +395,14 @@ int net_endpoint_buf_by_str(net_endpoint_t endpoint, net_endpoint_buf_type_t buf
     while(block) {
         int block_pos;
         for(block_pos = 0; block_pos < block->m_len; ++block_pos) {
+            if (block->m_data[block_pos] == 0) {
+                CPE_ERROR(
+                    schedule->m_em, "core: %s: %s: unexpected terminated at %d",
+                    net_endpoint_dump(&schedule->m_tmp_buffer, endpoint),
+                    net_endpoint_buf_type_str(buf_type), (sz + block_pos));
+                return -1;
+            }
+            
             if (block->m_data[block_pos] == str[0]
                 && net_endpoint_block_match_forward(schedule, block, block_pos + 1, str + 1, str_len - 1))
             {
@@ -609,7 +630,7 @@ int net_endpoint_buf_append_from_self(
 
 static int net_endpoint_buf_on_supply(net_schedule_t schedule, net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, uint32_t size) {
     assert(size > 0);
-    
+
     if (endpoint->m_data_watcher_fun) {
         endpoint->m_data_watcher_fun(endpoint->m_data_watcher_ctx, endpoint, buf_type, net_endpoint_data_supply, size);
     }
@@ -618,13 +639,7 @@ static int net_endpoint_buf_on_supply(net_schedule_t schedule, net_endpoint_t en
         if (endpoint->m_protocol->m_endpoint_input(endpoint) != 0) return -1;
     }
 
-    if (buf_type == net_ep_buf_write) {
-        if (endpoint->m_state == net_endpoint_state_established) {
-            if (endpoint->m_driver->m_endpoint_update(endpoint) != 0) return -1;
-        }
-    }
-
-    if (buf_type == net_ep_buf_write && endpoint->m_state == net_endpoint_state_established) {
+    if (buf_type == net_ep_buf_write && net_endpoint_is_writeable(endpoint)) {
         if (endpoint->m_driver->m_endpoint_update(endpoint) != 0) return -1;
     }
     

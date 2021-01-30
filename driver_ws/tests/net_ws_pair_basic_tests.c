@@ -22,6 +22,11 @@ static void net_ws_pair_basic(void **state) {
     net_endpoint_t svr_ep;
     net_ws_testenv_cli_create_pair_established(env, &cli_ep, &svr_ep, "1.1.2.3:5678", "/a/b");
 
+    
+    CPE_ERROR(env->m_em, "xxxxx pair test 11");
+    assert_true(0);
+    CPE_ERROR(env->m_em, "xxxxx pair test 22");
+    
     /*client -> server*/
     /* assert_true(net_endpoint_buf_append(cli_ep, net_ep_buf_write, "abcd", 4) == 0); */
     /* test_net_driver_run(env->m_env->m_tdriver, 0); */

@@ -26,4 +26,7 @@ void net_ws_cli_endpoint_fini(net_endpoint_t base_endpoint);
 int net_ws_cli_endpoint_input(net_endpoint_t base_endpoint);
 int net_ws_cli_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoint_state_t from_state);
 
+/*handshake*/
+int net_ws_cli_endpoint_send_handshake(net_endpoint_t base_endpoint, net_ws_cli_endpoint_t endpoint);
+
 #endif

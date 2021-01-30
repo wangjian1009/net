@@ -3,6 +3,7 @@
 #include "net_schedule.h"
 #include "net_driver.h"
 #include "net_protocol.h"
+#include "net_address.h"
 #include "net_endpoint.h"
 #include "net_ws_svr_endpoint_i.h"
 #include "net_ws_svr_stream_endpoint_i.h"
@@ -11,9 +12,6 @@
 #define net_ws_svr_endpoint_ep_read_cache net_ep_buf_user2
 
 static void net_ws_svr_endpoint_dump_error(net_endpoint_t base_endpoint, int val);
-
-static int net_ws_svr_endpoint_do_handshake(net_endpoint_t base_endpoint, net_ws_svr_endpoint_t endpoint);
-
 static int net_ws_svr_endpoint_update_error(net_endpoint_t base_endpoint, int err, int r);
 
 net_ws_svr_endpoint_t net_ws_svr_endpoint_cast(net_endpoint_t base_endpoint) {
@@ -35,31 +33,50 @@ int net_ws_svr_endpoint_init(net_endpoint_t base_endpoint) {
     net_ws_svr_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
 
     endpoint->m_stream = NULL;
-    endpoint->m_state = net_ws_svr_endpoint_ws_handshake;
+    endpoint->m_host = NULL;
+    endpoint->m_path = NULL;
+    endpoint->m_version = 0;
 
+    endpoint->m_state = net_ws_svr_endpoint_state_handshake;
+    endpoint->m_handshake.m_state = net_ws_svr_endpoint_handshake_first_line;
+    endpoint->m_handshake.m_readed_size = 0;
+    
     return 0;
 }
 
 void net_ws_svr_endpoint_fini(net_endpoint_t base_endpoint) {
     net_ws_svr_endpoint_t endpoint = net_endpoint_protocol_data(base_endpoint);
+    net_ws_svr_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
 
     if (endpoint->m_stream) {
         assert(endpoint->m_stream->m_underline == base_endpoint);
         endpoint->m_stream->m_underline = NULL;
         endpoint->m_stream = NULL;
     }
+
+    if (endpoint->m_host) {
+        net_address_free(endpoint->m_host);
+        endpoint->m_host = NULL;
+    }
+
+    if (endpoint->m_path) {
+        mem_free(protocol->m_alloc, endpoint->m_path);
+        endpoint->m_path = NULL;
+    }
+
 }
 
 int net_ws_svr_endpoint_input(net_endpoint_t base_endpoint) {
     net_ws_svr_endpoint_t endpoint = net_endpoint_protocol_data(base_endpoint);
     net_ws_svr_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
 
-    if (endpoint->m_state == net_ws_svr_endpoint_ws_handshake) {
-        if (net_ws_svr_endpoint_do_handshake(base_endpoint, endpoint) != 0) return -1;
+    if (endpoint->m_state == net_ws_svr_endpoint_state_handshake) {
+        if (net_ws_svr_endpoint_input_handshake(base_endpoint, endpoint) != 0) return -1;
+        if (endpoint->m_state == net_ws_svr_endpoint_state_handshake) return 0;
     }
 
 READ_AGAIN:    
-    if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return -1;
+    // if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return -1;
 
     /* uint32_t input_data_size = net_endpoint_buf_size(base_endpoint, net_ep_buf_read); */
     /* if (input_data_size == 0) return 0; */
@@ -120,7 +137,6 @@ READ_AGAIN:
 }
 
 int net_ws_svr_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoint_state_t from_state) {
-    net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
     net_ws_svr_endpoint_t endpoint = net_endpoint_protocol_data(base_endpoint);
     net_endpoint_t base_stream = endpoint->m_stream ? net_endpoint_from_data(endpoint->m_stream) : NULL;
     
@@ -191,27 +207,6 @@ int net_ws_svr_endpoint_write(
                 base_endpoint, net_ws_svr_endpoint_ep_write_cache, from_ep, from_buf, 0);
         }
     case net_endpoint_state_established:
-        switch(endpoint->m_state) {
-        case net_ws_svr_endpoint_ws_handshake:
-            if (net_endpoint_protocol_debug(base_endpoint)) {
-                CPE_INFO(
-                    protocol->m_em, "net: ws: %s: write: cache %d data in state %s.handshake!",
-                    net_endpoint_dump(net_ws_svr_protocol_tmp_buffer(protocol), base_endpoint),
-                    net_endpoint_buf_size(from_ep, from_buf),
-                    net_endpoint_state_str(net_endpoint_state(base_endpoint)));
-            }
-
-            if (base_endpoint == from_ep) {
-                return net_endpoint_buf_append_from_self(
-                    base_endpoint, net_ws_svr_endpoint_ep_write_cache, from_buf, 0);
-            }
-            else {
-                return net_endpoint_buf_append_from_other(
-                    base_endpoint, net_ws_svr_endpoint_ep_write_cache, from_ep, from_buf, 0);
-            }
-        case net_ws_svr_endpoint_ws_open:
-            break;
-        }
         break;
     case net_endpoint_state_error:
     case net_endpoint_state_deleting:
@@ -247,9 +242,5 @@ int net_ws_svr_endpoint_write(
     /*         net_endpoint_dump(net_ws_svr_protocol_tmp_buffer(protocol), base_endpoint), r); */
     /* } */
     
-    return 0;
-}
-
-int net_ws_svr_endpoint_do_handshake(net_endpoint_t base_endpoint, net_ws_svr_endpoint_t endpoint) {
     return 0;
 }
