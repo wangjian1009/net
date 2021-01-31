@@ -29,6 +29,10 @@ net_endpoint_t net_ws_cli_endpoint_stream(net_endpoint_t base_endpoint) {
     return net_endpoint_from_data(endpoint->m_stream);
 }
 
+net_ws_cli_endpoint_state_t net_ws_cli_endpoint_state(net_ws_cli_endpoint_t endpoint) {
+    return endpoint->m_state;
+}
+
 const char * net_ws_cli_endpoint_path(net_ws_cli_endpoint_t endpoint) {
     return endpoint->m_path;
 }
@@ -64,9 +68,13 @@ int net_ws_cli_endpoint_init(net_endpoint_t base_endpoint) {
 
     endpoint->m_base_endpoint = base_endpoint;
     endpoint->m_stream = NULL;
-    endpoint->m_handshake_state = net_ws_cli_handshake_processing;
     endpoint->m_path = NULL;
 
+    endpoint->m_state = net_ws_cli_endpoint_state_handshake;
+    endpoint->m_handshake.m_state = net_ws_cli_endpoint_handshake_first_line;
+    endpoint->m_handshake.m_readed_size = 0;
+    endpoint->m_handshake.m_received_fields = 0;
+    
     wslay_event_context_client_init(&endpoint->m_ctx, &s_net_ws_cli_endpoint_callbacks, endpoint);
     if (endpoint->m_ctx == NULL) {
         CPE_ERROR(
@@ -103,6 +111,11 @@ int net_ws_cli_endpoint_input(net_endpoint_t base_endpoint) {
     net_ws_cli_endpoint_t endpoint = net_endpoint_protocol_data(base_endpoint);
     net_ws_cli_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
 
+    if (endpoint->m_state == net_ws_cli_endpoint_state_handshake) {
+        if (net_ws_cli_endpoint_input_handshake(base_endpoint, endpoint) != 0) return -1;
+        if (endpoint->m_state == net_ws_cli_endpoint_state_handshake) return 0;
+    }
+    
     return 0;
 }
 
@@ -131,9 +144,9 @@ int net_ws_cli_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoi
         if (net_ws_cli_endpoint_send_handshake(base_endpoint, endpoint) != 0) return -1;
         break;
     case net_endpoint_state_error:
-        if (base_endpoint) {
+        if (base_stream) {
             net_endpoint_set_error(
-                base_endpoint,
+                base_stream,
                 net_endpoint_error_source(base_endpoint),
                 net_endpoint_error_no(base_endpoint), net_endpoint_error_msg(base_endpoint));
             if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) return -1;
@@ -185,8 +198,8 @@ int net_ws_cli_endpoint_write(
         assert(0);
         return -1;
     case net_endpoint_state_established:
-        switch(endpoint->m_handshake_state) {
-        case net_ws_cli_handshake_processing:
+        switch(endpoint->m_state) {
+        case net_ws_cli_endpoint_state_handshake:
             if (net_endpoint_protocol_debug(base_endpoint)) {
                 CPE_INFO(
                     protocol->m_em, "net: ws: %s: write: cache %d data in state %s.handshake!",
@@ -205,7 +218,7 @@ int net_ws_cli_endpoint_write(
             /* } */
             assert(0);
             return -1;
-        case net_ws_cli_handshake_done:
+        case net_ws_cli_endpoint_state_streaming:
             break;
         }
         break;
@@ -246,4 +259,13 @@ int net_ws_cli_endpoint_write(
     /* } */
     
     return 0;
+}
+
+const char * net_ws_cli_endpoint_state_str(net_ws_cli_endpoint_state_t state) {
+    switch(state) {
+    case net_ws_cli_endpoint_state_handshake:
+        return "handshake";
+    case net_ws_cli_endpoint_state_streaming:
+        return "streaming";
+    }
 }

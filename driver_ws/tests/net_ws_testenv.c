@@ -47,7 +47,6 @@ net_ws_testenv_t net_ws_testenv_create() {
 }
 
 void net_ws_testenv_free(net_ws_testenv_t env) {
-    test_net_driver_free(env->m_tdriver);
     net_schedule_free(env->m_schedule);
     test_error_monitor_free(env->m_tem);
     mem_free(test_allocrator(), env);
