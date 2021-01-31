@@ -1,7 +1,7 @@
 #include "cmocka_all.h"
 #include "test_net_endpoint.h"
 #include "net_ws_tests.h"
-#include "net_ws_cli_stream_endpoint.h"
+#include "net_ws_stream_endpoint.h"
 #include "net_ws_stream_pair_testenv.h"
 
 static int setup(void **state) {
@@ -18,10 +18,10 @@ static int teardown(void **state) {
 
 static void net_ws_stream_pair_basic(void **state) {
     net_ws_stream_pair_testenv_t env = *state;
-    net_endpoint_t cli_ep = net_ws_testenv_cli_stream_ep_create(env->m_env);
+    net_endpoint_t cli_ep = net_ws_testenv_stream_ep_create(env->m_env);
     net_endpoint_set_remote_address(cli_ep, net_acceptor_address(env->m_acceptor));
 
-    net_endpoint_t cli_underline = net_ws_cli_stream_endpoint_underline(cli_ep);
+    net_endpoint_t cli_underline = net_ws_stream_endpoint_underline(cli_ep);
     assert_true(cli_underline != NULL);
 
     test_net_endpoint_expect_connect_to_acceptor(cli_underline, "1.2.3.4:5678", 0, 0);
@@ -51,10 +51,10 @@ static void net_ws_stream_pair_basic(void **state) {
 
 static void net_ws_stream_pair_delay(void **state) {
     net_ws_stream_pair_testenv_t env = *state;
-    net_endpoint_t cli_ep = net_ws_testenv_cli_stream_ep_create(env->m_env);
+    net_endpoint_t cli_ep = net_ws_testenv_stream_ep_create(env->m_env);
     net_endpoint_set_remote_address(cli_ep, net_acceptor_address(env->m_acceptor));
 
-    net_endpoint_t cli_underline = net_ws_cli_stream_endpoint_underline(cli_ep);
+    net_endpoint_t cli_underline = net_ws_stream_endpoint_underline(cli_ep);
     assert_true(cli_underline != NULL);
 
     test_net_endpoint_expect_connect_to_acceptor(cli_underline, "1.2.3.4:5678", 100, 0);
@@ -74,10 +74,10 @@ static void net_ws_stream_pair_delay(void **state) {
 
 static void net_ws_stream_pair_input_handshake(void **state) {
     net_ws_stream_pair_testenv_t env = *state;
-    net_endpoint_t cli_ep = net_ws_testenv_cli_stream_ep_create(env->m_env);
+    net_endpoint_t cli_ep = net_ws_testenv_stream_ep_create(env->m_env);
     net_endpoint_set_remote_address(cli_ep, net_acceptor_address(env->m_acceptor));
 
-    net_endpoint_t cli_underline = net_ws_cli_stream_endpoint_underline(cli_ep);
+    net_endpoint_t cli_underline = net_ws_stream_endpoint_underline(cli_ep);
     assert_true(cli_underline != NULL);
     net_endpoint_set_driver_debug(cli_underline, 1);
 
@@ -106,10 +106,10 @@ static void net_ws_stream_pair_input_handshake(void **state) {
 
 static void net_ws_stream_pair_input_connecting(void **state) {
     net_ws_stream_pair_testenv_t env = *state;
-    net_endpoint_t cli_ep = net_ws_testenv_cli_stream_ep_create(env->m_env);
+    net_endpoint_t cli_ep = net_ws_testenv_stream_ep_create(env->m_env);
     net_endpoint_set_remote_address(cli_ep, net_acceptor_address(env->m_acceptor));
 
-    net_endpoint_t cli_underline = net_ws_cli_stream_endpoint_underline(cli_ep);
+    net_endpoint_t cli_underline = net_ws_stream_endpoint_underline(cli_ep);
     assert_true(cli_underline != NULL);
 
     test_net_endpoint_expect_connect_to_acceptor(cli_underline, "1.2.3.4:5678", 100, 0);

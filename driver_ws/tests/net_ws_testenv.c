@@ -7,10 +7,8 @@
 #include "net_address.h"
 #include "net_pair.h"
 #include "net_ws_testenv.h"
-#include "net_ws_cli_protocol.h"
-#include "net_ws_cli_stream_driver.h"
-#include "net_ws_svr_protocol.h"
-#include "net_ws_svr_stream_driver.h"
+#include "net_ws_protocol.h"
+#include "net_ws_stream_driver.h"
 
 net_ws_testenv_t net_ws_testenv_create() {
     net_ws_testenv_t env = mem_alloc(test_allocrator(), sizeof(struct net_ws_testenv));
@@ -22,26 +20,15 @@ net_ws_testenv_t net_ws_testenv_create() {
 
     const char * addition_name = "test";
     
-    env->m_cli_protocol =
-        net_ws_cli_protocol_create(env->m_schedule, addition_name, test_allocrator(), env->m_em);
-    net_protocol_set_debug(net_protocol_from_data(env->m_cli_protocol), 2);
+    env->m_protocol =
+        net_ws_protocol_create(env->m_schedule, addition_name, test_allocrator(), env->m_em);
+    net_protocol_set_debug(net_protocol_from_data(env->m_protocol), 2);
 
-    env->m_cli_stream_driver =
-        net_ws_cli_stream_driver_create(
+    env->m_stream_driver =
+        net_ws_stream_driver_create(
             env->m_schedule, addition_name,
             net_driver_from_data(env->m_tdriver),
             test_allocrator(), env->m_em);
-
-    env->m_svr_protocol =
-        net_ws_svr_protocol_create(env->m_schedule, addition_name, test_allocrator(), env->m_em);
-    net_protocol_set_debug(net_protocol_from_data(env->m_svr_protocol), 2);
-
-    env->m_svr_stream_driver =
-        net_ws_svr_stream_driver_create(
-            env->m_schedule, addition_name,
-            net_driver_from_data(env->m_tdriver),
-            test_allocrator(), env->m_em);
-    net_driver_set_debug(net_driver_from_data(env->m_svr_stream_driver), 2);
     
     return env;
 }
@@ -60,8 +47,8 @@ void net_ws_testenv_cli_create_pair(
     assert_true(
         net_pair_endpoint_make(
             env->m_schedule,
-            net_protocol_from_data(env->m_cli_protocol),
-            net_protocol_from_data(env->m_svr_protocol),
+            net_protocol_from_data(env->m_protocol),
+            net_protocol_from_data(env->m_protocol),
             ep) == 0);
 
     *cli = ep[0];
@@ -74,9 +61,9 @@ void net_ws_testenv_cli_create_pair(
     }
 
     if (path) {
-        net_ws_cli_endpoint_t ws_cli = net_ws_cli_endpoint_cast(*cli);
-        assert_true(ws_cli);
-        net_ws_cli_endpoint_set_path(ws_cli, path);
+        net_ws_endpoint_t ws = net_ws_endpoint_cast(*cli);
+        assert_true(ws);
+        net_ws_endpoint_set_path(ws, path);
     }
 }
 
@@ -98,10 +85,10 @@ void net_ws_testenv_cli_create_pair_established(
 }
 
 net_endpoint_t
-net_ws_testenv_cli_stream_ep_create(net_ws_testenv_t env) {
+net_ws_testenv_stream_ep_create(net_ws_testenv_t env) {
     net_endpoint_t endpoint =
         net_endpoint_create(
-            net_driver_from_data(env->m_cli_stream_driver),
+            net_driver_from_data(env->m_stream_driver),
             env->m_test_protocol,
             NULL);
 
@@ -111,7 +98,7 @@ net_ws_testenv_cli_stream_ep_create(net_ws_testenv_t env) {
 }
 
 net_acceptor_t
-net_ws_testenv_create_svr_acceptor(
+net_ws_testenv_create_acceptor(
     net_ws_testenv_t env, const char * str_address,
     net_acceptor_on_new_endpoint_fun_t on_new_endpoint, void * on_new_endpoint_ctx)
 {
@@ -120,7 +107,7 @@ net_ws_testenv_create_svr_acceptor(
 
     net_acceptor_t acceptor =
         net_acceptor_create(
-            net_driver_from_data(env->m_svr_stream_driver),
+            net_driver_from_data(env->m_stream_driver),
             env->m_test_protocol,
             address, 0,
             on_new_endpoint, on_new_endpoint_ctx);
@@ -130,9 +117,9 @@ net_ws_testenv_create_svr_acceptor(
     return acceptor;
 }
 
-net_endpoint_t net_ws_testenv_create_svr_stream(net_ws_testenv_t env) {
+net_endpoint_t net_ws_testenv_create_stream(net_ws_testenv_t env) {
     net_endpoint_t endpoint =
-        net_ws_svr_stream_endpoint_create(env->m_svr_stream_driver, env->m_test_protocol);
+        net_ws_stream_endpoint_create(env->m_stream_driver, env->m_test_protocol);
 
     net_endpoint_set_driver_debug(endpoint, 1);
 

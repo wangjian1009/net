@@ -22,27 +22,27 @@ static void net_ws_pair_basic(void **state) {
     net_endpoint_t svr_base;
     net_ws_testenv_cli_create_pair_established(env, &cli_base, &svr_base, "1.1.2.3:5678", "/a/b");
 
-    net_ws_cli_endpoint_t cli_ep = net_ws_cli_endpoint_cast(cli_base);
-    net_ws_svr_endpoint_t svr_ep = net_ws_svr_endpoint_cast(svr_base);
+    net_ws_endpoint_t cli_ep = net_ws_endpoint_cast(cli_base);
+    net_ws_endpoint_t svr_ep = net_ws_endpoint_cast(svr_base);
 
     test_net_driver_run(env->m_tdriver, 0);
 
     /*验证svr状态 */
     assert_string_equal(
-        net_ws_svr_endpoint_state_str(net_ws_svr_endpoint_state(svr_ep)),
-        net_ws_svr_endpoint_state_str(net_ws_svr_endpoint_state_streaming));
+        net_ws_endpoint_state_str(net_ws_endpoint_state(svr_ep)),
+        net_ws_endpoint_state_str(net_ws_endpoint_state_streaming));
 
     assert_string_equal(
-        net_ws_svr_endpoint_path(net_ws_svr_endpoint_cast(svr_base)),
+        net_ws_endpoint_path(net_ws_endpoint_cast(svr_base)),
         "/a/b");
     
     /*验证cli状态 */
     assert_string_equal(
-        net_ws_cli_endpoint_state_str(net_ws_cli_endpoint_state(cli_ep)),
-        net_ws_cli_endpoint_state_str(net_ws_cli_endpoint_state_streaming));
+        net_ws_endpoint_state_str(net_ws_endpoint_state(cli_ep)),
+        net_ws_endpoint_state_str(net_ws_endpoint_state_streaming));
     
     /*client -> server*/
-    assert_true(net_ws_cli_endpoint_send_msg_text(cli_ep, "abcd") == 0);
+    assert_true(net_ws_endpoint_send_msg_text(cli_ep, "abcd") == 0);
     test_net_driver_run(env->m_tdriver, 0);
 
     /* test_net_endpoint_assert_buf_memory(svr_ep, net_ep_buf_read, "abcd", 4); */
