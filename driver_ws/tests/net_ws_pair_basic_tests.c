@@ -1,5 +1,6 @@
 #include "cmocka_all.h"
 #include "test_net_endpoint.h"
+#include "test_ws_endpoint_receiver.h"
 #include "net_ws_tests.h"
 #include "net_ws_testenv.h"
 
@@ -35,6 +36,9 @@ static void net_ws_pair_basic(void **state) {
     assert_string_equal(
         net_ws_endpoint_state_str(net_ws_endpoint_state(cli_ep)),
         net_ws_endpoint_state_str(net_ws_endpoint_state_streaming));
+
+    test_net_ws_endpoint_install_receivers(cli_ep);
+    test_net_ws_endpoint_install_receivers(svr_ep);
     
     /*client -> server*/
     assert_true(net_ws_endpoint_send_msg_text(cli_ep, "abcd") == 0);

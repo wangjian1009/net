@@ -22,6 +22,8 @@ typedef void (*net_ws_endpoint_on_msg_bin_fun_t)(void * ctx, net_ws_endpoint_t e
 net_ws_endpoint_t net_ws_endpoint_cast(net_endpoint_t endpoint);
 net_endpoint_t net_ws_endpoint_stream(net_endpoint_t endpoint);
 
+void net_ws_endpoint_free(net_ws_endpoint_t endpoint);
+    
 net_ws_endpoint_state_t net_ws_endpoint_state(net_ws_endpoint_t endpoint);
 net_ws_endpoint_runing_mode_t net_ws_endpoint_runing_mode(net_ws_endpoint_t endpoint);
 int net_ws_endpoint_set_runing_mode(net_ws_endpoint_t endpoint, net_ws_endpoint_runing_mode_t runing_mode);

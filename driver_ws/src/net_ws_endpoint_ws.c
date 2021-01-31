@@ -196,22 +196,80 @@ static void net_ws_endpoint_on_msg_recv(
 
     switch(arg->opcode) {
     case WSLAY_CONTINUATION_FRAME:
+        CPE_ERROR(
+            protocol->m_em, "ws: %s: continuation: not support!",
+            net_endpoint_dump(
+                net_ws_protocol_tmp_buffer(protocol),
+                endpoint->m_base_endpoint));
         break;
-    case WSLAY_TEXT_FRAME:
-        break;
-    case WSLAY_BINARY_FRAME:
-        break;
-    case WSLAY_CONNECTION_CLOSE:
-        break;
-    case WSLAY_PING:
-        break;
-    case WSLAY_PONG:
+    case WSLAY_TEXT_FRAME: {
+        /* mem_buffer_clear_data(&protocol->m_data_buffer); */
+        /* char * buf = mem_buffer_alloc(&protocol->m_data_buffer, arg->msg_length + 1); */
+        /* if (buf == NULL) { */
+        /*     CPE_ERROR( */
+        /*         protocol->m_em, "ws: %s: msg text: alloc buf fail, msg-length=%d!", */
+        /*         net_endpoint_dump( */
+        /*             net_ws_protocol_tmp_buffer(protocol), */
+        /*             endpoint->m_base_endpoint), */
+        /*         (int)arg->msg_length); */
+        /*     break; */
+        /* } */
+        /* memcpy(buf, arg->msg, arg->msg_length); */
+        /* buf[arg->msg_length] = 0; */
+
+        /* if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 2) { */
+        /*     CPE_INFO( */
+        /*         protocol->m_em, "ws: %s: msg text: <<<\n%s", */
+        /*         net_endpoint_dump( */
+        /*             net_ws_protocol_tmp_buffer(protocol), */
+        /*             endpoint->m_base_endpoint), */
+        /*         buf); */
+        /* } */
+        
+        /* if (protocol->m_endpoint_on_text_msg) { */
+        /*     if (protocol->m_endpoint_on_text_msg(ws_ep, buf) != 0) { */
+        /*         wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE); */
+        /*     } */
+        /* } */
         break;
     }
-    
-    if (!wslay_is_ctrl_frame(arg->opcode)) {
-        struct wslay_event_msg msgarg = { arg->opcode, arg->msg, arg->msg_length };
-        wslay_event_queue_msg(ctx, &msgarg);
+    case WSLAY_BINARY_FRAME:
+        if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 2) {
+            CPE_INFO(
+                protocol->m_em, "ws: %s: msg bin: <<< %d data",
+                net_endpoint_dump(
+                    net_ws_protocol_tmp_buffer(protocol),
+                    endpoint->m_base_endpoint),
+                (int)arg->msg_length);
+        }
+        
+        /* if (protocol->m_endpoint_on_bin_msg) { */
+        /*     if (protocol->m_endpoint_on_bin_msg(ws_ep, arg->msg, (uint32_t)arg->msg_length) != 0) { */
+        /*         wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE); */
+        /*     } */
+        /* } */
+        break;
+    case WSLAY_CONNECTION_CLOSE:
+        CPE_ERROR(
+            protocol->m_em, "ws: %s: close: not support!",
+            net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint));
+        break;
+    case WSLAY_PING:
+        CPE_ERROR(
+            protocol->m_em, "ws: %s: ping: not support!",
+            net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint));
+        break;
+    case WSLAY_PONG:
+        //ws_ep->m_pingpong_count = 0;
+
+        if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 2) {
+            CPE_INFO(
+                protocol->m_em, "ws: %s: msg pong: <<< %d data",
+                net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+                (int)arg->msg_length);
+        }
+        
+        break;
     }
 }
 

@@ -14,6 +14,10 @@
 
 extern struct wslay_event_callbacks s_net_ws_endpoint_callbacks;
 
+void net_ws_endpoint_free(net_ws_endpoint_t endpoint) {
+    net_endpoint_free(endpoint->m_base_endpoint);
+}
+
 net_ws_endpoint_t
 net_ws_endpoint_cast(net_endpoint_t base_endpoint) {
     net_protocol_t protocol = net_endpoint_protocol(base_endpoint);
@@ -146,7 +150,7 @@ void net_ws_endpoint_fini(net_endpoint_t base_endpoint) {
     endpoint->m_on_msg_bin_fun = NULL;
     
     if (endpoint->m_stream) {
-        assert(endpoint->m_stream->m_underline == base_endpoint);
+        assert(endpoint->m_stream->m_underline == endpoint);
         endpoint->m_stream->m_underline = NULL;
         endpoint->m_stream = NULL;
     }

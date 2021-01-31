@@ -13,10 +13,11 @@ set_property(TARGET tests_net_driver_ws PROPERTY INCLUDE_DIRECTORIES
   ${net_core_base}/test_utils
   ${net_driver_ws_base}/include
   ${net_driver_ws_base}/src
+  ${net_driver_ws_base}/test_utils
   )
 
 set(tests_net_driver_ws_libraries
-  test_utils_cpe_utils test_utils_net_core
+  test_utils_cpe_utils test_utils_net_core test_utils_net_driver_ws
   net_driver_ws net_core  cpe_utils_yaml cpe_utils_sock cpe_utils cpe_pal
   wslay crypto pcre2 cmocka)
 
