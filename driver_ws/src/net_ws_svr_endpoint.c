@@ -102,6 +102,14 @@ int net_ws_svr_endpoint_init(net_endpoint_t base_endpoint) {
     endpoint->m_path = NULL;
     endpoint->m_version = 0;
 
+    endpoint->m_on_msg_text_ctx = NULL;
+    endpoint->m_on_msg_text_fun = NULL;
+    endpoint->m_on_msg_text_ctx_free = NULL;
+
+    endpoint->m_on_msg_bin_ctx = NULL;
+    endpoint->m_on_msg_bin_fun = NULL;
+    endpoint->m_on_msg_bin_ctx_free = NULL;
+    
     endpoint->m_state = net_ws_svr_endpoint_state_handshake;
     endpoint->m_handshake.m_state = net_ws_svr_endpoint_handshake_first_line;
     endpoint->m_handshake.m_readed_size = 0;
@@ -122,6 +130,20 @@ void net_ws_svr_endpoint_fini(net_endpoint_t base_endpoint) {
     net_ws_svr_endpoint_t endpoint = net_endpoint_protocol_data(base_endpoint);
     net_ws_svr_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
 
+    if (endpoint->m_on_msg_text_ctx_free) {
+        endpoint->m_on_msg_text_ctx_free(endpoint->m_on_msg_text_ctx);
+        endpoint->m_on_msg_text_ctx_free = NULL;
+    }
+    endpoint->m_on_msg_text_ctx = NULL;
+    endpoint->m_on_msg_text_fun = NULL;
+
+    if (endpoint->m_on_msg_bin_ctx_free) {
+        endpoint->m_on_msg_bin_ctx_free(endpoint->m_on_msg_bin_ctx);
+        endpoint->m_on_msg_bin_ctx_free = NULL;
+    }
+    endpoint->m_on_msg_bin_ctx = NULL;
+    endpoint->m_on_msg_bin_fun = NULL;
+    
     if (endpoint->m_stream) {
         assert(endpoint->m_stream->m_underline == base_endpoint);
         endpoint->m_stream->m_underline = NULL;
@@ -201,6 +223,34 @@ int net_ws_svr_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoi
     case net_endpoint_state_write_closed:
         return 0;
     }
+}
+
+void net_ws_svr_endpoint_set_msg_receiver_text(
+    net_ws_svr_endpoint_t endpoint,
+    void * ctx, net_ws_svr_endpoint_on_msg_text_fun_t fun, void (*ctx_free)(void*))
+{
+    if (endpoint->m_on_msg_text_ctx_free) {
+        endpoint->m_on_msg_text_ctx_free(endpoint->m_on_msg_text_ctx);
+        endpoint->m_on_msg_text_ctx_free = NULL;
+    }
+
+    endpoint->m_on_msg_text_ctx = ctx;
+    endpoint->m_on_msg_text_fun = fun;
+    endpoint->m_on_msg_text_ctx_free = ctx_free;
+}
+
+void net_ws_svr_endpoint_set_msg_receiver_bin(
+    net_ws_svr_endpoint_t endpoint,
+    void * ctx, net_ws_svr_endpoint_on_msg_bin_fun_t fun, void (*ctx_free)(void*))
+{
+    if (endpoint->m_on_msg_bin_ctx_free) {
+        endpoint->m_on_msg_bin_ctx_free(endpoint->m_on_msg_bin_ctx);
+        endpoint->m_on_msg_bin_ctx_free = NULL;
+    }
+
+    endpoint->m_on_msg_bin_ctx = ctx;
+    endpoint->m_on_msg_bin_fun = fun;
+    endpoint->m_on_msg_bin_ctx_free = ctx_free;
 }
 
 const char * net_ws_svr_endpoint_state_str(net_ws_svr_endpoint_state_t state) {

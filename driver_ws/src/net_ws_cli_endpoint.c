@@ -68,6 +68,15 @@ int net_ws_cli_endpoint_init(net_endpoint_t base_endpoint) {
 
     endpoint->m_base_endpoint = base_endpoint;
     endpoint->m_stream = NULL;
+
+    endpoint->m_on_msg_text_ctx = NULL;
+    endpoint->m_on_msg_text_fun = NULL;
+    endpoint->m_on_msg_text_ctx_free = NULL;
+
+    endpoint->m_on_msg_bin_ctx = NULL;
+    endpoint->m_on_msg_bin_fun = NULL;
+    endpoint->m_on_msg_bin_ctx_free = NULL;
+    
     endpoint->m_path = NULL;
 
     endpoint->m_state = net_ws_cli_endpoint_state_handshake;
@@ -75,8 +84,8 @@ int net_ws_cli_endpoint_init(net_endpoint_t base_endpoint) {
     endpoint->m_handshake.m_readed_size = 0;
     endpoint->m_handshake.m_received_fields = 0;
     
-    wslay_event_context_client_init(&endpoint->m_ctx, &s_net_ws_cli_endpoint_callbacks, endpoint);
-    if (endpoint->m_ctx == NULL) {
+    wslay_event_context_client_init(&endpoint->m_ws_ctx, &s_net_ws_cli_endpoint_callbacks, endpoint);
+    if (endpoint->m_ws_ctx == NULL) {
         CPE_ERROR(
             protocol->m_em, "net: ws: %s: init: init context failed",
             net_endpoint_dump(net_ws_cli_protocol_tmp_buffer(protocol), base_endpoint));
@@ -89,6 +98,20 @@ int net_ws_cli_endpoint_init(net_endpoint_t base_endpoint) {
 void net_ws_cli_endpoint_fini(net_endpoint_t base_endpoint) {
     net_ws_cli_endpoint_t endpoint = net_endpoint_protocol_data(base_endpoint);
     net_ws_cli_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
+
+    if (endpoint->m_on_msg_text_ctx_free) {
+        endpoint->m_on_msg_text_ctx_free(endpoint->m_on_msg_text_ctx);
+        endpoint->m_on_msg_text_ctx_free = NULL;
+    }
+    endpoint->m_on_msg_text_ctx = NULL;
+    endpoint->m_on_msg_text_fun = NULL;
+
+    if (endpoint->m_on_msg_bin_ctx_free) {
+        endpoint->m_on_msg_bin_ctx_free(endpoint->m_on_msg_bin_ctx);
+        endpoint->m_on_msg_bin_ctx_free = NULL;
+    }
+    endpoint->m_on_msg_bin_ctx = NULL;
+    endpoint->m_on_msg_bin_fun = NULL;
     
     if (endpoint->m_stream) {
         assert(endpoint->m_stream->m_underline == base_endpoint);
@@ -96,9 +119,9 @@ void net_ws_cli_endpoint_fini(net_endpoint_t base_endpoint) {
         endpoint->m_stream = NULL;
     }
 
-    if (endpoint->m_ctx) {
-        wslay_event_context_free(endpoint->m_ctx);
-        endpoint->m_ctx = NULL;
+    if (endpoint->m_ws_ctx) {
+        wslay_event_context_free(endpoint->m_ws_ctx);
+        endpoint->m_ws_ctx = NULL;
     }
 
     if (endpoint->m_path) {
@@ -259,6 +282,34 @@ int net_ws_cli_endpoint_write(
     /* } */
     
     return 0;
+}
+
+void net_ws_cli_endpoint_set_msg_receiver_text(
+    net_ws_cli_endpoint_t endpoint,
+    void * ctx, net_ws_cli_endpoint_on_msg_text_fun_t fun, void (*ctx_free)(void*))
+{
+    if (endpoint->m_on_msg_text_ctx_free) {
+        endpoint->m_on_msg_text_ctx_free(endpoint->m_on_msg_text_ctx);
+        endpoint->m_on_msg_text_ctx_free = NULL;
+    }
+
+    endpoint->m_on_msg_text_ctx = ctx;
+    endpoint->m_on_msg_text_fun = fun;
+    endpoint->m_on_msg_text_ctx_free = ctx_free;
+}
+
+void net_ws_cli_endpoint_set_msg_receiver_bin(
+    net_ws_cli_endpoint_t endpoint,
+    void * ctx, net_ws_cli_endpoint_on_msg_bin_fun_t fun, void (*ctx_free)(void*))
+{
+    if (endpoint->m_on_msg_bin_ctx_free) {
+        endpoint->m_on_msg_bin_ctx_free(endpoint->m_on_msg_bin_ctx);
+        endpoint->m_on_msg_bin_ctx_free = NULL;
+    }
+
+    endpoint->m_on_msg_bin_ctx = ctx;
+    endpoint->m_on_msg_bin_fun = fun;
+    endpoint->m_on_msg_bin_ctx_free = ctx_free;
 }
 
 const char * net_ws_cli_endpoint_state_str(net_ws_cli_endpoint_state_t state) {

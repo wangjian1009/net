@@ -23,7 +23,7 @@ static int net_ws_cli_endpoint_send_event(
         return -1;
     }
     
-    if (wslay_event_queue_msg(endpoint->m_ctx, ws_msg) != 0) {
+    if (wslay_event_queue_msg(endpoint->m_ws_ctx, ws_msg) != 0) {
         CPE_ERROR(
             protocol->m_em,
             "ws: %s: msg %s: >>> queue msg fail!",
@@ -32,8 +32,8 @@ static int net_ws_cli_endpoint_send_event(
         return -1;
     }
 
-    if (wslay_event_want_write(endpoint->m_ctx)) {
-        int rv = wslay_event_send(endpoint->m_ctx);
+    if (wslay_event_want_write(endpoint->m_ws_ctx)) {
+        int rv = wslay_event_send(endpoint->m_ws_ctx);
         if (rv != 0) {
             CPE_ERROR(
                 protocol->m_em, "ws: %s: msg %s: >>> send fail, rv=%d (%s)",
@@ -85,7 +85,7 @@ static ssize_t net_ws_cli_endpoint_recv(
     net_ws_cli_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
 
     if (net_endpoint_buf_is_empty(endpoint->m_base_endpoint, net_ep_buf_read)) {
-        wslay_event_set_error(endpoint->m_ctx, WSLAY_ERR_WOULDBLOCK);
+        wslay_event_set_error(endpoint->m_ws_ctx, WSLAY_ERR_WOULDBLOCK);
         return -1;
     }
 

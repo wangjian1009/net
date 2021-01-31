@@ -19,6 +19,15 @@ typedef enum net_ws_svr_endpoint_handshake_field {
 struct net_ws_svr_endpoint {
     net_endpoint_t m_base_endpoint;
     net_ws_svr_stream_endpoint_t m_stream;
+
+    void * m_on_msg_text_ctx;
+    net_ws_svr_endpoint_on_msg_text_fun_t m_on_msg_text_fun;
+    void (*m_on_msg_text_ctx_free)(void*);
+
+    void * m_on_msg_bin_ctx;
+    net_ws_svr_endpoint_on_msg_bin_fun_t m_on_msg_bin_fun;
+    void (*m_on_msg_bin_ctx_free)(void*);
+    
     net_ws_svr_endpoint_state_t m_state;
     union {
         struct {

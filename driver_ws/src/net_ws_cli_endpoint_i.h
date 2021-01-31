@@ -18,6 +18,15 @@ typedef enum net_ws_cli_endpoint_handshake_field {
 struct net_ws_cli_endpoint {
     net_endpoint_t m_base_endpoint;
     net_ws_cli_stream_endpoint_t m_stream;
+
+    void * m_on_msg_text_ctx;
+    net_ws_cli_endpoint_on_msg_text_fun_t m_on_msg_text_fun;
+    void (*m_on_msg_text_ctx_free)(void*);
+
+    void * m_on_msg_bin_ctx;
+    net_ws_cli_endpoint_on_msg_bin_fun_t m_on_msg_bin_fun;
+    void (*m_on_msg_bin_ctx_free)(void*);
+    
     net_ws_cli_endpoint_state_t m_state;
     struct {
         char m_key[16];
@@ -25,7 +34,7 @@ struct net_ws_cli_endpoint {
         uint16_t m_readed_size;
         uint8_t m_received_fields;
     } m_handshake;
-    wslay_event_context_ptr m_ctx;
+    wslay_event_context_ptr m_ws_ctx;
     char * m_path;
 };
 
