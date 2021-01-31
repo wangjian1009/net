@@ -29,11 +29,11 @@ net_endpoint_t net_ws_testenv_stream_ep_create(net_ws_testenv_t env);
 
 /*pair*/
 void net_ws_testenv_cli_create_pair(
-    net_ws_testenv_t env, net_endpoint_t  * cli, net_endpoint_t  * svr,
+    net_ws_testenv_t env, net_ws_endpoint_t * cli, net_ws_endpoint_t * svr,
     const char * address, const char * path);
 
 void net_ws_testenv_cli_create_pair_established(
-    net_ws_testenv_t env, net_endpoint_t  * cli, net_endpoint_t  * svr,
+    net_ws_testenv_t env, net_ws_endpoint_t * cli, net_ws_endpoint_t  * svr,
     const char * address, const char * path);
 
 /*svr*/

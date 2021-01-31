@@ -40,7 +40,7 @@ void net_ws_testenv_free(net_ws_testenv_t env) {
 }
 
 void net_ws_testenv_cli_create_pair(
-    net_ws_testenv_t env, net_endpoint_t  * cli, net_endpoint_t  * svr,
+    net_ws_testenv_t env, net_ws_endpoint_t * cli, net_ws_endpoint_t * svr,
     const char * str_address, const char * path)
 {
     net_endpoint_t ep[2];
@@ -51,36 +51,37 @@ void net_ws_testenv_cli_create_pair(
             net_protocol_from_data(env->m_protocol),
             ep) == 0);
 
-    *cli = ep[0];
-    *svr = ep[1];
+    *cli = net_ws_endpoint_cast(ep[0]);
+    *svr = net_ws_endpoint_cast(ep[1]);
+
+    net_ws_endpoint_set_runing_mode(*cli, net_ws_endpoint_runing_mode_cli);
+    net_ws_endpoint_set_runing_mode(*svr, net_ws_endpoint_runing_mode_svr);
 
     if (str_address) {
         net_address_t address = net_address_create_auto(env->m_schedule, str_address);
-        net_endpoint_set_remote_address(*cli, address);
+        net_endpoint_set_remote_address(net_ws_endpoint_base_endpoint(*cli), address);
         net_address_free(address);
     }
 
     if (path) {
-        net_ws_endpoint_t ws = net_ws_endpoint_cast(*cli);
-        assert_true(ws);
-        net_ws_endpoint_set_path(ws, path);
+        net_ws_endpoint_set_path(*cli, path);
     }
 }
 
 void net_ws_testenv_cli_create_pair_established(
-    net_ws_testenv_t env, net_endpoint_t  * cli, net_endpoint_t  * svr,
+    net_ws_testenv_t env, net_ws_endpoint_t * cli, net_ws_endpoint_t * svr,
     const char * str_address, const char * path)
 {
     net_ws_testenv_cli_create_pair(env, cli, svr, str_address, path);
 
-    assert_true(net_endpoint_connect(*cli) == 0);
+    assert_true(net_endpoint_connect(net_ws_endpoint_base_endpoint(*cli)) == 0);
 
     assert_string_equal(
-        net_endpoint_state_str(net_endpoint_state(*cli)),
+        net_endpoint_state_str(net_endpoint_state(net_ws_endpoint_base_endpoint(*cli))),
         net_endpoint_state_str(net_endpoint_state_established));
 
     assert_string_equal(
-        net_endpoint_state_str(net_endpoint_state(*svr)),
+        net_endpoint_state_str(net_endpoint_state(net_ws_endpoint_base_endpoint(*svr))),
         net_endpoint_state_str(net_endpoint_state_established));
 }
 

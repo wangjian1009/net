@@ -18,12 +18,9 @@ static int teardown(void **state) {
 static void net_ws_pair_basic(void **state) {
     net_ws_testenv_t env = *state;
 
-    net_endpoint_t cli_base;
-    net_endpoint_t svr_base;
-    net_ws_testenv_cli_create_pair_established(env, &cli_base, &svr_base, "1.1.2.3:5678", "/a/b");
-
-    net_ws_endpoint_t cli_ep = net_ws_endpoint_cast(cli_base);
-    net_ws_endpoint_t svr_ep = net_ws_endpoint_cast(svr_base);
+    net_ws_endpoint_t cli_ep;
+    net_ws_endpoint_t svr_ep;
+    net_ws_testenv_cli_create_pair_established(env, &cli_ep, &svr_ep, "1.1.2.3:5678", "/a/b");
 
     test_net_driver_run(env->m_tdriver, 0);
 
@@ -32,9 +29,7 @@ static void net_ws_pair_basic(void **state) {
         net_ws_endpoint_state_str(net_ws_endpoint_state(svr_ep)),
         net_ws_endpoint_state_str(net_ws_endpoint_state_streaming));
 
-    assert_string_equal(
-        net_ws_endpoint_path(net_ws_endpoint_cast(svr_base)),
-        "/a/b");
+    assert_string_equal(net_ws_endpoint_path(svr_ep), "/a/b");
     
     /*验证cli状态 */
     assert_string_equal(

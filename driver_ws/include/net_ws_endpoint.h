@@ -24,6 +24,8 @@ net_endpoint_t net_ws_endpoint_stream(net_endpoint_t endpoint);
 
 net_ws_endpoint_state_t net_ws_endpoint_state(net_ws_endpoint_t endpoint);
 net_ws_endpoint_runing_mode_t net_ws_endpoint_runing_mode(net_ws_endpoint_t endpoint);
+int net_ws_endpoint_set_runing_mode(net_ws_endpoint_t endpoint, net_ws_endpoint_runing_mode_t runing_mode);
+net_endpoint_t net_ws_endpoint_base_endpoint(net_ws_endpoint_t endpoint);
 
 const char * net_ws_endpoint_path(net_ws_endpoint_t endpoint);
 int net_ws_endpoint_set_path(net_ws_endpoint_t endpoint, const char * path);

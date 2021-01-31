@@ -13,7 +13,6 @@
 #include "net_ws_utils.h"
 
 extern struct wslay_event_callbacks s_net_ws_endpoint_callbacks;
-static int net_ws_endpoint_set_runing_mode(net_ws_endpoint_t endpoint, net_ws_endpoint_runing_mode_t runing_mode);
 
 net_ws_endpoint_t
 net_ws_endpoint_cast(net_endpoint_t base_endpoint) {
@@ -36,6 +35,10 @@ net_ws_endpoint_runing_mode_t net_ws_endpoint_runing_mode(net_ws_endpoint_t endp
 
 net_ws_endpoint_state_t net_ws_endpoint_state(net_ws_endpoint_t endpoint) {
     return endpoint->m_state;
+}
+
+net_endpoint_t net_ws_endpoint_base_endpoint(net_ws_endpoint_t endpoint) {
+    return endpoint->m_base_endpoint;
 }
 
 const char * net_ws_endpoint_path(net_ws_endpoint_t endpoint) {
@@ -163,17 +166,18 @@ int net_ws_endpoint_input(net_endpoint_t base_endpoint) {
     net_ws_endpoint_t endpoint = net_endpoint_protocol_data(base_endpoint);
     net_ws_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
 
-    if (endpoint->m_runing_mode == net_ws_endpoint_runing_mode_init
-        || endpoint->m_state == net_ws_endpoint_state_init)
-    {
+    if (endpoint->m_runing_mode == net_ws_endpoint_runing_mode_init) {
         CPE_ERROR(
-            protocol->m_em, "net: ws: %s: input in state %s.%s, error",
+            protocol->m_em, "net: ws: %s: input in runing-mode %s, error",
             net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), base_endpoint),
-            net_ws_endpoint_runing_mode_str(endpoint->m_runing_mode),
-            net_ws_endpoint_state_str(endpoint->m_state));
+            net_ws_endpoint_runing_mode_str(endpoint->m_runing_mode));
         return -1;
     }
 
+    if (endpoint->m_state == net_ws_endpoint_state_init) {
+        if (net_ws_endpoint_set_state(endpoint, net_ws_endpoint_state_handshake) != 0) return -1;
+    }
+    
     if (endpoint->m_state == net_ws_endpoint_state_handshake) {
         if (endpoint->m_runing_mode == net_ws_endpoint_runing_mode_svr) {
             if (net_ws_endpoint_input_handshake_svr(base_endpoint, endpoint) != 0) return -1;
@@ -216,7 +220,9 @@ int net_ws_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoint_s
         if (base_stream) {
             if (net_endpoint_set_state(base_stream, net_endpoint_state_connecting) != 0) return -1;
         }
-        if (net_ws_endpoint_send_handshake(base_endpoint, endpoint) != 0) return -1;
+        if (endpoint->m_runing_mode == net_ws_endpoint_runing_mode_cli) {
+            if (net_ws_endpoint_send_handshake(base_endpoint, endpoint) != 0) return -1;
+        }
         break;
     case net_endpoint_state_error:
         if (base_stream) {
@@ -365,17 +371,17 @@ void net_ws_endpoint_set_msg_receiver_bin(
     endpoint->m_on_msg_bin_ctx_free = ctx_free;
 }
 
-static int net_ws_endpoint_set_runing_mode(net_ws_endpoint_t endpoint, net_ws_endpoint_runing_mode_t runing_mode) {
+int net_ws_endpoint_set_runing_mode(net_ws_endpoint_t endpoint, net_ws_endpoint_runing_mode_t runing_mode) {
     if (endpoint->m_runing_mode == runing_mode) return 0;
 
     net_ws_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
 
     if (net_endpoint_protocol_debug(endpoint->m_base_endpoint)) {
         CPE_INFO(
-            protocol->m_em, "net: ws: %s: state %s ==> %s",
+            protocol->m_em, "net: ws: %s: runing-mode: %s ==> %s",
             net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
             net_ws_endpoint_runing_mode_str(endpoint->m_runing_mode),
-            net_ws_endpoint_runing_mode_str(endpoint->m_runing_mode));
+            net_ws_endpoint_runing_mode_str(runing_mode));
     }
 
     if (endpoint->m_state != net_ws_endpoint_state_init) {
@@ -396,7 +402,7 @@ int net_ws_endpoint_set_state(net_ws_endpoint_t endpoint, net_ws_endpoint_state_
     
     if (net_endpoint_protocol_debug(endpoint->m_base_endpoint)) {
         CPE_INFO(
-            protocol->m_em, "net: ws: %s: state %s ==> %s",
+            protocol->m_em, "net: ws: %s: state: %s ==> %s",
             net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
             net_ws_endpoint_state_str(endpoint->m_state),
             net_ws_endpoint_state_str(state));
