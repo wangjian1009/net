@@ -10,6 +10,8 @@
 #include "net_ws_svr_endpoint_i.h"
 #include "net_ws_svr_stream_endpoint_i.h"
 
+extern struct wslay_event_callbacks s_net_ws_svr_endpoint_callbacks;
+
 static void net_ws_svr_endpoint_dump_error(net_endpoint_t base_endpoint, int val);
 static int net_ws_svr_endpoint_update_error(net_endpoint_t base_endpoint, int err, int r);
 
@@ -104,6 +106,14 @@ int net_ws_svr_endpoint_init(net_endpoint_t base_endpoint) {
     endpoint->m_handshake.m_state = net_ws_svr_endpoint_handshake_first_line;
     endpoint->m_handshake.m_readed_size = 0;
     endpoint->m_handshake.m_received_fields = 0;
+
+    wslay_event_context_server_init(&endpoint->m_ctx, &s_net_ws_svr_endpoint_callbacks, endpoint);
+    if (endpoint->m_ctx == NULL) {
+        CPE_ERROR(
+            protocol->m_em, "net: ws: %s: init: init context failed",
+            net_endpoint_dump(net_ws_svr_protocol_tmp_buffer(protocol), base_endpoint));
+        return -1;
+    }
     
     return 0;
 }
@@ -118,6 +128,11 @@ void net_ws_svr_endpoint_fini(net_endpoint_t base_endpoint) {
         endpoint->m_stream = NULL;
     }
 
+    if (endpoint->m_ctx) {
+        wslay_event_context_free(endpoint->m_ctx);
+        endpoint->m_ctx = NULL;
+    }
+    
     if (endpoint->m_host) {
         net_address_free(endpoint->m_host);
         endpoint->m_host = NULL;

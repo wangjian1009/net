@@ -20,6 +20,7 @@ struct net_ws_cli_endpoint {
     net_ws_cli_stream_endpoint_t m_stream;
     net_ws_cli_endpoint_state_t m_state;
     struct {
+        char m_key[16];
         net_ws_cli_endpoint_handshake_state_t m_state;
         uint16_t m_readed_size;
         uint8_t m_received_fields;

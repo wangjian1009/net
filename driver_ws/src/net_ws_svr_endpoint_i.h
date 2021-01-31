@@ -1,5 +1,6 @@
 #ifndef NET_WS_SVR_ENDPOINT_I_H_INCLEDED
 #define NET_WS_SVR_ENDPOINT_I_H_INCLEDED
+#include <wslay/wslay.h>
 #include "cpe/utils/sha1.h"
 #include "net_ws_svr_endpoint.h"
 #include "net_ws_svr_protocol_i.h"
@@ -27,6 +28,7 @@ struct net_ws_svr_endpoint {
             struct cpe_sha1_value m_accept_key;
         } m_handshake;
     };
+    wslay_event_context_ptr m_ctx;
     net_address_t m_host;
     char * m_path;
     uint8_t m_version;

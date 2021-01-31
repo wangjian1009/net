@@ -94,6 +94,8 @@ int net_ws_cli_endpoint_input_handshake_header_line(
         net_ws_cli_endpoint_handshake_field_set(net_ws_cli_endpoint_handshake_field_connection);
     }
     else if (strcasecmp(name, "Sec-WebSocket-Accept") == 0) {
+        //TODO: 验证accept正确性
+        net_ws_cli_endpoint_handshake_field_set(net_ws_cli_endpoint_handshake_field_accept);
     }
     
     return 0;
@@ -224,9 +226,8 @@ int net_ws_cli_endpoint_send_handshake(net_endpoint_t base_endpoint, net_ws_cli_
     stream_printf((write_stream_t)&ws, "Connection: Upgrade\r\n");
 
     stream_printf((write_stream_t)&ws, "Sec-WebSocket-Key: ");
-    char client_key[16];
-    cpe_rand_ctx_fill(cpe_rand_ctx_dft(), client_key, sizeof(client_key));
-    cpe_base64_encode_from_buf((write_stream_t)&ws, client_key, sizeof(client_key));
+    cpe_rand_ctx_fill(cpe_rand_ctx_dft(), &endpoint->m_handshake.m_key, sizeof(endpoint->m_handshake.m_key));
+    cpe_base64_encode_from_buf((write_stream_t)&ws, endpoint->m_handshake.m_key, sizeof(endpoint->m_handshake.m_key));
     stream_printf((write_stream_t)&ws, "\r\n");
 
     stream_printf((write_stream_t)&ws, "Sec-WebSocket-Version: 13\r\n");
