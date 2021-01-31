@@ -43,7 +43,9 @@ static void net_ws_pair_basic(void **state) {
     /*client -> server*/
     test_net_ws_endpoint_expect_text_msg(svr_ep, "abcd");
     assert_true(net_ws_endpoint_send_msg_text(cli_ep, "abcd") == 0);
+    CPE_ERROR(env->m_em, "send 111");
     test_net_driver_run(env->m_tdriver, 0);
+    CPE_ERROR(env->m_em, "send 222");
 
     /* test_net_endpoint_assert_buf_memory(svr_ep, net_ep_buf_read, "abcd", 4); */
 

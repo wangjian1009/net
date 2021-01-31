@@ -192,6 +192,7 @@ int net_ws_endpoint_input(net_endpoint_t base_endpoint) {
         }
         
         if (endpoint->m_state == net_ws_endpoint_state_handshake) return 0;
+        if (net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_read)) return 0;
     }
 
     assert(endpoint->m_state == net_ws_endpoint_state_streaming);

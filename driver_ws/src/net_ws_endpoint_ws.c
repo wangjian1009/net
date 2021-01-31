@@ -98,7 +98,7 @@ static ssize_t net_ws_endpoint_recv(
         return -1;
     }
 
-    if (net_endpoint_driver_debug(endpoint->m_base_endpoint) >= 2) {
+    if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 2) {
         CPE_INFO(
             protocol->m_em, "net: ws: %s:     <== %d data",
             net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
@@ -119,7 +119,7 @@ static ssize_t net_ws_endpoint_send(
         return -1;
     }
 
-    if (net_endpoint_driver_debug(endpoint->m_base_endpoint) >= 2) {
+    if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 2) {
         CPE_INFO(
             protocol->m_em, "net: ws: %s:     ==> %d data",
             net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
@@ -137,7 +137,7 @@ static int net_ws_endpoint_genmask(
     
     cpe_rand_ctx_fill(cpe_rand_ctx_dft(), buf, len);
 
-    if (net_endpoint_driver_debug(endpoint->m_base_endpoint) >= 2) {
+    if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 2) {
         CPE_INFO(
             protocol->m_em, "net: ws: %s:     gen random %d data",
             net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
@@ -153,7 +153,7 @@ static void net_ws_endpoint_recv_start(
     net_ws_endpoint_t endpoint = user_data;
     net_ws_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
 
-    if (net_endpoint_driver_debug(endpoint->m_base_endpoint) >= 2) {
+    if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 2) {
         CPE_INFO(
             protocol->m_em, "net: ws: %s:     recv begin: fin=%d, rsv=%d, opcode=%s, payload-length=" FMT_UINT64_T,
             net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
@@ -167,7 +167,7 @@ static void net_ws_endpoint_recv_trunk(
     net_ws_endpoint_t endpoint = user_data;
     net_ws_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
 
-    if (net_endpoint_driver_debug(endpoint->m_base_endpoint) >= 2) {
+    if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 2) {
         CPE_INFO(
             protocol->m_em, "net: ws: %s:     recv trunk, length=%d",
             net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
@@ -181,7 +181,7 @@ static void net_ws_endpoint_recv_end(
     net_ws_endpoint_t endpoint = user_data;
     net_ws_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
 
-    if (net_endpoint_driver_debug(endpoint->m_base_endpoint) >= 2) {
+    if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 2) {
         CPE_INFO(
             protocol->m_em, "net: ws: %s:     recv end",
             net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint));
