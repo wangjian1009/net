@@ -488,7 +488,7 @@ uint32_t net_endpoint_error_no(net_endpoint_t endpoint) {
 }
 
 const char * net_endpoint_error_msg(net_endpoint_t endpoint) {
-    return endpoint->m_error_msg ? endpoint->m_error_msg : "";
+    return endpoint->m_error_msg;
 }
 
 uint8_t net_endpoint_have_error(net_endpoint_t endpoint) {
