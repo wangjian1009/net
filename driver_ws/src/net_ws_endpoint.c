@@ -430,11 +430,19 @@ int net_ws_endpoint_set_state(net_ws_endpoint_t endpoint, net_ws_endpoint_state_
             endpoint->m_state_data.m_cli.m_handshake.m_received_fields = 0;
         }
         else {
+            endpoint->m_state_data.m_svr.m_handshake.m_state = net_ws_endpoint_handshake_svr_first_line;
+            endpoint->m_state_data.m_svr.m_handshake.m_readed_size = 0;
+            endpoint->m_state_data.m_svr.m_handshake.m_received_fields = 0;
         }
         break;
     case net_ws_endpoint_state_streaming:
         assert(endpoint->m_ws_ctx == NULL);
-        wslay_event_context_client_init(&endpoint->m_ws_ctx, &s_net_ws_endpoint_callbacks, endpoint);
+        if (endpoint->m_runing_mode == net_ws_endpoint_runing_mode_cli) {
+            wslay_event_context_client_init(&endpoint->m_ws_ctx, &s_net_ws_endpoint_callbacks, endpoint);
+        }
+        else {
+            wslay_event_context_server_init(&endpoint->m_ws_ctx, &s_net_ws_endpoint_callbacks, endpoint);
+        }
         if (endpoint->m_ws_ctx == NULL) {
             CPE_ERROR(
                 protocol->m_em, "net: ws: %s: init context failed",

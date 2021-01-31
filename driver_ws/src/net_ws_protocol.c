@@ -20,10 +20,10 @@ net_ws_protocol_create(
 {
     char name[64];
     if (addition_name) {
-        snprintf(name, sizeof(name), "ws-cli-%s", addition_name);
+        snprintf(name, sizeof(name), "ws-%s", addition_name);
     }
     else {
-        snprintf(name, sizeof(name), "ws-cli");
+        snprintf(name, sizeof(name), "ws");
     }
 
     net_protocol_t base_protocol =
@@ -56,10 +56,10 @@ net_ws_protocol_t
 net_ws_protocol_find(net_schedule_t schedule, const char * addition_name) {
     char name[64];
     if (addition_name) {
-        snprintf(name, sizeof(name), "ws-cli-%s", addition_name);
+        snprintf(name, sizeof(name), "ws-%s", addition_name);
     }
     else {
-        snprintf(name, sizeof(name), "ws-cli");
+        snprintf(name, sizeof(name), "ws");
     }
 
     net_protocol_t protocol = net_protocol_find(schedule, name);
