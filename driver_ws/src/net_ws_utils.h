@@ -3,6 +3,6 @@
 #include <wslay/wslay.h>
 
 const char * net_ws_wslay_err_str(int err);
-const char * net_ws_wslay_op_type_str(int op_type);
+const char * net_ws_wslay_op_code_str(int op_code);
 
 #endif

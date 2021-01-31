@@ -37,10 +37,6 @@ struct net_ws_svr_endpoint {
 int net_ws_svr_endpoint_set_path(net_ws_svr_endpoint_t endpoint, const char * path);
 int net_ws_svr_endpoint_set_host(net_ws_svr_endpoint_t endpoint, net_address_t address);
 
-/**/
-int net_ws_svr_endpoint_write(
-    net_endpoint_t base_endpoint, net_endpoint_t from_ep, net_endpoint_buf_type_t from_buf);
-
 /*protocol*/
 int net_ws_svr_endpoint_init(net_endpoint_t base_endpoint);
 void net_ws_svr_endpoint_fini(net_endpoint_t base_endpoint);

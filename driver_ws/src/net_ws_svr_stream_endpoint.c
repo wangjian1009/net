@@ -46,7 +46,7 @@ int net_ws_svr_stream_endpoint_update(net_endpoint_t base_endpoint) {
         return 0;
     case net_endpoint_state_established:
         if (!net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write)) { /*有数据等待写入 */
-            if (net_ws_svr_endpoint_write(endpoint->m_underline, base_endpoint, net_ep_buf_write) != 0) return -1;
+            //if (net_ws_svr_endpoint_write(endpoint->m_underline, base_endpoint, net_ep_buf_write) != 0) return -1;
             if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return 0;
         }
 
