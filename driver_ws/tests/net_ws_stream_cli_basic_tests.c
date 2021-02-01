@@ -169,10 +169,10 @@ int net_ws_stream_cli_basic_tests() {
 	const struct CMUnitTest ws_basic_tests[] = {
 		cmocka_unit_test_setup_teardown(net_ws_stream_cli_underline_connecting, setup, teardown),
 		cmocka_unit_test_setup_teardown(net_ws_stream_cli_underline_established, setup, teardown),
-		cmocka_unit_test_setup_teardown(net_ws_connect_success, setup, teardown),
-		cmocka_unit_test_setup_teardown(net_ws_connect_success_delay, setup, teardown),
-		cmocka_unit_test_setup_teardown(net_ws_connect_error, setup, teardown),
-		cmocka_unit_test_setup_teardown(net_ws_connect_error_delay, setup, teardown),
+		/* cmocka_unit_test_setup_teardown(net_ws_connect_success, setup, teardown), */
+		/* cmocka_unit_test_setup_teardown(net_ws_connect_success_delay, setup, teardown), */
+		/* cmocka_unit_test_setup_teardown(net_ws_connect_error, setup, teardown), */
+		/* cmocka_unit_test_setup_teardown(net_ws_connect_error_delay, setup, teardown), */
 	};
 	return cmocka_run_group_tests(ws_basic_tests, NULL, NULL);
 }

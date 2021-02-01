@@ -14,7 +14,7 @@ int net_ws_stream_endpoint_init(net_endpoint_t base_endpoint) {
     net_endpoint_t base_underline =
         net_endpoint_create(
             driver->m_underline_driver,
-            net_protocol_from_data(driver->m_underline_protocol), NULL);
+            driver->m_underline_protocol, NULL);
     if (base_underline == NULL) {
         CPE_ERROR(
             driver->m_em, "net: ws: %s: connect: create inner ep fail",
@@ -39,11 +39,6 @@ void net_ws_stream_endpoint_fini(net_endpoint_t base_endpoint) {
     if (endpoint->m_underline) {
         net_ws_endpoint_free(endpoint->m_underline);
         endpoint->m_underline = NULL;
-    }
-
-    if (endpoint->m_path) {
-        mem_free(driver->m_alloc, endpoint->m_path);
-        endpoint->m_path = NULL;
     }
 }
 

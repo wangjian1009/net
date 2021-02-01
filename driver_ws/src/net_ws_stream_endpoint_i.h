@@ -5,7 +5,6 @@
 
 struct net_ws_stream_endpoint {
     net_ws_endpoint_t m_underline;
-    char * m_path;
 };
 
 int net_ws_stream_endpoint_init(net_endpoint_t endpoint);
