@@ -33,7 +33,23 @@ static int net_ws_endpoint_send_event(
     }
 
     if (wslay_event_want_write(endpoint->m_ws_ctx)) {
+        uint8_t ws_ctx_processing_tag_local = 0;
+        if (!endpoint->m_ws_ctx_is_processing) {
+            ws_ctx_processing_tag_local = 1;
+            endpoint->m_ws_ctx_is_processing = 1;
+        }
+
         int rv = wslay_event_send(endpoint->m_ws_ctx);
+
+        if (ws_ctx_processing_tag_local) {
+            endpoint->m_ws_ctx_is_processing = 0;
+            if (endpoint->m_ws_ctx_is_free) {
+                net_ws_endpoint_free_ws_ctx(endpoint);
+            }
+        }
+
+        if (net_endpoint_state(endpoint->m_base_endpoint) == net_endpoint_state_deleting) return -1;
+        
         if (rv != 0) {
             CPE_ERROR(
                 protocol->m_em, "net: ws: %s: msg %s: >>> send fail, rv=%d (%s)",

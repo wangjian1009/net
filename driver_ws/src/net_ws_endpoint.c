@@ -445,8 +445,7 @@ int net_ws_endpoint_set_state(net_ws_endpoint_t endpoint, net_ws_endpoint_state_
     switch(state) {
     case net_ws_endpoint_state_init:
         if (endpoint->m_ws_ctx) {
-            wslay_event_context_free(endpoint->m_ws_ctx);
-            endpoint->m_ws_ctx = NULL;
+            net_ws_endpoint_free_ws_ctx(endpoint);
         }
         break;
     case net_ws_endpoint_state_handshake:
