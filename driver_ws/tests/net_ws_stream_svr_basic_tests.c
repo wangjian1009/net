@@ -19,13 +19,14 @@ static int teardown(void **state) {
 
 static void net_ws_stream_svr_underline_established(void **state) {
     net_ws_testenv_t env = *state;
-    net_endpoint_t ws_endpoint = net_ws_testenv_create_stream(env);
-    net_endpoint_t underline = net_ws_stream_endpoint_underline(ws_endpoint);
+    net_ws_stream_endpoint_t endpoint = net_ws_testenv_create_stream(env);
+    net_endpoint_t base_endpoint = net_ws_stream_endpoint_base_endpoint(endpoint);
+    net_endpoint_t underline = net_ws_stream_endpoint_underline(base_endpoint);
     assert_true(underline != NULL);
     
     assert_true(net_endpoint_set_state(underline, net_endpoint_state_established) ==0);
     assert_string_equal(
-        net_endpoint_state_str(net_endpoint_state(ws_endpoint)),
+        net_endpoint_state_str(net_endpoint_state(base_endpoint)),
         net_endpoint_state_str(net_endpoint_state_connecting));
 }
 

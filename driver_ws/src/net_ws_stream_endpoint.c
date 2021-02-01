@@ -188,7 +188,7 @@ net_ws_stream_endpoint_create(net_ws_stream_driver_t driver, net_protocol_t prot
     net_endpoint_t base_endpoint = net_endpoint_create(base_driver, protocol, NULL);
     if (base_endpoint == NULL) return NULL;
 
-    return net_endpoint_protocol_data(base_endpoint);
+    return net_endpoint_data(base_endpoint);
 }
 
 net_ws_stream_endpoint_t

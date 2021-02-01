@@ -29,6 +29,7 @@ net_ws_testenv_t net_ws_testenv_create() {
             env->m_schedule, addition_name,
             net_driver_from_data(env->m_tdriver),
             test_allocrator(), env->m_em);
+    net_driver_set_debug(net_driver_from_data(env->m_stream_driver), 2);
     
     return env;
 }
@@ -109,6 +110,7 @@ net_ws_stream_endpoint_t
 net_ws_testenv_stream_cli_ep_create(net_ws_testenv_t env, const char * host, const char * path) {
     net_ws_stream_endpoint_t endpoint = net_ws_testenv_stream_ep_create(env);
     net_endpoint_t base_endpoint = net_ws_stream_endpoint_base_endpoint(endpoint);
+    assert_true(base_endpoint != NULL);
         
     net_address_t address = net_address_create_auto(env->m_schedule, host);
     assert_true(address != NULL);
@@ -140,11 +142,10 @@ net_ws_testenv_create_acceptor(
     return acceptor;
 }
 
-net_endpoint_t net_ws_testenv_create_stream(net_ws_testenv_t env) {
-    net_endpoint_t endpoint =
+net_ws_stream_endpoint_t
+net_ws_testenv_create_stream(net_ws_testenv_t env) {
+    net_ws_stream_endpoint_t endpoint =
         net_ws_stream_endpoint_create(env->m_stream_driver, env->m_test_protocol);
-
-    net_endpoint_set_driver_debug(endpoint, 1);
 
     return endpoint;
 }
