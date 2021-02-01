@@ -85,6 +85,21 @@ void net_ws_testenv_cli_create_pair_established(
         net_endpoint_state_str(net_endpoint_state_established));
 }
 
+net_ws_endpoint_t
+net_ws_testenv_svr_ep_create(net_ws_testenv_t env) {
+    net_endpoint_t base_endpoint =
+        net_endpoint_create(
+            net_driver_from_data(env->m_tdriver),
+            net_protocol_from_data(env->m_protocol),
+            NULL);
+
+    net_ws_endpoint_t endpoint = net_ws_endpoint_cast(base_endpoint);
+
+    net_ws_endpoint_set_runing_mode(endpoint, net_ws_endpoint_runing_mode_svr);
+
+    return endpoint;
+}
+
 net_endpoint_t
 net_ws_testenv_stream_ep_create(net_ws_testenv_t env) {
     net_endpoint_t endpoint =

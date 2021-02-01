@@ -24,6 +24,9 @@ struct net_ws_testenv {
 net_ws_testenv_t net_ws_testenv_create();
 void net_ws_testenv_free(net_ws_testenv_t env);
 
+/*endpoint*/
+net_ws_endpoint_t net_ws_testenv_svr_ep_create(net_ws_testenv_t env);
+
 /*stream*/
 net_endpoint_t net_ws_testenv_stream_ep_create(net_ws_testenv_t env);
 

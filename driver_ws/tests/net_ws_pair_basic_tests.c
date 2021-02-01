@@ -45,13 +45,18 @@ static void net_ws_pair_basic(void **state) {
     assert_true(net_ws_endpoint_send_msg_text(cli_ep, "abcd") == 0);
     test_net_driver_run(env->m_tdriver, 0);
 
-    /* test_net_endpoint_assert_buf_memory(svr_ep, net_ep_buf_read, "abcd", 4); */
+    test_net_ws_endpoint_expect_bin_msg(svr_ep, "efgh", 4);
+    assert_true(net_ws_endpoint_send_msg_bin(cli_ep, "efgh", 4) == 0);
+    test_net_driver_run(env->m_tdriver, 0);
 
     /*server -> client*/
-    /* assert_true(net_endpoint_buf_append(svr_ep, net_ep_buf_write, "efgh", 4) == 0); */
-    /* test_net_driver_run(env->m_env->m_tdriver, 0); */
+    test_net_ws_endpoint_expect_text_msg(cli_ep, "hijk");
+    assert_true(net_ws_endpoint_send_msg_text(svr_ep, "hijk") == 0);
+    test_net_driver_run(env->m_tdriver, 0);
 
-    /* test_net_endpoint_assert_buf_memory(cli_ep, net_ep_buf_read, "efgh", 4); */
+    test_net_ws_endpoint_expect_bin_msg(cli_ep, "lmno", 4);
+    assert_true(net_ws_endpoint_send_msg_bin(svr_ep, "lmno", 4) == 0);
+    test_net_driver_run(env->m_tdriver, 0);
 }
 
 int net_ws_pair_basic_tests() {
