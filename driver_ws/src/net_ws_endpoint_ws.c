@@ -227,12 +227,9 @@ static void net_ws_endpoint_on_msg_recv(
             memcpy(buf, arg->msg, arg->msg_length);
             buf[arg->msg_length] = 0;
 
-            if (endpoint->m_on_msg_text_fun(
-                    endpoint->m_on_msg_text_ctx, endpoint,
-                    mem_buffer_make_continuous(&protocol->m_data_buffer, 0)) != 0)
-            {
-                wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE);
-            }
+            endpoint->m_on_msg_text_fun(
+                endpoint->m_on_msg_text_ctx, endpoint,
+                mem_buffer_make_continuous(&protocol->m_data_buffer, 0));
         }
         break;
     }
@@ -247,11 +244,8 @@ static void net_ws_endpoint_on_msg_recv(
         if (endpoint->m_stream) {
         }
         else if (endpoint->m_on_msg_bin_fun) {
-            if (endpoint->m_on_msg_bin_fun(
-                    endpoint->m_on_msg_bin_ctx, endpoint, arg->msg, (uint32_t)arg->msg_length) != 0)
-            {
-                wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE);
-            }
+            endpoint->m_on_msg_bin_fun(
+                endpoint->m_on_msg_bin_ctx, endpoint, arg->msg, (uint32_t)arg->msg_length);
         }
         break;
     case WSLAY_CONNECTION_CLOSE:

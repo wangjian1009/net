@@ -5,6 +5,7 @@
 /*text*/
 void test_net_ws_endpoint_install_receiver_text(net_ws_endpoint_t endpoint);
 void test_net_ws_endpoint_expect_text_msg(net_ws_endpoint_t endpoint, const char * msg);
+void test_net_ws_endpoint_expect_text_msg_disable_ep(net_ws_endpoint_t endpoint, const char * msg);
 
 /*bin*/
 void test_net_ws_endpoint_install_receiver_bin(net_ws_endpoint_t endpoint);

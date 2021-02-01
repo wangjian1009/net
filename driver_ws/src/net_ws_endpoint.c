@@ -235,21 +235,26 @@ int net_ws_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoint_s
                 base_stream,
                 net_endpoint_error_source(base_endpoint),
                 net_endpoint_error_no(base_endpoint), net_endpoint_error_msg(base_endpoint));
-            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) return -1;
+            if (net_endpoint_set_state(base_stream, net_endpoint_state_error) != 0) return -1;
         }
         break;
     case net_endpoint_state_read_closed:
-    case net_endpoint_state_write_closed:
-    case net_endpoint_state_disable:
-    case net_endpoint_state_deleting:
         if (base_stream) {
-            net_endpoint_set_error(
-                base_stream,
-                net_endpoint_error_source_network,
-                net_endpoint_network_errno_logic,
-                "endpoint ep state error");
+            if (net_endpoint_set_state(base_stream, net_endpoint_state_read_closed) != 0) return -1;
         }
-        return -1;
+        break;
+    case net_endpoint_state_write_closed:
+        if (base_stream) {
+            if (net_endpoint_set_state(base_stream, net_endpoint_state_write_closed) != 0) return -1;
+        }
+        break;
+    case net_endpoint_state_disable:
+        if (base_stream) {
+            if (net_endpoint_set_state(base_stream, net_endpoint_state_disable) != 0) return -1;
+        }
+        break;
+    case net_endpoint_state_deleting:
+        break;
     }
     
     return 0;
