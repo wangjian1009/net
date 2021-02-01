@@ -24,10 +24,10 @@ net_ws_stream_driver_create(
     
     char name[64];
     if (addition_name) {
-        snprintf(name, sizeof(name), "ws-cli-%s", addition_name);
+        snprintf(name, sizeof(name), "ws-%s", addition_name);
     }
     else {
-        snprintf(name, sizeof(name), "ws-cli");
+        snprintf(name, sizeof(name), "ws");
     }
 
     net_driver_t base_driver =
@@ -74,10 +74,10 @@ net_ws_stream_driver_t
 net_ws_stream_driver_find(net_schedule_t schedule, const char * addition_name) {
     char name[64];
     if (addition_name) {
-        snprintf(name, sizeof(name), "ws-cli-%s", addition_name);
+        snprintf(name, sizeof(name), "ws-%s", addition_name);
     }
     else {
-        snprintf(name, sizeof(name), "ws-cli");
+        snprintf(name, sizeof(name), "ws");
     }
 
     net_driver_t driver = net_driver_find(schedule, name);

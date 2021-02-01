@@ -226,9 +226,7 @@ static void net_ws_endpoint_on_msg_recv(
                 (int)arg->msg_length, (const char *)arg->msg);
         }
 
-        if (endpoint->m_stream) {
-        }
-        else if (endpoint->m_on_msg_text_fun) {
+        if (endpoint->m_on_msg_text_fun) {
             mem_buffer_clear_data(&protocol->m_data_buffer);
             char * buf = mem_buffer_alloc(&protocol->m_data_buffer, arg->msg_length + 1);
             if (buf == NULL) {
@@ -258,6 +256,16 @@ static void net_ws_endpoint_on_msg_recv(
         }
 
         if (endpoint->m_stream) {
+            net_endpoint_t base_stream = net_endpoint_from_data(endpoint->m_stream);
+            if (net_endpoint_buf_append(base_stream, net_ep_buf_read, arg->msg, (uint32_t)arg->msg_length) != 0) {
+                if (net_endpoint_error_source(base_stream) == net_endpoint_error_source_none) {
+                    net_endpoint_set_error(
+                        base_stream, net_endpoint_error_source_network, net_endpoint_network_errno_logic, "WsForwardError");
+                }
+                if (net_endpoint_set_state(base_stream, net_endpoint_state_error) != 0) {
+                    net_endpoint_set_state(base_stream, net_endpoint_state_deleting);
+                }
+            }
         }
         else if (endpoint->m_on_msg_bin_fun) {
             endpoint->m_on_msg_bin_fun(

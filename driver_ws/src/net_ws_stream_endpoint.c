@@ -92,20 +92,18 @@ int net_ws_stream_endpoint_update(net_endpoint_t base_endpoint) {
 
     switch(net_endpoint_state(base_endpoint)) {
     case net_endpoint_state_read_closed:
-        /* if (net_endpoint_is_active(endpoint->m_underline)) { */
-        /*     if (net_endpoint_set_state(endpoint->m_underline, net_endpoint_state_read_closed) != 0) { */
-        /*         if (net_endpoint_set_state(endpoint->m_underline, net_endpoint_state_disable) != 0) { */
-        /*             net_endpoint_set_state(endpoint->m_underline, net_endpoint_state_deleting); */
-        /*         } */
-        /*     } */
-        /* } */
+        if (net_endpoint_is_active(base_endpoint)) {
+            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_read_closed) != 0) {
+                net_endpoint_set_state(base_underline, net_endpoint_state_deleting);
+            }
+        }
         return 0;
     case net_endpoint_state_write_closed:
-        /* if (net_endpoint_is_active(endpoint->m_underline)) { */
-        /*     if (net_endpoint_set_state(endpoint->m_underline, net_endpoint_state_disable) != 0) { */
-        /*         net_endpoint_set_state(endpoint->m_underline, net_endpoint_state_deleting); */
-        /*     } */
-        /* } */
+        if (net_endpoint_is_active(base_underline)) {
+            if (net_endpoint_set_state(base_underline, net_endpoint_state_disable) != 0) {
+                net_endpoint_set_state(base_underline, net_endpoint_state_deleting);
+            }
+        }
         return 0;
     case net_endpoint_state_disable:
         if (net_endpoint_is_active(base_underline)) {
@@ -116,7 +114,26 @@ int net_ws_stream_endpoint_update(net_endpoint_t base_endpoint) {
         return 0;
     case net_endpoint_state_established:
         if (!net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write)) { /*有数据等待写入 */
-            //if (net_ws_endpoint_write(endpoint->m_underline, base_endpoint, net_ep_buf_write) != 0) return -1;
+            uint32_t buf_size = net_endpoint_buf_size(base_endpoint, net_ep_buf_write);
+            void *  buf = NULL;
+            if (net_endpoint_buf_peak_with_size(base_endpoint, net_ep_buf_write, buf_size, &buf) != 0) {
+                CPE_ERROR(
+                    driver->m_em, "net: ws: %s: peak data to send fail!, size=%d!",
+                    net_endpoint_dump(net_ws_driver_tmp_buffer(driver), base_endpoint), buf_size);
+                return -1;
+            }
+
+            if (net_ws_endpoint_send_msg_bin(endpoint->m_underline, buf, buf_size) != 0) {
+                CPE_ERROR(
+                    driver->m_em, "net: ws: %s: send bin message fail, size=%d!",
+                    net_endpoint_dump(net_ws_driver_tmp_buffer(driver), base_endpoint), buf_size);
+                return -1;
+            }
+
+            if (net_endpoint_state(base_endpoint) == net_endpoint_state_deleting) return -1;
+
+            net_endpoint_buf_consume(base_endpoint, net_ep_buf_write, buf_size);
+            
             if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return 0;
         }
 
