@@ -7,7 +7,7 @@ typedef enum test_net_ws_endpoint_op {
 } test_net_ws_endpoint_op_t;
 
 /*text*/
-void test_net_ws_endpoint_on_msg_text(void * ctx, net_ws_endpoint_t endpoint, const char * msg) {
+int test_net_ws_endpoint_on_msg_text(void * ctx, net_ws_endpoint_t endpoint, const char * msg) {
     uint32_t id = net_endpoint_id(net_ws_endpoint_base_endpoint(endpoint));
     check_expected(id);
     check_expected(msg);
@@ -15,7 +15,7 @@ void test_net_ws_endpoint_on_msg_text(void * ctx, net_ws_endpoint_t endpoint, co
     test_net_ws_endpoint_op_t op = mock_type(test_net_ws_endpoint_op_t);
     switch(op) {
     case test_net_ws_endpoint_op_noop:
-        break;
+        return 0;
     }
 }
 
@@ -26,10 +26,11 @@ void test_net_ws_endpoint_install_receiver_text(net_ws_endpoint_t endpoint) {
 void test_net_ws_endpoint_expect_text_msg(net_ws_endpoint_t endpoint, const char * msg) {
     expect_value(test_net_ws_endpoint_on_msg_text, id, net_endpoint_id(net_ws_endpoint_base_endpoint(endpoint)));
     expect_string(test_net_ws_endpoint_on_msg_text, msg, msg);
+    will_return(test_net_ws_endpoint_on_msg_text, test_net_ws_endpoint_op_noop);
 }
 
 /*bin*/
-void test_net_ws_endpoint_on_msg_bin(void * ctx, net_ws_endpoint_t endpoint, const void * msg, uint32_t msg_len) {
+int test_net_ws_endpoint_on_msg_bin(void * ctx, net_ws_endpoint_t endpoint, const void * msg, uint32_t msg_len) {
     uint32_t id = net_endpoint_id(net_ws_endpoint_base_endpoint(endpoint));
     check_expected(id);
     check_expected(msg);
@@ -37,7 +38,7 @@ void test_net_ws_endpoint_on_msg_bin(void * ctx, net_ws_endpoint_t endpoint, con
     test_net_ws_endpoint_op_t op = mock_type(test_net_ws_endpoint_op_t);
     switch(op) {
     case test_net_ws_endpoint_op_noop:
-        break;
+        return 0;
     }
 }
 
@@ -48,6 +49,7 @@ void test_net_ws_endpoint_install_receiver_bin(net_ws_endpoint_t endpoint) {
 void test_net_ws_endpoint_expect_bin_msg(net_ws_endpoint_t endpoint, const void * msg, uint32_t msg_len) {
     expect_value(test_net_ws_endpoint_on_msg_bin, id, net_endpoint_id(net_ws_endpoint_base_endpoint(endpoint)));
     expect_memory(test_net_ws_endpoint_on_msg_bin, msg, msg, msg_len);
+    will_return(test_net_ws_endpoint_on_msg_bin, test_net_ws_endpoint_op_noop);
 }
 
 /*both*/

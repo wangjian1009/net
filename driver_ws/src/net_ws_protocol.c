@@ -7,10 +7,13 @@ int net_ws_protocol_init(net_protocol_t base_protocol) {
     net_ws_protocol_t protocol = net_protocol_data(base_protocol);
     protocol->m_alloc = NULL;
     protocol->m_em = NULL;
+    mem_buffer_init(&protocol->m_data_buffer, NULL);
     return 0;
 }
 
-void net_ws_protocol_fini(net_protocol_t protocol) {
+void net_ws_protocol_fini(net_protocol_t base_protocol) {
+    net_ws_protocol_t protocol = net_protocol_data(base_protocol);
+    mem_buffer_clear(&protocol->m_data_buffer);
 }
 
 net_ws_protocol_t

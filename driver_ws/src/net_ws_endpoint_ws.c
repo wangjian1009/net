@@ -203,32 +203,37 @@ static void net_ws_endpoint_on_msg_recv(
                 endpoint->m_base_endpoint));
         break;
     case WSLAY_TEXT_FRAME: {
-        /* mem_buffer_clear_data(&protocol->m_data_buffer); */
-        /* char * buf = mem_buffer_alloc(&protocol->m_data_buffer, arg->msg_length + 1); */
-        /* if (buf == NULL) { */
-        /*     CPE_ERROR( */
-        /*         protocol->m_em, "net: ws: %s: msg text: alloc buf fail, msg-length=%d!", */
-        /*         net_endpoint_dump( */
-        /*             net_ws_protocol_tmp_buffer(protocol), */
-        /*             endpoint->m_base_endpoint), */
-        /*         (int)arg->msg_length); */
-        /*     break; */
-        /* } */
-        /* memcpy(buf, arg->msg, arg->msg_length); */
-        /* buf[arg->msg_length] = 0; */
-
         if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 2) {
             CPE_INFO(
                 protocol->m_em, "net: ws: %s: msg text: <<< %.*s",
                 net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
                 (int)arg->msg_length, (const char *)arg->msg);
         }
-        
-        /* if (protocol->m_endpoint_on_text_msg) { */
-        /*     if (protocol->m_endpoint_on_text_msg(ws_ep, buf) != 0) { */
-        /*         wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE); */
-        /*     } */
-        /* } */
+
+        if (endpoint->m_stream) {
+        }
+        else if (endpoint->m_on_msg_text_fun) {
+            mem_buffer_clear_data(&protocol->m_data_buffer);
+            char * buf = mem_buffer_alloc(&protocol->m_data_buffer, arg->msg_length + 1);
+            if (buf == NULL) {
+                CPE_ERROR(
+                    protocol->m_em, "net: ws: %s: msg text: alloc buf fail, msg-length=%d!",
+                    net_endpoint_dump(
+                        net_ws_protocol_tmp_buffer(protocol),
+                        endpoint->m_base_endpoint),
+                    (int)arg->msg_length);
+                break;
+            }
+            memcpy(buf, arg->msg, arg->msg_length);
+            buf[arg->msg_length] = 0;
+
+            if (endpoint->m_on_msg_text_fun(
+                    endpoint->m_on_msg_text_ctx, endpoint,
+                    mem_buffer_make_continuous(&protocol->m_data_buffer, 0)) != 0)
+            {
+                wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE);
+            }
+        }
         break;
     }
     case WSLAY_BINARY_FRAME:
@@ -238,12 +243,16 @@ static void net_ws_endpoint_on_msg_recv(
                 net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
                 (int)arg->msg_length);
         }
-        
-        /* if (protocol->m_endpoint_on_bin_msg) { */
-        /*     if (protocol->m_endpoint_on_bin_msg(ws_ep, arg->msg, (uint32_t)arg->msg_length) != 0) { */
-        /*         wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE); */
-        /*     } */
-        /* } */
+
+        if (endpoint->m_stream) {
+        }
+        else if (endpoint->m_on_msg_bin_fun) {
+            if (endpoint->m_on_msg_bin_fun(
+                    endpoint->m_on_msg_bin_ctx, endpoint, arg->msg, (uint32_t)arg->msg_length) != 0)
+            {
+                wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE);
+            }
+        }
         break;
     case WSLAY_CONNECTION_CLOSE:
         CPE_ERROR(
