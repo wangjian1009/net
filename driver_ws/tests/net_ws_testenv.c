@@ -100,16 +100,23 @@ net_ws_testenv_svr_ep_create(net_ws_testenv_t env) {
     return endpoint;
 }
 
-net_endpoint_t
+net_ws_stream_endpoint_t
 net_ws_testenv_stream_ep_create(net_ws_testenv_t env) {
-    net_endpoint_t endpoint =
-        net_endpoint_create(
-            net_driver_from_data(env->m_stream_driver),
-            env->m_test_protocol,
-            NULL);
+    return net_ws_stream_endpoint_create(env->m_stream_driver, env->m_test_protocol);
+}
 
-    net_endpoint_set_driver_debug(endpoint, 1);
+net_ws_stream_endpoint_t
+net_ws_testenv_stream_cli_ep_create(net_ws_testenv_t env, const char * host, const char * path) {
+    net_ws_stream_endpoint_t endpoint = net_ws_testenv_stream_ep_create(env);
+    net_endpoint_t base_endpoint = net_ws_stream_endpoint_base_endpoint(endpoint);
+        
+    net_address_t address = net_address_create_auto(env->m_schedule, host);
+    assert_true(address != NULL);
+    net_endpoint_set_remote_address(base_endpoint, address);
+    net_address_free(address);
 
+    assert_true(net_ws_stream_endpoint_set_path(endpoint, path) == 0);
+    
     return endpoint;
 }
 

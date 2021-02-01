@@ -159,7 +159,8 @@ void test_net_next_endpoint_expect_write_keep(
 void test_net_endpoint_expect_write_keep(
     net_endpoint_t base_endpoint, net_endpoint_buf_type_t buf_type)
 {
-    test_net_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
+    test_net_driver_t driver = test_net_driver_cast(net_endpoint_driver(base_endpoint));
+    assert_true(driver);
     test_net_driver_do_expect_write_keep(driver, net_endpoint_id(base_endpoint), buf_type);
 }
 

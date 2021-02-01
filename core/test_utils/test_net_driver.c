@@ -100,3 +100,8 @@ static int64_t test_net_driver_time(net_driver_t base_driver) {
     test_net_driver_t driver = net_driver_data(base_driver);
     return driver->m_cur_time_ms;
 }
+
+test_net_driver_t
+test_net_driver_cast(net_driver_t driver) {
+    return net_driver_init_fun(driver) == test_net_driver_init ? net_driver_data(driver) : NULL;
+}

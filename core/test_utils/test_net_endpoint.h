@@ -43,6 +43,8 @@ void test_net_endpoint_write_policy_clear(test_net_endpoint_t base_endpoint);
 
 net_endpoint_t test_net_endpoint_linked_other(test_net_driver_t driver, net_endpoint_t base_endpoint);
 
+test_net_endpoint_t test_net_endpoint_cast(net_endpoint_t base_endpoint);
+
 /*endpoint by id*/
 void test_net_endpoint_id_expect_connect_success(
     test_net_driver_t driver, uint32_t ep_id, const char * target, int64_t delay_ms);

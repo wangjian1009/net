@@ -22,6 +22,7 @@ int net_ws_stream_endpoint_init(net_endpoint_t base_endpoint) {
         return -1;
     }
 
+    endpoint->m_base_endpoint = base_endpoint;
     endpoint->m_underline = net_ws_endpoint_cast(base_underline);
     endpoint->m_underline->m_stream = endpoint;
 
@@ -180,28 +181,65 @@ int net_ws_stream_endpoint_get_mss(net_endpoint_t base_endpoint, uint32_t * mss)
     return net_endpoint_get_mss(endpoint->m_underline->m_base_endpoint, mss);
 }
 
-net_endpoint_t
+net_ws_stream_endpoint_t
 net_ws_stream_endpoint_create(net_ws_stream_driver_t driver, net_protocol_t protocol) {
     net_driver_t base_driver = net_driver_from_data(driver);
     
     net_endpoint_t base_endpoint = net_endpoint_create(base_driver, protocol, NULL);
     if (base_endpoint == NULL) return NULL;
 
-    return base_endpoint;
+    return net_endpoint_protocol_data(base_endpoint);
 }
 
+net_ws_stream_endpoint_t
+net_ws_stream_endpoint_cast(net_endpoint_t base_endpoint) {
+    net_driver_t driver = net_endpoint_driver(base_endpoint);
+    return net_driver_endpoint_init_fun(driver) == net_ws_stream_endpoint_init
+        ? net_endpoint_data(base_endpoint)
+        : NULL;
+}
 
 net_endpoint_t
 net_ws_stream_endpoint_underline(net_endpoint_t base_endpoint) {
-    net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
+    net_ws_stream_endpoint_t endpoint = net_ws_stream_endpoint_cast(base_endpoint);
+    return endpoint && endpoint->m_underline ? endpoint->m_underline->m_base_endpoint : NULL;
+}
 
-    if (net_driver_endpoint_init_fun(net_endpoint_driver(base_endpoint)) != net_ws_stream_endpoint_init) {
+net_endpoint_t
+net_ws_stream_endpoint_base_endpoint(net_ws_stream_endpoint_t endpoint) {
+    return endpoint->m_base_endpoint;
+}
+
+const char * net_ws_stream_endpoint_path(net_ws_stream_endpoint_t endpoint) {
+    return endpoint->m_underline ? net_ws_endpoint_path(endpoint->m_underline) : NULL;
+}
+
+int net_ws_stream_endpoint_set_path(net_ws_stream_endpoint_t endpoint, const char * path) {
+    net_ws_stream_driver_t driver = net_driver_data(net_endpoint_driver(endpoint->m_base_endpoint));
+    
+    if (endpoint->m_underline == NULL) {
         CPE_ERROR(
-            net_schedule_em(schedule), "net: ws: %s: is not ws endpoint: no underline",
-            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
-        return NULL;
+            driver->m_em, "net: ws: %s: set path: no underline",
+            net_endpoint_dump(net_ws_driver_tmp_buffer(driver), endpoint->m_base_endpoint));
+        return -1;
     }
 
-    net_ws_stream_endpoint_t endpoint = net_endpoint_data(base_endpoint);
-    return endpoint->m_underline ? endpoint->m_underline->m_base_endpoint : NULL;
+    return net_ws_endpoint_set_path(endpoint->m_underline, path);
+}
+
+net_address_t net_ws_stream_endpoint_host(net_ws_stream_endpoint_t endpoint) {
+    return endpoint->m_underline ? net_ws_endpoint_host(endpoint->m_underline) : NULL;
+}
+
+int net_ws_stream_endpoint_set_host(net_ws_stream_endpoint_t endpoint, net_address_t host) {
+    net_ws_stream_driver_t driver = net_driver_data(net_endpoint_driver(endpoint->m_base_endpoint));
+    
+    if (endpoint->m_underline == NULL) {
+        CPE_ERROR(
+            driver->m_em, "net: ws: %s: set host: no underline",
+            net_endpoint_dump(net_ws_driver_tmp_buffer(driver), endpoint->m_base_endpoint));
+        return -1;
+    }
+
+    return net_ws_endpoint_set_host(endpoint->m_underline, host);
 }

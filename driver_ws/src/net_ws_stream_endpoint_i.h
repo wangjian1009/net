@@ -4,6 +4,7 @@
 #include "net_ws_stream_driver_i.h"
 
 struct net_ws_stream_endpoint {
+    net_endpoint_t m_base_endpoint;
     net_ws_endpoint_t m_underline;
 };
 
