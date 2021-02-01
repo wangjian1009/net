@@ -6,7 +6,7 @@ typedef enum test_net_ws_endpoint_op {
     test_net_ws_endpoint_op_noop,
     test_net_ws_endpoint_op_disable,
     test_net_ws_endpoint_op_error,
-    test_net_ws_endpoint_op_deleting,
+    test_net_ws_endpoint_op_delete,
 } test_net_ws_endpoint_op_t;
 
 void test_net_ws_endpoint_apply_op(net_ws_endpoint_t endpoint, test_net_ws_endpoint_op_t op) {
@@ -23,7 +23,7 @@ void test_net_ws_endpoint_apply_op(net_ws_endpoint_t endpoint, test_net_ws_endpo
             net_endpoint_set_state(net_ws_endpoint_base_endpoint(endpoint), net_endpoint_state_deleting);
         }
         break;
-    case test_net_ws_endpoint_op_deleting:
+    case test_net_ws_endpoint_op_delete:
         net_endpoint_set_state(net_ws_endpoint_base_endpoint(endpoint), net_endpoint_state_deleting);
         break;
     }
@@ -63,6 +63,17 @@ void test_net_ws_endpoint_expect_text_msg_disable_ep(net_ws_endpoint_t endpoint,
         expect_any(test_net_ws_endpoint_on_msg_text, msg);
     }
     will_return(test_net_ws_endpoint_on_msg_text, test_net_ws_endpoint_op_disable);
+}
+
+void test_net_ws_endpoint_expect_text_msg_delete_ep(net_ws_endpoint_t endpoint, const char * msg) {
+    expect_value(test_net_ws_endpoint_on_msg_text, id, net_endpoint_id(net_ws_endpoint_base_endpoint(endpoint)));
+    if (msg) {
+        expect_string(test_net_ws_endpoint_on_msg_text, msg, msg);
+    }
+    else {
+        expect_any(test_net_ws_endpoint_on_msg_text, msg);
+    }
+    will_return(test_net_ws_endpoint_on_msg_text, test_net_ws_endpoint_op_delete);
 }
 
 /*bin*/

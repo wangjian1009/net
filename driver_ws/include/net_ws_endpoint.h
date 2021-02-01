@@ -35,8 +35,6 @@ int net_ws_endpoint_set_path(net_ws_endpoint_t endpoint, const char * path);
 net_address_t net_ws_endpoint_host(net_ws_endpoint_t endpoint);
 int net_ws_endpoint_set_host(net_ws_endpoint_t endpoint, net_address_t host);
 
-uint8_t net_ws_endpoint_version(net_ws_endpoint_t endpoint);
-
 int net_ws_endpoint_send_msg_text(net_ws_endpoint_t endpoin, const char * msg);
 int net_ws_endpoint_send_msg_bin(net_ws_endpoint_t endpoint, const void * msg, uint32_t msg_len);
 

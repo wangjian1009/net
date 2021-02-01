@@ -1,4 +1,5 @@
 #include <assert.h>
+#include "cpe/pal/pal_strings.h"
 #include "cpe/utils/error.h"
 #include "cpe/utils/hex_utils.h"
 #include "cpe/utils/base64.h"
@@ -104,10 +105,6 @@ int net_ws_endpoint_set_host(net_ws_endpoint_t endpoint, net_address_t host) {
     return 0;
 }
 
-uint8_t net_ws_endpoint_version(net_ws_endpoint_t endpoint) {
-    return endpoint->m_version;
-}
-
 int net_ws_endpoint_init(net_endpoint_t base_endpoint) {
     net_ws_endpoint_t endpoint = net_endpoint_protocol_data(base_endpoint);
     net_ws_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
@@ -123,10 +120,15 @@ int net_ws_endpoint_init(net_endpoint_t base_endpoint) {
     endpoint->m_on_msg_bin_fun = NULL;
     endpoint->m_on_msg_bin_ctx_free = NULL;
     
+    endpoint->m_state = net_ws_endpoint_state_init;
+    bzero(&endpoint->m_state_data, sizeof(endpoint->m_state_data));
+
+    endpoint->m_ws_ctx_is_processing = 0;
+    endpoint->m_ws_ctx_is_free = 0;
+    endpoint->m_ws_ctx = NULL;
+
     endpoint->m_path = NULL;
     endpoint->m_host = NULL;
-    endpoint->m_state = net_ws_endpoint_state_init;
-    endpoint->m_ws_ctx = NULL;
     
     return 0;
 }
@@ -156,8 +158,7 @@ void net_ws_endpoint_fini(net_endpoint_t base_endpoint) {
     }
 
     if (endpoint->m_ws_ctx) {
-        wslay_event_context_free(endpoint->m_ws_ctx);
-        endpoint->m_ws_ctx = NULL;
+        net_ws_endpoint_free_ws_ctx(endpoint);
     }
 
     if (endpoint->m_path) {
@@ -196,7 +197,28 @@ int net_ws_endpoint_input(net_endpoint_t base_endpoint) {
     }
 
     assert(endpoint->m_state == net_ws_endpoint_state_streaming);
-    if (wslay_event_recv(endpoint->m_ws_ctx) != 0) {
+
+    uint8_t ws_ctx_processing_tag_local = 0;
+    if (!endpoint->m_ws_ctx_is_processing) {
+        ws_ctx_processing_tag_local = 1;
+        endpoint->m_ws_ctx_is_processing = 1;
+    }
+    
+    int rv = wslay_event_recv(endpoint->m_ws_ctx);
+    
+    if (ws_ctx_processing_tag_local) {
+        endpoint->m_ws_ctx_is_processing = 0;
+        if (endpoint->m_ws_ctx_is_free) {
+            net_ws_endpoint_free_ws_ctx(endpoint);
+        }
+    }
+
+    if (net_endpoint_state(base_endpoint) == net_endpoint_state_deleting) return -1;
+    
+    if (rv != 0) {
+        CPE_ERROR(
+            protocol->m_em, "net: ws: %s: input wslay recv error",
+            net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), base_endpoint));
         return -1;
     }
 
@@ -458,6 +480,15 @@ int net_ws_endpoint_set_state(net_ws_endpoint_t endpoint, net_ws_endpoint_state_
     }
 
     return 0;
+}
+
+void net_ws_endpoint_free_ws_ctx(net_ws_endpoint_t endpoint) {
+    if (endpoint->m_ws_ctx_is_processing) {
+        endpoint->m_ws_ctx_is_free = 1;
+    } else {
+        wslay_event_context_free(endpoint->m_ws_ctx);
+        endpoint->m_ws_ctx = NULL;
+    }
 }
 
 const char * net_ws_endpoint_state_str(net_ws_endpoint_state_t state) {

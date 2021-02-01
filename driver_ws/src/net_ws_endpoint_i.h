@@ -41,12 +41,6 @@ struct net_ws_endpoint {
 
     net_ws_endpoint_runing_mode_t m_runing_mode;
     net_ws_endpoint_state_t m_state;
-
-    wslay_event_context_ptr m_ws_ctx;
-    net_address_t m_host;
-    char * m_path;
-    uint8_t m_version;
-    
     union {
         struct {
             struct {
@@ -65,6 +59,13 @@ struct net_ws_endpoint {
             } m_handshake;
         } m_svr;
     } m_state_data;
+
+    uint8_t m_ws_ctx_is_processing;
+    uint8_t m_ws_ctx_is_free;
+    wslay_event_context_ptr m_ws_ctx;
+
+    net_address_t m_host;
+    char * m_path;
 };
 
 /**/
@@ -75,6 +76,7 @@ int net_ws_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoint_s
 
 /**/
 int net_ws_endpoint_set_state(net_ws_endpoint_t endpoint, net_ws_endpoint_state_t state);
+void net_ws_endpoint_free_ws_ctx(net_ws_endpoint_t endpoint);
 
 /*handshake*/
 int net_ws_endpoint_send_handshake(net_endpoint_t base_endpoint, net_ws_endpoint_t endpoint);
