@@ -19,8 +19,17 @@ void net_ws_stream_endpoint_fini(net_endpoint_t base_endpoint) {
     net_ws_stream_endpoint_t endpoint = net_endpoint_data(base_endpoint);
 
     if (endpoint->m_underline) {
-        net_ws_endpoint_free(endpoint->m_underline);
+        net_ws_endpoint_t underline = endpoint->m_underline;
+        assert(underline->m_stream == endpoint);
+
+        underline->m_stream = NULL;
         endpoint->m_underline = NULL;
+
+        if (net_endpoint_is_active(underline->m_base_endpoint)) {
+            if (net_endpoint_set_state(underline->m_base_endpoint, net_endpoint_state_disable) != 0) {
+                net_endpoint_set_state(underline->m_base_endpoint, net_endpoint_state_deleting);
+            }
+        }
     }
 }
 

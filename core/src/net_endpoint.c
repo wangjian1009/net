@@ -176,6 +176,7 @@ void net_endpoint_free(net_endpoint_t endpoint) {
     
     cpe_hash_table_remove_by_ins(&schedule->m_endpoints, endpoint);
 
+    endpoint->m_protocol = NULL;
     TAILQ_INSERT_TAIL(&endpoint->m_driver->m_free_endpoints, endpoint, m_next_for_driver);
 }
 

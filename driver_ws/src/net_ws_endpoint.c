@@ -171,6 +171,8 @@ int net_ws_endpoint_input(net_endpoint_t base_endpoint) {
     net_ws_endpoint_t endpoint = net_endpoint_protocol_data(base_endpoint);
     net_ws_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
 
+    assert(net_endpoint_state(base_endpoint) != net_endpoint_state_deleting);
+
     if (endpoint->m_runing_mode == net_ws_endpoint_runing_mode_init) {
         CPE_ERROR(
             protocol->m_em, "net: ws: %s: input in runing-mode %s, error",
