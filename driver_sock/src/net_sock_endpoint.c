@@ -138,7 +138,7 @@ int net_sock_endpoint_update(net_endpoint_t base_endpoint) {
             endpoint->m_watcher = NULL;
         }
 
-        endpoint->m_fd = -1;
+        net_sock_endpoint_close_sock(driver, endpoint);
         return 0;
     }
     case net_endpoint_state_established:
