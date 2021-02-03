@@ -1,5 +1,6 @@
 #include <assert.h>
 #include "net_schedule.h"
+#include "net_address.h"
 #include "net_driver.h"
 #include "net_endpoint.h"
 #include "net_protocol.h"
@@ -71,17 +72,23 @@ INIT_ERROR:
 int net_ws_stream_acceptor_init(net_acceptor_t base_acceptor) {
     net_ws_stream_driver_t driver = net_driver_data(net_acceptor_driver(base_acceptor));
     net_ws_stream_acceptor_t acceptor = net_acceptor_data(base_acceptor);
+
+    net_address_t address = net_acceptor_address(base_acceptor);
     
     acceptor->m_base_acceptor = 
         net_acceptor_create(
             driver->m_underline_driver,
             driver->m_underline_protocol,
-            net_acceptor_address(base_acceptor),
+            address,
             net_acceptor_queue_size(base_acceptor),
             net_ws_stream_acceptor_on_new_endpoint, base_acceptor);
     if (base_acceptor == NULL) {
         CPE_ERROR(driver->m_em, "net: ws: init: create inner acceptor fail");
         return -1;
+    }
+
+    if (net_address_port(address) == 0) {
+        net_address_set_port(address, net_address_port(net_acceptor_address(acceptor->m_base_acceptor)));
     }
 
     return 0;
