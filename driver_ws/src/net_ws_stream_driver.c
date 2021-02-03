@@ -4,6 +4,7 @@
 #include "net_protocol.h"
 #include "net_ws_stream_driver_i.h"
 #include "net_ws_stream_endpoint_i.h"
+#include "net_ws_stream_acceptor_i.h"
 #include "net_ws_protocol_i.h"
 
 static int net_ws_stream_driver_init(net_driver_t driver);
@@ -42,7 +43,9 @@ net_ws_stream_driver_create(
             /*timer*/
             0, NULL, NULL, NULL, NULL, NULL,
             /*acceptor*/
-            0, NULL, NULL,
+            sizeof(struct net_ws_stream_acceptor),
+            net_ws_stream_acceptor_init,
+            net_ws_stream_acceptor_fini,
             /*endpoint*/
             sizeof(struct net_ws_stream_endpoint),
             net_ws_stream_endpoint_init,

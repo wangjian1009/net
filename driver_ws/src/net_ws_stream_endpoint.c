@@ -6,36 +6,17 @@
 #include "net_ws_stream_endpoint_i.h"
 #include "net_ws_endpoint_i.h"
 
+int net_ws_stream_endpoint_create_underline(net_endpoint_t base_endpoint);
+
 int net_ws_stream_endpoint_init(net_endpoint_t base_endpoint) {
-    net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
-    net_ws_stream_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
     net_ws_stream_endpoint_t endpoint = net_endpoint_data(base_endpoint);
-
-    net_endpoint_t base_underline =
-        net_endpoint_create(
-            driver->m_underline_driver,
-            driver->m_underline_protocol, NULL);
-    if (base_underline == NULL) {
-        CPE_ERROR(
-            driver->m_em, "net: ws: %s: connect: create inner ep fail",
-            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
-        return -1;
-    }
-
     endpoint->m_base_endpoint = base_endpoint;
-    endpoint->m_underline = net_ws_endpoint_cast(base_underline);
-    endpoint->m_underline->m_stream = endpoint;
-
-    if (net_endpoint_driver_debug(base_endpoint) > net_endpoint_protocol_debug(base_underline)) {
-        net_endpoint_set_protocol_debug(base_underline, net_endpoint_driver_debug(base_endpoint));
-    }
-
+    endpoint->m_underline = NULL;
     return 0;
 }
 
 void net_ws_stream_endpoint_fini(net_endpoint_t base_endpoint) {
     net_ws_stream_endpoint_t endpoint = net_endpoint_data(base_endpoint);
-    net_ws_stream_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
 
     if (endpoint->m_underline) {
         net_ws_endpoint_free(endpoint->m_underline);
@@ -49,10 +30,7 @@ int net_ws_stream_endpoint_connect(net_endpoint_t base_endpoint) {
     net_ws_stream_endpoint_t endpoint = net_endpoint_data(base_endpoint);
 
     if (endpoint->m_underline == NULL) {
-        CPE_ERROR(
-            driver->m_em, "net: ws: %s: connect: no underline!",
-            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
-        return -1;
+        if (net_ws_stream_endpoint_create_underline(base_endpoint) != 0) return -1;
     }
 
     net_endpoint_t base_underline = endpoint->m_underline->m_base_endpoint;
@@ -218,10 +196,7 @@ int net_ws_stream_endpoint_set_path(net_ws_stream_endpoint_t endpoint, const cha
     net_ws_stream_driver_t driver = net_driver_data(net_endpoint_driver(endpoint->m_base_endpoint));
     
     if (endpoint->m_underline == NULL) {
-        CPE_ERROR(
-            driver->m_em, "net: ws: %s: set path: no underline",
-            net_endpoint_dump(net_ws_driver_tmp_buffer(driver), endpoint->m_base_endpoint));
-        return -1;
+        if (net_ws_stream_endpoint_create_underline(endpoint->m_base_endpoint) != 0) return -1;
     }
 
     return net_ws_endpoint_set_path(endpoint->m_underline, path);
@@ -235,11 +210,36 @@ int net_ws_stream_endpoint_set_host(net_ws_stream_endpoint_t endpoint, net_addre
     net_ws_stream_driver_t driver = net_driver_data(net_endpoint_driver(endpoint->m_base_endpoint));
     
     if (endpoint->m_underline == NULL) {
-        CPE_ERROR(
-            driver->m_em, "net: ws: %s: set host: no underline",
-            net_endpoint_dump(net_ws_driver_tmp_buffer(driver), endpoint->m_base_endpoint));
-        return -1;
+        if (net_ws_stream_endpoint_create_underline(endpoint->m_base_endpoint) != 0) return -1;
     }
 
     return net_ws_endpoint_set_host(endpoint->m_underline, host);
+}
+
+int net_ws_stream_endpoint_create_underline(net_endpoint_t base_endpoint) {
+    net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
+    net_ws_stream_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
+    net_ws_stream_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+
+    assert(endpoint->m_underline == NULL);
+
+    net_endpoint_t base_underline =
+        net_endpoint_create(
+            driver->m_underline_driver,
+            driver->m_underline_protocol, NULL);
+    if (base_underline == NULL) {
+        CPE_ERROR(
+            driver->m_em, "net: ws: %s: create undline ep fail",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+        return -1;
+    }
+
+    endpoint->m_underline = net_ws_endpoint_cast(base_underline);
+    endpoint->m_underline->m_stream = endpoint;
+
+    if (net_endpoint_driver_debug(base_endpoint) > net_endpoint_protocol_debug(base_underline)) {
+        net_endpoint_set_protocol_debug(base_underline, net_endpoint_driver_debug(base_endpoint));
+    }
+
+    return 0;
 }
