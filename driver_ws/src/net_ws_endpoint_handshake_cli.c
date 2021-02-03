@@ -224,9 +224,11 @@ int net_ws_endpoint_send_handshake(net_endpoint_t base_endpoint, net_ws_endpoint
     
     stream_printf((write_stream_t)&ws, "GET %s HTTP/1.1\r\n", endpoint->m_path);
 
-    stream_printf((write_stream_t)&ws, "Host: ");
-    net_address_print((write_stream_t)&ws, target_addr);
-    stream_printf((write_stream_t)&ws, "\r\n");
+    char path_buf[128];
+    stream_printf(
+        (write_stream_t)&ws, "Host: %s:%d\r\n",
+        net_address_host_inline(path_buf, sizeof(path_buf), target_addr),
+        net_address_port(target_addr));
     
     stream_printf((write_stream_t)&ws, "Upgrade: websocket\r\n");
     stream_printf((write_stream_t)&ws, "Connection: Upgrade\r\n");
