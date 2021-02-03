@@ -13,6 +13,8 @@
 #include "net_ws_stream_endpoint_i.h"
 #include "net_ws_utils.h"
 
+#define net_ws_endpoint_ep_write_cache net_ep_buf_user1
+
 extern struct wslay_event_callbacks s_net_ws_endpoint_callbacks;
 
 void net_ws_endpoint_free(net_ws_endpoint_t endpoint) {
@@ -137,6 +139,18 @@ void net_ws_endpoint_fini(net_endpoint_t base_endpoint) {
     net_ws_endpoint_t endpoint = net_endpoint_protocol_data(base_endpoint);
     net_ws_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
 
+    if (endpoint->m_stream) {
+        net_ws_stream_endpoint_t stream = endpoint->m_stream;
+        assert(stream->m_underline == endpoint);
+
+        endpoint->m_stream = NULL;
+        stream->m_underline = NULL;
+
+        if (net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_disable) != 0) {
+            net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_deleting);
+        }
+    }
+    
     if (endpoint->m_on_msg_text_ctx_free) {
         endpoint->m_on_msg_text_ctx_free(endpoint->m_on_msg_text_ctx);
         endpoint->m_on_msg_text_ctx_free = NULL;
@@ -151,12 +165,6 @@ void net_ws_endpoint_fini(net_endpoint_t base_endpoint) {
     endpoint->m_on_msg_bin_ctx = NULL;
     endpoint->m_on_msg_bin_fun = NULL;
     
-    if (endpoint->m_stream) {
-        assert(endpoint->m_stream->m_underline == endpoint);
-        endpoint->m_stream->m_underline = NULL;
-        endpoint->m_stream = NULL;
-    }
-
     if (endpoint->m_ws_ctx) {
         net_ws_endpoint_free_ws_ctx(endpoint);
     }
@@ -172,6 +180,15 @@ int net_ws_endpoint_input(net_endpoint_t base_endpoint) {
     net_ws_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
 
     assert(net_endpoint_state(base_endpoint) != net_endpoint_state_deleting);
+    
+    uint32_t buf_size = net_endpoint_buf_size(base_endpoint, net_ep_buf_read);
+    void * buf = NULL;
+    net_endpoint_buf_peak_with_size(base_endpoint, net_ep_buf_read, buf_size, &buf);
+    if (buf) {
+        CPE_ERROR(
+            protocol->m_em, "ws: input %s",
+            mem_buffer_dump_data(net_ws_protocol_tmp_buffer(protocol), buf, buf_size, 0));
+    }
 
     if (endpoint->m_runing_mode == net_ws_endpoint_runing_mode_init) {
         CPE_ERROR(
@@ -284,99 +301,6 @@ int net_ws_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoint_s
     return 0;
 }
 
-int net_ws_endpoint_write(
-    net_endpoint_t base_endpoint, net_endpoint_t from_ep, net_endpoint_buf_type_t from_buf)
-{
-    net_ws_endpoint_t endpoint = net_endpoint_protocol_data(base_endpoint);
-    net_ws_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
-
-    switch(net_endpoint_state(base_endpoint)) {
-    case net_endpoint_state_disable:
-    case net_endpoint_state_resolving:
-    case net_endpoint_state_connecting:
-        if (net_endpoint_protocol_debug(base_endpoint)) {
-            CPE_INFO(
-                protocol->m_em, "net: ws: %s: write: cache %d data in state %s!",
-                net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), base_endpoint),
-                net_endpoint_buf_size(from_ep, from_buf),
-                net_endpoint_state_str(net_endpoint_state(base_endpoint)));
-        }
-
-        /* if (base_endpoint == from_ep) { */
-        /*     return net_endpoint_buf_append_from_self( */
-        /*         base_endpoint, net_ws_endpoint_ep_write_cache, from_buf, 0); */
-        /* } */
-        /* else { */
-        /*     return net_endpoint_buf_append_from_other( */
-        /*         base_endpoint, net_ws_endpoint_ep_write_cache, from_ep, from_buf, 0); */
-        /* } */
-        assert(0);
-        return -1;
-    case net_endpoint_state_established:
-        switch(endpoint->m_state) {
-        case net_ws_endpoint_state_init:
-        case net_ws_endpoint_state_handshake:
-            if (net_endpoint_protocol_debug(base_endpoint)) {
-                CPE_INFO(
-                    protocol->m_em, "net: ws: %s: write: cache %d data in state %s.handshake!",
-                    net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), base_endpoint),
-                    net_endpoint_buf_size(from_ep, from_buf),
-                    net_endpoint_state_str(net_endpoint_state(base_endpoint)));
-            }
-
-            /* if (base_endpoint == from_ep) { */
-            /*     return net_endpoint_buf_append_from_self( */
-            /*         base_endpoint, net_ws_endpoint_ep_write_cache, from_buf, 0); */
-            /* } */
-            /* else { */
-            /*     return net_endpoint_buf_append_from_other( */
-            /*         base_endpoint, net_ws_endpoint_ep_write_cache, from_ep, from_buf, 0); */
-            /* } */
-            assert(0);
-            return -1;
-        case net_ws_endpoint_state_streaming:
-            break;
-        }
-        break;
-    case net_endpoint_state_error:
-    case net_endpoint_state_read_closed:
-    case net_endpoint_state_write_closed:
-    case net_endpoint_state_deleting:
-        CPE_ERROR(
-            protocol->m_em, "net: ws: %s: write: can`t write in state %s!",
-            net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), base_endpoint),
-            net_endpoint_state_str(net_endpoint_state(base_endpoint)));
-        return -1;
-    }
-
-    uint32_t data_size = net_endpoint_buf_size(from_ep, from_buf);
-    if (data_size == 0) return 0;
-
-    void * data = NULL;
-    if (net_endpoint_buf_peak_with_size(from_ep, from_buf, data_size, &data) != 0) {
-        CPE_ERROR(
-            protocol->m_em, "net: ws: %s: write: peak data fail!",
-            net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), base_endpoint));
-        return -1;
-    }
-
-    /* int r = SSL_write(endpoint->m_ws, data, data_size); */
-    /* if (r < 0) { */
-    /*     int err = SSL_get_error(endpoint->m_ws, r); */
-    /*     return net_ws_endpoint_update_error(base_endpoint, err, r); */
-    /* } */
-    
-    //net_endpoint_buf_consume(from_ep, from_buf, r);
-
-    /* if (net_endpoint_protocol_debug(base_endpoint)) { */
-    /*     CPE_INFO( */
-    /*         protocol->m_em, "net: ws: %s: ==> %d data!", */
-    /*         net_endpoint_dump(net_ws_driver_tmp_buffer(driver), base_endpoint), r); */
-    /* } */
-    
-    return 0;
-}
-
 void net_ws_endpoint_set_msg_receiver_text(
     net_ws_endpoint_t endpoint,
     void * ctx, net_ws_endpoint_on_msg_text_fun_t fun, void (*ctx_free)(void*))
@@ -477,6 +401,14 @@ int net_ws_endpoint_set_state(net_ws_endpoint_t endpoint, net_ws_endpoint_state_
                 net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint));
             return -1;
         }
+
+        if (endpoint->m_stream) {
+            net_endpoint_t base_stream= endpoint->m_stream->m_base_endpoint;
+            if (net_endpoint_set_state(base_stream, net_endpoint_state_established) != 0) {
+                net_endpoint_set_state(base_stream, net_endpoint_state_deleting);
+            }
+        }
+
         break;
     }
 

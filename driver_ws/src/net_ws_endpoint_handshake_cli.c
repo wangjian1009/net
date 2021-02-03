@@ -164,7 +164,8 @@ int net_ws_endpoint_input_handshake_cli(net_endpoint_t base_endpoint, net_ws_end
             }
 
             if (net_ws_endpoint_input_handshake_cli_last_line(base_endpoint, endpoint) != 0) return -1;
-            net_ws_endpoint_set_state(endpoint, net_ws_endpoint_state_streaming);
+            net_endpoint_buf_consume(base_endpoint, net_ep_buf_read, line_size);
+            return net_ws_endpoint_set_state(endpoint, net_ws_endpoint_state_streaming);
         }
         else {
             if (net_endpoint_protocol_debug(base_endpoint) >= 2) {

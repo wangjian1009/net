@@ -1,4 +1,5 @@
 #include <assert.h>
+#include "cpe/utils/string_utils.h"
 #include "net_schedule.h"
 #include "net_driver.h"
 #include "net_protocol.h"
@@ -42,6 +43,13 @@ int net_ws_stream_endpoint_connect(net_endpoint_t base_endpoint) {
         if (net_ws_stream_endpoint_create_underline(base_endpoint) != 0) return -1;
     }
 
+    if (net_ws_endpoint_set_runing_mode(endpoint->m_underline, net_ws_endpoint_runing_mode_cli) != 0) {
+        CPE_ERROR(
+            driver->m_em, "net: ws: stream: %s: connect: set undnline runing mode cli failed!",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+        return -1;
+    }
+    
     net_endpoint_t base_underline = endpoint->m_underline->m_base_endpoint;
     if (net_endpoint_driver_debug(base_endpoint) > net_endpoint_protocol_debug(base_underline)) {
         net_endpoint_set_protocol_debug(base_underline, net_endpoint_driver_debug(base_endpoint));
@@ -50,14 +58,14 @@ int net_ws_stream_endpoint_connect(net_endpoint_t base_endpoint) {
     net_address_t target_addr = net_endpoint_remote_address(base_endpoint);
     if (target_addr == NULL) {
         CPE_ERROR(
-            driver->m_em, "net: ws: %s: connect: target addr not set!",
+            driver->m_em, "net: ws: stream: %s: connect: target addr not set!",
             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
         return -1;
     }
 
     if (net_endpoint_set_remote_address(endpoint->m_underline->m_base_endpoint, target_addr) != 0) {
         CPE_ERROR(
-            driver->m_em, "net: ws: %s: connect: set remote address to underline fail",
+            driver->m_em, "net: ws: stream: %s: connect: set remote address to underline fail",
             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
         return -1;
     }
@@ -73,7 +81,7 @@ int net_ws_stream_endpoint_update(net_endpoint_t base_endpoint) {
     
     if (base_underline == NULL) {
         CPE_ERROR(
-            driver->m_em, "net: ws: %s: set no delay: no underline!",
+            driver->m_em, "net: ws: stream: %s: set no delay: no underline!",
             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
         return -1;
     }
@@ -106,14 +114,23 @@ int net_ws_stream_endpoint_update(net_endpoint_t base_endpoint) {
             void *  buf = NULL;
             if (net_endpoint_buf_peak_with_size(base_endpoint, net_ep_buf_write, buf_size, &buf) != 0) {
                 CPE_ERROR(
-                    driver->m_em, "net: ws: %s: peak data to send fail!, size=%d!",
+                    driver->m_em, "net: ws: stream: %s: peak data to send fail!, size=%d!",
                     net_endpoint_dump(net_ws_driver_tmp_buffer(driver), base_endpoint), buf_size);
                 return -1;
             }
 
+            if (net_endpoint_driver_debug(base_endpoint) >= 2) {
+                char name_buf[128];
+                cpe_str_dup(name_buf, sizeof(name_buf), net_endpoint_dump(net_ws_driver_tmp_buffer(driver), base_endpoint));
+                CPE_INFO(
+                    driver->m_em, "net: ws: stream: %s: ==> %d data\n%s",
+                    name_buf, buf_size,
+                    mem_buffer_dump_data(net_ws_driver_tmp_buffer(driver), buf, buf_size, 0));
+            }
+            
             if (net_ws_endpoint_send_msg_bin(endpoint->m_underline, buf, buf_size) != 0) {
                 CPE_ERROR(
-                    driver->m_em, "net: ws: %s: send bin message fail, size=%d!",
+                    driver->m_em, "net: ws: stream: %s: send bin message fail, size=%d!",
                     net_endpoint_dump(net_ws_driver_tmp_buffer(driver), base_endpoint), buf_size);
                 return -1;
             }
@@ -146,7 +163,7 @@ int net_ws_stream_endpoint_set_no_delay(net_endpoint_t base_endpoint, uint8_t no
 
     if (endpoint->m_underline == NULL) {
         CPE_ERROR(
-            driver->m_em, "net: ws: %s: set no delay: no underline!",
+            driver->m_em, "net: ws: stream: %s: set no delay: no underline!",
             net_endpoint_dump(net_ws_driver_tmp_buffer(driver), base_endpoint));
         return -1;
     }
@@ -160,7 +177,7 @@ int net_ws_stream_endpoint_get_mss(net_endpoint_t base_endpoint, uint32_t * mss)
 
     if (endpoint->m_underline == NULL) {
         CPE_ERROR(
-            driver->m_em, "net: ws: %s: get mss: no underline",
+            driver->m_em, "net: ws: stream: %s: get mss: no underline",
             net_endpoint_dump(net_ws_driver_tmp_buffer(driver), base_endpoint));
         return -1;
     }
@@ -238,7 +255,7 @@ int net_ws_stream_endpoint_create_underline(net_endpoint_t base_endpoint) {
             driver->m_underline_protocol, NULL);
     if (base_underline == NULL) {
         CPE_ERROR(
-            driver->m_em, "net: ws: %s: create undline ep fail",
+            driver->m_em, "net: ws: stream: %s: create undline ep fail",
             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
         return -1;
     }
