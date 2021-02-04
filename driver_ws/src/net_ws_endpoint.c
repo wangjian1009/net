@@ -181,14 +181,14 @@ int net_ws_endpoint_input(net_endpoint_t base_endpoint) {
 
     assert(net_endpoint_state(base_endpoint) != net_endpoint_state_deleting);
     
-    uint32_t buf_size = net_endpoint_buf_size(base_endpoint, net_ep_buf_read);
-    void * buf = NULL;
-    net_endpoint_buf_peak_with_size(base_endpoint, net_ep_buf_read, buf_size, &buf);
-    if (buf) {
-        CPE_ERROR(
-            protocol->m_em, "ws: input %s",
-            mem_buffer_dump_data(net_ws_protocol_tmp_buffer(protocol), buf, buf_size, 0));
-    }
+    /* uint32_t buf_size = net_endpoint_buf_size(base_endpoint, net_ep_buf_read); */
+    /* void * buf = NULL; */
+    /* net_endpoint_buf_peak_with_size(base_endpoint, net_ep_buf_read, buf_size, &buf); */
+    /* if (buf) { */
+    /*     CPE_ERROR( */
+    /*         protocol->m_em, "ws: input %s", */
+    /*         mem_buffer_dump_data(net_ws_protocol_tmp_buffer(protocol), buf, buf_size, 0)); */
+    /* } */
 
     if (endpoint->m_runing_mode == net_ws_endpoint_runing_mode_init) {
         CPE_ERROR(
