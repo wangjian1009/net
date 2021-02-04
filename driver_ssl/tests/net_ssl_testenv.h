@@ -27,7 +27,8 @@ net_ssl_testenv_create_stream_acceptor(
     net_ssl_testenv_t env, const char * address,
     net_acceptor_on_new_endpoint_fun_t on_new_endpoint, void * on_new_endpoint_ctx);
 
-net_endpoint_t
-net_ssl_testenv_create_stream_endpoint(net_ssl_testenv_t env);
+net_ssl_stream_endpoint_t net_ssl_testenv_create_stream_endpoint(net_ssl_testenv_t env);
+net_ssl_stream_endpoint_t net_ssl_testenv_create_stream_cli_endpoint(net_ssl_testenv_t env);
+net_ssl_stream_endpoint_t net_ssl_testenv_create_stream_svr_endpoint(net_ssl_testenv_t env);
 
 #endif

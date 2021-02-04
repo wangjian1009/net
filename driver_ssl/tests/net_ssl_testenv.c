@@ -49,14 +49,31 @@ net_ssl_testenv_create_stream_acceptor(
     return acceptor;
 }
 
-net_endpoint_t
+net_ssl_stream_endpoint_t
 net_ssl_testenv_create_stream_endpoint(net_ssl_testenv_t env) {
     net_ssl_stream_endpoint_t endpoint =
         net_ssl_stream_endpoint_create(env->m_stream_driver, env->m_test_protocol);
+    assert_true(endpoint);
 
     net_endpoint_t base_endpoint = net_ssl_stream_endpoint_base_endpoint(endpoint);
 
     net_endpoint_set_driver_debug(base_endpoint, 1);
 
-    return base_endpoint;
+    return endpoint;
+}
+
+net_ssl_stream_endpoint_t
+net_ssl_testenv_create_stream_cli_endpoint(net_ssl_testenv_t env) {
+    net_ssl_stream_endpoint_t endpoint = net_ssl_testenv_create_stream_endpoint(env);
+    assert_true(
+        net_ssl_stream_endpoint_set_runing_mode(endpoint, net_ssl_endpoint_runing_mode_cli) == 0);
+    return endpoint;
+}
+
+net_ssl_stream_endpoint_t
+net_ssl_testenv_create_stream_svr_endpoint(net_ssl_testenv_t env) {
+    net_ssl_stream_endpoint_t endpoint = net_ssl_testenv_create_stream_endpoint(env);
+    assert_true(
+        net_ssl_stream_endpoint_set_runing_mode(endpoint, net_ssl_endpoint_runing_mode_svr) == 0);
+    return endpoint;
 }

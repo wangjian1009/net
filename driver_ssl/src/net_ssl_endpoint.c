@@ -143,9 +143,9 @@ int net_ssl_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoint_
         if (base_stream) {
             if (net_endpoint_set_state(base_stream, net_endpoint_state_connecting) != 0) return -1;
         }
-        /* if (endpoint->m_runing_mode == net_ws_endpoint_runing_mode_cli) { */
-        /*     if (net_ws_endpoint_send_handshake(base_endpoint, endpoint) != 0) return -1; */
-        /* } */
+        if (endpoint->m_runing_mode == net_ssl_endpoint_runing_mode_cli) {
+            if (net_ssl_endpoint_do_handshake(base_endpoint, endpoint) != 0) return -1;
+        }
         break;
     case net_endpoint_state_error:
         if (base_stream) {
@@ -359,10 +359,7 @@ static int net_ssl_endpoint_update_error(net_endpoint_t base_endpoint, int err, 
     default:
         net_ssl_endpoint_dump_error(base_endpoint, err);
         net_endpoint_set_error(
-            base_endpoint,
-            net_endpoint_error_source_ssl,
-            -1,
-            "handshake start fail");
+            base_endpoint, net_endpoint_error_source_ssl, -1, "handshake start fail");
         return net_endpoint_set_state(base_endpoint, net_endpoint_state_error);
     }
     return 0;
@@ -392,15 +389,6 @@ int net_ssl_endpoint_set_runing_mode(net_ssl_endpoint_t endpoint, net_ssl_endpoi
         endpoint->m_ssl = NULL;
     }
 
-    switch(endpoint->m_runing_mode) {
-    case net_ssl_endpoint_runing_mode_init:
-        break;
-    case net_ssl_endpoint_runing_mode_cli:
-        break;
-    case net_ssl_endpoint_runing_mode_svr:
-        break;
-    }
-    
     endpoint->m_ssl = SSL_new(protocol->m_ssl_ctx);
     if(endpoint->m_ssl == NULL) {
         CPE_ERROR(protocol->m_em, "net: ssl: cli: endpoint init: create ssl fail");

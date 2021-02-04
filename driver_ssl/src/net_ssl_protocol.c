@@ -26,7 +26,7 @@ int net_ssl_protocol_init(net_protocol_t base_protocol) {
     BIO_meth_set_create(protocol->m_bio_method, net_ssl_endpoint_bio_new);
     BIO_meth_set_destroy(protocol->m_bio_method, net_ssl_endpoint_bio_free);
     
-    protocol->m_ssl_ctx = SSL_CTX_new(SSLv23_client_method());
+    protocol->m_ssl_ctx = SSL_CTX_new(SSLv23_method());
     if(protocol->m_ssl_ctx == NULL) {
         CPE_ERROR(
             net_schedule_em(net_protocol_schedule(base_protocol)),
