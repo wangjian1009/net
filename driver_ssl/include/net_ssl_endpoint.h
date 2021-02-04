@@ -4,12 +4,6 @@
 
 NET_BEGIN_DECL
 
-enum net_ssl_endpoint_runing_mode {
-    net_ssl_endpoint_runing_mode_init,
-    net_ssl_endpoint_runing_mode_cli,
-    net_ssl_endpoint_runing_mode_svr,
-};
-
 enum net_ssl_endpoint_state {
     net_ssl_endpoint_state_init,
     net_ssl_endpoint_state_handshake,

@@ -24,6 +24,7 @@ int net_ssl_endpoint_init(net_endpoint_t base_endpoint) {
 
     endpoint->m_base_endpoint = base_endpoint;
     endpoint->m_stream = NULL;
+    endpoint->m_runing_mode = net_ssl_endpoint_runing_mode_init;
     endpoint->m_state = net_ssl_endpoint_state_init;
     endpoint->m_ssl = NULL;
     

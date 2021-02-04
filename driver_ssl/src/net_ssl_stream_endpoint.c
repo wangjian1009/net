@@ -233,6 +233,30 @@ net_ssl_stream_endpoint_base_endpoint(net_ssl_stream_endpoint_t endpoint) {
     return endpoint->m_base_endpoint;
 }
 
+net_ssl_endpoint_runing_mode_t
+net_ssl_stream_endpoint_runing_mode(net_ssl_stream_endpoint_t endpoint) {
+    return endpoint->m_underline ? endpoint->m_underline->m_runing_mode : net_ssl_endpoint_runing_mode_init;
+}
+
+int net_ssl_stream_endpoint_set_runing_mode(net_ssl_stream_endpoint_t endpoint, net_ssl_endpoint_runing_mode_t runing_mode) {
+    if (runing_mode == net_ssl_endpoint_runing_mode_init) {
+        if (endpoint->m_underline) {
+            return net_ssl_endpoint_set_runing_mode(endpoint->m_underline, runing_mode);
+        }
+        else {
+            return 0;
+        }
+    }
+    else {
+        if (endpoint->m_underline == NULL) {
+            if (net_ssl_stream_endpoint_create_underline(endpoint->m_base_endpoint) != 0) return -1;
+        }
+
+        assert(endpoint->m_underline);
+        return net_ssl_endpoint_set_runing_mode(endpoint->m_underline, runing_mode);
+    }
+}
+
 int net_ssl_stream_endpoint_create_underline(net_endpoint_t base_endpoint) {
     net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
     net_ssl_stream_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
