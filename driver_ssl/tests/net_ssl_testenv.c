@@ -57,7 +57,7 @@ net_ssl_testenv_create_stream_endpoint(net_ssl_testenv_t env) {
 
     net_endpoint_t base_endpoint = net_ssl_stream_endpoint_base_endpoint(endpoint);
 
-    net_endpoint_set_driver_debug(base_endpoint, 1);
+    net_endpoint_set_driver_debug(base_endpoint, 2);
 
     return endpoint;
 }

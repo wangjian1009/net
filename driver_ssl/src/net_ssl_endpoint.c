@@ -56,8 +56,23 @@ int net_ssl_endpoint_input(net_endpoint_t base_endpoint) {
     net_ssl_endpoint_t endpoint = net_endpoint_protocol_data(base_endpoint);
     net_ssl_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
 
+    if (endpoint->m_runing_mode == net_ssl_endpoint_runing_mode_init) {
+        CPE_ERROR(
+            protocol->m_em, "net: ssl: %s: input in runing-mode %s, error",
+            net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_endpoint),
+            net_ssl_endpoint_runing_mode_str(endpoint->m_runing_mode));
+        return -1;
+    }
+
+    if (endpoint->m_state == net_ssl_endpoint_state_init) {
+        if (net_ssl_endpoint_set_state(endpoint, net_ssl_endpoint_state_handshake) != 0) return -1;
+    }
+    
     if (endpoint->m_state == net_ssl_endpoint_state_handshake) {
         if (net_ssl_endpoint_do_handshake(base_endpoint, endpoint) != 0) return -1;
+
+        if (endpoint->m_state == net_ssl_endpoint_state_handshake) return 0;
+        if (net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_read)) return 0;
     }
 
 READ_AGAIN:    
@@ -359,7 +374,7 @@ static int net_ssl_endpoint_update_error(net_endpoint_t base_endpoint, int err, 
     default:
         net_ssl_endpoint_dump_error(base_endpoint, err);
         net_endpoint_set_error(
-            base_endpoint, net_endpoint_error_source_ssl, -1, "handshake start fail");
+            base_endpoint, net_endpoint_error_source_ssl, err, ERR_reason_error_string(err));
         return net_endpoint_set_state(base_endpoint, net_endpoint_state_error);
     }
     return 0;
@@ -389,6 +404,8 @@ int net_ssl_endpoint_set_runing_mode(net_ssl_endpoint_t endpoint, net_ssl_endpoi
         endpoint->m_ssl = NULL;
     }
 
+    if (endpoint->m_runing_mode == net_ssl_endpoint_runing_mode_init) return 0;
+    
     endpoint->m_ssl = SSL_new(protocol->m_ssl_ctx);
     if(endpoint->m_ssl == NULL) {
         CPE_ERROR(protocol->m_em, "net: ssl: cli: endpoint init: create ssl fail");
@@ -396,7 +413,14 @@ int net_ssl_endpoint_set_runing_mode(net_ssl_endpoint_t endpoint, net_ssl_endpoi
     }
     SSL_set_msg_callback(endpoint->m_ssl, net_ssl_endpoint_trace_cb);
     SSL_set_msg_callback_arg(endpoint->m_ssl, endpoint);
-    SSL_set_connect_state(endpoint->m_ssl);
+
+    if (endpoint->m_runing_mode == net_ssl_endpoint_runing_mode_cli) {
+        SSL_set_connect_state(endpoint->m_ssl);
+    }
+    else {
+        assert(endpoint->m_runing_mode == net_ssl_endpoint_runing_mode_svr);
+        SSL_set_accept_state(endpoint->m_ssl);
+    }
 
     BIO * bio = BIO_new(protocol->m_bio_method);
     if (bio == NULL) {
