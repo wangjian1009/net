@@ -108,10 +108,13 @@ int net_ssl_stream_endpoint_update(net_endpoint_t base_endpoint) {
     net_ssl_stream_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     net_endpoint_t base_underline = endpoint->m_underline ? endpoint->m_underline->m_base_endpoint : NULL;
 
+    if (base_underline) {
+        net_ssl_stream_endpoint_update_readable(base_endpoint);
+    }
+
     switch(net_endpoint_state(base_endpoint)) {
     case net_endpoint_state_read_closed:
         if (base_underline && net_endpoint_is_active(base_endpoint)) {
-
             if (net_endpoint_set_state(base_endpoint, net_endpoint_state_read_closed) != 0) {
                 net_endpoint_set_state(base_underline, net_endpoint_state_deleting);
             }
@@ -119,8 +122,6 @@ int net_ssl_stream_endpoint_update(net_endpoint_t base_endpoint) {
         return 0;
     case net_endpoint_state_write_closed:
         if (base_underline && net_endpoint_is_active(base_underline)) {
-            net_ssl_stream_endpoint_update_readable(base_endpoint);
-
             if (net_endpoint_set_state(base_underline, net_endpoint_state_disable) != 0) {
                 net_endpoint_set_state(base_underline, net_endpoint_state_deleting);
             }
@@ -141,8 +142,6 @@ int net_ssl_stream_endpoint_update(net_endpoint_t base_endpoint) {
                 net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
             return -1;
         }
-
-        net_ssl_stream_endpoint_update_readable(base_endpoint);
 
         if (!net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write)) { /*有数据等待写入 */
             if (net_endpoint_driver_debug(base_endpoint) >= 2) {
