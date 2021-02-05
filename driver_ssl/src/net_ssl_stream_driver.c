@@ -25,10 +25,10 @@ net_ssl_stream_driver_create(
     
     char name[64];
     if (addition_name) {
-        snprintf(name, sizeof(name), "ssl-s-%s", addition_name);
+        snprintf(name, sizeof(name), "ssl-%s", addition_name);
     }
     else {
-        snprintf(name, sizeof(name), "ssl-s");
+        snprintf(name, sizeof(name), "ssl");
     }
 
     net_driver_t base_driver =

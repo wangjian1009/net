@@ -102,18 +102,13 @@ READ_AGAIN:
         net_endpoint_t base_stream =
             endpoint->m_stream ? net_endpoint_from_data(endpoint->m_stream) : NULL;
 
-        CPE_ERROR(
-            protocol->m_em, "net: ssl: %s: input 33: size=%d, stream=%p",
-            net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_endpoint),
-            net_endpoint_buf_size(base_endpoint, net_ssl_endpoint_ep_read_cache), base_stream);
-
         if (base_stream && net_endpoint_is_readable(base_stream)) {
-            /* if (net_endpoint_driver_debug(base_stream) >= 2) { */
+            if (net_endpoint_driver_debug(base_stream) >= 2) {
                 CPE_INFO(
                     protocol->m_em, "net: ssl: %s: <<< %d data",
                     net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_stream),
                     net_endpoint_buf_size(base_endpoint, net_ssl_endpoint_ep_read_cache));
-            /* } */
+            }
             
             if (net_endpoint_buf_append_from_other(
                     base_stream, net_ep_buf_read,
