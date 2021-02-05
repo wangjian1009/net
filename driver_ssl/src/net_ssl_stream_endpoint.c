@@ -181,10 +181,7 @@ int net_ssl_stream_endpoint_set_no_delay(net_endpoint_t base_endpoint, uint8_t n
     net_ssl_stream_endpoint_t endpoint = net_endpoint_data(base_endpoint);
 
     if (endpoint->m_underline == NULL) {
-        CPE_ERROR(
-            driver->m_em, "net: ssl: stream: %s: set no delay: no underline!",
-            net_endpoint_dump(net_ssl_driver_tmp_buffer(driver), base_endpoint));
-        return -1;
+        if (net_ssl_stream_endpoint_create_underline(endpoint->m_base_endpoint) != 0) return -1;
     }
 
     return net_endpoint_set_no_delay(endpoint->m_underline->m_base_endpoint, no_delay);
@@ -195,10 +192,7 @@ int net_ssl_stream_endpoint_get_mss(net_endpoint_t base_endpoint, uint32_t * mss
     net_ssl_stream_endpoint_t endpoint = net_endpoint_data(base_endpoint);
 
     if (endpoint->m_underline == NULL) {
-        CPE_ERROR(
-            driver->m_em, "net: ssl: stream: %s: get mss: no underline",
-            net_endpoint_dump(net_ssl_driver_tmp_buffer(driver), base_endpoint));
-        return -1;
+        if (net_ssl_stream_endpoint_create_underline(endpoint->m_base_endpoint) != 0) return -1;
     }
 
     return net_endpoint_get_mss(endpoint->m_underline->m_base_endpoint, mss);

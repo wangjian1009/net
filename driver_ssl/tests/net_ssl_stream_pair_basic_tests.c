@@ -20,7 +20,8 @@ static int teardown(void **state) {
 
 static void net_ssl_stream_pair_basic(void **state) {
     net_ssl_stream_pair_testenv_t env = *state;
-    net_endpoint_t cli_ep = net_ssl_testenv_create_stream_endpoint(env->m_env);
+    net_ssl_stream_endpoint_t cli_stream = net_ssl_testenv_create_stream_cli_endpoint(env->m_env);
+    net_endpoint_t cli_ep = net_ssl_stream_endpoint_base_endpoint(cli_stream);
     net_endpoint_set_remote_address(cli_ep, net_acceptor_address(env->m_acceptor));
 
     net_endpoint_t cli_underline = net_ssl_stream_endpoint_underline(cli_ep);
@@ -53,7 +54,8 @@ static void net_ssl_stream_pair_basic(void **state) {
 
 static void net_ssl_stream_pair_delay(void **state) {
     net_ssl_stream_pair_testenv_t env = *state;
-    net_endpoint_t cli_ep = net_ssl_testenv_create_stream_endpoint(env->m_env);
+    net_ssl_stream_endpoint_t cli_stream = net_ssl_testenv_create_stream_cli_endpoint(env->m_env);
+    net_endpoint_t cli_ep = net_ssl_stream_endpoint_base_endpoint(cli_stream);
     net_endpoint_set_remote_address(cli_ep, net_acceptor_address(env->m_acceptor));
 
     net_endpoint_t cli_underline = net_ssl_stream_endpoint_underline(cli_ep);
@@ -76,7 +78,8 @@ static void net_ssl_stream_pair_delay(void **state) {
 
 static void net_ssl_stream_pair_input_handshake(void **state) {
     net_ssl_stream_pair_testenv_t env = *state;
-    net_endpoint_t cli_ep = net_ssl_testenv_create_stream_endpoint(env->m_env);
+    net_ssl_stream_endpoint_t cli_stream = net_ssl_testenv_create_stream_cli_endpoint(env->m_env);
+    net_endpoint_t cli_ep = net_ssl_stream_endpoint_base_endpoint(cli_stream);
     net_endpoint_set_remote_address(cli_ep, net_acceptor_address(env->m_acceptor));
 
     net_endpoint_t cli_underline = net_ssl_stream_endpoint_underline(cli_ep);
@@ -108,7 +111,8 @@ static void net_ssl_stream_pair_input_handshake(void **state) {
 
 static void net_ssl_stream_pair_input_connecting(void **state) {
     net_ssl_stream_pair_testenv_t env = *state;
-    net_endpoint_t cli_ep = net_ssl_testenv_create_stream_endpoint(env->m_env);
+    net_ssl_stream_endpoint_t cli_stream = net_ssl_testenv_create_stream_cli_endpoint(env->m_env);
+    net_endpoint_t cli_ep = net_ssl_stream_endpoint_base_endpoint(cli_stream);
     net_endpoint_set_remote_address(cli_ep, net_acceptor_address(env->m_acceptor));
 
     net_endpoint_t cli_underline = net_ssl_stream_endpoint_underline(cli_ep);
