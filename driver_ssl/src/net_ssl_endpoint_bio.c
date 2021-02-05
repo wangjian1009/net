@@ -86,17 +86,6 @@ int net_ssl_endpoint_bio_write(BIO *b, const char *in, int inlen) {
         return -1;
     }
 
-	/* Copy only as much data onto the output buffer as can fit under the
-	 * high-water mark. */
-	/* if (bufev->wm_write.high && bufev->wm_write.high <= (outlen+inlen)) { */
-	/* 	if (bufev->wm_write.high <= outlen) { */
-	/* 		/\* If no data can fit, we'll need to retry later. *\/ */
-	/* 		BIO_set_retry_write(b); */
-	/* 		return -1; */
-	/* 	} */
-	/* 	inlen = bufev->wm_write.high - outlen; */
-	/* } */
-
     return (int)write_size;
 }
 

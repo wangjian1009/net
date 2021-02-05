@@ -4,8 +4,8 @@
 #include "net_acceptor.h"
 #include "net_address.h"
 #include "net_ssl_testenv.h"
-#include "net_ssl_endpoint.h"
-#include "net_ssl_stream_endpoint.h"
+#include "net_ssl_stream_driver.h"
+#include "net_ssl_protocol.h"
 
 net_ssl_testenv_t net_ssl_testenv_create() {
     net_ssl_testenv_t env = mem_alloc(test_allocrator(), sizeof(struct net_ssl_testenv));
@@ -15,9 +15,16 @@ net_ssl_testenv_t net_ssl_testenv_create() {
     env->m_test_protocol = test_net_protocol_create(env->m_schedule, "test-protocol");
     env->m_tdriver = test_net_driver_create(env->m_schedule, env->m_em);
 
-    env->m_stream_driver = net_ssl_stream_driver_create(
-        env->m_schedule, NULL, net_driver_from_data(env->m_tdriver),
-        test_allocrator(), env->m_em);
+    env->m_ssl_protocol = 
+        net_ssl_protocol_create(
+            env->m_schedule, NULL, test_allocrator(), env->m_em);
+
+    env->m_stream_driver =
+        net_ssl_stream_driver_create(
+            env->m_schedule, NULL,
+            net_driver_from_data(env->m_tdriver),
+            test_allocrator(), env->m_em);
+    net_driver_set_debug(net_driver_from_data(env->m_stream_driver), 2);
 
     return env;
 }
@@ -63,10 +70,17 @@ net_ssl_testenv_create_stream_endpoint(net_ssl_testenv_t env) {
 }
 
 net_ssl_stream_endpoint_t
-net_ssl_testenv_create_stream_cli_endpoint(net_ssl_testenv_t env) {
+net_ssl_testenv_create_stream_cli_endpoint(net_ssl_testenv_t env, const char * str_remote_addr) {
     net_ssl_stream_endpoint_t endpoint = net_ssl_testenv_create_stream_endpoint(env);
     assert_true(
         net_ssl_stream_endpoint_set_runing_mode(endpoint, net_ssl_endpoint_runing_mode_cli) == 0);
+
+    if (str_remote_addr) {
+        net_address_t target_addr = net_address_create_auto(env->m_schedule, str_remote_addr);
+        net_endpoint_set_remote_address(net_ssl_stream_endpoint_base_endpoint(endpoint), target_addr);
+        net_address_free(target_addr);
+    }
+
     return endpoint;
 }
 

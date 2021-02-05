@@ -35,21 +35,19 @@ void net_ssl_stream_pair_testenv_free(net_ssl_stream_pair_testenv_t env) {
     mem_free(test_allocrator(), env);
 }
 
-net_endpoint_t net_ssl_stream_pair_testenv_get_svr_ep(
-    net_ssl_stream_pair_testenv_t env, net_endpoint_t client_base_ep)
+net_ssl_stream_endpoint_t net_ssl_stream_pair_testenv_get_svr_ep(
+    net_ssl_stream_pair_testenv_t env, net_ssl_stream_endpoint_t cli_stream)
 {
-    net_ssl_stream_endpoint_t cli_ep = net_endpoint_data(client_base_ep);
-
-    net_endpoint_t cli_underline = net_ssl_stream_endpoint_underline(client_base_ep);
-    assert_true(cli_underline);
-
-    net_endpoint_t svr_underline_base =  test_net_endpoint_linked_other(env->m_env->m_tdriver, cli_underline);
-    assert_true(svr_underline_base != NULL);
-
-    net_ssl_endpoint_t svr_underline = net_endpoint_protocol_data(svr_underline_base);
-    assert_true(net_ssl_endpoint_stream(svr_underline_base) != NULL);
+    net_ssl_endpoint_t cli_ssl = net_ssl_stream_endpoint_underline(cli_stream);
+    net_endpoint_t cli_ssl_base = net_ssl_endpoint_base_endpoint(cli_ssl);
     
-    net_endpoint_t svr_base_endpoint = net_ssl_endpoint_base_endpoint(svr_underline);
+    net_endpoint_t svr_ssl_base =  test_net_endpoint_linked_other(env->m_env->m_tdriver, cli_ssl_base);
+    assert_true(svr_ssl_base != NULL);
 
-    return svr_base_endpoint;
+    net_ssl_endpoint_t svr_ssl = net_ssl_endpoint_cast(svr_ssl_base);
+    assert_true(svr_ssl != NULL);
+    
+    net_ssl_stream_endpoint_t svr_stream = net_ssl_endpoint_stream(svr_ssl);
+
+    return svr_stream;
 }

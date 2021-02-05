@@ -705,7 +705,7 @@ int net_endpoint_eq(net_endpoint_t l, net_endpoint_t r, void * user_data) {
 }
 
 void net_endpoint_print(write_stream_t ws, net_endpoint_t endpoint) {
-    stream_printf(ws, "[%d: %s", endpoint->m_id, endpoint->m_protocol->m_name);
+    stream_printf(ws, "[%d: %s+%s", endpoint->m_id, endpoint->m_protocol->m_name, endpoint->m_driver->m_name);
     if (endpoint->m_remote_address) {
         stream_printf(ws, "->");
         net_address_print(ws, endpoint->m_remote_address);

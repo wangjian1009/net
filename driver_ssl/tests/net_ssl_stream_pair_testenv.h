@@ -13,7 +13,8 @@ struct net_ssl_stream_pair_testenv {
 net_ssl_stream_pair_testenv_t net_ssl_stream_pair_testenv_create();
 void net_ssl_stream_pair_testenv_free(net_ssl_stream_pair_testenv_t env);
 
-net_endpoint_t net_ssl_stream_pair_testenv_get_svr_ep(
-    net_ssl_stream_pair_testenv_t env, net_endpoint_t client_ep);
+net_ssl_stream_endpoint_t
+net_ssl_stream_pair_testenv_get_svr_ep(
+    net_ssl_stream_pair_testenv_t env, net_ssl_stream_endpoint_t client_ep);
     
 #endif

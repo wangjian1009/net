@@ -76,7 +76,7 @@ int net_ssl_endpoint_input(net_endpoint_t base_endpoint) {
     }
 
 READ_AGAIN:    
-    if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return -1;
+    if (!net_endpoint_is_readable(base_endpoint)) return -1;
 
     uint32_t input_data_size = net_endpoint_buf_size(base_endpoint, net_ep_buf_read);
     if (input_data_size == 0) return 0;
@@ -88,7 +88,7 @@ READ_AGAIN:
             net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_endpoint));
         return -1;
     }
-
+    
     ERR_clear_error();
     int r = SSL_read(endpoint->m_ssl, data, input_data_size);
     if (r > 0) {
@@ -99,19 +99,29 @@ READ_AGAIN:
             return -1;
         }
 
-        net_endpoint_t base_endpoint =
+        net_endpoint_t base_stream =
             endpoint->m_stream ? net_endpoint_from_data(endpoint->m_stream) : NULL;
 
-        if (base_endpoint
-            && net_endpoint_state(base_endpoint) == net_endpoint_state_established)
-        {
+        CPE_ERROR(
+            protocol->m_em, "net: ssl: %s: input 33: size=%d, stream=%p",
+            net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_endpoint),
+            net_endpoint_buf_size(base_endpoint, net_ssl_endpoint_ep_read_cache), base_stream);
+
+        if (base_stream && net_endpoint_is_readable(base_stream)) {
+            /* if (net_endpoint_driver_debug(base_stream) >= 2) { */
+                CPE_INFO(
+                    protocol->m_em, "net: ssl: %s: <<< %d data",
+                    net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_stream),
+                    net_endpoint_buf_size(base_endpoint, net_ssl_endpoint_ep_read_cache));
+            /* } */
+            
             if (net_endpoint_buf_append_from_other(
-                    base_endpoint, net_ep_buf_read,
+                    base_stream, net_ep_buf_read,
                     base_endpoint, net_ssl_endpoint_ep_read_cache, 0) != 0)
             {
                 CPE_ERROR(
                     protocol->m_em, "net: ssl: %s: input: forward data to ssl ep fail",
-                    net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_endpoint));
+                    net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_stream));
                 return -1;
             }
             else {
@@ -352,8 +362,18 @@ static int net_ssl_endpoint_update_error(net_endpoint_t base_endpoint, int err, 
     
     switch (err) {
     case SSL_ERROR_WANT_READ:
+        if (net_endpoint_protocol_debug(base_endpoint) >= 2) {
+            CPE_INFO(
+                protocol->m_em, "net: ssl: %s: want read",
+                net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_endpoint));
+        }
         return 0;
     case SSL_ERROR_WANT_WRITE:
+        if (net_endpoint_protocol_debug(base_endpoint) >= 2) {
+            CPE_INFO(
+                protocol->m_em, "net: ssl: %s: want write",
+                net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_endpoint));
+        }
         return 0;
     case SSL_ERROR_ZERO_RETURN:
         /* Possibly a clean shutdown. */

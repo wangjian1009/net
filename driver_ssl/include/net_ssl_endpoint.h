@@ -14,7 +14,7 @@ typedef void (*net_ssl_endpoint_on_msg_text_fun_t)(void * ctx, net_ssl_endpoint_
 typedef void (*net_ssl_endpoint_on_msg_bin_fun_t)(void * ctx, net_ssl_endpoint_t endpoin, const void * msg, uint32_t msg_len);
 
 net_ssl_endpoint_t net_ssl_endpoint_cast(net_endpoint_t endpoint);
-net_endpoint_t net_ssl_endpoint_stream(net_endpoint_t endpoint);
+net_ssl_stream_endpoint_t net_ssl_endpoint_stream(net_ssl_endpoint_t endpoint);
 
 void net_ssl_endpoint_free(net_ssl_endpoint_t endpoint);
     

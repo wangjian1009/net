@@ -20,10 +20,9 @@ static int teardown(void **state) {
 
 static void net_ssl_svr_basic(void **state) {
     net_ssl_testenv_t env = *state;
-    net_ssl_stream_endpoint_t stream_ep = net_ssl_testenv_create_stream_svr_endpoint(env);
-    net_endpoint_t ep = net_ssl_stream_endpoint_base_endpoint(stream_ep);
-    net_endpoint_t underline = net_ssl_stream_endpoint_underline(ep);
-    assert_true(underline != NULL);
+    net_ssl_stream_endpoint_t svr_stream = net_ssl_testenv_create_stream_svr_endpoint(env);
+    net_ssl_endpoint_t svr_ssl = net_ssl_stream_endpoint_underline(svr_stream);
+    assert_true(svr_ssl != NULL);
 }
 
 int net_ssl_stream_svr_basic_tests() {

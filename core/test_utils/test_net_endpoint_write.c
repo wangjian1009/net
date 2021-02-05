@@ -42,6 +42,12 @@ void test_net_endpoint_write_op_cb(void * ctx, test_net_tl_op_t op) {
 
     net_endpoint_t to_endpoint = net_endpoint_find(schedule, write_op->m_ep_id);
     if (to_endpoint != NULL) {
+        if (net_endpoint_driver_debug(to_endpoint) >= 2) {
+            CPE_INFO(
+                net_schedule_em(schedule), "test: %s: << %d data",
+                net_endpoint_dump(net_schedule_tmp_buffer(schedule), to_endpoint),
+                write_op->m_data_size);
+        }
         net_endpoint_buf_append(to_endpoint, net_ep_buf_read, write_op + 1, write_op->m_data_size);
     }
 }

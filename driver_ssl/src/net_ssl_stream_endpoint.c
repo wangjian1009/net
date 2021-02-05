@@ -21,11 +21,8 @@ net_ssl_endpoint_cast(net_endpoint_t base_endpoint) {
         : NULL;
 }
 
-net_endpoint_t net_ssl_endpoint_stream(net_endpoint_t base_endpoint) {
-    net_ssl_endpoint_t endpoint = net_ssl_endpoint_cast(base_endpoint);
-    if (endpoint == NULL) return NULL;
-    if (endpoint->m_stream == NULL) return NULL;
-    return net_endpoint_from_data(endpoint->m_stream);
+net_ssl_stream_endpoint_t net_ssl_endpoint_stream(net_ssl_endpoint_t endpoint) {
+    return endpoint->m_stream;
 }
 
 net_ssl_endpoint_runing_mode_t net_ssl_endpoint_runing_mode(net_ssl_endpoint_t endpoint) {
@@ -109,37 +106,38 @@ int net_ssl_stream_endpoint_update(net_endpoint_t base_endpoint) {
     net_ssl_stream_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
     net_ssl_stream_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     net_endpoint_t base_underline = endpoint->m_underline ? endpoint->m_underline->m_base_endpoint : NULL;
-    
-    if (base_underline == NULL) {
-        CPE_ERROR(
-            driver->m_em, "net: ssl: stream: %s: set no delay: no underline!",
-            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
-        return -1;
-    }
 
     switch(net_endpoint_state(base_endpoint)) {
     case net_endpoint_state_read_closed:
-        if (net_endpoint_is_active(base_endpoint)) {
+        if (base_underline && net_endpoint_is_active(base_endpoint)) {
             if (net_endpoint_set_state(base_endpoint, net_endpoint_state_read_closed) != 0) {
                 net_endpoint_set_state(base_underline, net_endpoint_state_deleting);
             }
         }
         return 0;
     case net_endpoint_state_write_closed:
-        if (net_endpoint_is_active(base_underline)) {
+        if (base_underline && net_endpoint_is_active(base_underline)) {
             if (net_endpoint_set_state(base_underline, net_endpoint_state_disable) != 0) {
                 net_endpoint_set_state(base_underline, net_endpoint_state_deleting);
             }
         }
         return 0;
     case net_endpoint_state_disable:
-        if (net_endpoint_is_active(base_underline)) {
+        if (base_underline && net_endpoint_is_active(base_underline)) {
             if (net_endpoint_set_state(base_underline, net_endpoint_state_disable) != 0) {
                 net_endpoint_set_state(base_underline, net_endpoint_state_deleting);
             }
         }
         return 0;
     case net_endpoint_state_established:
+        if (base_underline == NULL) {
+            assert(0);
+            CPE_ERROR(
+                driver->m_em, "net: ssl: stream: %s: set no delay: no underline!",
+                net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+            return -1;
+        }
+
         if (!net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write)) { /*有数据等待写入 */
             if (net_endpoint_driver_debug(base_endpoint) >= 2) {
                 uint32_t buf_size = net_endpoint_buf_size(base_endpoint, net_ep_buf_write);
@@ -164,7 +162,10 @@ int net_ssl_stream_endpoint_update(net_endpoint_t base_endpoint) {
         assert(net_endpoint_state(base_endpoint) == net_endpoint_state_established);
         return 0;
     case net_endpoint_state_error:
-        if (net_endpoint_is_active(base_underline)) {
+        if (base_underline
+            && net_endpoint_is_active(base_underline)
+            && net_endpoint_error_source(base_underline) == net_endpoint_error_source_none)
+        {
             if (net_endpoint_set_state(base_underline, net_endpoint_state_error) != 0) {
                 net_endpoint_set_state(base_underline, net_endpoint_state_deleting);
             }
@@ -216,10 +217,9 @@ net_ssl_stream_endpoint_cast(net_endpoint_t base_endpoint) {
         : NULL;
 }
 
-net_endpoint_t
-net_ssl_stream_endpoint_underline(net_endpoint_t base_endpoint) {
-    net_ssl_stream_endpoint_t endpoint = net_ssl_stream_endpoint_cast(base_endpoint);
-    return endpoint && endpoint->m_underline ? endpoint->m_underline->m_base_endpoint : NULL;
+net_ssl_endpoint_t
+net_ssl_stream_endpoint_underline(net_ssl_stream_endpoint_t endpoint) {
+    return endpoint->m_underline;
 }
 
 net_endpoint_t
