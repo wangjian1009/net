@@ -895,7 +895,10 @@ static void net_endpoint_dns_query_callback(void * ctx, net_address_t address, n
             other_address_count);
     }
     
-    while (endpoint->m_driver->m_endpoint_connect(endpoint) != 0) {
+    while (
+        endpoint->m_driver->m_endpoint_connect(endpoint) != 0
+        && net_endpoint_is_active(endpoint))
+    {
         if (net_endpoint_shift_address(endpoint)) { /*有下一个地址，尝试连接下一个地址 */
             continue;
         }
