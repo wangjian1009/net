@@ -8,6 +8,7 @@
 #include "net_ssl_endpoint_i.h"
 
 int net_ssl_stream_endpoint_create_underline(net_endpoint_t base_endpoint);
+void net_ssl_stream_endpoint_update_readable(net_endpoint_t base_endpoint);
 
 void net_ssl_endpoint_free(net_ssl_endpoint_t endpoint) {
     net_endpoint_free(endpoint->m_base_endpoint);
@@ -110,6 +111,7 @@ int net_ssl_stream_endpoint_update(net_endpoint_t base_endpoint) {
     switch(net_endpoint_state(base_endpoint)) {
     case net_endpoint_state_read_closed:
         if (base_underline && net_endpoint_is_active(base_endpoint)) {
+
             if (net_endpoint_set_state(base_endpoint, net_endpoint_state_read_closed) != 0) {
                 net_endpoint_set_state(base_underline, net_endpoint_state_deleting);
             }
@@ -117,6 +119,8 @@ int net_ssl_stream_endpoint_update(net_endpoint_t base_endpoint) {
         return 0;
     case net_endpoint_state_write_closed:
         if (base_underline && net_endpoint_is_active(base_underline)) {
+            net_ssl_stream_endpoint_update_readable(base_endpoint);
+
             if (net_endpoint_set_state(base_underline, net_endpoint_state_disable) != 0) {
                 net_endpoint_set_state(base_underline, net_endpoint_state_deleting);
             }
@@ -138,6 +142,8 @@ int net_ssl_stream_endpoint_update(net_endpoint_t base_endpoint) {
             return -1;
         }
 
+        net_ssl_stream_endpoint_update_readable(base_endpoint);
+
         if (!net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write)) { /*有数据等待写入 */
             if (net_endpoint_driver_debug(base_endpoint) >= 2) {
                 uint32_t buf_size = net_endpoint_buf_size(base_endpoint, net_ep_buf_write);
@@ -145,11 +151,11 @@ int net_ssl_stream_endpoint_update(net_endpoint_t base_endpoint) {
                 net_endpoint_buf_peak_with_size(base_endpoint, net_ep_buf_write, buf_size, &buf);
 
                 char name_buf[128];
-                cpe_str_dup(name_buf, sizeof(name_buf), net_endpoint_dump(net_ssl_driver_tmp_buffer(driver), base_endpoint));
+                cpe_str_dup(name_buf, sizeof(name_buf), net_endpoint_dump(net_ssl_stream_driver_tmp_buffer(driver), base_endpoint));
                 CPE_INFO(
                     driver->m_em, "net: ssl: stream: %s: ==> %d data\n%s",
                     name_buf, buf_size,
-                    mem_buffer_dump_data(net_ssl_driver_tmp_buffer(driver), buf, buf_size, 0));
+                    mem_buffer_dump_data(net_ssl_stream_driver_tmp_buffer(driver), buf, buf_size, 0));
             }
 
             if (net_ssl_endpoint_write(endpoint->m_underline->m_base_endpoint, base_endpoint, net_ep_buf_write) != 0) return -1;
@@ -277,6 +283,36 @@ int net_ssl_stream_endpoint_create_underline(net_endpoint_t base_endpoint) {
     }
 
     return 0;
+}
+
+void net_ssl_stream_endpoint_update_readable(net_endpoint_t base_endpoint) {
+    net_ssl_stream_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
+    net_ssl_stream_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+    net_endpoint_t base_underline = endpoint->m_underline ? endpoint->m_underline->m_base_endpoint : NULL;
+    
+    assert(base_underline != NULL);
+
+    if (net_endpoint_expect_read(base_endpoint)) {
+        if (!net_endpoint_expect_read(base_underline)) {
+            if (net_endpoint_driver_debug(base_endpoint) >= 3) {
+                CPE_INFO(
+                    driver->m_em, "net: ssl: stream: %s: read begin!",
+                    net_endpoint_dump(net_ssl_stream_driver_tmp_buffer(driver), base_endpoint));
+            }
+
+            net_endpoint_set_expect_read(base_underline, 1);
+        }
+    } else {
+        if (net_endpoint_expect_read(base_underline)) {
+            if (net_endpoint_driver_debug(base_endpoint) >= 3) {
+                CPE_INFO(
+                    driver->m_em, "net: ssl: stream: %s: read stop!",
+                    net_endpoint_dump(net_ssl_stream_driver_tmp_buffer(driver), base_endpoint));
+            }
+
+            net_endpoint_set_expect_read(base_underline, 0);
+        }
+    }
 }
 
 const char * net_ssl_endpoint_state_str(net_ssl_endpoint_state_t state) {

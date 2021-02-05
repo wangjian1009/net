@@ -18,6 +18,27 @@ static int teardown(void **state) {
     return 0;
 }
 
+static void net_ws_stream_pair_expect_read(void **state) {
+    net_ws_testenv_t env = *state;
+    net_ws_stream_endpoint_t ep = net_ws_testenv_stream_cli_ep_create(env, "1.2.3.4:5678", "/a/b");
+    net_endpoint_t ep_base = net_ws_stream_endpoint_base_endpoint(ep);
+    net_endpoint_t underline = net_ws_stream_endpoint_underline(ep_base);
+    assert_true(underline != NULL);
+
+    test_net_endpoint_expect_write_keep(underline, net_ep_buf_user1);
+    test_net_endpoint_expect_connect_success(underline, "1.2.3.4:5678", 0);
+
+    assert_true(net_endpoint_connect(ep_base) == 0);
+    
+    net_endpoint_set_expect_read(ep_base, 1);
+    assert_true(net_endpoint_expect_read(ep_base) == 1);
+    assert_true(net_endpoint_expect_read(underline) == 1);
+
+    net_endpoint_set_expect_read(ep_base, 0);
+    assert_true(net_endpoint_expect_read(ep_base) == 0);
+    assert_true(net_endpoint_expect_read(underline) == 0);
+}
+
 static void net_ws_stream_pair_connect_success(void **state) {
     net_ws_testenv_t env = *state;
     net_ws_stream_endpoint_t ep = net_ws_testenv_stream_cli_ep_create(env, "1.2.3.4:5678", "/a/b");
@@ -128,6 +149,7 @@ static void net_ws_connect_error_delay(void **state) {
 
 int net_ws_stream_cli_basic_tests() {
 	const struct CMUnitTest ws_basic_tests[] = {
+		cmocka_unit_test_setup_teardown(net_ws_stream_pair_expect_read, setup, teardown),
 		cmocka_unit_test_setup_teardown(net_ws_stream_pair_connect_success, setup, teardown),
 		cmocka_unit_test_setup_teardown(net_ws_stream_pair_connect_success_delay, setup, teardown),
 		cmocka_unit_test_setup_teardown(net_ws_connect_error, setup, teardown),

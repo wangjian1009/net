@@ -26,6 +26,7 @@ static void net_sock_endpoint_connect_log_connect_success(
     net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint);
 
 static void net_sock_endpoint_close_sock(net_sock_driver_t driver, net_sock_endpoint_t endpoint);
+static int net_sock_endpoint_update_readable(net_endpoint_t base_endpoint);
 
 int net_sock_endpoint_init(net_endpoint_t base_endpoint) {
     net_sock_endpoint_t endpoint = net_endpoint_data(base_endpoint);
@@ -107,6 +108,10 @@ int net_sock_endpoint_update(net_endpoint_t base_endpoint) {
         if (endpoint->m_watcher) {
             net_watcher_update_write(endpoint->m_watcher, 0);
         }
+
+        if (net_endpoint_is_readable(base_endpoint)) {
+            if (net_sock_endpoint_update_readable(base_endpoint) != 0) return -1;
+        }
         
         return 0;
     case net_endpoint_state_error:  {
@@ -151,34 +156,11 @@ int net_sock_endpoint_update(net_endpoint_t base_endpoint) {
         }
 
         if (net_endpoint_is_readable(base_endpoint)) {
-            assert(endpoint->m_watcher != NULL);
-
-            if (net_endpoint_expect_read(base_endpoint)) {
-                if (!net_watcher_expect_read(endpoint->m_watcher)) { /*socket上没有等待读取的操作（当前有数据可以读取) */
-                    if (net_endpoint_driver_debug(base_endpoint) >= 3) {
-                        CPE_INFO(
-                            driver->m_em, "sock: %s: fd=%d: read begin!",
-                            net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
-                    }
-
-                    net_watcher_update_read(endpoint->m_watcher, 1);
-                }
-            } else {
-                if (net_watcher_expect_read(endpoint->m_watcher)) {
-                    if (net_endpoint_driver_debug(base_endpoint) >= 3) {
-                        CPE_INFO(
-                            driver->m_em, "sock: %s: fd=%d: read stop!",
-                            net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
-                    }
-
-                    net_watcher_update_read(endpoint->m_watcher, 0);
-                }
-            }
+            if (net_sock_endpoint_update_readable(base_endpoint) != 0) return -1;
         }
         return 0;
     default:
-        assert(0);
-        return -1;
+        return 0;
     }
 }
 
@@ -1030,3 +1012,35 @@ int net_sock_endpoint_set_no_delay(net_endpoint_t base_endpoint, uint8_t is_enab
         return 0;
     }
 }
+
+static int net_sock_endpoint_update_readable(net_endpoint_t base_endpoint) {
+    net_sock_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+    net_sock_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
+    
+    assert(endpoint->m_watcher != NULL);
+
+    if (net_endpoint_expect_read(base_endpoint)) {
+        if (!net_watcher_expect_read(endpoint->m_watcher)) { /*socket上没有等待读取的操作（当前有数据可以读取) */
+            if (net_endpoint_driver_debug(base_endpoint) >= 3) {
+                CPE_INFO(
+                    driver->m_em, "sock: %s: fd=%d: read begin!",
+                    net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
+            }
+
+            net_watcher_update_read(endpoint->m_watcher, 1);
+        }
+    } else {
+        if (net_watcher_expect_read(endpoint->m_watcher)) {
+            if (net_endpoint_driver_debug(base_endpoint) >= 3) {
+                CPE_INFO(
+                    driver->m_em, "sock: %s: fd=%d: read stop!",
+                    net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
+            }
+
+            net_watcher_update_read(endpoint->m_watcher, 0);
+        }
+    }
+
+    return 0;
+}
+

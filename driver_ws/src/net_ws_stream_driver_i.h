@@ -11,6 +11,6 @@ struct net_ws_stream_driver {
     net_protocol_t m_underline_protocol;
 };
 
-mem_buffer_t net_ws_driver_tmp_buffer(net_ws_stream_driver_t driver);
+mem_buffer_t net_ws_stream_driver_tmp_buffer(net_ws_stream_driver_t driver);
 
 #endif

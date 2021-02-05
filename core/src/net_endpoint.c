@@ -571,9 +571,7 @@ void net_endpoint_set_expect_read(net_endpoint_t endpoint, uint8_t expect_read) 
             net_endpoint_dump(&schedule->m_tmp_buffer, endpoint), expect_read ? "true" : "false");
     }
     
-    if (endpoint->m_state == net_endpoint_state_established
-        && endpoint->m_driver->m_endpoint_update)
-    {
+    if (endpoint->m_driver->m_endpoint_update) {
         endpoint->m_driver->m_endpoint_update(endpoint);
     }
 }

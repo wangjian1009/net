@@ -115,6 +115,6 @@ int net_ssl_stream_driver_svr_prepaired(net_ssl_stream_driver_t driver) {
     return net_ssl_protocol_svr_prepaired(protocol);
 }
 
-mem_buffer_t net_ssl_driver_tmp_buffer(net_ssl_stream_driver_t driver) {
+mem_buffer_t net_ssl_stream_driver_tmp_buffer(net_ssl_stream_driver_t driver) {
     return net_schedule_tmp_buffer(net_driver_schedule(net_driver_from_data(driver)));
 }

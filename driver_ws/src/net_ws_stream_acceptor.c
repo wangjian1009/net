@@ -26,7 +26,7 @@ int net_ws_stream_acceptor_on_new_endpoint(void * ctx, net_endpoint_t base_under
     if (base_endpoint == NULL) {
         CPE_ERROR(
             driver->m_em, "net: ws: stream: %s: create stream endpoint fail",
-            net_endpoint_dump(net_ws_driver_tmp_buffer(driver), base_underline));
+            net_endpoint_dump(net_ws_stream_driver_tmp_buffer(driver), base_underline));
         goto INIT_ERROR;
     }
     stream = net_ws_stream_endpoint_cast(base_endpoint);
@@ -35,7 +35,7 @@ int net_ws_stream_acceptor_on_new_endpoint(void * ctx, net_endpoint_t base_under
     if (net_ws_endpoint_set_runing_mode(underline, net_ws_endpoint_runing_mode_svr)) {
         CPE_ERROR(
             driver->m_em, "net: ws: stream: %s: set underline runing-mode fail",
-            net_endpoint_dump(net_ws_driver_tmp_buffer(driver), base_underline));
+            net_endpoint_dump(net_ws_stream_driver_tmp_buffer(driver), base_underline));
         goto INIT_ERROR;
     }
 
@@ -48,14 +48,14 @@ int net_ws_stream_acceptor_on_new_endpoint(void * ctx, net_endpoint_t base_under
     if (net_endpoint_set_state(base_endpoint, net_endpoint_state_established) != 0) {
         CPE_ERROR(
             driver->m_em, "net: ws: stream: %s: set new endpoint established fail",
-            net_endpoint_dump(net_ws_driver_tmp_buffer(driver), base_underline));
+            net_endpoint_dump(net_ws_stream_driver_tmp_buffer(driver), base_underline));
         goto INIT_ERROR;
     }
 
     if (net_acceptor_on_new_endpoint(base_acceptor, base_endpoint) != 0) {
         CPE_ERROR(
             driver->m_em, "net: ws: stream: %s: on acceptor new endpoint fail",
-            net_endpoint_dump(net_ws_driver_tmp_buffer(driver), base_underline));
+            net_endpoint_dump(net_ws_stream_driver_tmp_buffer(driver), base_underline));
         goto INIT_ERROR;
     }
     

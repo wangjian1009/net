@@ -8,6 +8,7 @@
 #include "net_ws_endpoint_i.h"
 
 int net_ws_stream_endpoint_create_underline(net_endpoint_t base_endpoint);
+void net_ws_stream_endpoint_update_readable(net_endpoint_t base_endpoint);
 
 int net_ws_stream_endpoint_init(net_endpoint_t base_endpoint) {
     net_ws_stream_endpoint_t endpoint = net_endpoint_data(base_endpoint);
@@ -86,6 +87,10 @@ int net_ws_stream_endpoint_update(net_endpoint_t base_endpoint) {
         return -1;
     }
 
+    if (base_underline) {
+        net_ws_stream_endpoint_update_readable(base_endpoint);
+    }
+
     switch(net_endpoint_state(base_endpoint)) {
     case net_endpoint_state_read_closed:
         if (net_endpoint_is_active(base_endpoint)) {
@@ -115,23 +120,23 @@ int net_ws_stream_endpoint_update(net_endpoint_t base_endpoint) {
             if (net_endpoint_buf_peak_with_size(base_endpoint, net_ep_buf_write, buf_size, &buf) != 0) {
                 CPE_ERROR(
                     driver->m_em, "net: ws: stream: %s: peak data to send fail!, size=%d!",
-                    net_endpoint_dump(net_ws_driver_tmp_buffer(driver), base_endpoint), buf_size);
+                    net_endpoint_dump(net_ws_stream_driver_tmp_buffer(driver), base_endpoint), buf_size);
                 return -1;
             }
 
             if (net_endpoint_driver_debug(base_endpoint) >= 2) {
                 char name_buf[128];
-                cpe_str_dup(name_buf, sizeof(name_buf), net_endpoint_dump(net_ws_driver_tmp_buffer(driver), base_endpoint));
+                cpe_str_dup(name_buf, sizeof(name_buf), net_endpoint_dump(net_ws_stream_driver_tmp_buffer(driver), base_endpoint));
                 CPE_INFO(
                     driver->m_em, "net: ws: stream: %s: ==> %d data\n%s",
                     name_buf, buf_size,
-                    mem_buffer_dump_data(net_ws_driver_tmp_buffer(driver), buf, buf_size, 0));
+                    mem_buffer_dump_data(net_ws_stream_driver_tmp_buffer(driver), buf, buf_size, 0));
             }
             
             if (net_ws_endpoint_send_msg_bin(endpoint->m_underline, buf, buf_size) != 0) {
                 CPE_ERROR(
                     driver->m_em, "net: ws: stream: %s: send bin message fail, size=%d!",
-                    net_endpoint_dump(net_ws_driver_tmp_buffer(driver), base_endpoint), buf_size);
+                    net_endpoint_dump(net_ws_stream_driver_tmp_buffer(driver), base_endpoint), buf_size);
                 return -1;
             }
 
@@ -152,8 +157,7 @@ int net_ws_stream_endpoint_update(net_endpoint_t base_endpoint) {
         }
         return 0;
     default:
-        assert(0);
-        return -1;
+        return 0;
     }
 }
 
@@ -164,7 +168,7 @@ int net_ws_stream_endpoint_set_no_delay(net_endpoint_t base_endpoint, uint8_t no
     if (endpoint->m_underline == NULL) {
         CPE_ERROR(
             driver->m_em, "net: ws: stream: %s: set no delay: no underline!",
-            net_endpoint_dump(net_ws_driver_tmp_buffer(driver), base_endpoint));
+            net_endpoint_dump(net_ws_stream_driver_tmp_buffer(driver), base_endpoint));
         return -1;
     }
 
@@ -178,7 +182,7 @@ int net_ws_stream_endpoint_get_mss(net_endpoint_t base_endpoint, uint32_t * mss)
     if (endpoint->m_underline == NULL) {
         CPE_ERROR(
             driver->m_em, "net: ws: stream: %s: get mss: no underline",
-            net_endpoint_dump(net_ws_driver_tmp_buffer(driver), base_endpoint));
+            net_endpoint_dump(net_ws_stream_driver_tmp_buffer(driver), base_endpoint));
         return -1;
     }
 
@@ -263,9 +267,41 @@ int net_ws_stream_endpoint_create_underline(net_endpoint_t base_endpoint) {
     endpoint->m_underline = net_ws_endpoint_cast(base_underline);
     endpoint->m_underline->m_stream = endpoint;
 
+    net_endpoint_set_expect_read(base_underline, net_endpoint_expect_read(base_endpoint));
+
     if (net_endpoint_driver_debug(base_endpoint) > net_endpoint_protocol_debug(base_underline)) {
         net_endpoint_set_protocol_debug(base_underline, net_endpoint_driver_debug(base_endpoint));
     }
 
     return 0;
+}
+
+void net_ws_stream_endpoint_update_readable(net_endpoint_t base_endpoint) {
+    net_ws_stream_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
+    net_ws_stream_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+    net_endpoint_t base_underline = endpoint->m_underline ? endpoint->m_underline->m_base_endpoint : NULL;
+    
+    assert(base_underline != NULL);
+
+    if (net_endpoint_expect_read(base_endpoint)) {
+        if (!net_endpoint_expect_read(base_underline)) {
+            if (net_endpoint_driver_debug(base_endpoint) >= 3) {
+                CPE_INFO(
+                    driver->m_em, "net: ws: stream: %s: read begin!",
+                    net_endpoint_dump(net_ws_stream_driver_tmp_buffer(driver), base_endpoint));
+            }
+
+            net_endpoint_set_expect_read(base_underline, 1);
+        }
+    } else {
+        if (net_endpoint_expect_read(base_underline)) {
+            if (net_endpoint_driver_debug(base_endpoint) >= 3) {
+                CPE_INFO(
+                    driver->m_em, "net: ws: stream: %s: read stop!",
+                    net_endpoint_dump(net_ws_stream_driver_tmp_buffer(driver), base_endpoint));
+            }
+
+            net_endpoint_set_expect_read(base_underline, 0);
+        }
+    }
 }

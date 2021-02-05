@@ -34,14 +34,6 @@ int test_net_endpoint_update(net_endpoint_t base_endpoint) {
     test_net_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
     test_net_endpoint_t endpoint = net_endpoint_data(base_endpoint);
 
-    assert(
-        net_endpoint_state(base_endpoint) == net_endpoint_state_established
-        || net_endpoint_state(base_endpoint) == net_endpoint_state_read_closed
-        || net_endpoint_state(base_endpoint) == net_endpoint_state_write_closed
-        || net_endpoint_state(base_endpoint) == net_endpoint_state_disable
-        || net_endpoint_state(base_endpoint) == net_endpoint_state_error
-        || net_endpoint_state(base_endpoint) == net_endpoint_state_error);
-
     if (net_endpoint_state(base_endpoint) == net_endpoint_state_established) {
         if (!net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write)) { /*有数据等待写入 */
             net_endpoint_set_is_writing(base_endpoint, 1);

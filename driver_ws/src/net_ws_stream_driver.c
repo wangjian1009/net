@@ -100,6 +100,6 @@ static void net_ws_stream_driver_fini(net_driver_t base_driver) {
     net_ws_stream_driver_t driver = net_driver_data(base_driver);
 }
 
-mem_buffer_t net_ws_driver_tmp_buffer(net_ws_stream_driver_t driver) {
+mem_buffer_t net_ws_stream_driver_tmp_buffer(net_ws_stream_driver_t driver) {
     return net_schedule_tmp_buffer(net_driver_schedule(net_driver_from_data(driver)));
 }
