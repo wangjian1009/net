@@ -3,10 +3,10 @@ set(net_core_base ${CMAKE_CURRENT_LIST_DIR}/../../core)
 file(GLOB net_core_source ${net_core_base}/src/*.c)
 
 set(net_core_includes
-  ${CMAKE_CURRENT_LIST_DIR}/../../../cpe/pal/include
-  ${CMAKE_CURRENT_LIST_DIR}/../../../cpe/utils/include
-  ${CMAKE_CURRENT_LIST_DIR}/../../../cpe/utils_sock/include
-  ${CMAKE_CURRENT_LIST_DIR}/../../../cpe/depends/pcre2/include
+  ${cpe_pal_base}/include
+  ${cpe_utils_base}/include
+  ${cpe_utils_sock_base}/include
+  ${pcre2_base}/include
   ${net_core_base}/include
   )
 
@@ -19,3 +19,4 @@ set_property(TARGET net_core PROPERTY COMPILE_DEFINITIONS
   PCRE2_CODE_UNIT_WIDTH=8
   )
 
+target_link_libraries(net_core INTERFACE cpe_utils_sock pcre2)

@@ -124,4 +124,6 @@ endif()
 
 if (OS_NAME MATCHES "linux")
   target_link_libraries(crypto INTERFACE dl)
+elseif (OS_NAME STREQUAL mingw)
+  target_link_libraries(crypto INTERFACE ws2_32)
 endif()
