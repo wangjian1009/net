@@ -1,3 +1,5 @@
+#include "cpe/pal/pal_string.h"
+#include "cpe/pal/pal_stdio.h"
 #include "openssl/ssl.h"
 #include "openssl/rsa.h"
 #include "openssl/bn.h"
@@ -5,7 +7,6 @@
 #include "openssl/pem.h"
 #include "openssl/x509.h"
 #include "openssl/err.h"
-#include "cpe/pal/pal_string.h"
 #include "cpe/utils/stream_buffer.h"
 #include "cpe/utils/error.h"
 #include "net_schedule.h"

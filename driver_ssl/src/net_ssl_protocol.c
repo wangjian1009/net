@@ -1,4 +1,5 @@
 #include "cpe/pal/pal_string.h"
+#include "cpe/pal/pal_stdio.h"
 #include "net_protocol.h"
 #include "net_schedule.h"
 #include "net_ssl_protocol_i.h"
