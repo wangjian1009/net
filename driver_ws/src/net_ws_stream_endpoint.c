@@ -80,40 +80,40 @@ int net_ws_stream_endpoint_update(net_endpoint_t base_endpoint) {
     net_ws_stream_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     net_endpoint_t base_underline = endpoint->m_underline ? endpoint->m_underline->m_base_endpoint : NULL;
     
-    if (base_underline == NULL) {
-        CPE_ERROR(
-            driver->m_em, "net: ws: stream: %s: set no delay: no underline!",
-            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
-        return -1;
-    }
-
     if (base_underline) {
         net_ws_stream_endpoint_update_readable(base_endpoint);
     }
 
     switch(net_endpoint_state(base_endpoint)) {
     case net_endpoint_state_read_closed:
-        if (net_endpoint_is_active(base_endpoint)) {
-            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_read_closed) != 0) {
+        if (base_underline && net_endpoint_is_active(base_underline)) {
+            if (net_endpoint_set_state(base_underline, net_endpoint_state_read_closed) != 0) {
                 net_endpoint_set_state(base_underline, net_endpoint_state_deleting);
             }
         }
         return 0;
     case net_endpoint_state_write_closed:
-        if (net_endpoint_is_active(base_underline)) {
+        if (base_underline && net_endpoint_is_active(base_underline)) {
             if (net_endpoint_set_state(base_underline, net_endpoint_state_disable) != 0) {
                 net_endpoint_set_state(base_underline, net_endpoint_state_deleting);
             }
         }
         return 0;
     case net_endpoint_state_disable:
-        if (net_endpoint_is_active(base_underline)) {
+        if (base_underline && net_endpoint_is_active(base_underline)) {
             if (net_endpoint_set_state(base_underline, net_endpoint_state_disable) != 0) {
                 net_endpoint_set_state(base_underline, net_endpoint_state_deleting);
             }
         }
         return 0;
     case net_endpoint_state_established:
+        if (base_underline == NULL) {
+            CPE_ERROR(
+                driver->m_em, "net: ws: stream: %s: set no delay: no underline!",
+                net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+            return -1;
+        }
+
         if (!net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write)) { /*有数据等待写入 */
             uint32_t buf_size = net_endpoint_buf_size(base_endpoint, net_ep_buf_write);
             void *  buf = NULL;
@@ -150,7 +150,7 @@ int net_ws_stream_endpoint_update(net_endpoint_t base_endpoint) {
         assert(net_endpoint_state(base_endpoint) == net_endpoint_state_established);
         return 0;
     case net_endpoint_state_error:
-        if (net_endpoint_is_active(base_underline)) {
+        if (base_underline && net_endpoint_is_active(base_underline)) {
             if (net_endpoint_set_state(base_underline, net_endpoint_state_error) != 0) {
                 net_endpoint_set_state(base_underline, net_endpoint_state_deleting);
             }
