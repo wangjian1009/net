@@ -1,4 +1,5 @@
 #include <assert.h>
+#include "cpe/pal/pal_stdio.h"
 #include "cpe/utils/error.h"
 #include "net_protocol.h"
 #include "net_endpoint.h"

@@ -1,3 +1,4 @@
+#include "cpe/pal/pal_stdio.h"
 #include "cpe/utils/error.h"
 #include "net_schedule.h"
 #include "net_driver.h"

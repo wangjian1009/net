@@ -1,3 +1,4 @@
+#include "cpe/pal/pal_stdio.h"
 #include "net_schedule.h"
 #include "net_protocol.h"
 #include "net_http_endpoint_i.h"
