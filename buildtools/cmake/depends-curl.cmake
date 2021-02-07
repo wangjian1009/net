@@ -45,3 +45,7 @@ set_property(TARGET curl PROPERTY INCLUDE_DIRECTORIES
   )
 
 add_dependencies(curl ssl)
+
+if (OS_NAME STREQUAL "mingw")
+  target_link_libraries(curl INTERFACE ws2_32 Wldap32 Iphlpapi)
+endif()

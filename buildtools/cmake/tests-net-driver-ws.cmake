@@ -8,7 +8,6 @@ set_property(TARGET tests_net_driver_ws PROPERTY INCLUDE_DIRECTORIES
   ${cpe_pal_base}/include
   ${cpe_utils_base}/include
   ${cpe_utils_base}/test_utils
-  ${cpe_utils_yaml_base}/include
   ${net_core_base}/include
   ${net_core_base}/test_utils
   ${net_driver_ws_base}/include
@@ -18,12 +17,12 @@ set_property(TARGET tests_net_driver_ws PROPERTY INCLUDE_DIRECTORIES
 
 set(tests_net_driver_ws_libraries
   test_utils_cpe_utils test_utils_net_core test_utils_net_driver_ws
-  net_driver_ws net_core  cpe_utils_yaml cpe_utils_sock cpe_utils cpe_pal
-  wslay crypto pcre2 cmocka)
+  net_driver_ws net_core  cpe_utils_sock cpe_utils cpe_pal
+  wslay crypto cmocka)
 
-if (OS_NAME STREQUAL linux32 OR OS_NAME STREQUAL linux64)
-  set(tests_net_driver_ws_libraries ${tests_net_driver_ws_libraries} m)
-endif()
+# if (OS_NAME STREQUAL linux32 OR OS_NAME STREQUAL linux64)
+#   set(tests_net_driver_ws_libraries ${tests_net_driver_ws_libraries} m)
+# endif()
 
 set_property(TARGET tests_net_driver_ws PROPERTY LINK_LIBRARIES ${tests_net_driver_ws_libraries})
 
