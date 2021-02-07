@@ -11,3 +11,5 @@ set_property(TARGET net_dns PROPERTY INCLUDE_DIRECTORIES
   ${CMAKE_CURRENT_LIST_DIR}/../../core/include
   ${net_dns_base}/include
   )
+
+target_link_libraries(net_dns INTERFACE net_core)

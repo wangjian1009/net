@@ -1,8 +1,24 @@
+#include "cmocka_all.h"
 #include "net_dns_entry.h"
-#include "test_dns_manager.h"
+#include "net_dns_testenv.h"
 
-START_TEST(select_circle_1) {
-    with_dns_manager_setup_records(
+static int setup(void **state) {
+    net_dns_testenv_t env = net_dns_testenv_create();
+    *state = env;
+    return 0;
+}
+
+static int teardown(void **state) {
+    net_dns_testenv_t env = *state;
+    net_dns_testenv_free(env);
+    return 0;
+}
+
+void test_records_select_circle_1(void **state) {
+    net_dns_testenv_t env = *state;
+
+    net_dns_testenv_setup_records(
+        env,
         "gllto.glpals.com:\n"
         "  - azrltovzs.azureedge.net\n"
         "  - gllto.trafficmanager.net\n"
@@ -24,14 +40,16 @@ START_TEST(select_circle_1) {
         "  - azrltovzs.azureedge.net\n"
         );
     
-    ck_assert_str_eq(
-        with_dns_manager_entry_select_item("gllto.glpals.com", net_dns_query_ipv4),
+    assert_string_equal(
+        net_dns_testenv_entry_select_item(env, "gllto.glpals.com", net_dns_query_ipv4),
         "152.195.12.4");
 }
-END_TEST
 
-START_TEST(select_circle_2) {
-    with_dns_manager_setup_records(
+void test_records_select_circle_2(void **state) {
+    net_dns_testenv_t env = *state;
+
+    net_dns_testenv_setup_records(
+        env,
         "account.live.com:\n"
         "  - account.msa.msidentity.com\n"
         "account.msa.msidentity.com:\n"
@@ -58,14 +76,16 @@ START_TEST(select_circle_2) {
         "  - 40.126.12.33\n"
         );
     
-    ck_assert_pstr_ne(
-        with_dns_manager_entry_select_item("account.live.com", net_dns_query_ipv4),
+    assert_string_not_equal(
+        net_dns_testenv_entry_select_item(env, "account.live.com", net_dns_query_ipv4),
         NULL);
 }
-END_TEST
 
-START_TEST(select_circle_3) {
-    with_dns_manager_setup_records(
+void test_records_select_circle_3(void **state) {
+    net_dns_testenv_t env = *state;
+    
+    net_dns_testenv_setup_records(
+        env,
         "s.youtube.com:\n"
         "  - video-stats.l.google.com\n"
         "video-stats.l.google.com:\n"
@@ -175,17 +195,16 @@ START_TEST(select_circle_3) {
         "  - 74.125.201.101\n"
         );
     
-    ck_assert_pstr_ne(
-        with_dns_manager_entry_select_item("s.youtube.com", net_dns_query_ipv4),
+    assert_string_not_equal(
+        net_dns_testenv_entry_select_item(env, "s.youtube.com", net_dns_query_ipv4),
         NULL);
 }
-END_TEST
 
-TCase* dns_records_case_runtime(void) {
-    TCase* tc_runtime = tcase_create("runtime");
-    tcase_add_checked_fixture(tc_runtime, with_dns_manager_setup, with_dns_manager_teardown);
-    tcase_add_test(tc_runtime, select_circle_1);
-    tcase_add_test(tc_runtime, select_circle_2);
-    tcase_add_test(tc_runtime, select_circle_3);
-    return tc_runtime;
+int net_dns_records_case_runtime(void) {
+	const struct CMUnitTest tests[] = {
+		cmocka_unit_test_setup_teardown(test_records_select_circle_1, setup, teardown),
+		cmocka_unit_test_setup_teardown(test_records_select_circle_2, setup, teardown),
+		cmocka_unit_test_setup_teardown(test_records_select_circle_3, setup, teardown),
+	};
+	return cmocka_run_group_tests(tests, NULL, NULL);
 }
