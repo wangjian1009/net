@@ -7,3 +7,5 @@ set_property(TARGET test_utils_net_core PROPERTY INCLUDE_DIRECTORIES
   ${net_core_includes}
   ${cpe_utils_base}/test_utils
   )
+
+target_link_libraries(test_utils_net_core INTERFACE net_core test_utils_cpe_utils)

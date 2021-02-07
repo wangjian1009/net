@@ -158,4 +158,6 @@ int net_dns_testenv_add_record(net_dns_testenv_t env, const char * str_host, con
 
     net_address_free(host);
     net_address_free(resolved);
+
+    return rv;
 }
