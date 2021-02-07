@@ -76,14 +76,13 @@ void test_records_select_circle_2(void **state) {
         "  - 40.126.12.33\n"
         );
     
-    assert_string_not_equal(
-        net_dns_testenv_entry_select_item(env, "account.live.com", net_dns_query_ipv4),
-        NULL);
+    assert_true(
+        net_dns_testenv_entry_select_item(env, "account.live.com", net_dns_query_ipv4) != NULL);
 }
 
 void test_records_select_circle_3(void **state) {
     net_dns_testenv_t env = *state;
-    
+
     net_dns_testenv_setup_records(
         env,
         "s.youtube.com:\n"
@@ -195,9 +194,8 @@ void test_records_select_circle_3(void **state) {
         "  - 74.125.201.101\n"
         );
     
-    assert_string_not_equal(
-        net_dns_testenv_entry_select_item(env, "s.youtube.com", net_dns_query_ipv4),
-        NULL);
+    assert_true(
+        net_dns_testenv_entry_select_item(env, "s.youtube.com", net_dns_query_ipv4) != NULL);
 }
 
 int net_dns_records_case_runtime(void) {

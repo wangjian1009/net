@@ -21,9 +21,11 @@ net_dns_testenv_t net_dns_testenv_create() {
     env->m_dns = 
         net_dns_manage_create(env->m_alloc, &env->m_em_buf, env->m_schedule);
     assert_true(env->m_dns);
-    net_dns_manage_set_debug(env->m_dns, 1);
+    //net_dns_manage_set_debug(env->m_dns, 1);
     
     mem_buffer_init(&env->m_tmp_buffer, env->m_alloc);
+
+    return env;
 }
 
 void net_dns_testenv_free(net_dns_testenv_t env) {

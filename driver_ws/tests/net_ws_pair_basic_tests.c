@@ -88,9 +88,10 @@ static void net_ws_pair_text_msg_delete_ep(void **state) {
 
     net_ws_endpoint_t cli_ep;
     net_ws_endpoint_t svr_ep;
-    uint32_t svr_ep_id = net_endpoint_id(net_ws_endpoint_base_endpoint(svr_ep));
     net_ws_testenv_cli_create_pair_established(env, &cli_ep, &svr_ep, "1.1.2.3:5678", "/a/b");
     test_net_driver_run(env->m_tdriver, 0);
+
+    uint32_t svr_ep_id = net_endpoint_id(net_ws_endpoint_base_endpoint(svr_ep));
 
     test_net_ws_endpoint_install_receivers(svr_ep);
     
