@@ -43,12 +43,14 @@ uint8_t net_endpoint_buf_is_empty(net_endpoint_t endpoint, net_endpoint_buf_type
     return TAILQ_EMPTY(&endpoint->m_bufs[buf_type].m_blocks) ? 1 : 0;
 }
 
-net_mem_block_t net_endpoint_block_alloc(net_endpoint_t endpoint, uint32_t * capacity) {
+static
+net_mem_block_t
+net_endpoint_block_alloc(net_endpoint_t endpoint, uint32_t * capacity, uint8_t is_capacity_suggest) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
 
     assert(endpoint->m_tb == NULL);
 
-    endpoint->m_tb = net_mem_block_create(endpoint->m_mem_group, *capacity);
+    endpoint->m_tb = net_mem_block_create(endpoint->m_mem_group, *capacity, is_capacity_suggest);
     if (endpoint->m_tb == NULL) {
         return NULL;
     }
@@ -66,7 +68,7 @@ void * net_endpoint_buf_alloc_at_least(net_endpoint_t endpoint, uint32_t * inout
 
     assert(inout_size);
 
-    net_mem_block_t tb = net_endpoint_block_alloc(endpoint, inout_size);
+    net_mem_block_t tb = net_endpoint_block_alloc(endpoint, inout_size, 0);
     if (tb == NULL) {
         return NULL;
     }
@@ -76,8 +78,19 @@ void * net_endpoint_buf_alloc_at_least(net_endpoint_t endpoint, uint32_t * inout
     return tb->m_data;
 }
 
-net_mem_block_t net_endpoint_block_get(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type) {
-    return TAILQ_FIRST(&endpoint->m_bufs[buf_type].m_blocks);
+void * net_endpoint_buf_alloc_suggest(net_endpoint_t endpoint, uint32_t * inout_size) {
+    net_schedule_t schedule = endpoint->m_driver->m_schedule;
+
+    assert(inout_size);
+
+    net_mem_block_t tb = net_endpoint_block_alloc(endpoint, inout_size, 1);
+    if (tb == NULL) {
+        return NULL;
+    }
+    
+    *inout_size = tb->m_capacity;
+
+    return tb->m_data;
 }
 
 void net_endpoint_buf_release(net_endpoint_t endpoint) {
@@ -444,7 +457,7 @@ int net_endpoint_buf_append(net_endpoint_t endpoint, net_endpoint_buf_type_t buf
         net_mem_block_append(last_block, i_data, size);
     }
     else {
-        net_mem_block_t new_block = net_mem_block_create(endpoint->m_mem_group, size);
+        net_mem_block_t new_block = net_mem_block_create(endpoint->m_mem_group, size, net_mem_alloc_capacity_at_least);
         if (new_block == NULL) return -1;
 
         memcpy(new_block->m_data, i_data, size);
@@ -481,7 +494,7 @@ int net_endpoint_buf_append_from_other(
             return -1;
         }
 
-        net_mem_block_t tb = net_mem_block_create(endpoint->m_mem_group, size);
+        net_mem_block_t tb = net_mem_block_create(endpoint->m_mem_group, size, 0);
         if (tb == NULL) return -1;
 
         while(!TAILQ_EMPTY(&other->m_bufs[from].m_blocks)) {
@@ -566,7 +579,7 @@ int net_endpoint_buf_append_from_self(
             return -1;
         }
         
-        net_mem_block_t tb = net_mem_block_create(endpoint->m_mem_group, size);
+        net_mem_block_t tb = net_mem_block_create(endpoint->m_mem_group, size, net_mem_alloc_capacity_at_least);
         if (tb == NULL) return -1;
 
         while(!TAILQ_EMPTY(&endpoint->m_bufs[from].m_blocks)) {
@@ -647,7 +660,8 @@ static int net_endpoint_buf_on_supply(net_schedule_t schedule, net_endpoint_t en
 net_mem_block_t net_endpoint_buf_combine(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type) {
     if (endpoint->m_bufs[buf_type].m_size == 0) return NULL;
     
-    net_mem_block_t block = net_mem_block_create(endpoint->m_mem_group, endpoint->m_bufs[buf_type].m_size);
+    net_mem_block_t block =
+        net_mem_block_create(endpoint->m_mem_group, endpoint->m_bufs[buf_type].m_size, net_mem_alloc_capacity_at_least);
     if (block == NULL) {
         return NULL;
     }

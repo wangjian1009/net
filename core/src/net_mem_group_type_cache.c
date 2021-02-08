@@ -75,11 +75,17 @@ void net_mem_group_type_cache_fini(net_mem_group_type_t type) {
     }
 }
 
-void * net_mem_group_type_cache_alloc(net_mem_group_type_t type, uint32_t * capacity) {
+void * net_mem_group_type_cache_alloc(
+    net_mem_group_type_t type, uint32_t * capacity, net_mem_alloc_capacity_policy_t policy)
+{
     net_schedule_t schedule = type->m_schedule;
     net_mem_group_type_cache_t cache = net_mem_group_type_data(type);
 
     net_mem_group_type_cache_group_t group = net_mem_group_type_cache_find_group(cache, *capacity);
+    if (group == NULL && policy == net_mem_alloc_capacity_suggest) {
+        group = &cache->m_groups[CPE_ARRAY_SIZE(cache->m_groups) - 1];
+    }
+
     if (group) {
         *capacity = group->m_capacity;
         return net_mem_group_type_cache_group_alloc(schedule, group);

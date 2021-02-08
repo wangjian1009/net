@@ -1,5 +1,6 @@
 #ifndef NET_MEM_BLOCK_I_H_INCLEDED
 #define NET_MEM_BLOCK_I_H_INCLEDED
+#include "net_mem_group_type.h"
 #include "net_mem_group_i.h"
 
 struct net_mem_block {
@@ -13,7 +14,10 @@ struct net_mem_block {
     uint8_t* m_data;
 };
 
-net_mem_block_t net_mem_block_create(net_mem_group_t group, uint32_t capacity);
+net_mem_block_t
+net_mem_block_create(
+    net_mem_group_t group, uint32_t capacity, net_mem_alloc_capacity_policy_t policy);
+
 void net_mem_block_free(net_mem_block_t mem_bloc);
 void net_mem_block_real_free(net_mem_block_t mem_block);
 

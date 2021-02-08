@@ -84,6 +84,7 @@ uint8_t net_endpoint_shift_address(net_endpoint_t endpoint);
 
 /*    write*/
 void * net_endpoint_buf_alloc_at_least(net_endpoint_t endpoint, uint32_t * inout_size);
+void * net_endpoint_buf_alloc_suggest(net_endpoint_t endpoint, uint32_t * inout_size);
 void * net_endpoint_buf_alloc(net_endpoint_t endpoint, uint32_t size);
 void net_endpoint_buf_release(net_endpoint_t endpoint);
 int net_endpoint_buf_supply(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type, uint32_t size);

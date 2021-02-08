@@ -6,7 +6,8 @@
 
 void net_mem_block_set_size(net_mem_block_t block, uint32_t size);
 
-net_mem_block_t net_mem_block_create(net_mem_group_t group, uint32_t capacity) {
+net_mem_block_t
+net_mem_block_create(net_mem_group_t group, uint32_t capacity, net_mem_alloc_capacity_policy_t policy) {
     net_schedule_t schedule = group->m_type->m_schedule;
     
     net_mem_block_t block = TAILQ_FIRST(&schedule->m_free_mem_blocks);
@@ -28,7 +29,7 @@ net_mem_block_t net_mem_block_create(net_mem_group_t group, uint32_t capacity) {
 
     block->m_len = 0;
     block->m_capacity = capacity;
-    block->m_data = group->m_type->m_block_alloc(group->m_type, &block->m_capacity);
+    block->m_data = group->m_type->m_block_alloc(group->m_type, &block->m_capacity, policy);
     if (block->m_data == NULL) {
         CPE_ERROR(schedule->m_em, "core: mem block: alloc buffer fail, capacity=%d!", block->m_capacity);
         block->m_group = (net_mem_group_t)schedule;

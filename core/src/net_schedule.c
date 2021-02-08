@@ -70,7 +70,7 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em) {
     TAILQ_INIT(&schedule->m_free_mem_groups);
     TAILQ_INIT(&schedule->m_free_mem_blocks);
 
-    schedule->m_dft_mem_group_type = net_mem_group_type_basic_create(schedule);
+    schedule->m_dft_mem_group_type = net_mem_group_type_cache_create(schedule);
     if (schedule->m_dft_mem_group_type == NULL) {
         CPE_ERROR(em, "schedule: create default mem group type fail");
         goto INIT_FAILED;

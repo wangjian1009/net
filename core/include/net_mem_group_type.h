@@ -4,10 +4,15 @@
 
 NET_BEGIN_DECL
 
+typedef enum net_mem_alloc_capacity_policy {
+    net_mem_alloc_capacity_at_least,
+    net_mem_alloc_capacity_suggest,
+} net_mem_alloc_capacity_policy_t;
+
 typedef int (*net_mem_group_type_init_fun_t)(net_mem_group_type_t type);
 typedef void (*net_mem_group_type_fini_fun_t)(net_mem_group_type_t type);
 
-typedef void * (*net_mem_block_alloc_fun_t)(net_mem_group_type_t type, uint32_t * capacity);
+typedef void * (*net_mem_block_alloc_fun_t)(net_mem_group_type_t type, uint32_t * capacity, net_mem_alloc_capacity_policy_t policy);
 typedef void (*net_mem_block_free_fun_t)(net_mem_group_type_t type, void * data, uint32_t capacity);
 
 net_mem_group_type_t
