@@ -449,7 +449,23 @@ static void net_sock_endpoint_on_read(net_sock_driver_t driver, net_sock_endpoin
     while(net_endpoint_is_readable(base_endpoint) /*当前状态正确 */
           && net_endpoint_expect_read(base_endpoint))
     {
-        uint32_t capacity = 0;
+        int bytes_avaliable = sock_get_read_size(endpoint->m_fd, NULL);
+        if (bytes_avaliable < 0) {
+            CPE_ERROR(
+                driver->m_em, "sock: %s: fd=%d: get read buf size fail, errno=%d (%s)!",
+                net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
+                errno, strerror(errno));
+
+            if (!net_endpoint_have_error(base_endpoint)) {
+                net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_logic, NULL);
+            }
+            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
+                net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+            }
+            return;
+        }
+
+        uint32_t capacity = bytes_avaliable;
         void * rbuf = net_endpoint_buf_alloc_at_least(base_endpoint, &capacity);
         if (rbuf == NULL) {
             net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_logic, NULL);
