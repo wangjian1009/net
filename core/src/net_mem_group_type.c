@@ -4,10 +4,12 @@
 
 net_mem_group_type_t
 net_mem_group_type_create(
-    net_schedule_t schedule, const char * name, uint32_t suggest_size,
+    net_schedule_t schedule, const char * name, 
     uint32_t capacity,
     net_mem_group_type_init_fun_t init_fun,
     net_mem_group_type_fini_fun_t fini_fun,
+    net_mem_gruop_type_suggest_size_fun_t suggest_size,
+    /*block*/
     net_mem_block_alloc_fun_t block_alloc,
     net_mem_block_free_fun_t block_free)
 {
@@ -19,9 +21,9 @@ net_mem_group_type_create(
 
     type->m_schedule = schedule;
     cpe_str_dup(type->m_name, sizeof(type->m_name), name);
-    type->m_suggest_size = suggest_size;
     TAILQ_INIT(&type->m_groups);
     type->m_fini_fun = fini_fun;
+    type->m_suggest_size = suggest_size;
     type->m_block_alloc = block_alloc;
     type->m_block_free = block_free;
 

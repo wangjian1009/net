@@ -23,7 +23,7 @@ net_mem_group_create(net_mem_group_type_t type) {
     TAILQ_INIT(&mem_group->m_blocks);
     mem_group->m_alloced_count = 0;
     mem_group->m_alloced_size = 0;
-
+    mem_group->m_suggest_size = type->m_suggest_size ? type->m_suggest_size(type) : 0;
     TAILQ_INSERT_TAIL(&type->m_groups, mem_group, m_next);
     return mem_group;
 }
@@ -70,5 +70,5 @@ uint32_t net_mem_group_alloced_size(net_mem_group_t mem_group) {
 }
 
 uint32_t net_mem_group_suggest_size(net_mem_group_t mem_group) {
-    return mem_group->m_type->m_suggest_size;
+    return mem_group->m_suggest_size;
 }

@@ -3,24 +3,35 @@
 #include "net_mem_group_type_cache_i.h"
 #include "net_mem_group_type_i.h"
 
-void net_mem_group_type_cache_group_init(
-    net_mem_group_type_t type, net_mem_group_type_cache_group_t group, uint32_t capacity)
+int net_mem_group_type_cache_group_add(
+    net_mem_group_type_t type, net_mem_group_type_cache_t cache, uint32_t capacity)
 {
+    if (cache->m_group_count >= CPE_ARRAY_SIZE(cache->m_groups)) {
+        CPE_INFO(
+            type->m_schedule->m_em, "net: core: mem gruop type: %s: init group %d",
+            type->m_name, capacity);
+        return -1;
+    }
+
+    net_mem_group_type_cache_group_t group = &cache->m_groups[cache->m_group_count];
+    
     group->m_capacity = capacity;
     group->m_alloc_count = 0;
     group->m_free_count = 0;
     group->m_blocks = NULL;
 
     CPE_INFO(
-        type->m_schedule->m_em, "net: core: mem gruop type: %s: init group %d",
-        type->m_name, capacity);
+        type->m_schedule->m_em, "net: core: mem gruop type: %s: %d ==> %d",
+        type->m_name, cache->m_group_count, capacity);
+    cache->m_group_count++;
+    return 0;
 }
 
 net_mem_group_type_cache_group_t
 net_mem_group_type_cache_find_group(net_mem_group_type_cache_t cache, uint32_t capacity) {
     uint8_t i;
 
-    for(i = 0; i < CPE_ARRAY_SIZE(cache->m_groups); ++i) {
+    for(i = 0; i < cache->m_group_count; ++i) {
         net_mem_group_type_cache_group_t group = &cache->m_groups[i];
         if (capacity <= group->m_capacity) return group;
     }
@@ -70,14 +81,12 @@ int net_mem_group_type_cache_init(net_mem_group_type_t type) {
 
     cache->m_alloced_count = 0;
     cache->m_alloced_size = 0;
-
+    cache->m_group_count = 0;
+    
     uint32_t capacity = 16;
     uint8_t i;
     for(i = 0; i < CPE_ARRAY_SIZE(cache->m_groups); ++i) {
-        net_mem_group_type_cache_group_t group = &cache->m_groups[i];
-
-        net_mem_group_type_cache_group_init(type, group, capacity);
-
+        if (net_mem_group_type_cache_group_add(type, cache, capacity) != 0) return -1;
         capacity *= 2;
     }
     
@@ -89,7 +98,7 @@ void net_mem_group_type_cache_fini(net_mem_group_type_t type) {
     net_mem_group_type_cache_t cache = net_mem_group_type_data(type);
 
     uint8_t i;
-    for(i = 0; i < CPE_ARRAY_SIZE(cache->m_groups); ++i) {
+    for(i = 0; i < cache->m_group_count; ++i) {
         net_mem_group_type_cache_group_t group = &cache->m_groups[i];
         assert(group->m_alloc_count == group->m_free_count);
 
@@ -112,6 +121,19 @@ void net_mem_group_type_cache_fini(net_mem_group_type_t type) {
     assert(cache->m_alloced_size == 0);
 }
 
+uint32_t net_mem_group_type_cache_suggest_size(net_mem_group_type_t type) {
+    net_mem_group_type_cache_t cache = net_mem_group_type_data(type);
+    if (cache->m_group_count > 1) {
+        return cache->m_groups[cache->m_group_count - 2].m_capacity;
+    }
+    else if (cache->m_group_count > 0) {
+        return cache->m_groups[cache->m_group_count - 1].m_capacity;
+    }
+    else {
+        return 0;
+    }
+}
+
 void * net_mem_group_type_cache_alloc(
     net_mem_group_type_t type, uint32_t * capacity, net_mem_alloc_capacity_policy_t policy)
 {
@@ -120,7 +142,7 @@ void * net_mem_group_type_cache_alloc(
 
     net_mem_group_type_cache_group_t group = net_mem_group_type_cache_find_group(cache, *capacity);
     if (group == NULL && policy == net_mem_alloc_capacity_suggest) {
-        group = &cache->m_groups[CPE_ARRAY_SIZE(cache->m_groups) - 1];
+        group = &cache->m_groups[cache->m_group_count - 1];
     }
 
     if (group) {
@@ -151,10 +173,10 @@ void net_mem_group_type_cache_free(net_mem_group_type_t type, void * data, uint3
 net_mem_group_type_t
 net_mem_group_type_cache_create(net_schedule_t schedule) {
     return net_mem_group_type_create(
-        schedule, "cache", 2048,
+        schedule, "cache",
         sizeof(struct net_mem_group_type_cache),
-        net_mem_group_type_cache_init,
-        net_mem_group_type_cache_fini,
+        net_mem_group_type_cache_init, net_mem_group_type_cache_fini,
+        net_mem_group_type_cache_suggest_size,
         net_mem_group_type_cache_alloc, net_mem_group_type_cache_free);
 }
 
