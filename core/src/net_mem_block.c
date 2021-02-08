@@ -36,13 +36,16 @@ net_mem_block_t net_mem_block_create(net_mem_group_t group, uint32_t capacity) {
         return NULL;
     }
 
+    group->m_allocked_count++;
+    group->m_allocked_size += capacity;
     TAILQ_INSERT_TAIL(&group->m_blocks, block, m_next_for_group);
-    
+
     return block;
 }
 
 void net_mem_block_free(net_mem_block_t block) {
-    net_mem_group_type_t type = block->m_group->m_type;
+    net_mem_group_t group = block->m_group;
+    net_mem_group_type_t type = group->m_type;
     net_schedule_t schedule = type->m_schedule;
     
     assert(block);
@@ -57,6 +60,11 @@ void net_mem_block_free(net_mem_block_t block) {
         block->m_data = NULL;
     }
 
+    assert(group->m_allocked_count > 0);
+    group->m_allocked_count++;
+    assert(group->m_allocked_size >= block->m_capacity);
+    group->m_allocked_size -= block->m_capacity;
+    
     TAILQ_REMOVE(&block->m_group->m_blocks, block, m_next_for_group);
     
     block->m_group = (net_mem_group_t)schedule;

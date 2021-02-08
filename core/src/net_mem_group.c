@@ -1,3 +1,4 @@
+#include <assert.h>
 #include "net_mem_group_i.h"
 #include "net_mem_group_type_i.h"
 #include "net_mem_block_i.h"
@@ -20,6 +21,8 @@ net_mem_group_create(net_mem_group_type_t type) {
 
     mem_group->m_type = type;
     TAILQ_INIT(&mem_group->m_blocks);
+    mem_group->m_alloced_count = 0;
+    mem_group->m_alloced_size = 0;
 
     TAILQ_INSERT_TAIL(&type->m_groups, mem_group, m_next);
     return mem_group;
@@ -37,6 +40,9 @@ void net_mem_group_free(net_mem_group_t mem_group) {
         schedule->m_dft_mem_group = NULL;
     }
 
+    assert(mem_group->m_alloced_count == 0);
+    assert(mem_group->m_alloced_size == 0);
+
     TAILQ_REMOVE(&type->m_groups, mem_group, m_next);
     
     mem_group->m_type = (void*)schedule;
@@ -49,4 +55,16 @@ void net_mem_group_real_free(net_mem_group_t mem_group) {
     TAILQ_REMOVE(&schedule->m_free_mem_groups, mem_group, m_next);
 
     mem_free(schedule->m_alloc, mem_group);
+}
+
+net_mem_group_type_t net_mem_group_type(net_mem_group_t mem_group) {
+    return mem_group->m_type;
+}
+
+uint16_t net_mem_group_alloced_count(net_mem_group_t mem_group) {
+    return mem_group->m_alloced_count;
+}
+
+uint32_t net_mem_group_alloced_size(net_mem_group_t mem_group) {
+    return mem_group->m_alloced_size;
 }
