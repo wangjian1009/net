@@ -16,6 +16,7 @@ typedef struct net_endpoint_next * net_endpoint_next_t;
 typedef TAILQ_HEAD(net_local_ip_stack_monitor_list, net_local_ip_stack_monitor) net_local_ip_stack_monitor_list_t;
 typedef TAILQ_HEAD(net_driver_list, net_driver) net_driver_list_t;
 typedef TAILQ_HEAD(net_mem_group_list, net_mem_group) net_mem_group_list_t;
+typedef TAILQ_HEAD(net_mem_group_type_list, net_mem_group_type) net_mem_group_type_list_t;
 typedef TAILQ_HEAD(net_mem_block_list, net_mem_block) net_mem_block_list_t;
 typedef TAILQ_HEAD(net_acceptor_list, net_acceptor) net_acceptor_list_t;
 typedef TAILQ_HEAD(net_protocol_list, net_protocol) net_protocol_list_t;
@@ -70,6 +71,10 @@ struct net_schedule {
 
     uint32_t m_endpoint_max_id;
     struct cpe_hash_table m_endpoints;
+
+    /*mem*/
+    net_mem_group_type_list_t m_mem_group_types;
+    net_mem_group_type_t m_dft_mem_group_type;
     net_mem_group_t m_dft_mem_group;
 
     net_local_ip_stack_monitor_list_t m_free_local_ip_stack_monitors;

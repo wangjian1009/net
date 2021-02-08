@@ -7,7 +7,7 @@
 void net_mem_block_set_size(net_mem_block_t block, uint32_t size);
 
 net_mem_block_t net_mem_block_create(net_mem_group_t group, uint32_t capacity) {
-    net_schedule_t schedule = group->m_schedule;
+    net_schedule_t schedule = group->m_type->m_schedule;
     
     net_mem_block_t block = TAILQ_FIRST(&schedule->m_free_mem_blocks);
     if (block) {
@@ -42,7 +42,7 @@ net_mem_block_t net_mem_block_create(net_mem_group_t group, uint32_t capacity) {
 }
 
 void net_mem_block_free(net_mem_block_t block) {
-    net_schedule_t schedule = block->m_group->m_schedule;
+    net_schedule_t schedule = block->m_group->m_type->m_schedule;
     
     assert(block);
 

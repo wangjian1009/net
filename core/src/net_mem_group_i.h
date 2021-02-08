@@ -1,10 +1,10 @@
 #ifndef NET_MEM_GROUP_I_H_INCLEDED
 #define NET_MEM_GROUP_I_H_INCLEDED
 #include "net_mem_group.h"
-#include "net_schedule_i.h"
+#include "net_mem_group_type_i.h"
 
 struct net_mem_group {
-    net_schedule_t m_schedule;
+    net_mem_group_type_t m_type;
     TAILQ_ENTRY(net_mem_group) m_next;
     net_mem_block_list_t m_blocks;
 };

@@ -1,5 +1,6 @@
 #include "assert.h"
 #include "cpe/pal/pal_stdlib.h"
+#include "cpe/pal/pal_strings.h"
 #include "net_schedule_i.h"
 #include "net_local_ip_stack_monitor_i.h"
 #include "net_driver_i.h"
@@ -17,6 +18,8 @@
 #include "net_debug_condition_i.h"
 #include "net_mem_group_i.h"
 #include "net_mem_block_i.h"
+#include "net_mem_group_type_i.h"
+#include "net_mem_group_type_basic_i.h"
 #include "net_protocol_noop.h"
 #include "net_protocol_null.h"
 #include "net_pair_i.h"
@@ -32,6 +35,7 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em) {
         CPE_ERROR(em, "schedule: alloc fail!");
         return NULL;
     }
+    bzero(schedule, sizeof(*schedule));
 
     schedule->m_alloc = alloc;
     schedule->m_em = em;
@@ -56,6 +60,7 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em) {
     TAILQ_INIT(&schedule->m_debug_setups);
     TAILQ_INIT(&schedule->m_drivers);
     TAILQ_INIT(&schedule->m_protocols);
+    TAILQ_INIT(&schedule->m_mem_group_types);
     TAILQ_INIT(&schedule->m_free_local_ip_stack_monitors);
     TAILQ_INIT(&schedule->m_free_addresses);
     TAILQ_INIT(&schedule->m_free_dns_querys);
@@ -64,10 +69,16 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em) {
     TAILQ_INIT(&schedule->m_free_mem_groups);
     TAILQ_INIT(&schedule->m_free_mem_blocks);
 
-    schedule->m_dft_mem_group = net_mem_group_create(schedule);
+    schedule->m_dft_mem_group_type = net_mem_group_type_basic_create(schedule);
+    if (schedule->m_dft_mem_group_type == NULL) {
+        CPE_ERROR(em, "schedule: create default mem group type fail");
+        goto INIT_FAILED;
+    }
+    
+    schedule->m_dft_mem_group = net_mem_group_create(schedule->m_dft_mem_group_type);
     if (schedule->m_dft_mem_group == NULL) {
-        CPE_ERROR(em, "schedule: alloc common buff fail");
-        return NULL;
+        CPE_ERROR(em, "schedule: create default mem group fail");
+        goto INIT_FAILED;
     }
     
     if (cpe_hash_table_init(
@@ -78,9 +89,7 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em) {
             CPE_HASH_OBJ2ENTRY(net_endpoint, m_hh),
             -1) != 0)
     {
-        net_mem_group_free(schedule->m_dft_mem_group);
-        mem_free(alloc, schedule);
-        return NULL;
+        goto INIT_FAILED;
     }
 
     if (cpe_hash_table_init(
@@ -92,18 +101,35 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em) {
             -1) != 0)
     {
         cpe_hash_table_fini(&schedule->m_endpoints);
-        net_mem_group_free(schedule->m_dft_mem_group);
-        mem_free(alloc, schedule);
-        return NULL;
+        goto INIT_FAILED;
     }
 
     mem_buffer_init(&schedule->m_tmp_buffer, alloc);
 
+    /*初始化完成 */
     schedule->m_noop_protocol = net_protocol_noop_create(schedule);
     schedule->m_null_protocol = net_protocol_null_create(schedule);
     schedule->m_pair_driver = net_pair_driver_create(schedule);
 
     return schedule;
+
+INIT_FAILED:
+    assert(schedule->m_pair_driver == NULL);
+    assert(schedule->m_null_protocol == NULL);
+    assert(schedule->m_noop_protocol == NULL);
+
+    if (schedule->m_dft_mem_group) {
+        net_mem_group_free(schedule->m_dft_mem_group);
+        schedule->m_dft_mem_group = NULL;
+    }
+
+    if (schedule->m_dft_mem_group_type) {
+        net_mem_group_type_free(schedule->m_dft_mem_group_type);
+        schedule->m_dft_mem_group_type = NULL;
+    }
+
+    mem_free(alloc, schedule);
+    return NULL;
 }
 
 void net_schedule_free(net_schedule_t schedule) {
@@ -142,16 +168,17 @@ void net_schedule_free(net_schedule_t schedule) {
         net_protocol_free(schedule->m_null_protocol);
         schedule->m_null_protocol = NULL;
     }
-
-    if (schedule->m_dft_mem_group) {
-        net_mem_group_free(schedule->m_dft_mem_group);
-        schedule->m_dft_mem_group = NULL;
-    }
     
     while(!TAILQ_EMPTY(&schedule->m_protocols)) {
         net_protocol_free(TAILQ_FIRST(&schedule->m_protocols));
     }
 
+    while(!TAILQ_EMPTY(&schedule->m_mem_group_types)) {
+        net_mem_group_type_free(TAILQ_FIRST(&schedule->m_mem_group_types));
+    }
+    assert(schedule->m_dft_mem_group == NULL);
+    assert(schedule->m_dft_mem_group_type == NULL);
+    
     while(!TAILQ_EMPTY(&schedule->m_debug_setups)) {
         net_debug_setup_free(TAILQ_FIRST(&schedule->m_debug_setups));
     }
