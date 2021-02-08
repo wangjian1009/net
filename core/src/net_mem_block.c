@@ -61,7 +61,7 @@ void net_mem_block_free(net_mem_block_t block) {
     }
 
     assert(group->m_alloced_count > 0);
-    group->m_alloced_count++;
+    group->m_alloced_count--;
     assert(group->m_alloced_size >= block->m_capacity);
     group->m_alloced_size -= block->m_capacity;
     
