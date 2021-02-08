@@ -86,6 +86,7 @@ net_mem_block_t net_endpoint_block_get(net_endpoint_t endpoint, net_endpoint_buf
 void net_endpoint_buf_release(net_endpoint_t endpoint) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
 
+    assert(endpoint->m_tb);
     if (endpoint->m_tb) {
         net_mem_block_free(endpoint->m_tb);
         endpoint->m_tb = NULL;

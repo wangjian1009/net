@@ -7,7 +7,7 @@ NET_BEGIN_DECL
 typedef int (*net_mem_group_type_init_fun_t)(net_mem_group_type_t type);
 typedef void (*net_mem_group_type_fini_fun_t)(net_mem_group_type_t type);
 
-typedef void * (*net_mem_block_alloc_fun_t)(net_mem_group_type_t type, uint32_t capacity);
+typedef void * (*net_mem_block_alloc_fun_t)(net_mem_group_type_t type, uint32_t * capacity);
 typedef void (*net_mem_block_free_fun_t)(net_mem_group_type_t type, void * data, uint32_t capacity);
 
 net_mem_group_type_t

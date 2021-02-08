@@ -28,7 +28,7 @@ net_mem_block_t net_mem_block_create(net_mem_group_t group, uint32_t capacity) {
 
     block->m_len = 0;
     block->m_capacity = capacity;
-    block->m_data = group->m_type->m_block_alloc(group->m_type, capacity);
+    block->m_data = group->m_type->m_block_alloc(group->m_type, &block->m_capacity);
     if (block->m_data == NULL) {
         CPE_ERROR(schedule->m_em, "core: mem block: alloc buffer fail, capacity=%d!", capacity);
         block->m_group = (net_mem_group_t)schedule;
@@ -36,8 +36,8 @@ net_mem_block_t net_mem_block_create(net_mem_group_t group, uint32_t capacity) {
         return NULL;
     }
 
-    group->m_allocked_count++;
-    group->m_allocked_size += capacity;
+    group->m_alloced_count++;
+    group->m_alloced_size += block->m_capacity;
     TAILQ_INSERT_TAIL(&group->m_blocks, block, m_next_for_group);
 
     return block;
@@ -60,10 +60,10 @@ void net_mem_block_free(net_mem_block_t block) {
         block->m_data = NULL;
     }
 
-    assert(group->m_allocked_count > 0);
-    group->m_allocked_count++;
-    assert(group->m_allocked_size >= block->m_capacity);
-    group->m_allocked_size -= block->m_capacity;
+    assert(group->m_alloced_count > 0);
+    group->m_alloced_count++;
+    assert(group->m_alloced_size >= block->m_capacity);
+    group->m_alloced_size -= block->m_capacity;
     
     TAILQ_REMOVE(&block->m_group->m_blocks, block, m_next_for_group);
     
@@ -88,7 +88,7 @@ void net_mem_block_reset(net_mem_block_t ptr) {
 
 void net_mem_block_erase(net_mem_block_t block, uint32_t size) {
     assert(block);
-    assert(size <= block->m_len);
+    assert(size < block->m_len); /*如果没有剩余数据，因该free */
 
     memmove(block->m_data, block->m_data + size, block->m_len - size);
     net_mem_block_set_size(block, block->m_len - size);
