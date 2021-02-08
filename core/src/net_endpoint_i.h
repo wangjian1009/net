@@ -17,7 +17,6 @@ struct net_endpoint {
     void * m_prepare_connect_ctx;
     uint32_t m_id;
     uint32_t m_options;
-    uint32_t m_dft_block_size;
     uint8_t m_expect_read;
     uint8_t m_is_writing;
     uint8_t m_close_after_send;

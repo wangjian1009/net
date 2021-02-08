@@ -2,6 +2,7 @@
 #include "net_mem_group_type_i.h"
 
 void * net_mem_group_type_basic_alloc(net_mem_group_type_t type, uint32_t * capacity) {
+    if (*capacity == 0) *capacity = 16;
     return mem_alloc(type->m_schedule->m_alloc, *capacity);
 }
 

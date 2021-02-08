@@ -52,7 +52,6 @@ net_endpoint_create(net_driver_t driver, net_protocol_t protocol, net_mem_group_
     endpoint->m_error_no = 0;
     endpoint->m_error_msg = NULL;
     endpoint->m_id = ++schedule->m_endpoint_max_id;
-    endpoint->m_dft_block_size = 0;
     endpoint->m_options = 0;
     endpoint->m_expect_read = 1;
     endpoint->m_is_writing = 0;
@@ -244,14 +243,6 @@ net_endpoint_t net_endpoint_find(net_schedule_t schedule, uint32_t id) {
     struct net_endpoint key;
     key.m_id = id;
     return cpe_hash_table_find(&schedule->m_endpoints, &key);
-}
-
-uint32_t net_endpoint_dft_block_size(net_endpoint_t endpoint) {
-    return endpoint->m_dft_block_size;
-}
-
-void net_endpoint_set_dft_block_size(net_endpoint_t endpoint, uint32_t block_size) {
-    endpoint->m_dft_block_size = block_size;
 }
 
 uint8_t net_endpoint_close_after_send(net_endpoint_t endpoint) {
@@ -1055,25 +1046,5 @@ int net_endpoint_get_mss(net_endpoint_t endpoint, uint32_t * mss) {
                 net_driver_name(endpoint->m_driver));
         }
         return -1;
-    }
-}
-
-int net_endpoint_set_dft_block_size_to_mss(net_endpoint_t endpoint) {
-    net_schedule_t schedule = endpoint->m_driver->m_schedule;
-
-    uint32_t mss = 0;
-    if (net_endpoint_get_mss(endpoint, &mss) != 0) {
-        return -1;
-    }
-    else {
-        if (net_endpoint_driver_debug(endpoint)) {
-            CPE_INFO(
-                schedule->m_em, "%s: dft-block-size to mss %d",
-                net_endpoint_dump(&schedule->m_tmp_buffer, endpoint),
-                mss);
-        }
-
-        net_endpoint_set_dft_block_size(endpoint, mss);
-        return 0;
     }
 }

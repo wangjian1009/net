@@ -43,20 +43,17 @@ uint8_t net_endpoint_buf_is_empty(net_endpoint_t endpoint, net_endpoint_buf_type
     return TAILQ_EMPTY(&endpoint->m_bufs[buf_type].m_blocks) ? 1 : 0;
 }
 
-net_mem_block_t net_endpoint_block_alloc(net_endpoint_t endpoint, uint32_t capacity) {
+net_mem_block_t net_endpoint_block_alloc(net_endpoint_t endpoint, uint32_t * capacity) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
 
     assert(endpoint->m_tb == NULL);
 
-    if (capacity == 0) {
-        capacity = endpoint->m_dft_block_size ? endpoint->m_dft_block_size : 2048;
-    }
-
-    endpoint->m_tb = net_mem_block_create(endpoint->m_mem_group, capacity);
+    endpoint->m_tb = net_mem_block_create(endpoint->m_mem_group, *capacity);
     if (endpoint->m_tb == NULL) {
         return NULL;
     }
 
+    *capacity = endpoint->m_tb->m_capacity;
     return endpoint->m_tb;
 }
 
@@ -69,7 +66,7 @@ void * net_endpoint_buf_alloc_at_least(net_endpoint_t endpoint, uint32_t * inout
 
     assert(inout_size);
 
-    net_mem_block_t tb = net_endpoint_block_alloc(endpoint, *inout_size);
+    net_mem_block_t tb = net_endpoint_block_alloc(endpoint, inout_size);
     if (tb == NULL) {
         return NULL;
     }

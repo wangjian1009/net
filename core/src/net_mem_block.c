@@ -30,7 +30,7 @@ net_mem_block_t net_mem_block_create(net_mem_group_t group, uint32_t capacity) {
     block->m_capacity = capacity;
     block->m_data = group->m_type->m_block_alloc(group->m_type, &block->m_capacity);
     if (block->m_data == NULL) {
-        CPE_ERROR(schedule->m_em, "core: mem block: alloc buffer fail, capacity=%d!", capacity);
+        CPE_ERROR(schedule->m_em, "core: mem block: alloc buffer fail, capacity=%d!", block->m_capacity);
         block->m_group = (net_mem_group_t)schedule;
         TAILQ_INSERT_TAIL(&schedule->m_free_mem_blocks, block, m_next_for_group);
         return NULL;

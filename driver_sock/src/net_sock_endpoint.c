@@ -5,6 +5,7 @@
 #include "cpe/utils/string_utils.h"
 #include "cpe/utils_sock/sock_utils.h"
 #include "net_endpoint.h"
+#include "net_mem_group.h"
 #include "net_protocol.h"
 #include "net_address.h"
 #include "net_driver.h"
@@ -434,6 +435,17 @@ int net_sock_endpoint_update_remote_address(net_sock_endpoint_t endpoint) {
 }
 
 static void net_sock_endpoint_on_read(net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint) {
+    CPE_ERROR(
+        driver->m_em, "xxxxxx: %s: <<< read begin, r=%d, w=%d, block-alloced=%d, block-size=%d, user1=%d, user2=%d, user3=%d",
+        net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint),
+        net_endpoint_buf_size(base_endpoint, net_ep_buf_read),
+        net_endpoint_buf_size(base_endpoint, net_ep_buf_write),
+        net_mem_group_alloced_count(net_endpoint_mem_group(base_endpoint)),
+        net_mem_group_alloced_size(net_endpoint_mem_group(base_endpoint)),
+        net_endpoint_buf_size(base_endpoint, net_ep_buf_user1),
+        net_endpoint_buf_size(base_endpoint, net_ep_buf_user2),
+        net_endpoint_buf_size(base_endpoint, net_ep_buf_user3));
+    
     while(net_endpoint_is_readable(base_endpoint) /*当前状态正确 */
           && net_endpoint_expect_read(base_endpoint))
     {
@@ -450,6 +462,18 @@ static void net_sock_endpoint_on_read(net_sock_driver_t driver, net_sock_endpoin
         assert(endpoint->m_fd != -1);
         ssize_t bytes = cpe_recv(endpoint->m_fd, rbuf, capacity, 0);
         if (bytes > 0) {
+            CPE_ERROR(
+                driver->m_em, "xxxxxx: %s: <<< read %d, r=%d, w=%d, block-alloced=%d, block-size=%d, user1=%d, user2=%d, user3=%d",
+                net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint),
+                (int)bytes,
+                net_endpoint_buf_size(base_endpoint, net_ep_buf_read),
+                net_endpoint_buf_size(base_endpoint, net_ep_buf_write),
+                net_mem_group_alloced_count(net_endpoint_mem_group(base_endpoint)),
+                net_mem_group_alloced_size(net_endpoint_mem_group(base_endpoint)),
+                net_endpoint_buf_size(base_endpoint, net_ep_buf_user1),
+                net_endpoint_buf_size(base_endpoint, net_ep_buf_user2),
+                net_endpoint_buf_size(base_endpoint, net_ep_buf_user3));
+
             if (net_endpoint_driver_debug(base_endpoint)) {
                 CPE_INFO(
                     driver->m_em, "sock: %s: fd=%d: recv %d bytes data!",
@@ -536,14 +560,22 @@ static void net_sock_endpoint_on_read(net_sock_driver_t driver, net_sock_endpoin
 }
 
 static void net_sock_endpoint_on_write(net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint) {
+    CPE_ERROR(
+        driver->m_em, "xxxxxx: %s: >>> write begin, r=%d, w=%d, block-alloced=%d, block-size=%d, user1=%d, user2=%d, user3=%d",
+        net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint),
+        net_endpoint_buf_size(base_endpoint, net_ep_buf_read),
+        net_endpoint_buf_size(base_endpoint, net_ep_buf_write),
+        net_mem_group_alloced_count(net_endpoint_mem_group(base_endpoint)),
+        net_mem_group_alloced_size(net_endpoint_mem_group(base_endpoint)),
+        net_endpoint_buf_size(base_endpoint, net_ep_buf_user1),
+        net_endpoint_buf_size(base_endpoint, net_ep_buf_user2),
+        net_endpoint_buf_size(base_endpoint, net_ep_buf_user3));
+    
     while(net_endpoint_is_writeable(base_endpoint) /*ep状态正确 */
           && !net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write) /*还有数据等待写入 */
         )
     {
         uint32_t data_size = 0;
-        if (net_endpoint_dft_block_size(base_endpoint) == 0) {
-            data_size = net_endpoint_buf_size(base_endpoint, net_ep_buf_write);
-        }
         void * data = net_endpoint_buf_peak(base_endpoint, net_ep_buf_write, &data_size);
         assert(data_size > 0);
         assert(data);
@@ -583,7 +615,7 @@ static void net_sock_endpoint_on_write(net_sock_driver_t driver, net_sock_endpoi
                 if (!net_endpoint_is_writing(base_endpoint)) {
                     if (net_endpoint_driver_debug(base_endpoint) >= 3) {
                         CPE_INFO(
-                            driver->m_em, "sock: %s: fd=%d: write begin!",
+                            driver->m_em, "sock: %s: fd=%d: wait write begin!",
                             net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
                     }
 
@@ -624,7 +656,6 @@ static void net_sock_endpoint_on_write(net_sock_driver_t driver, net_sock_endpoi
                     net_endpoint_set_is_writing(base_endpoint, 0);
                 }
             }
-            
             return;
         }
     }

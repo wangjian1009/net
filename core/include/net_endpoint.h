@@ -72,11 +72,6 @@ uint32_t net_endpoint_error_no(net_endpoint_t endpoint);
 const char * net_endpoint_error_msg(net_endpoint_t endpoint);
 uint8_t net_endpoint_have_error(net_endpoint_t endpoint);
 
-/*buf*/
-uint32_t net_endpoint_dft_block_size(net_endpoint_t endpoint);
-void net_endpoint_set_dft_block_size(net_endpoint_t endpoint, uint32_t read_block_size);
-int net_endpoint_set_dft_block_size_to_mss(net_endpoint_t endpoint);
-
 /*    check */
 uint32_t net_endpoint_buf_size(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type);
 uint8_t net_endpoint_buf_is_empty(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type);
