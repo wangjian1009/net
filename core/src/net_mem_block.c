@@ -53,7 +53,7 @@ void net_mem_block_free(net_mem_block_t block) {
     }
 
     if (block->m_data != NULL) {
-        type->m_block_free(type, block->m_data);
+        type->m_block_free(type, block->m_data, block->m_capacity);
         block->m_data = NULL;
     }
 

@@ -4,7 +4,10 @@
 
 net_mem_group_type_t
 net_mem_group_type_create(
-    net_schedule_t schedule, const char * name, uint32_t capacity,
+    net_schedule_t schedule, const char * name,
+    uint32_t capacity,
+    net_mem_group_type_init_fun_t init_fun,
+    net_mem_group_type_fini_fun_t fini_fun,
     net_mem_block_alloc_fun_t block_alloc,
     net_mem_block_free_fun_t block_free)
 {
@@ -17,9 +20,16 @@ net_mem_group_type_create(
     type->m_schedule = schedule;
     cpe_str_dup(type->m_name, sizeof(type->m_name), name);
     TAILQ_INIT(&type->m_groups);
+    type->m_fini_fun = fini_fun;
     type->m_block_alloc = block_alloc;
     type->m_block_free = block_free;
 
+    if (init_fun && init_fun(type) != 0) {
+        CPE_ERROR(schedule->m_em, "net: core: mem group type: %s: init fail", name);
+        mem_free(schedule->m_alloc, type);
+        return NULL;
+    }
+    
     TAILQ_INSERT_TAIL(&schedule->m_mem_group_types, type, m_next);
     return type;
 }
@@ -31,6 +41,8 @@ void net_mem_group_type_free(net_mem_group_type_t type) {
         net_mem_group_free(TAILQ_FIRST(&type->m_groups));
     }
 
+    if (type->m_fini_fun) type->m_fini_fun(type);
+
     if (schedule->m_dft_mem_group_type == type) {
         schedule->m_dft_mem_group_type = NULL;
     }
@@ -39,3 +51,6 @@ void net_mem_group_type_free(net_mem_group_type_t type) {
     mem_free(schedule->m_alloc, type);
 }
 
+void * net_mem_group_type_data(net_mem_group_type_t type) {
+    return type + 1;
+}

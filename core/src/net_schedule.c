@@ -20,6 +20,7 @@
 #include "net_mem_block_i.h"
 #include "net_mem_group_type_i.h"
 #include "net_mem_group_type_basic_i.h"
+#include "net_mem_group_type_cache_i.h"
 #include "net_protocol_noop.h"
 #include "net_protocol_null.h"
 #include "net_pair_i.h"
