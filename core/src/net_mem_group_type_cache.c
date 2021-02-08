@@ -60,9 +60,6 @@ void * net_mem_group_type_cache_group_alloc(
             cache->m_alloced_size += group->m_capacity;
             cache->m_alloced_count++;
             group->m_alloc_count++;
-            CPE_ERROR(
-                schedule->m_em, "xxxxx: alloc block, capacity=%d, total=%d/%d",
-                group->m_capacity, cache->m_alloced_count, cache->m_alloced_size);
         }
         
         return data;
@@ -179,7 +176,6 @@ void * net_mem_group_type_cache_alloc(
             cache->m_alloced_count++;
             cache->m_alloced_size += effect_capacity;
             *capacity = effect_capacity;
-            CPE_ERROR(schedule->m_em, "xxxxx: alloc big block, capacity=%d", effect_capacity);
         }
 
         return data;
