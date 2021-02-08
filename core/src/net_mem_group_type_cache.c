@@ -1,5 +1,7 @@
 #include <assert.h>
+#include "cpe/pal/pal_platform.h"
 #include "cpe/pal/pal_strings.h"
+#include "cpe/utils/math_ex.h"
 #include "net_mem_group_type_cache_i.h"
 #include "net_mem_group_type_i.h"
 
@@ -89,6 +91,8 @@ int net_mem_group_type_cache_init(net_mem_group_type_t type) {
         if (net_mem_group_type_cache_group_add(type, cache, capacity) != 0) return -1;
         capacity *= 2;
     }
+
+    TAILQ_INIT(&cache->m_big_blocks);
     
     return 0;
 }
@@ -109,12 +113,22 @@ void net_mem_group_type_cache_fini(net_mem_group_type_t type) {
             
             net_mem_group_type_cache_block_t to_free = block;
             block = block->m_next;
-            
-            mem_free(schedule->m_alloc, to_free);
 
             cache->m_alloced_count--;
             cache->m_alloced_size -= group->m_capacity;
+            
+            mem_free(schedule->m_alloc, to_free);
         }
+    }
+
+    while(!TAILQ_EMPTY(&cache->m_big_blocks)) {
+        net_mem_group_type_cache_big_block_t  to_free = TAILQ_FIRST(&cache->m_big_blocks);
+
+        TAILQ_REMOVE(&cache->m_big_blocks, to_free, m_next);
+        
+        cache->m_alloced_count--;
+        cache->m_alloced_size -= to_free->m_capacity;
+        mem_free(schedule->m_alloc, to_free);
     }
 
     assert(cache->m_alloced_count == 0);
@@ -150,8 +164,25 @@ void * net_mem_group_type_cache_alloc(
         return net_mem_group_type_cache_group_alloc(schedule, cache, group);
     }
     else {
-        CPE_ERROR(schedule->m_em, "xxxxx: alloc big block, capacity=%d", *capacity);
-        return mem_alloc(schedule->m_alloc, *capacity);
+        net_mem_group_type_cache_big_block_t block = NULL;
+        TAILQ_FOREACH(block, &cache->m_big_blocks, m_next) {
+            if (block->m_capacity >= *capacity) {
+                TAILQ_REMOVE(&cache->m_big_blocks, block, m_next);
+                *capacity = block->m_capacity;
+                return block;
+            }
+        }
+        
+        uint32_t effect_capacity = cpe_math_32_round_to_pow2(*capacity);
+        void * data =  mem_alloc(schedule->m_alloc, effect_capacity);
+        if (data) {
+            cache->m_alloced_count++;
+            cache->m_alloced_size += effect_capacity;
+            *capacity = effect_capacity;
+            CPE_ERROR(schedule->m_em, "xxxxx: alloc big block, capacity=%d", effect_capacity);
+        }
+
+        return data;
     }
 }
 
@@ -165,8 +196,23 @@ void net_mem_group_type_cache_free(net_mem_group_type_t type, void * data, uint3
         net_mem_group_type_cache_group_free(schedule, group, data);
     }
     else {
-        CPE_ERROR(schedule->m_em, "xxxxx: free big block, capacity=%d", capacity);
-         mem_free(type->m_schedule->m_alloc, data);
+        net_mem_group_type_cache_big_block_t insert_after = NULL;
+
+        net_mem_group_type_cache_big_block_t check_block = NULL;
+        TAILQ_FOREACH(check_block, &cache->m_big_blocks, m_next) {
+            if (check_block->m_capacity >= capacity) break;
+            insert_after = check_block;
+        }
+
+        net_mem_group_type_cache_big_block_t free_block = data;
+        free_block->m_capacity = capacity;
+
+        if (insert_after) {
+            TAILQ_INSERT_AFTER(&cache->m_big_blocks, insert_after, free_block, m_next);
+        }
+        else {
+            TAILQ_INSERT_HEAD(&cache->m_big_blocks, free_block, m_next);
+        }
     }
 }
 
