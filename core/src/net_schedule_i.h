@@ -9,6 +9,7 @@
 
 NET_BEGIN_DECL
 
+typedef struct net_mem_block * net_mem_block_t;
 typedef struct net_address_in_cache * net_address_in_cache_t;
 typedef struct net_endpoint_next * net_endpoint_next_t;
 
