@@ -4,6 +4,8 @@
 #include "net_mem_block_i.h"
 #include "net_endpoint_i.h"
 
+void net_mem_block_set_size(net_mem_block_t block, uint32_t size);
+
 net_mem_block_t net_mem_block_create(net_mem_group_t group, uint32_t capacity) {
     net_schedule_t schedule = group->m_schedule;
     

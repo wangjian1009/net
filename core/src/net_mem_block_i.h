@@ -15,12 +15,10 @@ struct net_mem_block {
 
 net_mem_block_t net_mem_block_create(net_mem_group_t group, uint32_t capacity);
 void net_mem_block_free(net_mem_block_t mem_bloc);
+void net_mem_block_real_free(net_mem_block_t mem_block);
 
-void net_mem_block_set_size(net_mem_block_t block, uint32_t size);
 void net_mem_block_erase(net_mem_block_t block, uint32_t size);
 void net_mem_block_append(net_mem_block_t block, void const * data, uint32_t size);
-
-void net_mem_block_real_free(net_mem_block_t mem_block);
 
 void net_mem_block_link(net_mem_block_t block, net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type);
 void net_mem_block_unlink(net_mem_block_t block);
