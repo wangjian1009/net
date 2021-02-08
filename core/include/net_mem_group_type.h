@@ -4,9 +4,14 @@
 
 NET_BEGIN_DECL
 
+typedef void * (*net_mem_block_alloc_fun_t)(net_mem_group_type_t type, uint32_t capacity);
+typedef void (*net_mem_block_free_fun_t)(net_mem_group_type_t type, void *);
+
 net_mem_group_type_t
 net_mem_group_type_create(
-    net_schedule_t schedule, const char * name, uint32_t capacity);
+    net_schedule_t schedule, const char * name, uint32_t capacity,
+    net_mem_block_alloc_fun_t block_alloc,
+    net_mem_block_free_fun_t block_free);
 
 void net_mem_group_type_free(net_mem_group_type_t mem_group);
 

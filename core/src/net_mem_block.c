@@ -28,7 +28,7 @@ net_mem_block_t net_mem_block_create(net_mem_group_t group, uint32_t capacity) {
 
     block->m_len = 0;
     block->m_capacity = capacity;
-    block->m_data = (uint8_t*)calloc(capacity, sizeof(uint8_t));
+    block->m_data = group->m_type->m_block_alloc(group->m_type, capacity);
     if (block->m_data == NULL) {
         CPE_ERROR(schedule->m_em, "core: mem block: alloc buffer fail, capacity=%d!", capacity);
         block->m_group = (net_mem_group_t)schedule;
@@ -42,7 +42,8 @@ net_mem_block_t net_mem_block_create(net_mem_group_t group, uint32_t capacity) {
 }
 
 void net_mem_block_free(net_mem_block_t block) {
-    net_schedule_t schedule = block->m_group->m_type->m_schedule;
+    net_mem_group_type_t type = block->m_group->m_type;
+    net_schedule_t schedule = type->m_schedule;
     
     assert(block);
 
@@ -52,7 +53,7 @@ void net_mem_block_free(net_mem_block_t block) {
     }
 
     if (block->m_data != NULL) {
-        free(block->m_data);
+        type->m_block_free(type, block->m_data);
         block->m_data = NULL;
     }
 

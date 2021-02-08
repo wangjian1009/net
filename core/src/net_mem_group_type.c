@@ -3,7 +3,11 @@
 #include "net_mem_group_i.h"
 
 net_mem_group_type_t
-net_mem_group_type_create(net_schedule_t schedule, const char * name, uint32_t capacity) {
+net_mem_group_type_create(
+    net_schedule_t schedule, const char * name, uint32_t capacity,
+    net_mem_block_alloc_fun_t block_alloc,
+    net_mem_block_free_fun_t block_free)
+{
     net_mem_group_type_t type = mem_alloc(schedule->m_alloc, sizeof(struct net_mem_group_type) + capacity);
     if (type == NULL) {
         CPE_ERROR(schedule->m_em, "net: core: mem group type: %s: alloc fail", name);
@@ -13,6 +17,8 @@ net_mem_group_type_create(net_schedule_t schedule, const char * name, uint32_t c
     type->m_schedule = schedule;
     cpe_str_dup(type->m_name, sizeof(type->m_name), name);
     TAILQ_INIT(&type->m_groups);
+    type->m_block_alloc = block_alloc;
+    type->m_block_free = block_free;
 
     TAILQ_INSERT_TAIL(&schedule->m_mem_group_types, type, m_next);
     return type;

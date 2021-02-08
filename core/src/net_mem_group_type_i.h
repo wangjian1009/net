@@ -9,6 +9,8 @@ struct net_mem_group_type {
     net_schedule_t m_schedule;
     TAILQ_ENTRY(net_mem_group_type) m_next;
     char m_name[32];
+    net_mem_block_alloc_fun_t m_block_alloc;
+    net_mem_block_free_fun_t m_block_free;
     net_mem_group_list_t m_groups;
 };
 
