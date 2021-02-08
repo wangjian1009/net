@@ -7,3 +7,6 @@
 [submodule "depends/libevent"]
 	path = depends/libevent
 	url = git@github.com:libevent/libevent.git
+[submodule "depends/kcp"]
+	path = depends/kcp
+	url = git@github.com:skywind3000/kcp.git
