@@ -12,6 +12,9 @@
 #include "net_watcher.h"
 #include "net_sock_endpoint_i.h"
 
+static void net_sock_endpoint_update_watcher(
+    net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint);
+
 static void net_sock_endpoint_rw_cb(void * ctx, int fd, uint8_t do_read, uint8_t do_write);
 static void net_sock_endpoint_connect_cb(void * ctx, int fd, uint8_t do_read, uint8_t do_write);
 
@@ -27,7 +30,6 @@ static void net_sock_endpoint_connect_log_connect_success(
     net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint);
 
 static void net_sock_endpoint_close_sock(net_sock_driver_t driver, net_sock_endpoint_t endpoint);
-static int net_sock_endpoint_update_readable(net_endpoint_t base_endpoint);
 
 int net_sock_endpoint_init(net_endpoint_t base_endpoint) {
     net_sock_endpoint_t endpoint = net_endpoint_data(base_endpoint);
@@ -73,9 +75,6 @@ int net_sock_endpoint_update(net_endpoint_t base_endpoint) {
             return -1;
         }
         endpoint->m_read_closed = 1;
-        if (endpoint->m_watcher) {
-            net_watcher_update_read(endpoint->m_watcher, 0);
-        }
         
         assert(!endpoint->m_write_closed);
         
@@ -85,6 +84,9 @@ int net_sock_endpoint_update(net_endpoint_t base_endpoint) {
                 net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
         }
 
+        if (endpoint->m_watcher) {
+            net_sock_endpoint_update_watcher(driver, endpoint, base_endpoint);
+        }
         return 0;
     case net_endpoint_state_write_closed:
         if (endpoint->m_fd == -1) return 0;
@@ -107,13 +109,8 @@ int net_sock_endpoint_update(net_endpoint_t base_endpoint) {
         }
 
         if (endpoint->m_watcher) {
-            net_watcher_update_write(endpoint->m_watcher, 0);
+            net_sock_endpoint_update_watcher(driver, endpoint, base_endpoint);
         }
-
-        if (net_endpoint_is_readable(base_endpoint)) {
-            if (net_sock_endpoint_update_readable(base_endpoint) != 0) return -1;
-        }
-        
         return 0;
     case net_endpoint_state_error:  {
         if (endpoint->m_fd == -1) return 0;
@@ -156,8 +153,8 @@ int net_sock_endpoint_update(net_endpoint_t base_endpoint) {
             net_sock_endpoint_on_write(driver, endpoint, base_endpoint);
         }
 
-        if (net_endpoint_is_readable(base_endpoint)) {
-            if (net_sock_endpoint_update_readable(base_endpoint) != 0) return -1;
+        if (endpoint->m_watcher) {
+            net_sock_endpoint_update_watcher(driver, endpoint, base_endpoint);
         }
         return 0;
     default:
@@ -435,157 +432,144 @@ int net_sock_endpoint_update_remote_address(net_sock_endpoint_t endpoint) {
 }
 
 static void net_sock_endpoint_on_read(net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint) {
-    CPE_ERROR(
-        driver->m_em, "xxxxxx: %s: <<< read begin, r=%d, w=%d, block-alloced=%d, block-size=%d, user1=%d, user2=%d, user3=%d",
-        net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint),
-        net_endpoint_buf_size(base_endpoint, net_ep_buf_read),
-        net_endpoint_buf_size(base_endpoint, net_ep_buf_write),
-        net_mem_group_alloced_count(net_endpoint_mem_group(base_endpoint)),
-        net_mem_group_alloced_size(net_endpoint_mem_group(base_endpoint)),
-        net_endpoint_buf_size(base_endpoint, net_ep_buf_user1),
-        net_endpoint_buf_size(base_endpoint, net_ep_buf_user2),
-        net_endpoint_buf_size(base_endpoint, net_ep_buf_user3));
-    
-    while(net_endpoint_is_readable(base_endpoint) /*当前状态正确 */
-          && net_endpoint_expect_read(base_endpoint))
-    {
-        int bytes_avaliable = sock_get_read_size(endpoint->m_fd, NULL);
-        if (bytes_avaliable < 0) {
-            CPE_ERROR(
-                driver->m_em, "sock: %s: fd=%d: get read buf size fail, errno=%d (%s)!",
-                net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
-                errno, strerror(errno));
+    /* CPE_ERROR( */
+    /*     driver->m_em, "xxxxxx: %s: <<< read begin, r=%d, w=%d, block-alloced=%d, block-size=%d, user1=%d, user2=%d, user3=%d", */
+    /*     net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), */
+    /*     net_endpoint_buf_size(base_endpoint, net_ep_buf_read), */
+    /*     net_endpoint_buf_size(base_endpoint, net_ep_buf_write), */
+    /*     net_mem_group_alloced_count(net_endpoint_mem_group(base_endpoint)), */
+    /*     net_mem_group_alloced_size(net_endpoint_mem_group(base_endpoint)), */
+    /*     net_endpoint_buf_size(base_endpoint, net_ep_buf_user1), */
+    /*     net_endpoint_buf_size(base_endpoint, net_ep_buf_user2), */
+    /*     net_endpoint_buf_size(base_endpoint, net_ep_buf_user3)); */
 
-            if (!net_endpoint_have_error(base_endpoint)) {
-                net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_logic, NULL);
-            }
-            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
-                net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
-            }
-            return;
-        }
+    int bytes_avaliable = sock_get_read_size(endpoint->m_fd, NULL);
+    if (bytes_avaliable < 0) {
+        CPE_ERROR(
+            driver->m_em, "sock: %s: fd=%d: get read buf size fail, errno=%d (%s)!",
+            net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
+            errno, strerror(errno));
 
-        uint32_t capacity = bytes_avaliable;
-        void * rbuf = net_endpoint_buf_alloc_at_least(base_endpoint, &capacity);
-        if (rbuf == NULL) {
+        if (!net_endpoint_have_error(base_endpoint)) {
             net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_logic, NULL);
-            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
-                net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
-            }
-            return;
+        }
+        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
+            net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+        }
+        return;
+    }
+
+    uint32_t capacity = bytes_avaliable;
+    void * rbuf = net_endpoint_buf_alloc_suggest(base_endpoint, &capacity);
+    if (rbuf == NULL) {
+        net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_logic, NULL);
+        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
+            net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+        }
+        return;
+    }
+
+    assert(endpoint->m_fd != -1);
+    ssize_t bytes = cpe_recv(endpoint->m_fd, rbuf, capacity, 0);
+    if (bytes > 0) {
+        /* CPE_ERROR( */
+        /*     driver->m_em, "xxxxxx: %s: <<< read %d, capacity=%d, r=%d, w=%d, block-alloced=%d, block-size=%d, user1=%d, user2=%d, user3=%d", */
+        /*     net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), */
+        /*     (int)bytes, */
+        /*     capacity, */
+        /*     net_endpoint_buf_size(base_endpoint, net_ep_buf_read), */
+        /*     net_endpoint_buf_size(base_endpoint, net_ep_buf_write), */
+        /*     net_mem_group_alloced_count(net_endpoint_mem_group(base_endpoint)), */
+        /*     net_mem_group_alloced_size(net_endpoint_mem_group(base_endpoint)), */
+        /*     net_endpoint_buf_size(base_endpoint, net_ep_buf_user1), */
+        /*     net_endpoint_buf_size(base_endpoint, net_ep_buf_user2), */
+        /*     net_endpoint_buf_size(base_endpoint, net_ep_buf_user3)); */
+
+        if (net_endpoint_driver_debug(base_endpoint)) {
+            CPE_INFO(
+                driver->m_em, "sock: %s: fd=%d: recv %d bytes data!",
+                net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
+                (int)bytes);
         }
 
-        assert(endpoint->m_fd != -1);
-        ssize_t bytes = cpe_recv(endpoint->m_fd, rbuf, capacity, 0);
-        if (bytes > 0) {
-            CPE_ERROR(
-                driver->m_em, "xxxxxx: %s: <<< read %d, r=%d, w=%d, block-alloced=%d, block-size=%d, user1=%d, user2=%d, user3=%d",
-                net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint),
-                (int)bytes,
-                net_endpoint_buf_size(base_endpoint, net_ep_buf_read),
-                net_endpoint_buf_size(base_endpoint, net_ep_buf_write),
-                net_mem_group_alloced_count(net_endpoint_mem_group(base_endpoint)),
-                net_mem_group_alloced_size(net_endpoint_mem_group(base_endpoint)),
-                net_endpoint_buf_size(base_endpoint, net_ep_buf_user1),
-                net_endpoint_buf_size(base_endpoint, net_ep_buf_user2),
-                net_endpoint_buf_size(base_endpoint, net_ep_buf_user3));
-
-            if (net_endpoint_driver_debug(base_endpoint)) {
-                CPE_INFO(
-                    driver->m_em, "sock: %s: fd=%d: recv %d bytes data!",
-                    net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
-                    (int)bytes);
-            }
-
-            if (net_endpoint_buf_supply(base_endpoint, net_ep_buf_read, (uint32_t)bytes) != 0) {
-                if (net_endpoint_is_active(base_endpoint)) {
-                    if (!net_endpoint_have_error(base_endpoint)) {
-                        net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_logic, NULL);
-                    }
-
-                    if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
-                        net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
-                    }
-                }
-                return;
-            }
-
-            continue;
-        }
-        else if (bytes == 0) {
-            net_endpoint_buf_release(base_endpoint);
-
-            if (net_endpoint_driver_debug(base_endpoint)) {
-                CPE_INFO(
-                    driver->m_em, "sock: %s: fd=%d: read finished!",
-                    net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
-            }
-
-            endpoint->m_read_closed = 1;
-            if (endpoint->m_watcher) {
-                net_watcher_update_read(endpoint->m_watcher, 0);
-            }
-
-            if (net_endpoint_error_no(base_endpoint) == 0) {
-                net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_remote_closed, NULL);
-            }
-
-            if (net_endpoint_state(base_endpoint) == net_endpoint_state_established) {
-                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_read_closed) != 0) {
-                    net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
-                }
-            }
-            else {
-                assert(net_endpoint_state(base_endpoint) == net_endpoint_state_write_closed);
-                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_disable) != 0) {
-                    net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
-                }
-            }
-            return;
-        }
-        else {
-            assert(bytes == -1);
-            net_endpoint_buf_release(base_endpoint);
-
-            if (cpe_sock_errno() == EWOULDBLOCK || cpe_sock_errno() == EINPROGRESS) {
-                break;
-            }
-            else if (cpe_sock_errno() == EINTR) {
-                continue;
-            }
-            else {
-                CPE_ERROR(
-                    driver->m_em, "sock: %s: fd=%d: recv error, errno=%d (%s)!",
-                    net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
-                    cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
-
-                if (net_endpoint_error_no(base_endpoint) == 0) {
-                    net_endpoint_set_error(
-                        base_endpoint, net_endpoint_error_source_network,
-                        net_endpoint_network_errno_network_error, cpe_sock_errstr(cpe_sock_errno()));
+        if (net_endpoint_buf_supply(base_endpoint, net_ep_buf_read, (uint32_t)bytes) != 0) {
+            if (net_endpoint_is_active(base_endpoint)) {
+                if (!net_endpoint_have_error(base_endpoint)) {
+                    net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_logic, NULL);
                 }
 
                 if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
                     net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
                 }
-                return;
+            }
+            return;
+        }
+    } else if (bytes == 0) {
+        net_endpoint_buf_release(base_endpoint);
+
+        if (net_endpoint_driver_debug(base_endpoint)) {
+            CPE_INFO(
+                driver->m_em, "sock: %s: fd=%d: read finished!",
+                net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
+        }
+
+        endpoint->m_read_closed = 1;
+        if (endpoint->m_watcher) {
+            net_watcher_update_read(endpoint->m_watcher, 0);
+        }
+
+        if (net_endpoint_error_no(base_endpoint) == 0) {
+            net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_remote_closed, NULL);
+        }
+
+        if (net_endpoint_state(base_endpoint) == net_endpoint_state_established) {
+            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_read_closed) != 0) {
+                net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+            }
+        } else {
+            assert(net_endpoint_state(base_endpoint) == net_endpoint_state_write_closed);
+            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_disable) != 0) {
+                net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
             }
         }
-        assert(0);
+        return;
+    } else {
+        assert(bytes == -1);
+        net_endpoint_buf_release(base_endpoint);
+
+        if (cpe_sock_errno() == EWOULDBLOCK || cpe_sock_errno() == EINPROGRESS) {
+        } else if (cpe_sock_errno() == EINTR) {
+        } else {
+            CPE_ERROR(
+                driver->m_em, "sock: %s: fd=%d: recv error, errno=%d (%s)!",
+                net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
+                cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+
+            if (net_endpoint_error_no(base_endpoint) == 0) {
+                net_endpoint_set_error(
+                    base_endpoint, net_endpoint_error_source_network,
+                    net_endpoint_network_errno_network_error, cpe_sock_errstr(cpe_sock_errno()));
+            }
+
+            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
+                net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+            }
+            return;
+        }
     }
 }
 
 static void net_sock_endpoint_on_write(net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint) {
-    CPE_ERROR(
-        driver->m_em, "xxxxxx: %s: >>> write begin, r=%d, w=%d, block-alloced=%d, block-size=%d, user1=%d, user2=%d, user3=%d",
-        net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint),
-        net_endpoint_buf_size(base_endpoint, net_ep_buf_read),
-        net_endpoint_buf_size(base_endpoint, net_ep_buf_write),
-        net_mem_group_alloced_count(net_endpoint_mem_group(base_endpoint)),
-        net_mem_group_alloced_size(net_endpoint_mem_group(base_endpoint)),
-        net_endpoint_buf_size(base_endpoint, net_ep_buf_user1),
-        net_endpoint_buf_size(base_endpoint, net_ep_buf_user2),
-        net_endpoint_buf_size(base_endpoint, net_ep_buf_user3));
+    /* CPE_ERROR( */
+    /*     driver->m_em, "xxxxxx: %s: >>> write begin, r=%d, w=%d, block-alloced=%d, block-size=%d, user1=%d, user2=%d, user3=%d", */
+    /*     net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), */
+    /*     net_endpoint_buf_size(base_endpoint, net_ep_buf_read), */
+    /*     net_endpoint_buf_size(base_endpoint, net_ep_buf_write), */
+    /*     net_mem_group_alloced_count(net_endpoint_mem_group(base_endpoint)), */
+    /*     net_mem_group_alloced_size(net_endpoint_mem_group(base_endpoint)), */
+    /*     net_endpoint_buf_size(base_endpoint, net_ep_buf_user1), */
+    /*     net_endpoint_buf_size(base_endpoint, net_ep_buf_user2), */
+    /*     net_endpoint_buf_size(base_endpoint, net_ep_buf_user3)); */
     
     while(net_endpoint_is_writeable(base_endpoint) /*ep状态正确 */
           && !net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write) /*还有数据等待写入 */
@@ -706,11 +690,19 @@ static void net_sock_endpoint_rw_cb(void * ctx, int fd, uint8_t do_read, uint8_t
         || net_endpoint_state(base_endpoint) == net_endpoint_state_write_closed);
     
     if (do_read) {
-        net_sock_endpoint_on_read(driver, endpoint, base_endpoint);
+        if (net_endpoint_is_readable(base_endpoint) && net_endpoint_expect_read(base_endpoint)) {
+            net_sock_endpoint_on_read(driver, endpoint, base_endpoint);
+        }
     }
 
     if (do_write) {
-        net_sock_endpoint_on_write(driver, endpoint, base_endpoint);
+        if (net_endpoint_is_writeable(base_endpoint) && !net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write)) {
+            net_sock_endpoint_on_write(driver, endpoint, base_endpoint);
+        }
+    }
+
+    if (endpoint->m_watcher) {
+        net_sock_endpoint_update_watcher(driver, endpoint, base_endpoint);
     }
 }
 
@@ -979,12 +971,6 @@ static int net_sock_endpoint_start_connect(
 
     int rv = cpe_connect(endpoint->m_fd, (struct sockaddr *)&remote_addr_sock, remote_addr_sock_len);
     
-    /* if (strcmp("sfox-cli-ss+", net_protocol_name(net_endpoint_protocol(base_endpoint))) == 0) { */
-    /*     CPE_ERROR(driver->m_em, "xxxxxx: %s: mock error", net_protocol_name(net_endpoint_protocol(base_endpoint))); */
-    /*     errno = EHOSTDOWN; */
-    /*     return -1; */
-    /* } */
-
     return rv;
 }
 
@@ -1060,34 +1046,14 @@ int net_sock_endpoint_set_no_delay(net_endpoint_t base_endpoint, uint8_t is_enab
     }
 }
 
-static int net_sock_endpoint_update_readable(net_endpoint_t base_endpoint) {
-    net_sock_endpoint_t endpoint = net_endpoint_data(base_endpoint);
-    net_sock_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
-    
-    assert(endpoint->m_watcher != NULL);
+static void net_sock_endpoint_update_watcher(net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint) {
+    uint8_t need_read =
+        net_endpoint_is_readable(base_endpoint)
+        && net_endpoint_expect_read(base_endpoint);
 
-    if (net_endpoint_expect_read(base_endpoint)) {
-        if (!net_watcher_expect_read(endpoint->m_watcher)) { /*socket上没有等待读取的操作（当前有数据可以读取) */
-            if (net_endpoint_driver_debug(base_endpoint) >= 3) {
-                CPE_INFO(
-                    driver->m_em, "sock: %s: fd=%d: read begin!",
-                    net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
-            }
+    uint8_t need_write =
+        net_endpoint_is_writeable(base_endpoint)
+        && !net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write);
 
-            net_watcher_update_read(endpoint->m_watcher, 1);
-        }
-    } else {
-        if (net_watcher_expect_read(endpoint->m_watcher)) {
-            if (net_endpoint_driver_debug(base_endpoint) >= 3) {
-                CPE_INFO(
-                    driver->m_em, "sock: %s: fd=%d: read stop!",
-                    net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
-            }
-
-            net_watcher_update_read(endpoint->m_watcher, 0);
-        }
-    }
-
-    return 0;
+    net_watcher_update(endpoint->m_watcher, need_read, need_write);
 }
-

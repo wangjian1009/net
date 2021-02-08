@@ -68,3 +68,7 @@ uint16_t net_mem_group_alloced_count(net_mem_group_t mem_group) {
 uint32_t net_mem_group_alloced_size(net_mem_group_t mem_group) {
     return mem_group->m_alloced_size;
 }
+
+uint32_t net_mem_group_suggest_size(net_mem_group_t mem_group) {
+    return mem_group->m_type->m_suggest_size;
+}

@@ -20,6 +20,8 @@ struct net_mem_group_type_cache_group {
 };
 
 struct net_mem_group_type_cache {
+    uint16_t m_alloced_count;
+    uint32_t m_alloced_size;
     struct net_mem_group_type_cache_group m_groups[8];
 };
 
