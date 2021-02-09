@@ -295,8 +295,13 @@ int net_ssl_endpoint_do_handshake(net_endpoint_t base_endpoint, net_ssl_endpoint
     int r = SSL_do_handshake(endpoint->m_ssl);
     if (r == 1) {
         net_ssl_endpoint_set_state(endpoint, net_ssl_endpoint_state_streaming);
-        if (net_ssl_endpoint_write(base_endpoint, base_endpoint, net_ssl_endpoint_ep_write_cache) != 0) return -1;
-
+        if (net_endpoint_is_writeable(base_endpoint)
+            && !net_endpoint_buf_is_empty(base_endpoint, net_ssl_endpoint_ep_write_cache))
+        {
+            if (net_ssl_endpoint_write(base_endpoint, base_endpoint, net_ssl_endpoint_ep_write_cache) != 0) return -1;
+            if (!net_endpoint_is_active(base_endpoint)) return -1;
+        }
+        
         if (endpoint->m_stream) {
             if (net_endpoint_set_state(
                     net_endpoint_from_data(endpoint->m_stream),
