@@ -1,6 +1,7 @@
 #ifndef NET_HTTP2_STREAM_REMOTE_I_H_INCLEDED
 #define NET_HTTP2_STREAM_REMOTE_I_H_INCLEDED
 #include "net_http2_stream_remote.h"
+#include "net_http2_protocol_i.h"
 #include "net_http2_stream_driver_i.h"
 
 struct net_http2_stream_remote {

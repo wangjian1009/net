@@ -6,6 +6,7 @@
 struct net_http2_stream_endpoint {
     net_endpoint_t m_base_endpoint;
     net_http2_endpoint_t m_control;
+    TAILQ_ENTRY(net_http2_stream_endpoint) m_next_for_control;
     int32_t m_stream_id;
 };
 

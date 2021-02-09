@@ -64,9 +64,13 @@ void net_http2_stream_remote_free(net_http2_stream_remote_t remote) {
 }
 
 net_http2_stream_remote_t
-net_http2_stream_remote_find(
-    net_http2_stream_driver_t driver, net_schedule_t schedule, net_address_t address)
-{
+net_http2_stream_remote_check_create(net_http2_stream_driver_t driver, net_address_t address) {
+    net_http2_stream_remote_t remote = net_http2_stream_remote_find(driver, address);
+    return remote ? remote : net_http2_stream_remote_create(driver, address);
+}
+
+net_http2_stream_remote_t
+net_http2_stream_remote_find(net_http2_stream_driver_t driver, net_address_t address) {
     struct net_http2_stream_remote key;
     key.m_address = address;
     return cpe_hash_table_find(&driver->m_remotes, &key);

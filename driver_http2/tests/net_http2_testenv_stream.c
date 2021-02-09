@@ -42,5 +42,17 @@ net_http2_testenv_create_stream_acceptor(net_http2_testenv_t env, const char * s
 
 net_http2_stream_endpoint_t
 net_http2_testenv_stream_ep_other(net_http2_testenv_t env, net_http2_stream_endpoint_t ep) {
+    net_http2_endpoint_t control = net_http2_stream_endpoint_control(ep);
+    if (control == NULL) return NULL;
+
+    net_endpoint_t control_base = net_http2_endpoint_base_endpoint(control);
+    assert_true(control_base);
+
+    net_endpoint_t other_base = test_net_endpoint_linked_other(env->m_tdriver, control_base);
+    if (other_base == NULL) return NULL;
+
+    net_http2_endpoint_t other_control = net_http2_endpoint_cast(other_base);
+    assert_true(other_control);
+
     return NULL;
 }

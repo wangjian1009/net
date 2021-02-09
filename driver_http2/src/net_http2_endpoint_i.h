@@ -7,7 +7,7 @@
 struct net_http2_endpoint {
     net_endpoint_t m_base_endpoint;
     nghttp2_session * m_http2_session;
-    net_http2_endpoint_stream_list_t m_streams;
+    net_http2_stream_endpoint_list_t m_streams;
 };
 
 int net_http2_endpoint_init(net_endpoint_t base_endpoint);
