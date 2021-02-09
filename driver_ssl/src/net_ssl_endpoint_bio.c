@@ -19,7 +19,7 @@ int net_ssl_endpoint_bio_free(BIO *b) {
     
     if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 2) {
         CPE_INFO(
-            protocol->m_em, "net: ssl: %s: cli: bio: free success",
+            protocol->m_em, "ssl: %s: cli: bio: free success",
             net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint));
     }
     
@@ -46,7 +46,7 @@ int net_ssl_endpoint_bio_read(BIO *b, char *out, int outlen) {
     if (length > outlen) {
         if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 2) {
             CPE_INFO(
-                protocol->m_em, "net: ssl: %s: cli: bio: read: out-len=%d, buf-len=%d, read part",
+                protocol->m_em, "ssl: %s: cli: bio: read: out-len=%d, buf-len=%d, read part",
                 net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
                 outlen, length);
         }
@@ -57,7 +57,7 @@ int net_ssl_endpoint_bio_read(BIO *b, char *out, int outlen) {
     void * data = NULL;
     if (net_endpoint_buf_peak_with_size(endpoint->m_base_endpoint, net_ep_buf_read, length, &data) != 0) {
         CPE_ERROR(
-            protocol->m_em, "net: ssl: %s: cli: bio: read: peak data fail, length=%d",
+            protocol->m_em, "ssl: %s: cli: bio: read: peak data fail, length=%d",
             net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
             length);
         return -1;
@@ -81,7 +81,7 @@ int net_ssl_endpoint_bio_write(BIO *b, const char *in, int inlen) {
     uint32_t write_size = inlen;
     if (net_endpoint_buf_append(endpoint->m_base_endpoint, net_ep_buf_write, in, write_size) != 0) {
         CPE_ERROR(
-            protocol->m_em, "net: ssl: %s: cli: bio: write: append buf fail, len=%d!",
+            protocol->m_em, "ssl: %s: cli: bio: write: append buf fail, len=%d!",
             net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint), write_size);
         return -1;
     }
@@ -98,7 +98,7 @@ long net_ssl_endpoint_bio_ctrl(BIO *b, int cmd, long num, void *ptr) {
     
     if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 2) {
         CPE_INFO(
-            protocol->m_em, "net: ssl: %s: cli: bio: cmd %s",
+            protocol->m_em, "ssl: %s: cli: bio: cmd %s",
             net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
             net_ssl_bio_ctrl_cmd_str(cmd));
     }

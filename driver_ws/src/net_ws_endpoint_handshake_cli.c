@@ -28,7 +28,7 @@ int net_ws_endpoint_input_handshake_cli_first_line(
     char * sep = strchr(line, ' ');
     if (sep == NULL) {
         CPE_ERROR(
-            protocol->m_em, "net: ws: %s: handshake: first line sep 1 not found: %s!",
+            protocol->m_em, "ws: %s: handshake: first line sep 1 not found: %s!",
             net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), base_endpoint),
             line);
         return -1;
@@ -39,7 +39,7 @@ int net_ws_endpoint_input_handshake_cli_first_line(
     sep = strchr(line, ' ');
     if (sep == NULL) {
         CPE_ERROR(
-            protocol->m_em, "net: ws: %s: handshake: first line sep 2 not found: %s!",
+            protocol->m_em, "ws: %s: handshake: first line sep 2 not found: %s!",
             net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), base_endpoint),
             line);
         return -1;
@@ -50,7 +50,7 @@ int net_ws_endpoint_input_handshake_cli_first_line(
     
     if (strcasecmp(http_protocol, "HTTP/1.1") != 0) {
         CPE_ERROR(
-            protocol->m_em, "net: ws: %s: handshake: http protocol %s not suport!",
+            protocol->m_em, "ws: %s: handshake: http protocol %s not suport!",
             net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), base_endpoint),
             http_protocol);
         return -1;
@@ -67,7 +67,7 @@ int net_ws_endpoint_input_handshake_cli_header_line(
     char * sep = strchr(line, ':');
     if (sep == NULL) {
         CPE_ERROR(
-            protocol->m_em, "net: ws: %s: handshake: line no sep: %s!",
+            protocol->m_em, "ws: %s: handshake: line no sep: %s!",
             net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), base_endpoint),
             line);
         return -1;
@@ -79,7 +79,7 @@ int net_ws_endpoint_input_handshake_cli_header_line(
     if (strcasecmp(name, "Upgrade") == 0) {
         if (strcasecmp(value, "websocket") != 0) {
             CPE_ERROR(
-                protocol->m_em, "net: ws: %s: handshake: upgrade type %s not support!",
+                protocol->m_em, "ws: %s: handshake: upgrade type %s not support!",
                 net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), base_endpoint),
                 value);
             return -1;
@@ -89,7 +89,7 @@ int net_ws_endpoint_input_handshake_cli_header_line(
     else if (strcasecmp(name, "Connection") == 0) {
         if (strcasecmp(value, "Upgrade") != 0) {
             CPE_ERROR(
-                protocol->m_em, "net: ws: %s: handshake: connection value %s not support!",
+                protocol->m_em, "ws: %s: handshake: connection value %s not support!",
                 net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), base_endpoint),
                 value);
             return -1;
@@ -119,7 +119,7 @@ int net_ws_endpoint_input_handshake_cli_last_line(
     for(i = 0; i < CPE_ARRAY_SIZE(check_fields); ++i) {
         if (!net_ws_endpoint_handshake_cli_field_is_set(i)) {
             CPE_ERROR(
-                protocol->m_em, "net: ws: %s: handshake: field %s not set!",
+                protocol->m_em, "ws: %s: handshake: field %s not set!",
                 net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), base_endpoint),
                 net_ws_endpoint_handshake_cli_field_str((net_ws_endpoint_handshake_cli_field_t)i));
             return -1;
@@ -146,7 +146,7 @@ int net_ws_endpoint_input_handshake_cli(net_endpoint_t base_endpoint, net_ws_end
                 + net_endpoint_buf_size(base_endpoint, net_ep_buf_read);
             if (total_size >= 8192) {
                 CPE_ERROR(
-                    protocol->m_em, "net: ws: %s: handshake << %d, Too large http header",
+                    protocol->m_em, "ws: %s: handshake << %d, Too large http header",
                     net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), base_endpoint),
                     total_size);
                 return -1;
@@ -159,7 +159,7 @@ int net_ws_endpoint_input_handshake_cli(net_endpoint_t base_endpoint, net_ws_end
         if (line[0] == 0) {
             if (net_endpoint_protocol_debug(base_endpoint) >= 2) {
                 CPE_INFO(
-                    protocol->m_em, "net: ws: %s: handshake completed",
+                    protocol->m_em, "ws: %s: handshake completed",
                     net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), base_endpoint));
             }
 
@@ -170,7 +170,7 @@ int net_ws_endpoint_input_handshake_cli(net_endpoint_t base_endpoint, net_ws_end
         else {
             if (net_endpoint_protocol_debug(base_endpoint) >= 2) {
                 CPE_INFO(
-                    protocol->m_em, "net: ws: %s: handshake << %s",
+                    protocol->m_em, "ws: %s: handshake << %s",
                     net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), base_endpoint), line);
             }
 
@@ -198,7 +198,7 @@ int net_ws_endpoint_send_handshake(net_endpoint_t base_endpoint, net_ws_endpoint
 
     if (endpoint->m_path == NULL) {
         CPE_ERROR(
-            protocol->m_em, "net: ws: %s: handshake: send: no path!",
+            protocol->m_em, "ws: %s: handshake: send: no path!",
             net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), base_endpoint));
         return -1;
     }
@@ -206,7 +206,7 @@ int net_ws_endpoint_send_handshake(net_endpoint_t base_endpoint, net_ws_endpoint
     net_address_t target_addr = net_endpoint_remote_address(base_endpoint);
     if (target_addr == NULL) {
         CPE_ERROR(
-            protocol->m_em, "net: ws: %s: handshake: send: no remote address!",
+            protocol->m_em, "ws: %s: handshake: send: no remote address!",
             net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), base_endpoint));
         return -1;
     }
@@ -215,7 +215,7 @@ int net_ws_endpoint_send_handshake(net_endpoint_t base_endpoint, net_ws_endpoint
     char * buf = net_endpoint_buf_alloc_at_least(base_endpoint, &buf_capacity);
     if (buf == NULL) {
         CPE_ERROR(
-            protocol->m_em, "net: ws: %s: handshake: send: alloc buf fail!",
+            protocol->m_em, "ws: %s: handshake: send: alloc buf fail!",
             net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), base_endpoint));
         return -1;
     }
@@ -251,14 +251,14 @@ int net_ws_endpoint_send_handshake(net_endpoint_t base_endpoint, net_ws_endpoint
 
     if (net_endpoint_protocol_debug(base_endpoint) >= 2) {
         CPE_ERROR(
-            protocol->m_em, "net: ws: %s: handshake: send %d data\n%.*s",
+            protocol->m_em, "ws: %s: handshake: send %d data\n%.*s",
             net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), base_endpoint),
             size, size, buf);
     }
     
     if (net_endpoint_buf_supply(base_endpoint, net_ep_buf_write, size) != 0) {
         CPE_ERROR(
-            protocol->m_em, "net: ws: %s: handshake: send %d data failed!",
+            protocol->m_em, "ws: %s: handshake: send %d data failed!",
             net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), base_endpoint),
             size);
         return -1;

@@ -16,7 +16,7 @@ static int net_ws_endpoint_send_event(
     if (endpoint->m_state != net_ws_endpoint_state_streaming) {
         CPE_ERROR(
             protocol->m_em,
-            "net: ws: %s: msg %s: >>> curent state %s, can`t send msg!",
+            "ws: %s: msg %s: >>> curent state %s, can`t send msg!",
             net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
             net_ws_wslay_op_code_str(ws_msg->opcode),
             net_ws_endpoint_state_str(endpoint->m_state));
@@ -26,7 +26,7 @@ static int net_ws_endpoint_send_event(
     if (wslay_event_queue_msg(endpoint->m_ws_ctx, ws_msg) != 0) {
         CPE_ERROR(
             protocol->m_em,
-            "net: ws: %s: msg %s: >>> queue msg fail!",
+            "ws: %s: msg %s: >>> queue msg fail!",
             net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
             net_ws_wslay_op_code_str(ws_msg->opcode));
         return -1;
@@ -52,7 +52,7 @@ static int net_ws_endpoint_send_event(
         
         if (rv != 0) {
             CPE_ERROR(
-                protocol->m_em, "net: ws: %s: msg %s: >>> send fail, rv=%d (%s)",
+                protocol->m_em, "ws: %s: msg %s: >>> send fail, rv=%d (%s)",
                 net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
                 net_ws_wslay_op_code_str(ws_msg->opcode),
                 rv, net_ws_wslay_err_str(rv));
@@ -63,7 +63,7 @@ static int net_ws_endpoint_send_event(
     if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 2) {
         if (ws_msg->opcode == WSLAY_TEXT_FRAME) {
             CPE_INFO(
-                protocol->m_em, "net: ws: %s: msg %s: >>>\n%s",
+                protocol->m_em, "ws: %s: msg %s: >>>\n%s",
                 net_endpoint_dump(
                     net_ws_protocol_tmp_buffer(protocol),
                     endpoint->m_base_endpoint),
@@ -72,7 +72,7 @@ static int net_ws_endpoint_send_event(
         }
         else {
             CPE_INFO(
-                protocol->m_em, "net: ws: %s: msg %s: >>> %d data success",
+                protocol->m_em, "ws: %s: msg %s: >>> %d data success",
                 net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
                 net_ws_wslay_op_code_str(ws_msg->opcode),
                 (int)ws_msg->msg_length);
@@ -109,14 +109,14 @@ static ssize_t net_ws_endpoint_recv(
     if (net_endpoint_buf_recv(endpoint->m_base_endpoint, net_ep_buf_read, buf, &size) != 0) {
         wslay_event_set_error(ctx, WSLAY_ERR_CALLBACK_FAILURE);
         CPE_ERROR(
-            protocol->m_em, "net: ws: %s: receive failed",
+            protocol->m_em, "ws: %s: receive failed",
             net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint));
         return -1;
     }
 
     if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 2) {
         CPE_INFO(
-            protocol->m_em, "net: ws: %s:     <== %d data",
+            protocol->m_em, "ws: %s:     <== %d data",
             net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
             size);
     }
@@ -137,7 +137,7 @@ static ssize_t net_ws_endpoint_send(
 
     if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 2) {
         CPE_INFO(
-            protocol->m_em, "net: ws: %s:     ==> %d data",
+            protocol->m_em, "ws: %s:     ==> %d data",
             net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
             (int)len);
     }
@@ -155,7 +155,7 @@ static int net_ws_endpoint_genmask(
 
     if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 2) {
         CPE_INFO(
-            protocol->m_em, "net: ws: %s:     gen random %d data",
+            protocol->m_em, "ws: %s:     gen random %d data",
             net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
             (int)len);
     }
@@ -171,7 +171,7 @@ static void net_ws_endpoint_recv_start(
 
     if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 2) {
         CPE_INFO(
-            protocol->m_em, "net: ws: %s:     recv begin: fin=%d, rsv=%d, opcode=%s, payload-length=" FMT_UINT64_T,
+            protocol->m_em, "ws: %s:     recv begin: fin=%d, rsv=%d, opcode=%s, payload-length=" FMT_UINT64_T,
             net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
             arg->fin, arg->rsv, net_ws_wslay_op_code_str(arg->opcode), arg->payload_length);
     }
@@ -185,7 +185,7 @@ static void net_ws_endpoint_recv_trunk(
 
     if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 2) {
         CPE_INFO(
-            protocol->m_em, "net: ws: %s:     recv trunk, length=%d",
+            protocol->m_em, "ws: %s:     recv trunk, length=%d",
             net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
             (int)arg->data_length);
     }
@@ -199,7 +199,7 @@ static void net_ws_endpoint_recv_end(
 
     if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 2) {
         CPE_INFO(
-            protocol->m_em, "net: ws: %s:     recv end",
+            protocol->m_em, "ws: %s:     recv end",
             net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint));
     }
 }
@@ -213,7 +213,7 @@ static void net_ws_endpoint_on_msg_recv(
     switch(arg->opcode) {
     case WSLAY_CONTINUATION_FRAME:
         CPE_ERROR(
-            protocol->m_em, "net: ws: %s: continuation: not support!",
+            protocol->m_em, "ws: %s: continuation: not support!",
             net_endpoint_dump(
                 net_ws_protocol_tmp_buffer(protocol),
                 endpoint->m_base_endpoint));
@@ -221,7 +221,7 @@ static void net_ws_endpoint_on_msg_recv(
     case WSLAY_TEXT_FRAME: {
         if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 2) {
             CPE_INFO(
-                protocol->m_em, "net: ws: %s: msg text: <<< %.*s",
+                protocol->m_em, "ws: %s: msg text: <<< %.*s",
                 net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
                 (int)arg->msg_length, (const char *)arg->msg);
         }
@@ -231,7 +231,7 @@ static void net_ws_endpoint_on_msg_recv(
             char * buf = mem_buffer_alloc(&protocol->m_data_buffer, arg->msg_length + 1);
             if (buf == NULL) {
                 CPE_ERROR(
-                    protocol->m_em, "net: ws: %s: msg text: alloc buf fail, msg-length=%d!",
+                    protocol->m_em, "ws: %s: msg text: alloc buf fail, msg-length=%d!",
                     net_endpoint_dump(
                         net_ws_protocol_tmp_buffer(protocol),
                         endpoint->m_base_endpoint),
@@ -250,7 +250,7 @@ static void net_ws_endpoint_on_msg_recv(
     case WSLAY_BINARY_FRAME:
         if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 2) {
             CPE_INFO(
-                protocol->m_em, "net: ws: %s: msg bin: <<< %d data",
+                protocol->m_em, "ws: %s: msg bin: <<< %d data",
                 net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
                 (int)arg->msg_length);
         }
@@ -274,12 +274,12 @@ static void net_ws_endpoint_on_msg_recv(
         break;
     case WSLAY_CONNECTION_CLOSE:
         CPE_ERROR(
-            protocol->m_em, "net: ws: %s: close: not support!",
+            protocol->m_em, "ws: %s: close: not support!",
             net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint));
         break;
     case WSLAY_PING:
         CPE_ERROR(
-            protocol->m_em, "net: ws: %s: ping: not support!",
+            protocol->m_em, "ws: %s: ping: not support!",
             net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint));
         break;
     case WSLAY_PONG:
@@ -287,7 +287,7 @@ static void net_ws_endpoint_on_msg_recv(
 
         if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 2) {
             CPE_INFO(
-                protocol->m_em, "net: ws: %s: msg pong: <<< %d data",
+                protocol->m_em, "ws: %s: msg pong: <<< %d data",
                 net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
                 (int)arg->msg_length);
         }

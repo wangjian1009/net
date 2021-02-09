@@ -59,7 +59,7 @@ int net_ssl_endpoint_input(net_endpoint_t base_endpoint) {
 
     if (endpoint->m_runing_mode == net_ssl_endpoint_runing_mode_init) {
         CPE_ERROR(
-            protocol->m_em, "net: ssl: %s: input in runing-mode %s, error",
+            protocol->m_em, "ssl: %s: input in runing-mode %s, error",
             net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_endpoint),
             net_ssl_endpoint_runing_mode_str(endpoint->m_runing_mode));
         return -1;
@@ -85,7 +85,7 @@ READ_AGAIN:
     void * data = net_endpoint_buf_alloc_at_least(base_endpoint, &input_data_size);
     if (data == NULL) {
         CPE_ERROR(
-            protocol->m_em, "net: ssl: %s: input: alloc data for read fail",
+            protocol->m_em, "ssl: %s: input: alloc data for read fail",
             net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_endpoint));
         return -1;
     }
@@ -95,7 +95,7 @@ READ_AGAIN:
     if (r > 0) {
         if (net_endpoint_buf_supply(base_endpoint, net_ssl_endpoint_ep_read_cache, r) != 0) {
             CPE_ERROR(
-                protocol->m_em, "net: ssl: %s: input: load data to input cache fail",
+                protocol->m_em, "ssl: %s: input: load data to input cache fail",
                 net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_endpoint));
             return -1;
         }
@@ -106,7 +106,7 @@ READ_AGAIN:
         if (base_stream && net_endpoint_is_readable(base_stream)) {
             if (net_endpoint_driver_debug(base_stream) >= 2) {
                 CPE_INFO(
-                    protocol->m_em, "net: ssl: %s: <<< %d data",
+                    protocol->m_em, "ssl: %s: <<< %d data",
                     net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_stream),
                     net_endpoint_buf_size(base_endpoint, net_ssl_endpoint_ep_read_cache));
             }
@@ -116,7 +116,7 @@ READ_AGAIN:
                     base_endpoint, net_ssl_endpoint_ep_read_cache, 0) != 0)
             {
                 CPE_ERROR(
-                    protocol->m_em, "net: ssl: %s: input: forward data to ssl ep fail",
+                    protocol->m_em, "ssl: %s: input: forward data to ssl ep fail",
                     net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_stream));
                 return -1;
             }
@@ -127,7 +127,7 @@ READ_AGAIN:
         else {
             net_endpoint_buf_clear(base_endpoint, net_ssl_endpoint_ep_read_cache);
             CPE_ERROR(
-                protocol->m_em, "net: ssl: %s: input: no established ssl endpoint(state=%s), clear cached data",
+                protocol->m_em, "ssl: %s: input: no established ssl endpoint(state=%s), clear cached data",
                 net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_endpoint),
                 net_endpoint_state_str(net_endpoint_state(base_endpoint)));
         }
@@ -209,13 +209,13 @@ int net_ssl_endpoint_write(
     case net_endpoint_state_disable:
     case net_endpoint_state_resolving:
     case net_endpoint_state_connecting:
-        if (net_endpoint_protocol_debug(base_endpoint)) {
+        /* if (net_endpoint_protocol_debug(base_endpoint)) { */
             CPE_INFO(
-                protocol->m_em, "net: ssl: %s: write: cache %d data in state %s!",
+                protocol->m_em, "ssl: %s: write: cache %d data in state %s!",
                 net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_endpoint),
                 net_endpoint_buf_size(from_ep, from_buf),
                 net_endpoint_state_str(net_endpoint_state(base_endpoint)));
-        }
+        /* } */
 
         if (base_endpoint == from_ep) {
             return net_endpoint_buf_append_from_self(
@@ -231,7 +231,7 @@ int net_ssl_endpoint_write(
         case net_ssl_endpoint_state_handshake:
             if (net_endpoint_protocol_debug(base_endpoint)) {
                 CPE_INFO(
-                    protocol->m_em, "net: ssl: %s: write: cache %d data in state %s.handshake!",
+                    protocol->m_em, "ssl: %s: write: cache %d data in state %s.handshake!",
                     net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_endpoint),
                     net_endpoint_buf_size(from_ep, from_buf),
                     net_endpoint_state_str(net_endpoint_state(base_endpoint)));
@@ -254,7 +254,7 @@ int net_ssl_endpoint_write(
     case net_endpoint_state_write_closed:
     case net_endpoint_state_deleting:
         CPE_ERROR(
-            protocol->m_em, "net: ssl: %s: write: can`t write in state %s!",
+            protocol->m_em, "ssl: %s: write: can`t write in state %s!",
             net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_endpoint),
             net_endpoint_state_str(net_endpoint_state(base_endpoint)));
         return -1;
@@ -266,7 +266,7 @@ int net_ssl_endpoint_write(
     void * data = NULL;
     if (net_endpoint_buf_peak_with_size(from_ep, from_buf, data_size, &data) != 0) {
         CPE_ERROR(
-            protocol->m_em, "net: ssl: %s: write: peak data fail!",
+            protocol->m_em, "ssl: %s: write: peak data fail!",
             net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_endpoint));
         return -1;
     }
@@ -281,7 +281,7 @@ int net_ssl_endpoint_write(
 
     if (net_endpoint_protocol_debug(base_endpoint)) {
         CPE_INFO(
-            protocol->m_em, "net: ssl: %s: ==> %d data!",
+            protocol->m_em, "ssl: %s: ==> %d data!",
             net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_endpoint), r);
     }
     
@@ -320,7 +320,7 @@ void net_ssl_endpoint_trace_cb(
     if (net_endpoint_protocol_debug(endpoint->m_base_endpoint)) {
         char prefix[256];
         snprintf(
-            prefix, sizeof(prefix), "net: ssl: %s: SSL: ",
+            prefix, sizeof(prefix), "ssl: %s: SSL: ",
             net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint));
         net_ssl_dump_tls_info(
             protocol->m_em, net_ssl_protocol_tmp_buffer(protocol), prefix,
@@ -333,7 +333,7 @@ void net_ssl_endpoint_dump_error(net_endpoint_t base_endpoint, int val) {
     net_ssl_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
 
     CPE_ERROR(
-        protocol->m_em, "net: ssl: %s: SSL: Error was %s!",
+        protocol->m_em, "ssl: %s: SSL: Error was %s!",
         net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_endpoint),
         ERR_error_string(val, NULL));
 
@@ -344,7 +344,7 @@ void net_ssl_endpoint_dump_error(net_endpoint_t base_endpoint, int val) {
 		const char *func = (const char*)ERR_func_error_string(err);
 
         CPE_ERROR(
-            protocol->m_em, "net: ssl: %s: SSL:     %s in %s %s",
+            protocol->m_em, "ssl: %s: SSL:     %s in %s %s",
             net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_endpoint),
             msg, lib, func);
 	}
@@ -360,14 +360,14 @@ static int net_ssl_endpoint_update_error(net_endpoint_t base_endpoint, int err, 
     case SSL_ERROR_WANT_READ:
         if (net_endpoint_protocol_debug(base_endpoint) >= 2) {
             CPE_INFO(
-                protocol->m_em, "net: ssl: %s: want read",
+                protocol->m_em, "ssl: %s: want read",
                 net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_endpoint));
         }
         return 0;
     case SSL_ERROR_WANT_WRITE:
         if (net_endpoint_protocol_debug(base_endpoint) >= 2) {
             CPE_INFO(
-                protocol->m_em, "net: ssl: %s: want write",
+                protocol->m_em, "ssl: %s: want write",
                 net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_endpoint));
         }
         return 0;
@@ -403,7 +403,7 @@ int net_ssl_endpoint_set_runing_mode(net_ssl_endpoint_t endpoint, net_ssl_endpoi
 
     if (net_endpoint_protocol_debug(endpoint->m_base_endpoint)) {
         CPE_INFO(
-            protocol->m_em, "net: ssl: %s: runing-mode: %s ==> %s",
+            protocol->m_em, "ssl: %s: runing-mode: %s ==> %s",
             net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
             net_ssl_endpoint_runing_mode_str(endpoint->m_runing_mode),
             net_ssl_endpoint_runing_mode_str(runing_mode));
@@ -424,7 +424,7 @@ int net_ssl_endpoint_set_runing_mode(net_ssl_endpoint_t endpoint, net_ssl_endpoi
     
     endpoint->m_ssl = SSL_new(protocol->m_ssl_ctx);
     if(endpoint->m_ssl == NULL) {
-        CPE_ERROR(protocol->m_em, "net: ssl: cli: endpoint init: create ssl fail");
+        CPE_ERROR(protocol->m_em, "ssl: cli: endpoint init: create ssl fail");
         return -1;
     }
     SSL_set_msg_callback(endpoint->m_ssl, net_ssl_endpoint_trace_cb);
@@ -440,7 +440,7 @@ int net_ssl_endpoint_set_runing_mode(net_ssl_endpoint_t endpoint, net_ssl_endpoi
 
     BIO * bio = BIO_new(protocol->m_bio_method);
     if (bio == NULL) {
-        CPE_ERROR(protocol->m_em, "net: ssl: cli: endpoint init: create bio fail");
+        CPE_ERROR(protocol->m_em, "ssl: cli: endpoint init: create bio fail");
         SSL_free(endpoint->m_ssl);
         return -1;
     }
@@ -461,7 +461,7 @@ int net_ssl_endpoint_set_state(net_ssl_endpoint_t endpoint, net_ssl_endpoint_sta
     
     if (net_endpoint_protocol_debug(endpoint->m_base_endpoint)) {
         CPE_INFO(
-            protocol->m_em, "net: ssl: %s: state: %s ==> %s",
+            protocol->m_em, "ssl: %s: state: %s ==> %s",
             net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
             net_ssl_endpoint_state_str(endpoint->m_state),
             net_ssl_endpoint_state_str(state));

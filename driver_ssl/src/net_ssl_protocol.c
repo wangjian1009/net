@@ -17,7 +17,7 @@ int net_ssl_protocol_init(net_protocol_t base_protocol) {
     if (protocol->m_bio_method == NULL) {
         CPE_ERROR(
             net_schedule_em(net_protocol_schedule(base_protocol)),
-            "net: ssl: protocol: init: create bio method fail");
+            "ssl: protocol: init: create bio method fail");
         return -1;
     }
     BIO_meth_set_write(protocol->m_bio_method, net_ssl_endpoint_bio_write);
@@ -31,7 +31,7 @@ int net_ssl_protocol_init(net_protocol_t base_protocol) {
     if(protocol->m_ssl_ctx == NULL) {
         CPE_ERROR(
             net_schedule_em(net_protocol_schedule(base_protocol)),
-            "net: ssl: protocol: init: create ssl ctx fail");
+            "ssl: protocol: init: create ssl ctx fail");
         BIO_meth_free(protocol->m_bio_method);
         return -1;
     }
@@ -135,7 +135,7 @@ int net_ssl_protocol_svr_use_pkey_from_string(net_ssl_protocol_t protocol, const
 
     if (protocol->m_svr.m_pkey != NULL) {
         CPE_ERROR(
-            protocol->m_em, "net: ssl: %s: use pkey: already setted!",
+            protocol->m_em, "ssl: %s: use pkey: already setted!",
             net_protocol_name(base_protocol));
         return -1;
     }
@@ -145,7 +145,7 @@ int net_ssl_protocol_svr_use_pkey_from_string(net_ssl_protocol_t protocol, const
 
     if (SSL_CTX_use_PrivateKey(protocol->m_ssl_ctx, protocol->m_svr.m_pkey) <= 0) {
         CPE_ERROR(
-            protocol->m_em, "net: ssl: %s: use pkey failed, %s",
+            protocol->m_em, "ssl: %s: use pkey failed, %s",
             net_protocol_name(base_protocol), ERR_error_string(ERR_get_error(), NULL));
         return -1;
     }
@@ -163,7 +163,7 @@ int net_ssl_protocol_svr_confirm_pkey(net_ssl_protocol_t protocol) {
 
     if (SSL_CTX_use_PrivateKey(protocol->m_ssl_ctx, protocol->m_svr.m_pkey) <= 0) {
         CPE_ERROR(
-            protocol->m_em, "net: ssl: %s: use pkey failed, %s",
+            protocol->m_em, "ssl: %s: use pkey failed, %s",
             net_protocol_name(base_protocol), ERR_error_string(ERR_get_error(), NULL));
         return -1;
     }
@@ -177,7 +177,7 @@ int net_ssl_protocol_use_cert_from_string(net_ssl_protocol_t protocol, const cha
 
     if (protocol->m_svr.m_cert_loaded) {
         CPE_ERROR(
-            protocol->m_em, "net: ssl: %s: use cert: already setted!",
+            protocol->m_em, "ssl: %s: use cert: already setted!",
             net_protocol_name(base_protocol));
         return -1;
     }
@@ -189,7 +189,7 @@ int net_ssl_protocol_use_cert_from_string(net_ssl_protocol_t protocol, const cha
     BIO * cert_bio = BIO_new_mem_buf(cert, (int)strlen(cert));
     if (cert_bio == NULL) {
         CPE_ERROR(
-            protocol->m_em, "net: ssl: %s: init cert bio failed: %s",
+            protocol->m_em, "ssl: %s: init cert bio failed: %s",
             net_protocol_name(base_protocol), ERR_error_string(ERR_get_error(), NULL));
         return -1;
     }
@@ -197,7 +197,7 @@ int net_ssl_protocol_use_cert_from_string(net_ssl_protocol_t protocol, const cha
     X509 * x = PEM_read_bio_X509_AUX(cert_bio, NULL, passwd_callback, passwd_callback_userdata);
     if (x == NULL) {
         CPE_ERROR(
-            protocol->m_em, "net: ssl: %s: read cert failed: %s\n%s",
+            protocol->m_em, "ssl: %s: read cert failed: %s\n%s",
             net_protocol_name(base_protocol),
             ERR_error_string(ERR_get_error(), NULL), cert);
         BIO_free(cert_bio);
@@ -205,13 +205,13 @@ int net_ssl_protocol_use_cert_from_string(net_ssl_protocol_t protocol, const cha
     }
 
     CPE_INFO(
-        protocol->m_em, "net: ssl: %s: load cert: %s",
+        protocol->m_em, "ssl: %s: load cert: %s",
         net_protocol_name(base_protocol),
         net_ssl_dump_cert_info(net_schedule_tmp_buffer(schedule), x));
         
     if (SSL_CTX_use_certificate(protocol->m_ssl_ctx, x) != 1 || ERR_peek_error() != 0) {
         CPE_ERROR(
-            protocol->m_em, "net: ssl: %s: read cert failed: %s",
+            protocol->m_em, "ssl: %s: read cert failed: %s",
             net_protocol_name(base_protocol),
             ERR_error_string(ERR_get_error(), NULL));
         goto PROCESS_ERROR;
@@ -223,7 +223,7 @@ int net_ssl_protocol_use_cert_from_string(net_ssl_protocol_t protocol, const cha
      */
     if (SSL_CTX_clear_chain_certs(protocol->m_ssl_ctx) != 1) {
         CPE_ERROR(
-            protocol->m_em, "net: ssl: %s: clear chain certs fail: %s",
+            protocol->m_em, "ssl: %s: clear chain certs fail: %s",
             net_protocol_name(base_protocol),
             ERR_error_string(ERR_get_error(), NULL));
         goto PROCESS_ERROR;
@@ -233,7 +233,7 @@ int net_ssl_protocol_use_cert_from_string(net_ssl_protocol_t protocol, const cha
     while ((ca = PEM_read_bio_X509(cert_bio, NULL, passwd_callback, passwd_callback_userdata)) != NULL) {
         if (!SSL_CTX_add0_chain_cert(protocol->m_ssl_ctx, ca)) {
             CPE_ERROR(
-                protocol->m_em, "net: ssl: %s: add ca cert fail: %s",
+                protocol->m_em, "ssl: %s: add ca cert fail: %s",
                 net_protocol_name(base_protocol), ERR_error_string(ERR_get_error(), NULL));
             X509_free(ca);
             goto PROCESS_ERROR;
@@ -247,7 +247,7 @@ int net_ssl_protocol_use_cert_from_string(net_ssl_protocol_t protocol, const cha
     }
     else {
         CPE_ERROR(
-            protocol->m_em, "net: ssl: %s: last found error: %s",
+            protocol->m_em, "ssl: %s: last found error: %s",
             net_protocol_name(base_protocol), ERR_error_string(err, NULL));
         goto PROCESS_ERROR;
     }
@@ -276,7 +276,7 @@ int net_ssl_protocol_svr_confirm_cert(net_ssl_protocol_t protocol) {
     x509 = X509_new();
     if (x509 == NULL) {
         CPE_ERROR(
-            protocol->m_em, "net: ssl: %s: generate cert: X509_new error: %s",
+            protocol->m_em, "ssl: %s: generate cert: X509_new error: %s",
             net_protocol_name(base_protocol), ERR_error_string(ERR_get_error(), NULL));
         goto PROCESS_ERROR;
     }
@@ -298,20 +298,20 @@ int net_ssl_protocol_svr_confirm_cert(net_ssl_protocol_t protocol) {
     /* Actually sign the certificate with our key. */
     if (!X509_sign(x509, protocol->m_svr.m_pkey, EVP_sha1())) {
         CPE_ERROR(
-            protocol->m_em, "net: ssl: %s: generate cert: sign error: %s",
+            protocol->m_em, "ssl: %s: generate cert: sign error: %s",
             net_protocol_name(base_protocol), ERR_error_string(ERR_get_error(), NULL));
         goto PROCESS_ERROR;
     }
 
     if (SSL_CTX_use_certificate(protocol->m_ssl_ctx, x509) != 1 || ERR_peek_error() != 0) {
         CPE_ERROR(
-            protocol->m_em, "net: ssl: %s: generate cert: SSL_CTX_use_certificate failed: %s",
+            protocol->m_em, "ssl: %s: generate cert: SSL_CTX_use_certificate failed: %s",
             net_protocol_name(base_protocol), ERR_error_string(ERR_get_error(), NULL));
         goto PROCESS_ERROR;
     }
     
     CPE_INFO(
-        protocol->m_em, "net: ssl: %s: generate cert: %s",
+        protocol->m_em, "ssl: %s: generate cert: %s",
         net_protocol_name(base_protocol),
         net_ssl_dump_cert_info(net_schedule_tmp_buffer(schedule), x509));
         

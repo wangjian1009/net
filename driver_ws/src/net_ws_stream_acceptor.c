@@ -25,7 +25,7 @@ int net_ws_stream_acceptor_on_new_endpoint(void * ctx, net_endpoint_t base_under
         net_endpoint_create(base_driver, net_acceptor_protocol(base_acceptor), NULL);
     if (base_endpoint == NULL) {
         CPE_ERROR(
-            driver->m_em, "net: ws: stream: %s: create stream endpoint fail",
+            driver->m_em, "ws: stream: %s: create stream endpoint fail",
             net_endpoint_dump(net_ws_stream_driver_tmp_buffer(driver), base_underline));
         goto INIT_ERROR;
     }
@@ -34,7 +34,7 @@ int net_ws_stream_acceptor_on_new_endpoint(void * ctx, net_endpoint_t base_under
 
     if (net_ws_endpoint_set_runing_mode(underline, net_ws_endpoint_runing_mode_svr)) {
         CPE_ERROR(
-            driver->m_em, "net: ws: stream: %s: set underline runing-mode fail",
+            driver->m_em, "ws: stream: %s: set underline runing-mode fail",
             net_endpoint_dump(net_ws_stream_driver_tmp_buffer(driver), base_underline));
         goto INIT_ERROR;
     }
@@ -47,14 +47,14 @@ int net_ws_stream_acceptor_on_new_endpoint(void * ctx, net_endpoint_t base_under
     
     if (net_endpoint_set_state(base_endpoint, net_endpoint_state_established) != 0) {
         CPE_ERROR(
-            driver->m_em, "net: ws: stream: %s: set new endpoint established fail",
+            driver->m_em, "ws: stream: %s: set new endpoint established fail",
             net_endpoint_dump(net_ws_stream_driver_tmp_buffer(driver), base_underline));
         goto INIT_ERROR;
     }
 
     if (net_acceptor_on_new_endpoint(base_acceptor, base_endpoint) != 0) {
         CPE_ERROR(
-            driver->m_em, "net: ws: stream: %s: on acceptor new endpoint fail",
+            driver->m_em, "ws: stream: %s: on acceptor new endpoint fail",
             net_endpoint_dump(net_ws_stream_driver_tmp_buffer(driver), base_underline));
         goto INIT_ERROR;
     }
@@ -84,7 +84,7 @@ int net_ws_stream_acceptor_init(net_acceptor_t base_acceptor) {
             net_acceptor_queue_size(base_acceptor),
             net_ws_stream_acceptor_on_new_endpoint, base_acceptor);
     if (base_acceptor == NULL) {
-        CPE_ERROR(driver->m_em, "net: ws: init: create inner acceptor fail");
+        CPE_ERROR(driver->m_em, "ws: init: create inner acceptor fail");
         return -1;
     }
 

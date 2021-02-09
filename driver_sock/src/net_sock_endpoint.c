@@ -136,11 +136,6 @@ int net_sock_endpoint_update(net_endpoint_t base_endpoint) {
             }
         }
 
-        if (endpoint->m_watcher) {
-            net_watcher_free(endpoint->m_watcher);
-            endpoint->m_watcher = NULL;
-        }
-
         net_sock_endpoint_close_sock(driver, endpoint);
         return 0;
     }

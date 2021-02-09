@@ -74,7 +74,7 @@ int net_ssl_stream_endpoint_connect(net_endpoint_t base_endpoint) {
 
     if (net_ssl_endpoint_set_runing_mode(endpoint->m_underline, net_ssl_endpoint_runing_mode_cli) != 0) {
         CPE_ERROR(
-            driver->m_em, "net: ssl: stream: %s: connect: set undnline runing mode cli failed!",
+            driver->m_em, "ssl: stream: %s: connect: set undnline runing mode cli failed!",
             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
         return -1;
     }
@@ -87,14 +87,14 @@ int net_ssl_stream_endpoint_connect(net_endpoint_t base_endpoint) {
     net_address_t target_addr = net_endpoint_remote_address(base_endpoint);
     if (target_addr == NULL) {
         CPE_ERROR(
-            driver->m_em, "net: ssl: stream: %s: connect: target addr not set!",
+            driver->m_em, "ssl: stream: %s: connect: target addr not set!",
             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
         return -1;
     }
 
     if (net_endpoint_set_remote_address(endpoint->m_underline->m_base_endpoint, target_addr) != 0) {
         CPE_ERROR(
-            driver->m_em, "net: ssl: stream: %s: connect: set remote address to underline fail",
+            driver->m_em, "ssl: stream: %s: connect: set remote address to underline fail",
             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
         return -1;
     }
@@ -138,7 +138,7 @@ int net_ssl_stream_endpoint_update(net_endpoint_t base_endpoint) {
         if (base_underline == NULL) {
             assert(0);
             CPE_ERROR(
-                driver->m_em, "net: ssl: stream: %s: set no delay: no underline!",
+                driver->m_em, "ssl: stream: %s: set no delay: no underline!",
                 net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
             return -1;
         }
@@ -152,7 +152,7 @@ int net_ssl_stream_endpoint_update(net_endpoint_t base_endpoint) {
                 char name_buf[128];
                 cpe_str_dup(name_buf, sizeof(name_buf), net_endpoint_dump(net_ssl_stream_driver_tmp_buffer(driver), base_endpoint));
                 CPE_INFO(
-                    driver->m_em, "net: ssl: stream: %s: ==> %d data\n%s",
+                    driver->m_em, "ssl: stream: %s: ==> %d data\n%s",
                     name_buf, buf_size,
                     mem_buffer_dump_data(net_ssl_stream_driver_tmp_buffer(driver), buf, buf_size, 0));
             }
@@ -269,7 +269,7 @@ int net_ssl_stream_endpoint_create_underline(net_endpoint_t base_endpoint) {
             driver->m_underline_protocol, NULL);
     if (base_underline == NULL) {
         CPE_ERROR(
-            driver->m_em, "net: ssl: stream: %s: create undline ep fail",
+            driver->m_em, "ssl: stream: %s: create undline ep fail",
             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
         return -1;
     }
@@ -295,7 +295,7 @@ void net_ssl_stream_endpoint_update_readable(net_endpoint_t base_endpoint) {
         if (!net_endpoint_expect_read(base_underline)) {
             if (net_endpoint_driver_debug(base_endpoint) >= 3) {
                 CPE_INFO(
-                    driver->m_em, "net: ssl: stream: %s: read begin!",
+                    driver->m_em, "ssl: stream: %s: read begin!",
                     net_endpoint_dump(net_ssl_stream_driver_tmp_buffer(driver), base_endpoint));
             }
 
@@ -305,7 +305,7 @@ void net_ssl_stream_endpoint_update_readable(net_endpoint_t base_endpoint) {
         if (net_endpoint_expect_read(base_underline)) {
             if (net_endpoint_driver_debug(base_endpoint) >= 3) {
                 CPE_INFO(
-                    driver->m_em, "net: ssl: stream: %s: read stop!",
+                    driver->m_em, "ssl: stream: %s: read stop!",
                     net_endpoint_dump(net_ssl_stream_driver_tmp_buffer(driver), base_endpoint));
             }
 

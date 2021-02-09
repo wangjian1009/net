@@ -25,7 +25,7 @@ int net_ssl_stream_acceptor_on_new_endpoint(void * ctx, net_endpoint_t base_unde
         net_endpoint_create(base_driver, net_acceptor_protocol(base_acceptor), NULL);
     if (base_endpoint == NULL) {
         CPE_ERROR(
-            driver->m_em, "net: ssl: stream: %s: create stream endpoint fail",
+            driver->m_em, "ssl: stream: %s: create stream endpoint fail",
             net_endpoint_dump(net_ssl_stream_driver_tmp_buffer(driver), base_underline));
         goto INIT_ERROR;
     }
@@ -34,7 +34,7 @@ int net_ssl_stream_acceptor_on_new_endpoint(void * ctx, net_endpoint_t base_unde
 
     if (net_ssl_endpoint_set_runing_mode(underline, net_ssl_endpoint_runing_mode_svr)) {
         CPE_ERROR(
-            driver->m_em, "net: ssl: stream: %s: set underline runing-mode fail",
+            driver->m_em, "ssl: stream: %s: set underline runing-mode fail",
             net_endpoint_dump(net_ssl_stream_driver_tmp_buffer(driver), base_underline));
         goto INIT_ERROR;
     }
@@ -47,14 +47,14 @@ int net_ssl_stream_acceptor_on_new_endpoint(void * ctx, net_endpoint_t base_unde
     
     if (net_endpoint_set_state(base_endpoint, net_endpoint_state_established) != 0) {
         CPE_ERROR(
-            driver->m_em, "net: ssl: stream: %s: set new endpoint established fail",
+            driver->m_em, "ssl: stream: %s: set new endpoint established fail",
             net_endpoint_dump(net_ssl_stream_driver_tmp_buffer(driver), base_underline));
         goto INIT_ERROR;
     }
 
     if (net_acceptor_on_new_endpoint(base_acceptor, base_endpoint) != 0) {
         CPE_ERROR(
-            driver->m_em, "net: ssl: stream: %s: on acceptor new endpoint fail",
+            driver->m_em, "ssl: stream: %s: on acceptor new endpoint fail",
             net_endpoint_dump(net_ssl_stream_driver_tmp_buffer(driver), base_underline));
         goto INIT_ERROR;
     }
@@ -84,7 +84,7 @@ int net_ssl_stream_acceptor_init(net_acceptor_t base_acceptor) {
             net_acceptor_queue_size(base_acceptor),
             net_ssl_stream_acceptor_on_new_endpoint, base_acceptor);
     if (base_acceptor == NULL) {
-        CPE_ERROR(driver->m_em, "net: ssl: init: create inner acceptor fail");
+        CPE_ERROR(driver->m_em, "ssl: init: create inner acceptor fail");
         return -1;
     }
 

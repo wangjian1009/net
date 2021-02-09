@@ -68,7 +68,7 @@ int net_ws_endpoint_set_path(net_ws_endpoint_t endpoint, const char * path) {
                     net_protocol_schedule(net_protocol_from_data(protocol)),
                     endpoint);
             CPE_ERROR(
-                protocol->m_em, "net: ws: %s: set path: dup failed",
+                protocol->m_em, "ws: %s: set path: dup failed",
                 net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), base_endpoint));
             return -1;
         }
@@ -92,7 +92,7 @@ int net_ws_endpoint_set_host(net_ws_endpoint_t endpoint, net_address_t host) {
         new_host = net_address_copy(net_endpoint_schedule(endpoint->m_base_endpoint), host);
         if (new_host == NULL) {
             CPE_ERROR(
-                protocol->m_em, "net: ws: %s: set host: dup failed",
+                protocol->m_em, "ws: %s: set host: dup failed",
                 net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint));
             return -1;
         }
@@ -192,7 +192,7 @@ int net_ws_endpoint_input(net_endpoint_t base_endpoint) {
 
     if (endpoint->m_runing_mode == net_ws_endpoint_runing_mode_init) {
         CPE_ERROR(
-            protocol->m_em, "net: ws: %s: input in runing-mode %s, error",
+            protocol->m_em, "ws: %s: input in runing-mode %s, error",
             net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), base_endpoint),
             net_ws_endpoint_runing_mode_str(endpoint->m_runing_mode));
         return -1;
@@ -236,7 +236,7 @@ int net_ws_endpoint_input(net_endpoint_t base_endpoint) {
     
     if (rv != 0) {
         CPE_ERROR(
-            protocol->m_em, "net: ws: %s: input wslay recv error",
+            protocol->m_em, "ws: %s: input wslay recv error",
             net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), base_endpoint));
         return -1;
     }
@@ -336,7 +336,7 @@ int net_ws_endpoint_set_runing_mode(net_ws_endpoint_t endpoint, net_ws_endpoint_
 
     if (net_endpoint_protocol_debug(endpoint->m_base_endpoint)) {
         CPE_INFO(
-            protocol->m_em, "net: ws: %s: runing-mode: %s ==> %s",
+            protocol->m_em, "ws: %s: runing-mode: %s ==> %s",
             net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
             net_ws_endpoint_runing_mode_str(endpoint->m_runing_mode),
             net_ws_endpoint_runing_mode_str(runing_mode));
@@ -360,7 +360,7 @@ int net_ws_endpoint_set_state(net_ws_endpoint_t endpoint, net_ws_endpoint_state_
     
     if (net_endpoint_protocol_debug(endpoint->m_base_endpoint)) {
         CPE_INFO(
-            protocol->m_em, "net: ws: %s: state: %s ==> %s",
+            protocol->m_em, "ws: %s: state: %s ==> %s",
             net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
             net_ws_endpoint_state_str(endpoint->m_state),
             net_ws_endpoint_state_str(state));
@@ -397,7 +397,7 @@ int net_ws_endpoint_set_state(net_ws_endpoint_t endpoint, net_ws_endpoint_state_
         }
         if (endpoint->m_ws_ctx == NULL) {
             CPE_ERROR(
-                protocol->m_em, "net: ws: %s: init context failed",
+                protocol->m_em, "ws: %s: init context failed",
                 net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint));
             return -1;
         }

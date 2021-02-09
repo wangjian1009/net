@@ -16,7 +16,7 @@ EVP_PKEY * net_ssl_pkey_from_string(error_monitor_t em, const char * key) {
     BIO * pkey_bio = BIO_new_mem_buf(key, (int)strlen(key));
     if (pkey_bio == NULL) {
         CPE_ERROR(
-            em, "net: ssl: pkey from string: create bio failed: %s",
+            em, "ssl: pkey from string: create bio failed: %s",
             ERR_error_string(ERR_get_error(), NULL));
         return NULL;
     }
@@ -25,7 +25,7 @@ EVP_PKEY * net_ssl_pkey_from_string(error_monitor_t em, const char * key) {
     BIO_free(pkey_bio);
     if (pkey == NULL) {
         CPE_ERROR(
-            em, "net: ssl: read pkey failed: %s\n%s",
+            em, "ssl: read pkey failed: %s\n%s",
             ERR_error_string(ERR_get_error(), NULL), key);
         return NULL;
     }
@@ -37,7 +37,7 @@ EVP_PKEY * net_ssl_pkey_generate(error_monitor_t em) {
     BIGNUM *a = BN_new();
     if (a == NULL) {
         CPE_ERROR(
-            em, "net: ssl: generate pkey: BN_new failed\n%s",
+            em, "ssl: generate pkey: BN_new failed\n%s",
             ERR_error_string(ERR_get_error(), NULL));
         return NULL;
     }
@@ -46,7 +46,7 @@ EVP_PKEY * net_ssl_pkey_generate(error_monitor_t em) {
     RSA *rsa = RSA_new();
     if (rsa == NULL) {
         CPE_ERROR(
-            em, "net: ssl: generate pkey: RSA_new failed\n%s",
+            em, "ssl: generate pkey: RSA_new failed\n%s",
             ERR_error_string(ERR_get_error(), NULL));
         BN_free(a);
         return NULL;
@@ -65,7 +65,7 @@ EVP_PKEY * net_ssl_pkey_generate(error_monitor_t em) {
     EVP_PKEY* pkey = EVP_PKEY_new();
     if (pkey == NULL) {
         CPE_ERROR(
-            em, "net: ssl: generate pkey: PKEY_new failed\n%s",
+            em, "ssl: generate pkey: PKEY_new failed\n%s",
             ERR_error_string(ERR_get_error(), NULL));
         RSA_free(rsa);
         return NULL;
@@ -73,7 +73,7 @@ EVP_PKEY * net_ssl_pkey_generate(error_monitor_t em) {
     
     if (EVP_PKEY_assign_RSA(pkey, rsa) != 1) {
         CPE_ERROR(
-            em, "net: ssl: generate pkey: PKEY_assign_RSA failed\n%s",
+            em, "ssl: generate pkey: PKEY_assign_RSA failed\n%s",
             ERR_error_string(ERR_get_error(), NULL));
         EVP_PKEY_free(pkey);
         return NULL;
