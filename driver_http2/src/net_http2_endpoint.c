@@ -8,6 +8,7 @@
 #include "net_address.h"
 #include "net_http2_endpoint_i.h"
 #include "net_http2_stream_endpoint_i.h"
+#include "net_http2_stream_remote_i.h"
 #include "net_http2_utils.h"
 
 extern struct wslay_event_callbacks s_net_http2_endpoint_callbacks;
@@ -33,8 +34,11 @@ int net_http2_endpoint_init(net_endpoint_t base_endpoint) {
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
 
     endpoint->m_base_endpoint = base_endpoint;
+    endpoint->m_runing_mode = net_http2_endpoint_runing_mode_init;
     endpoint->m_http2_session = NULL;
-
+    endpoint->m_stream_remote = NULL;
+    TAILQ_INIT(&endpoint->m_streams);
+    
     return 0;
 }
 
@@ -42,6 +46,16 @@ void net_http2_endpoint_fini(net_endpoint_t base_endpoint) {
     net_http2_endpoint_t endpoint = net_endpoint_protocol_data(base_endpoint);
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
 
+    if (endpoint->m_stream_remote) {
+        net_http2_endpoint_set_stream_remote(endpoint, NULL);
+        assert(endpoint->m_stream_remote == NULL);
+    }
+
+    while(!TAILQ_EMPTY(&endpoint->m_streams)) {
+        net_http2_stream_endpoint_t stream = TAILQ_FIRST(&endpoint->m_streams);
+        net_http2_stream_endpoint_set_control(stream, NULL);
+    }
+    
     if (endpoint->m_http2_session) {
         //sfox_sfox_cli_router_http2_session_fini(endpoint);
         assert(endpoint->m_http2_session == NULL);
@@ -121,4 +135,58 @@ int net_http2_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoin
     /* } */
     
     return 0;
+}
+
+net_http2_endpoint_runing_mode_t net_http2_endpoint_runing_mode(net_http2_endpoint_t endpoint) {
+    return endpoint->m_runing_mode;
+}
+
+void net_http2_endpoint_set_stream_remote(
+    net_http2_endpoint_t endpoint, net_http2_stream_remote_t stream_remote)
+{
+    if (endpoint->m_stream_remote == stream_remote) return;
+
+    if (endpoint->m_stream_remote) {
+        TAILQ_REMOVE(&endpoint->m_stream_remote->m_endpoints, endpoint, m_next_for_stream_remote);
+        endpoint->m_stream_remote = NULL;
+    }
+
+    endpoint->m_stream_remote = stream_remote;
+
+    if (endpoint->m_stream_remote) {
+        TAILQ_INSERT_TAIL(&endpoint->m_stream_remote->m_endpoints, endpoint, m_next_for_stream_remote);
+    }
+}
+
+int net_http2_endpoint_set_runing_mode(net_http2_endpoint_t endpoint, net_http2_endpoint_runing_mode_t runing_mode) {
+    if (endpoint->m_runing_mode == runing_mode) return 0;
+
+    net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
+
+    if (net_endpoint_protocol_debug(endpoint->m_base_endpoint)) {
+        CPE_INFO(
+            protocol->m_em, "http2: %s: runing-mode: %s ==> %s",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+            net_http2_endpoint_runing_mode_str(runing_mode));
+    }
+
+    /* if (endpoint->m_state != net_http2_endpoint_state_init) { */
+    /*     if (net_http2_endpoint_set_state(endpoint, net_http2_endpoint_state_init) != 0) return -1; */
+    /* } */
+
+    endpoint->m_runing_mode = runing_mode;
+    
+    return 0;
+}
+
+const char * net_http2_endpoint_runing_mode_str(net_http2_endpoint_runing_mode_t runing_mode) {
+    switch(runing_mode) {
+    case net_http2_endpoint_runing_mode_init:
+        return "init";
+    case net_http2_endpoint_runing_mode_cli:
+        return "cli";
+    case net_http2_endpoint_runing_mode_svr:
+        return "svr";
+    }
 }

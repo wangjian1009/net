@@ -2,7 +2,7 @@
 #include "net_address.h"
 #include "net_endpoint.h"
 #include "net_http2_stream_remote_i.h"
-#include "net_http2_stream_endpoint_i.h"
+#include "net_http2_endpoint_i.h"
 
 net_http2_stream_remote_t
 net_http2_stream_remote_create(net_http2_stream_driver_t driver, net_address_t address) {
@@ -51,8 +51,8 @@ void net_http2_stream_remote_free(net_http2_stream_remote_t remote) {
     net_http2_stream_driver_t driver = remote->m_driver;
 
     while(!TAILQ_EMPTY(&remote->m_endpoints)) {
-        net_http2_stream_endpoint_t endpoint = TAILQ_FIRST(&remote->m_endpoints);
-        net_endpoint_set_state(endpoint->m_base_endpoint, net_endpoint_state_deleting);
+        net_http2_endpoint_t endpoint = TAILQ_FIRST(&remote->m_endpoints);
+        net_http2_endpoint_set_stream_remote(endpoint, NULL);
     }
     
     cpe_hash_table_remove_by_ins(&driver->m_remotes, remote);

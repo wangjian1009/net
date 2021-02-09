@@ -6,6 +6,7 @@
 #include "cpe/utils/buffer.h"
 #include "net_http2_protocol.h"
 
+typedef TAILQ_HEAD(net_http2_endpoint_list, net_http2_endpoint) net_http2_endpoint_list_t;
 typedef TAILQ_HEAD(net_http2_stream_endpoint_list, net_http2_stream_endpoint) net_http2_stream_endpoint_list_t;
 
 struct net_http2_protocol {

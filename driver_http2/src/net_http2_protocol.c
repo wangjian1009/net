@@ -24,10 +24,10 @@ net_http2_protocol_create(
 {
     char name[64];
     if (addition_name) {
-        snprintf(name, sizeof(name), "ws-%s", addition_name);
+        snprintf(name, sizeof(name), "http2-%s", addition_name);
     }
     else {
-        snprintf(name, sizeof(name), "ws");
+        snprintf(name, sizeof(name), "http2");
     }
 
     net_protocol_t base_protocol =
@@ -60,10 +60,10 @@ net_http2_protocol_t
 net_http2_protocol_find(net_schedule_t schedule, const char * addition_name) {
     char name[64];
     if (addition_name) {
-        snprintf(name, sizeof(name), "ws-%s", addition_name);
+        snprintf(name, sizeof(name), "http2-%s", addition_name);
     }
     else {
-        snprintf(name, sizeof(name), "ws");
+        snprintf(name, sizeof(name), "http2");
     }
 
     net_protocol_t protocol = net_protocol_find(schedule, name);

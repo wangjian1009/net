@@ -7,7 +7,6 @@
 #include "net_http2_stream_remote_i.h"
 #include "net_http2_endpoint_i.h"
 
-void net_http2_stream_endpoint_set_control(net_endpoint_t base_endpoint, net_http2_endpoint_t control);
 int net_http2_stream_endpoint_select_control(net_endpoint_t base_endpoint);
 void net_http2_stream_endpoint_update_readable(net_endpoint_t base_endpoint);
 
@@ -23,18 +22,10 @@ void net_http2_stream_endpoint_fini(net_endpoint_t base_endpoint) {
     net_http2_stream_endpoint_t endpoint = net_endpoint_data(base_endpoint);
 
     if (endpoint->m_control) {
-        net_http2_endpoint_t control = endpoint->m_control;
-        /* assert(control->m_stream == endpoint); */
-
-        /* control->m_stream = NULL; */
-        /* endpoint->m_control = NULL; */
-
-        /* if (net_endpoint_is_active(control->m_base_endpoint)) { */
-        /*     if (net_endpoint_set_state(control->m_base_endpoint, net_endpoint_state_disable) != 0) { */
-        /*         net_endpoint_set_state(control->m_base_endpoint, net_endpoint_state_deleting); */
-        /*     } */
-        /* } */
+        net_http2_stream_endpoint_set_control(endpoint, NULL);
     }
+
+    assert(endpoint->m_stream_id == -1);
 }
 
 int net_http2_stream_endpoint_connect(net_endpoint_t base_endpoint) {
@@ -53,25 +44,53 @@ int net_http2_stream_endpoint_connect(net_endpoint_t base_endpoint) {
         }
     }
 
-    /* if (net_http2_endpoint_set_runing_mode(endpoint->m_control, net_http2_endpoint_runing_mode_cli) != 0) { */
-    /*     CPE_ERROR( */
-    /*         driver->m_em, "http2: stream: %s: connect: set undnline runing mode cli failed!", */
-    /*         net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint)); */
-    /*     return -1; */
-    /* } */
+    if (net_http2_endpoint_set_runing_mode(endpoint->m_control, net_http2_endpoint_runing_mode_cli) != 0) {
+        CPE_ERROR(
+            driver->m_em, "http2: stream: %s: connect: set control runing mode cli failed!",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+        return -1;
+    }
     
     net_endpoint_t base_control = endpoint->m_control->m_base_endpoint;
-    if (net_endpoint_driver_debug(base_endpoint) > net_endpoint_driver_debug(base_control)) {
-        net_endpoint_set_driver_debug(base_control, net_endpoint_driver_debug(base_endpoint));
+    if (net_endpoint_driver_debug(base_endpoint) > net_endpoint_protocol_debug(base_control)) {
+        net_endpoint_set_protocol_debug(base_control, net_endpoint_driver_debug(base_endpoint));
     }
 
-    if (!net_endpoint_is_active(base_control)) {
-        return net_endpoint_connect(base_control);
+CHECK_STATE_AGAIN:
+    switch(net_endpoint_state(base_control)) {
+    case net_endpoint_state_disable:
+        if (net_endpoint_connect(base_control) != 0) {
+            CPE_ERROR(
+                driver->m_em, "http2: stream: %s: connect: start control connect fail!",
+                net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+            return -1;
+        }
+        assert(net_endpoint_state(base_control) != net_endpoint_state_disable);
+        goto CHECK_STATE_AGAIN;
+    case net_endpoint_state_resolving:
+    case net_endpoint_state_connecting:
+    case net_endpoint_state_established:
+        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_connecting) != 0) {
+            CPE_ERROR(
+                driver->m_em, "http2: stream: %s: connect: set state to %s failed!",
+                net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
+                net_endpoint_state_str(net_endpoint_state_connecting));
+            return -1;
+        }
+        break;
+    case net_endpoint_state_read_closed:
+    case net_endpoint_state_write_closed:
+    case net_endpoint_state_error:
+    case net_endpoint_state_deleting:
+        CPE_ERROR(
+            driver->m_em, "http2: stream: %s: connect: can`t reuse control in state %s!",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
+            net_endpoint_state_str(net_endpoint_state(base_control)));
+        return -1;
     }
-    else {
-        return 0;
-    }
-}
+
+    return 0;
+}    
 
 int net_http2_stream_endpoint_update(net_endpoint_t base_endpoint) {
     net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
@@ -231,12 +250,16 @@ net_http2_stream_endpoint_find_by_stream_id(net_http2_endpoint_t endpoint, int32
     return NULL;
 }
 
-void net_http2_stream_endpoint_set_control(net_endpoint_t base_endpoint, net_http2_endpoint_t control) {
-    net_http2_stream_endpoint_t endpoint = net_endpoint_data(base_endpoint);
-
+void net_http2_stream_endpoint_set_control(net_http2_stream_endpoint_t endpoint, net_http2_endpoint_t control) {
     if (endpoint->m_control == control) return;
 
     if (endpoint->m_control) {
+        if (endpoint->m_stream_id) {
+            if (net_endpoint_state(endpoint->m_control->m_base_endpoint) == net_endpoint_state_established) {
+            }
+            endpoint->m_stream_id = -1;
+        }
+        
         TAILQ_REMOVE(&control->m_streams, endpoint, m_next_for_control);
     }
 
@@ -264,28 +287,35 @@ int net_http2_stream_endpoint_select_control(net_endpoint_t base_endpoint) {
 
     net_http2_stream_remote_t remote = net_http2_stream_remote_check_create(driver, target_addr);
     if (remote == NULL) {
+        CPE_ERROR(
+            driver->m_em, "http2: stream: %s: select: check create remote faild!",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+        return -1;
+    }
+
+    net_endpoint_t base_control =
+        net_endpoint_create(driver->m_control_driver, driver->m_control_protocol, NULL);
+    if (base_control == NULL) {
+        CPE_ERROR(
+            driver->m_em, "http2: stream: %s: select: create control ep fail",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+        return -1;
+    }
+
+    if (net_endpoint_set_remote_address(base_control, target_addr) != 0) {
+        CPE_ERROR(
+            driver->m_em, "http2: stream: %s: select: set control ep remote addr fail",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+        net_endpoint_free(base_endpoint);
+        return -1;
     }
     
-    //net_http2_stream_remote_check_create(net_http2_stream_driver_t driver, net_address_t address) {    
-    /* net_endpoint_t base_control = */
-    /*     net_endpoint_create( */
-    /*         driver->m_control_driver, */
-    /*         driver->m_control_driver, NULL); */
-    /* if (base_control == NULL) { */
-    /*     CPE_ERROR( */
-    /*         driver->m_em, "http2: stream: %s: create undline ep fail", */
-    /*         net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint)); */
-    /*     return -1; */
-    /* } */
+    net_http2_endpoint_t control = net_http2_endpoint_cast(base_control);
+    net_http2_stream_endpoint_set_control(endpoint, control);
 
-    /* endpoint->m_control = net_http2_endpoint_cast(base_control); */
-    /* endpoint->m_control->m_stream = endpoint; */
-
-    /* net_endpoint_set_expect_read(base_control, net_endpoint_expect_read(base_endpoint)); */
-
-    /* if (net_endpoint_driver_debug(base_endpoint) > net_endpoint_driver_debug(base_control)) { */
-    /*     net_endpoint_set_driver_debug(base_control, net_endpoint_driver_debug(base_endpoint)); */
-    /* } */
+    if (net_endpoint_driver_debug(base_endpoint) > net_endpoint_driver_debug(base_control)) {
+        net_endpoint_set_driver_debug(base_control, net_endpoint_driver_debug(base_endpoint));
+    }
 
     return 0;
 }
