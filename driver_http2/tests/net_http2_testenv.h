@@ -27,19 +27,12 @@ void net_http2_testenv_free(net_http2_testenv_t env);
 /*endpoint*/
 net_http2_endpoint_t net_http2_testenv_svr_ep_create(net_http2_testenv_t env);
 
-/*stream*/
-net_http2_stream_endpoint_t net_http2_testenv_stream_ep_create(net_http2_testenv_t env);
-
-net_http2_stream_endpoint_t
-net_http2_testenv_stream_cli_ep_create(
-    net_http2_testenv_t env, const char * host);
-
 /*pair*/
-void net_http2_testenv_cli_create_pair(
+void net_http2_testenv_create_pair(
     net_http2_testenv_t env, net_http2_endpoint_t * cli, net_http2_endpoint_t * svr,
     const char * address);
 
-void net_http2_testenv_cli_create_pair_established(
+void net_http2_testenv_create_pair_established(
     net_http2_testenv_t env, net_http2_endpoint_t * cli, net_http2_endpoint_t  * svr,
     const char * address);
 
@@ -50,5 +43,12 @@ net_http2_testenv_create_acceptor(
     net_acceptor_on_new_endpoint_fun_t on_new_endpoint, void * on_new_endpoint_ctx);
 
 net_http2_stream_endpoint_t net_http2_testenv_create_stream(net_http2_testenv_t env);
+
+/*stream*/
+net_http2_stream_endpoint_t net_http2_testenv_stream_ep_create(net_http2_testenv_t env);
+
+net_http2_stream_endpoint_t
+net_http2_testenv_stream_cli_ep_create(
+    net_http2_testenv_t env, const char * host);
 
 #endif

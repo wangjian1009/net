@@ -3,7 +3,8 @@
 #include "cpe/utils/string_utils.h"
 #include "net_protocol.h"
 #include "net_endpoint.h"
-#include "net_http2_endpoint_stream_i.h"
+#include "net_http2_endpoint_i.h"
+#include "net_http2_stream_endpoint_i.h"
 #include "net_http2_utils.h"
 
 ssize_t net_http2_endpoint_send_callback(
@@ -11,35 +12,34 @@ ssize_t net_http2_endpoint_send_callback(
     net_http2_endpoint_t endpoint = user_data;
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
 
-    /* if (evbuffer_get_length(bufferevent_get_output(endpoint->m_bev)) >= OUTPUT_WOULDBLOCK_THRESHOLD) { */
-    /*     if (net_endpoint_debug(endpoint->m_base_endpoint) >= 3) { */
-    /*         CPE_INFO( */
-    /*             protocol->m_em, "http2: %s: http2: send: threahold %d reached, would block", */
-    /*             net_endpoint_dump(net_http2_protocol_tmp_buffer(net_http2_protocol), endpoint), */
-    /*             (int)OUTPUT_WOULDBLOCK_THRESHOLD); */
-    /*     } */
+    if (net_endpoint_buf_size(endpoint->m_base_endpoint, net_ep_buf_write) >= OUTPUT_WOULDBLOCK_THRESHOLD) {
+        if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 3) {
+            CPE_INFO(
+                protocol->m_em, "http2: %s: http2: send: threahold %d reached, would block",
+                net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+                (int)OUTPUT_WOULDBLOCK_THRESHOLD);
+        }
 
-    /*     return NGHTTP2_ERR_WOULDBLOCK; */
-    /* } */
-    
-    /* int rv = bufferevent_write(endpoint->m_bev, data, length); */
-    /* if (rv < 0) { */
-    /*     CPE_ERROR( */
-    /*         net_http2_protocol->m_em, "http2: %s: send: write %d data fail", */
-    /*         net_endpoint_dump(net_http2_protocol_tmp_buffer(net_http2_protocol), endpoint), */
-    /*         (int)length); */
-    /*     return NGHTTP2_ERR_CALLBACK_FAILURE; */
-    /* } */
+        return NGHTTP2_ERR_WOULDBLOCK;
+    }
 
-    /* if (net_endpoint_debug(endpoint->m_base_endpoint) >= 3) { */
-    /*     CPE_INFO( */
-    /*         net_http2_protocol->m_em, "http2: %s: http2: ==> net %d bytes", */
-    /*         net_endpoint_dump(net_http2_protocol_tmp_buffer(net_http2_protocol), endpoint), */
-    /*         (int)length); */
-    /* } */
+    int rv = net_endpoint_buf_append(endpoint->m_base_endpoint, net_ep_buf_write, data, length);
+    if (rv < 0) {
+        CPE_ERROR(
+            protocol->m_em, "http2: %s: send: write %d data fail",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            (int)length);
+        return NGHTTP2_ERR_CALLBACK_FAILURE;
+    }
 
-    /* return (ssize_t)length; */
-    return 0;
+    if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 3) {
+        CPE_INFO(
+            protocol->m_em, "http2: %s: ==> net %d bytes",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            (int)length);
+    }
+
+    return (ssize_t)length;
 }
 
 int net_http2_endpoint_on_frame_recv_callback(
@@ -76,57 +76,57 @@ int net_http2_endpoint_on_frame_schedule_next_send(
     nghttp2_session * session, const nghttp2_frame * frame, net_http2_endpoint_t endpoint)
 {
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
-    /* net_http2_endpoint_stream_t sfox_ep; */
+    net_http2_stream_endpoint_t stream;
     
-    /* switch (frame->hd.type) { */
-    /* case NGHTTP2_HEADERS: */
-    /*     if (frame->hd.flags & NGHTTP2_FLAG_END_STREAM) { */
-    /*         sfox_ep = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id); */
-    /*         if (sfox_ep == NULL) { */
-    /*             CPE_ERROR( */
-    /*                 protocol->m_em, "http2: %s: %d: schedule next send: stream closed", */
-    /*                 net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint), */
-    /*                 frame->hd.stream_id); */
-    /*             return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE; */
-    /*         } */
+    switch (frame->hd.type) {
+    case NGHTTP2_HEADERS:
+        if (frame->hd.flags & NGHTTP2_FLAG_END_STREAM) {
+            stream = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id);
+            if (stream == NULL) {
+                CPE_ERROR(
+                    protocol->m_em, "http2: %s: %d: schedule next send: stream closed",
+                    net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+                    frame->hd.stream_id);
+                return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+            }
 
-    /*         //sfox_client_conn_set_state(sfox_ep->m_conn, sfox_client_conn_state_closed); */
-    /*         return 0; */
-    /*     } */
+            //sfox_client_conn_set_state(sfox_ep->m_conn, sfox_client_conn_state_closed);
+            return 0;
+        }
 
-    /*     if (frame->hd.flags & NGHTTP2_FLAG_END_HEADERS) { */
-    /*         goto CHECK_NEXT_SEND; */
-    /*     } */
-    /*     break; */
-    /* case NGHTTP2_DATA: */
-    /*     goto CHECK_NEXT_SEND; */
-    /* default: */
-    /*     break; */
-    /* } */
+        if (frame->hd.flags & NGHTTP2_FLAG_END_HEADERS) {
+            goto CHECK_NEXT_SEND;
+        }
+        break;
+    case NGHTTP2_DATA:
+        goto CHECK_NEXT_SEND;
+    default:
+        break;
+    }
     
     return 0;
 
-/* CHECK_NEXT_SEND: */
-/*     sfox_ep = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id); */
-/*     if (sfox_ep == NULL) { */
-/*         CPE_ERROR( */
-/*             protocol->m_em, "http2: %s: %d: on frame send: no bind endpoint", */
-/*             net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint), */
-/*             frame->hd.stream_id); */
-/*         return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE; */
-/*     } */
+CHECK_NEXT_SEND:
+    stream = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id);
+    if (stream == NULL) {
+        CPE_ERROR(
+            protocol->m_em, "http2: %s: %d: on frame send: no bind stream",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            frame->hd.stream_id);
+        return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+    }
 
-/*     if (net_endpoint_state(sfox_ep->m_endpoint) == net_endpoint_state_established) { */
-/*         assert(net_endpoint_is_writing(sfox_ep->m_endpoint)); */
-/*         assert(!sfox_ep->m_send_scheduled); */
+    /* if (net_endpoint_state(struct->m_endpoint) == net_endpoint_state_established) { */
+    /*     assert(net_endpoint_is_writing(sfox_ep->m_endpoint)); */
+    /*     assert(!sfox_ep->m_send_scheduled); */
 
-/*         if (net_endpoint_buf_is_empty(sfox_ep->m_endpoint, net_ep_buf_write)) { */
-/*             net_endpoint_set_is_writing(sfox_ep->m_endpoint, 0); */
-/*         } */
-/*         else { */
-/*             sfox_sfox_cli_endpoint_schedule_send_data(sfox_ep); */
-/*         } */
-/*     } */
+    /*     if (net_endpoint_buf_is_empty(sfox_ep->m_endpoint, net_ep_buf_write)) { */
+    /*         net_endpoint_set_is_writing(sfox_ep->m_endpoint, 0); */
+    /*     } */
+    /*     else { */
+    /*         //sfox_sfox_cli_endpoint_schedule_send_data(sfox_ep); */
+    /*     } */
+    /* } */
 
     return 0;
 }
@@ -198,16 +198,16 @@ int net_http2_endpoint_on_data_chunk_recv_callback(
 {
     net_http2_endpoint_t endpoint = user_data;
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
+    net_http2_stream_endpoint_t stream;
 
-    //TODO:
-    /* net_cli_endpoint_t sfox_ep = nghttp2_session_get_stream_user_data(session, stream_id); */
-    /* if (!sfox_ep) { */
-    /*     CPE_ERROR( */
-    /*         protocol->m_em, "http2: %s: %d: recv data: no bind endpoint", */
-    /*         net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint), */
-    /*         stream_id); */
-    /*     return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE; */
-    /* } */
+    stream = nghttp2_session_get_stream_user_data(session, stream_id);
+    if (!stream) {
+        CPE_ERROR(
+            protocol->m_em, "http2: %s: %d: recv data: no bind endpoint",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            stream_id);
+        return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+    }
 
     /* if (net_endpoint_buf_append(sfox_ep->m_endpoint, net_ep_buf_read, data, (uint32_t)len) != 0) { */
     /*     return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE; */
@@ -221,8 +221,8 @@ int net_http2_endpoint_on_stream_close_callback(
     net_http2_endpoint_t endpoint = user_data;
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
 
-    net_http2_endpoint_stream_t stream = nghttp2_session_get_stream_user_data(session, stream_id);
-    if (stream == NULL || !net_endpoint_is_active(stream->m_endpoint->m_base_endpoint)) {
+    net_http2_stream_endpoint_t stream = nghttp2_session_get_stream_user_data(session, stream_id);
+    if (stream == NULL || !net_endpoint_is_active(stream->m_base_endpoint)) {
         if (net_endpoint_protocol_debug(endpoint->m_base_endpoint)) {
             CPE_INFO(
                 protocol->m_em, "http2: %s: %d: already closed!",
@@ -234,10 +234,10 @@ int net_http2_endpoint_on_stream_close_callback(
 
     if (stream->m_stream_id != -1) {
         assert(stream->m_stream_id == stream_id);
-        if (net_endpoint_protocol_debug(stream->m_endpoint->m_base_endpoint)) {
+        if (net_endpoint_protocol_debug(stream->m_base_endpoint)) {
             CPE_INFO(
                 protocol->m_em, "http2: %s: %d: stream close and ignore rst!",
-                net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), stream->m_endpoint->m_base_endpoint),
+                net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), stream->m_base_endpoint),
                 stream->m_stream_id);
         }
         stream->m_stream_id = -1;
@@ -252,10 +252,10 @@ int net_http2_endpoint_on_stream_close_callback(
         }
 
         net_endpoint_set_error(
-            stream->m_endpoint->m_base_endpoint,
+            stream->m_base_endpoint,
             net_endpoint_error_source_network, net_endpoint_network_errno_remote_closed, NULL);
-        if (net_endpoint_set_state(stream->m_endpoint->m_base_endpoint, net_endpoint_state_disable) != 0) {
-            net_endpoint_set_state(stream->m_endpoint->m_base_endpoint, net_endpoint_state_deleting);
+        if (net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_disable) != 0) {
+            net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_deleting);
         }
     }
     else {
@@ -265,10 +265,10 @@ int net_http2_endpoint_on_stream_close_callback(
             stream_id, net_http2_error_code_str(error_code));
 
         net_endpoint_set_error(
-            stream->m_endpoint->m_base_endpoint, net_endpoint_error_source_network,
+            stream->m_base_endpoint, net_endpoint_error_source_network,
             net_endpoint_network_errno_remote_closed, net_http2_error_code_str(error_code));
-        if (net_endpoint_set_state(stream->m_endpoint->m_base_endpoint, net_endpoint_state_error) != 0) {
-            net_endpoint_set_state(stream->m_endpoint->m_base_endpoint, net_endpoint_state_deleting);
+        if (net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_error) != 0) {
+            net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_deleting);
         }
     }
 
@@ -309,7 +309,7 @@ int net_http2_endpoint_on_header_callback(
             frame->hd.stream_id, (int)namelen, (const char *)name, (int)valuelen, (const char *)value);
     }
 
-    net_http2_endpoint_stream_t stream = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id);
+    net_http2_stream_endpoint_t stream = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id);
     if (!stream) {
         CPE_ERROR(
             protocol->m_em, "http2: %s: http2: %d: head no bind endpoint",
@@ -319,7 +319,7 @@ int net_http2_endpoint_on_header_callback(
     }
 
     if (frame->headers.cat == NGHTTP2_HCAT_RESPONSE) {
-        if (net_http2_endpoint_stream_on_head(
+        if (net_http2_stream_endpoint_on_head(
                 stream,
                 (const char *)name, (uint32_t)namelen, (const char *)value, (uint32_t)valuelen)
             != 0)
@@ -328,7 +328,7 @@ int net_http2_endpoint_on_header_callback(
         }
     }
     else if (frame->headers.cat == NGHTTP2_HCAT_HEADERS) {
-        if (net_http2_endpoint_stream_on_tailer(
+        if (net_http2_stream_endpoint_on_tailer(
                 stream,
                 (const char *)name, (uint32_t)namelen, (const char *)value, (uint32_t)valuelen)
             != 0)
@@ -382,34 +382,34 @@ int net_http2_endpoint_send_data_callback(
 {
     net_http2_endpoint_t endpoint = user_data;
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
-    net_http2_endpoint_stream_t stream = source->ptr;
+    net_http2_stream_endpoint_t stream = source->ptr;
 
     uint32_t sended_sz = 0;
 
-    /* if (bufferevent_write(endpoint->m_bev, framehd, 9) < 0) { */
-    /*     CPE_ERROR( */
-    /*         protocol->m_em, "http2: %s: http2: %d: send data: write frame head fail", */
-    /*         net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint), */
-    /*         stream->m_stream_id); */
-    /*     return NGHTTP2_ERR_CALLBACK_FAILURE; */
-    /* } */
+    if (net_endpoint_buf_append(endpoint->m_base_endpoint, net_ep_buf_write, framehd, 9) != 0) {
+        CPE_ERROR(
+            protocol->m_em, "http2: %s: http2: %d: send data: write frame head fail",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            stream->m_stream_id);
+        return NGHTTP2_ERR_CALLBACK_FAILURE;
+    }
     sended_sz += 9;
     
-    if (frame->data.padlen > 0) {
-        uint8_t padlen = frame->data.padlen - 1;
-        /* if (bufferevent_write(endpoint->m_bev, &padlen, 1) < 0) { */
-        /*     CPE_ERROR( */
-        /*         protocol->m_em, "http2: %s: http2: %d: send data: write padlen %d fail", */
-        /*         net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint-m_base_endpoint), */
-        /*         stream->m_stream_id, (padlen)); */
-        /*     return NGHTTP2_ERR_CALLBACK_FAILURE; */
-        /* } */
-        sended_sz++;
-    }
+    /* if (frame->data.padlen > 0) { */
+    /*     uint8_t padlen = frame->data.padlen - 1; */
+    /*     if (bufferevent_write(endpoint->m_bev, &padlen, 1) < 0) { */
+    /*         CPE_ERROR( */
+    /*             protocol->m_em, "http2: %s: http2: %d: send data: write padlen %d fail", */
+    /*             net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint-m_base_endpoint), */
+    /*             stream->m_stream_id, (padlen)); */
+    /*         return NGHTTP2_ERR_CALLBACK_FAILURE; */
+    /*     } */
+    /*     sended_sz++; */
+    /* } */
 
     while(length > 0) {
         uint32_t block_sz = 0;
-        void * buf = net_endpoint_buf_peak(stream->m_endpoint->m_base_endpoint, net_ep_buf_write, &block_sz);
+        void * buf = net_endpoint_buf_peak(stream->m_base_endpoint, net_ep_buf_write, &block_sz);
         if (buf == NULL) {
             CPE_ERROR(
                 protocol->m_em, "http2: %s: http2: %d: send data: get buf fail",
@@ -430,7 +430,7 @@ int net_http2_endpoint_send_data_callback(
         /*     return NGHTTP2_ERR_CALLBACK_FAILURE; */
         /* } */
 
-        net_endpoint_buf_consume(stream->m_endpoint->m_base_endpoint, net_ep_buf_write, block_sz);
+        net_endpoint_buf_consume(stream->m_base_endpoint, net_ep_buf_write, block_sz);
         length -= block_sz;
         sended_sz += block_sz;
     }

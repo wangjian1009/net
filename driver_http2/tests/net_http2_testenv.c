@@ -40,7 +40,7 @@ void net_http2_testenv_free(net_http2_testenv_t env) {
     mem_free(test_allocrator(), env);
 }
 
-void net_http2_testenv_cli_create_pair(
+void net_http2_testenv_create_pair(
     net_http2_testenv_t env, net_http2_endpoint_t * cli, net_http2_endpoint_t * svr,
     const char * str_address)
 {
@@ -65,11 +65,11 @@ void net_http2_testenv_cli_create_pair(
     }
 }
 
-void net_http2_testenv_cli_create_pair_established(
+void net_http2_testenv_create_pair_established(
     net_http2_testenv_t env, net_http2_endpoint_t * cli, net_http2_endpoint_t * svr,
     const char * str_address)
 {
-    net_http2_testenv_cli_create_pair(env, cli, svr, str_address);
+    net_http2_testenv_create_pair(env, cli, svr, str_address);
 
     assert_true(net_endpoint_connect(net_http2_endpoint_base_endpoint(*cli)) == 0);
 
