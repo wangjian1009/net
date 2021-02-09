@@ -8,7 +8,7 @@
 #include "net_address.h"
 #include "net_http2_endpoint_i.h"
 #include "net_http2_stream_endpoint_i.h"
-#include "net_http2_stream_remote_i.h"
+#include "net_http2_stream_group_i.h"
 #include "net_http2_utils.h"
 
 extern struct wslay_event_callbacks s_net_http2_endpoint_callbacks;
@@ -36,7 +36,7 @@ int net_http2_endpoint_init(net_endpoint_t base_endpoint) {
     endpoint->m_base_endpoint = base_endpoint;
     endpoint->m_runing_mode = net_http2_endpoint_runing_mode_init;
     endpoint->m_http2_session = NULL;
-    endpoint->m_stream_remote = NULL;
+    endpoint->m_stream_group = NULL;
     TAILQ_INIT(&endpoint->m_streams);
     
     return 0;
@@ -46,9 +46,9 @@ void net_http2_endpoint_fini(net_endpoint_t base_endpoint) {
     net_http2_endpoint_t endpoint = net_endpoint_protocol_data(base_endpoint);
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
 
-    if (endpoint->m_stream_remote) {
-        net_http2_endpoint_set_stream_remote(endpoint, NULL);
-        assert(endpoint->m_stream_remote == NULL);
+    if (endpoint->m_stream_group) {
+        net_http2_endpoint_set_stream_group(endpoint, NULL);
+        assert(endpoint->m_stream_group == NULL);
     }
 
     while(!TAILQ_EMPTY(&endpoint->m_streams)) {
@@ -141,20 +141,20 @@ net_http2_endpoint_runing_mode_t net_http2_endpoint_runing_mode(net_http2_endpoi
     return endpoint->m_runing_mode;
 }
 
-void net_http2_endpoint_set_stream_remote(
-    net_http2_endpoint_t endpoint, net_http2_stream_remote_t stream_remote)
+void net_http2_endpoint_set_stream_group(
+    net_http2_endpoint_t endpoint, net_http2_stream_group_t stream_group)
 {
-    if (endpoint->m_stream_remote == stream_remote) return;
+    if (endpoint->m_stream_group == stream_group) return;
 
-    if (endpoint->m_stream_remote) {
-        TAILQ_REMOVE(&endpoint->m_stream_remote->m_endpoints, endpoint, m_next_for_stream_remote);
-        endpoint->m_stream_remote = NULL;
+    if (endpoint->m_stream_group) {
+        TAILQ_REMOVE(&endpoint->m_stream_group->m_endpoints, endpoint, m_next_for_stream_group);
+        endpoint->m_stream_group = NULL;
     }
 
-    endpoint->m_stream_remote = stream_remote;
+    endpoint->m_stream_group = stream_group;
 
-    if (endpoint->m_stream_remote) {
-        TAILQ_INSERT_TAIL(&endpoint->m_stream_remote->m_endpoints, endpoint, m_next_for_stream_remote);
+    if (endpoint->m_stream_group) {
+        TAILQ_INSERT_TAIL(&endpoint->m_stream_group->m_endpoints, endpoint, m_next_for_stream_group);
     }
 }
 

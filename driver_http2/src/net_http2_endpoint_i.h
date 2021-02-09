@@ -8,8 +8,8 @@ struct net_http2_endpoint {
     net_endpoint_t m_base_endpoint;
     net_http2_endpoint_runing_mode_t m_runing_mode;
     nghttp2_session * m_http2_session;
-    net_http2_stream_remote_t m_stream_remote;
-    TAILQ_ENTRY(net_http2_endpoint) m_next_for_stream_remote;
+    net_http2_stream_group_t m_stream_group;
+    TAILQ_ENTRY(net_http2_endpoint) m_next_for_stream_group;
     net_http2_stream_endpoint_list_t m_streams;
 };
 
@@ -18,7 +18,7 @@ void net_http2_endpoint_fini(net_endpoint_t base_endpoint);
 int net_http2_endpoint_input(net_endpoint_t base_endpoint);
 int net_http2_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoint_state_t from_state);
 
-void net_http2_endpoint_set_stream_remote(
-    net_http2_endpoint_t endpoint, net_http2_stream_remote_t stream_remote);
+void net_http2_endpoint_set_stream_group(
+    net_http2_endpoint_t endpoint, net_http2_stream_group_t stream_group);
 
 #endif

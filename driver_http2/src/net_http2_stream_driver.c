@@ -6,7 +6,7 @@
 #include "net_http2_stream_driver_i.h"
 #include "net_http2_stream_endpoint_i.h"
 #include "net_http2_stream_acceptor_i.h"
-#include "net_http2_stream_remote_i.h"
+#include "net_http2_stream_group_i.h"
 #include "net_http2_protocol_i.h"
 
 static int net_http2_stream_driver_init(net_driver_t driver);
@@ -97,11 +97,11 @@ static int net_http2_stream_driver_init(net_driver_t base_driver) {
     driver->m_control_protocol = NULL;
 
     if (cpe_hash_table_init(
-            &driver->m_remotes,
+            &driver->m_groups,
             driver->m_alloc,
-            (cpe_hash_fun_t) net_http2_stream_remote_hash,
-            (cpe_hash_eq_t) net_http2_stream_remote_eq,
-            CPE_HASH_OBJ2ENTRY(net_http2_stream_remote, m_hh_for_driver),
+            (cpe_hash_fun_t) net_http2_stream_group_hash,
+            (cpe_hash_eq_t) net_http2_stream_group_eq,
+            CPE_HASH_OBJ2ENTRY(net_http2_stream_group, m_hh_for_driver),
             -1) != 0)
     {
         CPE_ERROR(driver->m_em, "http2: init hash table fail!");

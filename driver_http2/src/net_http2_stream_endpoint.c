@@ -4,7 +4,7 @@
 #include "net_driver.h"
 #include "net_endpoint.h"
 #include "net_http2_stream_endpoint_i.h"
-#include "net_http2_stream_remote_i.h"
+#include "net_http2_stream_group_i.h"
 #include "net_http2_endpoint_i.h"
 
 int net_http2_stream_endpoint_select_control(net_endpoint_t base_endpoint);
@@ -285,7 +285,7 @@ int net_http2_stream_endpoint_select_control(net_endpoint_t base_endpoint) {
         return -1;
     }
 
-    net_http2_stream_remote_t remote = net_http2_stream_remote_check_create(driver, target_addr);
+    net_http2_stream_group_t remote = net_http2_stream_group_check_create(driver, target_addr);
     if (remote == NULL) {
         CPE_ERROR(
             driver->m_em, "http2: stream: %s: select: check create remote faild!",

@@ -11,7 +11,7 @@ struct net_http2_stream_driver {
     error_monitor_t m_em;
     net_driver_t m_control_driver;
     net_protocol_t m_control_protocol;
-    struct cpe_hash_table m_remotes;
+    struct cpe_hash_table m_groups;
 };
 
 mem_buffer_t net_http2_stream_driver_tmp_buffer(net_http2_stream_driver_t driver);
