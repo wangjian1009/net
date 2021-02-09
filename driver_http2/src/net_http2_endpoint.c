@@ -9,6 +9,7 @@
 #include "net_http2_endpoint_i.h"
 #include "net_http2_stream_endpoint_i.h"
 #include "net_http2_stream_group_i.h"
+#include "net_http2_stream_acceptor_i.h"
 #include "net_http2_utils.h"
 
 extern struct wslay_event_callbacks s_net_http2_endpoint_callbacks;
@@ -44,7 +45,6 @@ int net_http2_endpoint_init(net_endpoint_t base_endpoint) {
         return -1;
     }
 
-    endpoint->m_stream_group = NULL;
     TAILQ_INIT(&endpoint->m_streams);
     
     return 0;
@@ -53,11 +53,6 @@ int net_http2_endpoint_init(net_endpoint_t base_endpoint) {
 void net_http2_endpoint_fini(net_endpoint_t base_endpoint) {
     net_http2_endpoint_t endpoint = net_endpoint_protocol_data(base_endpoint);
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
-
-    if (endpoint->m_stream_group) {
-        net_http2_endpoint_set_stream_group(endpoint, NULL);
-        assert(endpoint->m_stream_group == NULL);
-    }
 
     while(!TAILQ_EMPTY(&endpoint->m_streams)) {
         net_http2_stream_endpoint_t stream = TAILQ_FIRST(&endpoint->m_streams);
@@ -152,17 +147,38 @@ net_http2_endpoint_runing_mode_t net_http2_endpoint_runing_mode(net_http2_endpoi
 void net_http2_endpoint_set_stream_group(
     net_http2_endpoint_t endpoint, net_http2_stream_group_t stream_group)
 {
-    if (endpoint->m_stream_group == stream_group) return;
+    assert(endpoint->m_runing_mode == net_http2_endpoint_runing_mode_cli);
+    
+    if (endpoint->m_cli.m_stream_group == stream_group) return;
 
-    if (endpoint->m_stream_group) {
-        TAILQ_REMOVE(&endpoint->m_stream_group->m_endpoints, endpoint, m_next_for_stream_group);
-        endpoint->m_stream_group = NULL;
+    if (endpoint->m_cli.m_stream_group) {
+        TAILQ_REMOVE(&endpoint->m_cli.m_stream_group->m_endpoints, endpoint, m_cli.m_next_for_group);
+        endpoint->m_cli.m_stream_group = NULL;
     }
 
-    endpoint->m_stream_group = stream_group;
+    endpoint->m_cli.m_stream_group = stream_group;
 
-    if (endpoint->m_stream_group) {
-        TAILQ_INSERT_TAIL(&endpoint->m_stream_group->m_endpoints, endpoint, m_next_for_stream_group);
+    if (endpoint->m_cli.m_stream_group) {
+        TAILQ_INSERT_TAIL(&endpoint->m_cli.m_stream_group->m_endpoints, endpoint, m_cli.m_next_for_group);
+    }
+}
+
+void net_http2_endpoint_set_stream_acceptor(
+    net_http2_endpoint_t endpoint, net_http2_stream_acceptor_t stream_acceptor)
+{
+    assert(endpoint->m_runing_mode == net_http2_endpoint_runing_mode_svr);
+    
+    if (endpoint->m_svr.m_stream_acceptor == stream_acceptor) return;
+
+    if (endpoint->m_svr.m_stream_acceptor) {
+        TAILQ_REMOVE(&endpoint->m_svr.m_stream_acceptor->m_endpoints, endpoint, m_svr.m_next_for_acceptor);
+        endpoint->m_svr.m_stream_acceptor = NULL;
+    }
+
+    endpoint->m_svr.m_stream_acceptor = stream_acceptor;
+
+    if (endpoint->m_svr.m_stream_acceptor) {
+        TAILQ_INSERT_TAIL(&endpoint->m_svr.m_stream_acceptor->m_endpoints, endpoint, m_svr.m_next_for_acceptor);
     }
 }
 
@@ -179,12 +195,32 @@ int net_http2_endpoint_set_runing_mode(net_http2_endpoint_t endpoint, net_http2_
             net_http2_endpoint_runing_mode_str(runing_mode));
     }
 
-    /* if (endpoint->m_state != net_http2_endpoint_state_init) { */
-    /*     if (net_http2_endpoint_set_state(endpoint, net_http2_endpoint_state_init) != 0) return -1; */
-    /* } */
-
-    endpoint->m_runing_mode = runing_mode;
+    switch(endpoint->m_runing_mode) {
+    case net_http2_endpoint_runing_mode_init:
+        break;
+    case net_http2_endpoint_runing_mode_cli:
+        if (endpoint->m_cli.m_stream_group) {
+            net_http2_endpoint_set_stream_group(endpoint, NULL);
+            assert(endpoint->m_cli.m_stream_group == NULL);
+        }
+        break;
+    case net_http2_endpoint_runing_mode_svr:
+        break;
+    }
     
+    endpoint->m_runing_mode = runing_mode;
+
+    switch(endpoint->m_runing_mode) {
+    case net_http2_endpoint_runing_mode_init:
+        break;
+    case net_http2_endpoint_runing_mode_cli:
+        endpoint->m_cli.m_stream_group = NULL;
+        break;
+    case net_http2_endpoint_runing_mode_svr:
+        endpoint->m_svr.m_stream_acceptor = NULL;
+        break;
+    }
+
     return 0;
 }
 
