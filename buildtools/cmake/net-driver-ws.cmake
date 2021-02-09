@@ -11,3 +11,5 @@ set_property(TARGET net_driver_ws PROPERTY INCLUDE_DIRECTORIES
   ${net_core_base}/include
   ${net_driver_ws_base}/include
   )
+
+target_link_libraries(net_driver_ws INTERFACE net_core wslay)

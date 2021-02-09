@@ -5,6 +5,7 @@
 
 struct net_kcp_endpoint {
     net_endpoint_t m_base_endpoint;
+    ikcpcb * m_kcp;
 };
 
 int net_kcp_endpoint_init(net_endpoint_t endpoint);

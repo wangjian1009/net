@@ -1,5 +1,6 @@
 #ifndef NET_KCP_DRIVER_I_H_INCLEDED
 #define NET_KCP_DRIVER_I_H_INCLEDED
+#include "ikcp.h"
 #include "cpe/utils/error.h"
 #include "cpe/utils/memory.h"
 #include "net_kcp_driver.h"
