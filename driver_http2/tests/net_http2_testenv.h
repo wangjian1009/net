@@ -15,40 +15,33 @@ struct net_http2_testenv {
     test_error_monitor_t m_tem;
     error_monitor_t m_em;
     net_schedule_t m_schedule;
-    net_protocol_t m_test_protocol;
+
+    /*basic*/
     test_net_driver_t m_tdriver;
     net_http2_protocol_t m_protocol;
+
+    /*stream*/
+    net_protocol_t m_stream_test_protocol;
     net_http2_stream_driver_t m_stream_driver;
 };
 
 net_http2_testenv_t net_http2_testenv_create();
 void net_http2_testenv_free(net_http2_testenv_t env);
 
-/*endpoint*/
-net_http2_endpoint_t net_http2_testenv_svr_ep_create(net_http2_testenv_t env);
-
-/*pair*/
-void net_http2_testenv_create_pair(
-    net_http2_testenv_t env, net_http2_endpoint_t * cli, net_http2_endpoint_t * svr,
-    const char * address);
-
-void net_http2_testenv_create_pair_established(
-    net_http2_testenv_t env, net_http2_endpoint_t * cli, net_http2_endpoint_t  * svr,
-    const char * address);
-
-/*svr*/
-net_acceptor_t
-net_http2_testenv_create_acceptor(
-    net_http2_testenv_t env, const char * address,
-    net_acceptor_on_new_endpoint_fun_t on_new_endpoint, void * on_new_endpoint_ctx);
-
-net_http2_stream_endpoint_t net_http2_testenv_create_stream(net_http2_testenv_t env);
+/*basic*/
+net_http2_endpoint_t net_http2_testenv_create_ep_svr(net_http2_testenv_t env);
 
 /*stream*/
-net_http2_stream_endpoint_t net_http2_testenv_stream_ep_create(net_http2_testenv_t env);
+net_http2_stream_endpoint_t
+net_http2_testenv_create_stream_ep(net_http2_testenv_t env);
 
 net_http2_stream_endpoint_t
-net_http2_testenv_stream_cli_ep_create(
-    net_http2_testenv_t env, const char * host);
+net_http2_testenv_create_stream_ep_cli(net_http2_testenv_t env, const char * host);
+
+net_http2_stream_endpoint_t
+net_http2_testenv_stream_ep_other(net_http2_testenv_t env, net_http2_stream_endpoint_t ep);
+
+net_acceptor_t
+net_http2_testenv_create_stream_acceptor(net_http2_testenv_t env, const char * address);
 
 #endif
