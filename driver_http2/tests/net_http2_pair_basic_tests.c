@@ -1,150 +1,97 @@
 #include "cmocka_all.h"
 #include "test_net_endpoint.h"
 #include "net_http2_tests.h"
-#include "net_http2_endpoint.h"
-#include "net_http2_pair_testenv.h"
+#include "net_http2_testenv.h"
 
 static int setup(void **state) {
-    net_http2_pair_testenv_t env = net_http2_pair_testenv_create();
+    net_http2_testenv_t env = net_http2_testenv_create();
     *state = env;
     return 0;
 }
 
 static int teardown(void **state) {
-    net_http2_pair_testenv_t env = *state;
-    net_http2_pair_testenv_free(env);
+    net_http2_testenv_t env = *state;
+    net_http2_testenv_free(env);
     return 0;
 }
 
 static void net_http2_pair_basic(void **state) {
-    net_http2_pair_testenv_t env = *state;
-    net_http2_endpoint_t cli_ep = net_http2_testenv_stream_ep_create(env->m_env);
-    net_endpoint_t cli_ep_base = net_http2_endpoint_base_endpoint(cli_ep);
-    net_endpoint_set_remote_address(cli_ep_base, net_acceptor_address(env->m_acceptor));
-    
-    /* net_endpoint_t cli_underline = net_http2_endpoint_underline(cli_ep_base); */
-    /* assert_true(cli_underline != NULL); */
+    net_http2_testenv_t env = *state;
 
-    /* test_net_endpoint_expect_connect_to_acceptor(cli_underline, "1.2.3.4:5678", 0, 0); */
-    
-    assert_true(net_endpoint_connect(cli_ep_base) == 0);
+    net_http2_endpoint_t cli_ep;
+    net_http2_endpoint_t svr_ep;
+    net_http2_testenv_cli_create_pair_established(env, &cli_ep, &svr_ep, "1.1.2.3:5678");
 
-    test_net_driver_run(env->m_env->m_tdriver, 0);
-    assert_string_equal(
-        net_endpoint_state_str(net_endpoint_state(cli_ep_base)),
-        net_endpoint_state_str(net_endpoint_state_established));
+    test_net_driver_run(env->m_tdriver, 0);
 
-    net_endpoint_t svr_ep = net_http2_pair_testenv_get_svr_stream(env, cli_ep_base);
-    assert_true(svr_ep != NULL);
+    /* /\*验证svr状态 *\/ */
+    /* assert_string_equal( */
+    /*     net_http2_endpoint_state_str(net_http2_endpoint_state(svr_ep)), */
+    /*     net_http2_endpoint_state_str(net_http2_endpoint_state_streaming)); */
+
+    /* /\*验证cli状态 *\/ */
+    /* assert_string_equal( */
+    /*     net_http2_endpoint_state_str(net_http2_endpoint_state(cli_ep)), */
+    /*     net_http2_endpoint_state_str(net_http2_endpoint_state_streaming)); */
 
     /*client -> server*/
-    assert_true(net_endpoint_buf_append(cli_ep_base, net_ep_buf_write, "abcd", 4) == 0);
-    test_net_driver_run(env->m_env->m_tdriver, 0);
+    /* test_net_http2_endpoint_expect_text_msg(svr_ep, "abcd"); */
+    /* assert_true(net_http2_endpoint_send_msg_text(cli_ep, "abcd") == 0); */
+    /* test_net_driver_run(env->m_tdriver, 0); */
 
-    test_net_endpoint_assert_buf_memory(svr_ep, net_ep_buf_read, "abcd", 4);
+    /* test_net_http2_endpoint_expect_bin_msg(svr_ep, "efgh", 4); */
+    /* assert_true(net_http2_endpoint_send_msg_bin(cli_ep, "efgh", 4) == 0); */
+    /* test_net_driver_run(env->m_tdriver, 0); */
 
-    /*server -> client*/
-    assert_true(net_endpoint_buf_append(svr_ep, net_ep_buf_write, "efgh", 4) == 0);
-    test_net_driver_run(env->m_env->m_tdriver, 0);
+    /* /\*server -> client*\/ */
+    /* test_net_http2_endpoint_expect_text_msg(cli_ep, "hijk"); */
+    /* assert_true(net_http2_endpoint_send_msg_text(svr_ep, "hijk") == 0); */
+    /* test_net_driver_run(env->m_tdriver, 0); */
 
-    test_net_endpoint_assert_buf_memory(cli_ep_base, net_ep_buf_read, "efgh", 4);
+    /* test_net_http2_endpoint_expect_bin_msg(cli_ep, "lmno", 4); */
+    /* assert_true(net_http2_endpoint_send_msg_bin(svr_ep, "lmno", 4) == 0); */
+    /* test_net_driver_run(env->m_tdriver, 0); */
 }
 
-static void net_http2_pair_delay(void **state) {
-    net_http2_pair_testenv_t env = *state;
-    net_http2_endpoint_t cli_ep = net_http2_testenv_stream_ep_create(env->m_env);
-    net_endpoint_t cli_ep_base = net_http2_endpoint_base_endpoint(cli_ep);
-    net_endpoint_set_remote_address(cli_ep_base, net_acceptor_address(env->m_acceptor));
+static void net_http2_pair_text_msg_disable_ep(void **state) {
+    net_http2_testenv_t env = *state;
 
-    /* net_endpoint_t cli_underline = net_http2_endpoint_underline(cli_ep_base); */
-    /* assert_true(cli_underline != NULL); */
+    net_http2_endpoint_t cli_ep;
+    net_http2_endpoint_t svr_ep;
+    net_http2_testenv_cli_create_pair_established(env, &cli_ep, &svr_ep, "1.1.2.3:5678");
+    test_net_driver_run(env->m_tdriver, 0);
 
-    /* test_net_endpoint_expect_connect_to_acceptor(cli_underline, "1.2.3.4:5678", 100, 0); */
-    
-    assert_true(net_endpoint_connect(cli_ep_base) == 0);
+    /*client -> server*/
+    assert_string_equal(
+        net_endpoint_state_str(net_endpoint_state(net_http2_endpoint_base_endpoint(svr_ep))),
+        net_endpoint_state_str(net_endpoint_state_disable));
 
     assert_string_equal(
-        net_endpoint_state_str(net_endpoint_state(cli_ep_base)),
-        net_endpoint_state_str(net_endpoint_state_connecting));
-
-    test_net_driver_run(env->m_env->m_tdriver, 500);
-    
-    assert_string_equal(
-        net_endpoint_state_str(net_endpoint_state(cli_ep_base)),
-        net_endpoint_state_str(net_endpoint_state_established));
+        net_endpoint_state_str(net_endpoint_state(net_http2_endpoint_base_endpoint(cli_ep))),
+        net_endpoint_state_str(net_endpoint_state_disable));
 }
 
-static void net_http2_pair_input_handshake(void **state) {
-    net_http2_pair_testenv_t env = *state;
-    net_http2_endpoint_t cli_ep = net_http2_testenv_stream_ep_create(env->m_env);
-    net_endpoint_t cli_ep_base = net_http2_endpoint_base_endpoint(cli_ep);
-    net_endpoint_set_remote_address(cli_ep_base, net_acceptor_address(env->m_acceptor));
+static void net_http2_pair_text_msg_delete_ep(void **state) {
+    net_http2_testenv_t env = *state;
 
-    /* net_endpoint_t cli_underline = net_http2_endpoint_underline(cli_ep_base); */
-    /* assert_true(cli_underline != NULL); */
-    /* net_endpoint_set_driver_debug(cli_underline, 1); */
+    net_http2_endpoint_t cli_ep;
+    net_http2_endpoint_t svr_ep;
+    net_http2_testenv_cli_create_pair_established(env, &cli_ep, &svr_ep, "1.1.2.3:5678");
+    test_net_driver_run(env->m_tdriver, 0);
 
-    /* test_net_endpoint_expect_connect_to_acceptor(cli_underline, "1.2.3.4:5678", 0, 0); */
-    
-    assert_true(net_endpoint_connect(cli_ep_base) == 0);
+    uint32_t svr_ep_id = net_endpoint_id(net_http2_endpoint_base_endpoint(svr_ep));
 
-    assert_string_equal(
-        net_endpoint_state_str(net_endpoint_state(cli_ep_base)),
-        net_endpoint_state_str(net_endpoint_state_connecting));
+    /*client -> server*/
+    test_net_driver_run(env->m_tdriver, 0);
 
-    assert_true(
-        net_endpoint_buf_append(cli_ep_base, net_ep_buf_write, "abcd", 4) == 0);
-    
-    test_net_driver_run(env->m_env->m_tdriver, 500);
-    
-    assert_string_equal(
-        net_endpoint_state_str(net_endpoint_state(cli_ep_base)),
-        net_endpoint_state_str(net_endpoint_state_established));
-
-    net_endpoint_t svr_ep = net_http2_pair_testenv_get_svr_stream(env, cli_ep_base);
-    assert_true(svr_ep != NULL);
-    
-    test_net_endpoint_assert_buf_memory(svr_ep, net_ep_buf_read, "abcd", 4);
-}
-
-static void net_http2_pair_input_connecting(void **state) {
-    net_http2_pair_testenv_t env = *state;
-    net_http2_endpoint_t cli_ep = net_http2_testenv_stream_ep_create(env->m_env);
-    net_endpoint_t cli_ep_base = net_http2_endpoint_base_endpoint(cli_ep);
-    net_endpoint_set_remote_address(cli_ep_base, net_acceptor_address(env->m_acceptor));
-
-    /* net_endpoint_t cli_underline = net_http2_endpoint_underline(cli_ep_base); */
-    /* assert_true(cli_underline != NULL); */
-
-    /* test_net_endpoint_expect_connect_to_acceptor(cli_underline, "1.2.3.4:5678", 100, 0); */
-    
-    assert_true(net_endpoint_connect(cli_ep_base) == 0);
-
-    assert_string_equal(
-        net_endpoint_state_str(net_endpoint_state(cli_ep_base)),
-        net_endpoint_state_str(net_endpoint_state_connecting));
-
-    assert_true(
-        net_endpoint_buf_append(cli_ep_base, net_ep_buf_write, "abcd", 4) == 0);
-    
-    test_net_driver_run(env->m_env->m_tdriver, 500);
-    
-    assert_string_equal(
-        net_endpoint_state_str(net_endpoint_state(cli_ep_base)),
-        net_endpoint_state_str(net_endpoint_state_established));
-
-    net_endpoint_t svr_ep = net_http2_pair_testenv_get_svr_stream(env, cli_ep_base);
-    assert_true(svr_ep != NULL);
-    
-    test_net_endpoint_assert_buf_memory(svr_ep, net_ep_buf_read, "abcd", 4);
+    assert_true(net_endpoint_find(env->m_schedule, svr_ep_id) == NULL);
 }
 
 int net_http2_pair_basic_tests() {
 	const struct CMUnitTest ws_basic_tests[] = {
 		cmocka_unit_test_setup_teardown(net_http2_pair_basic, setup, teardown),
-		cmocka_unit_test_setup_teardown(net_http2_pair_delay, setup, teardown),
-		cmocka_unit_test_setup_teardown(net_http2_pair_input_handshake, setup, teardown),
-		cmocka_unit_test_setup_teardown(net_http2_pair_input_connecting, setup, teardown),
+		cmocka_unit_test_setup_teardown(net_http2_pair_text_msg_disable_ep, setup, teardown),
+		cmocka_unit_test_setup_teardown(net_http2_pair_text_msg_delete_ep, setup, teardown),
 	};
 	return cmocka_run_group_tests(ws_basic_tests, NULL, NULL);
 }

@@ -3,8 +3,8 @@
 #include "test_memory.h"
 #include "test_error.h"
 #include "net_http2_types.h"
-#include "net_http2_control_endpoint.h"
 #include "net_http2_endpoint.h"
+#include "net_http2_stream_endpoint.h"
 #include "test_net_driver.h"
 #include "test_net_endpoint.h"
 #include "test_net_protocol_endpoint.h"
@@ -17,8 +17,8 @@ struct net_http2_testenv {
     net_schedule_t m_schedule;
     net_protocol_t m_test_protocol;
     test_net_driver_t m_tdriver;
-    net_http2_control_protocol_t m_protocol;
-    net_http2_driver_t m_driver;
+    net_http2_protocol_t m_protocol;
+    net_http2_stream_driver_t m_stream_driver;
 };
 
 net_http2_testenv_t net_http2_testenv_create();
@@ -28,9 +28,9 @@ void net_http2_testenv_free(net_http2_testenv_t env);
 net_http2_endpoint_t net_http2_testenv_svr_ep_create(net_http2_testenv_t env);
 
 /*stream*/
-net_http2_endpoint_t net_http2_testenv_stream_ep_create(net_http2_testenv_t env);
+net_http2_stream_endpoint_t net_http2_testenv_stream_ep_create(net_http2_testenv_t env);
 
-net_http2_endpoint_t
+net_http2_stream_endpoint_t
 net_http2_testenv_stream_cli_ep_create(
     net_http2_testenv_t env, const char * host);
 
@@ -49,6 +49,6 @@ net_http2_testenv_create_acceptor(
     net_http2_testenv_t env, const char * address,
     net_acceptor_on_new_endpoint_fun_t on_new_endpoint, void * on_new_endpoint_ctx);
 
-net_http2_endpoint_t net_http2_testenv_create_ep(net_http2_testenv_t env);
+net_http2_stream_endpoint_t net_http2_testenv_create_stream(net_http2_testenv_t env);
 
 #endif

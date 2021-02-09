@@ -8,9 +8,11 @@
 int net_mem_group_type_cache_group_add(
     net_mem_group_type_t type, net_mem_group_type_cache_t cache, uint32_t capacity)
 {
+    net_schedule_t schedule = type->m_schedule;
+
     if (cache->m_group_count >= CPE_ARRAY_SIZE(cache->m_groups)) {
         CPE_INFO(
-            type->m_schedule->m_em, "net: core: mem gruop type: %s: init group %d",
+            schedule->m_em, "net: core: mem gruop type: %s: init group %d",
             type->m_name, capacity);
         return -1;
     }
@@ -22,9 +24,12 @@ int net_mem_group_type_cache_group_add(
     group->m_free_count = 0;
     group->m_blocks = NULL;
 
-    CPE_INFO(
-        type->m_schedule->m_em, "net: core: mem gruop type: %s: %d ==> %d",
-        type->m_name, cache->m_group_count, capacity);
+    if (schedule->m_debug) {
+        CPE_INFO(
+            schedule->m_em, "net: core: mem gruop type: %s: %d ==> %d",
+            type->m_name, cache->m_group_count, capacity);
+    }
+    
     cache->m_group_count++;
     return 0;
 }

@@ -7,8 +7,8 @@
 #include "net_address.h"
 #include "net_pair.h"
 #include "net_http2_testenv.h"
-#include "net_http2_control_protocol.h"
-#include "net_http2_driver.h"
+#include "net_http2_protocol.h"
+#include "net_http2_stream_driver.h"
 
 net_http2_testenv_t net_http2_testenv_create() {
     net_http2_testenv_t env = mem_alloc(test_allocrator(), sizeof(struct net_http2_testenv));
@@ -21,15 +21,15 @@ net_http2_testenv_t net_http2_testenv_create() {
     const char * addition_name = "test";
     
     env->m_protocol =
-        net_http2_control_protocol_create(env->m_schedule, addition_name, test_allocrator(), env->m_em);
+        net_http2_protocol_create(env->m_schedule, addition_name, test_allocrator(), env->m_em);
     net_protocol_set_debug(net_protocol_from_data(env->m_protocol), 2);
 
-    env->m_driver =
-        net_http2_driver_create(
+    env->m_stream_driver =
+        net_http2_stream_driver_create(
             env->m_schedule, addition_name,
             net_driver_from_data(env->m_tdriver),
             test_allocrator(), env->m_em);
-    net_driver_set_debug(net_driver_from_data(env->m_driver), 2);
+    net_driver_set_debug(net_driver_from_data(env->m_stream_driver), 2);
     
     return env;
 }
@@ -54,6 +54,9 @@ void net_http2_testenv_cli_create_pair(
 
     *cli = net_http2_endpoint_cast(ep[0]);
     *svr = net_http2_endpoint_cast(ep[1]);
+
+    /* net_http2_endpoint_set_runing_mode(*cli, net_http2_endpoint_runing_mode_cli); */
+    /* net_http2_endpoint_set_runing_mode(*svr, net_http2_endpoint_runing_mode_svr); */
 
     if (str_address) {
         net_address_t address = net_address_create_auto(env->m_schedule, str_address);
@@ -94,15 +97,15 @@ net_http2_testenv_svr_ep_create(net_http2_testenv_t env) {
     return endpoint;
 }
 
-net_http2_endpoint_t
+net_http2_stream_endpoint_t
 net_http2_testenv_stream_ep_create(net_http2_testenv_t env) {
-    return net_http2_endpoint_create(env->m_driver, env->m_test_protocol);
+    return net_http2_stream_endpoint_create(env->m_stream_driver, env->m_test_protocol);
 }
 
-net_http2_endpoint_t
+net_http2_stream_endpoint_t
 net_http2_testenv_stream_cli_ep_create(net_http2_testenv_t env, const char * host) {
-    net_http2_endpoint_t endpoint = net_http2_testenv_stream_ep_create(env);
-    net_endpoint_t base_endpoint = net_http2_endpoint_base_endpoint(endpoint);
+    net_http2_stream_endpoint_t endpoint = net_http2_testenv_stream_ep_create(env);
+    net_endpoint_t base_endpoint = net_http2_stream_endpoint_base_endpoint(endpoint);
     assert_true(base_endpoint != NULL);
         
     net_address_t address = net_address_create_auto(env->m_schedule, host);
@@ -123,7 +126,7 @@ net_http2_testenv_create_acceptor(
 
     net_acceptor_t acceptor =
         net_acceptor_create(
-            net_driver_from_data(env->m_driver),
+            net_driver_from_data(env->m_stream_driver),
             env->m_test_protocol,
             address, 0,
             on_new_endpoint, on_new_endpoint_ctx);
@@ -133,10 +136,10 @@ net_http2_testenv_create_acceptor(
     return acceptor;
 }
 
-net_http2_endpoint_t
-net_http2_testenv_create_ep(net_http2_testenv_t env) {
-    net_http2_endpoint_t endpoint =
-        net_http2_endpoint_create(env->m_driver, env->m_test_protocol);
+net_http2_stream_endpoint_t
+net_http2_testenv_create_stream(net_http2_testenv_t env) {
+    net_http2_stream_endpoint_t endpoint =
+        net_http2_stream_endpoint_create(env->m_stream_driver, env->m_test_protocol);
 
     return endpoint;
 }
