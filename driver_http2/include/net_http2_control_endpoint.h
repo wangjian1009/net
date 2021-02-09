@@ -1,0 +1,14 @@
+#ifndef NET_HTTP2_CONTROL_ENDPOINT_H_INCLEDED
+#define NET_HTTP2_CONTROL_ENDPOINT_H_INCLEDED
+#include "net_http2_types.h"
+
+NET_BEGIN_DECL
+
+net_http2_control_endpoint_t net_http2_control_endpoint_cast(net_endpoint_t endpoint);
+void net_http2_control_endpoint_free(net_http2_control_endpoint_t endpoint);
+
+net_endpoint_t net_http2_control_endpoint_base_endpoint(net_http2_control_endpoint_t endpoint);
+
+NET_END_DECL
+
+#endif
