@@ -1,5 +1,5 @@
-#ifndef NET_WS_CLI_PROTOCOL_I_H_INCLEDED
-#define NET_WS_CLI_PROTOCOL_I_H_INCLEDED
+#ifndef NET_WS_PROTOCOL_I_H_INCLEDED
+#define NET_WS_PROTOCOL_I_H_INCLEDED
 #include "cpe/utils/error.h"
 #include "cpe/utils/memory.h"
 #include "cpe/utils/buffer.h"

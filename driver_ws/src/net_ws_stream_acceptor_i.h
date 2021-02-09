@@ -1,5 +1,5 @@
-#ifndef NET_WS_CLI_STREAM_ACCEPTOR_I_H_INCLEDED
-#define NET_WS_CLI_STREAM_ACCEPTOR_I_H_INCLEDED
+#ifndef NET_WS_STREAM_ACCEPTOR_I_H_INCLEDED
+#define NET_WS_STREAM_ACCEPTOR_I_H_INCLEDED
 #include "net_ws_stream_acceptor.h"
 #include "net_ws_stream_driver_i.h"
 

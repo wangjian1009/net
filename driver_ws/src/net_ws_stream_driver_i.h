@@ -1,5 +1,5 @@
-#ifndef NET_WS_CLI_STREAM_DRIVER_I_H_INCLEDED
-#define NET_WS_CLI_STREAM_DRIVER_I_H_INCLEDED
+#ifndef NET_WS_STREAM_DRIVER_I_H_INCLEDED
+#define NET_WS_STREAM_DRIVER_I_H_INCLEDED
 #include "cpe/utils/error.h"
 #include "cpe/utils/memory.h"
 #include "net_ws_stream_driver.h"

@@ -1,5 +1,5 @@
-#ifndef NET_WS_CLI_ENDPOINT_I_H_INCLEDED
-#define NET_WS_CLI_ENDPOINT_I_H_INCLEDED
+#ifndef NET_WS_ENDPOINT_I_H_INCLEDED
+#define NET_WS_ENDPOINT_I_H_INCLEDED
 #include <wslay/wslay.h>
 #include "cpe/utils/sha1.h"
 #include "net_ws_endpoint.h"
