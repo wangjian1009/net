@@ -444,51 +444,7 @@ int net_http2_endpoint_send_data_callback(
 
     return 0;
 }
-
-int net_http2_endpoint_http2_session_init(net_http2_endpoint_t endpoint) {
-    net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
-
-    /*http2_session*/
-    nghttp2_session_callbacks * callbacks = NULL;
-    if (nghttp2_session_callbacks_new(&callbacks) != 0) {
-        CPE_ERROR(
-            protocol->m_em, "http2: %s: nghttp2_session_callbacks_new error",
-            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint));
-        return -1;
-    }
-    assert(callbacks != NULL);
-
-    nghttp2_session_callbacks_set_send_callback(callbacks, net_http2_endpoint_send_callback);
-    nghttp2_session_callbacks_set_on_frame_recv_callback(callbacks, net_http2_endpoint_on_frame_recv_callback);
-    nghttp2_session_callbacks_set_on_frame_send_callback(callbacks, net_http2_endpoint_on_frame_send_callback);
-    nghttp2_session_callbacks_set_on_frame_not_send_callback(callbacks, net_http2_endpoint_on_frame_not_send_callback);
-    nghttp2_session_callbacks_set_on_data_chunk_recv_callback(callbacks, net_http2_endpoint_on_data_chunk_recv_callback);
-    nghttp2_session_callbacks_set_on_stream_close_callback(callbacks, net_http2_endpoint_on_stream_close_callback);
-    nghttp2_session_callbacks_set_on_header_callback(callbacks, net_http2_endpoint_on_header_callback);
-    nghttp2_session_callbacks_set_on_invalid_header_callback(callbacks, net_http2_endpoint_on_invalid_header_callback);
-    nghttp2_session_callbacks_set_on_begin_headers_callback(callbacks, net_http2_endpoint_on_begin_headers_callback);
-    nghttp2_session_callbacks_set_error_callback2(callbacks, net_http2_endpoint_on_error_callback);
-    nghttp2_session_callbacks_set_send_data_callback(callbacks, net_http2_endpoint_send_data_callback);
     
-    if (nghttp2_session_client_new(&endpoint->m_http2_session, callbacks, endpoint) != 0) {
-        CPE_ERROR(
-            protocol->m_em, "http2: %s: nghttp2_session_client_new error",
-            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint));
-        nghttp2_session_callbacks_del(callbacks);
-        return -1;
-    }
-
-    nghttp2_session_callbacks_del(callbacks);
-    return 0;
-}
-
-void net_http2_endpoint_http2_session_fini(net_http2_endpoint_t endpoint) {
-    if (endpoint->m_http2_session) {
-        nghttp2_session_del(endpoint->m_http2_session);
-        endpoint->m_http2_session = NULL;
-    }
-}
-
 int net_http2_endpoint_http2_session_send_settings(net_http2_endpoint_t endpoint) {
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
 

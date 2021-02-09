@@ -1,3 +1,4 @@
+#include <assert.h>
 #include "cpe/pal/pal_stdio.h"
 #include "net_protocol.h"
 #include "net_schedule.h"
@@ -8,12 +9,51 @@ int net_http2_protocol_init(net_protocol_t base_protocol) {
     net_http2_protocol_t protocol = net_protocol_data(base_protocol);
     protocol->m_alloc = NULL;
     protocol->m_em = NULL;
+
+    protocol->m_http2_callbacks = NULL;
+    if (nghttp2_session_callbacks_new(&protocol->m_http2_callbacks) != 0) {
+        CPE_ERROR(
+            protocol->m_em, "http2: %s: nghttp2_session_callbacks_new error",
+            net_protocol_name(base_protocol));
+        return -1;
+    }
+    assert(protocol->m_http2_callbacks != NULL);
+
+    nghttp2_session_callbacks_set_send_callback(
+        protocol->m_http2_callbacks, net_http2_endpoint_send_callback);
+    nghttp2_session_callbacks_set_on_frame_recv_callback(
+        protocol->m_http2_callbacks, net_http2_endpoint_on_frame_recv_callback);
+    nghttp2_session_callbacks_set_on_frame_send_callback(
+        protocol->m_http2_callbacks, net_http2_endpoint_on_frame_send_callback);
+    nghttp2_session_callbacks_set_on_frame_not_send_callback(
+        protocol->m_http2_callbacks, net_http2_endpoint_on_frame_not_send_callback);
+    nghttp2_session_callbacks_set_on_data_chunk_recv_callback(
+        protocol->m_http2_callbacks, net_http2_endpoint_on_data_chunk_recv_callback);
+    nghttp2_session_callbacks_set_on_stream_close_callback(
+        protocol->m_http2_callbacks, net_http2_endpoint_on_stream_close_callback);
+    nghttp2_session_callbacks_set_on_header_callback(
+        protocol->m_http2_callbacks, net_http2_endpoint_on_header_callback);
+    nghttp2_session_callbacks_set_on_invalid_header_callback(
+        protocol->m_http2_callbacks, net_http2_endpoint_on_invalid_header_callback);
+    nghttp2_session_callbacks_set_on_begin_headers_callback(
+        protocol->m_http2_callbacks, net_http2_endpoint_on_begin_headers_callback);
+    nghttp2_session_callbacks_set_error_callback2(
+        protocol->m_http2_callbacks, net_http2_endpoint_on_error_callback);
+    nghttp2_session_callbacks_set_send_data_callback(
+        protocol->m_http2_callbacks, net_http2_endpoint_send_data_callback);
+    
     mem_buffer_init(&protocol->m_data_buffer, NULL);
     return 0;
 }
 
 void net_http2_protocol_fini(net_protocol_t base_protocol) {
     net_http2_protocol_t protocol = net_protocol_data(base_protocol);
+
+    if (protocol->m_http2_callbacks) {
+        nghttp2_session_callbacks_del(protocol->m_http2_callbacks);
+        protocol->m_http2_callbacks = NULL;
+    }
+
     mem_buffer_clear(&protocol->m_data_buffer);
 }
 

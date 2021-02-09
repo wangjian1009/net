@@ -35,7 +35,15 @@ int net_http2_endpoint_init(net_endpoint_t base_endpoint) {
 
     endpoint->m_base_endpoint = base_endpoint;
     endpoint->m_runing_mode = net_http2_endpoint_runing_mode_init;
+
     endpoint->m_http2_session = NULL;
+    if (nghttp2_session_client_new(&endpoint->m_http2_session, protocol->m_http2_callbacks, endpoint) != 0) {
+        CPE_ERROR(
+            protocol->m_em, "http2: %s: nghttp2_session_client_new error",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), base_endpoint));
+        return -1;
+    }
+
     endpoint->m_stream_group = NULL;
     TAILQ_INIT(&endpoint->m_streams);
     
@@ -57,8 +65,8 @@ void net_http2_endpoint_fini(net_endpoint_t base_endpoint) {
     }
     
     if (endpoint->m_http2_session) {
-        //sfox_sfox_cli_router_http2_session_fini(endpoint);
-        assert(endpoint->m_http2_session == NULL);
+        nghttp2_session_del(endpoint->m_http2_session);
+        endpoint->m_http2_session = NULL;
     }
 }
 
