@@ -39,6 +39,7 @@ int net_http2_endpoint_init(net_endpoint_t base_endpoint) {
 
     endpoint->m_base_endpoint = base_endpoint;
     endpoint->m_runing_mode = net_http2_endpoint_runing_mode_init;
+    endpoint->m_state = net_http2_endpoint_state_init;
     endpoint->m_in_processing = 0;
     endpoint->m_delay_processor = NULL;
     endpoint->m_http2_session = NULL;
@@ -152,6 +153,10 @@ int net_http2_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoin
 
 net_http2_endpoint_runing_mode_t net_http2_endpoint_runing_mode(net_http2_endpoint_t endpoint) {
     return endpoint->m_runing_mode;
+}
+
+net_http2_endpoint_state_t net_http2_endpoint_state(net_http2_endpoint_t endpoint) {
+    return endpoint->m_state;
 }
 
 void net_http2_endpoint_set_stream_group(
@@ -273,6 +278,40 @@ void net_http2_endpoint_delay_process(net_timer_t timer, void * ctx) {
     net_http2_endpoint_delay_flush(endpoint);
 }
 
+int net_http2_endpoint_set_state(net_http2_endpoint_t endpoint, net_http2_endpoint_state_t state) {
+    if (endpoint->m_state == state) return 0;
+
+    net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
+    
+    assert(endpoint->m_runing_mode != net_http2_endpoint_runing_mode_init);
+    
+    if (net_endpoint_protocol_debug(endpoint->m_base_endpoint)) {
+        CPE_INFO(
+            protocol->m_em, "http2: %s: %s: state: %s ==> %s",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+            net_http2_endpoint_state_str(endpoint->m_state),
+            net_http2_endpoint_state_str(state));
+    }
+
+    endpoint->m_state = state;
+
+    switch(state) {
+    case net_http2_endpoint_state_init:
+        break;
+    case net_http2_endpoint_state_handshake:
+        if (endpoint->m_runing_mode == net_http2_endpoint_runing_mode_cli) {
+        }
+        else {
+        }
+        break;
+    case net_http2_endpoint_state_streaming:
+        break;
+    }
+
+    return 0;
+}
+
 int net_http2_endpoint_set_runing_mode(net_http2_endpoint_t endpoint, net_http2_endpoint_runing_mode_t runing_mode) {
     if (endpoint->m_runing_mode == runing_mode) return 0;
 
@@ -346,6 +385,17 @@ int net_http2_endpoint_set_runing_mode(net_http2_endpoint_t endpoint, net_http2_
     }
 
     return 0;
+}
+
+const char * net_http2_endpoint_state_str(net_http2_endpoint_state_t state) {
+    switch(state) {
+    case net_http2_endpoint_state_init:
+        return "init";
+    case net_http2_endpoint_state_handshake:
+        return "handshake";
+    case net_http2_endpoint_state_streaming:
+        return "streaming";
+    }
 }
 
 const char * net_http2_endpoint_runing_mode_str(net_http2_endpoint_runing_mode_t runing_mode) {

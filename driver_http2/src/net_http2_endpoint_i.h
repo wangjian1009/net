@@ -6,6 +6,7 @@
 struct net_http2_endpoint {
     net_endpoint_t m_base_endpoint;
     net_http2_endpoint_runing_mode_t m_runing_mode;
+    net_http2_endpoint_state_t m_state;
     nghttp2_session * m_http2_session;
     union {
         struct {
@@ -30,6 +31,7 @@ int net_http2_endpoint_input(net_endpoint_t base_endpoint);
 int net_http2_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoint_state_t from_state);
 
 /**/
+int net_http2_endpoint_set_state(net_http2_endpoint_t endpoint, net_http2_endpoint_state_t state);
 void net_http2_endpoint_schedule_delay_processor(net_http2_endpoint_t endpoint);
 void net_http2_endpoint_schedule_flush(net_http2_endpoint_t endpoint);
 

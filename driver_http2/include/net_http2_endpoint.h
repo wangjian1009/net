@@ -10,6 +10,12 @@ enum net_http2_endpoint_runing_mode {
     net_http2_endpoint_runing_mode_svr,
 };
 
+enum net_http2_endpoint_state {
+    net_http2_endpoint_state_init,
+    net_http2_endpoint_state_handshake,
+    net_http2_endpoint_state_streaming,
+};
+
 net_http2_endpoint_t net_http2_endpoint_cast(net_endpoint_t endpoint);
 
 void net_http2_endpoint_free(net_http2_endpoint_t endpoint);

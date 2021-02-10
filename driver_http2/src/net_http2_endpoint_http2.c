@@ -76,6 +76,13 @@ int net_http2_endpoint_on_frame_recv_callback(
         CPE_INFO(protocol->m_em, "%s", (const char *)mem_buffer_make_continuous(buffer, 0));
     }
 
+    switch(frame->hd.type) {
+    case NGHTTP2_SETTINGS:
+        break;
+    default:
+        break;
+    }
+    
     return 0;
 }
 
@@ -135,7 +142,7 @@ CHECK_NEXT_SEND:
             net_endpoint_set_is_writing(stream->m_base_endpoint, 0);
         }
         else {
-            //net_http2_stream_endpoint_schedule_send_data(stream);
+            net_http2_stream_endpoint_schedule_send_data(stream);
         }
     }
 
