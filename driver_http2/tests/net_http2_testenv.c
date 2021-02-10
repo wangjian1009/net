@@ -22,7 +22,7 @@ net_http2_testenv_t net_http2_testenv_create() {
     env->m_tdriver = test_net_driver_create(env->m_schedule, env->m_em);
     env->m_protocol =
         net_http2_protocol_create(env->m_schedule, addition_name, test_allocrator(), env->m_em);
-    net_protocol_set_debug(net_protocol_from_data(env->m_protocol), 3);
+    net_protocol_set_debug(net_protocol_from_data(env->m_protocol), 2);
 
     /*stream*/
     env->m_stream_test_protocol = test_net_protocol_create(env->m_schedule, "test-protocol");
@@ -32,7 +32,7 @@ net_http2_testenv_t net_http2_testenv_create() {
             env->m_schedule, addition_name,
             net_driver_from_data(env->m_tdriver),
             test_allocrator(), env->m_em);
-    net_driver_set_debug(net_driver_from_data(env->m_stream_driver), 3);
+    net_driver_set_debug(net_driver_from_data(env->m_stream_driver), 2);
     
     return env;
 }

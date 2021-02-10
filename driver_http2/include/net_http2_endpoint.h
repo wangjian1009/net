@@ -12,7 +12,7 @@ enum net_http2_endpoint_runing_mode {
 
 enum net_http2_endpoint_state {
     net_http2_endpoint_state_init,
-    net_http2_endpoint_state_handshake,
+    net_http2_endpoint_state_setting,
     net_http2_endpoint_state_streaming,
 };
 

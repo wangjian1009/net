@@ -37,6 +37,17 @@ ssize_t net_http2_endpoint_send_callback(
     }
 
     if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 3) {
+        char name_buf[128];
+        cpe_str_dup(
+            name_buf, sizeof(name_buf),
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint));
+
+        CPE_INFO(
+            protocol->m_em, "http2: %s: %s: net: ==> net %d bytes\n%s",
+            name_buf, net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode), (int)length,
+            mem_buffer_dump_data(net_http2_protocol_tmp_buffer(protocol), data, length, 0));
+    }
+    else if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 2) {
         CPE_INFO(
             protocol->m_em, "http2: %s: %s: net: ==> net %d bytes",
             net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),

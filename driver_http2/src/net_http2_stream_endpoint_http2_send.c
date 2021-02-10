@@ -33,24 +33,28 @@ int net_http2_stream_endpoint_send_connect_request(net_http2_stream_endpoint_t e
         MAKE_NV(":authority", target_path, strlen(target_path)),
     };
 
-    if (net_endpoint_driver_debug(endpoint->m_base_endpoint)) {
-        CPE_INFO(
-            driver->m_em, "http2: %s: request: ==> begin connect",
-            net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), endpoint->m_base_endpoint));
-    }
-
     const nghttp2_priority_spec * pri_spec = NULL;
 
     int rv = nghttp2_submit_headers(
         control->m_http2_session, NGHTTP2_FLAG_NONE, -1, pri_spec, hdrs, CPE_ARRAY_SIZE(hdrs), endpoint);
     if (rv < 0) {
         CPE_ERROR(
-            driver->m_em, "http2: %s: request: submit request fail, %s!",
+            driver->m_em, "http2: %s: %s: http2: %d: ==> submit request fail, %s!",
             net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), endpoint->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(control->m_runing_mode),
+            endpoint->m_stream_id,
             nghttp2_strerror(rv));
         return -1;
     }
     endpoint->m_stream_id = (int32_t)rv;
+
+    if (net_endpoint_driver_debug(endpoint->m_base_endpoint)) {
+        CPE_INFO(
+            driver->m_em, "http2: %s: %s: http2: %d: ==> submit headers",
+            net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), endpoint->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(control->m_runing_mode),
+            endpoint->m_stream_id);
+    }
 
     net_http2_endpoint_schedule_flush(control);
 

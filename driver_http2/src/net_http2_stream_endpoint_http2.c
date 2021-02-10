@@ -97,8 +97,10 @@ int net_http2_stream_endpoint_delay_send_data(net_http2_stream_endpoint_t stream
 
     if (net_endpoint_driver_debug(stream->m_base_endpoint) >= 2) {
         CPE_INFO(
-            driver->m_em, "http2: %s: schedule send cleared(in delay send)",
-            net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), stream->m_base_endpoint));
+            driver->m_em, "http2: %s: %s: %d: schedule send cleared(in delay send)",
+            net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), stream->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(stream)),
+            stream->m_stream_id);
     }
     
     nghttp2_data_provider data_prd;
@@ -108,9 +110,10 @@ int net_http2_stream_endpoint_delay_send_data(net_http2_stream_endpoint_t stream
     int rv = nghttp2_submit_data(control->m_http2_session, 0, stream->m_stream_id, &data_prd);
     if (rv < 0) {
         CPE_ERROR(
-            driver->m_em, "http2: %s: submit data fail, %s!",
+            driver->m_em, "http2: %s: %s: %d: submit data fail, %s!",
             net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), stream->m_base_endpoint),
-            nghttp2_strerror(rv));
+            net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(stream)),
+            stream->m_stream_id, nghttp2_strerror(rv));
         return -1;
     }
     stream->m_send_processing = 1;
@@ -120,6 +123,7 @@ int net_http2_stream_endpoint_delay_send_data(net_http2_stream_endpoint_t stream
 
 int net_http2_stream_endpoint_sync_state(net_http2_stream_endpoint_t stream) {
     assert(stream->m_control);
+    net_http2_stream_driver_t driver = net_driver_data(net_endpoint_driver(stream->m_base_endpoint));
     net_endpoint_t control_base = stream->m_control->m_base_endpoint;
 
     switch(net_endpoint_state(control_base)) {
@@ -135,7 +139,6 @@ int net_http2_stream_endpoint_sync_state(net_http2_stream_endpoint_t stream) {
 
             if (stream->m_control->m_state == net_http2_endpoint_state_streaming) {
                 if (stream->m_state == net_http2_stream_endpoint_state_init) {
-                    if (net_http2_stream_endpoint_send_connect_request(stream) != 0) return -1;
                     if (net_http2_stream_endpoint_set_state(stream, net_http2_stream_endpoint_state_connecting) != 0) return -1;
                 }
             }

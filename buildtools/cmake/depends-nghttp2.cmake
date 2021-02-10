@@ -24,6 +24,7 @@ set(nghttp2_source
   ${nghttp2_base}/lib/nghttp2_http.c
   ${nghttp2_base}/lib/nghttp2_rcbuf.c
   ${nghttp2_base}/lib/nghttp2_debug.c
+  ${nghttp2_base}/lib/nghttp2_ksl.c
 )
 
 if (MSVC)

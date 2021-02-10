@@ -16,6 +16,7 @@
 extern struct wslay_event_callbacks s_net_http2_endpoint_callbacks;
 void net_http2_endpoint_do_flush(net_http2_endpoint_t endpoint);
 void net_http2_endpoint_delay_process(net_timer_t timer, void * ctx);
+void net_http2_endpoint_sync_stream_state(net_http2_endpoint_t endpoint);
 
 void net_http2_endpoint_free(net_http2_endpoint_t endpoint) {
     net_endpoint_free(endpoint->m_base_endpoint);
@@ -128,21 +129,9 @@ int net_http2_endpoint_input(net_endpoint_t base_endpoint) {
     return 0;
 }
 
-int net_http2_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoint_state_t from_state) {
-    net_http2_endpoint_t endpoint = net_endpoint_protocol_data(base_endpoint);
-    net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
+void net_http2_endpoint_sync_stream_state(net_http2_endpoint_t endpoint) {
     net_http2_stream_endpoint_t stream, next_stream;
 
-    if (net_endpoint_state(base_endpoint) == net_endpoint_state_established) {
-        if (endpoint->m_runing_mode == net_http2_endpoint_runing_mode_svr) {
-            if (endpoint->m_state == net_http2_endpoint_state_init) {
-                if (net_http2_endpoint_http2_send_settings(endpoint) != 0) return -1;
-                net_http2_endpoint_schedule_flush(endpoint);
-                if (net_http2_endpoint_set_state(endpoint, net_http2_endpoint_state_handshake) != 0) return -1;
-            }
-        }
-    }
-    
     for(stream = TAILQ_FIRST(&endpoint->m_streams); stream; stream = next_stream) {
         next_stream = TAILQ_NEXT(stream, m_next_for_control);
 
@@ -150,6 +139,19 @@ int net_http2_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoin
             net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_deleting);
         }
     }
+}
+
+int net_http2_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoint_state_t from_state) {
+    net_http2_endpoint_t endpoint = net_endpoint_protocol_data(base_endpoint);
+    net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
+
+    if (net_endpoint_state(base_endpoint) == net_endpoint_state_established) {
+        if (endpoint->m_runing_mode != net_http2_endpoint_runing_mode_init) {
+            if (net_http2_endpoint_set_state(endpoint, net_http2_endpoint_state_setting) != 0) return -1;
+        }
+    }
+
+    net_http2_endpoint_sync_stream_state(endpoint);
 
     return 0;
 }
@@ -290,7 +292,7 @@ int net_http2_endpoint_set_state(net_http2_endpoint_t endpoint, net_http2_endpoi
     
     if (net_endpoint_protocol_debug(endpoint->m_base_endpoint)) {
         CPE_INFO(
-            protocol->m_em, "http2: %s: %s: state: %s ==> %s",
+            protocol->m_em, "http2: %s: %s: http2-state: %s ==> %s",
             net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
             net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
             net_http2_endpoint_state_str(endpoint->m_state),
@@ -302,9 +304,12 @@ int net_http2_endpoint_set_state(net_http2_endpoint_t endpoint, net_http2_endpoi
     switch(state) {
     case net_http2_endpoint_state_init:
         break;
-    case net_http2_endpoint_state_handshake:
+    case net_http2_endpoint_state_setting:
+        if (net_http2_endpoint_http2_send_settings(endpoint) != 0) return -1;
+        net_http2_endpoint_schedule_flush(endpoint);
         break;
     case net_http2_endpoint_state_streaming:
+        net_http2_endpoint_sync_stream_state(endpoint);
         break;
     }
 
@@ -365,6 +370,11 @@ int net_http2_endpoint_set_runing_mode(net_http2_endpoint_t endpoint, net_http2_
                 net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint));
             return -1;
         }
+
+        if (net_endpoint_state(endpoint->m_base_endpoint) == net_endpoint_state_established) {
+            if (net_http2_endpoint_set_state(endpoint, net_http2_endpoint_state_setting) != 0) return -1;
+        }
+
         break;
     case net_http2_endpoint_runing_mode_svr:
         endpoint->m_svr.m_stream_acceptor = NULL;
@@ -377,9 +387,7 @@ int net_http2_endpoint_set_runing_mode(net_http2_endpoint_t endpoint, net_http2_
         }
 
         if (net_endpoint_state(endpoint->m_base_endpoint) == net_endpoint_state_established) {
-            if (net_http2_endpoint_http2_send_settings(endpoint) != 0) return -1;
-            net_http2_endpoint_schedule_flush(endpoint);
-            if (net_http2_endpoint_set_state(endpoint, net_http2_endpoint_state_handshake) != 0) return -1;
+            if (net_http2_endpoint_set_state(endpoint, net_http2_endpoint_state_setting) != 0) return -1;
         }
 
         break;
@@ -392,8 +400,8 @@ const char * net_http2_endpoint_state_str(net_http2_endpoint_state_t state) {
     switch(state) {
     case net_http2_endpoint_state_init:
         return "init";
-    case net_http2_endpoint_state_handshake:
-        return "handshake";
+    case net_http2_endpoint_state_setting:
+        return "setting";
     case net_http2_endpoint_state_streaming:
         return "streaming";
     }

@@ -280,7 +280,7 @@ int net_http2_stream_endpoint_set_state(net_http2_stream_endpoint_t stream, net_
 
     if (net_endpoint_driver_debug(stream->m_base_endpoint)) {
         CPE_INFO(
-            driver->m_em, "http2: %s: state: %s ==> %s",
+            driver->m_em, "http2: %s: stream-state: %s ==> %s",
             net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), stream->m_base_endpoint),
             net_http2_stream_endpoint_state_str(stream->m_state),
             net_http2_stream_endpoint_state_str(state));
@@ -288,6 +288,16 @@ int net_http2_stream_endpoint_set_state(net_http2_stream_endpoint_t stream, net_
 
     stream->m_state = state;
 
+    switch(stream->m_state) {
+    case net_http2_stream_endpoint_state_init:
+        break;
+    case net_http2_stream_endpoint_state_connecting:
+        if (net_http2_stream_endpoint_send_connect_request(stream) != 0) return -1;
+        break;
+    case net_http2_stream_endpoint_state_established:
+        break;
+    }
+    
     return 0;
 }
 
