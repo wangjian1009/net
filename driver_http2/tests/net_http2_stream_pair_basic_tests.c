@@ -42,7 +42,7 @@ static void net_http2_stream_pair_basic(void **state) {
         net_endpoint_state_str(net_endpoint_state_connecting));
 
     /*等待连接成功 */
-    test_net_driver_run(env->m_tdriver, 0);
+    test_net_driver_run(env->m_tdriver, 100);
 
     /*验证连接成功状态 */
     assert_string_equal(

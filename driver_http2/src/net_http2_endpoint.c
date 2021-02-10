@@ -83,33 +83,36 @@ int net_http2_endpoint_input(net_endpoint_t base_endpoint) {
     return 0;
 }
 
+void net_http2_endpoint_stream_bulk_set_state(
+    net_http2_protocol_t protocol, net_http2_endpoint_t endpoint, net_endpoint_state_t state)
+{
+    net_http2_stream_endpoint_t stream, next_stream;
+
+    for(stream = TAILQ_FIRST(&endpoint->m_streams); stream; stream = next_stream) {
+        next_stream = TAILQ_NEXT(stream, m_next_for_control);
+    }
+}
+    
 int net_http2_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoint_state_t from_state) {
     net_http2_endpoint_t endpoint = net_endpoint_protocol_data(base_endpoint);
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
 
-    /* net_endpoint_t base_stream = */
-    /*     endpoint->m_stream ? net_endpoint_from_data(endpoint->m_stream) : NULL; */
-        
-    /* switch(net_endpoint_state(base_endpoint)) { */
-    /* case net_endpoint_state_resolving: */
-    /*     if (base_stream) { */
-    /*         if (net_endpoint_set_state(base_stream, net_endpoint_state_resolving) != 0) return -1; */
-    /*     } */
-    /*     break; */
-    /* case net_endpoint_state_connecting: */
-    /*     if (base_stream) { */
-    /*         if (net_endpoint_set_state(base_stream, net_endpoint_state_connecting) != 0) return -1; */
-    /*     } */
-    /*     break; */
-    /* case net_endpoint_state_established: */
+    switch(net_endpoint_state(base_endpoint)) {
+    case net_endpoint_state_resolving:
+        net_http2_endpoint_stream_bulk_set_state(protocol, endpoint, net_endpoint_state_resolving);
+        break;
+    case net_endpoint_state_connecting:
+        net_http2_endpoint_stream_bulk_set_state(protocol, endpoint, net_endpoint_state_connecting);
+        break;
+    case net_endpoint_state_established:
     /*     if (base_stream) { */
     /*         if (net_endpoint_set_state(base_stream, net_endpoint_state_connecting) != 0) return -1; */
     /*     } */
     /*     if (endpoint->m_runing_mode == net_http2_endpoint_runing_mode_cli) { */
     /*         if (net_http2_endpoint_send_handshake(base_endpoint, endpoint) != 0) return -1; */
     /*     } */
-    /*     break; */
-    /* case net_endpoint_state_error: */
+        break;
+    case net_endpoint_state_error:
     /*     if (base_stream) { */
     /*         net_endpoint_set_error( */
     /*             base_stream, */
@@ -117,25 +120,19 @@ int net_http2_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoin
     /*             net_endpoint_error_no(base_endpoint), net_endpoint_error_msg(base_endpoint)); */
     /*         if (net_endpoint_set_state(base_stream, net_endpoint_state_error) != 0) return -1; */
     /*     } */
-    /*     break; */
-    /* case net_endpoint_state_read_closed: */
-    /*     if (base_stream) { */
-    /*         if (net_endpoint_set_state(base_stream, net_endpoint_state_read_closed) != 0) return -1; */
-    /*     } */
-    /*     break; */
-    /* case net_endpoint_state_write_closed: */
-    /*     if (base_stream) { */
-    /*         if (net_endpoint_set_state(base_stream, net_endpoint_state_write_closed) != 0) return -1; */
-    /*     } */
-    /*     break; */
-    /* case net_endpoint_state_disable: */
-    /*     if (base_stream) { */
-    /*         if (net_endpoint_set_state(base_stream, net_endpoint_state_disable) != 0) return -1; */
-    /*     } */
-    /*     break; */
-    /* case net_endpoint_state_deleting: */
-    /*     break; */
-    /* } */
+        break;
+    case net_endpoint_state_read_closed:
+        net_http2_endpoint_stream_bulk_set_state(protocol, endpoint, net_endpoint_state_read_closed);
+        break;
+    case net_endpoint_state_write_closed:
+        net_http2_endpoint_stream_bulk_set_state(protocol, endpoint, net_endpoint_state_write_closed);
+        break;
+    case net_endpoint_state_disable:
+        net_http2_endpoint_stream_bulk_set_state(protocol, endpoint, net_endpoint_state_disable);
+        break;
+    case net_endpoint_state_deleting:
+        break;
+    }
     
     return 0;
 }
