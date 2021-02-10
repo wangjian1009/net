@@ -8,7 +8,6 @@
 #include "net_http2_endpoint_i.h"
 
 int net_http2_stream_endpoint_select_control(net_endpoint_t base_endpoint);
-void net_http2_stream_endpoint_update_readable(net_endpoint_t base_endpoint);
 
 int net_http2_stream_endpoint_init(net_endpoint_t base_endpoint) {
     net_http2_stream_endpoint_t endpoint = net_endpoint_data(base_endpoint);
@@ -88,91 +87,23 @@ int net_http2_stream_endpoint_connect(net_endpoint_t base_endpoint) {
         : 0;
 }    
 
-int net_http2_stream_endpoint_update(net_endpoint_t base_endpoint) {
-    net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
-    net_http2_stream_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
-    net_http2_stream_endpoint_t endpoint = net_endpoint_data(base_endpoint);
-    net_endpoint_t base_control = endpoint->m_control ? endpoint->m_control->m_base_endpoint : NULL;
-    
-    if (base_control) {
-        net_http2_stream_endpoint_update_readable(base_endpoint);
-    }
+int net_http2_stream_endpoint_update(net_endpoint_t base_stream) {
+    net_schedule_t schedule = net_endpoint_schedule(base_stream);
+    net_http2_stream_driver_t driver = net_driver_data(net_endpoint_driver(base_stream));
+    net_http2_stream_endpoint_t stream = net_endpoint_data(base_stream);
 
-    switch(net_endpoint_state(base_endpoint)) {
+    switch(net_endpoint_state(base_stream)) {
     case net_endpoint_state_read_closed:
-        if (base_control && net_endpoint_is_active(base_control)) {
-            if (net_endpoint_set_state(base_control, net_endpoint_state_read_closed) != 0) {
-                net_endpoint_set_state(base_control, net_endpoint_state_deleting);
-            }
-        }
         return 0;
     case net_endpoint_state_write_closed:
-        if (base_control && net_endpoint_is_active(base_control)) {
-            if (net_endpoint_set_state(base_control, net_endpoint_state_disable) != 0) {
-                net_endpoint_set_state(base_control, net_endpoint_state_deleting);
-            }
-        }
         return 0;
     case net_endpoint_state_disable:
-        if (base_control && net_endpoint_is_active(base_control)) {
-            if (net_endpoint_set_state(base_control, net_endpoint_state_disable) != 0) {
-                net_endpoint_set_state(base_control, net_endpoint_state_deleting);
-            }
-        }
         return 0;
     case net_endpoint_state_established:
-        if (base_control == NULL) {
-            CPE_ERROR(
-                driver->m_em, "http2: %s: %s: set no delay: no control!",
-                net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
-                net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(endpoint)));
-            return -1;
-        }
-
-        if (!net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write)) { /*有数据等待写入 */
-            uint32_t buf_size = net_endpoint_buf_size(base_endpoint, net_ep_buf_write);
-            void *  buf = NULL;
-            if (net_endpoint_buf_peak_with_size(base_endpoint, net_ep_buf_write, buf_size, &buf) != 0) {
-                CPE_ERROR(
-                    driver->m_em, "http2: %s: %s: peak data to send fail!, size=%d!",
-                    net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), base_endpoint),
-                    net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(endpoint)),
-                    buf_size);
-                return -1;
-            }
-
-            if (net_endpoint_driver_debug(base_endpoint) >= 2) {
-                char name_buf[128];
-                cpe_str_dup(name_buf, sizeof(name_buf), net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), base_endpoint));
-                CPE_INFO(
-                    driver->m_em, "http2: %s: %s: ==> %d data\n%s",
-                    name_buf,
-                    net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(endpoint)),
-                    buf_size,
-                    mem_buffer_dump_data(net_http2_stream_driver_tmp_buffer(driver), buf, buf_size, 0));
-            }
-            
-            /* if (net_http2_endpoint_send_msg_bin(endpoint->m_control, buf, buf_size) != 0) { */
-            /*     CPE_ERROR( */
-            /*         driver->m_em, "http2: %s: send bin message fail, size=%d!", */
-            /*         net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), base_endpoint), buf_size); */
-            /*     return -1; */
-            /* } */
-
-            if (net_endpoint_state(base_endpoint) == net_endpoint_state_deleting) return -1;
-
-            net_endpoint_buf_consume(base_endpoint, net_ep_buf_write, buf_size);
-            
-            if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return 0;
-        }
-
-        assert(net_endpoint_state(base_endpoint) == net_endpoint_state_established);
         return 0;
     case net_endpoint_state_error:
-        if (base_control && net_endpoint_is_active(base_control)) {
-            if (net_endpoint_set_state(base_control, net_endpoint_state_error) != 0) {
-                net_endpoint_set_state(base_control, net_endpoint_state_deleting);
-            }
+        if (stream->m_stream_id != -1) {
+            
         }
         return 0;
     default:
@@ -353,38 +284,6 @@ int net_http2_stream_endpoint_select_control(net_endpoint_t base_endpoint) {
     }
 
     return 0;
-}
-
-void net_http2_stream_endpoint_update_readable(net_endpoint_t base_endpoint) {
-    net_http2_stream_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
-    net_http2_stream_endpoint_t endpoint = net_endpoint_data(base_endpoint);
-    net_endpoint_t base_control = endpoint->m_control ? endpoint->m_control->m_base_endpoint : NULL;
-    
-    assert(base_control != NULL);
-
-    if (net_endpoint_expect_read(base_endpoint)) {
-        if (!net_endpoint_expect_read(base_control)) {
-            if (net_endpoint_driver_debug(base_endpoint) >= 3) {
-                CPE_INFO(
-                    driver->m_em, "http2: %s: %s: read begin!",
-                    net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), base_endpoint),
-                    net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(endpoint)));
-            }
-
-            net_endpoint_set_expect_read(base_control, 1);
-        }
-    } else {
-        if (net_endpoint_expect_read(base_control)) {
-            if (net_endpoint_driver_debug(base_endpoint) >= 3) {
-                CPE_INFO(
-                    driver->m_em, "http2: %s: %s: read stop!",
-                    net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), base_endpoint),
-                    net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(endpoint)));
-            }
-
-            net_endpoint_set_expect_read(base_control, 0);
-        }
-    }
 }
 
 const char * net_http2_stream_endpoint_state_str(net_http2_stream_endpoint_state_t state) {

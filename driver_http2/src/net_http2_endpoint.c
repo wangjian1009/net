@@ -41,6 +41,7 @@ int net_http2_endpoint_init(net_endpoint_t base_endpoint) {
     endpoint->m_base_endpoint = base_endpoint;
     endpoint->m_runing_mode = net_http2_endpoint_runing_mode_init;
     endpoint->m_state = net_http2_endpoint_state_init;
+    endpoint->m_remote_settings.m_stream_capacity = 0;
     endpoint->m_in_processing = 0;
     endpoint->m_delay_processor = NULL;
     endpoint->m_http2_session = NULL;

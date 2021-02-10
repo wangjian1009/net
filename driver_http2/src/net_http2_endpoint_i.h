@@ -7,6 +7,9 @@ struct net_http2_endpoint {
     net_endpoint_t m_base_endpoint;
     net_http2_endpoint_runing_mode_t m_runing_mode;
     net_http2_endpoint_state_t m_state;
+    struct {
+        uint16_t m_stream_capacity;
+    } m_remote_settings;
     nghttp2_session * m_http2_session;
     union {
         struct {
