@@ -1,4 +1,5 @@
 #include <assert.h>
+#include "cpe/pal/pal_string.h"
 #include "cpe/utils/stream_buffer.h"
 #include "cpe/utils/string_utils.h"
 #include "net_protocol.h"
@@ -209,9 +210,15 @@ int net_http2_endpoint_on_data_chunk_recv_callback(
         return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
     }
 
-    /* if (net_endpoint_buf_append(sfox_ep->m_endpoint, net_ep_buf_read, data, (uint32_t)len) != 0) { */
-    /*     return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE; */
-    /* } */
+    if (net_endpoint_buf_append(stream->m_base_endpoint, net_ep_buf_read, data, (uint32_t)len) != 0) {
+        if (net_endpoint_error_source(stream->m_base_endpoint) == net_endpoint_error_source_none) {
+            net_endpoint_set_error(
+                stream->m_base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_logic, NULL);
+        }
+        if (net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_error) != 0) {
+            net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_deleting);
+        }
+    }
 
     return 0;
 }
@@ -384,68 +391,54 @@ int net_http2_endpoint_send_data_callback(
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
     net_http2_stream_endpoint_t stream = source->ptr;
 
-    uint32_t sended_sz = 0;
+    uint32_t head_sz = 9;
+    if (frame->data.padlen > 0) head_sz++;
 
-    if (net_endpoint_buf_append(endpoint->m_base_endpoint, net_ep_buf_write, framehd, 9) != 0) {
+    uint8_t * head_data = net_endpoint_buf_alloc(endpoint->m_base_endpoint, head_sz);
+    if (head_data == NULL) {
         CPE_ERROR(
-            protocol->m_em, "http2: %s: http2: %d: send data: write frame head fail",
+            protocol->m_em, "http2: %s: http2: %d: send data: alloc head %d data fail",
             net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
-            stream->m_stream_id);
+            stream->m_stream_id, head_sz);
         return NGHTTP2_ERR_CALLBACK_FAILURE;
     }
-    sended_sz += 9;
+
+    memcpy(head_data, framehd, 9);
+    if (frame->data.padlen > 0) {
+        head_data[9] = (frame->data.padlen - 1);
+    }
     
-    /* if (frame->data.padlen > 0) { */
-    /*     uint8_t padlen = frame->data.padlen - 1; */
-    /*     if (bufferevent_write(endpoint->m_bev, &padlen, 1) < 0) { */
-    /*         CPE_ERROR( */
-    /*             protocol->m_em, "http2: %s: http2: %d: send data: write padlen %d fail", */
-    /*             net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint-m_base_endpoint), */
-    /*             stream->m_stream_id, (padlen)); */
-    /*         return NGHTTP2_ERR_CALLBACK_FAILURE; */
-    /*     } */
-    /*     sended_sz++; */
-    /* } */
+    if (net_endpoint_buf_supply(endpoint->m_base_endpoint, net_ep_buf_write, head_sz) != 0) {
+        CPE_ERROR(
+            protocol->m_em, "http2: %s: http2: %d: send data: write head %d data fail",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            stream->m_stream_id, head_sz);
+        return NGHTTP2_ERR_CALLBACK_FAILURE;
+    }
 
-    while(length > 0) {
-        uint32_t block_sz = 0;
-        void * buf = net_endpoint_buf_peak(stream->m_base_endpoint, net_ep_buf_write, &block_sz);
-        if (buf == NULL) {
-            CPE_ERROR(
-                protocol->m_em, "http2: %s: http2: %d: send data: get buf fail",
-                net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
-                stream->m_stream_id);
-            return NGHTTP2_ERR_CALLBACK_FAILURE;
-        }
-
-        if (block_sz > length) {
-            block_sz = (uint32_t)length;
-        }
-
-        /* if (bufferevent_write(endpoint->m_bev, buf, block_sz) < 0) { */
-        /*     CPE_ERROR( */
-        /*         protocol->m_em, "http2: %s: http2: %d: send data: write block %d fail", */
-        /*         net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint), */
-        /*         stream->m_stream_id, block_sz); */
-        /*     return NGHTTP2_ERR_CALLBACK_FAILURE; */
-        /* } */
-
-        net_endpoint_buf_consume(stream->m_base_endpoint, net_ep_buf_write, block_sz);
-        length -= block_sz;
-        sended_sz += block_sz;
+    if (net_endpoint_buf_append_from_other(
+            endpoint->m_base_endpoint, net_ep_buf_write,
+            stream->m_base_endpoint, net_ep_buf_write,
+            length) != 0)
+    {
+        CPE_ERROR(
+            protocol->m_em, "http2: %s: http2: %d: send data: write body %d data fail",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            stream->m_stream_id, (int)length);
+        return NGHTTP2_ERR_CALLBACK_FAILURE;
     }
 
     if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 3) {
         CPE_INFO(
-            protocol->m_em, "http2: %s: http2:    ==>       (ep) %d data",
+            protocol->m_em, "http2: %s:    ==>       (ep) %d data",
             net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
-            (int)sended_sz);
+            (int)head_sz + (int)length);
     }
 
     return 0;
 }
     
-int net_http2_endpoint_http2_session_send_settings(net_http2_endpoint_t endpoint) {
+int net_http2_endpoint_http2_send_settings(net_http2_endpoint_t endpoint) {
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
 
     nghttp2_settings_entry iv[1] = {
@@ -456,11 +449,17 @@ int net_http2_endpoint_http2_session_send_settings(net_http2_endpoint_t endpoint
     int rv = nghttp2_submit_settings(endpoint->m_http2_session, NGHTTP2_FLAG_NONE, iv, CPE_ARRAY_SIZE(iv));
     if (rv != 0) {
         CPE_ERROR(
-            protocol->m_em, "http2: %s: http2: Could not submit SETTINGS: %s",
+            protocol->m_em, "http2: %s: Could not submit SETTINGS: %s",
             net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
             nghttp2_strerror(rv));
         return -1;
     }
 
+    if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 2) {
+        CPE_INFO(
+            protocol->m_em, "http2: %s: ==> submit settings",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint));
+    }
+    
     return 0;
 }

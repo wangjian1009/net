@@ -13,7 +13,7 @@ int net_http2_stream_endpoint_send_connect_request(net_http2_stream_endpoint_t e
     net_http2_endpoint_t control = endpoint->m_control;
     assert(control);
 
-    assert(endpoint->m_stream_id != -1);
+    assert(endpoint->m_stream_id == -1);
     
     net_address_t target_address = net_endpoint_remote_address(endpoint->m_base_endpoint);
     if (target_address == NULL) {
@@ -52,8 +52,44 @@ int net_http2_stream_endpoint_send_connect_request(net_http2_stream_endpoint_t e
     }
     endpoint->m_stream_id = (int32_t)rv;
 
-    /* sfox_sfox_cli_router_schedule_flush(sfox_router); */
+    net_http2_endpoint_schedule_flush(control);
 
     return 0;
 }
 
+int net_http2_stream_endpoint_send_rst_and_schedule(net_http2_stream_endpoint_t stream) {
+    assert(stream->m_stream_id != -1);
+    assert(stream->m_control);
+
+    net_http2_endpoint_t control = stream->m_control;
+    net_http2_stream_driver_t driver = net_driver_data(net_endpoint_driver(stream->m_base_endpoint));
+
+    uint32_t error_code = 0;
+    int rv = nghttp2_submit_rst_stream(control->m_http2_session, NGHTTP2_FLAG_NONE, stream->m_stream_id, error_code);
+    if (rv < 0) {
+        CPE_ERROR(
+            driver->m_em, "http2: %s: submit rst fail, %s!",
+            net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), stream->m_base_endpoint),
+            nghttp2_strerror(rv));
+        return -1;
+    }
+
+    rv = nghttp2_session_set_stream_user_data(control->m_http2_session, stream->m_stream_id, NULL);
+    if (rv != 0) {
+        CPE_ERROR(
+            driver->m_em, "http2: %s: clear stream data fail, %s!",
+            net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), stream->m_base_endpoint),
+            nghttp2_strerror(rv));
+        return -1;
+    }
+
+    stream->m_stream_id = -1;
+    if (stream->m_send_scheduled) {
+        stream->m_send_scheduled = 0;
+        TAILQ_REMOVE(&control->m_sending_streams, stream, m_next_for_sending);
+    }
+
+    net_http2_endpoint_schedule_flush(control);
+
+    return 0;
+}

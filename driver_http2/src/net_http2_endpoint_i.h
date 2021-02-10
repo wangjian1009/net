@@ -18,6 +18,9 @@ struct net_http2_endpoint {
         } m_svr;
     };
     net_http2_stream_endpoint_list_t m_streams;
+    net_http2_stream_endpoint_list_t m_sending_streams;
+    uint8_t m_in_processing;
+    net_timer_t m_delay_processor;
 };
 
 /*protocol*/
@@ -26,6 +29,10 @@ void net_http2_endpoint_fini(net_endpoint_t base_endpoint);
 int net_http2_endpoint_input(net_endpoint_t base_endpoint);
 int net_http2_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoint_state_t from_state);
 
+/**/
+void net_http2_endpoint_schedule_delay_processor(net_http2_endpoint_t endpoint);
+void net_http2_endpoint_schedule_flush(net_http2_endpoint_t endpoint);
+
 /*cli*/
 void net_http2_endpoint_set_stream_group(
     net_http2_endpoint_t endpoint, net_http2_stream_group_t stream_group);
@@ -33,6 +40,8 @@ void net_http2_endpoint_set_stream_group(
 /*svr*/
 void net_http2_endpoint_set_stream_acceptor(
     net_http2_endpoint_t endpoint, net_http2_stream_acceptor_t stream_acceptor);
+
+int net_http2_endpoint_http2_send_settings(net_http2_endpoint_t endpoint);
 
 /*nghttp2*/
 ssize_t net_http2_endpoint_send_callback(

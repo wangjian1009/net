@@ -15,6 +15,8 @@ int net_http2_stream_endpoint_init(net_endpoint_t base_endpoint) {
     endpoint->m_base_endpoint = base_endpoint;
     endpoint->m_control = NULL;
     endpoint->m_state = net_http2_stream_endpoint_state_init;
+    endpoint->m_send_scheduled = 0;
+    endpoint->m_send_processing = 0;
     endpoint->m_stream_id = -1;
     return 0;
 }
@@ -358,6 +360,85 @@ void net_http2_stream_endpoint_update_readable(net_endpoint_t base_endpoint) {
             net_endpoint_set_expect_read(base_control, 0);
         }
     }
+}
+
+ssize_t net_http2_stream_endpoint_read_callback(
+    nghttp2_session *session, int32_t stream_id,
+    uint8_t *buf, size_t length, uint32_t *data_flags, nghttp2_data_source *source, void *user_data)
+{
+    net_http2_stream_endpoint_t stream = source->ptr;
+    net_http2_endpoint_t control = stream->m_control;
+    net_http2_stream_driver_t driver = net_driver_data(net_endpoint_driver(stream->m_base_endpoint));
+
+    assert(stream->m_send_processing);
+
+    uint32_t flags = NGHTTP2_DATA_FLAG_NO_COPY;
+    
+    uint32_t read_len = net_endpoint_buf_size(stream->m_base_endpoint, net_ep_buf_write);
+    if (read_len == 0) {
+        *data_flags |= NGHTTP2_DATA_FLAG_EOF;
+    }
+    else {
+        if (read_len <= length) {
+            flags |= NGHTTP2_DATA_FLAG_EOF;
+        }
+        else {
+            read_len = (uint32_t)length;
+        }
+    }
+
+    *data_flags = flags;
+
+    if (net_endpoint_driver_debug(stream->m_base_endpoint) >= 3) {
+        CPE_INFO(
+            driver->m_em, "http2: %s: write %d data, eof=%s",
+            net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), stream->m_base_endpoint),
+            (int)read_len, (flags & NGHTTP2_DATA_FLAG_EOF) ? "true" : "false");
+    }
+
+    if (flags & NGHTTP2_DATA_FLAG_EOF) {
+        stream->m_send_processing = 0;
+    }
+    
+    return (ssize_t)read_len;
+}
+
+int net_http2_stream_endpoint_delay_send_data(net_http2_stream_endpoint_t stream) {
+    net_http2_endpoint_t control = stream->m_control;
+    net_http2_stream_driver_t driver = net_driver_data(net_endpoint_driver(stream->m_base_endpoint));
+
+    assert(stream);
+    assert(stream->m_base_endpoint);
+    assert(net_endpoint_is_writing(stream->m_base_endpoint));
+    assert(!stream->m_send_processing);
+
+    assert(!net_endpoint_buf_is_empty(stream->m_base_endpoint, net_ep_buf_write));
+
+    assert(stream->m_send_scheduled);
+    stream->m_send_scheduled = 0;
+    TAILQ_REMOVE(&control->m_sending_streams, stream, m_next_for_sending);
+
+    if (net_endpoint_driver_debug(stream->m_base_endpoint) >= 2) {
+        CPE_INFO(
+            driver->m_em, "http2: %s: schedule send cleared(in delay send)",
+            net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), stream->m_base_endpoint));
+    }
+    
+    nghttp2_data_provider data_prd;
+    data_prd.source.ptr = stream;
+    data_prd.read_callback = net_http2_stream_endpoint_read_callback;
+
+    int rv = nghttp2_submit_data(control->m_http2_session, 0, stream->m_stream_id, &data_prd);
+    if (rv < 0) {
+        CPE_ERROR(
+            driver->m_em, "http2: %s: submit data fail, %s!",
+            net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), stream->m_base_endpoint),
+            nghttp2_strerror(rv));
+        return -1;
+    }
+    stream->m_send_processing = 1;
+
+    return 0;
 }
 
 int net_http2_stream_endpoint_on_state_changed(net_http2_stream_endpoint_t stream) {
