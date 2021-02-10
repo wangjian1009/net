@@ -69,7 +69,7 @@ int net_http2_endpoint_on_frame_recv_callback(
             stream_printf((write_stream_t)&ws, "%d: ", frame->hd.stream_id);
         }
         
-        stream_printf((write_stream_t)&ws, " <== ");
+        stream_printf((write_stream_t)&ws, "<== ");
         net_http2_print_frame((write_stream_t)&ws, frame);
         stream_putc((write_stream_t)&ws, 0);
 
@@ -156,13 +156,15 @@ int net_http2_endpoint_on_frame_send_callback(
 
         stream_printf((write_stream_t)&ws, "http2: ");
         net_endpoint_print((write_stream_t)&ws, endpoint->m_base_endpoint);
-        stream_printf((write_stream_t)&ws, ": ");
-
+        stream_printf(
+            (write_stream_t)&ws, ": %s: http2: ",
+            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode));
+        
         if (frame->hd.stream_id) {
             stream_printf((write_stream_t)&ws, "%d: ", frame->hd.stream_id);
         }
 
-        stream_printf((write_stream_t)&ws, "   ==>       ");
+        stream_printf((write_stream_t)&ws, "==> ");
         net_http2_print_frame((write_stream_t)&ws, frame);
         stream_putc((write_stream_t)&ws, 0);
 
@@ -301,8 +303,9 @@ int net_http2_endpoint_on_invalid_header_callback(
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
 
     CPE_INFO(
-        protocol->m_em, "http2: %s: %d:    <==       invalid head: %.*s = %.*s",
+        protocol->m_em, "http2: %s: %s: http2: %d: <== invalid head: %.*s = %.*s",
         net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+        net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
         frame->hd.stream_id, (int)namelen, (const char *)name, (int)valuelen, (const char *)value);
 
     return 0;
@@ -321,16 +324,18 @@ int net_http2_endpoint_on_header_callback(
 
     if (net_endpoint_protocol_debug(endpoint->m_base_endpoint)) {
         CPE_INFO(
-            protocol->m_em, "http2: %s: %d:    <==       head: %.*s = %.*s",
+            protocol->m_em, "http2: %s: %s: http2: %d: <== %.*s = %.*s",
             net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
             frame->hd.stream_id, (int)namelen, (const char *)name, (int)valuelen, (const char *)value);
     }
 
     net_http2_stream_endpoint_t stream = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id);
     if (!stream) {
         CPE_ERROR(
-            protocol->m_em, "http2: %s: http2: %d: head no bind endpoint",
+            protocol->m_em, "http2: %s: %s: http2: %d: <== head no bind endpoint",
             net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
             frame->hd.stream_id);
         return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
     }
@@ -355,8 +360,9 @@ int net_http2_endpoint_on_header_callback(
     }
     else {
         CPE_INFO(
-            protocol->m_em, "http2: %s: http2: %d: ignore header cat %d",
+            protocol->m_em, "http2: %s: %s: http2: %d: <== ignore header cat %d",
             net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
             frame->hd.stream_id, frame->headers.cat);
     }
 
@@ -386,8 +392,9 @@ int net_http2_endpoint_on_error_callback(
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
 
     CPE_INFO(
-        protocol->m_em, "http2: %s: http2: error: code=%d %.*s",
+        protocol->m_em, "http2: %s: %s: http2: error: code=%d %.*s",
         net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+        net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
         lib_error_code, (int)len, msg);
     
     return NGHTTP2_NO_ERROR;
