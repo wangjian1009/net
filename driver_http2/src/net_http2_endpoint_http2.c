@@ -283,9 +283,12 @@ int net_http2_endpoint_on_stream_close_callback(
             net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
             stream_id, net_http2_error_code_str(error_code));
 
-        net_endpoint_set_error(
-            stream->m_base_endpoint, net_endpoint_error_source_network,
-            net_endpoint_network_errno_remote_closed, net_http2_error_code_str(error_code));
+        if (net_endpoint_error_source(stream->m_base_endpoint) == net_endpoint_error_source_none) {
+            net_endpoint_set_error(
+                stream->m_base_endpoint, net_endpoint_error_source_network,
+                net_endpoint_network_errno_remote_closed, net_http2_error_code_str(error_code));
+        }
+
         if (net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_error) != 0) {
             net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_deleting);
         }
