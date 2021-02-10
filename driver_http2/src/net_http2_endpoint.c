@@ -84,16 +84,46 @@ int net_http2_endpoint_input(net_endpoint_t base_endpoint) {
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
 
     assert(net_endpoint_state(base_endpoint) != net_endpoint_state_deleting);
-    
-    /* uint32_t buf_size = net_endpoint_buf_size(base_endpoint, net_ep_buf_read); */
-    /* void * buf = NULL; */
-    /* net_endpoint_buf_peak_with_size(base_endpoint, net_ep_buf_read, buf_size, &buf); */
-    /* if (buf) { */
-    /*     CPE_ERROR( */
-    /*         protocol->m_em, "ws: input %s", */
-    /*         mem_buffer_dump_data(net_http2_protocol_tmp_buffer(protocol), buf, buf_size, 0)); */
-    /* } */
 
+    uint32_t data_len = net_endpoint_buf_size(base_endpoint, net_ep_buf_read);
+    void * data = NULL;
+    if (net_endpoint_buf_peak_with_size(base_endpoint, net_ep_buf_read, data_len, &data) != 0) {
+        CPE_ERROR(
+            protocol->m_em, "http2: %s: peak with size %d faild",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), base_endpoint),
+            data_len);
+        return -1;
+    }
+
+    if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 3) {
+        CPE_INFO(
+            protocol->m_em, "http2: %s: %s: net: <== %d bytes",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), base_endpoint),
+            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+            data_len);
+    }
+
+    assert(!endpoint->m_in_processing);
+    endpoint->m_in_processing = 1;
+    
+    assert(endpoint->m_http2_session);
+    ssize_t readlen = nghttp2_session_mem_recv(endpoint->m_http2_session, data, data_len);
+    if (readlen < 0) {
+        CPE_ERROR(
+            protocol->m_em, "http2: %s: %s: http2 session input fail: %s",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), base_endpoint),
+            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+            nghttp2_strerror((int)readlen));
+        endpoint->m_in_processing = 0;
+        return -1;
+    }
+
+    if (net_endpoint_is_active(base_endpoint)) {
+        net_endpoint_buf_consume(endpoint->m_base_endpoint, net_ep_buf_read, (size_t)readlen);
+        net_http2_endpoint_do_flush(endpoint);
+    }
+    
+    endpoint->m_in_processing = 0;
     return 0;
 }
 
@@ -105,6 +135,7 @@ int net_http2_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoin
     if (net_endpoint_state(base_endpoint) == net_endpoint_state_established) {
         if (endpoint->m_runing_mode == net_http2_endpoint_runing_mode_svr) {
             if (net_http2_endpoint_http2_send_settings(endpoint) != 0) return -1;
+            net_http2_endpoint_schedule_flush(endpoint);
         }
     }
     

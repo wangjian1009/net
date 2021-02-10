@@ -61,8 +61,9 @@ int net_http2_stream_endpoint_connect(net_endpoint_t base_endpoint) {
 
     if (net_http2_endpoint_set_runing_mode(endpoint->m_control, net_http2_endpoint_runing_mode_cli) != 0) {
         CPE_ERROR(
-            driver->m_em, "http2: stream: %s: connect: set control runing mode cli failed!",
-            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+            driver->m_em, "http2: %s: %s: connect: set control runing mode cli failed!",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
+            net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(endpoint)));
         return -1;
     }
     
@@ -74,8 +75,9 @@ int net_http2_stream_endpoint_connect(net_endpoint_t base_endpoint) {
     if (net_endpoint_state(base_control) == net_endpoint_state_disable) {
         if (net_endpoint_connect(base_control) != 0) {
             CPE_ERROR(
-                driver->m_em, "http2: stream: %s: connect: start control connect fail!",
-                net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+                driver->m_em, "http2: %s: %s: connect: start control connect fail!",
+                net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
+                net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(endpoint)));
             return -1;
         }
         assert(net_endpoint_state(base_control) != net_endpoint_state_disable);
@@ -121,8 +123,9 @@ int net_http2_stream_endpoint_update(net_endpoint_t base_endpoint) {
     case net_endpoint_state_established:
         if (base_control == NULL) {
             CPE_ERROR(
-                driver->m_em, "http2: stream: %s: set no delay: no control!",
-                net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+                driver->m_em, "http2: %s: %s: set no delay: no control!",
+                net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
+                net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(endpoint)));
             return -1;
         }
 
@@ -131,8 +134,10 @@ int net_http2_stream_endpoint_update(net_endpoint_t base_endpoint) {
             void *  buf = NULL;
             if (net_endpoint_buf_peak_with_size(base_endpoint, net_ep_buf_write, buf_size, &buf) != 0) {
                 CPE_ERROR(
-                    driver->m_em, "http2: stream: %s: peak data to send fail!, size=%d!",
-                    net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), base_endpoint), buf_size);
+                    driver->m_em, "http2: %s: %s: peak data to send fail!, size=%d!",
+                    net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), base_endpoint),
+                    net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(endpoint)),
+                    buf_size);
                 return -1;
             }
 
@@ -140,14 +145,16 @@ int net_http2_stream_endpoint_update(net_endpoint_t base_endpoint) {
                 char name_buf[128];
                 cpe_str_dup(name_buf, sizeof(name_buf), net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), base_endpoint));
                 CPE_INFO(
-                    driver->m_em, "http2: stream: %s: ==> %d data\n%s",
-                    name_buf, buf_size,
+                    driver->m_em, "http2: %s: %s: ==> %d data\n%s",
+                    name_buf,
+                    net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(endpoint)),
+                    buf_size,
                     mem_buffer_dump_data(net_http2_stream_driver_tmp_buffer(driver), buf, buf_size, 0));
             }
             
             /* if (net_http2_endpoint_send_msg_bin(endpoint->m_control, buf, buf_size) != 0) { */
             /*     CPE_ERROR( */
-            /*         driver->m_em, "http2: stream: %s: send bin message fail, size=%d!", */
+            /*         driver->m_em, "http2: %s: send bin message fail, size=%d!", */
             /*         net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), base_endpoint), buf_size); */
             /*     return -1; */
             /* } */
@@ -179,8 +186,9 @@ int net_http2_stream_endpoint_set_no_delay(net_endpoint_t base_endpoint, uint8_t
 
     if (endpoint->m_control == NULL) {
         CPE_ERROR(
-            driver->m_em, "http2: stream: %s: set no delay: no control!",
-            net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), base_endpoint));
+            driver->m_em, "http2: %s: %s: set no delay: no control!",
+            net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), base_endpoint),
+            net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(endpoint)));
         return -1;
     }
 
@@ -193,8 +201,9 @@ int net_http2_stream_endpoint_get_mss(net_endpoint_t base_endpoint, uint32_t * m
 
     if (endpoint->m_control == NULL) {
         CPE_ERROR(
-            driver->m_em, "http2: stream: %s: get mss: no control",
-            net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), base_endpoint));
+            driver->m_em, "http2: %s: %s: get mss: no control",
+            net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), base_endpoint),
+            net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(endpoint)));
         return -1;
     }
 
@@ -292,16 +301,18 @@ int net_http2_stream_endpoint_select_control(net_endpoint_t base_endpoint) {
     net_address_t target_addr = net_endpoint_remote_address(base_endpoint);
     if (target_addr == NULL) {
         CPE_ERROR(
-            driver->m_em, "http2: stream: %s: select: target addr not set!",
-            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+            driver->m_em, "http2: %s: %s: select: target addr not set!",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
+            net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(endpoint)));
         return -1;
     }
 
     net_http2_stream_group_t remote = net_http2_stream_group_check_create(driver, target_addr);
     if (remote == NULL) {
         CPE_ERROR(
-            driver->m_em, "http2: stream: %s: select: check create remote faild!",
-            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+            driver->m_em, "http2: %s: %s: select: check create remote faild!",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
+            net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(endpoint)));
         return -1;
     }
 
@@ -309,15 +320,17 @@ int net_http2_stream_endpoint_select_control(net_endpoint_t base_endpoint) {
         net_endpoint_create(driver->m_control_driver, driver->m_control_protocol, NULL);
     if (base_control == NULL) {
         CPE_ERROR(
-            driver->m_em, "http2: stream: %s: select: create control ep fail",
-            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+            driver->m_em, "http2: %s: %s: select: create control ep fail",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
+            net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(endpoint)));
         return -1;
     }
 
     if (net_endpoint_set_remote_address(base_control, target_addr) != 0) {
         CPE_ERROR(
-            driver->m_em, "http2: stream: %s: select: set control ep remote addr fail",
-            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+            driver->m_em, "http2: %s: %s: select: set control ep remote addr fail",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
+            net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(endpoint)));
         net_endpoint_free(base_endpoint);
         return -1;
     }
@@ -343,8 +356,9 @@ void net_http2_stream_endpoint_update_readable(net_endpoint_t base_endpoint) {
         if (!net_endpoint_expect_read(base_control)) {
             if (net_endpoint_driver_debug(base_endpoint) >= 3) {
                 CPE_INFO(
-                    driver->m_em, "http2: stream: %s: read begin!",
-                    net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), base_endpoint));
+                    driver->m_em, "http2: %s: %s: read begin!",
+                    net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), base_endpoint),
+                    net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(endpoint)));
             }
 
             net_endpoint_set_expect_read(base_control, 1);
@@ -353,8 +367,9 @@ void net_http2_stream_endpoint_update_readable(net_endpoint_t base_endpoint) {
         if (net_endpoint_expect_read(base_control)) {
             if (net_endpoint_driver_debug(base_endpoint) >= 3) {
                 CPE_INFO(
-                    driver->m_em, "http2: stream: %s: read stop!",
-                    net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), base_endpoint));
+                    driver->m_em, "http2: %s: %s: read stop!",
+                    net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), base_endpoint),
+                    net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(endpoint)));
             }
 
             net_endpoint_set_expect_read(base_control, 0);
@@ -401,6 +416,39 @@ ssize_t net_http2_stream_endpoint_read_callback(
     }
     
     return (ssize_t)read_len;
+}
+
+void net_http2_stream_endpoint_schedule_send_data(net_http2_stream_endpoint_t stream) {
+    net_http2_endpoint_t control = stream->m_control;
+    net_http2_stream_driver_t driver = net_driver_data(net_endpoint_driver(stream->m_base_endpoint));
+
+    assert(net_endpoint_is_writing(stream->m_base_endpoint));
+    assert(!stream->m_send_scheduled);
+    assert(stream->m_base_endpoint);
+    
+    stream->m_send_scheduled  = 1;
+    TAILQ_INSERT_TAIL(&control->m_sending_streams, stream, m_next_for_sending);
+
+    if (net_endpoint_protocol_debug(stream->m_base_endpoint) >= 2) {
+        CPE_INFO(
+            driver->m_em, "http2: %s: %s: schedule send begin",
+            net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), stream->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(stream)));
+    }
+
+    net_http2_endpoint_schedule_flush(control);
+}
+
+
+void net_http2_stream_endpoint_check_schedule_send_data(net_http2_stream_endpoint_t stream) {
+    if (!stream->m_send_scheduled) {
+        if (!net_endpoint_buf_is_empty(stream->m_base_endpoint, net_ep_buf_write) /*有数据需要发送 */
+            && !net_endpoint_is_writing(stream->m_base_endpoint) /*没有在发送中 */
+        ) {
+            net_endpoint_set_is_writing(stream->m_base_endpoint, 1);
+            net_http2_stream_endpoint_schedule_send_data(stream);
+        }
+    }
 }
 
 int net_http2_stream_endpoint_delay_send_data(net_http2_stream_endpoint_t stream) {
