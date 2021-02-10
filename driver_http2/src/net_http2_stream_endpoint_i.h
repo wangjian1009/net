@@ -25,9 +25,11 @@ int net_http2_stream_endpoint_get_mss(net_endpoint_t base_endpoint, uint32_t * m
 int net_http2_stream_endpoint_set_state(net_http2_stream_endpoint_t stream, net_http2_stream_endpoint_state_t state);
 
 /*http2*/
+int net_http2_stream_endpoint_sync_state(net_http2_stream_endpoint_t stream);
+
 int net_http2_stream_endpoint_delay_send_data(net_http2_stream_endpoint_t stream);
 void net_http2_stream_endpoint_schedule_send_data(net_http2_stream_endpoint_t stream);
-int net_http2_stream_endpoint_on_state_changed(net_http2_stream_endpoint_t stream);
+void net_http2_stream_endpoint_schedule_send_data(net_http2_stream_endpoint_t stream);
 
 /*http2.send*/
 int net_http2_stream_endpoint_send_connect_request(net_http2_stream_endpoint_t endpoint);

@@ -118,7 +118,7 @@ int net_http2_stream_endpoint_delay_send_data(net_http2_stream_endpoint_t stream
     return 0;
 }
 
-int net_http2_stream_endpoint_on_state_changed(net_http2_stream_endpoint_t stream) {
+int net_http2_stream_endpoint_sync_state(net_http2_stream_endpoint_t stream) {
     assert(stream->m_control);
     net_endpoint_t control_base = stream->m_control->m_base_endpoint;
 
@@ -132,8 +132,13 @@ int net_http2_stream_endpoint_on_state_changed(net_http2_stream_endpoint_t strea
     case net_endpoint_state_established:
         if (net_http2_endpoint_runing_mode(stream->m_control) == net_http2_endpoint_runing_mode_cli) {
             if (net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_connecting) != 0) return -1;
-            if (net_http2_stream_endpoint_send_connect_request(stream) != 0) return -1;
-            if (net_http2_stream_endpoint_set_state(stream, net_http2_stream_endpoint_state_connecting) != 0) return -1;
+
+            if (stream->m_control->m_state == net_http2_endpoint_state_streaming) {
+                if (stream->m_state == net_http2_stream_endpoint_state_init) {
+                    if (net_http2_stream_endpoint_send_connect_request(stream) != 0) return -1;
+                    if (net_http2_stream_endpoint_set_state(stream, net_http2_stream_endpoint_state_connecting) != 0) return -1;
+                }
+            }
         }
         else {
             assert(net_http2_endpoint_runing_mode(stream->m_control) == net_http2_endpoint_runing_mode_svr);

@@ -135,15 +135,18 @@ int net_http2_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoin
 
     if (net_endpoint_state(base_endpoint) == net_endpoint_state_established) {
         if (endpoint->m_runing_mode == net_http2_endpoint_runing_mode_svr) {
-            if (net_http2_endpoint_http2_send_settings(endpoint) != 0) return -1;
-            net_http2_endpoint_schedule_flush(endpoint);
+            if (endpoint->m_state == net_http2_endpoint_state_init) {
+                if (net_http2_endpoint_http2_send_settings(endpoint) != 0) return -1;
+                net_http2_endpoint_schedule_flush(endpoint);
+                if (net_http2_endpoint_set_state(endpoint, net_http2_endpoint_state_handshake) != 0) return -1;
+            }
         }
     }
     
     for(stream = TAILQ_FIRST(&endpoint->m_streams); stream; stream = next_stream) {
         next_stream = TAILQ_NEXT(stream, m_next_for_control);
 
-        if (net_http2_stream_endpoint_on_state_changed(stream) != 0) {
+        if (net_http2_stream_endpoint_sync_state(stream) != 0) {
             net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_deleting);
         }
     }
@@ -300,10 +303,6 @@ int net_http2_endpoint_set_state(net_http2_endpoint_t endpoint, net_http2_endpoi
     case net_http2_endpoint_state_init:
         break;
     case net_http2_endpoint_state_handshake:
-        if (endpoint->m_runing_mode == net_http2_endpoint_runing_mode_cli) {
-        }
-        else {
-        }
         break;
     case net_http2_endpoint_state_streaming:
         break;
@@ -379,6 +378,8 @@ int net_http2_endpoint_set_runing_mode(net_http2_endpoint_t endpoint, net_http2_
 
         if (net_endpoint_state(endpoint->m_base_endpoint) == net_endpoint_state_established) {
             if (net_http2_endpoint_http2_send_settings(endpoint) != 0) return -1;
+            net_http2_endpoint_schedule_flush(endpoint);
+            if (net_http2_endpoint_set_state(endpoint, net_http2_endpoint_state_handshake) != 0) return -1;
         }
 
         break;

@@ -558,7 +558,7 @@ void net_endpoint_set_expect_read(net_endpoint_t endpoint, uint8_t expect_read) 
 
     if (endpoint->m_driver_debug >= 3) {
         CPE_INFO(
-            schedule->m_em, "%s: expect-read ==> %s",
+            schedule->m_em, "core: %s: expect-read ==> %s",
             net_endpoint_dump(&schedule->m_tmp_buffer, endpoint), expect_read ? "true" : "false");
     }
     
@@ -582,7 +582,7 @@ void net_endpoint_set_is_writing(net_endpoint_t endpoint, uint8_t is_writing) {
 
     if (endpoint->m_driver_debug >= 3) {
         CPE_INFO(
-            schedule->m_em, "%s: is-writing ==> %s",
+            schedule->m_em, "core: %s: is-writing ==> %s",
             net_endpoint_dump(&schedule->m_tmp_buffer, endpoint), is_writing ? "true" : "false");
     }
 
@@ -596,7 +596,7 @@ int net_endpoint_connect(net_endpoint_t endpoint) {
 
     if (net_endpoint_is_active(endpoint)) {
         CPE_ERROR(
-            schedule->m_em, "%s: connect: current state is %s, can`t connect!",
+            schedule->m_em, "core: %s: connect: current state is %s, can`t connect!",
             net_endpoint_dump(&schedule->m_tmp_buffer, endpoint),
             net_endpoint_state_str(endpoint->m_state));
         return -1;
@@ -604,7 +604,7 @@ int net_endpoint_connect(net_endpoint_t endpoint) {
     
     if (endpoint->m_remote_address == NULL) {
         CPE_ERROR(
-            schedule->m_em, "%s: connect: no remote address!",
+            schedule->m_em, "core: %s: connect: no remote address!",
             net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
         return -1;
     }
@@ -617,7 +617,7 @@ int net_endpoint_connect(net_endpoint_t endpoint) {
         uint8_t do_connect = 0;
         if (endpoint->m_prepare_connect(endpoint->m_prepare_connect_ctx, endpoint, &do_connect) != 0) {
             CPE_ERROR(
-                schedule->m_em, "%s: connect: external prepare fail!",
+                schedule->m_em, "core: %s: connect: external prepare fail!",
                 net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
             return -1;
         }
@@ -626,7 +626,7 @@ int net_endpoint_connect(net_endpoint_t endpoint) {
             if (!net_endpoint_is_active(endpoint)) {
                 if (net_endpoint_set_state(endpoint, net_endpoint_state_established) != 0) {
                     CPE_ERROR(
-                        schedule->m_em, "%s: connect: external prepare success, set state to established fail!",
+                        schedule->m_em, "core: %s: connect: external prepare success, set state to established fail!",
                         net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
                     return -1;
                 }
@@ -639,7 +639,7 @@ int net_endpoint_connect(net_endpoint_t endpoint) {
     if (net_address_resolved(endpoint->m_remote_address) == NULL) {
         if (net_schedule_dns_resolver(schedule) == NULL) {
             CPE_ERROR(
-                schedule->m_em, "%s: connect: no dns resolver!",
+                schedule->m_em, "core: %s: connect: no dns resolver!",
                 net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
             return -1;
         }
@@ -665,7 +665,7 @@ int net_endpoint_connect(net_endpoint_t endpoint) {
                 net_endpoint_dns_query_callback, NULL, endpoint);
         if (endpoint->m_dns_query == NULL) {
             CPE_ERROR(
-                schedule->m_em, "%s: connect: create dns query fail!",
+                schedule->m_em, "core: %s: connect: create dns query fail!",
                 net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
             return -1;
         }
@@ -674,7 +674,7 @@ int net_endpoint_connect(net_endpoint_t endpoint) {
 
         if (endpoint->m_driver_debug || schedule->m_debug >= 2) {
             CPE_INFO(
-                schedule->m_em, "%s: resolve: begin",
+                schedule->m_em, "core: %s: resolve: begin",
                 net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
         }
         
@@ -837,7 +837,7 @@ static void net_endpoint_dns_query_callback(void * ctx, net_address_t address, n
     
     if (address == NULL) {
         CPE_ERROR(
-            schedule->m_em, "%s: resolve: dns resolve fail!!!",
+            schedule->m_em, "core: %s: resolve: dns resolve fail!!!",
             net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
         net_endpoint_set_error(
             endpoint, net_endpoint_error_source_network,
@@ -851,7 +851,7 @@ static void net_endpoint_dns_query_callback(void * ctx, net_address_t address, n
     assert(endpoint->m_remote_address);
     if (net_address_set_resolved(endpoint->m_remote_address, address, 0) != 0) {
         CPE_ERROR(
-            schedule->m_em, "%s: resolve: set resolve result fail!",
+            schedule->m_em, "core: %s: resolve: set resolve result fail!",
             net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
         if (net_endpoint_set_state(endpoint, net_endpoint_state_error) != 0) {
             net_endpoint_free(endpoint);
@@ -869,7 +869,7 @@ static void net_endpoint_dns_query_callback(void * ctx, net_address_t address, n
         net_endpoint_next_t next = net_endpoint_next_create(endpoint, other_address);
         if (next == NULL) {
             CPE_ERROR(
-                schedule->m_em, "%s: resolve: resolve success, add next try address fail!",
+                schedule->m_em, "core: %s: resolve: resolve success, add next try address fail!",
                 net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
             continue;
         }
@@ -882,7 +882,7 @@ static void net_endpoint_dns_query_callback(void * ctx, net_address_t address, n
         cpe_str_dup(address_buf, sizeof(address_buf), net_address_host(&schedule->m_tmp_buffer, address));
         
         CPE_INFO(
-            schedule->m_em, "%s: resolve: success, use-address=%s, next-try-address=%d!",
+            schedule->m_em, "core: %s: resolve: success, use-address=%s, next-try-address=%d!",
             net_endpoint_dump(&schedule->m_tmp_buffer, endpoint),
             address_buf,
             other_address_count);
@@ -937,13 +937,13 @@ uint8_t net_endpoint_shift_address(net_endpoint_t endpoint) {
             cpe_str_dup(address_buf, sizeof(address_buf), net_address_host(&schedule->m_tmp_buffer, next_address));
     
             CPE_INFO(
-                schedule->m_em, "%s: shift address: use %s",
+                schedule->m_em, "core: %s: shift address: use %s",
                 net_endpoint_dump(&schedule->m_tmp_buffer, endpoint), address_buf);
         }
 
         if (net_address_set_resolved(endpoint->m_remote_address, next_address, 1) != 0) {
             CPE_ERROR(
-                schedule->m_em, "%s: shift address: set resolve result fail!",
+                schedule->m_em, "core: %s: shift address: set resolve result fail!",
                 net_endpoint_dump(&schedule->m_tmp_buffer, endpoint));
             net_address_free(next_address);
             continue;
@@ -1024,7 +1024,7 @@ int net_endpoint_set_no_delay(net_endpoint_t endpoint, uint8_t is_enable) {
     else {
         if (net_endpoint_driver_debug(endpoint)) {
             CPE_INFO(
-                schedule->m_em, "%s: set_no_delay: driver %s not support",
+                schedule->m_em, "core: %s: set_no_delay: driver %s not support",
                 net_endpoint_dump(&schedule->m_tmp_buffer, endpoint),
                 net_driver_name(endpoint->m_driver));
         }
@@ -1041,7 +1041,7 @@ int net_endpoint_get_mss(net_endpoint_t endpoint, uint32_t * mss) {
     else {
         if (net_endpoint_driver_debug(endpoint)) {
             CPE_INFO(
-                schedule->m_em, "%s: get_mss: driver %s not support",
+                schedule->m_em, "core: %s: get_mss: driver %s not support",
                 net_endpoint_dump(&schedule->m_tmp_buffer, endpoint),
                 net_driver_name(endpoint->m_driver));
         }

@@ -84,7 +84,7 @@ int net_http2_stream_endpoint_connect(net_endpoint_t base_endpoint) {
     }
 
     return net_endpoint_state(base_endpoint) == net_endpoint_state_disable
-        ? net_http2_stream_endpoint_on_state_changed(endpoint)
+        ? net_http2_stream_endpoint_sync_state(endpoint)
         : 0;
 }    
 
