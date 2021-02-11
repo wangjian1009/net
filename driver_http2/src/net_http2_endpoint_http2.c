@@ -238,7 +238,7 @@ int net_http2_endpoint_on_data_chunk_recv_callback(
     stream = nghttp2_session_get_stream_user_data(session, stream_id);
     if (!stream) {
         CPE_ERROR(
-            protocol->m_em, "http2: %s: %s: http2: %d: recv data: no bind endpoint",
+            protocol->m_em, "http2: %s: %s: http2: %d: recv chunk: no bind endpoint",
             net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
             net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
             stream_id);
@@ -341,7 +341,7 @@ int net_http2_endpoint_on_invalid_header_callback(
         net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
         frame->hd.stream_id, (int)namelen, (const char *)name, (int)valuelen, (const char *)value);
 
-    return 0;
+    return NGHTTP2_NO_ERROR;
 }
 
 int net_http2_endpoint_on_header_callback(
@@ -458,6 +458,12 @@ int net_http2_endpoint_on_header_callback(
         return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
     }
 
+    if (frame->hd.flags & NGHTTP2_FLAG_END_HEADERS) {
+        if (net_http2_stream_endpoint_set_state(stream, net_http2_stream_endpoint_state_established) != 0) {
+            return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+        }
+    }
+    
     return NGHTTP2_NO_ERROR;
 }
 
