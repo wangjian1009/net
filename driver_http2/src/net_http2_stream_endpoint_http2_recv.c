@@ -7,7 +7,19 @@
 #include "net_http2_stream_group_i.h"
 #include "net_http2_endpoint_i.h"
 
-int net_http2_stream_endpoint_on_head(
+int net_http2_stream_endpoint_on_request_head(
+    net_http2_stream_endpoint_t stream,
+    const char * name, uint32_t name_len, const char * value, uint32_t value_len)
+{
+    net_http2_stream_driver_t driver = net_driver_data(net_endpoint_driver(stream->m_base_endpoint));
+
+    if (cpe_str_cmp_part((const char *)name, name_len, ":method") == 0) {
+    }
+
+    return 0;
+}
+
+int net_http2_stream_endpoint_on_response_head(
     net_http2_stream_endpoint_t stream,
     const char * name, uint32_t name_len, const char * value, uint32_t value_len)
 {

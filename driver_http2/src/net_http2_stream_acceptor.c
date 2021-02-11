@@ -6,6 +6,7 @@
 #include "net_protocol.h"
 #include "net_acceptor.h"
 #include "net_http2_stream_acceptor_i.h"
+#include "net_http2_stream_endpoint_i.h"
 #include "net_http2_endpoint_i.h"
 
 int net_http2_stream_acceptor_on_new_endpoint(void * ctx, net_endpoint_t base_control) {
@@ -21,7 +22,7 @@ int net_http2_stream_acceptor_on_new_endpoint(void * ctx, net_endpoint_t base_co
 
     if (net_http2_endpoint_set_runing_mode(control, net_http2_endpoint_runing_mode_svr)) {
         CPE_ERROR(
-            driver->m_em, "ws: stream: %s: set control runing-mode fail",
+            driver->m_em, "ws: %s: set control runing-mode fail",
             net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), base_control));
         return -1;
     }
@@ -37,7 +38,7 @@ int net_http2_stream_acceptor_init(net_acceptor_t base_acceptor) {
 
     net_address_t address = net_acceptor_address(base_acceptor);
     
-    acceptor->m_base_acceptor = 
+    acceptor->m_control_acceptor = 
         net_acceptor_create(
             driver->m_control_driver,
             driver->m_control_protocol,
@@ -50,7 +51,7 @@ int net_http2_stream_acceptor_init(net_acceptor_t base_acceptor) {
     }
 
     if (net_address_port(address) == 0) {
-        net_address_set_port(address, net_address_port(net_acceptor_address(acceptor->m_base_acceptor)));
+        net_address_set_port(address, net_address_port(net_acceptor_address(acceptor->m_control_acceptor)));
     }
 
     TAILQ_INIT(&acceptor->m_endpoints);
@@ -62,13 +63,57 @@ void net_http2_stream_acceptor_fini(net_acceptor_t base_acceptor) {
     net_http2_stream_acceptor_t acceptor = net_acceptor_data(base_acceptor);
     net_http2_stream_driver_t driver = net_driver_data(net_acceptor_driver(base_acceptor));
 
-    if (acceptor->m_base_acceptor) {
-        net_acceptor_free(acceptor->m_base_acceptor);
-        acceptor->m_base_acceptor = NULL;
+    if (acceptor->m_control_acceptor) {
+        net_acceptor_free(acceptor->m_control_acceptor);
+        acceptor->m_control_acceptor = NULL;
     }
 
     while(!TAILQ_EMPTY(&acceptor->m_endpoints)) {
         net_http2_endpoint_t endpoint = TAILQ_FIRST(&acceptor->m_endpoints);
         net_http2_endpoint_set_stream_acceptor(endpoint, NULL);
     }
+}
+
+net_http2_stream_endpoint_t
+net_http2_stream_acceptor_accept(
+    net_http2_stream_acceptor_t acceptor, net_http2_endpoint_t control, int32_t stream_id)
+{
+    net_acceptor_t base_acceptor = net_acceptor_from_data(acceptor);
+    net_http2_stream_driver_t driver = net_driver_data(net_acceptor_driver(base_acceptor));
+
+    net_endpoint_t base_stream =
+        net_endpoint_create(
+            net_driver_from_data(driver),
+            net_acceptor_protocol(base_acceptor),
+            NULL);
+    if (base_stream == NULL) {
+        CPE_ERROR(
+            driver->m_em, "ws: %s: %s: accept: create stream endpoint fail",
+            net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), control->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(net_http2_endpoint_runing_mode_svr));
+        return NULL;
+    }
+
+    if (net_endpoint_set_state(base_stream, net_endpoint_state_connecting) != 0) {
+        CPE_ERROR(
+            driver->m_em, "ws: %s: %s: accept: set connecting fail",
+            net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), control->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(net_http2_endpoint_runing_mode_svr));
+        net_endpoint_free(base_stream);
+        return NULL;
+    }
+    
+    net_http2_stream_endpoint_t stream = net_http2_stream_endpoint_cast(base_stream);
+    net_http2_stream_endpoint_set_control(stream, control);
+
+    if (net_http2_stream_endpoint_set_state(stream, net_http2_stream_endpoint_state_connecting) != 0) {
+        CPE_ERROR(
+            driver->m_em, "ws: %s: %s: accept: set established fail",
+            net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), control->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(net_http2_endpoint_runing_mode_svr));
+        net_endpoint_free(base_stream);
+        return NULL;
+    }
+
+    return stream;
 }

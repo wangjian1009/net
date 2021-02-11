@@ -5,11 +5,15 @@
 #include "net_http2_protocol_i.h"
 
 struct net_http2_stream_acceptor {
-    net_acceptor_t m_base_acceptor;
+    net_acceptor_t m_control_acceptor;
     net_http2_endpoint_list_t m_endpoints;
 };
 
 int net_http2_stream_acceptor_init(net_acceptor_t acceptor);
 void net_http2_stream_acceptor_fini(net_acceptor_t acceptor);
+
+net_http2_stream_endpoint_t
+net_http2_stream_acceptor_accept(
+    net_http2_stream_acceptor_t acceptor, net_http2_endpoint_t control, int32_t stream_id);
 
 #endif

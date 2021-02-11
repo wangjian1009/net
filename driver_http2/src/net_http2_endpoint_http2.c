@@ -6,6 +6,7 @@
 #include "net_endpoint.h"
 #include "net_http2_endpoint_i.h"
 #include "net_http2_stream_endpoint_i.h"
+#include "net_http2_stream_acceptor_i.h"
 #include "net_http2_utils.h"
 
 ssize_t net_http2_endpoint_send_callback(
@@ -354,34 +355,92 @@ int net_http2_endpoint_on_header_callback(
 
     assert(frame->hd.type == NGHTTP2_HEADERS);
 
+    net_http2_stream_endpoint_t stream = NULL;
+
+    if (frame->headers.cat == NGHTTP2_HCAT_REQUEST) {
+        if (endpoint->m_runing_mode != net_http2_endpoint_runing_mode_svr) {
+            CPE_ERROR(
+                protocol->m_em, "http2: %s: %s: http2: %d: <== receive request header in error runing-mode",
+                net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+                net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+                frame->hd.stream_id);
+            return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+        }
+
+        stream = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id);
+        if (stream == NULL) {
+            if (endpoint->m_svr.m_stream_acceptor == NULL) {
+                CPE_ERROR(
+                    protocol->m_em, "http2: %s: %s: http2: %d: <== receive request header no acceptor",
+                    net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+                    net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+                    frame->hd.stream_id);
+                return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+            }
+
+            stream = net_http2_stream_acceptor_accept(endpoint->m_svr.m_stream_acceptor, endpoint, frame->hd.stream_id);
+            if (stream == NULL) {
+                CPE_ERROR(
+                    protocol->m_em, "http2: %s: %s: http2: %d: <== receive request header create new stream fail",
+                    net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+                    net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+                    frame->hd.stream_id);
+                return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+            }
+
+            int rv = nghttp2_session_set_stream_user_data(session, frame->hd.stream_id, stream);
+            if (rv != NGHTTP2_NO_ERROR) {
+                CPE_ERROR(
+                    protocol->m_em, "http2: %s: %s: http2: %d: <== receive request header bind stream fail, error=%s",
+                    net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+                    net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+                    frame->hd.stream_id, net_http2_error_code_str(rv));
+                return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+            }
+        }
+    }
+    else {
+        stream = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id);
+        if (!stream) {
+            CPE_ERROR(
+                protocol->m_em, "http2: %s: %s: http2: %d: <== receive head no bind endpoint",
+                net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+                net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+                frame->hd.stream_id);
+            return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+        }
+    }
+
     if (net_endpoint_protocol_debug(endpoint->m_base_endpoint)) {
         CPE_INFO(
             protocol->m_em, "http2: %s: %s: http2: %d: <== %.*s = %.*s",
-            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), stream->m_base_endpoint),
             net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
             frame->hd.stream_id, (int)namelen, (const char *)name, (int)valuelen, (const char *)value);
     }
 
-    net_http2_stream_endpoint_t stream = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id);
-    if (!stream) {
-        CPE_ERROR(
-            protocol->m_em, "http2: %s: %s: http2: %d: <== head no bind endpoint",
-            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
-            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
-            frame->hd.stream_id);
-        return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
-    }
-
-    if (frame->headers.cat == NGHTTP2_HCAT_RESPONSE) {
-        if (net_http2_stream_endpoint_on_head(
+    switch(frame->headers.cat) {
+    case NGHTTP2_HCAT_REQUEST:
+        if (net_http2_stream_endpoint_on_request_head(
                 stream,
                 (const char *)name, (uint32_t)namelen, (const char *)value, (uint32_t)valuelen)
             != 0)
         {
             return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
         }
-    }
-    else if (frame->headers.cat == NGHTTP2_HCAT_HEADERS) {
+        break;
+    case NGHTTP2_HCAT_RESPONSE:
+        if (net_http2_stream_endpoint_on_response_head(
+                stream,
+                (const char *)name, (uint32_t)namelen, (const char *)value, (uint32_t)valuelen)
+            != 0)
+        {
+            return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+        }
+        break;
+    case NGHTTP2_HCAT_PUSH_RESPONSE:
+        break;
+    case NGHTTP2_HCAT_HEADERS:
         if (net_http2_stream_endpoint_on_tailer(
                 stream,
                 (const char *)name, (uint32_t)namelen, (const char *)value, (uint32_t)valuelen)
@@ -389,13 +448,14 @@ int net_http2_endpoint_on_header_callback(
         {
             return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
         }
-    }
-    else {
+        break;
+    default:
         CPE_INFO(
             protocol->m_em, "http2: %s: %s: http2: %d: <== ignore header cat %d",
             net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
             net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
             frame->hd.stream_id, frame->headers.cat);
+        return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
     }
 
     return NGHTTP2_NO_ERROR;
