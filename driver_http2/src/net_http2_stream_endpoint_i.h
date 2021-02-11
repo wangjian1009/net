@@ -7,7 +7,6 @@ struct net_http2_stream_endpoint {
     net_endpoint_t m_base_endpoint;
     net_http2_endpoint_t m_control;
     TAILQ_ENTRY(net_http2_stream_endpoint) m_next_for_control;
-    net_http2_stream_endpoint_state_t m_state;
     uint8_t m_send_scheduled;
     uint8_t m_send_processing;
     TAILQ_ENTRY(net_http2_stream_endpoint) m_next_for_sending;

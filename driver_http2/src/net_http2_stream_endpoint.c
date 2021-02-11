@@ -13,7 +13,6 @@ int net_http2_stream_endpoint_init(net_endpoint_t base_endpoint) {
     net_http2_stream_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     endpoint->m_base_endpoint = base_endpoint;
     endpoint->m_control = NULL;
-    endpoint->m_state = net_http2_stream_endpoint_state_init;
     endpoint->m_send_scheduled = 0;
     endpoint->m_send_processing = 0;
     endpoint->m_stream_id = -1;
@@ -28,11 +27,6 @@ void net_http2_stream_endpoint_fini(net_endpoint_t base_endpoint) {
     }
 
     assert(endpoint->m_stream_id == -1);
-}
-
-net_http2_stream_endpoint_state_t
-net_http2_stream_endpoint_state(net_http2_stream_endpoint_t endpoint) {
-    return endpoint->m_state;
 }
 
 net_http2_endpoint_runing_mode_t
@@ -204,36 +198,6 @@ void net_http2_stream_endpoint_set_control(net_http2_stream_endpoint_t endpoint,
     }
 }
 
-int net_http2_stream_endpoint_set_state(net_http2_stream_endpoint_t stream, net_http2_stream_endpoint_state_t state) {
-    if (stream->m_state == state) return 0;
-
-    net_http2_stream_driver_t driver = net_driver_data(net_endpoint_driver(stream->m_base_endpoint));
-
-    if (net_endpoint_driver_debug(stream->m_base_endpoint)) {
-        CPE_INFO(
-            driver->m_em, "http2: %s: stream-state: %s ==> %s",
-            net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), stream->m_base_endpoint),
-            net_http2_stream_endpoint_state_str(stream->m_state),
-            net_http2_stream_endpoint_state_str(state));
-    }
-
-    stream->m_state = state;
-
-    switch(stream->m_state) {
-    case net_http2_stream_endpoint_state_init:
-        break;
-    case net_http2_stream_endpoint_state_connecting:
-        if (stream->m_control->m_runing_mode == net_http2_endpoint_runing_mode_cli) {
-            if (net_http2_stream_endpoint_send_connect_request(stream) != 0) return -1;
-        }
-        break;
-    case net_http2_stream_endpoint_state_established:
-        break;
-    }
-    
-    return 0;
-}
-
 int net_http2_stream_endpoint_select_control(net_endpoint_t base_endpoint) {
     net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
     net_http2_stream_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
@@ -286,15 +250,4 @@ int net_http2_stream_endpoint_select_control(net_endpoint_t base_endpoint) {
     }
 
     return 0;
-}
-
-const char * net_http2_stream_endpoint_state_str(net_http2_stream_endpoint_state_t state) {
-    switch(state) {
-    case net_http2_stream_endpoint_state_init:
-        return "init";
-    case net_http2_stream_endpoint_state_connecting:
-        return "connecting";
-    case net_http2_stream_endpoint_state_established:
-        return "established";
-    }
 }

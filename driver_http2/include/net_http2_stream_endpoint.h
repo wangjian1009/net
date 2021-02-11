@@ -4,12 +4,6 @@
 
 NET_BEGIN_DECL
 
-enum net_http2_stream_endpoint_state {
-    net_http2_stream_endpoint_state_init,
-    net_http2_stream_endpoint_state_connecting,
-    net_http2_stream_endpoint_state_established,
-};
-
 net_http2_stream_endpoint_t
 net_http2_stream_endpoint_create(
     net_http2_stream_driver_t driver, net_protocol_t protocol);
@@ -20,15 +14,12 @@ void net_http2_stream_endpoint_set_control(net_http2_stream_endpoint_t endpoint,
 net_http2_endpoint_t net_http2_stream_endpoint_control(net_http2_stream_endpoint_t endpoint);
 net_endpoint_t net_http2_stream_endpoint_base_endpoint(net_http2_stream_endpoint_t endpoint);
 
-net_http2_stream_endpoint_state_t net_http2_stream_endpoint_state(net_http2_stream_endpoint_t endpoint);
 net_http2_endpoint_runing_mode_t net_http2_stream_endpoint_runing_mode(net_http2_stream_endpoint_t endpoint);
 
 net_http2_stream_endpoint_t
 net_http2_stream_endpoint_find_by_stream_id(net_http2_endpoint_t endpoint, int32_t stream_id);
 
 int32_t net_http2_stream_endpoint_stream_id(net_http2_stream_endpoint_t endpoint);
-
-const char * net_http2_stream_endpoint_state_str(net_http2_stream_endpoint_state_t state);
 
 NET_END_DECL
 

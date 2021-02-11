@@ -106,14 +106,5 @@ net_http2_stream_acceptor_accept(
     net_http2_stream_endpoint_t stream = net_http2_stream_endpoint_cast(base_stream);
     net_http2_stream_endpoint_set_control(stream, control);
 
-    if (net_http2_stream_endpoint_set_state(stream, net_http2_stream_endpoint_state_connecting) != 0) {
-        CPE_ERROR(
-            driver->m_em, "ws: %s: %s: accept: set established fail",
-            net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), control->m_base_endpoint),
-            net_http2_endpoint_runing_mode_str(net_http2_endpoint_runing_mode_svr));
-        net_endpoint_free(base_stream);
-        return NULL;
-    }
-
     return stream;
 }

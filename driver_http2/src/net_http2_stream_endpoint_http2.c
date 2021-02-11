@@ -138,8 +138,8 @@ int net_http2_stream_endpoint_sync_state(net_http2_stream_endpoint_t stream) {
             if (net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_connecting) != 0) return -1;
 
             if (stream->m_control->m_state == net_http2_endpoint_state_streaming) {
-                if (stream->m_state == net_http2_stream_endpoint_state_init) {
-                    if (net_http2_stream_endpoint_set_state(stream, net_http2_stream_endpoint_state_connecting) != 0) return -1;
+                if (stream->m_control->m_runing_mode == net_http2_endpoint_runing_mode_cli) {
+                    if (net_http2_stream_endpoint_send_connect_request(stream) != 0) return -1;
                 }
             }
         }
