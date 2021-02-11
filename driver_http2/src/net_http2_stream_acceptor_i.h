@@ -16,4 +16,7 @@ net_http2_stream_endpoint_t
 net_http2_stream_acceptor_accept(
     net_http2_stream_acceptor_t acceptor, net_http2_endpoint_t control, int32_t stream_id);
 
+int net_http2_stream_acceptor_established(
+    net_http2_stream_acceptor_t acceptor, net_http2_stream_endpoint_t stream);
+
 #endif

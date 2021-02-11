@@ -33,7 +33,8 @@ void net_http2_stream_endpoint_schedule_send_data(net_http2_stream_endpoint_t st
 
 /*http2.send*/
 int net_http2_stream_endpoint_send_connect_request(net_http2_stream_endpoint_t endpoint);
-    
+int net_http2_stream_endpoint_send_connect_response(net_http2_stream_endpoint_t stream);
+
 /*http2.recv*/
 int net_http2_stream_endpoint_on_request_head(
     net_http2_stream_endpoint_t endpoint,

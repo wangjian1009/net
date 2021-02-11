@@ -50,6 +50,7 @@ static void net_http2_stream_pair_basic(void **state) {
         net_endpoint_state_str(net_endpoint_state_established));
 
     net_http2_stream_endpoint_t svr_ep = net_http2_testenv_stream_ep_other(env, cli_ep);
+    CPE_ERROR(env->m_em, "aaa 1: %p", svr_ep);
     assert_true(svr_ep != NULL);
     net_endpoint_t svr_ep_base = net_http2_stream_endpoint_base_endpoint(svr_ep);
 

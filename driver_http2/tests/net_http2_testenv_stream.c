@@ -54,5 +54,5 @@ net_http2_testenv_stream_ep_other(net_http2_testenv_t env, net_http2_stream_endp
     net_http2_endpoint_t other_control = net_http2_endpoint_cast(other_base);
     assert_true(other_control);
 
-    return NULL;
+    return net_http2_stream_endpoint_find_by_stream_id(other_control, net_http2_stream_endpoint_stream_id(ep));
 }

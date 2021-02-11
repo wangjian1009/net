@@ -4,6 +4,7 @@
 #include "cpe/utils/string_utils.h"
 #include "net_protocol.h"
 #include "net_endpoint.h"
+#include "net_acceptor.h"
 #include "net_http2_endpoint_i.h"
 #include "net_http2_stream_endpoint_i.h"
 #include "net_http2_stream_acceptor_i.h"
@@ -98,8 +99,16 @@ int net_http2_endpoint_on_frame_recv_callback(
         if (frame->hd.flags & NGHTTP2_FLAG_END_HEADERS) {
             net_http2_stream_endpoint_t stream = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id);
             if (stream) {
-                if (net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_established) != 0) {
-                    net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_deleting);
+                if (endpoint->m_runing_mode == net_http2_endpoint_runing_mode_cli) {
+                    if (net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_established) != 0) {
+                        net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_deleting);
+                    }
+                }
+                else {
+                    assert(endpoint->m_svr.m_stream_acceptor);
+                    if (net_http2_stream_acceptor_established(endpoint->m_svr.m_stream_acceptor, stream) != 0) {
+                        net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_deleting);
+                    }
                 }
             }
         }
@@ -483,12 +492,6 @@ int net_http2_endpoint_on_begin_headers_callback(nghttp2_session *session, const
         /* } */
         break;
     }
-
-    CPE_INFO(
-        protocol->m_em, "http2: %s: %s: http2: %d: <== on_begin_headers",
-        net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
-        net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
-        frame->hd.stream_id);
     
     return NGHTTP2_NO_ERROR;
 }

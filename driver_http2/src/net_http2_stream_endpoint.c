@@ -185,23 +185,26 @@ net_http2_stream_endpoint_find_by_stream_id(net_http2_endpoint_t endpoint, int32
     return NULL;
 }
 
-void net_http2_stream_endpoint_set_control(net_http2_stream_endpoint_t endpoint, net_http2_endpoint_t control) {
-    if (endpoint->m_control == control) return;
+void net_http2_stream_endpoint_set_control(net_http2_stream_endpoint_t stream, net_http2_endpoint_t control) {
+    if (stream->m_control == control) return;
 
-    if (endpoint->m_control) {
-        if (endpoint->m_stream_id) {
-            if (net_endpoint_state(endpoint->m_control->m_base_endpoint) == net_endpoint_state_established) {
+    net_http2_stream_driver_t driver =
+        net_driver_data(net_endpoint_driver(stream->m_base_endpoint));
+    if (stream->m_control) {
+        if (stream->m_stream_id != -1) {
+            if (net_endpoint_state(stream->m_control->m_base_endpoint) == net_endpoint_state_established) {
             }
-            endpoint->m_stream_id = -1;
+            nghttp2_session_set_stream_user_data(stream->m_control->m_http2_session, stream->m_stream_id, NULL);
+            stream->m_stream_id = -1;
         }
-        
-        TAILQ_REMOVE(&control->m_streams, endpoint, m_next_for_control);
+
+        TAILQ_REMOVE(&stream->m_control->m_streams, stream, m_next_for_control);
     }
 
-    endpoint->m_control = control;
+    stream->m_control = control;
 
-    if (endpoint->m_control) {
-        TAILQ_INSERT_TAIL(&control->m_streams, endpoint, m_next_for_control);
+    if (stream->m_control) {
+        TAILQ_INSERT_TAIL(&control->m_streams, stream, m_next_for_control);
     }
 }
 
