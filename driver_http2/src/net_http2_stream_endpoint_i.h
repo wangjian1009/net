@@ -11,6 +11,7 @@ struct net_http2_stream_endpoint {
     uint8_t m_send_processing;
     TAILQ_ENTRY(net_http2_stream_endpoint) m_next_for_sending;
     int32_t m_stream_id;
+    char * m_path;
 };
 
 int net_http2_stream_endpoint_init(net_endpoint_t base_endpoint);

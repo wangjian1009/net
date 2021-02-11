@@ -16,17 +16,24 @@ int net_http2_stream_endpoint_init(net_endpoint_t base_endpoint) {
     endpoint->m_send_scheduled = 0;
     endpoint->m_send_processing = 0;
     endpoint->m_stream_id = -1;
+    endpoint->m_path = NULL;
     return 0;
 }
 
 void net_http2_stream_endpoint_fini(net_endpoint_t base_endpoint) {
     net_http2_stream_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+    net_http2_stream_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
 
     if (endpoint->m_control) {
         net_http2_stream_endpoint_set_control(endpoint, NULL);
     }
 
     assert(endpoint->m_stream_id == -1);
+
+    if (endpoint->m_path) {
+        mem_free(driver->m_alloc, endpoint->m_path);
+        endpoint->m_path = NULL;
+    }
 }
 
 net_http2_endpoint_runing_mode_t
