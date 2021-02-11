@@ -94,6 +94,14 @@ int net_http2_endpoint_on_frame_recv_callback(
             net_http2_endpoint_set_state(endpoint, net_http2_endpoint_state_streaming);
         }
         break;
+    case NGHTTP2_HEADERS:
+        if (frame->hd.flags & NGHTTP2_FLAG_END_HEADERS) {
+            net_http2_stream_endpoint_t stream = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id);
+            if (stream && net_http2_stream_endpoint_set_state(stream, net_http2_stream_endpoint_state_established) != 0) {
+                return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+            }
+        }
+        break;
     default:
         break;
     }
@@ -456,12 +464,6 @@ int net_http2_endpoint_on_header_callback(
             net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
             frame->hd.stream_id, frame->headers.cat);
         return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
-    }
-
-    if (frame->hd.flags & NGHTTP2_FLAG_END_HEADERS) {
-        if (net_http2_stream_endpoint_set_state(stream, net_http2_stream_endpoint_state_established) != 0) {
-            return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
-        }
     }
     
     return NGHTTP2_NO_ERROR;
