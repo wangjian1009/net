@@ -11,15 +11,11 @@ net_http2_stream_endpoint_create(
 net_http2_stream_endpoint_t net_http2_stream_endpoint_cast(net_endpoint_t base_endpoint);
 
 void net_http2_stream_endpoint_set_control(net_http2_stream_endpoint_t endpoint, net_http2_endpoint_t control);
-net_http2_endpoint_t net_http2_stream_endpoint_control(net_http2_stream_endpoint_t endpoint);
 net_endpoint_t net_http2_stream_endpoint_base_endpoint(net_http2_stream_endpoint_t endpoint);
 
+net_http2_req_t net_http2_stream_endpoint_req(net_http2_stream_endpoint_t endpoint);
+
 net_http2_endpoint_runing_mode_t net_http2_stream_endpoint_runing_mode(net_http2_stream_endpoint_t endpoint);
-
-net_http2_stream_endpoint_t
-net_http2_stream_endpoint_find_by_stream_id(net_http2_endpoint_t endpoint, int32_t stream_id);
-
-int32_t net_http2_stream_endpoint_stream_id(net_http2_stream_endpoint_t endpoint);
 
 NET_END_DECL
 

@@ -94,7 +94,7 @@ uint16_t net_http2_req_id(net_http2_req_t req) {
     return req->m_id;
 }
 
-net_http2_endpoint_t net_http2_req_ep(net_http2_req_t req) {
+net_http2_endpoint_t net_http2_req_endpoint(net_http2_req_t req) {
     return req->m_endpoint;
 }
 

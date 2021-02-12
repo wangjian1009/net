@@ -42,18 +42,16 @@ net_http2_stream_group_create(net_http2_stream_driver_t driver, net_address_t ad
         return NULL;
     }
 
-    TAILQ_INIT(&remote->m_endpoints);
-
     return remote;
 }
 
 void net_http2_stream_group_free(net_http2_stream_group_t remote) {
     net_http2_stream_driver_t driver = remote->m_driver;
 
-    while(!TAILQ_EMPTY(&remote->m_endpoints)) {
-        net_http2_endpoint_t endpoint = TAILQ_FIRST(&remote->m_endpoints);
-        //net_http2_endpoint_set_stream_group(endpoint, NULL);
-    }
+    /* while(!TAILQ_EMPTY(&remote->m_endpoints)) { */
+    /*     net_http2_endpoint_t endpoint = TAILQ_FIRST(&remote->m_endpoints); */
+    /*     //net_http2_endpoint_set_stream_group(endpoint, NULL); */
+    /* } */
     
     cpe_hash_table_remove_by_ins(&driver->m_groups, remote);
 

@@ -26,7 +26,7 @@ net_http2_req_t net_http2_req_create(net_http2_endpoint_t http_ep, net_http2_req
 void net_http2_req_free(net_http2_req_t req);
 
 uint16_t net_http2_req_id(net_http2_req_t req);
-net_http2_endpoint_t net_http2_req_ep(net_http2_req_t req);
+net_http2_endpoint_t net_http2_req_endpoint(net_http2_req_t req);
 
 net_http2_req_t net_http2_req_find(net_http2_endpoint_t http_ep, uint16_t req_id);
 

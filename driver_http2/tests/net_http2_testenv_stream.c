@@ -42,7 +42,8 @@ net_http2_testenv_create_stream_acceptor(net_http2_testenv_t env, const char * s
 
 net_http2_stream_endpoint_t
 net_http2_testenv_stream_ep_other(net_http2_testenv_t env, net_http2_stream_endpoint_t ep) {
-    net_http2_endpoint_t control = net_http2_stream_endpoint_control(ep);
+    net_http2_req_t req = net_http2_stream_endpoint_req(ep);
+    net_http2_endpoint_t control = net_http2_req_endpoint(req);
     if (control == NULL) return NULL;
 
     net_endpoint_t control_base = net_http2_endpoint_base_endpoint(control);
@@ -54,5 +55,6 @@ net_http2_testenv_stream_ep_other(net_http2_testenv_t env, net_http2_stream_endp
     net_http2_endpoint_t other_control = net_http2_endpoint_cast(other_base);
     assert_true(other_control);
 
-    return net_http2_stream_endpoint_find_by_stream_id(other_control, net_http2_stream_endpoint_stream_id(ep));
+    //net_http2_stream_endpoint_find_by_stream_id(other_control, net_http2_stream_endpoint_stream_id(ep));
+    return NULL;
 }

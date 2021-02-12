@@ -54,8 +54,6 @@ int net_http2_stream_acceptor_init(net_acceptor_t base_acceptor) {
         net_address_set_port(address, net_address_port(net_acceptor_address(acceptor->m_control_acceptor)));
     }
 
-    TAILQ_INIT(&acceptor->m_endpoints);
-
     return 0;
 }
 
@@ -68,10 +66,10 @@ void net_http2_stream_acceptor_fini(net_acceptor_t base_acceptor) {
         acceptor->m_control_acceptor = NULL;
     }
 
-    while(!TAILQ_EMPTY(&acceptor->m_endpoints)) {
-        net_http2_endpoint_t endpoint = TAILQ_FIRST(&acceptor->m_endpoints);
-        //net_http2_endpoint_set_stream_acceptor(endpoint, NULL);
-    }
+    /* while(!TAILQ_EMPTY(&acceptor->m_endpoints)) { */
+    /*     net_http2_endpoint_t endpoint = TAILQ_FIRST(&acceptor->m_endpoints); */
+    /*     //net_http2_endpoint_set_stream_acceptor(endpoint, NULL); */
+    /* } */
 }
 
 net_http2_stream_endpoint_t
@@ -105,7 +103,7 @@ net_http2_stream_acceptor_accept(
     
     net_http2_stream_endpoint_t stream = net_http2_stream_endpoint_cast(base_stream);
     net_http2_stream_endpoint_set_control(stream, control);
-    stream->m_stream_id = stream_id;
+    //stream->m_stream_id = stream_id;
 
     return stream;
 }
@@ -116,23 +114,23 @@ int net_http2_stream_acceptor_established(
     net_acceptor_t base_acceptor = net_acceptor_from_data(acceptor);
     net_http2_stream_driver_t driver = net_driver_data(net_acceptor_driver(base_acceptor));
     
-    if (net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_established) != 0) {
-        CPE_ERROR(
-            driver->m_em, "http2: %s: %s: %d: established: set endpoint established fail",
-            net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), stream->m_base_endpoint),
-            net_http2_endpoint_runing_mode_str(net_http2_endpoint_runing_mode_svr),
-            stream->m_stream_id);
-        return -1;
-    }
+    /* if (net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_established) != 0) { */
+    /*     CPE_ERROR( */
+    /*         driver->m_em, "http2: %s: %s: %d: established: set endpoint established fail", */
+    /*         net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), stream->m_base_endpoint), */
+    /*         net_http2_endpoint_runing_mode_str(net_http2_endpoint_runing_mode_svr), */
+    /*         stream->m_stream_id); */
+    /*     return -1; */
+    /* } */
 
-    if (net_acceptor_on_new_endpoint(base_acceptor, stream->m_base_endpoint) != 0) {
-        CPE_ERROR(
-            driver->m_em, "http2: %s: %s: %d: established: on new endpoint fail",
-            net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), stream->m_base_endpoint),
-            net_http2_endpoint_runing_mode_str(net_http2_endpoint_runing_mode_svr),
-            stream->m_stream_id);
-        return -1;
-    }
+    /* if (net_acceptor_on_new_endpoint(base_acceptor, stream->m_base_endpoint) != 0) { */
+    /*     CPE_ERROR( */
+    /*         driver->m_em, "http2: %s: %s: %d: established: on new endpoint fail", */
+    /*         net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), stream->m_base_endpoint), */
+    /*         net_http2_endpoint_runing_mode_str(net_http2_endpoint_runing_mode_svr), */
+    /*         stream->m_stream_id); */
+    /*     return -1; */
+    /* } */
 
     //if (net_http2_stream_endpoint_send_connect_response(stream) != 0) return -1;
     
