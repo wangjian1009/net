@@ -6,7 +6,7 @@
 #include "net_endpoint.h"
 #include "net_acceptor.h"
 #include "net_http2_endpoint_i.h"
-#include "net_http2_stream_endpoint_i.h"
+#include "net_http2_stream_i.h"
 #include "net_http2_stream_acceptor_i.h"
 #include "net_http2_utils.h"
 
@@ -97,19 +97,20 @@ int net_http2_endpoint_on_frame_recv_callback(
         break;
     case NGHTTP2_HEADERS:
         if (frame->hd.flags & NGHTTP2_FLAG_END_HEADERS) {
-            net_http2_stream_endpoint_t stream = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id);
+            net_http2_stream_t stream = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id);
             if (stream) {
-                if (endpoint->m_runing_mode == net_http2_endpoint_runing_mode_cli) {
-                    if (net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_established) != 0) {
-                        net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_deleting);
-                    }
-                }
-                else {
-                    assert(endpoint->m_svr.m_stream_acceptor);
-                    if (net_http2_stream_acceptor_established(endpoint->m_svr.m_stream_acceptor, stream) != 0) {
-                        net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_deleting);
-                    }
-                }
+                //TODO:
+                /* if (endpoint->m_runing_mode == net_http2_endpoint_runing_mode_cli) { */
+                /*     if (net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_established) != 0) { */
+                /*         net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_deleting); */
+                /*     } */
+                /* } */
+                /* else { */
+                /*     assert(endpoint->m_svr.m_stream_acceptor); */
+                /*     if (net_http2_stream_acceptor_established(endpoint->m_svr.m_stream_acceptor, stream) != 0) { */
+                /*         net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_deleting); */
+                /*     } */
+                /* } */
             }
         }
         break;
@@ -124,7 +125,7 @@ int net_http2_endpoint_on_frame_schedule_next_send(
     nghttp2_session * session, const nghttp2_frame * frame, net_http2_endpoint_t endpoint)
 {
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
-    net_http2_stream_endpoint_t stream;
+    net_http2_stream_t stream;
     
     switch (frame->hd.type) {
     case NGHTTP2_HEADERS:
@@ -139,9 +140,10 @@ int net_http2_endpoint_on_frame_schedule_next_send(
                 return 0;
             }
 
-            if (net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_disable) != 0) {
-                net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_deleting);
-            }
+            //TODO:
+            /* if (net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_disable) != 0) { */
+            /*     net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_deleting); */
+            /* } */
             return 0;
         }
 
@@ -168,17 +170,18 @@ CHECK_NEXT_SEND:
         return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
     }
 
-    if (net_endpoint_state(stream->m_base_endpoint) == net_endpoint_state_established) {
-        assert(net_endpoint_is_writing(stream->m_base_endpoint));
-        assert(!stream->m_send_scheduled);
+    //TODO:
+    /* if (net_endpoint_state(stream->m_base_endpoint) == net_endpoint_state_established) { */
+    /*     assert(net_endpoint_is_writing(stream->m_base_endpoint)); */
+    /*     assert(!stream->m_send_scheduled); */
 
-        if (net_endpoint_buf_is_empty(stream->m_base_endpoint, net_ep_buf_write)) {
-            net_endpoint_set_is_writing(stream->m_base_endpoint, 0);
-        }
-        else {
-            net_http2_stream_endpoint_schedule_send_data(stream);
-        }
-    }
+    /*     if (net_endpoint_buf_is_empty(stream->m_base_endpoint, net_ep_buf_write)) { */
+    /*         net_endpoint_set_is_writing(stream->m_base_endpoint, 0); */
+    /*     } */
+    /*     else { */
+    /*         net_http2_stream_schedule_send_data(stream); */
+    /*     } */
+    /* } */
 
     return 0;
 }
@@ -252,7 +255,7 @@ int net_http2_endpoint_on_data_chunk_recv_callback(
 {
     net_http2_endpoint_t endpoint = user_data;
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
-    net_http2_stream_endpoint_t stream;
+    net_http2_stream_t stream;
 
     stream = nghttp2_session_get_stream_user_data(session, stream_id);
     if (!stream) {
@@ -264,15 +267,16 @@ int net_http2_endpoint_on_data_chunk_recv_callback(
         return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
     }
 
-    if (net_endpoint_buf_append(stream->m_base_endpoint, net_ep_buf_read, data, (uint32_t)len) != 0) {
-        if (net_endpoint_error_source(stream->m_base_endpoint) == net_endpoint_error_source_none) {
-            net_endpoint_set_error(
-                stream->m_base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_logic, NULL);
-        }
-        if (net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_error) != 0) {
-            net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_deleting);
-        }
-    }
+    net_http2_stream_on_input(stream, data, len);
+    /* if (net_endpoint_buf_append(stream->m_base_endpoint, net_ep_buf_read, data, (uint32_t)len) != 0) { */
+    /*     if (net_endpoint_error_source(stream->m_base_endpoint) == net_endpoint_error_source_none) { */
+    /*         net_endpoint_set_error( */
+    /*             stream->m_base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_logic, NULL); */
+    /*     } */
+    /*     if (net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_error) != 0) { */
+    /*         net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_deleting); */
+    /*     } */
+    /* } */
 
     return NGHTTP2_NO_ERROR;
 }
@@ -282,8 +286,8 @@ int net_http2_endpoint_on_stream_close_callback(
     net_http2_endpoint_t endpoint = user_data;
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
 
-    net_http2_stream_endpoint_t stream = nghttp2_session_get_stream_user_data(session, stream_id);
-    if (stream == NULL || !net_endpoint_is_active(stream->m_base_endpoint)) {
+    net_http2_stream_t stream = nghttp2_session_get_stream_user_data(session, stream_id);
+    if (stream == NULL) {
         if (net_endpoint_protocol_debug(endpoint->m_base_endpoint)) {
             CPE_INFO(
                 protocol->m_em, "http2: %s: %s: http2: %d: already closed!",
@@ -291,56 +295,9 @@ int net_http2_endpoint_on_stream_close_callback(
                 net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
                 stream_id);
         }
-        return NGHTTP2_NO_ERROR;
-    }
-
-    if (stream->m_stream_id != -1) {
-        assert(stream->m_stream_id == stream_id);
-        if (net_endpoint_protocol_debug(stream->m_base_endpoint)) {
-            CPE_INFO(
-                protocol->m_em, "http2: %s: %s: http2: %d: stream close and ignore rst!",
-                net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), stream->m_base_endpoint),
-                net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
-                stream->m_stream_id);
-        }
-        stream->m_stream_id = -1;
-    }
-    
-    if (error_code == 0) {
-        if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 2) {
-            CPE_INFO(
-                protocol->m_em, "http2: %s: %s: http2: %d: stream closed no error",
-                net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
-                net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
-                stream_id);
-        }
-
-        if (net_endpoint_error_source(stream->m_base_endpoint) == net_endpoint_error_source_none) {
-            net_endpoint_set_error(
-                stream->m_base_endpoint,
-                net_endpoint_error_source_network, net_endpoint_network_errno_remote_closed, NULL);
-        }
-
-        if (net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_disable) != 0) {
-            net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_deleting);
-        }
     }
     else {
-        CPE_ERROR(
-            protocol->m_em, "http2: %s: %s: http2: %d: stream closed, error=%s",
-            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
-            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
-            stream_id, net_http2_error_code_str(error_code));
-
-        if (net_endpoint_error_source(stream->m_base_endpoint) == net_endpoint_error_source_none) {
-            net_endpoint_set_error(
-                stream->m_base_endpoint, net_endpoint_error_source_network,
-                net_endpoint_network_errno_remote_closed, net_http2_error_code_str(error_code));
-        }
-
-        if (net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_error) != 0) {
-            net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_deleting);
-        }
+        net_http2_stream_on_close(stream, error_code);
     }
 
     return NGHTTP2_NO_ERROR;
@@ -374,7 +331,7 @@ int net_http2_endpoint_on_header_callback(
 
     assert(frame->hd.type == NGHTTP2_HEADERS);
 
-    net_http2_stream_endpoint_t stream = NULL;
+    net_http2_stream_t stream = NULL;
 
     if (frame->headers.cat == NGHTTP2_HCAT_REQUEST) {
         if (endpoint->m_runing_mode != net_http2_endpoint_runing_mode_svr) {
@@ -388,34 +345,6 @@ int net_http2_endpoint_on_header_callback(
 
         stream = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id);
         if (stream == NULL) {
-            if (endpoint->m_svr.m_stream_acceptor == NULL) {
-                CPE_ERROR(
-                    protocol->m_em, "http2: %s: %s: http2: %d: <== receive request header no acceptor",
-                    net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
-                    net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
-                    frame->hd.stream_id);
-                return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
-            }
-
-            stream = net_http2_stream_acceptor_accept(endpoint->m_svr.m_stream_acceptor, endpoint, frame->hd.stream_id);
-            if (stream == NULL) {
-                CPE_ERROR(
-                    protocol->m_em, "http2: %s: %s: http2: %d: <== receive request header create new stream fail",
-                    net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
-                    net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
-                    frame->hd.stream_id);
-                return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
-            }
-
-            int rv = nghttp2_session_set_stream_user_data(session, frame->hd.stream_id, stream);
-            if (rv != NGHTTP2_NO_ERROR) {
-                CPE_ERROR(
-                    protocol->m_em, "http2: %s: %s: http2: %d: <== receive request header bind stream fail, error=%s",
-                    net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
-                    net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
-                    frame->hd.stream_id, net_http2_error_code_str(rv));
-                return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
-            }
         }
     }
     else {
@@ -433,14 +362,14 @@ int net_http2_endpoint_on_header_callback(
     if (net_endpoint_protocol_debug(endpoint->m_base_endpoint)) {
         CPE_INFO(
             protocol->m_em, "http2: %s: %s: http2: %d: <== %.*s = %.*s",
-            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), stream->m_base_endpoint),
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
             net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
             frame->hd.stream_id, (int)namelen, (const char *)name, (int)valuelen, (const char *)value);
     }
 
     switch(frame->headers.cat) {
     case NGHTTP2_HCAT_REQUEST:
-        if (net_http2_stream_endpoint_on_request_head(
+        if (net_http2_stream_on_request_head(
                 stream,
                 (const char *)name, (uint32_t)namelen, (const char *)value, (uint32_t)valuelen)
             != 0)
@@ -449,7 +378,7 @@ int net_http2_endpoint_on_header_callback(
         }
         break;
     case NGHTTP2_HCAT_RESPONSE:
-        if (net_http2_stream_endpoint_on_response_head(
+        if (net_http2_stream_on_response_head(
                 stream,
                 (const char *)name, (uint32_t)namelen, (const char *)value, (uint32_t)valuelen)
             != 0)
@@ -460,7 +389,7 @@ int net_http2_endpoint_on_header_callback(
     case NGHTTP2_HCAT_PUSH_RESPONSE:
         break;
     case NGHTTP2_HCAT_HEADERS:
-        if (net_http2_stream_endpoint_on_tailer(
+        if (net_http2_stream_on_tailer(
                 stream,
                 (const char *)name, (uint32_t)namelen, (const char *)value, (uint32_t)valuelen)
             != 0)
@@ -518,7 +447,7 @@ int net_http2_endpoint_send_data_callback(
 {
     net_http2_endpoint_t endpoint = user_data;
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
-    net_http2_stream_endpoint_t stream = source->ptr;
+    net_http2_stream_t stream = source->ptr;
 
     uint32_t head_sz = 9;
     if (frame->data.padlen > 0) head_sz++;
@@ -547,18 +476,19 @@ int net_http2_endpoint_send_data_callback(
         return NGHTTP2_ERR_CALLBACK_FAILURE;
     }
 
-    if (net_endpoint_buf_append_from_other(
-            endpoint->m_base_endpoint, net_ep_buf_write,
-            stream->m_base_endpoint, net_ep_buf_write,
-            length) != 0)
-    {
-        CPE_ERROR(
-            protocol->m_em, "http2: %s: %s: http2: %d: ==> write body %d data fail",
-            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
-            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
-            stream->m_stream_id, (int)length);
-        return NGHTTP2_ERR_CALLBACK_FAILURE;
-    }
+    //TODO:
+    /* if (net_endpoint_buf_append_from_other( */
+    /*         endpoint->m_base_endpoint, net_ep_buf_write, */
+    /*         stream->m_base_endpoint, net_ep_buf_write, */
+    /*         length) != 0) */
+    /* { */
+    /*     CPE_ERROR( */
+    /*         protocol->m_em, "http2: %s: %s: http2: %d: ==> write body %d data fail", */
+    /*         net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint), */
+    /*         net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode), */
+    /*         stream->m_stream_id, (int)length); */
+    /*     return NGHTTP2_ERR_CALLBACK_FAILURE; */
+    /* } */
 
     if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 3) {
         CPE_INFO(
@@ -570,7 +500,31 @@ int net_http2_endpoint_send_data_callback(
 
     return 0;
 }
-    
+
+int net_http2_endpoint_http2_flush(net_http2_endpoint_t endpoint) {
+    net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
+
+    int rv = nghttp2_session_send(endpoint->m_http2_session);
+    if (rv != 0) {
+        CPE_ERROR(
+            protocol->m_em, "http2: %s: %s: http2: ==> flush failed: %s",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+            nghttp2_strerror(rv));
+        if (net_endpoint_error_source(endpoint->m_base_endpoint) == net_endpoint_error_source_none) {
+            net_endpoint_set_error(
+                endpoint->m_base_endpoint,
+                net_endpoint_error_source_network, net_endpoint_network_errno_logic, nghttp2_strerror(rv));
+        }
+        if (net_endpoint_set_state(endpoint->m_base_endpoint, net_endpoint_state_error) != 0) {
+            net_endpoint_set_state(endpoint->m_base_endpoint, net_endpoint_state_deleting);
+        }
+        return -1;
+    }
+
+    return 0;
+}
+
 int net_http2_endpoint_http2_send_settings(net_http2_endpoint_t endpoint) {
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
 

@@ -52,7 +52,7 @@ void net_http2_stream_group_free(net_http2_stream_group_t remote) {
 
     while(!TAILQ_EMPTY(&remote->m_endpoints)) {
         net_http2_endpoint_t endpoint = TAILQ_FIRST(&remote->m_endpoints);
-        net_http2_endpoint_set_stream_group(endpoint, NULL);
+        //net_http2_endpoint_set_stream_group(endpoint, NULL);
     }
     
     cpe_hash_table_remove_by_ins(&driver->m_groups, remote);

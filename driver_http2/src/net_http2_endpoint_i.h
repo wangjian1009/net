@@ -7,22 +7,15 @@ struct net_http2_endpoint {
     net_endpoint_t m_base_endpoint;
     net_http2_endpoint_runing_mode_t m_runing_mode;
     net_http2_endpoint_state_t m_state;
-    struct {
-        uint16_t m_stream_capacity;
-    } m_remote_settings;
     nghttp2_session * m_http2_session;
-    union {
-        struct {
-            net_http2_stream_group_t m_stream_group;
-            TAILQ_ENTRY(net_http2_endpoint) m_next_for_group;
-        } m_cli;
-        struct {
-            net_http2_stream_acceptor_t m_stream_acceptor;
-            TAILQ_ENTRY(net_http2_endpoint) m_next_for_acceptor;
-        } m_svr;
-    };
-    net_http2_stream_endpoint_list_t m_streams;
-    net_http2_stream_endpoint_list_t m_sending_streams;
+
+    /*req*/
+    uint16_t m_req_count;
+    net_http2_req_list_t m_reqs;
+    
+    /*streams*/
+    net_http2_stream_list_t m_streams;
+    
     uint8_t m_in_processing;
     net_timer_t m_delay_processor;
 };
@@ -35,20 +28,12 @@ int net_http2_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoin
 
 /**/
 int net_http2_endpoint_set_state(net_http2_endpoint_t endpoint, net_http2_endpoint_state_t state);
-void net_http2_endpoint_schedule_delay_processor(net_http2_endpoint_t endpoint);
-void net_http2_endpoint_schedule_flush(net_http2_endpoint_t endpoint);
 
-/*cli*/
-void net_http2_endpoint_set_stream_group(
-    net_http2_endpoint_t endpoint, net_http2_stream_group_t stream_group);
-
-/*svr*/
-void net_http2_endpoint_set_stream_acceptor(
-    net_http2_endpoint_t endpoint, net_http2_stream_acceptor_t stream_acceptor);
-
+/*hghttp2.operations*/
 int net_http2_endpoint_http2_send_settings(net_http2_endpoint_t endpoint);
+int net_http2_endpoint_http2_flush(net_http2_endpoint_t endpoint);
 
-/*nghttp2*/
+/*nghttp2.callback*/
 ssize_t net_http2_endpoint_send_callback(
     nghttp2_session * session, const uint8_t * data, size_t length, int flags, void * user_data);
 

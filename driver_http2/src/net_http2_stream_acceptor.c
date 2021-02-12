@@ -27,7 +27,7 @@ int net_http2_stream_acceptor_on_new_endpoint(void * ctx, net_endpoint_t base_co
         return -1;
     }
 
-    net_http2_endpoint_set_stream_acceptor(control, acceptor);
+    //net_http2_endpoint_set_stream_acceptor(control, acceptor);
     
     return 0;
 }
@@ -70,7 +70,7 @@ void net_http2_stream_acceptor_fini(net_acceptor_t base_acceptor) {
 
     while(!TAILQ_EMPTY(&acceptor->m_endpoints)) {
         net_http2_endpoint_t endpoint = TAILQ_FIRST(&acceptor->m_endpoints);
-        net_http2_endpoint_set_stream_acceptor(endpoint, NULL);
+        //net_http2_endpoint_set_stream_acceptor(endpoint, NULL);
     }
 }
 
@@ -134,7 +134,36 @@ int net_http2_stream_acceptor_established(
         return -1;
     }
 
-    if (net_http2_stream_endpoint_send_connect_response(stream) != 0) return -1;
+    //if (net_http2_stream_endpoint_send_connect_response(stream) != 0) return -1;
     
     return 0;
 }
+
+            /* if (endpoint->m_svr.m_stream_acceptor == NULL) { */
+            /*     CPE_ERROR( */
+            /*         protocol->m_em, "http2: %s: %s: http2: %d: <== receive request header no acceptor", */
+            /*         net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint), */
+            /*         net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode), */
+            /*         frame->hd.stream_id); */
+            /*     return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE; */
+            /* } */
+
+            /* stream = net_http2_stream_acceptor_accept(endpoint->m_svr.m_stream_acceptor, endpoint, frame->hd.stream_id); */
+            /* if (stream == NULL) { */
+            /*     CPE_ERROR( */
+            /*         protocol->m_em, "http2: %s: %s: http2: %d: <== receive request header create new stream fail", */
+            /*         net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint), */
+            /*         net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode), */
+            /*         frame->hd.stream_id); */
+            /*     return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE; */
+            /* } */
+
+            /* int rv = nghttp2_session_set_stream_user_data(session, frame->hd.stream_id, stream); */
+            /* if (rv != NGHTTP2_NO_ERROR) { */
+            /*     CPE_ERROR( */
+            /*         protocol->m_em, "http2: %s: %s: http2: %d: <== receive request header bind stream fail, error=%s", */
+            /*         net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint), */
+            /*         net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode), */
+            /*         frame->hd.stream_id, net_http2_error_code_str(rv)); */
+            /*     return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE; */
+            /* } */

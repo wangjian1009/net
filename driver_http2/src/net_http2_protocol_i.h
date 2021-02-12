@@ -8,12 +8,14 @@
 #include "net_http2_protocol.h"
 
 typedef TAILQ_HEAD(net_http2_endpoint_list, net_http2_endpoint) net_http2_endpoint_list_t;
-typedef TAILQ_HEAD(net_http2_stream_endpoint_list, net_http2_stream_endpoint) net_http2_stream_endpoint_list_t;
+typedef TAILQ_HEAD(net_http2_stream_list, net_http2_stream) net_http2_stream_list_t;
+typedef TAILQ_HEAD(net_http2_req_list, net_http2_req) net_http2_req_list_t;
 
 struct net_http2_protocol {
     mem_allocrator_t m_alloc;
     error_monitor_t m_em;
     nghttp2_session_callbacks * m_http2_callbacks;
+    uint32_t m_max_req_id;
     struct mem_buffer m_data_buffer;
 };
 
