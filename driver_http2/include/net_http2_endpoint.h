@@ -20,6 +20,7 @@ net_http2_endpoint_t net_http2_endpoint_cast(net_endpoint_t endpoint);
 
 void net_http2_endpoint_free(net_http2_endpoint_t endpoint);
 
+net_http2_endpoint_state_t net_http2_endpoint_state(net_http2_endpoint_t endpoint);
 net_http2_endpoint_runing_mode_t net_http2_endpoint_runing_mode(net_http2_endpoint_t endpoint);
 int net_http2_endpoint_set_runing_mode(net_http2_endpoint_t endpoint, net_http2_endpoint_runing_mode_t runing_mode);
 
