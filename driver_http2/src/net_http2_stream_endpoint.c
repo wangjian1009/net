@@ -46,41 +46,43 @@ net_http2_stream_endpoint_runing_mode(net_http2_stream_endpoint_t endpoint) {
         : net_http2_endpoint_runing_mode_init;
 }
 
-int net_http2_stream_endpoint_connect(net_endpoint_t base_endpoint) {
-    net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
-    net_http2_stream_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
-    net_http2_stream_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+int net_http2_stream_endpoint_connect(net_endpoint_t base_stream) {
+    net_schedule_t schedule = net_endpoint_schedule(base_stream);
+    net_http2_stream_driver_t driver = net_driver_data(net_endpoint_driver(base_stream));
+    net_http2_stream_endpoint_t stream = net_endpoint_data(base_stream);
 
-    if (endpoint->m_using == NULL) {
-        if (net_http2_stream_endpoint_select_control(base_endpoint) != 0) return -1;
+    if (stream->m_using == NULL) {
+        if (net_http2_stream_endpoint_select_control(base_stream) != 0) return -1;
     }
     else {
-        if (net_endpoint_remote_address(base_endpoint) == NULL) {
+        if (net_endpoint_remote_address(base_stream) == NULL) {
             net_endpoint_set_remote_address(
-                base_endpoint,
+                base_stream,
                 net_endpoint_remote_address(
-                    net_http2_endpoint_base_endpoint(endpoint->m_using->m_http2_ep)));
+                    net_http2_endpoint_base_endpoint(stream->m_using->m_http2_ep)));
         }
     }
+    assert(stream->m_using);
 
-    /* net_endpoint_t base_control = endpoint->m_control->m_base_endpoint; */
-    /* if (net_endpoint_driver_debug(base_endpoint) > net_endpoint_protocol_debug(base_control)) { */
-    /*     net_endpoint_set_protocol_debug(base_control, net_endpoint_driver_debug(base_endpoint)); */
-    /* } */
+    net_http2_endpoint_t http_ep = stream->m_using->m_http2_ep;
+    net_endpoint_t base_http_ep = net_http2_endpoint_base_endpoint(http_ep);
+    if (net_endpoint_driver_debug(base_stream) > net_endpoint_protocol_debug(base_http_ep)) {
+        net_endpoint_set_protocol_debug(base_http_ep, net_endpoint_driver_debug(base_stream));
+    }
 
-    /* if (net_endpoint_state(base_control) == net_endpoint_state_disable) { */
-    /*     if (net_endpoint_connect(base_control) != 0) { */
-    /*         CPE_ERROR( */
-    /*             driver->m_em, "http2: %s: %s: connect: start control connect fail!", */
-    /*             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint), */
-    /*             net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(endpoint))); */
-    /*         return -1; */
-    /*     } */
-    /*     assert(net_endpoint_state(base_control) != net_endpoint_state_disable); */
-    /* } */
+    if (net_endpoint_state(base_http_ep) == net_endpoint_state_disable) {
+        if (net_endpoint_connect(base_http_ep) != 0) {
+            CPE_ERROR(
+                driver->m_em, "http2: %s: %s: connect: start control connect fail!",
+                net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_stream),
+                net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(stream)));
+            return -1;
+        }
+        assert(net_endpoint_state(base_http_ep) != net_endpoint_state_disable);
+    }
 
-    return net_endpoint_state(base_endpoint) == net_endpoint_state_disable
-        ? net_http2_stream_endpoint_sync_state(endpoint)
+    return net_endpoint_state(base_stream) == net_endpoint_state_disable
+        ? net_http2_stream_endpoint_sync_state(stream)
         : 0;
 }    
 
