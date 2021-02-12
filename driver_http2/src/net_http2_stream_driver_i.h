@@ -6,7 +6,9 @@
 #include "cpe/utils/memory.h"
 #include "net_http2_stream_driver.h"
 
+typedef struct net_http2_stream_using * net_http2_stream_using_t;
 typedef TAILQ_HEAD(net_http2_stream_endpoint_list, net_http2_stream_endpoint) net_http2_stream_endpoint_list_t;
+typedef TAILQ_HEAD(net_http2_stream_using_list, net_http2_stream_using) net_http2_stream_using_list_t;
 
 struct net_http2_stream_driver {
     mem_allocrator_t m_alloc;

@@ -102,7 +102,7 @@ net_http2_stream_acceptor_accept(
     }
     
     net_http2_stream_endpoint_t stream = net_http2_stream_endpoint_cast(base_stream);
-    net_http2_stream_endpoint_set_control(stream, control);
+    //net_http2_stream_endpoint_set_control(stream, control);
     //stream->m_stream_id = stream_id;
 
     return stream;

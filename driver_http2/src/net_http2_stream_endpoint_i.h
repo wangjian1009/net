@@ -5,6 +5,7 @@
 
 struct net_http2_stream_endpoint {
     net_endpoint_t m_base_endpoint;
+    net_http2_stream_using_t m_using;
     net_http2_req_t m_req;
 };
 

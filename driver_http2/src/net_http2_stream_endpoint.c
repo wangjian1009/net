@@ -7,12 +7,14 @@
 #include "net_http2_req.h"
 #include "net_http2_stream_endpoint_i.h"
 #include "net_http2_stream_group_i.h"
+#include "net_http2_stream_using_i.h"
 
 int net_http2_stream_endpoint_select_control(net_endpoint_t base_endpoint);
 
 int net_http2_stream_endpoint_init(net_endpoint_t base_endpoint) {
     net_http2_stream_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     endpoint->m_base_endpoint = base_endpoint;
+    endpoint->m_using = NULL;
     endpoint->m_req = NULL;
     return 0;
 }
@@ -25,6 +27,11 @@ void net_http2_stream_endpoint_fini(net_endpoint_t base_endpoint) {
         net_http2_req_free(endpoint->m_req);
         endpoint->m_req = NULL;
     }
+
+    if (endpoint->m_using) {
+        net_http2_stream_using_free(endpoint->m_using);
+        endpoint->m_using = NULL;
+    }
 }
 
 net_http2_req_t
@@ -34,11 +41,9 @@ net_http2_stream_endpoint_req(net_http2_stream_endpoint_t endpoint) {
 
 net_http2_endpoint_runing_mode_t
 net_http2_stream_endpoint_runing_mode(net_http2_stream_endpoint_t endpoint) {
-    /* return endpoint->m_control */
-    /*     ? net_http2_endpoint_runing_mode(endpoint->m_control) */
-    /*     : net_http2_endpoint_runing_mode_init; */
-
-    return net_http2_endpoint_runing_mode_init;
+    return endpoint->m_using
+        ? net_http2_endpoint_runing_mode(endpoint->m_using->m_http2_ep)
+        : net_http2_endpoint_runing_mode_init;
 }
 
 int net_http2_stream_endpoint_connect(net_endpoint_t base_endpoint) {
@@ -46,25 +51,18 @@ int net_http2_stream_endpoint_connect(net_endpoint_t base_endpoint) {
     net_http2_stream_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
     net_http2_stream_endpoint_t endpoint = net_endpoint_data(base_endpoint);
 
-    if (endpoint->m_req == NULL) {
-        /* if (net_http2_stream_endpoint_select_control(base_endpoint) != 0) return -1; */
+    if (endpoint->m_using == NULL) {
+        if (net_http2_stream_endpoint_select_control(base_endpoint) != 0) return -1;
     }
     else {
-        /* if (net_endpoint_remote_address(base_endpoint) == NULL) { */
-        /*     net_endpoint_set_remote_address( */
-        /*         base_endpoint, */
-        /*         net_endpoint_remote_address(endpoint->m_control->m_base_endpoint)); */
-        /* } */
+        if (net_endpoint_remote_address(base_endpoint) == NULL) {
+            net_endpoint_set_remote_address(
+                base_endpoint,
+                net_endpoint_remote_address(
+                    net_http2_endpoint_base_endpoint(endpoint->m_using->m_http2_ep)));
+        }
     }
 
-    /* if (net_http2_endpoint_set_runing_mode(endpoint->m_control, net_http2_endpoint_runing_mode_cli) != 0) { */
-    /*     CPE_ERROR( */
-    /*         driver->m_em, "http2: %s: %s: connect: set control runing mode cli failed!", */
-    /*         net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint), */
-    /*         net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(endpoint))); */
-    /*     return -1; */
-    /* } */
-    
     /* net_endpoint_t base_control = endpoint->m_control->m_base_endpoint; */
     /* if (net_endpoint_driver_debug(base_endpoint) > net_endpoint_protocol_debug(base_control)) { */
     /*     net_endpoint_set_protocol_debug(base_control, net_endpoint_driver_debug(base_endpoint)); */
@@ -160,35 +158,12 @@ net_http2_stream_endpoint_base_endpoint(net_http2_stream_endpoint_t endpoint) {
     return endpoint->m_base_endpoint;
 }
 
-void net_http2_stream_endpoint_set_control(net_http2_stream_endpoint_t stream, net_http2_endpoint_t control) {
-    /* if (stream->m_control == control) return; */
-
-    /* net_http2_stream_driver_t driver = */
-    /*     net_driver_data(net_endpoint_driver(stream->m_base_endpoint)); */
-    /* if (stream->m_control) { */
-    /*     if (stream->m_stream_id != -1) { */
-    /*         if (net_endpoint_state(stream->m_control->m_base_endpoint) == net_endpoint_state_established) { */
-    /*         } */
-    /*         nghttp2_session_set_stream_user_data(stream->m_control->m_http2_session, stream->m_stream_id, NULL); */
-    /*         stream->m_stream_id = -1; */
-    /*     } */
-
-    /*     TAILQ_REMOVE(&stream->m_control->m_streams, stream, m_next_for_control); */
-    /* } */
-
-    /* stream->m_control = control; */
-
-    /* if (stream->m_control) { */
-    /*     TAILQ_INSERT_TAIL(&control->m_streams, stream, m_next_for_control); */
-    /* } */
-}
-
 int net_http2_stream_endpoint_select_control(net_endpoint_t base_endpoint) {
     net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
     net_http2_stream_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
     net_http2_stream_endpoint_t endpoint = net_endpoint_data(base_endpoint);
 
-    //assert(endpoint->m_control == NULL);
+    assert(endpoint->m_using == NULL);
 
     net_address_t target_addr = net_endpoint_remote_address(base_endpoint);
     if (target_addr == NULL) {
@@ -208,9 +183,9 @@ int net_http2_stream_endpoint_select_control(net_endpoint_t base_endpoint) {
         return -1;
     }
 
-    net_endpoint_t base_control =
+    net_endpoint_t base_http2_ep =
         net_endpoint_create(driver->m_control_driver, driver->m_control_protocol, NULL);
-    if (base_control == NULL) {
+    if (base_http2_ep == NULL) {
         CPE_ERROR(
             driver->m_em, "http2: %s: %s: select: create control ep fail",
             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
@@ -218,20 +193,38 @@ int net_http2_stream_endpoint_select_control(net_endpoint_t base_endpoint) {
         return -1;
     }
 
-    if (net_endpoint_set_remote_address(base_control, target_addr) != 0) {
+    if (net_endpoint_set_remote_address(base_http2_ep, target_addr) != 0) {
         CPE_ERROR(
             driver->m_em, "http2: %s: %s: select: set control ep remote addr fail",
             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
             net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(endpoint)));
-        net_endpoint_free(base_endpoint);
+        net_endpoint_free(base_http2_ep);
+        return -1;
+    }
+
+    net_http2_endpoint_t http2_ep = net_http2_endpoint_cast(base_http2_ep);
+    if (net_http2_endpoint_set_runing_mode(http2_ep, net_http2_endpoint_runing_mode_cli) != 0) {
+        CPE_ERROR(
+            driver->m_em, "http2: %s: %s: connect: set control runing mode cli failed!",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
+            net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(endpoint)));
+        net_endpoint_free(base_http2_ep);
+        return -1;
+    }
+
+    assert(endpoint->m_using == NULL);
+    endpoint->m_using = net_http2_stream_using_create(&remote->m_usings, endpoint, http2_ep);
+    if (endpoint->m_using == NULL) {
+        CPE_ERROR(
+            driver->m_em, "http2: %s: %s: connect: create using failed!",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
+            net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(endpoint)));
+        net_endpoint_free(base_http2_ep);
         return -1;
     }
     
-    net_http2_endpoint_t control = net_http2_endpoint_cast(base_control);
-    net_http2_stream_endpoint_set_control(endpoint, control);
-
-    if (net_endpoint_driver_debug(base_endpoint) > net_endpoint_driver_debug(base_control)) {
-        net_endpoint_set_driver_debug(base_control, net_endpoint_driver_debug(base_endpoint));
+    if (net_endpoint_driver_debug(base_endpoint) > net_endpoint_driver_debug(base_http2_ep)) {
+        net_endpoint_set_driver_debug(base_http2_ep, net_endpoint_driver_debug(base_endpoint));
     }
 
     return 0;

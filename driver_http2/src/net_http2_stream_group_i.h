@@ -7,6 +7,7 @@ struct net_http2_stream_group {
     net_http2_stream_driver_t m_driver;
     struct cpe_hash_entry m_hh_for_driver;
     net_address_t m_address;
+    net_http2_stream_using_list_t m_usings;
 };
 
 int net_http2_stream_group_eq(net_http2_stream_group_t l, net_http2_stream_group_t r, void * user_data);

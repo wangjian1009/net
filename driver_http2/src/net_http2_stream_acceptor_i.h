@@ -5,6 +5,7 @@
 
 struct net_http2_stream_acceptor {
     net_acceptor_t m_control_acceptor;
+    net_http2_stream_using_list_t m_usings;
 };
 
 int net_http2_stream_acceptor_init(net_acceptor_t acceptor);
