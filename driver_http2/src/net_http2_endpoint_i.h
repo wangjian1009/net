@@ -12,7 +12,7 @@ struct net_http2_endpoint {
     /*req*/
     uint16_t m_req_count;
     net_http2_req_list_t m_reqs;
-    
+
     /*streams*/
     net_http2_stream_list_t m_streams;
     

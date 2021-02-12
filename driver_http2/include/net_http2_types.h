@@ -17,6 +17,7 @@ typedef struct net_http2_protocol * net_http2_protocol_t;
 typedef struct net_http2_endpoint * net_http2_endpoint_t;
 typedef struct net_http2_stream * net_http2_stream_t;
 typedef struct net_http2_req * net_http2_req_t;
+typedef struct net_http2_processor * net_http2_processor_t;
 
 /*stream*/
 typedef enum net_http2_stream_endpoint_state net_http2_stream_endpoint_state_t;

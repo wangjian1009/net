@@ -7,6 +7,7 @@ struct net_http2_stream_using {
     net_http2_stream_using_list_t * m_owner;
     TAILQ_ENTRY(net_http2_stream_using) m_next;
     net_http2_endpoint_t m_http2_ep;
+    net_endpoint_monitor_t m_monitor;
     net_http2_stream_endpoint_list_t m_streams;
 };
 

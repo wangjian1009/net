@@ -155,6 +155,11 @@ net_http2_stream_endpoint_cast(net_endpoint_t base_endpoint) {
         : NULL;
 }
 
+net_http2_endpoint_t
+net_http2_stream_endpoint_http2_ep(net_http2_stream_endpoint_t endpoint) {
+    return endpoint->m_using ? endpoint->m_using->m_http2_ep : NULL;
+}
+
 net_endpoint_t
 net_http2_stream_endpoint_base_endpoint(net_http2_stream_endpoint_t endpoint) {
     return endpoint->m_base_endpoint;
@@ -250,10 +255,8 @@ int net_http2_stream_endpoint_sync_state(net_http2_stream_endpoint_t stream) {
         if (net_http2_endpoint_runing_mode(http2_ep) == net_http2_endpoint_runing_mode_cli) {
             if (net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_connecting) != 0) return -1;
 
-            if (net_http2_endpoint_state(http2_ep) == net_http2_endpoint_state_streaming) {
-                if (net_http2_endpoint_runing_mode(http2_ep) == net_http2_endpoint_runing_mode_cli) {
-                    if (net_http2_stream_endpoint_http2_connect(stream) != 0) return -1;
-                }
+            if (net_http2_endpoint_runing_mode(http2_ep) == net_http2_endpoint_runing_mode_cli) {
+                if (net_http2_stream_endpoint_http2_connect(stream) != 0) return -1;
             }
         }
         else {

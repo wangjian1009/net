@@ -8,18 +8,10 @@ static void net_http2_req_on_timeout(net_timer_t timer, void * ctx);
 
 net_http2_req_t
 net_http2_req_create(net_http2_endpoint_t http_ep, net_http2_req_method_t method, const char * url) {
-    net_http2_protocol_t protocol = net_http2_protocol_cast(net_endpoint_protocol(http_ep->m_base_endpoint));
-    
-    net_http2_req_t pre_req = TAILQ_FIRST(&http_ep->m_reqs);
-    if (pre_req) {
-        if (pre_req->m_req_state != net_http2_req_state_completed) {
-            CPE_ERROR(
-                protocol->m_em, "http: %s: req: create: pre req still in prepare!",
-                net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), http_ep->m_base_endpoint));
-            return NULL;
-        }
-    }
+    net_http2_protocol_t protocol =
+        net_http2_protocol_cast(net_endpoint_protocol(http_ep->m_base_endpoint));
 
+    
     net_http2_req_t req = mem_alloc(protocol->m_alloc, sizeof(struct net_http2_req));
     if (req == NULL) {
         CPE_ERROR(protocol->m_em, "http: req: create: alloc fail!");

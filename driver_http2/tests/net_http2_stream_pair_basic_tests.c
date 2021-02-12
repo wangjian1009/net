@@ -1,3 +1,4 @@
+#include <assert.h>
 #include "cmocka_all.h"
 #include "test_net_endpoint.h"
 #include "net_http2_tests.h"
@@ -28,8 +29,7 @@ static void net_http2_stream_pair_basic(void **state) {
     
     assert_true(net_endpoint_connect(cli_ep_base) == 0);
 
-    net_http2_req_t cli_req = net_http2_stream_endpoint_req(cli_ep);
-    net_http2_endpoint_t cli_ctrl = net_http2_req_endpoint(cli_req);
+    net_http2_endpoint_t cli_ctrl = net_http2_stream_endpoint_http2_ep(cli_ep);
     
     assert_true(cli_ctrl);
     net_endpoint_t cli_ctrl_base = net_http2_endpoint_base_endpoint(cli_ctrl);

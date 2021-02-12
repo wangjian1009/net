@@ -7,6 +7,7 @@
 #include "net_acceptor.h"
 #include "net_http2_stream_acceptor_i.h"
 #include "net_http2_stream_endpoint_i.h"
+#include "net_http2_stream_using_i.h"
 #include "net_http2_endpoint_i.h"
 
 int net_http2_stream_acceptor_on_new_endpoint(void * ctx, net_endpoint_t base_control) {
