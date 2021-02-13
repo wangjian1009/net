@@ -42,18 +42,3 @@ void net_http2_testenv_free(net_http2_testenv_t env) {
     test_error_monitor_free(env->m_tem);
     mem_free(test_allocrator(), env);
 }
-
-net_http2_endpoint_t
-net_http2_testenv_create_ep_svr(net_http2_testenv_t env) {
-    net_endpoint_t base_endpoint =
-        net_endpoint_create(
-            net_driver_from_data(env->m_tdriver),
-            net_protocol_from_data(env->m_protocol),
-            NULL);
-
-    net_http2_endpoint_t endpoint = net_http2_endpoint_cast(base_endpoint);
-
-    net_http2_endpoint_set_runing_mode(endpoint, net_http2_endpoint_runing_mode_svr);
-
-    return endpoint;
-}

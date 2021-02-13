@@ -13,6 +13,11 @@ struct net_http2_endpoint {
     uint16_t m_req_count;
     net_http2_req_list_t m_reqs;
 
+    /*processor*/
+    void * m_accept_ctx;
+    void (*m_accept_ctx_free)(void*);
+    net_http2_endpoint_accept_fun_t m_accept_fun;
+    
     /*streams*/
     net_http2_stream_list_t m_streams;
     

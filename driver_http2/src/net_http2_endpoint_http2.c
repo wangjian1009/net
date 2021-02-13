@@ -91,7 +91,9 @@ int net_http2_endpoint_on_frame_recv_callback(
 
     switch(frame->hd.type) {
     case NGHTTP2_SETTINGS:
+        CPE_ERROR(protocol->m_em, "xxxx: 11");
         if (frame->hd.flags & NGHTTP2_FLAG_ACK) {
+            CPE_ERROR(protocol->m_em, "xxxx: 22");
             net_http2_endpoint_set_state(endpoint, net_http2_endpoint_state_streaming);
         }
         break;
@@ -99,18 +101,7 @@ int net_http2_endpoint_on_frame_recv_callback(
         if (frame->hd.flags & NGHTTP2_FLAG_END_HEADERS) {
             net_http2_stream_t stream = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id);
             if (stream) {
-                //TODO:
-                /* if (endpoint->m_runing_mode == net_http2_endpoint_runing_mode_cli) { */
-                /*     if (net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_established) != 0) { */
-                /*         net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_deleting); */
-                /*     } */
-                /* } */
-                /* else { */
-                /*     assert(endpoint->m_svr.m_stream_acceptor); */
-                /*     if (net_http2_stream_acceptor_established(endpoint->m_svr.m_stream_acceptor, stream) != 0) { */
-                /*         net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_deleting); */
-                /*     } */
-                /* } */
+                net_http2_stream_on_head_complete(stream);
             }
         }
         break;

@@ -30,7 +30,11 @@ net_http2_testenv_t net_http2_testenv_create();
 void net_http2_testenv_free(net_http2_testenv_t env);
 
 /*basic*/
-net_http2_endpoint_t net_http2_testenv_create_ep_svr(net_http2_testenv_t env);
+net_http2_endpoint_t
+net_http2_testenv_create_basic_ep_cli(net_http2_testenv_t env, const char * address);
+
+net_acceptor_t
+net_http2_testenv_create_basic_acceptor(net_http2_testenv_t env, const char * address);
 
 /*stream*/
 net_http2_stream_endpoint_t

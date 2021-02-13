@@ -13,7 +13,6 @@
 #include "net_http2_utils.h"
 
 extern struct wslay_event_callbacks s_net_http2_endpoint_callbacks;
-void net_http2_endpoint_sync_stream_state(net_http2_endpoint_t endpoint);
 
 void net_http2_endpoint_free(net_http2_endpoint_t endpoint) {
     net_endpoint_free(endpoint->m_base_endpoint);
@@ -61,6 +60,11 @@ void net_http2_endpoint_fini(net_endpoint_t base_endpoint) {
     net_http2_endpoint_t endpoint = net_endpoint_protocol_data(base_endpoint);
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
 
+    if (endpoint->m_accept_ctx_free) {
+        endpoint->m_accept_ctx_free(endpoint->m_accept_ctx);
+        endpoint->m_accept_ctx_free = NULL;
+    }
+    
     while(!TAILQ_EMPTY(&endpoint->m_reqs)) {
         net_http2_req_t req = TAILQ_FIRST(&endpoint->m_reqs);
         net_http2_req_free(req);
@@ -87,6 +91,13 @@ int net_http2_endpoint_input(net_endpoint_t base_endpoint) {
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
 
     assert(net_endpoint_state(base_endpoint) != net_endpoint_state_deleting);
+    if (endpoint->m_runing_mode == net_http2_endpoint_runing_mode_init) {
+        CPE_ERROR(
+            protocol->m_em, "http2: %s: input data in runing-mode %s",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), base_endpoint),
+            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode));
+        return -1;
+    }
 
     uint32_t data_len = net_endpoint_buf_size(base_endpoint, net_ep_buf_read);
     void * data = NULL;
@@ -108,7 +119,7 @@ int net_http2_endpoint_input(net_endpoint_t base_endpoint) {
 
     assert(!endpoint->m_in_processing);
     endpoint->m_in_processing = 1;
-    
+
     assert(endpoint->m_http2_session);
     ssize_t readlen = nghttp2_session_mem_recv(endpoint->m_http2_session, data, data_len);
     if (readlen < 0) {
@@ -124,20 +135,19 @@ int net_http2_endpoint_input(net_endpoint_t base_endpoint) {
     if (net_endpoint_is_active(base_endpoint)) {
         net_endpoint_buf_consume(endpoint->m_base_endpoint, net_ep_buf_read, (size_t)readlen);
     }
-    
+
+    if (net_http2_endpoint_http2_flush(endpoint) != 0) {
+        CPE_ERROR(
+            protocol->m_em, "http2: %s: %s: http2 session flush: %s",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), base_endpoint),
+            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+            nghttp2_strerror((int)readlen));
+        endpoint->m_in_processing = 0;
+        return -1;
+    }
+
     endpoint->m_in_processing = 0;
     return 0;
-}
-
-void net_http2_endpoint_sync_stream_state(net_http2_endpoint_t endpoint) {
-    net_http2_stream_t stream, next_stream;
-    /* for(stream = TAILQ_FIRST(&endpoint->m_streams); stream; stream = next_stream) { */
-    /*     next_stream = TAILQ_NEXT(stream,m_next_for_control); */
-
-    /*     if (net_http2_stream_sync_state(stream) != 0) { */
-    /*         net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_deleting); */
-    /*     } */
-    /* } */
 }
 
 int net_http2_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoint_state_t from_state) {
@@ -150,7 +160,7 @@ int net_http2_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoin
         }
     }
 
-    net_http2_endpoint_sync_stream_state(endpoint);
+    //net_http2_endpoint_sync_stream_state(endpoint);
 
     return 0;
 }
@@ -163,42 +173,18 @@ net_http2_endpoint_state_t net_http2_endpoint_state(net_http2_endpoint_t endpoin
     return endpoint->m_state;
 }
 
-/* void net_http2_endpoint_do_flush(net_http2_endpoint_t endpoint) { */
-/*     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint)); */
+void net_http2_endpoint_set_acceptor(
+    net_http2_endpoint_t endpoint,
+    void * ctx, net_http2_endpoint_accept_fun_t fun, void (*ctx_free)(void*))
+{
+    if (endpoint->m_accept_ctx_free) {
+        endpoint->m_accept_ctx_free(endpoint->m_accept_ctx);
+    }
 
-/*     assert(endpoint->m_in_processing); */
-/*     if (endpoint->m_http2_session == NULL) { */
-/*         CPE_ERROR( */
-/*             protocol->m_em, "http2: %s: flush: no http2 session", */
-/*             net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint)); */
-/*         return; */
-/*     } */
-    
-/*     do { */
-/*         while(!TAILQ_EMPTY(&endpoint->m_sending_streams)) { */
-/*             net_http2_stream_t stream = TAILQ_FIRST(&endpoint->m_sending_streams); */
-/*             if (net_http2_stream_delay_send_data(stream) != 0) { */
-/*                 if (net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_error) != 0) { */
-/*                     net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_deleting); */
-/*                 } */
-/*             } */
-
-/*             if (endpoint->m_http2_session == NULL) return; */
-/*         } */
-
-/*         if (endpoint->m_http2_session == NULL) return; */
-
-/*         int rv = nghttp2_session_send(endpoint->m_http2_session); */
-/*         if (rv != 0) { */
-/*             CPE_ERROR( */
-/*                 protocol->m_em, "http2: %s: flush: session send failed: %s", */
-/*                 net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint), */
-/*                 nghttp2_strerror(rv)); */
-/*             //net_http2_endpoint_pyhsical_close(endpoint, net_endpoint_network_errno_logic, nghttp2_strerror(rv)); */
-/*             return; */
-/*         } */
-/*     } while (!TAILQ_EMPTY(&endpoint->m_sending_streams)); */
-/* } */
+    endpoint->m_accept_ctx = ctx;
+    endpoint->m_accept_ctx_free = ctx_free;
+    endpoint->m_accept_fun = fun;
+}
 
 int net_http2_endpoint_set_state(net_http2_endpoint_t endpoint, net_http2_endpoint_state_t state) {
     if (endpoint->m_state == state) return 0;
@@ -226,7 +212,7 @@ int net_http2_endpoint_set_state(net_http2_endpoint_t endpoint, net_http2_endpoi
         if (net_http2_endpoint_http2_flush(endpoint) != 0) return -1;
         break;
     case net_http2_endpoint_state_streaming:
-        net_http2_endpoint_sync_stream_state(endpoint);
+        //net_http2_endpoint_sync_stream_state(endpoint);
         break;
     }
 

@@ -26,6 +26,15 @@ int net_http2_endpoint_set_runing_mode(net_http2_endpoint_t endpoint, net_http2_
 
 net_endpoint_t net_http2_endpoint_base_endpoint(net_http2_endpoint_t endpoint);
 
+typedef int (*net_http2_endpoint_accept_fun_t)(void * ctx, net_http2_processor_t processor);
+
+void net_http2_endpoint_set_acceptor(
+    net_http2_endpoint_t endpoint,
+    void * ctx,
+    net_http2_endpoint_accept_fun_t fun,
+    void (*ctx_free)(void*));
+
+/*utils*/
 const char * net_http2_endpoint_state_str(net_http2_endpoint_state_t state);
 const char * net_http2_endpoint_runing_mode_str(net_http2_endpoint_runing_mode_t runing_mode);
 

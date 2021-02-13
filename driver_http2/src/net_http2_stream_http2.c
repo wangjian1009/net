@@ -56,8 +56,6 @@ int net_http2_stream_commit_headers(net_http2_stream_t stream) {
             stream->m_stream_id);
     }
 
-    //net_http2_endpoint_schedule_flush(control);
-
     return 0;
 }
 

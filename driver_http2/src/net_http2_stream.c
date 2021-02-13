@@ -71,6 +71,21 @@ void net_http2_stream_on_close(net_http2_stream_t stream, int http2_error) {
     /* } */
 }
 
+void net_http2_stream_on_head_complete(net_http2_stream_t stream) {
+                //TODO:
+                /* if (endpoint->m_runing_mode == net_http2_endpoint_runing_mode_cli) { */
+                /*     if (net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_established) != 0) { */
+                /*         net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_deleting); */
+                /*     } */
+                /* } */
+                /* else { */
+                /*     assert(endpoint->m_svr.m_stream_acceptor); */
+                /*     if (net_http2_stream_acceptor_established(endpoint->m_svr.m_stream_acceptor, stream) != 0) { */
+                /*         net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_deleting); */
+                /*     } */
+                /* } */
+}
+
 int net_http2_stream_on_request_head(
     net_http2_stream_t stream,
     const char * name, uint32_t name_len, const char * value, uint32_t value_len)
