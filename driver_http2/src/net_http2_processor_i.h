@@ -3,13 +3,12 @@
 #include "net_http2_processor.h"
 #include "net_http2_endpoint_i.h"
 
-NET_BEGIN_DECL
-
 struct net_http2_processor {
     net_http2_endpoint_t m_endpoint;
     TAILQ_ENTRY(net_http2_req) m_next;
+    net_http2_stream_t m_stream;
 };
 
-NET_END_DECL
+void net_http2_processor_set_stream(net_http2_processor_t processor, net_http2_stream_t stream);
 
 #endif

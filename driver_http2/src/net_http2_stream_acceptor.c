@@ -28,6 +28,12 @@ int net_http2_stream_acceptor_on_new_endpoint(void * ctx, net_endpoint_t base_co
         return -1;
     }
 
+/* void net_http2_endpoint_set_acceptor( */
+/*     net_http2_endpoint_t endpoint, */
+/*     void * ctx, */
+/*     net_http2_endpoint_accept_fun_t fun, */
+/*     void (*ctx_free)(void*)); */
+    
     //net_http2_endpoint_set_stream_acceptor(control, acceptor);
     
     return 0;

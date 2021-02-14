@@ -48,6 +48,14 @@ static void net_http2_basic_pair_basic(void **state) {
     assert_string_equal(
         net_http2_endpoint_state_str(net_http2_endpoint_state(cli_ep)),
         net_http2_endpoint_state_str(net_http2_endpoint_state_streaming));
+
+    /**/
+    net_http2_req_t req = net_http2_req_create(cli_ep, net_http2_req_method_get, "/a/b");
+    assert_true(req);
+
+    assert_true(net_http2_req_start(req) == 0);
+
+    net_http2_testenv_response_t response = net_http2_testenv_req_commit(env, req);
 }
 
 int net_http2_basic_pair_basic_tests() {

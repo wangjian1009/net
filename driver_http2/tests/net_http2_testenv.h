@@ -11,6 +11,9 @@
 #include "test_net_protocol_endpoint.h"
 
 typedef struct net_http2_testenv * net_http2_testenv_t;
+typedef struct net_http2_testenv_response * net_http2_testenv_response_t;
+
+typedef TAILQ_HEAD(net_http2_testenv_response_list, net_http2_testenv_response) net_http2_testenv_response_list_t;
 
 struct net_http2_testenv {
     test_error_monitor_t m_tem;
@@ -24,6 +27,9 @@ struct net_http2_testenv {
     /*stream*/
     net_protocol_t m_stream_test_protocol;
     net_http2_stream_driver_t m_stream_driver;
+
+    /*responses*/
+    net_http2_testenv_response_list_t m_responses;
 };
 
 net_http2_testenv_t net_http2_testenv_create();
@@ -35,6 +41,8 @@ net_http2_testenv_create_basic_ep_cli(net_http2_testenv_t env, const char * addr
 
 net_acceptor_t
 net_http2_testenv_create_basic_acceptor(net_http2_testenv_t env, const char * address);
+
+net_http2_testenv_response_t net_http2_testenv_req_commit(net_http2_testenv_t env, net_http2_req_t req);
 
 /*stream*/
 net_http2_stream_endpoint_t

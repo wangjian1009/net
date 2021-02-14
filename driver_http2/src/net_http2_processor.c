@@ -3,6 +3,7 @@
 #include "net_endpoint.h"
 #include "net_timer.h"
 #include "net_http2_processor_i.h"
+#include "net_http2_stream_i.h"
 
 net_http2_processor_t
 net_http2_processor_create(net_http2_stream_t stream) {
@@ -25,4 +26,22 @@ net_http2_processor_create(net_http2_stream_t stream) {
 }
 
 void net_http2_processor_free(net_http2_processor_t processor) {
+}
+
+void net_http2_processor_set_stream(net_http2_processor_t processor, net_http2_stream_t stream) {
+    if (processor->m_stream == stream) return;
+
+    if (processor->m_stream) {
+        assert(processor->m_stream->m_svr.m_processor == processor);
+        processor->m_stream->m_svr.m_processor = NULL;
+        processor->m_stream = NULL;
+    }
+
+    processor->m_stream = stream;
+
+    if (processor->m_stream) {
+        assert(processor->m_stream->m_runing_mode == net_http2_stream_runing_mode_svr);
+        assert(processor->m_stream->m_svr.m_processor == NULL);
+        processor->m_stream->m_svr.m_processor = processor;
+    }
 }

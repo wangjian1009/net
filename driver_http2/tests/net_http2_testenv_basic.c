@@ -3,6 +3,7 @@
 #include "net_protocol.h"
 #include "net_address.h"
 #include "net_http2_testenv.h"
+#include "net_http2_testenv_response.h"
 
 net_http2_endpoint_t
 net_http2_testenv_create_basic_ep_cli(net_http2_testenv_t env, const char * str_address) {
@@ -52,5 +53,14 @@ net_http2_testenv_create_basic_acceptor(net_http2_testenv_t env, const char * st
     return acceptor;
 }
 
+net_http2_testenv_response_t
+net_http2_testenv_req_commit(net_http2_testenv_t env, net_http2_req_t req) {
+    net_http2_testenv_response_t response = net_http2_testenv_response_create(env, req);
+    
+    /* if (net_http2_req_write_commit(req) != 0) { */
+    /*     net_http2_testenv_response_free(response); */
+    /*     return NULL; */
+    /* } */
 
-
+    return response;
+}

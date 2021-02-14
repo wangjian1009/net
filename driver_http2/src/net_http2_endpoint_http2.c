@@ -258,16 +258,9 @@ int net_http2_endpoint_on_data_chunk_recv_callback(
         return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
     }
 
-    net_http2_stream_on_input(stream, data, len);
-    /* if (net_endpoint_buf_append(stream->m_base_endpoint, net_ep_buf_read, data, (uint32_t)len) != 0) { */
-    /*     if (net_endpoint_error_source(stream->m_base_endpoint) == net_endpoint_error_source_none) { */
-    /*         net_endpoint_set_error( */
-    /*             stream->m_base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_logic, NULL); */
-    /*     } */
-    /*     if (net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_error) != 0) { */
-    /*         net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_deleting); */
-    /*     } */
-    /* } */
+    if (net_http2_stream_on_input(stream, data, len) != 0) {
+        return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+    }
 
     return NGHTTP2_NO_ERROR;
 }

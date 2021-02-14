@@ -9,6 +9,7 @@
 #include "net_http2_testenv.h"
 #include "net_http2_protocol.h"
 #include "net_http2_stream_driver.h"
+#include "net_http2_testenv_response.h"
 
 net_http2_testenv_t net_http2_testenv_create() {
     net_http2_testenv_t env = mem_alloc(test_allocrator(), sizeof(struct net_http2_testenv));
@@ -34,10 +35,16 @@ net_http2_testenv_t net_http2_testenv_create() {
             test_allocrator(), env->m_em);
     net_driver_set_debug(net_driver_from_data(env->m_stream_driver), 2);
     
+    TAILQ_INIT(&env->m_responses);
+
     return env;
 }
 
 void net_http2_testenv_free(net_http2_testenv_t env) {
+    while(!TAILQ_EMPTY(&env->m_responses)) {
+        net_http2_testenv_response_free(TAILQ_FIRST(&env->m_responses));
+    }
+    
     net_schedule_free(env->m_schedule);
     test_error_monitor_free(env->m_tem);
     mem_free(test_allocrator(), env);

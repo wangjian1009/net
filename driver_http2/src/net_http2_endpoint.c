@@ -134,16 +134,16 @@ int net_http2_endpoint_input(net_endpoint_t base_endpoint) {
 
     if (net_endpoint_is_active(base_endpoint)) {
         net_endpoint_buf_consume(endpoint->m_base_endpoint, net_ep_buf_read, (size_t)readlen);
-    }
 
-    if (net_http2_endpoint_http2_flush(endpoint) != 0) {
-        CPE_ERROR(
-            protocol->m_em, "http2: %s: %s: http2 session flush: %s",
-            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), base_endpoint),
-            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
-            nghttp2_strerror((int)readlen));
-        endpoint->m_in_processing = 0;
-        return -1;
+        if (net_http2_endpoint_http2_flush(endpoint) != 0) {
+            CPE_ERROR(
+                protocol->m_em, "http2: %s: %s: http2 session flush: %s",
+                net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), base_endpoint),
+                net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+                nghttp2_strerror((int)readlen));
+            endpoint->m_in_processing = 0;
+            return -1;
+        }
     }
 
     endpoint->m_in_processing = 0;
