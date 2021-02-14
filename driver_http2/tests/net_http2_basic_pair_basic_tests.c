@@ -40,6 +40,12 @@ static void net_http2_basic_pair_basic(void **state) {
     /*等待连接成功 */
     test_net_driver_run(env->m_tdriver, 100);
 
+    net_endpoint_t svr_ep_base = test_net_endpoint_linked_other(env->m_tdriver, cli_ep_base);
+    assert_true(svr_ep_base != NULL);
+
+    net_http2_endpoint_t svr_ep = net_http2_endpoint_cast(svr_ep_base);
+    assert_true(svr_ep);
+
     /*验证连接成功状态 */
     assert_string_equal(
         net_endpoint_state_str(net_endpoint_state(cli_ep_base)),
@@ -49,13 +55,25 @@ static void net_http2_basic_pair_basic(void **state) {
         net_http2_endpoint_state_str(net_http2_endpoint_state(cli_ep)),
         net_http2_endpoint_state_str(net_http2_endpoint_state_streaming));
 
-    /**/
+    assert_string_equal(
+        net_endpoint_state_str(net_endpoint_state(svr_ep_base)),
+        net_endpoint_state_str(net_endpoint_state_established));
+
+    assert_string_equal(
+        net_http2_endpoint_state_str(net_http2_endpoint_state(svr_ep)),
+        net_http2_endpoint_state_str(net_http2_endpoint_state_streaming));
+    
+    /*创建stream连接 */
     net_http2_req_t req = net_http2_req_create(cli_ep, net_http2_req_method_get, "/a/b");
     assert_true(req);
 
     assert_true(net_http2_req_start(req) == 0);
 
-    net_http2_testenv_response_t response = net_http2_testenv_req_commit(env, req);
+    net_http2_stream_t cli_stream = net_http2_req_stream(req);
+    assert_true(cli_stream);
+
+    net_http2_stream_t svr_stream = net_http2_endpoint_find_stream(svr_ep, net_http2_stream_id(cli_stream));
+    assert_true(svr_stream);
 }
 
 int net_http2_basic_pair_basic_tests() {

@@ -34,6 +34,9 @@ void net_http2_endpoint_set_acceptor(
     net_http2_endpoint_accept_fun_t fun,
     void (*ctx_free)(void*));
 
+/**/
+net_http2_stream_t net_http2_endpoint_find_stream(net_http2_endpoint_t endpoint, uint32_t stream_id);
+
 /*utils*/
 const char * net_http2_endpoint_state_str(net_http2_endpoint_state_t state);
 const char * net_http2_endpoint_runing_mode_str(net_http2_endpoint_runing_mode_t runing_mode);

@@ -5,6 +5,7 @@
 #include "net_http2_types.h"
 #include "net_http2_req.h"
 #include "net_http2_endpoint.h"
+#include "net_http2_stream.h"
 #include "net_http2_stream_endpoint.h"
 #include "test_net_driver.h"
 #include "test_net_endpoint.h"

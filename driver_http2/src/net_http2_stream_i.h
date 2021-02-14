@@ -26,9 +26,6 @@ net_http2_stream_create(
 
 void net_http2_stream_free(net_http2_stream_t stream);
 
-/*send*/
-int net_http2_stream_commit_headers(net_http2_stream_t stream);
-
 /*recv*/
 int net_http2_stream_on_input(net_http2_stream_t stream, const uint8_t * data, uint32_t len);
 

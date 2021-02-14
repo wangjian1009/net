@@ -172,6 +172,10 @@ net_http2_endpoint_t net_http2_req_endpoint(net_http2_req_t req) {
     return req->m_endpoint;
 }
 
+net_http2_stream_t net_http2_req_stream(net_http2_req_t req) {
+    return req->m_stream;
+}
+
 int net_http2_req_set_reader(
     net_http2_req_t req,
     void * ctx,

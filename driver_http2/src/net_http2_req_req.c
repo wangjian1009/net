@@ -11,10 +11,6 @@ net_http2_req_state_t net_http2_req_state(net_http2_req_t req) {
     return req->m_req_state;
 }
 
-int net_http2_req_write_head_pair(net_http2_req_t http_req, const char * attr_name, const char * attr_value) {
-    return 0;
-}
-
 int net_http2_req_start(net_http2_req_t http_req) {
     net_http2_endpoint_t endpoint = http_req->m_endpoint;
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));

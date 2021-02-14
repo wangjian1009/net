@@ -186,6 +186,17 @@ void net_http2_endpoint_set_acceptor(
     endpoint->m_accept_fun = fun;
 }
 
+net_http2_stream_t
+net_http2_endpoint_find_stream(net_http2_endpoint_t endpoint, uint32_t stream_id) {
+    net_http2_stream_t stream;
+
+    TAILQ_FOREACH(stream, &endpoint->m_streams, m_next_for_ep) {
+        if (stream->m_stream_id == stream_id) return stream;
+    }
+
+    return NULL;
+}
+
 int net_http2_endpoint_set_state(net_http2_endpoint_t endpoint, net_http2_endpoint_state_t state) {
     if (endpoint->m_state == state) return 0;
 

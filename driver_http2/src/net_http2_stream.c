@@ -52,8 +52,16 @@ void net_http2_stream_free(net_http2_stream_t stream) {
     mem_free(protocol->m_alloc, stream);
 }
 
+uint32_t net_http2_stream_id(net_http2_stream_t stream) {
+    return stream->m_stream_id;
+}
+
 net_http2_stream_runing_mode_t net_http2_stream_runing_mode(net_http2_stream_t stream) {
     return stream->m_runing_mode;
+}
+
+net_http2_endpoint_t net_http2_stream_endpoint(net_http2_stream_t stream) {
+    return stream->m_endpoint;
 }
 
 int net_http2_stream_on_input(net_http2_stream_t stream, const uint8_t * data, uint32_t len) {
