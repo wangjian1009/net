@@ -1,6 +1,7 @@
 #include "net_endpoint.h"
 #include "net_protocol.h"
 #include "net_http2_req_i.h"
+#include "net_http2_stream_i.h"
 
 net_http2_req_method_t net_http2_req_method(net_http2_req_t req) {
     return req->m_req_method;
@@ -26,10 +27,54 @@ int net_http2_req_start(net_http2_req_t http_req) {
         return -1;
     }
 
-    /* net_http2_req_state_connecting, */
-    /* net_http2_req_state_established, */
-    /* net_http2_req_state_error, */
-    /* net_http2_req_state_done, */
+    if (endpoint->m_state != net_http2_endpoint_state_streaming) {
+        CPE_ERROR(
+            protocol->m_em, "http2: %s: req %d: start in state %s",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            http_req->m_id,
+            net_http2_endpoint_state_str(endpoint->m_state));
+        return -1;
+    }
+
+    net_http2_stream_t stream =
+        net_http2_stream_create(
+            endpoint,
+            nghttp2_session_get_next_stream_id(endpoint->m_http2_session), net_http2_stream_runing_mode_cli);
+    if (stream == NULL) {
+        CPE_ERROR(
+            protocol->m_em, "http2: %s: req %d: create stream failed",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            http_req->m_id);
+        return -1;
+    }
+
+    const nghttp2_priority_spec * pri_spec = NULL;
+
+    int rv = nghttp2_submit_headers(
+        endpoint->m_http2_session, NGHTTP2_FLAG_NONE, -1, pri_spec,
+        http_req->m_req_headers, http_req->m_req_head_count, stream);
+    if (rv < 0) {
+        CPE_ERROR(
+            protocol->m_em, "http2: %s: %s: http2: %d: ==> submit request fail, %s!",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+            stream->m_stream_id,
+            nghttp2_strerror(rv));
+        net_http2_stream_free(stream);
+        return -1;
+    }
+
+    if (net_http2_endpoint_http2_flush(endpoint) != 0) {
+        CPE_ERROR(
+            protocol->m_em, "http2: %s: %s: http2: %d: ==> req %d start failed!",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+            stream->m_stream_id, http_req->m_id);
+        net_http2_stream_free(stream);
+        return -1;
+    }
+    
+    net_http2_req_set_stream(http_req, stream);
 
     return 0;
 }

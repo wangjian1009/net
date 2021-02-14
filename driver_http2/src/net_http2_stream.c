@@ -10,7 +10,7 @@
 
 net_http2_stream_t
 net_http2_stream_create(
-    net_http2_endpoint_t endpoint, int32_t stream_id, net_http2_stream_runing_mode_t runing_mode)
+    net_http2_endpoint_t endpoint, uint32_t stream_id, net_http2_stream_runing_mode_t runing_mode)
 {
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
     
@@ -19,6 +19,15 @@ net_http2_stream_create(
     stream->m_stream_id = stream_id;
     stream->m_runing_mode = runing_mode;
 
+    switch(stream->m_runing_mode) {
+    case net_http2_stream_runing_mode_cli:
+        stream->m_cli.m_req = NULL;
+        break;
+    case net_http2_stream_runing_mode_svr:
+        stream->m_svr.m_processor = NULL;
+        break;
+    }
+    
     TAILQ_INSERT_TAIL(&endpoint->m_streams, stream, m_next_for_ep);
     
     return stream;

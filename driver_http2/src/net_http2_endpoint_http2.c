@@ -91,9 +91,7 @@ int net_http2_endpoint_on_frame_recv_callback(
 
     switch(frame->hd.type) {
     case NGHTTP2_SETTINGS:
-        CPE_ERROR(protocol->m_em, "xxxx: 11");
         if (frame->hd.flags & NGHTTP2_FLAG_ACK) {
-            CPE_ERROR(protocol->m_em, "xxxx: 22");
             net_http2_endpoint_set_state(endpoint, net_http2_endpoint_state_streaming);
         }
         break;

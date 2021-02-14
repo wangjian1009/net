@@ -8,7 +8,7 @@ NET_BEGIN_DECL
 struct net_http2_stream {
     net_http2_endpoint_t m_endpoint;
     TAILQ_ENTRY(net_http2_stream) m_next_for_ep;
-    int32_t m_stream_id;
+    uint32_t m_stream_id;
     net_http2_stream_runing_mode_t m_runing_mode;
     union {
         struct {
@@ -22,7 +22,7 @@ struct net_http2_stream {
 
 net_http2_stream_t
 net_http2_stream_create(
-    net_http2_endpoint_t endpoint, int32_t stream_id, net_http2_stream_runing_mode_t runing_mode);
+    net_http2_endpoint_t endpoint, uint32_t stream_id, net_http2_stream_runing_mode_t runing_mode);
 
 void net_http2_stream_free(net_http2_stream_t stream);
 
