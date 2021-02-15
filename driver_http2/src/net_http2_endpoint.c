@@ -161,8 +161,6 @@ int net_http2_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoin
         }
     }
 
-    //net_http2_endpoint_sync_stream_state(endpoint);
-
     return 0;
 }
 

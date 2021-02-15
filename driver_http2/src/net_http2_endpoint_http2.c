@@ -275,13 +275,42 @@ int net_http2_endpoint_on_data_chunk_recv_callback(
         return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
     }
 
-    if (net_http2_stream_on_input(stream, data, len) != 0) {
-        CPE_ERROR(
-            protocol->m_em, "http2: %s: %s: http2: %d: recv chunk: input failed",
-            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
-            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
-            stream_id);
-        return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+    switch(stream->m_runing_mode) {
+    case net_http2_stream_runing_mode_cli: {
+        net_http2_req_t req = net_http2_stream_req(stream);
+        if (req == NULL) {
+            CPE_ERROR(
+                protocol->m_em, "http2: %s: %s: http2: %d: <== recv chunk, stream no bind request",
+                net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+                net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+                stream_id);
+            return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+        }
+
+    /* if (net_http2_stream_on_input(stream, data, len) != 0) { */
+    /*     CPE_ERROR( */
+    /*         protocol->m_em, "http2: %s: %s: http2: %d: recv chunk: input failed", */
+    /*         net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint), */
+    /*         net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode), */
+    /*         stream_id); */
+    /*     return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE; */
+    /* } */
+        
+        break;
+    }
+    case net_http2_stream_runing_mode_svr: {
+        net_http2_processor_t processor = net_http2_stream_processor(stream);
+        if (processor == NULL) {
+            CPE_ERROR(
+                protocol->m_em, "http2: %s: %s: http2: %d: <== recv chunk, stream no bind processor",
+                net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+                net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+                stream_id);
+            return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+        }
+
+        break;
+    }
     }
 
     return NGHTTP2_NO_ERROR;

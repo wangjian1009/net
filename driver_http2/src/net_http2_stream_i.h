@@ -28,8 +28,8 @@ net_http2_stream_create(
 
 void net_http2_stream_free(net_http2_stream_t stream);
 
-/*recv*/
-int net_http2_stream_on_input(net_http2_stream_t stream, const uint8_t * data, uint32_t len);
+int net_http2_stream_send(
+    net_http2_stream_t stream, void const * data, uint32_t data_size, uint8_t have_follow_data);
 
 NET_END_DECL
 
