@@ -226,8 +226,8 @@ int net_http2_processor_on_head_complete(net_http2_processor_t processor) {
 
     net_http2_processor_set_state(processor, net_http2_processor_state_head_received);
 
-    if (endpoint->m_accept_fun == NULL) {
-        
+    if (endpoint->m_accept_fun != NULL) {
+        if (endpoint->m_accept_fun(endpoint->m_accept_ctx, processor) != 0) return -1;
     }
 
     return 0;

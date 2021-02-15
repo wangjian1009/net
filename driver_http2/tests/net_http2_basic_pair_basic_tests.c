@@ -86,11 +86,13 @@ static void net_http2_basic_pair_basic(void **state) {
 
     assert_string_equal(
         net_http2_processor_state_str(net_http2_processor_state(processor)),
-        net_http2_processor_state_str(net_http2_processor_state_established));
+        net_http2_processor_state_str(net_http2_processor_state_head_received));
 
     assert_string_equal(
         net_http2_req_state_str(net_http2_req_state(req)),
-        net_http2_req_state_str(net_http2_req_state_established));
+        net_http2_req_state_str(net_http2_req_state_connecting));
+
+    /*发送响应头 */
 }
 
 int net_http2_basic_pair_basic_tests() {
