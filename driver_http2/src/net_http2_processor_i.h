@@ -20,10 +20,16 @@ struct net_http2_processor {
     uint16_t m_req_head_capacity;
     struct net_http2_processor_pair * m_req_headers;
 
-    /**/
+    /*res*/
     uint16_t m_res_head_count;
     uint16_t m_res_head_capacity;
     nghttp2_nv * m_res_headers;
+
+    /*processor*/
+    void * m_ctx;
+    net_http2_processor_on_state_change_fun_t m_on_state_change;
+    net_http2_processor_on_data_fun_t m_on_data;
+    void (*m_ctx_free)(void *);
 };
 
 net_http2_processor_t net_http2_processor_create(net_http2_endpoint_t endpoint, uint32_t id);

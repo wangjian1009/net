@@ -27,6 +27,20 @@ const char * net_http2_processor_find_req_header(net_http2_processor_t processor
 int net_http2_processor_add_res_head(net_http2_processor_t processor, const char * attr_name, const char * attr_value);
 const char * net_http2_processor_find_res_header(net_http2_processor_t processor, const char * name);
 
+/*processor*/
+typedef void (*net_http2_processor_on_state_change_fun_t)(
+    void * ctx, net_http2_processor_t processor, net_http2_processor_state_t old_state);
+
+typedef void (*net_http2_processor_on_data_fun_t)(
+    void * ctx, net_http2_processor_t processor, void const * data, uint32_t data_len);
+
+void net_http2_processor_set_processor(
+    net_http2_processor_t processor,
+    void * ctx,
+    net_http2_processor_on_state_change_fun_t on_state_change,
+    net_http2_processor_on_data_fun_t on_data,
+    void (*ctx_free)(void *));
+
 const char * net_http2_processor_state_str(net_http2_processor_state_t state);
 
 NET_END_DECL

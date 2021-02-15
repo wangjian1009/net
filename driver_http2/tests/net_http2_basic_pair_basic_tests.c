@@ -114,6 +114,9 @@ static void net_http2_basic_pair_basic(void **state) {
     assert_string_equal(
         net_http2_req_find_res_header(req, "b"),
         "bv");
+
+    /*发送数据c->s */
+    
 }
 
 int net_http2_basic_pair_basic_tests() {

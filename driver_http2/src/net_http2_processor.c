@@ -35,6 +35,11 @@ net_http2_processor_create(net_http2_endpoint_t endpoint, uint32_t id) {
     processor->m_res_head_capacity = 0;
     processor->m_res_headers = NULL;
 
+    processor->m_ctx = NULL;
+    processor->m_on_state_change = NULL;
+    processor->m_on_data = NULL;
+    processor->m_ctx_free = NULL;
+    
     endpoint->m_processor_count++;
     TAILQ_INSERT_TAIL(&endpoint->m_processors, processor, m_next);
     
