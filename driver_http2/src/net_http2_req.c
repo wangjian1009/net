@@ -15,8 +15,9 @@ net_http2_req_create(net_http2_endpoint_t http_ep) {
     net_http2_req_t req = mem_alloc(protocol->m_alloc, sizeof(struct net_http2_req));
     if (req == NULL) {
         CPE_ERROR(
-            protocol->m_em, "http2: %s: req: create: alloc fail!",
-            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), http_ep->m_base_endpoint));
+            protocol->m_em, "http2: %s: %s: req: create: alloc fail!",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), http_ep->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(http_ep->m_runing_mode));
         return NULL;
     }
 
@@ -144,6 +145,10 @@ int net_http2_req_set_reader(
 {
     net_http2_endpoint_t http_ep = req->m_endpoint;
     net_http2_protocol_t protocol = net_http2_protocol_cast(net_endpoint_protocol(http_ep->m_base_endpoint));
+
+    if (req->m_read_ctx_free) {
+        req->m_read_ctx_free(req->m_read_ctx);
+    }
     
     req->m_read_ctx = read_ctx;
     req->m_on_state_change = on_state_change;
@@ -158,6 +163,37 @@ void net_http2_req_clear_reader(net_http2_req_t req) {
     req->m_on_state_change = NULL;
     req->m_on_recv = NULL;
     req->m_read_ctx_free = NULL;
+}
+
+int net_http2_req_set_writer(
+    net_http2_req_t req,
+    void * write_ctx,
+    net_http2_req_on_write_fun_t on_write,
+    void (*write_ctx_free)(void *))
+{
+    net_http2_endpoint_t http_ep = req->m_endpoint;
+    net_http2_protocol_t protocol = net_http2_protocol_cast(net_endpoint_protocol(http_ep->m_base_endpoint));
+
+    if (req->m_on_write != NULL) {
+        CPE_ERROR(
+            protocol->m_em, "http2: %s: %s: req %d: set writer: already have writer!",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), http_ep->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(http_ep->m_runing_mode),
+            req->m_id);
+        return -1;
+    }
+    
+    req->m_write_ctx = write_ctx;
+    req->m_on_write = on_write;
+    req->m_write_ctx_free = write_ctx_free;
+
+    return 0;
+}
+
+void net_http2_req_clear_writer(net_http2_req_t req) {
+    req->m_write_ctx = NULL;
+    req->m_on_write = NULL;
+    req->m_write_ctx_free = NULL;
 }
 
 void net_http2_req_set_stream(net_http2_req_t req, net_http2_stream_t stream) {

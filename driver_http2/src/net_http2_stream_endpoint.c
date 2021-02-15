@@ -301,10 +301,15 @@ void net_http2_stream_endpoint_set_using(net_http2_stream_endpoint_t stream, net
     }
 }
 
-net_http2_stream_endpoint_req_on_state_changed(void * ctx, net_http2_req_t req, net_http2_res_result_t result) {
-    net_http2_stream_endpoint_t stream = ctx;
+void net_http2_stream_endpoint_req_on_write(void * ctx, net_http2_req_t req) {
+}
 
-    return net_http2_res_op_success;
+void net_http2_stream_endpoint_req_on_recv(void * ctx, net_http2_req_t req, void const * data, uint32_t data_len) {
+    net_http2_stream_endpoint_t stream = ctx;
+}
+
+void net_http2_stream_endpoint_req_on_state_change(void * ctx, net_http2_req_t req, net_http2_req_state_t old_state) {
+    net_http2_stream_endpoint_t stream = ctx;
 }
 
 int net_http2_stream_endpoint_http2_connect(net_http2_stream_endpoint_t stream) {
@@ -313,21 +318,6 @@ int net_http2_stream_endpoint_http2_connect(net_http2_stream_endpoint_t stream) 
     net_endpoint_t base_http2_ep = net_http2_endpoint_base_endpoint(http2_ep);
 
     assert(stream->m_using);
-    CPE_ERROR(driver->m_em, "xxxx: sync_state connect 1");
-
-    net_address_t target_address = net_endpoint_remote_address(stream->m_base_endpoint);
-    if (target_address == NULL) {
-        CPE_ERROR(
-            driver->m_em, "http2: %s: send connect request: no remote target!",
-            net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), stream->m_base_endpoint));
-        return -1;
-    }
-
-    char target_path[256];
-    cpe_str_dup(
-        target_path, sizeof(target_path),
-        net_address_dump(net_http2_stream_driver_tmp_buffer(driver), target_address));
-    CPE_ERROR(driver->m_em, "xxxx: sync_state connect 2");
 
     assert(stream->m_req == NULL);
     stream->m_req = net_http2_req_create(http2_ep);
@@ -340,13 +330,16 @@ int net_http2_stream_endpoint_http2_connect(net_http2_stream_endpoint_t stream) 
     }
 
     if (net_http2_req_add_req_head(stream->m_req, ":method", net_http2_req_method_str(net_http2_req_method_get)) != 0
-        || net_http2_req_add_req_head(stream->m_req, ":path", target_path) != 0
         || net_http2_req_set_reader(
-            stream->m_req,
-            stream,
-            net_http2_stream_endpoint_req_on_res_head,
-            net_http2_stream_endpoint_req_on_res_body,
-            net_http2_stream_endpoint_req_on_res_complete) != 0)
+            stream->m_req, stream,
+            net_http2_stream_endpoint_req_on_state_change,
+            net_http2_stream_endpoint_req_on_recv,
+            NULL) != 0
+        || net_http2_req_set_writer(
+            stream->m_req, stream,
+            net_http2_stream_endpoint_req_on_write,
+            NULL) != 0
+        )
     {
         CPE_ERROR(
             driver->m_em, "http2: %s: %s: http2 connect: setup req failed!",
@@ -357,7 +350,7 @@ int net_http2_stream_endpoint_http2_connect(net_http2_stream_endpoint_t stream) 
         return -1;
     }
 
-    if (net_http2_req_start(stream->m_req, 1) != 0) {
+    if (net_http2_req_start(stream->m_req) != 0) {
         CPE_ERROR(
             driver->m_em, "http2: %s: %s: http2 connect: start req failed!",
             net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), stream->m_base_endpoint),

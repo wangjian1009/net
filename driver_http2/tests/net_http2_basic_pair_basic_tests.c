@@ -68,7 +68,7 @@ static void net_http2_basic_pair_basic(void **state) {
     assert_true(req);
 
     assert_true(net_http2_req_add_req_head(req, "a", "av") == 0);
-    assert_true(net_http2_req_start(req, 1) == 0);
+    assert_true(net_http2_req_start(req) == 0);
 
     assert_string_equal(
         net_http2_req_state_str(net_http2_req_state(req)),

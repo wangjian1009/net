@@ -40,7 +40,7 @@ int net_http2_req_append(net_http2_req_t http_req, void const * data, uint32_t d
 /*请求处理 */
 typedef void (*net_http2_req_on_write_fun_t)(void * ctx, net_http2_req_t req);
 
-int net_http2_req_set_sender(
+int net_http2_req_set_writer(
     net_http2_req_t http_req,
     void * write_ctx,
     net_http2_req_on_write_fun_t on_write,
