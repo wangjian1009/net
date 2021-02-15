@@ -39,7 +39,7 @@ net_http2_endpoint_t net_http2_req_endpoint(net_http2_req_t req);
 net_http2_stream_t net_http2_req_stream(net_http2_req_t req);
 net_http2_req_method_t net_http2_req_method(net_http2_req_t req);
 net_http2_req_state_t net_http2_req_state(net_http2_req_t req);
-int net_http2_req_add_head(net_http2_req_t http_req, const char * attr_name, const char * attr_value);
+int net_http2_req_add_req_head(net_http2_req_t http_req, const char * attr_name, const char * attr_value);
 int net_http2_req_start(net_http2_req_t http_req);
 
 const char * net_http2_req_state_str(net_http2_req_state_t req_state);

@@ -362,7 +362,7 @@ int net_http2_stream_endpoint_http2_connect(net_http2_stream_endpoint_t stream) 
         return -1;
     }
 
-    if (net_http2_req_add_head(stream->m_req, ":authority", target_path) != 0
+    if (net_http2_req_add_req_head(stream->m_req, ":authority", target_path) != 0
         || net_http2_req_set_reader(
             stream->m_req,
             stream,
