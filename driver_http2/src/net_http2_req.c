@@ -24,11 +24,8 @@ net_http2_req_create(net_http2_endpoint_t http_ep) {
     req->m_endpoint = http_ep;
     req->m_stream = NULL;
     req->m_id = ++protocol->m_max_req_id;
-    req->m_free_after_processed = 0;
-    req->m_on_complete_processed = 0;
-    req->m_on_complete_processed = 0;
+    req->m_state = net_http2_req_state_init;
 
-    req->m_req_state = net_http2_req_state_init;
     req->m_req_head_count = 0;
     req->m_req_head_capacity = 0;
     req->m_req_headers = NULL;
@@ -112,12 +109,7 @@ net_http2_req_find(net_http2_endpoint_t http_ep, uint16_t req_id) {
 
     TAILQ_FOREACH(req, &http_ep->m_reqs, m_next_for_endpoint) {
         if (req->m_id == req_id) {
-            if (req->m_free_after_processed) {
-                return NULL;
-            }
-            else {
-                return req;
-            }
+            return req;
         }
     }
 

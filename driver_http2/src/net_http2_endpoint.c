@@ -70,7 +70,7 @@ void net_http2_endpoint_fini(net_endpoint_t base_endpoint) {
         net_http2_req_t req = TAILQ_FIRST(&endpoint->m_reqs);
         net_http2_req_free(req);
     }
-
+    
     while(!TAILQ_EMPTY(&endpoint->m_streams)) {
         net_http2_stream_t stream = TAILQ_FIRST(&endpoint->m_streams);
         net_http2_stream_free(stream);
@@ -221,9 +221,15 @@ int net_http2_endpoint_set_state(net_http2_endpoint_t endpoint, net_http2_endpoi
         if (net_http2_endpoint_http2_send_settings(endpoint) != 0) return -1;
         if (net_http2_endpoint_http2_flush(endpoint) != 0) return -1;
         break;
-    case net_http2_endpoint_state_streaming:
-        //net_http2_endpoint_sync_stream_state(endpoint);
+    case net_http2_endpoint_state_streaming: {
+        net_http2_req_t req, next_req;
+        for(req = TAILQ_FIRST(&endpoint->m_reqs); req; req = next_req) {
+            next_req = TAILQ_NEXT(req, m_next_for_endpoint);
+            if (req->m_state != net_http2_req_state_connecting) continue;
+            
+        }
         break;
+    }
     }
 
     return 0;

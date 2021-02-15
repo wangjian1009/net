@@ -15,11 +15,9 @@ struct net_http2_req {
     TAILQ_ENTRY(net_http2_req) m_next_for_endpoint;
     net_http2_stream_t m_stream;
     uint16_t m_id;
-    uint8_t m_free_after_processed;
-    uint8_t m_on_complete_processed;
+    net_http2_req_state_t m_state;
 
     /*req*/
-    net_http2_req_state_t m_req_state;
     uint16_t m_req_head_count;
     uint16_t m_req_head_capacity;
     nghttp2_nv * m_req_headers;

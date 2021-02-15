@@ -8,7 +8,7 @@
 void net_http2_req_set_req_state(net_http2_req_t req, net_http2_req_state_t state);
 
 net_http2_req_state_t net_http2_req_state(net_http2_req_t req) {
-    return req->m_req_state;
+    return req->m_state;
 }
 
 int net_http2_req_add_req_head(net_http2_req_t http_req, const char * attr_name, const char * attr_value) {
@@ -80,12 +80,12 @@ int net_http2_req_start(net_http2_req_t http_req) {
     net_http2_endpoint_t endpoint = http_req->m_endpoint;
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
 
-    if (http_req->m_req_state != net_http2_req_state_init) {
+    if (http_req->m_state != net_http2_req_state_init) {
         CPE_ERROR(
             protocol->m_em, "http2: %s: %s: req %d: can`t start in req-state %s",
             net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
             net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
-            http_req->m_id, net_http2_req_state_str(http_req->m_req_state));
+            http_req->m_id, net_http2_req_state_str(http_req->m_state));
         return -1;
     }
 
@@ -155,14 +155,14 @@ int net_http2_req_append(net_http2_req_t http_req, void const * data, uint32_t d
         return -1;
     }
 
-    if (http_req->m_req_state != net_http2_req_state_established
-        && http_req->m_req_state != net_http2_req_state_read_closed)
+    if (http_req->m_state != net_http2_req_state_established
+        && http_req->m_state != net_http2_req_state_read_closed)
     {
         CPE_ERROR(
             protocol->m_em, "http2: %s: %s: http2: %d: req %d: can`t send data in req-state %s",
             net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
             net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
-            stream->m_stream_id, http_req->m_id, net_http2_req_state_str(http_req->m_req_state));
+            stream->m_stream_id, http_req->m_id, net_http2_req_state_str(http_req->m_state));
         return -1;
     }
 
@@ -210,7 +210,7 @@ int net_http2_req_on_req_head_complete(net_http2_req_t http_req) {
 }
 
 void net_http2_req_set_req_state(net_http2_req_t http_req, net_http2_req_state_t state) {
-    if (http_req->m_req_state == state) return;
+    if (http_req->m_state == state) return;
 
     net_http2_endpoint_t endpoint = http_req->m_endpoint;
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
@@ -222,18 +222,18 @@ void net_http2_req_set_req_state(net_http2_req_t http_req, net_http2_req_state_t
                 net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
                 net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
                 http_req->m_stream->m_stream_id, http_req->m_id,
-                net_http2_req_state_str(http_req->m_req_state), net_http2_req_state_str(state));
+                net_http2_req_state_str(http_req->m_state), net_http2_req_state_str(state));
         } else {
             CPE_INFO(
                 protocol->m_em, "http2: %s: %s: req %d: req-state %s ==> %s",
                 net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
                 net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
                 http_req->m_id,
-                net_http2_req_state_str(http_req->m_req_state), net_http2_req_state_str(state));
+                net_http2_req_state_str(http_req->m_state), net_http2_req_state_str(state));
         }
     }
 
-    http_req->m_req_state = state;
+    http_req->m_state = state;
 }
 
 const char * net_http2_req_state_str(net_http2_req_state_t req_state) {
