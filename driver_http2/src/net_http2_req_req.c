@@ -109,6 +109,10 @@ const char * net_http2_req_state_str(net_http2_req_state_t req_state) {
         return "connecting";
     case net_http2_req_state_established:
         return "established";
+    case net_http2_req_state_read_closed:
+        return "read-closed";
+    case net_http2_req_state_write_closed:
+        return "write-closed";
     case net_http2_req_state_error:
         return "error";
     case net_http2_req_state_done:

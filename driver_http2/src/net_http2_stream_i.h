@@ -10,6 +10,8 @@ struct net_http2_stream {
     TAILQ_ENTRY(net_http2_stream) m_next_for_ep;
     uint32_t m_stream_id;
     net_http2_stream_runing_mode_t m_runing_mode;
+    uint8_t m_read_closed;
+    uint8_t m_write_closed;
     union {
         struct {
             net_http2_req_t m_req;

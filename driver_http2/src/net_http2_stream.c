@@ -17,6 +17,8 @@ net_http2_stream_create(
     net_http2_stream_t stream = mem_alloc(protocol->m_alloc, sizeof(struct net_http2_stream));
     stream->m_endpoint = endpoint;
     stream->m_stream_id = stream_id;
+    stream->m_read_closed = 0;
+    stream->m_write_closed = 0;
     stream->m_runing_mode = runing_mode;
 
     switch(stream->m_runing_mode) {
@@ -64,6 +66,14 @@ net_http2_endpoint_t net_http2_stream_endpoint(net_http2_stream_t stream) {
     return stream->m_endpoint;
 }
 
+uint8_t net_http2_stream_read_closed(net_http2_stream_t stream) {
+    return stream->m_read_closed;
+}
+
+uint8_t net_http2_stream_write_closed(net_http2_stream_t stream) {
+    return stream->m_write_closed;
+}
+
 net_http2_req_t net_http2_stream_req(net_http2_stream_t stream) {
     return stream->m_runing_mode == net_http2_stream_runing_mode_cli
         ? stream->m_cli.m_req
@@ -90,54 +100,6 @@ int net_http2_stream_on_input(net_http2_stream_t stream, const uint8_t * data, u
 }
 
 void net_http2_stream_on_close(net_http2_stream_t stream, int http2_error) {
-    /* if (stream->m_stream_id != -1) { */
-    /*     assert(stream->m_stream_id == stream_id); */
-    /*     if (net_endpoint_protocol_debug(endpoint->m_base_endpoint)) { */
-    /*         CPE_INFO( */
-    /*             protocol->m_em, "http2: %s: %s: http2: %d: stream close and ignore rst!", */
-    /*             net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint), */
-    /*             net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode), */
-    /*             stream->m_stream_id); */
-    /*     } */
-    /*     stream->m_stream_id = -1; */
-    /* } */
-    
-    /* if (error_code == 0) { */
-    /*     if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 2) { */
-    /*         CPE_INFO( */
-    /*             protocol->m_em, "http2: %s: %s: http2: %d: stream closed no error", */
-    /*             net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint), */
-    /*             net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode), */
-    /*             stream_id); */
-    /*     } */
-
-    /*     if (net_endpoint_error_source(stream->m_base_endpoint) == net_endpoint_error_source_none) { */
-    /*         net_endpoint_set_error( */
-    /*             stream->m_base_endpoint, */
-    /*             net_endpoint_error_source_network, net_endpoint_network_errno_remote_closed, NULL); */
-    /*     } */
-
-    /*     if (net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_disable) != 0) { */
-    /*         net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_deleting); */
-    /*     } */
-    /* } */
-    /* else { */
-    /*     CPE_ERROR( */
-    /*         protocol->m_em, "http2: %s: %s: http2: %d: stream closed, error=%s", */
-    /*         net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint), */
-    /*         net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode), */
-    /*         stream_id, net_http2_error_code_str(error_code)); */
-
-    /*     if (net_endpoint_error_source(stream->m_base_endpoint) == net_endpoint_error_source_none) { */
-    /*         net_endpoint_set_error( */
-    /*             stream->m_base_endpoint, net_endpoint_error_source_network, */
-    /*             net_endpoint_network_errno_remote_closed, net_http2_error_code_str(error_code)); */
-    /*     } */
-
-    /*     if (net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_error) != 0) { */
-    /*         net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_deleting); */
-    /*     } */
-    /* } */
 }
 
 void net_http2_stream_on_head_complete(net_http2_stream_t stream) {

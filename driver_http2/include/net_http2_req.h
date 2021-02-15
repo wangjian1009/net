@@ -8,6 +8,8 @@ enum net_http2_req_state {
     net_http2_req_state_init,
     net_http2_req_state_connecting,
     net_http2_req_state_established,
+    net_http2_req_state_read_closed,
+    net_http2_req_state_write_closed,
     net_http2_req_state_error,
     net_http2_req_state_done,
 };

@@ -13,6 +13,9 @@ uint32_t net_http2_stream_id(net_http2_stream_t stream);
 net_http2_stream_runing_mode_t net_http2_stream_runing_mode(net_http2_stream_t stream);
 net_http2_endpoint_t net_http2_stream_endpoint(net_http2_stream_t stream);
 
+uint8_t net_http2_stream_read_closed(net_http2_stream_t stream);
+uint8_t net_http2_stream_write_closed(net_http2_stream_t stream);
+
 net_http2_req_t net_http2_stream_req(net_http2_stream_t stream);
 
 net_http2_processor_t net_http2_stream_processor(net_http2_stream_t stream);
