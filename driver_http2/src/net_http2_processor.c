@@ -106,8 +106,10 @@ int net_http2_processor_add_head(
             mem_alloc(protocol->m_alloc, sizeof(struct net_http2_processor_pair) * new_capacity);
         if (new_headers == NULL) {
             CPE_ERROR(
-                protocol->m_em, "http2: %s: req: add header: alloc nv faild, capacity=%d!",
-                net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), http_ep->m_base_endpoint), new_capacity);
+                protocol->m_em, "http2: %s: %s: req: add header: alloc nv faild, capacity=%d!",
+                net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), http_ep->m_base_endpoint),
+                net_http2_endpoint_runing_mode_str(http_ep->m_runing_mode),
+                new_capacity);
             return -1;
         }
 
@@ -124,16 +126,20 @@ int net_http2_processor_add_head(
     nv->m_name = cpe_str_mem_dup_len(protocol->m_alloc, attr_name, name_len);
     if (nv->m_name == NULL) {
         CPE_ERROR(
-            protocol->m_em, "http2: %s: processor: add header: dup name %s faild!",
-            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), http_ep->m_base_endpoint), attr_name);
+            protocol->m_em, "http2: %s: %s: processor: add header: dup name %s faild!",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), http_ep->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(http_ep->m_runing_mode),
+            attr_name);
         return -1;
     }
 
     nv->m_value = cpe_str_mem_dup_len(protocol->m_alloc, attr_value, value_len);
     if (nv->m_value == NULL) {
         CPE_ERROR(
-            protocol->m_em, "http2: %s: process: add header: dup value %s faild!",
-            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), http_ep->m_base_endpoint), attr_value);
+            protocol->m_em, "http2: %s: %s: process: add header: dup value %s faild!",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), http_ep->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(http_ep->m_runing_mode),
+            attr_value);
         mem_free(protocol->m_alloc, nv->m_name);
         return -1;
     }

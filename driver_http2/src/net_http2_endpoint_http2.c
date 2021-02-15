@@ -16,19 +16,6 @@ ssize_t net_http2_endpoint_send_callback(
     net_http2_endpoint_t endpoint = user_data;
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
 
-    if (net_endpoint_buf_size(endpoint->m_base_endpoint, net_ep_buf_write) >= OUTPUT_WOULDBLOCK_THRESHOLD) {
-        if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 3) {
-            CPE_INFO(
-                protocol->m_em, "http2: %s: %s: net: => write buf size %d, threahold %d reached, would block",
-                net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
-                net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
-                net_endpoint_buf_size(endpoint->m_base_endpoint, net_ep_buf_write),
-                OUTPUT_WOULDBLOCK_THRESHOLD);
-        }
-
-        return NGHTTP2_ERR_WOULDBLOCK;
-    }
-
     int rv = net_endpoint_buf_append(endpoint->m_base_endpoint, net_ep_buf_write, data, length);
     if (rv < 0) {
         CPE_ERROR(
@@ -98,8 +85,10 @@ int net_http2_endpoint_on_frame_recv_callback(
         break;
     case NGHTTP2_HEADERS:
         if (frame->hd.flags & NGHTTP2_FLAG_END_HEADERS) {
+            CPE_ERROR(protocol->m_em, "xxxx 00");
             net_http2_stream_t stream = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id);
             if (stream) {
+                CPE_ERROR(protocol->m_em, "xxxx 1");
                 switch(stream->m_runing_mode) {
                 case net_http2_stream_runing_mode_cli: {
                     net_http2_req_t req = net_http2_stream_req(stream);
@@ -117,6 +106,7 @@ int net_http2_endpoint_on_frame_recv_callback(
                     break;
                 }
                 case net_http2_stream_runing_mode_svr: {
+                    CPE_ERROR(protocol->m_em, "xxxx 1");
                     net_http2_processor_t processor = net_http2_stream_processor(stream);
                     if (processor == NULL) {
                         CPE_ERROR(
@@ -127,8 +117,10 @@ int net_http2_endpoint_on_frame_recv_callback(
                         return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
                     }
                     else if (net_http2_processor_on_head_complete(processor) != 0) {
+                        CPE_ERROR(protocol->m_em, "xxxx 2");
                         return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
                     }
+                    CPE_ERROR(protocol->m_em, "xxxx 3");
                     break;
                 }
                 }
@@ -139,7 +131,7 @@ int net_http2_endpoint_on_frame_recv_callback(
         break;
     }
     
-    return 0;
+    return NGHTTP2_NO_ERROR;
 }
 
 int net_http2_endpoint_on_frame_schedule_next_send(
@@ -289,9 +281,16 @@ int net_http2_endpoint_on_data_chunk_recv_callback(
     }
 
     if (net_http2_stream_on_input(stream, data, len) != 0) {
+        CPE_ERROR(
+            protocol->m_em, "http2: %s: %s: http2: %d: recv chunk: input failed",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+            stream_id);
         return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
     }
 
+    CPE_ERROR(protocol->m_em, "http2: 111");
+    
     return NGHTTP2_NO_ERROR;
 }
 
@@ -506,6 +505,8 @@ int net_http2_endpoint_send_data_callback(
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
     net_http2_stream_t stream = source->ptr;
 
+    CPE_ERROR(protocol->m_em, "http2: send data 222");
+    
     uint32_t head_sz = 9;
     if (frame->data.padlen > 0) head_sz++;
 
@@ -555,6 +556,7 @@ int net_http2_endpoint_send_data_callback(
             stream->m_stream_id, (int)head_sz + (int)length);
     }
 
+    CPE_ERROR(protocol->m_em, "http2: send data 333");
     return 0;
 }
 

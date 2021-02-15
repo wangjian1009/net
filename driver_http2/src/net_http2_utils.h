@@ -3,8 +3,6 @@
 #include "net_http2_protocol_i.h"
 #include "nghttp2/nghttp2.h"
 
-#define OUTPUT_WOULDBLOCK_THRESHOLD (1 << 16)
-
 #define MAKE_NV(NAME, VALUE, VALUELEN)                                         \
   {                                                                            \
     (uint8_t *)NAME, (uint8_t *)VALUE, sizeof(NAME) - 1, VALUELEN,             \

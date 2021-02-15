@@ -41,7 +41,9 @@ int net_http2_protocol_init(net_protocol_t base_protocol) {
         protocol->m_http2_callbacks, net_http2_endpoint_on_error_callback);
     nghttp2_session_callbacks_set_send_data_callback(
         protocol->m_http2_callbacks, net_http2_endpoint_send_data_callback);
-    
+
+    protocol->m_max_req_id = 0;
+
     mem_buffer_init(&protocol->m_data_buffer, NULL);
     return 0;
 }

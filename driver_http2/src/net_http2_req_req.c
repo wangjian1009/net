@@ -91,10 +91,11 @@ void net_http2_req_set_req_state(net_http2_req_t http_req, net_http2_req_state_t
 
     if (net_endpoint_protocol_debug(endpoint->m_base_endpoint)) {
         CPE_INFO(
-            protocol->m_em, "http2: %s: %s: req %d: req-start %s ==> %s",
+            protocol->m_em, "http2: %s: %s: req %d: req-state %s ==> %s",
             net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
             net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
-            http_req->m_id, net_http2_req_state_str(http_req->m_req_state), net_http2_req_state_str(state));
+            http_req->m_id,
+            net_http2_req_state_str(http_req->m_req_state), net_http2_req_state_str(state));
     }
 
     http_req->m_req_state = state;
