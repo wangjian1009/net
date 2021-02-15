@@ -25,18 +25,21 @@ struct net_http2_req {
     nghttp2_nv * m_req_headers;
 
     /*res*/
-    void * m_res_ctx;
-    net_http2_req_on_res_head_fun_t m_res_on_head;
-    net_http2_req_on_res_data_fun_t m_res_on_data;
-    net_http2_req_on_res_complete_fun_t m_res_on_complete;
     uint16_t m_res_head_count;
     uint16_t m_res_head_capacity;
     struct net_http2_req_pair * m_res_headers;
+
+    /*read callback*/
+    void * m_read_ctx;
+    net_http2_req_on_state_change_fun_t m_on_state_change;
+    net_http2_req_on_recv_fun_t m_on_recv;
+    void (*m_read_ctx_free)(void *);
+
+    /*write callback*/
+    void * m_write_ctx;
+    net_http2_req_on_write_fun_t m_on_write;
+    void (*m_write_ctx_free)(void *);
 };
-
-void net_http2_req_free_i(net_http2_req_t req, uint8_t force);
-
-void net_http2_req_cancel_and_free_i(net_http2_req_t req, uint8_t force);
 
 void net_http2_req_set_stream(net_http2_req_t req, net_http2_stream_t stream);
 

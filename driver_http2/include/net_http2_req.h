@@ -20,66 +20,49 @@ enum net_http2_req_method {
     net_http2_req_method_head,
 };
 
-enum net_http2_res_state {
-    net_http2_res_state_reading_head,
-    net_http2_res_state_reading_body,
-    net_http2_res_state_completed,
-};
-
 net_http2_req_t net_http2_req_create(net_http2_endpoint_t http_ep);
 void net_http2_req_free(net_http2_req_t req);
 
 net_http2_req_t net_http2_req_find(net_http2_endpoint_t http_ep, uint16_t req_id);
 
-void net_http2_req_cancel_and_free(net_http2_req_t req);
-void net_http2_req_cancel_and_free_by_id(net_http2_endpoint_t http_ep, uint16_t req_id);
-
 uint16_t net_http2_req_id(net_http2_req_t req);
-
-/*req*/
 net_http2_endpoint_t net_http2_req_endpoint(net_http2_req_t req);
 net_http2_stream_t net_http2_req_stream(net_http2_req_t req);
 net_http2_req_state_t net_http2_req_state(net_http2_req_t req);
+
+/*请求*/
 int net_http2_req_add_req_head(net_http2_req_t http_req, const char * attr_name, const char * attr_value);
 const char * net_http2_req_find_req_header(net_http2_req_t req, const char * name);
 
-int net_http2_req_start(net_http2_req_t http_req, uint8_t have_follow_data);
-int net_http2_req_send(net_http2_req_t http_req, void const * data, uint32_t data_len, uint8_t have_follow_data);
+int net_http2_req_start(net_http2_req_t http_req);
+int net_http2_req_append(net_http2_req_t http_req, void const * data, uint32_t data_len, uint8_t have_follow_data);
 
-const char * net_http2_req_state_str(net_http2_req_state_t req_state);
+/*请求处理 */
+typedef void (*net_http2_req_on_write_fun_t)(void * ctx, net_http2_req_t req);
 
-/*response*/
-typedef enum net_http2_res_op_result {
-    net_http2_res_op_success,
-    net_http2_res_op_ignore,
-    net_http2_res_op_error_and_close,
-} net_http2_res_op_result_t;
+int net_http2_req_set_sender(
+    net_http2_req_t http_req,
+    void * write_ctx,
+    net_http2_req_on_write_fun_t on_write,
+    void (*write_ctx_free)(void *));
 
-typedef enum net_http2_res_result {
-    net_http2_res_complete,
-    net_http2_res_timeout,
-    net_http2_res_canceled,
-    net_http2_res_disconnected,
-} net_http2_res_result_t;
-
-typedef net_http2_res_op_result_t (*net_http2_req_on_res_head_fun_t)(void * ctx, net_http2_req_t req);
-typedef net_http2_res_op_result_t (*net_http2_req_on_res_data_fun_t)(void * ctx, net_http2_req_t req, void * data, size_t data_size);
-typedef net_http2_res_op_result_t (*net_http2_req_on_res_complete_fun_t)(void * ctx, net_http2_req_t req, net_http2_res_result_t result);
+/*响应处理 */
+typedef void (*net_http2_req_on_state_change_fun_t)(void * ctx, net_http2_req_t req, net_http2_req_state_t old_state);
+typedef void (*net_http2_req_on_recv_fun_t)(void * ctx, net_http2_req_t req, void const * data, uint32_t data_len);
 
 int net_http2_req_set_reader(
     net_http2_req_t req,
-    void * ctx,
-    net_http2_req_on_res_head_fun_t on_head,
-    net_http2_req_on_res_data_fun_t on_data,
-    net_http2_req_on_res_complete_fun_t on_complete);
+    void * read_ctx,
+    net_http2_req_on_state_change_fun_t on_state_change,
+    net_http2_req_on_recv_fun_t on_recv,
+    void (*read_ctx_free)(void *));
 
 void net_http2_req_clear_reader(net_http2_req_t req);
 
 const char * net_http2_req_find_res_header(net_http2_req_t req, const char * name);
 
-const char *  net_http2_req_method_str( net_http2_req_method_t method);
-const char * net_http2_res_state_str(net_http2_res_state_t res_state);
-const char * net_http2_res_result_str(net_http2_res_result_t res_result);
+const char *  net_http2_req_method_str(net_http2_req_method_t method);
+const char * net_http2_req_state_str(net_http2_req_state_t req_state);
 
 NET_END_DECL
 

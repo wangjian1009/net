@@ -7,8 +7,6 @@
 #include "net_http2_req_i.h"
 #include "net_http2_stream_i.h"
 
-static void net_http2_req_on_timeout(net_timer_t timer, void * ctx);
-
 net_http2_req_t
 net_http2_req_create(net_http2_endpoint_t http_ep) {
     net_http2_protocol_t protocol =
@@ -34,29 +32,39 @@ net_http2_req_create(net_http2_endpoint_t http_ep) {
     req->m_req_head_capacity = 0;
     req->m_req_headers = NULL;
     
-    req->m_res_ctx = NULL;
-    req->m_res_on_head = NULL;
-    req->m_res_on_data = NULL;
-    req->m_res_on_complete = NULL;
     req->m_res_head_count = 0;
     req->m_res_head_capacity = 0;
     req->m_res_headers = NULL;
 
+    req->m_read_ctx = NULL;
+    req->m_read_ctx_free = NULL;
+    req->m_on_state_change = NULL;
+    req->m_on_recv = NULL;
+
+    req->m_write_ctx = NULL;
+    req->m_write_ctx_free = NULL;
+    req->m_on_write = NULL;
+    
     http_ep->m_req_count++;
     TAILQ_INSERT_TAIL(&http_ep->m_reqs, req, m_next_for_endpoint);
 
     return req;
 }
 
-void net_http2_req_free_i(net_http2_req_t req, uint8_t force) {
+void net_http2_req_free(net_http2_req_t req) {
     net_http2_endpoint_t http_ep = req->m_endpoint;
     net_http2_protocol_t protocol = net_http2_protocol_cast(net_endpoint_protocol(http_ep->m_base_endpoint));
 
-    req->m_res_ctx = NULL;
-    req->m_res_on_head = NULL;
-    req->m_res_on_data = NULL;
-    req->m_res_on_complete = NULL;
+    if (req->m_write_ctx_free) {
+        req->m_write_ctx_free(req->m_write_ctx);
+        req->m_write_ctx_free = NULL;
+    }
 
+    if (req->m_read_ctx_free) {
+        req->m_read_ctx_free(req->m_read_ctx);
+        req->m_read_ctx_free = NULL;
+    }
+    
     /*req*/
     uint16_t i;
     for(i = 0; i < req->m_req_head_count; ++i) {
@@ -97,10 +105,6 @@ void net_http2_req_free_i(net_http2_req_t req, uint8_t force) {
     mem_free(protocol->m_alloc, req);
 }
 
-void net_http2_req_free(net_http2_req_t req) {
-    net_http2_req_free_i(req, 0);
-}
-
 net_http2_req_t
 net_http2_req_find(net_http2_endpoint_t http_ep, uint16_t req_id) {
     net_http2_req_t req;
@@ -133,83 +137,27 @@ net_http2_stream_t net_http2_req_stream(net_http2_req_t req) {
 
 int net_http2_req_set_reader(
     net_http2_req_t req,
-    void * ctx,
-    net_http2_req_on_res_head_fun_t on_head,
-    net_http2_req_on_res_data_fun_t on_data,
-    net_http2_req_on_res_complete_fun_t on_complete)
+    void * read_ctx,
+    net_http2_req_on_state_change_fun_t on_state_change,
+    net_http2_req_on_recv_fun_t on_recv,
+    void (*read_ctx_free)(void *))
 {
     net_http2_endpoint_t http_ep = req->m_endpoint;
     net_http2_protocol_t protocol = net_http2_protocol_cast(net_endpoint_protocol(http_ep->m_base_endpoint));
     
-    req->m_res_ctx = ctx;
-    req->m_res_on_head = on_head;
-    req->m_res_on_data = on_data;
-    req->m_res_on_complete = on_complete;
-    
+    req->m_read_ctx = read_ctx;
+    req->m_on_state_change = on_state_change;
+    req->m_on_recv = on_recv;
+    req->m_read_ctx_free = read_ctx_free;
+
     return 0;
 }
 
 void net_http2_req_clear_reader(net_http2_req_t req) {
-    req->m_res_ctx = NULL;
-    req->m_res_on_head = NULL;
-    req->m_res_on_data = NULL;
-    req->m_res_on_complete = NULL;
-}
-
-void net_http2_req_cancel_and_free_i(net_http2_req_t req, uint8_t force) {
-    if (!req->m_on_complete_processed && req->m_res_on_complete) {
-        req->m_on_complete_processed = 1;
-        req->m_res_on_complete(req->m_res_ctx, req, net_http2_res_canceled);
-    }
-    net_http2_req_free_i(req, force);
-}
-
-void net_http2_req_cancel_and_free(net_http2_req_t req) {
-    net_http2_req_cancel_and_free_i(req, 0);
-}
-
-void net_http2_req_cancel_and_free_by_id(net_http2_endpoint_t http_ep, uint16_t req_id) {
-    net_http2_req_t req = net_http2_req_find(http_ep, req_id);
-    if (req) {
-        net_http2_req_cancel_and_free(req);
-    }
-}
-
-const char * net_http2_res_state_str(net_http2_res_state_t res_state) {
-    switch(res_state) {
-    case net_http2_res_state_reading_head:
-        return "http-res-reading-head";
-    case net_http2_res_state_reading_body:
-        return "http-res-reading-body";
-    case net_http2_res_state_completed:
-        return "http-res-completed";
-    }
-}
-
-const char * net_http2_res_result_str(net_http2_res_result_t res_result) {
-    switch(res_result) {
-    case net_http2_res_complete:
-        return "http-res-complete";
-    case net_http2_res_timeout:
-        return "http-res-timeout";
-    case net_http2_res_canceled:
-        return "http-res-canceled";
-    case net_http2_res_disconnected:
-        return "http-res-disconnected";
-    }
-}
-
-static void net_http2_req_on_timeout(net_timer_t timer, void * ctx) {
-    net_http2_req_t req = ctx;
-
-    if (!req->m_on_complete_processed
-        && req->m_res_on_complete)
-    {
-        req->m_on_complete_processed = 1;
-        req->m_res_on_complete(req->m_res_ctx, req, net_http2_res_timeout);
-    }
-
-    net_http2_req_free(req);
+    req->m_read_ctx = NULL;
+    req->m_on_state_change = NULL;
+    req->m_on_recv = NULL;
+    req->m_read_ctx_free = NULL;
 }
 
 void net_http2_req_set_stream(net_http2_req_t req, net_http2_stream_t stream) {

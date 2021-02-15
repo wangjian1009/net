@@ -34,7 +34,7 @@ typedef void (*net_http2_processor_on_state_change_fun_t)(
 typedef void (*net_http2_processor_on_data_fun_t)(
     void * ctx, net_http2_processor_t processor, void const * data, uint32_t data_len);
 
-void net_http2_processor_set_processor(
+void net_http2_processor_set_reader(
     net_http2_processor_t processor,
     void * ctx,
     net_http2_processor_on_state_change_fun_t on_state_change,

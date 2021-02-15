@@ -301,26 +301,7 @@ void net_http2_stream_endpoint_set_using(net_http2_stream_endpoint_t stream, net
     }
 }
 
-net_http2_res_op_result_t
-net_http2_stream_endpoint_req_on_res_begin(void * ctx, net_http2_req_t req, uint16_t code, const char * msg) {
-    net_http2_stream_endpoint_t stream = ctx;    
-    return net_http2_res_op_success;
-}
-
-net_http2_res_op_result_t
-net_http2_stream_endpoint_req_on_res_head(void * ctx, net_http2_req_t req) {
-    net_http2_stream_endpoint_t stream = ctx;
-    
-    return net_http2_res_op_success;
-}
-
-net_http2_res_op_result_t
-net_http2_stream_endpoint_req_on_res_body(void * ctx, net_http2_req_t req, void * data, size_t data_size) {
-    return net_http2_res_op_success;
-}
-
-net_http2_res_op_result_t
-net_http2_stream_endpoint_req_on_res_complete(void * ctx, net_http2_req_t req, net_http2_res_result_t result) {
+net_http2_stream_endpoint_req_on_state_changed(void * ctx, net_http2_req_t req, net_http2_res_result_t result) {
     net_http2_stream_endpoint_t stream = ctx;
 
     return net_http2_res_op_success;

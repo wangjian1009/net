@@ -76,7 +76,7 @@ const char * net_http2_req_find_req_header(net_http2_req_t req, const char * nam
     return NULL;
 }
 
-int net_http2_req_start(net_http2_req_t http_req, uint8_t have_follow_data) {
+int net_http2_req_start(net_http2_req_t http_req) {
     net_http2_endpoint_t endpoint = http_req->m_endpoint;
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
 
@@ -114,9 +114,9 @@ int net_http2_req_start(net_http2_req_t http_req, uint8_t have_follow_data) {
     const nghttp2_priority_spec * pri_spec = NULL;
 
     uint8_t flags = NGHTTP2_FLAG_NONE;
-    if (!have_follow_data) {
-        flags |= NGHTTP2_FLAG_END_STREAM;
-    }
+    /* if (!have_follow_data) { */
+    /*     flags |= NGHTTP2_FLAG_END_STREAM; */
+    /* } */
     
     int rv = nghttp2_submit_headers(
         endpoint->m_http2_session, flags, -1, pri_spec,
@@ -148,7 +148,7 @@ int net_http2_req_start(net_http2_req_t http_req, uint8_t have_follow_data) {
     return 0;
 }
 
-int net_http2_req_send(net_http2_req_t http_req, void const * data, uint32_t data_len, uint8_t have_follow_data) {
+int net_http2_req_append(net_http2_req_t http_req, void const * data, uint32_t data_len, uint8_t have_follow_data) {
     net_http2_endpoint_t endpoint = http_req->m_endpoint;
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
     net_http2_stream_t stream = http_req->m_stream;
