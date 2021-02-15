@@ -42,6 +42,9 @@ net_http2_req_create(net_http2_endpoint_t http_ep, net_http2_req_method_t method
     req->m_res_on_data = NULL;
     req->m_res_on_complete = NULL;
     req->m_res_code = 0;
+    req->m_res_head_count = 0;
+    req->m_res_head_capacity = 0;
+    req->m_res_headers = NULL;
 
     http_ep->m_req_count++;
     TAILQ_INSERT_TAIL(&http_ep->m_reqs, req, m_next_for_endpoint);
@@ -66,6 +69,7 @@ void net_http2_req_free_i(net_http2_req_t req, uint8_t force) {
     req->m_res_on_data = NULL;
     req->m_res_on_complete = NULL;
 
+    /*req*/
     uint16_t i;
     for(i = 0; i < req->m_req_head_count; ++i) {
         mem_free(protocol->m_alloc, req->m_req_headers[i].name);
@@ -79,6 +83,20 @@ void net_http2_req_free_i(net_http2_req_t req, uint8_t force) {
         req->m_req_head_capacity = 0;
     }
             
+    /*res*/
+    for(i = 0; i < req->m_res_head_count; ++i) {
+        mem_free(protocol->m_alloc, req->m_res_headers[i].m_name);
+        mem_free(protocol->m_alloc, req->m_res_headers[i].m_value);
+    }
+    req->m_res_head_count = 0;
+    
+    if (req->m_res_headers) {
+        mem_free(protocol->m_alloc, req->m_res_headers);
+        req->m_res_headers = NULL;
+        req->m_res_head_capacity = 0;
+    }
+
+    /*stream*/
     if (req->m_stream) {
         net_http2_req_set_stream(req, NULL);
         assert(req->m_stream == NULL);

@@ -5,6 +5,11 @@
 
 NET_BEGIN_DECL
 
+struct net_http2_req_pair {
+    char * m_name;
+    char * m_value;
+};
+
 struct net_http2_req {
     net_http2_endpoint_t m_endpoint;
     TAILQ_ENTRY(net_http2_req) m_next_for_endpoint;
@@ -28,6 +33,9 @@ struct net_http2_req {
     net_http2_req_on_res_data_fun_t m_res_on_data;
     net_http2_req_on_res_complete_fun_t m_res_on_complete;
     uint16_t m_res_code;
+    uint16_t m_res_head_count;
+    uint16_t m_res_head_capacity;
+    struct net_http2_req_pair * m_res_headers;
 };
 
 void net_http2_req_free_i(net_http2_req_t req, uint8_t force);
