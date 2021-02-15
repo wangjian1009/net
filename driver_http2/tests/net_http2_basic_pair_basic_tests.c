@@ -69,11 +69,18 @@ static void net_http2_basic_pair_basic(void **state) {
 
     assert_true(net_http2_req_start(req) == 0);
 
+    test_net_driver_run(env->m_tdriver, 0);
+    
     net_http2_stream_t cli_stream = net_http2_req_stream(req);
     assert_true(cli_stream);
 
     net_http2_stream_t svr_stream = net_http2_endpoint_find_stream(svr_ep, net_http2_stream_id(cli_stream));
     assert_true(svr_stream);
+
+    net_http2_processor_t processor = net_http2_stream_processor(svr_stream);
+    assert_true(processor);
+
+    
 }
 
 int net_http2_basic_pair_basic_tests() {

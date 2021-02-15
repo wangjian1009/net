@@ -314,6 +314,13 @@ int net_http2_endpoint_on_header_callback(
 
     assert(frame->hd.type == NGHTTP2_HEADERS);
 
+    if (net_endpoint_protocol_debug(endpoint->m_base_endpoint)) {
+        CPE_INFO(
+            protocol->m_em, "http2: %s: %s: xxxx: on head callback",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode));
+    }
+    
     net_http2_stream_t stream = NULL;
 
     if (frame->headers.cat == NGHTTP2_HCAT_REQUEST) {

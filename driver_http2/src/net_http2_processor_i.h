@@ -11,6 +11,7 @@ struct net_http2_processor_pair {
 struct net_http2_processor {
     net_http2_endpoint_t m_endpoint;
     TAILQ_ENTRY(net_http2_processor) m_next;
+    net_http2_processor_state_t m_state;
     net_http2_stream_t m_stream;
     uint16_t m_head_count;
     uint16_t m_head_capacity;

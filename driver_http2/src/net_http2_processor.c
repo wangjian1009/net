@@ -20,6 +20,7 @@ net_http2_processor_create(net_http2_endpoint_t endpoint) {
 
     processor->m_endpoint = endpoint;
     processor->m_stream = NULL;
+    processor->m_state = net_http2_processor_state_init;
     processor->m_head_count = 0;
     processor->m_head_capacity = 0;
     processor->m_headers = NULL;
@@ -59,6 +60,18 @@ void net_http2_processor_free(net_http2_processor_t processor) {
     TAILQ_REMOVE(&endpoint->m_processors, processor, m_next);
 
     mem_free(protocol->m_alloc, processor);
+}
+
+net_http2_processor_state_t net_http2_processor_state(net_http2_processor_t processor) {
+    return processor->m_state;
+}
+
+net_http2_endpoint_t net_http2_processor_endpoint(net_http2_processor_t processor) {
+    return processor->m_endpoint;
+}
+
+net_http2_stream_t net_http2_processor_stream(net_http2_processor_t processor) {
+    return processor->m_stream;
 }
 
 void net_http2_processor_set_stream(net_http2_processor_t processor, net_http2_stream_t stream) {
@@ -127,4 +140,15 @@ int net_http2_processor_add_head(
 
     processor->m_head_count++;
     return 0;
+}
+
+const char * net_http2_processor_state_str(net_http2_processor_state_t state) {
+    switch(state) {
+    case net_http2_processor_state_init:
+        return "init";
+    case net_http2_processor_state_established:
+        return "established";
+    case net_http2_processor_state_done:
+        return "done";
+    }
 }
