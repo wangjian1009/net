@@ -90,12 +90,8 @@ int net_http2_req_start(net_http2_req_t http_req) {
     }
 
     if (endpoint->m_state != net_http2_endpoint_state_streaming) {
-        CPE_ERROR(
-            protocol->m_em, "http2: %s: %s: req %d: start in endpoint-state %s",
-            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
-            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
-            http_req->m_id, net_http2_endpoint_state_str(endpoint->m_state));
-        return -1;
+        net_http2_req_set_req_state(http_req, net_http2_req_state_connecting);
+        return 0;
     }
 
     net_http2_stream_t stream =
@@ -114,9 +110,6 @@ int net_http2_req_start(net_http2_req_t http_req) {
     const nghttp2_priority_spec * pri_spec = NULL;
 
     uint8_t flags = NGHTTP2_FLAG_NONE;
-    /* if (!have_follow_data) { */
-    /*     flags |= NGHTTP2_FLAG_END_STREAM; */
-    /* } */
     
     int rv = nghttp2_submit_headers(
         endpoint->m_http2_session, flags, -1, pri_spec,
@@ -143,7 +136,7 @@ int net_http2_req_start(net_http2_req_t http_req) {
     
     net_http2_req_set_stream(http_req, stream);
 
-    net_http2_req_set_req_state(http_req, net_http2_req_state_connecting);
+    net_http2_req_set_req_state(http_req, net_http2_req_state_head_sended);
 
     return 0;
 }
@@ -249,6 +242,8 @@ const char * net_http2_req_state_str(net_http2_req_state_t req_state) {
         return "init";
     case net_http2_req_state_connecting:
         return "connecting";
+    case net_http2_req_state_head_sended:
+        return "head-sended";
     case net_http2_req_state_established:
         return "established";
     case net_http2_req_state_read_closed:

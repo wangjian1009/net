@@ -72,7 +72,7 @@ static void net_http2_basic_pair_basic(void **state) {
 
     assert_string_equal(
         net_http2_req_state_str(net_http2_req_state(req)),
-        net_http2_req_state_str(net_http2_req_state_connecting));
+        net_http2_req_state_str(net_http2_req_state_head_sended));
     
     test_net_driver_run(env->m_tdriver, 0);
     
@@ -88,10 +88,6 @@ static void net_http2_basic_pair_basic(void **state) {
     assert_string_equal(
         net_http2_processor_state_str(net_http2_processor_state(processor)),
         net_http2_processor_state_str(net_http2_processor_state_head_received));
-
-    assert_string_equal(
-        net_http2_req_state_str(net_http2_req_state(req)),
-        net_http2_req_state_str(net_http2_req_state_connecting));
 
     assert_string_equal(
         net_http2_processor_find_req_header(processor, "a"),
