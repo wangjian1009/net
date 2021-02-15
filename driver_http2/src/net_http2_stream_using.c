@@ -55,6 +55,15 @@ void net_http2_stream_using_free(net_http2_stream_using_t using) {
 }
 
 void net_http2_stream_using_on_http2_ep_fini(void * ctx) {
+    net_http2_stream_using_t using = ctx;
+    net_http2_stream_endpoint_t stream, next_stream;
+
+    for (stream = TAILQ_FIRST(&using->m_streams); stream; stream = next_stream) {
+        next_stream = TAILQ_NEXT(stream, m_next_for_using);
+        if (net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_disable) != 0) {
+            net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_deleting);
+        }
+    }
 }
 
 void net_http2_stream_using_on_http2_ep_evt(void * ctx, net_endpoint_t endpoint, net_endpoint_monitor_evt_t evt) {

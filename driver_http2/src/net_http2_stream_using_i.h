@@ -16,5 +16,5 @@ net_http2_stream_using_create(
     net_http2_stream_driver_t driver, net_http2_stream_using_list_t * owner, net_http2_endpoint_t http2_ep);
 
 void net_http2_stream_using_free(net_http2_stream_using_t using);
-                                                                
+
 #endif

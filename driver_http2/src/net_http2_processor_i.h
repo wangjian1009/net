@@ -13,8 +13,11 @@ struct net_http2_processor {
     TAILQ_ENTRY(net_http2_processor) m_next;
     uint32_t m_id;
     net_http2_processor_state_t m_state;
-    net_http2_stream_t m_stream;
+    uint8_t m_is_free;
+    uint8_t m_is_processing;
 
+    net_http2_stream_t m_stream;
+    
     /*req*/
     uint16_t m_req_head_count;
     uint16_t m_req_head_capacity;

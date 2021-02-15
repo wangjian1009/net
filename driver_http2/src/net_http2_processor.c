@@ -28,9 +28,13 @@ net_http2_processor_create(net_http2_endpoint_t endpoint, uint32_t id) {
     processor->m_id = id;
     processor->m_stream = NULL;
     processor->m_state = net_http2_processor_state_init;
+    processor->m_is_free = 0;
+    processor->m_is_processing = 0;
+    
     processor->m_req_head_count = 0;
     processor->m_req_head_capacity = 0;
     processor->m_req_headers = NULL;
+    
     processor->m_res_head_count = 0;
     processor->m_res_head_capacity = 0;
     processor->m_res_headers = NULL;
@@ -48,6 +52,11 @@ net_http2_processor_create(net_http2_endpoint_t endpoint, uint32_t id) {
 
 void net_http2_processor_free(net_http2_processor_t processor) {
     net_http2_endpoint_t endpoint = processor->m_endpoint;
+
+    if (processor->m_is_processing) {
+        processor->m_is_free = 1;
+        return;
+    }
 
     net_http2_protocol_t protocol =
         net_http2_protocol_cast(net_endpoint_protocol(endpoint->m_base_endpoint));

@@ -445,13 +445,13 @@ int net_http2_endpoint_on_header_callback(
     case NGHTTP2_HCAT_PUSH_RESPONSE:
         break;
     case NGHTTP2_HCAT_HEADERS:
-        if (net_http2_stream_on_tailer(
-                stream,
-                (const char *)name, (uint32_t)namelen, (const char *)value, (uint32_t)valuelen)
-            != 0)
-        {
-            return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
-        }
+        /* if (net_http2_stream_on_tailer( */
+        /*         stream, */
+        /*         (const char *)name, (uint32_t)namelen, (const char *)value, (uint32_t)valuelen) */
+        /*     != 0) */
+        /* { */
+        /*     return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE; */
+        /* } */
         break;
     default:
         CPE_INFO(

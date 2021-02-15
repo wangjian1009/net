@@ -10,7 +10,7 @@ int main(void) {
     /*stream*/
     // if (net_http2_stream_cli_basic_tests() != 0) rv = -1;
     /* if (net_http2_stream_svr_basic_tests() != 0) rv = -1; */
-    //if (net_http2_stream_pair_basic_tests() != 0) rv = -1;
+    if (net_http2_stream_pair_basic_tests() != 0) rv = -1;
 
     return rv;
 }
