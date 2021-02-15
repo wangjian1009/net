@@ -268,7 +268,8 @@ int net_http2_endpoint_set_runing_mode(net_http2_endpoint_t endpoint, net_http2_
         break;
     case net_http2_endpoint_runing_mode_cli:
         assert(endpoint->m_http2_session == NULL);
-        if (nghttp2_session_client_new(&endpoint->m_http2_session, protocol->m_http2_callbacks, endpoint) != 0) {
+        if (nghttp2_session_client_new2(
+                &endpoint->m_http2_session, protocol->m_http2_callbacks, endpoint, protocol->m_http2_options) != 0) {
             CPE_ERROR(
                 protocol->m_em, "http2: %s: cli: nghttp2_session_client_new error",
                 net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint));
@@ -282,7 +283,8 @@ int net_http2_endpoint_set_runing_mode(net_http2_endpoint_t endpoint, net_http2_
         break;
     case net_http2_endpoint_runing_mode_svr:
         assert(endpoint->m_http2_session == NULL);
-        if (nghttp2_session_server_new(&endpoint->m_http2_session, protocol->m_http2_callbacks, endpoint) != 0) {
+        if (nghttp2_session_server_new2(
+                &endpoint->m_http2_session, protocol->m_http2_callbacks, endpoint, protocol->m_http2_options) != 0) {
             CPE_ERROR(
                 protocol->m_em, "http2: %s: svr: nghttp2_session_server_new error",
                 net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint));

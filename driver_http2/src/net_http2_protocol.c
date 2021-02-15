@@ -5,16 +5,31 @@
 #include "net_http2_protocol_i.h"
 #include "net_http2_endpoint_i.h"
 
+void net_http2_protocol_fini(net_protocol_t base_protocol);
+
 int net_http2_protocol_init(net_protocol_t base_protocol) {
     net_http2_protocol_t protocol = net_protocol_data(base_protocol);
     protocol->m_alloc = NULL;
     protocol->m_em = NULL;
-
     protocol->m_http2_callbacks = NULL;
+    protocol->m_http2_options = NULL;
+    protocol->m_max_req_id = 0;
+    mem_buffer_init(&protocol->m_data_buffer, NULL);
+
+    if (nghttp2_option_new(&protocol->m_http2_options) != 0) {
+        CPE_ERROR(
+            protocol->m_em, "http2: %s: nghttp2_session_callbacks_new error",
+            net_protocol_name(base_protocol));
+        net_http2_protocol_fini(base_protocol);
+        return -1;
+    }
+    assert(protocol->m_http2_options != NULL);
+    
     if (nghttp2_session_callbacks_new(&protocol->m_http2_callbacks) != 0) {
         CPE_ERROR(
             protocol->m_em, "http2: %s: nghttp2_session_callbacks_new error",
             net_protocol_name(base_protocol));
+        net_http2_protocol_fini(base_protocol);
         return -1;
     }
     assert(protocol->m_http2_callbacks != NULL);
@@ -42,15 +57,17 @@ int net_http2_protocol_init(net_protocol_t base_protocol) {
     nghttp2_session_callbacks_set_send_data_callback(
         protocol->m_http2_callbacks, net_http2_endpoint_send_data_callback);
 
-    protocol->m_max_req_id = 0;
-
-    mem_buffer_init(&protocol->m_data_buffer, NULL);
     return 0;
 }
 
 void net_http2_protocol_fini(net_protocol_t base_protocol) {
     net_http2_protocol_t protocol = net_protocol_data(base_protocol);
 
+    if (protocol->m_http2_options) {
+        nghttp2_option_del(protocol->m_http2_options);
+        protocol->m_http2_options = NULL;
+    }
+    
     if (protocol->m_http2_callbacks) {
         nghttp2_session_callbacks_del(protocol->m_http2_callbacks);
         protocol->m_http2_callbacks = NULL;
@@ -117,6 +134,10 @@ net_http2_protocol_cast(net_protocol_t base_protocol) {
     return net_protocol_init_fun(base_protocol) == net_http2_protocol_init
         ? net_protocol_data(base_protocol)
         : NULL;
+}
+
+void net_http2_protocol_set_no_http_messaging(net_http2_protocol_t protocol, uint8_t val) {
+    nghttp2_option_set_no_http_messaging(protocol->m_http2_options, val);
 }
 
 mem_buffer_t net_http2_protocol_tmp_buffer(net_http2_protocol_t protocol) {

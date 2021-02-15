@@ -36,7 +36,7 @@ endif ()
     
 set(nghttp2_compile_definitions
   NGHTTP2_STATICLIB
-  DEBUGBUILD=1
+  #DEBUGBUILD=1
   NOTHREADS=1)
 
 if (ANDROID)

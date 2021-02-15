@@ -99,9 +99,6 @@ int net_http2_stream_on_input(net_http2_stream_t stream, const uint8_t * data, u
     return 0;
 }
 
-void net_http2_stream_on_close(net_http2_stream_t stream, int http2_error) {
-}
-
 void net_http2_stream_on_head_complete(net_http2_stream_t stream) {
                 //TODO:
                 /* if (endpoint->m_runing_mode == net_http2_endpoint_runing_mode_cli) { */

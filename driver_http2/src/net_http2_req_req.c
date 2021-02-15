@@ -5,10 +5,6 @@
 
 void net_http2_req_set_req_state(net_http2_req_t req, net_http2_req_state_t state);
 
-net_http2_req_method_t net_http2_req_method(net_http2_req_t req) {
-    return req->m_req_method;
-}
-
 net_http2_req_state_t net_http2_req_state(net_http2_req_t req) {
     return req->m_req_state;
 }
@@ -79,7 +75,8 @@ int net_http2_req_start(net_http2_req_t http_req) {
     return 0;
 }
 
-int net_http2_req_on_req_head_complete(net_http2_req_t req) {
+int net_http2_req_on_req_head_complete(net_http2_req_t http_req) {
+    net_http2_req_set_req_state(http_req, net_http2_req_state_established);
     return 0;
 }
 

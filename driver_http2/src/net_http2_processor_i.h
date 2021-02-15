@@ -11,17 +11,25 @@ struct net_http2_processor_pair {
 struct net_http2_processor {
     net_http2_endpoint_t m_endpoint;
     TAILQ_ENTRY(net_http2_processor) m_next;
+    uint32_t m_id;
     net_http2_processor_state_t m_state;
     net_http2_stream_t m_stream;
-    uint16_t m_head_count;
-    uint16_t m_head_capacity;
-    struct net_http2_processor_pair * m_headers;
+
+    /*req*/
+    uint16_t m_req_head_count;
+    uint16_t m_req_head_capacity;
+    struct net_http2_processor_pair * m_req_headers;
+
+    /**/
+    uint16_t m_res_head_count;
+    uint16_t m_res_head_capacity;
+    nghttp2_nv * m_res_headers;
 };
 
-net_http2_processor_t net_http2_processor_create(net_http2_endpoint_t endpoint);
+net_http2_processor_t net_http2_processor_create(net_http2_endpoint_t endpoint, uint32_t id);
 void net_http2_processor_free(net_http2_processor_t processor);
 
-int net_http2_processor_add_head(
+int net_http2_processor_add_req_head(
     net_http2_processor_t processor,
     const char * attr_name, uint32_t name_len, const char * attr_value, uint32_t value_len);
 

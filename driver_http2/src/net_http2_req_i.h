@@ -19,7 +19,6 @@ struct net_http2_req {
     uint8_t m_on_complete_processed;
 
     /*req*/
-    net_http2_req_method_t m_req_method;
     net_http2_req_state_t m_req_state;
     uint16_t m_req_head_count;
     uint16_t m_req_head_capacity;
@@ -27,11 +26,9 @@ struct net_http2_req {
 
     /*res*/
     void * m_res_ctx;
-    uint8_t m_res_ignore;
     net_http2_req_on_res_head_fun_t m_res_on_head;
     net_http2_req_on_res_data_fun_t m_res_on_data;
     net_http2_req_on_res_complete_fun_t m_res_on_complete;
-    uint16_t m_res_code;
     uint16_t m_res_head_count;
     uint16_t m_res_head_capacity;
     struct net_http2_req_pair * m_res_headers;

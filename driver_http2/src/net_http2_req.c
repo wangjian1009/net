@@ -10,7 +10,7 @@
 static void net_http2_req_on_timeout(net_timer_t timer, void * ctx);
 
 net_http2_req_t
-net_http2_req_create(net_http2_endpoint_t http_ep, net_http2_req_method_t method, const char * url) {
+net_http2_req_create(net_http2_endpoint_t http_ep) {
     net_http2_protocol_t protocol =
         net_http2_protocol_cast(net_endpoint_protocol(http_ep->m_base_endpoint));
     
@@ -29,18 +29,15 @@ net_http2_req_create(net_http2_endpoint_t http_ep, net_http2_req_method_t method
     req->m_on_complete_processed = 0;
     req->m_on_complete_processed = 0;
 
-    req->m_req_method = method;
     req->m_req_state = net_http2_req_state_init;
     req->m_req_head_count = 0;
     req->m_req_head_capacity = 0;
     req->m_req_headers = NULL;
     
-    req->m_res_ignore = 0;
     req->m_res_ctx = NULL;
     req->m_res_on_head = NULL;
     req->m_res_on_data = NULL;
     req->m_res_on_complete = NULL;
-    req->m_res_code = 0;
     req->m_res_head_count = 0;
     req->m_res_head_capacity = 0;
     req->m_res_headers = NULL;
@@ -48,14 +45,6 @@ net_http2_req_create(net_http2_endpoint_t http_ep, net_http2_req_method_t method
     http_ep->m_req_count++;
     TAILQ_INSERT_TAIL(&http_ep->m_reqs, req, m_next_for_endpoint);
 
-    if (net_http2_req_add_req_head(req, ":method", net_http2_req_method_str(method)) != 0) {
-        CPE_ERROR(
-            protocol->m_em, "http2: %s: req: set method fail!",
-            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), http_ep->m_base_endpoint));
-        net_http2_req_free(req);
-        return NULL;
-    }
-    
     return req;
 }
 
@@ -217,10 +206,6 @@ void net_http2_req_clear_reader(net_http2_req_t req) {
     req->m_res_on_complete = NULL;
 }
 
-uint16_t net_http2_req_res_code(net_http2_req_t req) {
-    return req->m_res_code;
-}
-
 int net_http2_req_add_res_head(
     net_http2_req_t http_req,
     const char * attr_name, uint32_t name_len, const char * attr_value, uint32_t value_len)
@@ -273,7 +258,7 @@ int net_http2_req_add_res_head(
 
 
 void net_http2_req_cancel_and_free_i(net_http2_req_t req, uint8_t force) {
-    if (!req->m_res_ignore && !req->m_on_complete_processed && req->m_res_on_complete) {
+    if (!req->m_on_complete_processed && req->m_res_on_complete) {
         req->m_on_complete_processed = 1;
         req->m_res_on_complete(req->m_res_ctx, req, net_http2_res_canceled);
     }
@@ -318,8 +303,7 @@ const char * net_http2_res_result_str(net_http2_res_result_t res_result) {
 static void net_http2_req_on_timeout(net_timer_t timer, void * ctx) {
     net_http2_req_t req = ctx;
 
-    if (!req->m_res_ignore
-        && !req->m_on_complete_processed
+    if (!req->m_on_complete_processed
         && req->m_res_on_complete)
     {
         req->m_on_complete_processed = 1;

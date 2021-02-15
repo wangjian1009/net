@@ -343,7 +343,7 @@ int net_http2_stream_endpoint_http2_connect(net_http2_stream_endpoint_t stream) 
         net_address_dump(net_http2_stream_driver_tmp_buffer(driver), target_address));
 
     assert(stream->m_req == NULL);
-    stream->m_req = net_http2_req_create(http2_ep, net_http2_req_method_get, "/");
+    stream->m_req = net_http2_req_create(http2_ep);
     if (stream->m_req == NULL) {
         CPE_ERROR(
             driver->m_em, "http2: %s: %s: http2 connect: create req failed!",
@@ -352,7 +352,8 @@ int net_http2_stream_endpoint_http2_connect(net_http2_stream_endpoint_t stream) 
         return -1;
     }
 
-    if (net_http2_req_add_req_head(stream->m_req, ":authority", target_path) != 0
+    if (net_http2_req_add_req_head(stream->m_req, ":method", net_http2_req_method_str(net_http2_req_method_get)) != 0
+        || net_http2_req_add_req_head(stream->m_req, ":path", target_path) != 0
         || net_http2_req_set_reader(
             stream->m_req,
             stream,

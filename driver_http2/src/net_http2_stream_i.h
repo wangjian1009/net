@@ -31,8 +31,6 @@ void net_http2_stream_free(net_http2_stream_t stream);
 /*recv*/
 int net_http2_stream_on_input(net_http2_stream_t stream, const uint8_t * data, uint32_t len);
 
-void net_http2_stream_on_close(net_http2_stream_t stream, int http2_error);
-
 void net_http2_stream_on_head_complete(net_http2_stream_t stream);
 
 int net_http2_stream_on_response_head(

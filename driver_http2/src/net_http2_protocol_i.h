@@ -16,6 +16,7 @@ struct net_http2_protocol {
     mem_allocrator_t m_alloc;
     error_monitor_t m_em;
     nghttp2_session_callbacks * m_http2_callbacks;
+    struct nghttp2_option * m_http2_options;
     uint32_t m_max_req_id;
     struct mem_buffer m_data_buffer;
 };

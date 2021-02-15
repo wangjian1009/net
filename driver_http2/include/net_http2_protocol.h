@@ -15,6 +15,8 @@ net_http2_protocol_find(net_schedule_t schedule, const char * addition_name);
 
 net_http2_protocol_t net_http2_protocol_cast(net_protocol_t protocol);
 
+void net_http2_protocol_set_no_http_messaging(net_http2_protocol_t protocol, uint8_t is_enable);
+
 NET_END_DECL
 
 #endif
