@@ -67,7 +67,8 @@ static void net_http2_basic_pair_basic(void **state) {
     net_http2_req_t req = net_http2_req_create(cli_ep);
     assert_true(req);
 
-    assert_true(net_http2_req_start(req) == 0);
+    assert_true(net_http2_req_add_req_head(req, "a", "av") == 0);
+    assert_true(net_http2_req_start(req, 1) == 0);
 
     assert_string_equal(
         net_http2_req_state_str(net_http2_req_state(req)),
@@ -92,7 +93,27 @@ static void net_http2_basic_pair_basic(void **state) {
         net_http2_req_state_str(net_http2_req_state(req)),
         net_http2_req_state_str(net_http2_req_state_connecting));
 
+    assert_string_equal(
+        net_http2_processor_find_req_header(processor, "a"),
+        "av");
+
     /*发送响应头 */
+    assert_true(net_http2_processor_add_res_head(processor, "b", "bv") == 0);
+    assert_true(net_http2_processor_start(processor, NULL, 0, 1) == 0);
+
+    test_net_driver_run(env->m_tdriver, 0);
+    
+    assert_string_equal(
+        net_http2_processor_state_str(net_http2_processor_state(processor)),
+        net_http2_processor_state_str(net_http2_processor_state_established));
+    
+    assert_string_equal(
+        net_http2_req_state_str(net_http2_req_state(req)),
+        net_http2_req_state_str(net_http2_req_state_established));
+
+    assert_string_equal(
+        net_http2_req_find_res_header(req, "b"),
+        "bv");
 }
 
 int net_http2_basic_pair_basic_tests() {

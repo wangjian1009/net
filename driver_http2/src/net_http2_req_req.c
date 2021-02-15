@@ -1,3 +1,5 @@
+#include "cpe/pal/pal_strings.h"
+#include "cpe/utils/string_utils.h"
 #include "net_endpoint.h"
 #include "net_protocol.h"
 #include "net_http2_req_i.h"
@@ -9,7 +11,68 @@ net_http2_req_state_t net_http2_req_state(net_http2_req_t req) {
     return req->m_req_state;
 }
 
-int net_http2_req_start(net_http2_req_t http_req) {
+int net_http2_req_add_req_head(net_http2_req_t http_req, const char * attr_name, const char * attr_value) {
+    net_http2_endpoint_t http_ep = http_req->m_endpoint;
+    net_http2_protocol_t protocol =
+        net_http2_protocol_cast(net_endpoint_protocol(http_ep->m_base_endpoint));
+
+    if (http_req->m_req_head_count >= http_req->m_req_head_capacity) {
+        uint16_t new_capacity = http_req->m_req_head_capacity < 8 ? 8 : http_req->m_req_head_capacity * 2;
+        nghttp2_nv * new_headers = mem_alloc(protocol->m_alloc, sizeof(nghttp2_nv) * new_capacity);
+        if (new_headers == NULL) {
+            CPE_ERROR(
+                protocol->m_em, "http2: %s: req: add header: alloc nv faild, capacity=%d!",
+                net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), http_ep->m_base_endpoint), new_capacity);
+            return -1;
+        }
+
+        if (http_req->m_req_headers) {
+            memcpy(new_headers, http_req->m_req_headers, sizeof(nghttp2_nv) * http_req->m_req_head_count);
+            mem_free(protocol->m_alloc, http_req->m_req_headers);
+        }
+
+        http_req->m_req_headers = new_headers;
+        http_req->m_req_head_capacity = new_capacity;
+    }
+    
+    nghttp2_nv * nv = http_req->m_req_headers + http_req->m_req_head_count;
+    nv->namelen = strlen(attr_name);
+    nv->name = (void*)cpe_str_mem_dup_len(protocol->m_alloc, attr_name, nv->namelen);
+    if (nv->name == NULL) {
+        CPE_ERROR(
+            protocol->m_em, "http2: %s: req: add header: dup name %s faild!",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), http_ep->m_base_endpoint), attr_name);
+        return -1;
+    }
+
+    nv->valuelen = strlen(attr_value);
+    nv->value = (void*)cpe_str_mem_dup_len(protocol->m_alloc, attr_value, nv->valuelen);
+    if (nv->value == NULL) {
+        CPE_ERROR(
+            protocol->m_em, "http2: %s: req: add header: dup value %s faild!",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), http_ep->m_base_endpoint), attr_value);
+        mem_free(protocol->m_alloc, nv->name);
+        return -1;
+    }
+
+    nv->flags = NGHTTP2_NV_FLAG_NO_COPY_VALUE | NGHTTP2_NV_FLAG_NO_COPY_VALUE;
+
+    http_req->m_req_head_count++;
+    return 0;
+}
+
+const char * net_http2_req_find_req_header(net_http2_req_t req, const char * name) {
+    uint16_t i;
+
+    for(i = 0; i < req->m_req_head_count; i++) {
+        nghttp2_nv * header = req->m_req_headers + i;
+        if (strcmp((const char *)header->name, name) == 0) return (const char *)header->value;
+    }
+    
+    return NULL;
+}
+
+int net_http2_req_start(net_http2_req_t http_req, uint8_t have_follow_data) {
     net_http2_endpoint_t endpoint = http_req->m_endpoint;
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
 
@@ -44,8 +107,13 @@ int net_http2_req_start(net_http2_req_t http_req) {
 
     const nghttp2_priority_spec * pri_spec = NULL;
 
+    uint8_t flags = NGHTTP2_FLAG_NONE;
+    if (!have_follow_data) {
+        flags |= NGHTTP2_FLAG_END_STREAM;
+    }
+    
     int rv = nghttp2_submit_headers(
-        endpoint->m_http2_session, NGHTTP2_FLAG_NONE, -1, pri_spec,
+        endpoint->m_http2_session, flags, -1, pri_spec,
         http_req->m_req_headers, http_req->m_req_head_count, stream);
     if (rv < 0) {
         CPE_ERROR(

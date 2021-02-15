@@ -1,6 +1,6 @@
 #include <assert.h>
-#include "cpe/utils/stream_buffer.h"
 #include "cpe/pal/pal_strings.h"
+#include "cpe/utils/stream_buffer.h"
 #include "cpe/utils/string_utils.h"
 #include "net_endpoint.h"
 #include "net_protocol.h"
@@ -31,6 +31,9 @@ net_http2_processor_create(net_http2_endpoint_t endpoint, uint32_t id) {
     processor->m_req_head_count = 0;
     processor->m_req_head_capacity = 0;
     processor->m_req_headers = NULL;
+    processor->m_res_head_count = 0;
+    processor->m_res_head_capacity = 0;
+    processor->m_res_headers = NULL;
 
     endpoint->m_processor_count++;
     TAILQ_INSERT_TAIL(&endpoint->m_processors, processor, m_next);
@@ -170,6 +173,16 @@ int net_http2_processor_add_req_head(
     return 0;
 }
 
+const char * net_http2_processor_find_req_header(net_http2_processor_t processor, const char * name) {
+    uint16_t i;
+    for (i = 0; i < processor->m_req_head_count; ++i) {
+        struct net_http2_processor_pair * header = processor->m_req_headers + i;
+        if (strcmp(header->m_name, name) == 0) return header->m_value;
+    }
+
+    return NULL;
+}
+
 int net_http2_processor_add_res_head(net_http2_processor_t processor, const char * attr_name, const char * attr_value) {
     net_http2_endpoint_t http_ep = processor->m_endpoint;
     net_http2_protocol_t protocol =
@@ -217,6 +230,73 @@ int net_http2_processor_add_res_head(net_http2_processor_t processor, const char
     nv->flags = NGHTTP2_NV_FLAG_NO_COPY_VALUE | NGHTTP2_NV_FLAG_NO_COPY_VALUE;
 
     processor->m_res_head_count++;
+    return 0;
+}
+
+const char * net_http2_processor_find_res_header(net_http2_processor_t processor, const char * name) {
+    uint16_t i;
+    for (i = 0; i < processor->m_res_head_count; ++i) {
+        nghttp2_nv * header = processor->m_res_headers + i;
+        if (strcmp((const char *)header->name, name) == 0) return (const char *)header->value;
+    }
+
+    return NULL;
+}
+
+int net_http2_processor_start(
+    net_http2_processor_t processor, void const * data, uint32_t data_size, uint8_t have_follow_data)
+{
+    net_http2_endpoint_t endpoint = processor->m_endpoint;
+    net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
+
+    if (processor->m_state != net_http2_processor_state_head_received) {
+        CPE_ERROR(
+            protocol->m_em, "http2: %s: processor %d: can`t start in state %s",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            processor->m_id, net_http2_processor_state_str(processor->m_state));
+        return -1;
+    }
+
+    if (endpoint->m_state != net_http2_endpoint_state_streaming) {
+        CPE_ERROR(
+            protocol->m_em, "http2: %s: processor %d: start in state %s",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            processor->m_id,
+            net_http2_endpoint_state_str(endpoint->m_state));
+        return -1;
+    }
+
+    nghttp2_data_provider * data_prd = NULL;
+
+    uint8_t flags = NGHTTP2_FLAG_NONE;
+    if (!have_follow_data) {
+        flags |= NGHTTP2_FLAG_END_STREAM;
+    }
+
+    int rv = nghttp2_submit_response(
+        endpoint->m_http2_session, processor->m_stream->m_stream_id,
+        processor->m_res_headers, processor->m_res_head_count, data_prd);
+    if (rv < 0) {
+        CPE_ERROR(
+            protocol->m_em, "http2: %s: %s: http2: %d: ==> submit processoruest fail, %s!",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+            processor->m_stream->m_stream_id,
+            nghttp2_strerror(rv));
+        return -1;
+    }
+
+    if (net_http2_endpoint_http2_flush(endpoint) != 0) {
+        CPE_ERROR(
+            protocol->m_em, "http2: %s: %s: http2: %d: ==> processor %d start failed!",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+            processor->m_stream->m_stream_id, processor->m_id);
+        return -1;
+    }
+    
+    net_http2_processor_set_state(processor, net_http2_processor_state_established);
+
     return 0;
 }
 

@@ -17,9 +17,17 @@ net_http2_processor_state_t net_http2_processor_state(net_http2_processor_t proc
 net_http2_endpoint_t net_http2_processor_endpoint(net_http2_processor_t processor);
 net_http2_stream_t net_http2_processor_stream(net_http2_processor_t processor);
 
-const char * net_http2_processor_state_str(net_http2_processor_state_t state);
+int net_http2_processor_start(
+    net_http2_processor_t processor, void const * data, uint32_t data_size, uint8_t have_follow_data);
 
+/*req*/
+const char * net_http2_processor_find_req_header(net_http2_processor_t processor, const char * name);
+
+/*res*/
 int net_http2_processor_add_res_head(net_http2_processor_t processor, const char * attr_name, const char * attr_value);
+const char * net_http2_processor_find_res_header(net_http2_processor_t processor, const char * name);
+
+const char * net_http2_processor_state_str(net_http2_processor_state_t state);
 
 NET_END_DECL
 
