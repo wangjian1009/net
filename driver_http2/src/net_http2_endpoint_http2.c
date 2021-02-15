@@ -284,8 +284,6 @@ int net_http2_endpoint_on_data_chunk_recv_callback(
         return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
     }
 
-    CPE_ERROR(protocol->m_em, "http2: 111");
-    
     return NGHTTP2_NO_ERROR;
 }
 
@@ -324,15 +322,15 @@ int net_http2_endpoint_on_stream_close_callback(
                 stream_id);
         }
 
-        /* if (net_endpoint_error_source(endpoint->m_base_endpoint) == net_endpoint_error_source_none) { */
-        /*     net_endpoint_set_error( */
-        /*         endpoint->m_base_endpoint, */
-        /*         net_endpoint_error_source_network, net_endpoint_network_errno_remote_closed, NULL); */
-        /* } */
+        if (net_endpoint_error_source(endpoint->m_base_endpoint) == net_endpoint_error_source_none) {
+            net_endpoint_set_error(
+                endpoint->m_base_endpoint,
+                net_endpoint_error_source_network, net_endpoint_network_errno_remote_closed, NULL);
+        }
 
-        /* if (net_endpoint_set_state(endpoint->m_base_endpoint, net_endpoint_state_disable) != 0) { */
-        /*     net_endpoint_set_state(endpoint->m_base_endpoint, net_endpoint_state_deleting); */
-        /* } */
+        if (net_endpoint_set_state(endpoint->m_base_endpoint, net_endpoint_state_disable) != 0) {
+            net_endpoint_set_state(endpoint->m_base_endpoint, net_endpoint_state_deleting);
+        }
     }
     else {
         CPE_ERROR(
@@ -341,15 +339,15 @@ int net_http2_endpoint_on_stream_close_callback(
             net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
             stream_id, net_http2_error_code_str(error_code));
 
-        /* if (net_endpoint_error_source(endpoint->m_base_endpoint) == net_endpoint_error_source_none) { */
-        /*     net_endpoint_set_error( */
-        /*         endpoint->m_base_endpoint, net_endpoint_error_source_network, */
-        /*         net_endpoint_network_errno_remote_closed, net_http2_error_code_str(error_code)); */
-        /* } */
+        if (net_endpoint_error_source(endpoint->m_base_endpoint) == net_endpoint_error_source_none) {
+            net_endpoint_set_error(
+                endpoint->m_base_endpoint, net_endpoint_error_source_network,
+                net_endpoint_network_errno_remote_closed, net_http2_error_code_str(error_code));
+        }
 
-        /* if (net_endpoint_set_state(endpoint->m_base_endpoint, net_endpoint_state_error) != 0) { */
-        /*     net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_deleting); */
-        /* } */
+        if (net_endpoint_set_state(endpoint->m_base_endpoint, net_endpoint_state_error) != 0) {
+            net_endpoint_set_state(endpoint->m_base_endpoint, net_endpoint_state_deleting);
+        }
     }
 
     net_http2_stream_free(stream);
@@ -556,8 +554,6 @@ int net_http2_endpoint_send_data_callback(
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
     net_http2_stream_t stream = source->ptr;
 
-    CPE_ERROR(protocol->m_em, "http2: send data 222");
-    
     uint32_t head_sz = 9;
     if (frame->data.padlen > 0) head_sz++;
 

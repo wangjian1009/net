@@ -267,3 +267,22 @@ const char * net_nghttp2_stream_state_str(nghttp2_stream_proto_state state) {
         return "closed";
     }
 }
+
+const char * net_http2_stream_proto_state_str(nghttp2_stream_proto_state proto_state) {
+    switch(proto_state) {
+    case NGHTTP2_STREAM_STATE_IDLE:
+        return "idle";
+    case NGHTTP2_STREAM_STATE_OPEN:
+        return "open";
+    case NGHTTP2_STREAM_STATE_RESERVED_LOCAL:
+        return "resolved-local";
+    case NGHTTP2_STREAM_STATE_RESERVED_REMOTE:
+        return "resolved-remote";
+    case NGHTTP2_STREAM_STATE_HALF_CLOSED_LOCAL:
+        return "closed-local";
+    case NGHTTP2_STREAM_STATE_HALF_CLOSED_REMOTE:
+        return "closed-remote";
+    case NGHTTP2_STREAM_STATE_CLOSED:
+        return "closed";
+    }
+}

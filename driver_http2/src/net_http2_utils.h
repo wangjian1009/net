@@ -20,6 +20,7 @@ void net_http2_print_frame(write_stream_t ws, const nghttp2_frame *frame);
 const char * net_http2_frame_type_str(nghttp2_frame_type frame_type);
 const char * net_http2_error_code_str(nghttp2_error_code error_code);
 const char * net_http2_settings_id_str(nghttp2_settings_id settings_id);
+const char * net_http2_stream_proto_state_str(nghttp2_stream_proto_state protoc_state);
 const char * net_nghttp2_headers_category_str(nghttp2_headers_category headers_category);
 const char * net_nghttp2_flag_str(nghttp2_flag flag, uint8_t is_for_stream);
 
