@@ -155,19 +155,6 @@ void net_http2_stream_on_head_complete(net_http2_stream_t stream) {
                 /* } */
 }
 
-/* int net_http2_stream_on_request_head( */
-/*     net_http2_stream_t stream, */
-/*     const char * name, uint32_t name_len, const char * value, uint32_t value_len) */
-/* { */
-/*     net_http2_endpoint_t endpoint = stream->m_endpoint; */
-/*     net_http2_protocol_t protocol = net_http2_protocol_cast(net_endpoint_protocol(endpoint->m_base_endpoint)); */
-
-/*     if (cpe_str_cmp_part((const char *)name, name_len, ":method") == 0) { */
-/*     } */
-
-/*     return 0; */
-/* } */
-
 int net_http2_stream_on_tailer(
     net_http2_stream_t stream,
     const char * name, uint32_t name_len, const char * value, uint32_t value_len)
