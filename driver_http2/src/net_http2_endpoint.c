@@ -52,7 +52,8 @@ int net_http2_endpoint_init(net_endpoint_t base_endpoint) {
 
     endpoint->m_in_processing = 0;
     endpoint->m_delay_processor = NULL;
-    
+
+    //endpoint->m_delay_processor = net_timer_auto_create(
     return 0;
 }
 

@@ -20,7 +20,7 @@ net_http2_processor_create(net_http2_endpoint_t endpoint) {
 
     processor->m_endpoint = endpoint;
     processor->m_stream = NULL;
-    processor->m_state = net_http2_processor_state_init;
+    processor->m_state = net_http2_processor_state_connecting;
     processor->m_head_count = 0;
     processor->m_head_capacity = 0;
     processor->m_headers = NULL;
@@ -142,10 +142,14 @@ int net_http2_processor_add_head(
     return 0;
 }
 
+int net_http2_processor_on_head_complete(net_http2_processor_t processor) {
+    return 0;
+}
+
 const char * net_http2_processor_state_str(net_http2_processor_state_t state) {
     switch(state) {
-    case net_http2_processor_state_init:
-        return "init";
+    case net_http2_processor_state_connecting:
+        return "connecting";
     case net_http2_processor_state_established:
         return "established";
     case net_http2_processor_state_done:

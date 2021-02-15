@@ -5,7 +5,7 @@
 NET_BEGIN_DECL
 
 enum net_http2_processor_state {
-    net_http2_processor_state_init,
+    net_http2_processor_state_connecting,   /*正在接受头部信息 */
     net_http2_processor_state_established,
     net_http2_processor_state_done,
 };

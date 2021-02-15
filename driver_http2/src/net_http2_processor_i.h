@@ -27,4 +27,6 @@ int net_http2_processor_add_head(
 
 void net_http2_processor_set_stream(net_http2_processor_t processor, net_http2_stream_t stream);
 
+int net_http2_processor_on_head_complete(net_http2_processor_t processor);
+
 #endif

@@ -100,7 +100,38 @@ int net_http2_endpoint_on_frame_recv_callback(
         if (frame->hd.flags & NGHTTP2_FLAG_END_HEADERS) {
             net_http2_stream_t stream = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id);
             if (stream) {
-                net_http2_stream_on_head_complete(stream);
+                switch(stream->m_runing_mode) {
+                case net_http2_stream_runing_mode_cli: {
+                    net_http2_req_t req = net_http2_stream_req(stream);
+                    if (req == NULL) {
+                        CPE_ERROR(
+                            protocol->m_em, "http2: %s: %s: http2: %d: <== recv head, stream no bind request",
+                            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+                            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+                            frame->hd.stream_id);
+                        return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+                    }
+                    else if (net_http2_req_on_req_head_complete(req) != 0) {
+                        return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+                    }
+                    break;
+                }
+                case net_http2_stream_runing_mode_svr: {
+                    net_http2_processor_t processor = net_http2_stream_processor(stream);
+                    if (processor == NULL) {
+                        CPE_ERROR(
+                            protocol->m_em, "http2: %s: %s: http2: %d: <== recv head, stream no bind processor",
+                            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+                            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+                            frame->hd.stream_id);
+                        return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+                    }
+                    else if (net_http2_processor_on_head_complete(processor) != 0) {
+                        return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+                    }
+                    break;
+                }
+                }
             }
         }
         break;
@@ -314,13 +345,6 @@ int net_http2_endpoint_on_header_callback(
 
     assert(frame->hd.type == NGHTTP2_HEADERS);
 
-    if (net_endpoint_protocol_debug(endpoint->m_base_endpoint)) {
-        CPE_INFO(
-            protocol->m_em, "http2: %s: %s: xxxx: on head callback",
-            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
-            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode));
-    }
-    
     net_http2_stream_t stream = NULL;
 
     if (frame->headers.cat == NGHTTP2_HCAT_REQUEST) {

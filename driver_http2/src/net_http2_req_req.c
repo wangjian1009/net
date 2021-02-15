@@ -3,6 +3,8 @@
 #include "net_http2_req_i.h"
 #include "net_http2_stream_i.h"
 
+void net_http2_req_set_req_state(net_http2_req_t req, net_http2_req_state_t state);
+
 net_http2_req_method_t net_http2_req_method(net_http2_req_t req) {
     return req->m_req_method;
 }
@@ -72,7 +74,30 @@ int net_http2_req_start(net_http2_req_t http_req) {
     
     net_http2_req_set_stream(http_req, stream);
 
+    net_http2_req_set_req_state(http_req, net_http2_req_state_connecting);
+
     return 0;
+}
+
+int net_http2_req_on_req_head_complete(net_http2_req_t req) {
+    return 0;
+}
+
+void net_http2_req_set_req_state(net_http2_req_t http_req, net_http2_req_state_t state) {
+    if (http_req->m_req_state == state) return;
+
+    net_http2_endpoint_t endpoint = http_req->m_endpoint;
+    net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
+
+    if (net_endpoint_protocol_debug(endpoint->m_base_endpoint)) {
+        CPE_INFO(
+            protocol->m_em, "http2: %s: %s: req %d: req-start %s ==> %s",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+            http_req->m_id, net_http2_req_state_str(http_req->m_req_state), net_http2_req_state_str(state));
+    }
+
+    http_req->m_req_state = state;
 }
 
 const char * net_http2_req_state_str(net_http2_req_state_t req_state) {

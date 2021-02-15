@@ -48,6 +48,8 @@ int net_http2_req_add_res_head(
     net_http2_req_t req,
     const char * attr_name, uint32_t name_len, const char * attr_value, uint32_t value_len);
 
+int net_http2_req_on_req_head_complete(net_http2_req_t req);
+
 NET_END_DECL
 
 #endif
