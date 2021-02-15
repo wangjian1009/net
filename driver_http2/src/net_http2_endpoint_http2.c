@@ -358,6 +358,16 @@ int net_http2_endpoint_on_header_callback(
                     frame->hd.stream_id);
                 return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
             }
+
+            int rv = nghttp2_session_set_stream_user_data(endpoint->m_http2_session, frame->hd.stream_id, stream);
+            if (rv != NGHTTP2_NO_ERROR) {
+                CPE_ERROR(
+                    protocol->m_em, "http2: %s: %s: http2: %d: <== receive request header: bind stream fail, error=%s",
+                    net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+                    net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+                    frame->hd.stream_id, net_http2_error_code_str(rv));
+                return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+            }
         }
     }
     else {

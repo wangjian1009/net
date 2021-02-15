@@ -67,6 +67,7 @@ static void net_http2_basic_pair_basic(void **state) {
     net_http2_req_t req = net_http2_req_create(cli_ep, net_http2_req_method_get, "/a/b");
     assert_true(req);
 
+    assert_true(net_http2_req_add_req_head(req, ":path", "/") == 0);
     assert_true(net_http2_req_start(req) == 0);
 
     assert_string_equal(
