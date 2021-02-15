@@ -25,7 +25,6 @@ net_http2_req_create(net_http2_endpoint_t http_ep, net_http2_req_method_t method
     req->m_endpoint = http_ep;
     req->m_stream = NULL;
     req->m_id = ++protocol->m_max_req_id;
-    req->m_data_sended = 0;
     req->m_free_after_processed = 0;
     req->m_on_complete_processed = 0;
     req->m_on_complete_processed = 0;

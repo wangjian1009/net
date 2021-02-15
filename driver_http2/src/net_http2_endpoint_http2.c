@@ -307,7 +307,7 @@ int net_http2_endpoint_on_stream_close_callback(
     assert(stream->m_stream_id == stream_id);
     if (net_endpoint_protocol_debug(endpoint->m_base_endpoint)) {
         CPE_INFO(
-            protocol->m_em, "http2: %s: %s: http2: %d: stream close and ignore rst!",
+            protocol->m_em, "http2: %s: %s: http2: %d: stream closed!",
             net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
             net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
             stream->m_stream_id);

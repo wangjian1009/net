@@ -124,17 +124,7 @@ int net_http2_stream_endpoint_set_no_delay(net_endpoint_t base_endpoint, uint8_t
 }
 
 int net_http2_stream_endpoint_get_mss(net_endpoint_t base_endpoint, uint32_t * mss) {
-    net_http2_stream_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
-    net_http2_stream_endpoint_t endpoint = net_endpoint_data(base_endpoint);
-
-    /* if (endpoint->m_control == NULL) { */
-    /*     CPE_ERROR( */
-    /*         driver->m_em, "http2: %s: %s: get mss: no control", */
-    /*         net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), base_endpoint), */
-    /*         net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(endpoint))); */
-    /*     return -1; */
-    /* } */
-
+    *mss = 16383;
     return 0;
 }
 

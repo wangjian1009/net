@@ -15,7 +15,6 @@ struct net_http2_req {
     TAILQ_ENTRY(net_http2_req) m_next_for_endpoint;
     net_http2_stream_t m_stream;
     uint16_t m_id;
-    uint8_t m_data_sended;
     uint8_t m_free_after_processed;
     uint8_t m_on_complete_processed;
 
