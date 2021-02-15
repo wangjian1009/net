@@ -72,8 +72,6 @@ int net_http2_req_set_reader(
 void net_http2_req_clear_reader(net_http2_req_t req);
 
 uint16_t net_http2_req_res_code(net_http2_req_t req);
-const char * net_http2_req_res_message(net_http2_req_t req);
-uint32_t net_http2_req_res_length(net_http2_req_t req);
 
 const char *  net_http2_req_method_str( net_http2_req_method_t method);
 const char * net_http2_res_state_str(net_http2_res_state_t res_state);

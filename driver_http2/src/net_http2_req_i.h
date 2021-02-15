@@ -28,7 +28,6 @@ struct net_http2_req {
     net_http2_req_on_res_data_fun_t m_res_on_data;
     net_http2_req_on_res_complete_fun_t m_res_on_complete;
     uint16_t m_res_code;
-    char m_res_message[16];
 };
 
 void net_http2_req_free_i(net_http2_req_t req, uint8_t force);
@@ -36,6 +35,10 @@ void net_http2_req_free_i(net_http2_req_t req, uint8_t force);
 void net_http2_req_cancel_and_free_i(net_http2_req_t req, uint8_t force);
 
 void net_http2_req_set_stream(net_http2_req_t req, net_http2_stream_t stream);
+
+int net_http2_req_add_res_head(
+    net_http2_req_t req,
+    const char * attr_name, uint32_t name_len, const char * attr_value, uint32_t value_len);
 
 NET_END_DECL
 

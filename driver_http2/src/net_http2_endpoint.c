@@ -37,22 +37,22 @@ int net_http2_endpoint_init(net_endpoint_t base_endpoint) {
     endpoint->m_base_endpoint = base_endpoint;
     endpoint->m_runing_mode = net_http2_endpoint_runing_mode_init;
     endpoint->m_state = net_http2_endpoint_state_init;
+    endpoint->m_http2_session = NULL;
+
+    endpoint->m_req_count = 0;
+    TAILQ_INIT(&endpoint->m_reqs);
+
+    endpoint->m_processor_count = 0;
+    TAILQ_INIT(&endpoint->m_processors);
+    endpoint->m_accept_ctx = NULL;
+    endpoint->m_accept_ctx_free = NULL;
+    endpoint->m_accept_fun = NULL;
+    
+    TAILQ_INIT(&endpoint->m_streams);
+
     endpoint->m_in_processing = 0;
     endpoint->m_delay_processor = NULL;
-    endpoint->m_http2_session = NULL;
-    TAILQ_INIT(&endpoint->m_reqs);
-    TAILQ_INIT(&endpoint->m_streams);
     
-    /* endpoint->m_delay_processor = */
-    /*     net_timer_auto_create( */
-    /*         net_endpoint_schedule(base_endpoint), net_http2_endpoint_delay_process, endpoint); */
-    /* if (endpoint->m_delay_processor == NULL) { */
-    /*     CPE_ERROR( */
-    /*         protocol->m_em, "http2: %s: init: create delay processor fail", */
-    /*         net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), base_endpoint)); */
-    /*     return -1; */
-    /* } */
-
     return 0;
 }
 

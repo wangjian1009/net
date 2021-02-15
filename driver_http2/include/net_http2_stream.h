@@ -13,6 +13,10 @@ uint32_t net_http2_stream_id(net_http2_stream_t stream);
 net_http2_stream_runing_mode_t net_http2_stream_runing_mode(net_http2_stream_t stream);
 net_http2_endpoint_t net_http2_stream_endpoint(net_http2_stream_t stream);
 
+net_http2_req_t net_http2_stream_req(net_http2_stream_t stream);
+
+net_http2_processor_t net_http2_stream_processor(net_http2_stream_t stream);
+
 const char * net_http2_stream_runing_mode_str(net_http2_stream_runing_mode_t runing_mode);
 
 NET_END_DECL

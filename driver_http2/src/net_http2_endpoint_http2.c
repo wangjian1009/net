@@ -7,7 +7,8 @@
 #include "net_acceptor.h"
 #include "net_http2_endpoint_i.h"
 #include "net_http2_stream_i.h"
-#include "net_http2_stream_acceptor_i.h"
+#include "net_http2_processor_i.h"
+#include "net_http2_req_i.h"
 #include "net_http2_utils.h"
 
 ssize_t net_http2_endpoint_send_callback(
@@ -316,17 +317,17 @@ int net_http2_endpoint_on_header_callback(
     net_http2_stream_t stream = NULL;
 
     if (frame->headers.cat == NGHTTP2_HCAT_REQUEST) {
-        if (endpoint->m_runing_mode != net_http2_endpoint_runing_mode_svr) {
-            CPE_ERROR(
-                protocol->m_em, "http2: %s: %s: http2: %d: <== receive request header in error runing-mode",
-                net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
-                net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
-                frame->hd.stream_id);
-            return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
-        }
-
         stream = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id);
         if (stream == NULL) {
+            stream = net_http2_stream_create(endpoint, frame->hd.stream_id, net_http2_stream_runing_mode_svr);
+            if (stream == NULL) {
+                CPE_ERROR(
+                    protocol->m_em, "http2: %s: %s: http2: %d: <== receive request header create stream fail",
+                    net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+                    net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+                    frame->hd.stream_id);
+                return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+            }
         }
     }
     else {
@@ -350,24 +351,67 @@ int net_http2_endpoint_on_header_callback(
     }
 
     switch(frame->headers.cat) {
-    case NGHTTP2_HCAT_REQUEST:
-        if (net_http2_stream_on_request_head(
-                stream,
-                (const char *)name, (uint32_t)namelen, (const char *)value, (uint32_t)valuelen)
-            != 0)
+    case NGHTTP2_HCAT_REQUEST: {
+        net_http2_processor_t processor = net_http2_stream_processor(stream);
+        if (processor == NULL) {
+            processor = net_http2_processor_create(endpoint);
+            if (processor == NULL) {
+                CPE_ERROR(
+                    protocol->m_em, "http2: %s: %s: http2: %d: <== receive request header create processor fail",
+                    net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+                    net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+                    frame->hd.stream_id);
+                return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+            }
+
+            net_http2_processor_set_stream(processor, stream);
+        }
+
+        if (net_http2_processor_add_head(
+                processor, (const char *)name, namelen, (const char *)value, valuelen) != 0)
         {
+            CPE_ERROR(
+                protocol->m_em, "http2: %s: %s: http2: %d: <== receive request header add head fail",
+                net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+                net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+                frame->hd.stream_id);
             return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
         }
+
         break;
-    case NGHTTP2_HCAT_RESPONSE:
-        if (net_http2_stream_on_response_head(
-                stream,
-                (const char *)name, (uint32_t)namelen, (const char *)value, (uint32_t)valuelen)
-            != 0)
-        {
+    }
+    case NGHTTP2_HCAT_RESPONSE: {
+        net_http2_req_t req = net_http2_stream_req(stream);
+        if (req == NULL) {
+            CPE_ERROR(
+                protocol->m_em, "http2: %s: %s: http2: %d: <== receive reason header, no bind req",
+                net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+                net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+                frame->hd.stream_id);
             return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
         }
+
+        if (cpe_str_cmp_part((const char *)name, namelen, ":status") == 0) {
+            char value_buf[64];
+            if (valuelen + 1 > CPE_ARRAY_SIZE(value_buf)) {
+                CPE_ERROR(
+                    protocol->m_em, "http2: %s: %s: http2: %d: on head: status overflow!",
+                    net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+                    net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+                    stream->m_stream_id);
+                return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+            }
+
+            const char * str_status = cpe_str_dup_len(value_buf, sizeof(value_buf), (const char *)value, valuelen);
+            req->m_res_code = atoi(str_status);
+        }
+        else {
+            if (net_http2_req_add_res_head(req, (const char *)name, namelen, (const char *)value, valuelen) != 0) {
+                return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+            }
+        }
         break;
+    }
     case NGHTTP2_HCAT_PUSH_RESPONSE:
         break;
     case NGHTTP2_HCAT_HEADERS:

@@ -64,6 +64,18 @@ net_http2_endpoint_t net_http2_stream_endpoint(net_http2_stream_t stream) {
     return stream->m_endpoint;
 }
 
+net_http2_req_t net_http2_stream_req(net_http2_stream_t stream) {
+    return stream->m_runing_mode == net_http2_stream_runing_mode_cli
+        ? stream->m_cli.m_req
+        : NULL;
+}
+
+net_http2_processor_t net_http2_stream_processor(net_http2_stream_t stream) {
+    return stream->m_runing_mode == net_http2_stream_runing_mode_svr
+        ? stream->m_svr.m_processor
+        : NULL;
+}    
+
 int net_http2_stream_on_input(net_http2_stream_t stream, const uint8_t * data, uint32_t len) {
     /* if (net_endpoint_buf_append(stream->m_base_endpoint, net_ep_buf_read, data, (uint32_t)len) != 0) { */
     /*     if (net_endpoint_error_source(stream->m_base_endpoint) == net_endpoint_error_source_none) { */
@@ -143,55 +155,18 @@ void net_http2_stream_on_head_complete(net_http2_stream_t stream) {
                 /* } */
 }
 
-int net_http2_stream_on_request_head(
-    net_http2_stream_t stream,
-    const char * name, uint32_t name_len, const char * value, uint32_t value_len)
-{
-    net_http2_endpoint_t endpoint = stream->m_endpoint;
-    net_http2_protocol_t protocol = net_http2_protocol_cast(net_endpoint_protocol(endpoint->m_base_endpoint));
+/* int net_http2_stream_on_request_head( */
+/*     net_http2_stream_t stream, */
+/*     const char * name, uint32_t name_len, const char * value, uint32_t value_len) */
+/* { */
+/*     net_http2_endpoint_t endpoint = stream->m_endpoint; */
+/*     net_http2_protocol_t protocol = net_http2_protocol_cast(net_endpoint_protocol(endpoint->m_base_endpoint)); */
 
-    if (cpe_str_cmp_part((const char *)name, name_len, ":method") == 0) {
-    }
+/*     if (cpe_str_cmp_part((const char *)name, name_len, ":method") == 0) { */
+/*     } */
 
-    return 0;
-}
-
-int net_http2_stream_on_response_head(
-    net_http2_stream_t stream,
-    const char * name, uint32_t name_len, const char * value, uint32_t value_len)
-{
-    net_http2_endpoint_t endpoint = stream->m_endpoint;
-    net_http2_protocol_t protocol = net_http2_protocol_cast(net_endpoint_protocol(endpoint->m_base_endpoint));
-
-    if (cpe_str_cmp_part((const char *)name, name_len, ":status") == 0) {
-        char value_buf[64];
-        if (value_len + 1 > CPE_ARRAY_SIZE(value_buf)) {
-            CPE_ERROR(
-                protocol->m_em, "http2: %s: %s: http2: %d: on head: status overflow!",
-                net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
-                net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
-                stream->m_stream_id);
-            return -1;
-        }
-
-        const char * str_status = cpe_str_dup_len(value_buf, sizeof(value_buf), value, value_len);
-        int status = atoi(str_status);
-        if (status == 200) {
-            return 0;
-        }
-        else {
-            CPE_ERROR(
-                protocol->m_em, "http2: %s: %s: http2: %d: on head: direct fail, status=%.*s!",
-                net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
-                net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
-                stream->m_stream_id,
-                (int)value_len, value);
-            return -1;
-        }
-    }
-    
-    return 0;
-}
+/*     return 0; */
+/* } */
 
 int net_http2_stream_on_tailer(
     net_http2_stream_t stream,

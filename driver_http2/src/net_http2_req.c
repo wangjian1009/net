@@ -42,7 +42,6 @@ net_http2_req_create(net_http2_endpoint_t http_ep, net_http2_req_method_t method
     req->m_res_on_data = NULL;
     req->m_res_on_complete = NULL;
     req->m_res_code = 0;
-    req->m_res_message[0] = 0;
 
     http_ep->m_req_count++;
     TAILQ_INSERT_TAIL(&http_ep->m_reqs, req, m_next_for_endpoint);
@@ -203,10 +202,6 @@ void net_http2_req_clear_reader(net_http2_req_t req) {
 
 uint16_t net_http2_req_res_code(net_http2_req_t req) {
     return req->m_res_code;
-}
-
-const char * net_http2_req_res_message(net_http2_req_t req) {
-    return req->m_res_message;
 }
 
 void net_http2_req_cancel_and_free_i(net_http2_req_t req, uint8_t force) {

@@ -33,10 +33,6 @@ void net_http2_stream_on_close(net_http2_stream_t stream, int http2_error);
 
 void net_http2_stream_on_head_complete(net_http2_stream_t stream);
 
-int net_http2_stream_on_request_head(
-    net_http2_stream_t stream,
-    const char * name, uint32_t name_len, const char * value, uint32_t value_len);
-
 int net_http2_stream_on_response_head(
     net_http2_stream_t stream,
     const char * name, uint32_t name_len, const char * value, uint32_t value_len);

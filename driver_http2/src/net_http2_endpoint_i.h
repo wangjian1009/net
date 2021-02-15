@@ -14,6 +14,8 @@ struct net_http2_endpoint {
     net_http2_req_list_t m_reqs;
 
     /*processor*/
+    uint16_t m_processor_count;
+    net_http2_processor_list_t m_processors;
     void * m_accept_ctx;
     void (*m_accept_ctx_free)(void*);
     net_http2_endpoint_accept_fun_t m_accept_fun;
