@@ -26,6 +26,16 @@ net_http2_stream_create(net_http2_endpoint_t endpoint, uint32_t stream_id, net_h
 
 void net_http2_stream_free(net_http2_stream_t stream) {
     net_http2_endpoint_t endpoint = stream->m_endpoint;
+
+    if (endpoint->m_http2_session) {
+        nghttp2_session_set_stream_user_data(endpoint->m_http2_session, stream->m_stream_id, NULL);
+    }
+
+    net_http2_stream_free_no_unbind(stream);
+}
+
+void net_http2_stream_free_no_unbind(net_http2_stream_t stream) {
+    net_http2_endpoint_t endpoint = stream->m_endpoint;
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
 
     if (stream->m_req) {

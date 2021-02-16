@@ -339,7 +339,7 @@ int net_http2_req_start_request(net_http2_req_t req, uint8_t have_follow_data) {
             net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
             net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
             stream->m_stream_id, req->m_id, nghttp2_strerror(rv));
-        net_http2_stream_free(stream);
+        net_http2_stream_free_no_unbind(stream);
         return -1;
     }
 
@@ -400,7 +400,6 @@ int net_http2_req_start_response(net_http2_req_t req, uint8_t have_follow_data) 
             net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
             net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
             stream->m_stream_id, req->m_id, nghttp2_strerror(rv));
-        net_http2_stream_free(stream);
         return -1;
     }
 
@@ -410,7 +409,6 @@ int net_http2_req_start_response(net_http2_req_t req, uint8_t have_follow_data) 
             net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
             net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
             stream->m_stream_id, req->m_id);
-        net_http2_stream_free(stream);
         return -1;
     }
 

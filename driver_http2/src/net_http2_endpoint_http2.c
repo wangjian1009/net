@@ -381,7 +381,7 @@ int net_http2_endpoint_on_stream_close_callback(
         }
     }
 
-    net_http2_stream_free(stream);
+    net_http2_stream_free_no_unbind(stream);
 
     return NGHTTP2_NO_ERROR;
 }
@@ -523,7 +523,7 @@ int net_http2_endpoint_on_begin_headers_callback(nghttp2_session *session, const
                     net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
                     net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
                     frame->hd.stream_id);
-                net_http2_stream_free(stream);
+                net_http2_stream_free_no_unbind(stream);
                 return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
             }
 
@@ -536,8 +536,9 @@ int net_http2_endpoint_on_begin_headers_callback(nghttp2_session *session, const
                     net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
                     net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
                     frame->hd.stream_id, net_http2_error_code_str(rv));
+                net_http2_req_set_stream(req, NULL);
                 net_http2_req_free(req);
-                net_http2_stream_free(stream);
+                net_http2_stream_free_no_unbind(stream);
                 return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
             }
         }

@@ -63,6 +63,11 @@ void net_http2_endpoint_fini(net_endpoint_t base_endpoint) {
         endpoint->m_accept_ctx_free(endpoint->m_accept_ctx);
         endpoint->m_accept_ctx_free = NULL;
     }
+
+    if (endpoint->m_http2_session) {
+        nghttp2_session_del(endpoint->m_http2_session);
+        endpoint->m_http2_session = NULL;
+    }
     
     while(!TAILQ_EMPTY(&endpoint->m_reqs)) {
         net_http2_req_t req = TAILQ_FIRST(&endpoint->m_reqs);
@@ -71,12 +76,7 @@ void net_http2_endpoint_fini(net_endpoint_t base_endpoint) {
     
     while(!TAILQ_EMPTY(&endpoint->m_streams)) {
         net_http2_stream_t stream = TAILQ_FIRST(&endpoint->m_streams);
-        net_http2_stream_free(stream);
-    }
-    
-    if (endpoint->m_http2_session) {
-        nghttp2_session_del(endpoint->m_http2_session);
-        endpoint->m_http2_session = NULL;
+        net_http2_stream_free_no_unbind(stream);
     }
 }
 
