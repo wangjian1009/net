@@ -7,7 +7,7 @@ NET_BEGIN_DECL
 enum net_http2_req_state {
     net_http2_req_state_init,
     net_http2_req_state_connecting,
-    net_http2_req_state_head,
+    net_http2_req_state_head_sended,
     net_http2_req_state_established,
     net_http2_req_state_read_closed,
     net_http2_req_state_write_closed,

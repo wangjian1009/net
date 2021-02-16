@@ -337,7 +337,7 @@ int net_http2_req_start(net_http2_req_t req) {
     
     net_http2_req_set_stream(req, stream);
 
-    net_http2_req_set_req_state(req, net_http2_req_state_head);
+    net_http2_req_set_req_state(req, net_http2_req_state_head_sended);
 
     return 0;
 }
@@ -550,7 +550,7 @@ const char * net_http2_req_state_str(net_http2_req_state_t req_state) {
         return "init";
     case net_http2_req_state_connecting:
         return "connecting";
-    case net_http2_req_state_head:
+    case net_http2_req_state_head_sended:
         return "head-sended";
     case net_http2_req_state_established:
         return "established";

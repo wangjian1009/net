@@ -72,7 +72,7 @@ static void net_http2_basic_pair_basic(void **state) {
 
     assert_string_equal(
         net_http2_req_state_str(net_http2_req_state(req)),
-        net_http2_req_state_str(net_http2_req_state_head));
+        net_http2_req_state_str(net_http2_req_state_head_sended));
     
     test_net_driver_run(env->m_tdriver, 0);
     
