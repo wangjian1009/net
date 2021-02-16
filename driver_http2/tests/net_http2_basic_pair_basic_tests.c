@@ -122,7 +122,7 @@ static void net_http2_basic_pair_basic(void **state) {
     assert_int_equal(mem_buffer_size(&svr_receiver->m_buffer), 4);
     assert_memory_equal(mem_buffer_make_continuous(&svr_receiver->m_buffer, 0), "abcd", 4);
 
-    /*发送数据s->c */
+    /*发送数据s->c (关闭写) */
     assert_true(net_http2_req_append(svr_req, "efgh", 4, 0) == 0);
     test_net_driver_run(env->m_tdriver, 0);
     
@@ -136,6 +136,8 @@ static void net_http2_basic_pair_basic(void **state) {
     assert_string_equal(
         net_http2_req_state_str(net_http2_req_state(svr_req)),
         net_http2_req_state_str(net_http2_req_state_write_closed));
+
+    /*关闭最后一端写 */
 }
 
 int net_http2_basic_pair_basic_tests() {
