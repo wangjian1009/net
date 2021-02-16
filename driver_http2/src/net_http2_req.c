@@ -351,7 +351,10 @@ int net_http2_req_start(net_http2_req_t req, uint8_t have_follow_data) {
 }
 
 uint8_t net_http2_req_on_write_from_buf(void * ctx, net_http2_req_t req, void * output, uint32_t * output_len) {
-    return 0;
+    size_t sz = mem_buffer_read(output, *output_len, &req->m_write_data_buffer);
+    mem_buffer_remove(&req->m_write_data_buffer, sz);
+    *output_len = sz;
+    return mem_buffer_size(&req->m_write_data_buffer) == 0 ? 0 : 1;
 }
 
 int net_http2_req_append(net_http2_req_t req, void const * data, uint32_t data_len, uint8_t have_follow_data) {
@@ -396,30 +399,34 @@ ssize_t net_http2_req_do_write(
     nghttp2_session *session, int32_t stream_id, uint8_t *buf, size_t length,
     uint32_t *data_flags, nghttp2_data_source *source, void *user_data)
 {
-    net_http2_req_t req = user_data;
-    net_http2_endpoint_t endpoint = req->m_endpoint;
+    net_http2_req_t req = source->ptr;
+    net_http2_endpoint_t endpoint = user_data;
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
     net_http2_stream_t stream = req->m_stream;
 
     assert(stream);
     assert(stream->m_stream_id == stream_id);
 
+    uint32_t read_len = 0;
+    uint8_t have_continue_data = 0;
+
+    assert(req->m_is_write_started);
+
     if (req->m_on_write == NULL) {
         *data_flags |= NGHTTP2_DATA_FLAG_EOF;
-        return 0;
     }
+    else {
+        //*data_flags |= NGHTTP2_DATA_FLAG_NO_COPY;
+        read_len = length;
+        have_continue_data = req->m_on_write(req->m_write_ctx, req, buf, &read_len);
 
-    //*data_flags |= NGHTTP2_DATA_FLAG_NO_COPY;
-    
-    uint32_t read_len = length;
-    uint8_t have_continue_data = req->m_on_write(req->m_write_ctx, req, buf, &read_len);
-    
-    if (net_endpoint_driver_debug(endpoint->m_base_endpoint) >= 3) {
-        CPE_INFO(
-            protocol->m_em, "http2: %s: %s: http2: %d: write %d data, eof=%s",
-            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
-            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
-            stream_id, read_len, have_continue_data ? "true" : "false");
+        if (net_endpoint_driver_debug(endpoint->m_base_endpoint) >= 3) {
+            CPE_INFO(
+                protocol->m_em, "http2: %s: %s: http2: %d: write %d data, eof=%s",
+                net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+                net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+                stream_id, read_len, have_continue_data ? "true" : "false");
+        }
     }
 
     if (!have_continue_data) {
@@ -440,9 +447,10 @@ int net_http2_req_begin_write(net_http2_req_t req) {
     net_http2_endpoint_t endpoint = req->m_endpoint;
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
     net_http2_stream_t stream = req->m_stream;
-    assert(stream == NULL);
+    assert(stream);
 
     assert(req->m_on_write != NULL);
+    assert(req->m_is_write_started == 0);
 
     nghttp2_data_provider data_prd;
     data_prd.source.ptr = req;
@@ -453,6 +461,7 @@ int net_http2_req_begin_write(net_http2_req_t req) {
         flags |= NGHTTP2_FLAG_END_STREAM;
     }
     
+    req->m_is_write_started = 1;
     int rv = nghttp2_submit_data(endpoint->m_http2_session, flags, stream->m_stream_id, &data_prd);
     if (rv < 0) {
         CPE_ERROR(
@@ -460,6 +469,7 @@ int net_http2_req_begin_write(net_http2_req_t req) {
             net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
             net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
             stream->m_stream_id, req->m_id, nghttp2_strerror(rv));
+        req->m_is_write_started = 0;
         return -1;
     }
 
@@ -530,8 +540,8 @@ int net_http2_req_write(
     req->m_write_ctx_free = write_ctx_free;
     req->m_have_follow_data = have_follow_data;
 
-    if (req->m_state != net_http2_req_state_established
-        && req->m_state != net_http2_req_state_read_closed)
+    if (req->m_state == net_http2_req_state_established
+        || req->m_state == net_http2_req_state_read_closed)
     {
         return net_http2_req_begin_write(req);
     }

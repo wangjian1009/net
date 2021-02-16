@@ -133,7 +133,7 @@ int net_http2_endpoint_on_frame_schedule_next_send(
     nghttp2_session * session, const nghttp2_frame * frame, net_http2_endpoint_t endpoint)
 {
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
-    net_http2_stream_t stream;
+    net_http2_stream_t stream = NULL;
     
     switch (frame->hd.type) {
     case NGHTTP2_HEADERS:
@@ -569,6 +569,12 @@ int net_http2_endpoint_send_data_callback(
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
     net_http2_stream_t stream = source->ptr;
 
+    CPE_ERROR(
+        protocol->m_em, "http2: %s: %s: http2: %d: ==> xxxx write",
+        net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+        net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+        stream->m_stream_id);
+        
     uint32_t head_sz = 9;
     if (frame->data.padlen > 0) head_sz++;
 
@@ -619,7 +625,7 @@ int net_http2_endpoint_send_data_callback(
     }
 
     CPE_ERROR(protocol->m_em, "http2: send data 333");
-    return 0;
+    return NGHTTP2_NO_ERROR;
 }
 
 int net_http2_endpoint_http2_flush(net_http2_endpoint_t endpoint) {

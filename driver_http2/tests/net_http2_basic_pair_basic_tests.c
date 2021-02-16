@@ -3,6 +3,7 @@
 #include "test_net_endpoint.h"
 #include "net_http2_tests.h"
 #include "net_http2_testenv.h"
+#include "net_http2_testenv_receiver.h"
 
 static int setup(void **state) {
     net_http2_testenv_t env = net_http2_testenv_create();
@@ -112,7 +113,17 @@ static void net_http2_basic_pair_basic(void **state) {
         "bv");
 
     /*发送数据c->s */
+    net_http2_testenv_receiver_t req_receiver = net_http2_testenv_create_req_receiver(env, req);
+    net_http2_testenv_receiver_t processor_receiver
+        = net_http2_testenv_create_processor_receiver(env, processor);
+
+    assert_true(net_http2_req_append(req, "abcd", 4, 1) == 0);
+    test_net_driver_run(env->m_tdriver, 0);
     
+    CPE_ERROR(env->m_em, "xxx 3");
+    assert_int_equal(mem_buffer_size(&processor_receiver->m_buffer), 4);
+    assert_memory_equal(mem_buffer_make_continuous(&processor_receiver->m_buffer, 0), "abcd", 4);
+    CPE_ERROR(env->m_em, "xxx 4");
 }
 
 int net_http2_basic_pair_basic_tests() {
