@@ -37,7 +37,11 @@ struct net_http2_req {
     void * m_write_ctx;
     net_http2_req_on_write_fun_t m_on_write;
     void (*m_write_ctx_free)(void *);
+    uint8_t m_have_follow_data;
+    uint8_t m_is_write_started;
 };
+
+int net_http2_req_begin_write(net_http2_req_t req);
 
 void net_http2_req_set_stream(net_http2_req_t req, net_http2_stream_t stream);
 

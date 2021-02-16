@@ -334,12 +334,7 @@ int net_http2_stream_endpoint_http2_connect(net_http2_stream_endpoint_t stream) 
             stream->m_req, stream,
             net_http2_stream_endpoint_req_on_state_change,
             net_http2_stream_endpoint_req_on_recv,
-            NULL) != 0
-        || net_http2_req_set_writer(
-            stream->m_req, stream,
-            net_http2_stream_endpoint_req_on_write,
-            NULL) != 0
-        )
+            NULL) != 0)
     {
         CPE_ERROR(
             driver->m_em, "http2: %s: %s: http2 connect: setup req failed!",
