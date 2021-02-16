@@ -76,6 +76,7 @@ int net_http2_endpoint_on_frame_recv_callback(
         CPE_INFO(protocol->m_em, "%s", (const char *)mem_buffer_make_continuous(buffer, 0));
     }
 
+    net_http2_stream_t stream = NULL;
     switch(frame->hd.type) {
     case NGHTTP2_SETTINGS:
         if (frame->hd.flags & NGHTTP2_FLAG_ACK) {
@@ -83,20 +84,19 @@ int net_http2_endpoint_on_frame_recv_callback(
         }
         break;
     case NGHTTP2_HEADERS:
-        if (frame->hd.flags & NGHTTP2_FLAG_END_HEADERS) {
-            net_http2_stream_t stream = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id);
-            if (stream) {
-                net_http2_req_t req = net_http2_stream_req(stream);
-                if (req == NULL) {
-                    CPE_ERROR(
-                        protocol->m_em, "http2: %s: %s: http2: %d: <== recv head, stream no bind request",
-                        net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
-                        net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
-                        frame->hd.stream_id);
-                    return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
-                }
+        if ((stream = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id))) {
+            net_http2_req_t req = net_http2_stream_req(stream);
+            if (req == NULL) {
+                CPE_ERROR(
+                    protocol->m_em, "http2: %s: %s: http2: %d: <== recv head, stream no bind request",
+                    net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+                    net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+                    frame->hd.stream_id);
+                return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+            }
 
-                switch(stream->m_runing_mode) {
+            if (frame->hd.flags & NGHTTP2_FLAG_END_HEADERS) {
+                switch (stream->m_runing_mode) {
                 case net_http2_stream_runing_mode_cli:
                     net_http2_req_set_req_state(req, net_http2_req_state_established);
                     break;
@@ -109,6 +109,17 @@ int net_http2_endpoint_on_frame_recv_callback(
                     }
                     break;
                 }
+            }
+
+            if (frame->hd.flags & NGHTTP2_FLAG_END_STREAM) {
+                net_http2_stream_set_read_closed(stream, 1);
+            }
+        }
+        break;
+    case NGHTTP2_DATA:
+        if ((stream = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id))) {
+            if (frame->hd.flags & NGHTTP2_FLAG_END_STREAM) {
+                net_http2_stream_set_read_closed(stream, 1);
             }
         }
         break;
@@ -213,6 +224,24 @@ int net_http2_endpoint_on_frame_send_callback(
         CPE_INFO(protocol->m_em, "%s", (const char *)mem_buffer_make_continuous(buffer, 0));
     }
 
+    net_http2_stream_t stream = NULL;
+    switch (frame->hd.type) {
+    case NGHTTP2_HEADERS:
+        if ((stream = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id))) {
+            if (frame->hd.flags & NGHTTP2_FLAG_END_STREAM) {
+                net_http2_stream_set_write_closed(stream, 1);
+            }
+        }
+        break;
+    case NGHTTP2_DATA:
+        if ((stream = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id))) {
+            if (frame->hd.flags & NGHTTP2_FLAG_END_STREAM) {
+                net_http2_stream_set_write_closed(stream, 1);
+            }
+        }
+        break;
+    };
+    
     return net_http2_endpoint_on_frame_schedule_next_send(session, frame, endpoint);
 }
 

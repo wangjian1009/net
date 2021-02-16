@@ -49,8 +49,74 @@ uint8_t net_http2_stream_read_closed(net_http2_stream_t stream) {
     return stream->m_read_closed;
 }
 
+void net_http2_stream_set_read_closed(net_http2_stream_t stream, uint8_t read_closed) {
+    if (stream->m_read_closed == read_closed) return;
+
+    net_http2_endpoint_t endpoint = stream->m_endpoint;
+    net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
+
+    if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 2) {
+        CPE_INFO(
+            protocol->m_em, "http2: %s: %s: http2: %d: read-closed ==> %d",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+            stream->m_stream_id, read_closed);
+    }
+
+    stream->m_read_closed = read_closed;
+
+    if (stream->m_read_closed && stream->m_req) {
+        if (stream->m_req) {
+            switch (stream->m_req->m_state) {
+            case net_http2_req_state_established:
+                net_http2_req_set_req_state(stream->m_req, net_http2_req_state_read_closed);
+                break;
+            case net_http2_req_state_write_closed:
+                net_http2_req_set_req_state(stream->m_req, net_http2_req_state_closed);
+                break;
+            default:
+                net_http2_req_set_req_state(stream->m_req, net_http2_req_state_closed);
+                break;
+            }
+        }
+    }
+}
+
 uint8_t net_http2_stream_write_closed(net_http2_stream_t stream) {
     return stream->m_write_closed;
+}
+
+void net_http2_stream_set_write_closed(net_http2_stream_t stream, uint8_t write_closed) {
+    if (stream->m_write_closed == write_closed) return;
+
+    net_http2_endpoint_t endpoint = stream->m_endpoint;
+    net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
+
+    if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 2) {
+        CPE_INFO(
+            protocol->m_em, "http2: %s: %s: http2: %d: write-closed ==> %d",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+            stream->m_stream_id, write_closed);
+    }
+
+    stream->m_write_closed = write_closed;
+
+    if (stream->m_write_closed && stream->m_req) {
+        if (stream->m_req) {
+            switch (stream->m_req->m_state) {
+            case net_http2_req_state_established:
+                net_http2_req_set_req_state(stream->m_req, net_http2_req_state_write_closed);
+                break;
+            case net_http2_req_state_write_closed:
+                net_http2_req_set_req_state(stream->m_req, net_http2_req_state_closed);
+                break;
+            default:
+                net_http2_req_set_req_state(stream->m_req, net_http2_req_state_closed);
+                break;
+            }
+        }
+    }
 }
 
 net_http2_req_t net_http2_stream_req(net_http2_stream_t stream) {
