@@ -345,7 +345,7 @@ int net_http2_stream_endpoint_http2_connect(net_http2_stream_endpoint_t stream) 
         return -1;
     }
 
-    if (net_http2_req_start(stream->m_req, 1) != 0) {
+    if (net_http2_req_start_request(stream->m_req, 1) != 0) {
         CPE_ERROR(
             driver->m_em, "http2: %s: %s: http2 connect: start req failed!",
             net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), stream->m_base_endpoint),

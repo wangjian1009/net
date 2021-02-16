@@ -69,7 +69,7 @@ static void net_http2_basic_pair_basic(void **state) {
     assert_true(req);
 
     assert_true(net_http2_req_add_req_head(req, "a", "av") == 0);
-    assert_true(net_http2_req_start(req, 1) == 0);
+    assert_true(net_http2_req_start_request(req, 1) == 0);
 
     assert_string_equal(
         net_http2_req_state_str(net_http2_req_state(req)),
@@ -96,7 +96,7 @@ static void net_http2_basic_pair_basic(void **state) {
 
     /*发送响应头 */
     assert_true(net_http2_req_add_res_head(svr_req, "b", "bv") == 0);
-    assert_true(net_http2_req_start(svr_req, 1) == 0);
+    assert_true(net_http2_req_start_response(svr_req, 1) == 0);
 
     test_net_driver_run(env->m_tdriver, 0);
     

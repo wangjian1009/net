@@ -94,8 +94,20 @@ int net_http2_endpoint_on_frame_recv_callback(
                         net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
                         frame->hd.stream_id);
                     return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
-                } else if (net_http2_req_on_req_head_complete(req) != 0) {
-                    return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+                }
+
+                switch(stream->m_runing_mode) {
+                case net_http2_stream_runing_mode_cli:
+                    net_http2_req_set_req_state(req, net_http2_req_state_established);
+                    break;
+                case net_http2_stream_runing_mode_svr:
+                    net_http2_req_set_req_state(req, net_http2_req_state_head_received);
+                    if (endpoint->m_accept_fun) {
+                        if (endpoint->m_accept_fun(endpoint->m_accept_ctx, req) != 0) {
+                            return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+                        }
+                    }
+                    break;
                 }
             }
         }

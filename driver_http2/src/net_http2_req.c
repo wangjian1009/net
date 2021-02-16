@@ -7,8 +7,6 @@
 #include "net_http2_req_i.h"
 #include "net_http2_stream_i.h"
 
-void net_http2_req_set_req_state(net_http2_req_t req, net_http2_req_state_t state);
-
 net_http2_req_t
 net_http2_req_create(net_http2_endpoint_t endpoint) {
     net_http2_protocol_t protocol =
@@ -294,13 +292,13 @@ const char * net_http2_req_find_res_header(net_http2_req_t req, const char * nam
     return NULL;
 }
 
-int net_http2_req_start(net_http2_req_t req, uint8_t have_follow_data) {
+int net_http2_req_start_request(net_http2_req_t req, uint8_t have_follow_data) {
     net_http2_endpoint_t endpoint = req->m_endpoint;
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
 
     if (req->m_state != net_http2_req_state_init) {
         CPE_ERROR(
-            protocol->m_em, "http2: %s: %s: req %d: can`t start in req-state %s",
+            protocol->m_em, "http2: %s: %s: req %d: start-request: can`t start in req-state %s",
             net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
             net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
             req->m_id, net_http2_req_state_str(req->m_state));
@@ -318,7 +316,7 @@ int net_http2_req_start(net_http2_req_t req, uint8_t have_follow_data) {
             nghttp2_session_get_next_stream_id(endpoint->m_http2_session), net_http2_stream_runing_mode_cli);
     if (stream == NULL) {
         CPE_ERROR(
-            protocol->m_em, "http2: %s: %s: req %d: create stream failed",
+            protocol->m_em, "http2: %s: %s: req %d: start-request: create stream failed",
             net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
             net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
             req->m_id);
@@ -347,7 +345,7 @@ int net_http2_req_start(net_http2_req_t req, uint8_t have_follow_data) {
 
     if (net_http2_endpoint_http2_flush(endpoint) != 0) {
         CPE_ERROR(
-            protocol->m_em, "http2: %s: %s: http2: %d: req %d ==> start failed!",
+            protocol->m_em, "http2: %s: %s: http2: %d: req %d ==> start request failed!",
             net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
             net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
             stream->m_stream_id, req->m_id);
@@ -359,6 +357,66 @@ int net_http2_req_start(net_http2_req_t req, uint8_t have_follow_data) {
     net_http2_req_set_stream(req, stream);
 
     net_http2_req_set_req_state(req, net_http2_req_state_head_sended);
+
+    return 0;
+}
+
+int net_http2_req_start_response(net_http2_req_t req, uint8_t have_follow_data) {
+    net_http2_endpoint_t endpoint = req->m_endpoint;
+    net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
+
+    if (req->m_state != net_http2_req_state_head_received) {
+        CPE_ERROR(
+            protocol->m_em, "http2: %s: %s: req %d: start-response: can`t start in req-state %s",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+            req->m_id, net_http2_req_state_str(req->m_state));
+        return -1;
+    }
+
+    net_http2_stream_t stream = req->m_stream;
+    if (stream == NULL) {
+        CPE_ERROR(
+            protocol->m_em, "http2: %s: %s: req %d: start-response: no stream",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+            req->m_id);
+        return -1;
+    }
+
+    const nghttp2_data_provider * data_prd = NULL;
+
+    uint8_t flags = NGHTTP2_FLAG_NONE;
+    if (!have_follow_data) {
+        flags |= NGHTTP2_FLAG_END_STREAM;
+    }
+    
+    int rv = nghttp2_submit_headers(
+        endpoint->m_http2_session, flags, stream->m_stream_id, NULL,
+        req->m_res_headers, req->m_res_head_count, stream);
+    if (rv < 0) {
+        CPE_ERROR(
+            protocol->m_em, "http2: %s: %s: http2: %d: req %d: ==> submit response fail, %s!",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+            stream->m_stream_id, req->m_id, nghttp2_strerror(rv));
+        net_http2_stream_free(stream);
+        return -1;
+    }
+
+    if (net_http2_endpoint_http2_flush(endpoint) != 0) {
+        CPE_ERROR(
+            protocol->m_em, "http2: %s: %s: http2: %d: req %d ==> flush response failed!",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+            stream->m_stream_id, req->m_id);
+        net_http2_stream_free(stream);
+        return -1;
+    }
+
+    req->m_have_follow_data = have_follow_data;
+
+    net_http2_req_set_req_state(req, net_http2_req_state_established);
 
     return 0;
 }
@@ -602,7 +660,6 @@ uint8_t net_http2_req_is_writing(net_http2_req_t req) {
 }
 
 int net_http2_req_on_req_head_complete(net_http2_req_t req) {
-    net_http2_req_set_req_state(req, net_http2_req_state_established);
     return 0;
 }
 
@@ -618,7 +675,6 @@ void net_http2_req_set_stream(net_http2_req_t req, net_http2_stream_t stream) {
     req->m_stream = stream;
 
     if (req->m_stream) {
-        assert(req->m_stream->m_runing_mode == net_http2_stream_runing_mode_cli);
         assert(req->m_stream->m_req == NULL);
         req->m_stream->m_req = req;
     }
