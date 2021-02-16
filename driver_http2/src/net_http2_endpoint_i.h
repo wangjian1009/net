@@ -24,7 +24,6 @@ struct net_http2_endpoint {
     net_http2_stream_list_t m_streams;
     
     uint8_t m_in_processing;
-    net_timer_t m_delay_processor;
 };
 
 /*protocol*/

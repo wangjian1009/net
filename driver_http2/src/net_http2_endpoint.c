@@ -51,9 +51,7 @@ int net_http2_endpoint_init(net_endpoint_t base_endpoint) {
     TAILQ_INIT(&endpoint->m_streams);
 
     endpoint->m_in_processing = 0;
-    endpoint->m_delay_processor = NULL;
 
-    //endpoint->m_delay_processor = net_timer_auto_create(
     return 0;
 }
 
@@ -79,11 +77,6 @@ void net_http2_endpoint_fini(net_endpoint_t base_endpoint) {
     if (endpoint->m_http2_session) {
         nghttp2_session_del(endpoint->m_http2_session);
         endpoint->m_http2_session = NULL;
-    }
-
-    if (endpoint->m_delay_processor) {
-        net_timer_free(endpoint->m_delay_processor);
-        endpoint->m_delay_processor = NULL;
     }
 }
 

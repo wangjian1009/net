@@ -80,7 +80,9 @@ static void net_http2_basic_pair_basic(void **state) {
     net_http2_stream_t cli_stream = net_http2_req_stream(cli_req);
     assert_true(cli_stream);
 
-    net_http2_stream_t svr_stream = net_http2_endpoint_find_stream(svr_ep, net_http2_stream_id(cli_stream));
+    uint32_t stream_id = net_http2_stream_id(cli_stream);
+
+    net_http2_stream_t svr_stream = net_http2_endpoint_find_stream(svr_ep, stream_id);
     assert_true(svr_stream);
 
     net_http2_req_t svr_req = net_http2_stream_req(svr_stream);
@@ -138,6 +140,22 @@ static void net_http2_basic_pair_basic(void **state) {
         net_http2_req_state_str(net_http2_req_state_write_closed));
 
     /*关闭最后一端写 */
+    assert_true(net_http2_req_append(cli_req, "ef", 2, 0) == 0);
+    test_net_driver_run(env->m_tdriver, 0);
+    
+    assert_int_equal(mem_buffer_size(&svr_receiver->m_buffer), 6);
+    assert_memory_equal(mem_buffer_make_continuous(&svr_receiver->m_buffer, 0), "abcdef", 6);
+
+    assert_string_equal(
+        net_http2_req_state_str(net_http2_req_state(cli_req)),
+        net_http2_req_state_str(net_http2_req_state_closed));
+
+    assert_string_equal(
+        net_http2_req_state_str(net_http2_req_state(svr_req)),
+        net_http2_req_state_str(net_http2_req_state_closed));
+
+    assert_true(net_http2_endpoint_find_stream(svr_ep, stream_id) == NULL);
+    assert_true(net_http2_endpoint_find_stream(cli_ep, stream_id) == NULL);
 }
 
 int net_http2_basic_pair_basic_tests() {
