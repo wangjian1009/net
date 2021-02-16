@@ -31,14 +31,14 @@ const char * net_http2_processor_find_res_header(net_http2_processor_t processor
 typedef void (*net_http2_processor_on_state_change_fun_t)(
     void * ctx, net_http2_processor_t processor, net_http2_processor_state_t old_state);
 
-typedef void (*net_http2_processor_on_data_fun_t)(
+typedef void (*net_http2_processor_on_recv_fun_t)(
     void * ctx, net_http2_processor_t processor, void const * data, uint32_t data_len);
 
 void net_http2_processor_set_reader(
     net_http2_processor_t processor,
     void * ctx,
     net_http2_processor_on_state_change_fun_t on_state_change,
-    net_http2_processor_on_data_fun_t on_data,
+    net_http2_processor_on_recv_fun_t on_recv,
     void (*ctx_free)(void *));
 
 const char * net_http2_processor_state_str(net_http2_processor_state_t state);

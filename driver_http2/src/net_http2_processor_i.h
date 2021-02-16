@@ -29,10 +29,10 @@ struct net_http2_processor {
     nghttp2_nv * m_res_headers;
 
     /*processor*/
-    void * m_ctx;
+    void * m_read_ctx;
     net_http2_processor_on_state_change_fun_t m_on_state_change;
-    net_http2_processor_on_data_fun_t m_on_data;
-    void (*m_ctx_free)(void *);
+    net_http2_processor_on_recv_fun_t m_on_recv;
+    void (*m_read_ctx_free)(void *);
 };
 
 net_http2_processor_t net_http2_processor_create(net_http2_endpoint_t endpoint, uint32_t id);

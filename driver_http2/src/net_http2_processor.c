@@ -39,10 +39,10 @@ net_http2_processor_create(net_http2_endpoint_t endpoint, uint32_t id) {
     processor->m_res_head_capacity = 0;
     processor->m_res_headers = NULL;
 
-    processor->m_ctx = NULL;
+    processor->m_read_ctx = NULL;
     processor->m_on_state_change = NULL;
-    processor->m_on_data = NULL;
-    processor->m_ctx_free = NULL;
+    processor->m_on_recv = NULL;
+    processor->m_read_ctx_free = NULL;
     
     endpoint->m_processor_count++;
     TAILQ_INSERT_TAIL(&endpoint->m_processors, processor, m_next);
@@ -343,6 +343,26 @@ void net_http2_processor_set_state(net_http2_processor_t processor, net_http2_pr
     }
 
     processor->m_state = state;
+}
+
+void net_http2_processor_set_reader(
+    net_http2_processor_t processor,
+    void * read_ctx,
+    net_http2_processor_on_state_change_fun_t on_state_change,
+    net_http2_processor_on_recv_fun_t on_recv,
+    void (*read_ctx_free)(void *))
+{
+    net_http2_endpoint_t endpoint = processor->m_endpoint;
+    net_http2_protocol_t protocol = net_http2_protocol_cast(net_endpoint_protocol(endpoint->m_base_endpoint));
+
+    if (processor->m_read_ctx_free) {
+        processor->m_read_ctx_free(processor->m_read_ctx);
+    }
+    
+    processor->m_read_ctx = read_ctx;
+    processor->m_on_state_change = on_state_change;
+    processor->m_on_recv = on_recv;
+    processor->m_read_ctx_free = read_ctx_free;
 }
 
 const char * net_http2_processor_state_str(net_http2_processor_state_t state) {

@@ -7,6 +7,7 @@
 #include "net_address.h"
 #include "net_pair.h"
 #include "net_http2_testenv.h"
+#include "net_http2_testenv_receiver.h"
 #include "net_http2_protocol.h"
 #include "net_http2_stream_driver.h"
 
@@ -35,10 +36,16 @@ net_http2_testenv_t net_http2_testenv_create() {
             test_allocrator(), env->m_em);
     net_driver_set_debug(net_driver_from_data(env->m_stream_driver), 2);
     
+    TAILQ_INIT(&env->m_receivers);
+
     return env;
 }
 
 void net_http2_testenv_free(net_http2_testenv_t env) {
+    while(!TAILQ_EMPTY(&env->m_receivers)) {
+        net_http2_testenv_receiver_free(TAILQ_FIRST(&env->m_receivers));
+    }
+    
     net_schedule_free(env->m_schedule);
     test_error_monitor_free(env->m_tem);
     mem_free(test_allocrator(), env);
