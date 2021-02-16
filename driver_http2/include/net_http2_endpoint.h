@@ -26,7 +26,7 @@ int net_http2_endpoint_set_runing_mode(net_http2_endpoint_t endpoint, net_http2_
 
 net_endpoint_t net_http2_endpoint_base_endpoint(net_http2_endpoint_t endpoint);
 
-typedef int (*net_http2_endpoint_accept_fun_t)(void * ctx, net_http2_processor_t processor);
+typedef int (*net_http2_endpoint_accept_fun_t)(void * ctx, net_http2_req_t req);
 
 void net_http2_endpoint_set_acceptor(
     net_http2_endpoint_t endpoint,

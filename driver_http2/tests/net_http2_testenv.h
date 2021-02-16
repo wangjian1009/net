@@ -6,7 +6,6 @@
 #include "net_http2_endpoint.h"
 #include "net_http2_stream.h"
 #include "net_http2_req.h"
-#include "net_http2_processor.h"
 #include "net_http2_stream_endpoint.h"
 #include "test_net_driver.h"
 #include "test_net_endpoint.h"
@@ -45,9 +44,6 @@ net_http2_testenv_create_basic_acceptor(net_http2_testenv_t env, const char * ad
 
 net_http2_testenv_receiver_t
 net_http2_testenv_create_req_receiver(net_http2_testenv_t env, net_http2_req_t req);
-
-net_http2_testenv_receiver_t
-net_http2_testenv_create_processor_receiver(net_http2_testenv_t env, net_http2_processor_t processor);
 
 /*stream*/
 net_http2_stream_endpoint_t

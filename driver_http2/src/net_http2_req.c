@@ -84,8 +84,8 @@ void net_http2_req_free(net_http2_req_t req) {
             
     /*res*/
     for(i = 0; i < req->m_res_head_count; ++i) {
-        mem_free(protocol->m_alloc, req->m_res_headers[i].m_name);
-        mem_free(protocol->m_alloc, req->m_res_headers[i].m_value);
+        mem_free(protocol->m_alloc, req->m_res_headers[i].name);
+        mem_free(protocol->m_alloc, req->m_res_headers[i].value);
     }
     req->m_res_head_count = 0;
     
@@ -139,7 +139,9 @@ net_http2_req_state_t net_http2_req_state(net_http2_req_t req) {
     return req->m_state;
 }
 
-int net_http2_req_add_req_head(net_http2_req_t req, const char * attr_name, const char * attr_value) {
+int net_http2_req_add_req_head2(
+    net_http2_req_t req, const char * attr_name, uint32_t name_len, const char * attr_value, uint32_t value_len)
+{
     net_http2_endpoint_t endpoint = req->m_endpoint;
     net_http2_protocol_t protocol =
         net_http2_protocol_cast(net_endpoint_protocol(endpoint->m_base_endpoint));
@@ -166,7 +168,7 @@ int net_http2_req_add_req_head(net_http2_req_t req, const char * attr_name, cons
     }
     
     nghttp2_nv * nv = req->m_req_headers + req->m_req_head_count;
-    nv->namelen = strlen(attr_name);
+    nv->namelen = name_len;
     nv->name = (void*)cpe_str_mem_dup_len(protocol->m_alloc, attr_name, nv->namelen);
     if (nv->name == NULL) {
         CPE_ERROR(
@@ -176,7 +178,7 @@ int net_http2_req_add_req_head(net_http2_req_t req, const char * attr_name, cons
         return -1;
     }
 
-    nv->valuelen = strlen(attr_value);
+    nv->valuelen = value_len;
     nv->value = (void*)cpe_str_mem_dup_len(protocol->m_alloc, attr_value, nv->valuelen);
     if (nv->value == NULL) {
         CPE_ERROR(
@@ -193,6 +195,10 @@ int net_http2_req_add_req_head(net_http2_req_t req, const char * attr_name, cons
     return 0;
 }
 
+int net_http2_req_add_req_head(net_http2_req_t req, const char * attr_name, const char * attr_value) {
+    return net_http2_req_add_req_head2(req, attr_name, strlen(attr_name), attr_value, strlen(attr_value));
+}
+
 const char * net_http2_req_find_req_header(net_http2_req_t req, const char * name) {
     uint16_t i;
 
@@ -204,7 +210,7 @@ const char * net_http2_req_find_req_header(net_http2_req_t req, const char * nam
     return NULL;
 }
 
-int net_http2_req_add_res_head(
+int net_http2_req_add_res_head2(
     net_http2_req_t req,
     const char * attr_name, uint32_t name_len, const char * attr_value, uint32_t value_len)
 {
@@ -224,8 +230,8 @@ int net_http2_req_add_res_head(
 
     if (req->m_res_head_count >= req->m_res_head_capacity) {
         uint16_t new_capacity = req->m_res_head_capacity < 8 ? 8 : req->m_res_head_capacity * 2;
-        struct net_http2_req_pair * new_headers =
-            mem_alloc(protocol->m_alloc, sizeof(struct net_http2_req_pair) * new_capacity);
+        nghttp2_nv * new_headers =
+            mem_alloc(protocol->m_alloc, sizeof(nghttp2_nv) * new_capacity);
         if (new_headers == NULL) {
             CPE_ERROR(
                 protocol->m_em, "http2: %s: %s: http2: %d: req: add header: alloc nv faild, capacity=%d!",
@@ -236,7 +242,7 @@ int net_http2_req_add_res_head(
         }
 
         if (req->m_res_headers) {
-            memcpy(new_headers, req->m_res_headers, sizeof(struct net_http2_req_pair) * req->m_res_head_count);
+            memcpy(new_headers, req->m_res_headers, sizeof(nghttp2_nv) * req->m_res_head_count);
             mem_free(protocol->m_alloc, req->m_res_headers);
         }
 
@@ -244,9 +250,11 @@ int net_http2_req_add_res_head(
         req->m_res_head_capacity = new_capacity;
     }
     
-    struct net_http2_req_pair * nv = req->m_res_headers + req->m_res_head_count;
-    nv->m_name = (void*)cpe_str_mem_dup_len(protocol->m_alloc, attr_name, name_len);
-    if (nv->m_name == NULL) {
+    nghttp2_nv * nv = req->m_res_headers + req->m_res_head_count;
+
+    nv->namelen = name_len;
+    nv->name = (void*)cpe_str_mem_dup_len(protocol->m_alloc, attr_name, nv->namelen);
+    if (nv->name == NULL) {
         CPE_ERROR(
             protocol->m_em, "http2: %s: %s: http2: %d: req %d: add res header: dup name %s faild!",
             net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
@@ -255,14 +263,15 @@ int net_http2_req_add_res_head(
         return -1;
     }
 
-    nv->m_value = cpe_str_mem_dup_len(protocol->m_alloc, attr_value, value_len);
-    if (nv->m_value == NULL) {
+    nv->valuelen = value_len;
+    nv->value = (void*)cpe_str_mem_dup_len(protocol->m_alloc, attr_value, nv->valuelen);
+    if (nv->value == NULL) {
         CPE_ERROR(
             protocol->m_em, "http2: %s: %s: http2: %d: req %d: add res header: dup value %s faild!",
             net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
             net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
             stream->m_stream_id, req->m_id, attr_value);
-        mem_free(protocol->m_alloc, nv->m_name);
+        mem_free(protocol->m_alloc, nv->name);
         return -1;
     }
 
@@ -270,12 +279,16 @@ int net_http2_req_add_res_head(
     return 0;
 }
 
+int net_http2_req_add_res_head(net_http2_req_t req, const char * attr_name, const char * attr_value) {
+    return net_http2_req_add_res_head2(req, attr_name, strlen(attr_name), attr_value, strlen(attr_value));
+}
+
 const char * net_http2_req_find_res_header(net_http2_req_t req, const char * name) {
     uint16_t i;
 
     for(i = 0; i < req->m_res_head_count; i++) {
-        struct net_http2_req_pair * header = req->m_res_headers + i;
-        if (strcmp(header->m_name, name) == 0) return header->m_value;
+        nghttp2_nv * header = req->m_res_headers + i;
+        if (strcmp((const char *)header->name, name) == 0) return (const char *)header->value;
     }
 
     return NULL;
@@ -523,8 +536,7 @@ int net_http2_req_write(
 
     switch(req->m_state) {
     case net_http2_req_state_write_closed:
-    case net_http2_req_state_error:
-    case net_http2_req_state_done:
+    case net_http2_req_state_closed:
         CPE_ERROR(
             protocol->m_em, "http2: %s: %s: http2: %d: req %d: can`t write in req-state %s",
             net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
@@ -598,8 +610,8 @@ void net_http2_req_set_stream(net_http2_req_t req, net_http2_stream_t stream) {
     if (req->m_stream == stream) return;
 
     if (req->m_stream) {
-        assert(req->m_stream->m_cli.m_req == req);
-        req->m_stream->m_cli.m_req = NULL;
+        assert(req->m_stream->m_req == req);
+        req->m_stream->m_req = NULL;
         req->m_stream = NULL;
     }
 
@@ -607,8 +619,8 @@ void net_http2_req_set_stream(net_http2_req_t req, net_http2_stream_t stream) {
 
     if (req->m_stream) {
         assert(req->m_stream->m_runing_mode == net_http2_stream_runing_mode_cli);
-        assert(req->m_stream->m_cli.m_req == NULL);
-        req->m_stream->m_cli.m_req = req;
+        assert(req->m_stream->m_req == NULL);
+        req->m_stream->m_req = req;
     }
 }
 
@@ -658,15 +670,15 @@ const char * net_http2_req_state_str(net_http2_req_state_t req_state) {
         return "connecting";
     case net_http2_req_state_head_sended:
         return "head-sended";
+    case net_http2_req_state_head_received:
+        return "head-receive";
     case net_http2_req_state_established:
         return "established";
     case net_http2_req_state_read_closed:
         return "read-closed";
     case net_http2_req_state_write_closed:
         return "write-closed";
-    case net_http2_req_state_error:
-        return "error";
-    case net_http2_req_state_done:
-        return "done";
+    case net_http2_req_state_closed:
+        return "closed";
     }
 }

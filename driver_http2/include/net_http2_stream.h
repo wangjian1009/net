@@ -18,8 +18,6 @@ uint8_t net_http2_stream_write_closed(net_http2_stream_t stream);
 
 net_http2_req_t net_http2_stream_req(net_http2_stream_t stream);
 
-net_http2_processor_t net_http2_stream_processor(net_http2_stream_t stream);
-
 const char * net_http2_stream_runing_mode_str(net_http2_stream_runing_mode_t runing_mode);
 
 NET_END_DECL

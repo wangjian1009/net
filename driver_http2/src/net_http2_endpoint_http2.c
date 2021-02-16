@@ -7,7 +7,6 @@
 #include "net_acceptor.h"
 #include "net_http2_endpoint_i.h"
 #include "net_http2_stream_i.h"
-#include "net_http2_processor_i.h"
 #include "net_http2_req_i.h"
 #include "net_http2_utils.h"
 
@@ -87,37 +86,16 @@ int net_http2_endpoint_on_frame_recv_callback(
         if (frame->hd.flags & NGHTTP2_FLAG_END_HEADERS) {
             net_http2_stream_t stream = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id);
             if (stream) {
-                switch(stream->m_runing_mode) {
-                case net_http2_stream_runing_mode_cli: {
-                    net_http2_req_t req = net_http2_stream_req(stream);
-                    if (req == NULL) {
-                        CPE_ERROR(
-                            protocol->m_em, "http2: %s: %s: http2: %d: <== recv head, stream no bind request",
-                            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
-                            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
-                            frame->hd.stream_id);
-                        return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
-                    }
-                    else if (net_http2_req_on_req_head_complete(req) != 0) {
-                        return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
-                    }
-                    break;
-                }
-                case net_http2_stream_runing_mode_svr: {
-                    net_http2_processor_t processor = net_http2_stream_processor(stream);
-                    if (processor == NULL) {
-                        CPE_ERROR(
-                            protocol->m_em, "http2: %s: %s: http2: %d: <== recv head, stream no bind processor",
-                            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
-                            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
-                            frame->hd.stream_id);
-                        return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
-                    }
-                    else if (net_http2_processor_on_head_complete(processor) != 0) {
-                        return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
-                    }
-                    break;
-                }
+                net_http2_req_t req = net_http2_stream_req(stream);
+                if (req == NULL) {
+                    CPE_ERROR(
+                        protocol->m_em, "http2: %s: %s: http2: %d: <== recv head, stream no bind request",
+                        net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+                        net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+                        frame->hd.stream_id);
+                    return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+                } else if (net_http2_req_on_req_head_complete(req) != 0) {
+                    return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
                 }
             }
         }
@@ -275,17 +253,15 @@ int net_http2_endpoint_on_data_chunk_recv_callback(
         return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
     }
 
-    switch(stream->m_runing_mode) {
-    case net_http2_stream_runing_mode_cli: {
-        net_http2_req_t req = net_http2_stream_req(stream);
-        if (req == NULL) {
-            CPE_ERROR(
-                protocol->m_em, "http2: %s: %s: http2: %d: <== recv chunk, stream no bind request",
-                net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
-                net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
-                stream_id);
-            return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
-        }
+    net_http2_req_t req = net_http2_stream_req(stream);
+    if (req == NULL) {
+        CPE_ERROR(
+            protocol->m_em, "http2: %s: %s: http2: %d: <== recv chunk, stream no bind request",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+            stream_id);
+        return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+    }
 
     /* if (net_http2_stream_on_input(stream, data, len) != 0) { */
     /*     CPE_ERROR( */
@@ -295,23 +271,6 @@ int net_http2_endpoint_on_data_chunk_recv_callback(
     /*         stream_id); */
     /*     return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE; */
     /* } */
-        
-        break;
-    }
-    case net_http2_stream_runing_mode_svr: {
-        net_http2_processor_t processor = net_http2_stream_processor(stream);
-        if (processor == NULL) {
-            CPE_ERROR(
-                protocol->m_em, "http2: %s: %s: http2: %d: <== recv chunk, stream no bind processor",
-                net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
-                net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
-                stream_id);
-            return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
-        }
-
-        break;
-    }
-    }
 
     return NGHTTP2_NO_ERROR;
 }
@@ -432,18 +391,18 @@ int net_http2_endpoint_on_header_callback(
 
     switch(frame->headers.cat) {
     case NGHTTP2_HCAT_REQUEST: {
-        net_http2_processor_t processor = net_http2_stream_processor(stream);
-        if (processor == NULL) {
+        net_http2_req_t req = net_http2_stream_req(stream);
+        if (req == NULL) {
             CPE_ERROR(
-                protocol->m_em, "http2: %s: %s: http2: %d: <== receive request header no processor fail",
+                protocol->m_em, "http2: %s: %s: http2: %d: <== receive request header no req fail",
                 net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
                 net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
                 frame->hd.stream_id);
             return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
         }
 
-        if (net_http2_processor_add_req_head(
-                processor, (const char *)name, namelen, (const char *)value, valuelen) != 0)
+        if (net_http2_req_add_req_head2(
+                req, (const char *)name, namelen, (const char *)value, valuelen) != 0)
         {
             CPE_ERROR(
                 protocol->m_em, "http2: %s: %s: http2: %d: <== receive request header add head fail",
@@ -466,7 +425,7 @@ int net_http2_endpoint_on_header_callback(
             return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
         }
 
-        if (net_http2_req_add_res_head(req, (const char *)name, namelen, (const char *)value, valuelen) != 0) {
+        if (net_http2_req_add_res_head2(req, (const char *)name, namelen, (const char *)value, valuelen) != 0) {
             return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
         }
         break;
@@ -514,10 +473,10 @@ int net_http2_endpoint_on_begin_headers_callback(nghttp2_session *session, const
                 return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
             }
 
-            net_http2_processor_t processor = net_http2_processor_create(endpoint, frame->hd.stream_id);
-            if (processor == NULL) {
+            net_http2_req_t req = net_http2_req_create(endpoint);
+            if (req == NULL) {
                 CPE_ERROR(
-                    protocol->m_em, "http2: %s: %s: http2: %d: <== receive request header create processor fail",
+                    protocol->m_em, "http2: %s: %s: http2: %d: <== receive request header create req fail",
                     net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
                     net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
                     frame->hd.stream_id);
@@ -525,7 +484,7 @@ int net_http2_endpoint_on_begin_headers_callback(nghttp2_session *session, const
                 return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
             }
 
-            net_http2_processor_set_stream(processor, stream);
+            net_http2_req_set_stream(req, stream);
 
             int rv = nghttp2_session_set_stream_user_data(endpoint->m_http2_session, frame->hd.stream_id, stream);
             if (rv != NGHTTP2_NO_ERROR) {
@@ -534,7 +493,7 @@ int net_http2_endpoint_on_begin_headers_callback(nghttp2_session *session, const
                     net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
                     net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
                     frame->hd.stream_id, net_http2_error_code_str(rv));
-                net_http2_processor_free(processor);
+                net_http2_req_free(req);
                 net_http2_stream_free(stream);
                 return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
             }

@@ -65,15 +65,3 @@ net_http2_testenv_create_req_receiver(net_http2_testenv_t env, net_http2_req_t r
         net_http2_req_set_reader(req, receiver, NULL, net_http2_testenv_req_on_recv, NULL) == 0);
     return receiver;
 }
-
-static void net_http2_testenv_processor_on_recv(void * ctx, net_http2_processor_t processor, void const * data, uint32_t data_len) {
-    net_http2_testenv_receiver_t receiver = ctx;
-    mem_buffer_append(&receiver->m_buffer, data, data_len);
-}
-
-net_http2_testenv_receiver_t
-net_http2_testenv_create_processor_receiver(net_http2_testenv_t env, net_http2_processor_t processor) {
-    net_http2_testenv_receiver_t receiver = net_http2_testenv_receiver_create(env);
-    net_http2_processor_set_reader(processor, receiver, NULL, net_http2_testenv_processor_on_recv, NULL);
-    return receiver;
-}

@@ -5,11 +5,6 @@
 
 NET_BEGIN_DECL
 
-struct net_http2_req_pair {
-    char * m_name;
-    char * m_value;
-};
-
 struct net_http2_req {
     net_http2_endpoint_t m_endpoint;
     TAILQ_ENTRY(net_http2_req) m_next_for_endpoint;
@@ -25,7 +20,7 @@ struct net_http2_req {
     /*res*/
     uint16_t m_res_head_count;
     uint16_t m_res_head_capacity;
-    struct net_http2_req_pair * m_res_headers;
+    nghttp2_nv * m_res_headers;
 
     /*read callback*/
     void * m_read_ctx;
@@ -46,7 +41,11 @@ int net_http2_req_begin_write(net_http2_req_t req);
 
 void net_http2_req_set_stream(net_http2_req_t req, net_http2_stream_t stream);
 
-int net_http2_req_add_res_head(
+int net_http2_req_add_req_head2(
+    net_http2_req_t req,
+    const char * attr_name, uint32_t name_len, const char * attr_value, uint32_t value_len);
+    
+int net_http2_req_add_res_head2(
     net_http2_req_t req,
     const char * attr_name, uint32_t name_len, const char * attr_value, uint32_t value_len);
 

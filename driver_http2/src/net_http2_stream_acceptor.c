@@ -9,9 +9,9 @@
 #include "net_http2_stream_endpoint_i.h"
 #include "net_http2_stream_using_i.h"
 #include "net_http2_endpoint.h"
-#include "net_http2_processor.h"
+#include "net_http2_req.h"
 
-int net_http2_stream_acceptor_on_new_stream(void * ctx, net_http2_processor_t processor);
+int net_http2_stream_acceptor_on_new_stream(void * ctx, net_http2_req_t req);
 
 int net_http2_stream_acceptor_on_new_endpoint(void * ctx, net_endpoint_t base_http_endpoint) {
     net_acceptor_t base_acceptor = ctx;
@@ -75,14 +75,14 @@ void net_http2_stream_acceptor_fini(net_acceptor_t base_acceptor) {
     }
 }
 
-int net_http2_stream_acceptor_on_new_stream(void * ctx, net_http2_processor_t processor) {
+int net_http2_stream_acceptor_on_new_stream(void * ctx, net_http2_req_t req) {
     net_http2_stream_acceptor_t acceptor = ctx;
     net_acceptor_t base_acceptor = net_acceptor_from_data(acceptor);
     net_http2_stream_driver_t driver = net_driver_data(net_acceptor_driver(base_acceptor));
 
     CPE_ERROR(driver->m_em, "xxxxxx: on new stream");
 
-    net_http2_endpoint_t http2_endpoint = net_http2_processor_endpoint(processor);
+    net_http2_endpoint_t http2_endpoint = net_http2_req_endpoint(req);
     net_endpoint_t base_http2_endpoint = net_http2_endpoint_base_endpoint(http2_endpoint);
 
     net_endpoint_t base_stream =

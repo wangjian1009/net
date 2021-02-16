@@ -83,26 +83,26 @@ static void net_http2_basic_pair_basic(void **state) {
     net_http2_stream_t svr_stream = net_http2_endpoint_find_stream(svr_ep, net_http2_stream_id(cli_stream));
     assert_true(svr_stream);
 
-    net_http2_processor_t processor = net_http2_stream_processor(svr_stream);
-    assert_true(processor);
+    net_http2_req_t svr_req = net_http2_stream_req(svr_stream);
+    assert_true(svr_req);
 
     assert_string_equal(
-        net_http2_processor_state_str(net_http2_processor_state(processor)),
-        net_http2_processor_state_str(net_http2_processor_state_head_received));
+        net_http2_req_state_str(net_http2_req_state(svr_req)),
+        net_http2_req_state_str(net_http2_req_state_head_received));
 
     assert_string_equal(
-        net_http2_processor_find_req_header(processor, "a"),
+        net_http2_req_find_req_header(svr_req, "a"),
         "av");
 
     /*发送响应头 */
-    assert_true(net_http2_processor_add_res_head(processor, "b", "bv") == 0);
-    assert_true(net_http2_processor_start(processor, NULL, 0, 1) == 0);
+    assert_true(net_http2_req_add_res_head(svr_req, "b", "bv") == 0);
+    assert_true(net_http2_req_start(svr_req, 1) == 0);
 
     test_net_driver_run(env->m_tdriver, 0);
     
     assert_string_equal(
-        net_http2_processor_state_str(net_http2_processor_state(processor)),
-        net_http2_processor_state_str(net_http2_processor_state_established));
+        net_http2_req_state_str(net_http2_req_state(svr_req)),
+        net_http2_req_state_str(net_http2_req_state_established));
     
     assert_string_equal(
         net_http2_req_state_str(net_http2_req_state(req)),
@@ -115,7 +115,7 @@ static void net_http2_basic_pair_basic(void **state) {
     /*发送数据c->s */
     net_http2_testenv_receiver_t req_receiver = net_http2_testenv_create_req_receiver(env, req);
     net_http2_testenv_receiver_t processor_receiver
-        = net_http2_testenv_create_processor_receiver(env, processor);
+        = net_http2_testenv_create_req_receiver(env, svr_req);
 
     assert_true(net_http2_req_append(req, "abcd", 4, 1) == 0);
     test_net_driver_run(env->m_tdriver, 0);
