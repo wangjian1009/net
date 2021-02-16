@@ -304,8 +304,9 @@ void net_http2_stream_endpoint_set_using(net_http2_stream_endpoint_t stream, net
 void net_http2_stream_endpoint_req_on_write(void * ctx, net_http2_req_t req) {
 }
 
-void net_http2_stream_endpoint_req_on_recv(void * ctx, net_http2_req_t req, void const * data, uint32_t data_len) {
+int net_http2_stream_endpoint_req_on_recv(void * ctx, net_http2_req_t req, void const * data, uint32_t data_len) {
     net_http2_stream_endpoint_t stream = ctx;
+    return 0;
 }
 
 void net_http2_stream_endpoint_req_on_state_change(void * ctx, net_http2_req_t req, net_http2_req_state_t old_state) {

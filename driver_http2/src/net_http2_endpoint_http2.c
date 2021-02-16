@@ -275,14 +275,16 @@ int net_http2_endpoint_on_data_chunk_recv_callback(
         return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
     }
 
-    /* if (net_http2_stream_on_input(stream, data, len) != 0) { */
-    /*     CPE_ERROR( */
-    /*         protocol->m_em, "http2: %s: %s: http2: %d: recv chunk: input failed", */
-    /*         net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint), */
-    /*         net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode), */
-    /*         stream_id); */
-    /*     return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE; */
-    /* } */
+    if (req->m_on_recv) {
+        if (req->m_on_recv(req->m_read_ctx, req, data, (uint32_t)len) != 0) {
+            CPE_ERROR(
+                protocol->m_em, "http2: %s: %s: http2: %d: req %d: <== recv trun: input fail, len=%d",
+                net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+                net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+                stream_id, req->m_id, (int)len);
+            return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+        }
+    }
 
     return NGHTTP2_NO_ERROR;
 }

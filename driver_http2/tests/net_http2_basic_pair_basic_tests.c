@@ -120,7 +120,6 @@ static void net_http2_basic_pair_basic(void **state) {
     assert_true(net_http2_req_append(req, "abcd", 4, 1) == 0);
     test_net_driver_run(env->m_tdriver, 0);
     
-    CPE_ERROR(env->m_em, "xxx 3");
     assert_int_equal(mem_buffer_size(&processor_receiver->m_buffer), 4);
     assert_memory_equal(mem_buffer_make_continuous(&processor_receiver->m_buffer, 0), "abcd", 4);
     CPE_ERROR(env->m_em, "xxx 4");

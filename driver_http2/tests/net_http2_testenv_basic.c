@@ -53,9 +53,10 @@ net_http2_testenv_create_basic_acceptor(net_http2_testenv_t env, const char * st
     return acceptor;
 }
 
-static void net_http2_testenv_req_on_recv(void * ctx, net_http2_req_t req, void const * data, uint32_t data_len) {
+static int net_http2_testenv_req_on_recv(void * ctx, net_http2_req_t req, void const * data, uint32_t data_len) {
     net_http2_testenv_receiver_t receiver = ctx;
     mem_buffer_append(&receiver->m_buffer, data, data_len);
+    return 0;
 }
 
 net_http2_testenv_receiver_t
