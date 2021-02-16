@@ -39,7 +39,7 @@ int net_http2_req_start(net_http2_req_t http_req);
 int net_http2_req_append(net_http2_req_t http_req, void const * data, uint32_t data_len, uint8_t have_follow_data);
 
 /*请求处理 */
-typedef uint8_t (*net_http2_req_on_write_fun_t)(void * ctx, net_http2_req_t req);
+typedef uint8_t (*net_http2_req_on_write_fun_t)(void * ctx, net_http2_req_t req, void * output, uint32_t * output_len);
 
 uint8_t net_http2_req_is_writing(net_http2_req_t http_req);
 

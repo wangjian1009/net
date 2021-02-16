@@ -342,11 +342,52 @@ int net_http2_req_start(net_http2_req_t req) {
     return 0;
 }
 
+int net_http2_req_append(net_http2_req_t http_req, void const * data, uint32_t data_len, uint8_t have_follow_data) {
+    return 0;
+}
+
 ssize_t net_http2_req_do_write(
     nghttp2_session *session, int32_t stream_id, uint8_t *buf, size_t length,
     uint32_t *data_flags, nghttp2_data_source *source, void *user_data)
 {
-    return 0;
+    net_http2_req_t req = user_data;
+    net_http2_endpoint_t endpoint = req->m_endpoint;
+    net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
+    net_http2_stream_t stream = req->m_stream;
+
+    assert(stream);
+    assert(stream->m_stream_id == stream_id);
+
+    if (req->m_on_write == NULL) {
+        *data_flags |= NGHTTP2_DATA_FLAG_EOF;
+        return 0;
+    }
+
+    //*data_flags |= NGHTTP2_DATA_FLAG_NO_COPY;
+    
+    uint32_t read_len = length;
+    uint8_t have_continue_data = req->m_on_write(req->m_write_ctx, req, buf, &read_len);
+    
+    if (net_endpoint_driver_debug(endpoint->m_base_endpoint) >= 3) {
+        CPE_INFO(
+            protocol->m_em, "http2: %s: %s: http2: %d: write %d data, eof=%s",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+            stream_id, read_len, have_continue_data ? "true" : "false");
+    }
+
+    if (!have_continue_data) {
+        *data_flags |= NGHTTP2_DATA_FLAG_EOF;
+        if (req->m_write_ctx_free) {
+            req->m_write_ctx_free(req->m_write_ctx);
+        }
+        req->m_write_ctx = NULL;
+        req->m_write_ctx_free = NULL;
+        req->m_on_write = NULL;
+        req->m_is_write_started = 0;
+    }
+    
+    return (ssize_t)read_len;
 }
 
 int net_http2_req_begin_write(net_http2_req_t req) {
