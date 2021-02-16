@@ -28,9 +28,6 @@ net_http2_stream_create(
 
 void net_http2_stream_free(net_http2_stream_t stream);
 
-int net_http2_stream_send(
-    net_http2_stream_t stream, void const * data, uint32_t data_size, uint8_t have_follow_data);
-
 NET_END_DECL
 
 #endif

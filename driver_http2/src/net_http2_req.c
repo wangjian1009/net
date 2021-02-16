@@ -45,6 +45,8 @@ net_http2_req_create(net_http2_endpoint_t endpoint) {
     req->m_write_ctx_free = NULL;
     req->m_on_write = NULL;
     req->m_is_write_started = 0;
+    req->m_have_follow_data = 0;
+    mem_buffer_init(&req->m_write_data_buffer, protocol->m_alloc);
 
     endpoint->m_req_count++;
     TAILQ_INSERT_TAIL(&endpoint->m_reqs, req, m_next_for_endpoint);
@@ -98,6 +100,8 @@ void net_http2_req_free(net_http2_req_t req) {
         net_http2_req_set_stream(req, NULL);
         assert(req->m_stream == NULL);
     }
+
+    mem_buffer_clear(&req->m_write_data_buffer);
 
     assert(http_ep->m_req_count > 0);
     http_ep->m_req_count--;
@@ -277,7 +281,7 @@ const char * net_http2_req_find_res_header(net_http2_req_t req, const char * nam
     return NULL;
 }
 
-int net_http2_req_start(net_http2_req_t req) {
+int net_http2_req_start(net_http2_req_t req, uint8_t have_follow_data) {
     net_http2_endpoint_t endpoint = req->m_endpoint;
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
 
@@ -311,6 +315,9 @@ int net_http2_req_start(net_http2_req_t req) {
     const nghttp2_priority_spec * pri_spec = NULL;
 
     uint8_t flags = NGHTTP2_FLAG_NONE;
+    if (!have_follow_data) {
+        flags |= NGHTTP2_FLAG_END_STREAM;
+    }
     
     int rv = nghttp2_submit_headers(
         endpoint->m_http2_session, flags, -1, pri_spec,
@@ -334,7 +341,8 @@ int net_http2_req_start(net_http2_req_t req) {
         net_http2_stream_free(stream);
         return -1;
     }
-    
+
+    req->m_have_follow_data = have_follow_data;
     net_http2_req_set_stream(req, stream);
 
     net_http2_req_set_req_state(req, net_http2_req_state_head_sended);
@@ -342,8 +350,46 @@ int net_http2_req_start(net_http2_req_t req) {
     return 0;
 }
 
-int net_http2_req_append(net_http2_req_t http_req, void const * data, uint32_t data_len, uint8_t have_follow_data) {
+uint8_t net_http2_req_on_write_from_buf(void * ctx, net_http2_req_t req, void * output, uint32_t * output_len) {
     return 0;
+}
+
+int net_http2_req_append(net_http2_req_t req, void const * data, uint32_t data_len, uint8_t have_follow_data) {
+    net_http2_endpoint_t endpoint = req->m_endpoint;
+    net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
+    net_http2_stream_t stream = req->m_stream;
+
+    if (!req->m_have_follow_data) {
+        CPE_ERROR(
+            protocol->m_em, "http2: %s: %s: req %d: append: no follow data, can`t append!",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+            req->m_id);
+        return -1;
+    }
+    
+    if (req->m_on_write != NULL
+        && req->m_on_write != net_http2_req_on_write_from_buf) {
+        CPE_ERROR(
+            protocol->m_em, "http2: %s: %s: req %d: append: already have writer!",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+            req->m_id);
+        return -1;
+    }
+
+    if (mem_buffer_append(&req->m_write_data_buffer, data, data_len) < 0) {
+        CPE_ERROR(
+            protocol->m_em, "http2: %s: %s: req %d: append: append data to buf fail!",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+            req->m_id);
+        return -1;
+    }
+
+    return req->m_on_write == NULL
+        ? net_http2_req_write(req, req, net_http2_req_on_write_from_buf, NULL, have_follow_data)
+        : 0;
 }
 
 ssize_t net_http2_req_do_write(
@@ -419,7 +465,7 @@ int net_http2_req_begin_write(net_http2_req_t req) {
 
     if (net_http2_endpoint_http2_flush(endpoint) != 0) {
         CPE_ERROR(
-            protocol->m_em, "http2: %s: %s: req %d: ==> req %d start failed!",
+            protocol->m_em, "http2: %s: %s: http2: %d: req %d: ==> flush failed!",
             net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
             net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
             stream->m_stream_id, req->m_id);
@@ -438,21 +484,30 @@ int net_http2_req_write(
     net_http2_protocol_t protocol = net_http2_protocol_cast(net_endpoint_protocol(endpoint->m_base_endpoint));
     net_http2_stream_t stream = req->m_stream;
 
-    if (req->m_on_write != NULL) {
+    if (stream == NULL) {
         CPE_ERROR(
-            protocol->m_em, "http2: %s: %s: req %d: set writer: already have writer!",
+            protocol->m_em, "http2: %s: %s: req %d: write: no stream",
             net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
             net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
             req->m_id);
         return -1;
     }
-
-    if (stream == NULL) {
+    
+    if (!req->m_have_follow_data) {
         CPE_ERROR(
-            protocol->m_em, "http2: %s: %s: req %d: send data no stream",
+            protocol->m_em, "http2: %s: %s: http2: %d: req %d: write: no follow data, can`t append!",
             net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
             net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
-            req->m_id);
+            stream->m_stream_id, req->m_id);
+        return -1;
+    }
+    
+    if (req->m_on_write != NULL) {
+        CPE_ERROR(
+            protocol->m_em, "http2: %s: %s: http2: %d: req %d: write: already have writer!",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(endpoint->m_runing_mode),
+            stream->m_stream_id, req->m_id);
         return -1;
     }
 

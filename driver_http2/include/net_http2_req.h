@@ -35,7 +35,7 @@ net_http2_req_state_t net_http2_req_state(net_http2_req_t req);
 int net_http2_req_add_req_head(net_http2_req_t http_req, const char * attr_name, const char * attr_value);
 const char * net_http2_req_find_req_header(net_http2_req_t req, const char * name);
 
-int net_http2_req_start(net_http2_req_t http_req);
+int net_http2_req_start(net_http2_req_t http_req, uint8_t have_follow_data);
 int net_http2_req_append(net_http2_req_t http_req, void const * data, uint32_t data_len, uint8_t have_follow_data);
 
 /*请求处理 */

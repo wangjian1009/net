@@ -39,6 +39,7 @@ struct net_http2_req {
     void (*m_write_ctx_free)(void *);
     uint8_t m_have_follow_data;
     uint8_t m_is_write_started;
+    struct mem_buffer m_write_data_buffer;
 };
 
 int net_http2_req_begin_write(net_http2_req_t req);
