@@ -6,9 +6,10 @@
 
 NET_BEGIN_DECL
 
-struct net_http_manager {
+struct net_smux_manager {
     mem_allocrator_t m_alloc;
     error_monitor_t m_em;
+    net_schedule_t m_schedule;
 };
 
 mem_buffer_t net_http_protocol_tmp_buffer(net_smux_manager_t manager);

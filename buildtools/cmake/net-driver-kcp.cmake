@@ -9,7 +9,8 @@ set_property(TARGET net_driver_kcp PROPERTY INCLUDE_DIRECTORIES
   ${cpe_pal_base}/include
   ${cpe_utils_base}/include
   ${net_core_base}/include
+  ${net_protocol_smux_base}/include
   ${net_driver_kcp_base}/include
   )
 
-target_link_libraries(net_driver_kcp INTERFACE net_core kcp)
+target_link_libraries(net_driver_kcp INTERFACE net_core net_protocol_smux kcp)
