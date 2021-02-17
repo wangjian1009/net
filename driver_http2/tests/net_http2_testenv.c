@@ -24,7 +24,6 @@ net_http2_testenv_t net_http2_testenv_create() {
     env->m_protocol =
         net_http2_protocol_create(env->m_schedule, addition_name, test_allocrator(), env->m_em);
     net_protocol_set_debug(net_protocol_from_data(env->m_protocol), 2);
-    net_http2_protocol_set_no_http_messaging(env->m_protocol, 1);
 
     /*stream*/
     env->m_stream_test_protocol = test_net_protocol_create(env->m_schedule, "test-protocol");

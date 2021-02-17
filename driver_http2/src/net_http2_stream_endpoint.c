@@ -6,12 +6,15 @@
 #include "net_address.h"
 #include "net_http2_endpoint.h"
 #include "net_http2_req.h"
+#include "net_http2_stream.h"
 #include "net_http2_stream_endpoint_i.h"
 #include "net_http2_stream_group_i.h"
 #include "net_http2_stream_using_i.h"
 
 int net_http2_stream_endpoint_http2_select(net_endpoint_t base_endpoint);
 int net_http2_stream_endpoint_http2_connect(net_http2_stream_endpoint_t stream);
+uint8_t net_http2_stream_endpoint_req_on_write(void * ctx, net_http2_req_t req, void * buf, uint32_t * buf_size);
+void net_http2_stream_endpoint_req_on_write_finish(void * ctx);
 
 int net_http2_stream_endpoint_init(net_endpoint_t base_endpoint) {
     net_http2_stream_endpoint_t endpoint = net_endpoint_data(base_endpoint);
@@ -98,12 +101,77 @@ int net_http2_stream_endpoint_update(net_endpoint_t base_stream) {
 
     switch(net_endpoint_state(base_stream)) {
     case net_endpoint_state_read_closed:
+        if (stream->m_req == NULL) {
+            CPE_ERROR(
+                driver->m_em, "http2: %s: %s: read closed: no bind stream!",
+                net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_stream),
+                net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(stream)));
+            return -1;
+        }
         return 0;
     case net_endpoint_state_write_closed:
+        if (stream->m_req == NULL) {
+            CPE_ERROR(
+                driver->m_em, "http2: %s: %s: write closed: no bind stream!",
+                net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_stream),
+                net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(stream)));
+            return -1;
+        }
+
+        if (net_http2_req_is_writing(stream->m_req)) return 0;
+
+        if (net_http2_stream_write_closed(net_http2_req_stream(stream->m_req))) return 0;
+
+        if (net_http2_req_append(stream->m_req, NULL, 0, 0) != 0) {
+            CPE_ERROR(
+                driver->m_em, "http2: %s: %s: write closed: send end stream failed!",
+                net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_stream),
+                net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(stream)));
+            return -1;
+        }
+        
         return 0;
     case net_endpoint_state_disable:
+        if (stream->m_req) {
+            if (net_endpoint_driver_debug(stream->m_base_endpoint)) {
+                CPE_INFO(
+                    driver->m_em, "http2: %s: %s: clear req for disable!",
+                    net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_stream),
+                    net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(stream)));
+            }
+            net_http2_req_clear_reader(stream->m_req);
+            net_http2_req_clear_writer(stream->m_req);
+            net_http2_req_free(stream->m_req);
+            stream->m_req = NULL;
+        }
         return 0;
     case net_endpoint_state_established:
+        if (stream->m_req == NULL) {
+            CPE_ERROR(
+                driver->m_em, "http2: %s: %s: update: no bind stream!",
+                net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_stream),
+                net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(stream)));
+            return -1;
+        }
+
+        if (!net_endpoint_buf_is_empty(stream->m_base_endpoint, net_ep_buf_write)) {
+            if (!net_http2_req_is_writing(stream->m_req)) {
+                if (net_http2_req_write(
+                        stream->m_req,
+                        stream,
+                        net_http2_stream_endpoint_req_on_write,
+                        net_http2_stream_endpoint_req_on_write_finish,
+                        1) != 0)
+                {
+                    CPE_ERROR(
+                        driver->m_em, "http2: %s: %s: update: start write fail!",
+                        net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_stream),
+                        net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(stream)));
+                    return -1;
+                }
+            }
+        }
+        
         return 0;
     case net_endpoint_state_error:
         return 0;
@@ -115,15 +183,6 @@ int net_http2_stream_endpoint_update(net_endpoint_t base_stream) {
 int net_http2_stream_endpoint_set_no_delay(net_endpoint_t base_endpoint, uint8_t no_delay) {
     net_http2_stream_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
     net_http2_stream_endpoint_t endpoint = net_endpoint_data(base_endpoint);
-
-    /* if (endpoint->m_control == NULL) { */
-    /*     CPE_ERROR( */
-    /*         driver->m_em, "http2: %s: %s: set no delay: no control!", */
-    /*         net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), base_endpoint), */
-    /*         net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(endpoint))); */
-    /*     return -1; */
-    /* } */
-
     return 0;
 }
 
@@ -292,11 +351,57 @@ void net_http2_stream_endpoint_set_using(net_http2_stream_endpoint_t stream, net
     }
 }
 
-void net_http2_stream_endpoint_req_on_write(void * ctx, net_http2_req_t req) {
+uint8_t net_http2_stream_endpoint_req_on_write(void * ctx, net_http2_req_t req, void * buf, uint32_t * buf_size) {
+    net_http2_stream_endpoint_t stream = ctx;
+    net_http2_stream_driver_t driver = net_driver_data(net_endpoint_driver(stream->m_base_endpoint));
+
+    if (net_endpoint_buf_recv(stream->m_base_endpoint, net_ep_buf_write, buf, buf_size) != 0) {
+        CPE_ERROR(
+            driver->m_em, "http2: %s: %s: on write: read data fail1d!",
+            net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), stream->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(stream)));
+        *buf_size = 0;
+        return 0;
+    }
+
+    if (net_endpoint_protocol_debug(stream->m_base_endpoint)) {
+        CPE_INFO(
+            driver->m_em, "http2: %s: %s: ==> %d data!",
+            net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), stream->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(stream)),
+            *buf_size);
+    }
+    
+    return net_endpoint_buf_is_empty(stream->m_base_endpoint, net_ep_buf_write) ? 0 : 1;
+}
+
+void net_http2_stream_endpoint_req_on_write_finish(void * ctx) {
+    net_http2_stream_endpoint_t stream = ctx;
+    net_http2_stream_driver_t driver = net_driver_data(net_endpoint_driver(stream->m_base_endpoint));
+
+    assert(stream->m_req);
 }
 
 int net_http2_stream_endpoint_req_on_recv(void * ctx, net_http2_req_t req, void const * data, uint32_t data_len) {
     net_http2_stream_endpoint_t stream = ctx;
+    net_http2_stream_driver_t driver = net_driver_data(net_endpoint_driver(stream->m_base_endpoint));
+
+    if (net_endpoint_protocol_debug(stream->m_base_endpoint)) {
+        CPE_INFO(
+            driver->m_em, "http2: %s: %s: <== %d data!",
+            net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), stream->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(stream)),
+            data_len);
+    }
+
+    if (net_endpoint_buf_append(stream->m_base_endpoint, net_ep_buf_read, data, data_len) != 0) {
+        CPE_ERROR(
+            driver->m_em, "http2: %s: %s: on recv: supply failed!",
+            net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), stream->m_base_endpoint),
+            net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(stream)));
+        return -1;
+    }
+    
     return 0;
 }
 
@@ -372,7 +477,7 @@ int net_http2_stream_endpoint_http2_connect(net_http2_stream_endpoint_t stream) 
     }
 
     if (net_http2_req_add_req_head(req, ":method", "CONNECT") != 0
-        || net_http2_req_add_req_head(req, ":authority", "") != 0)
+        || net_http2_req_add_req_head(req, ":authority", "dummy") != 0)
     {
         CPE_ERROR(
             driver->m_em, "http2: %s: %s: http2 connect: setup req failed!",

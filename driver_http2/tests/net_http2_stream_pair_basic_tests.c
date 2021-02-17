@@ -57,10 +57,10 @@ static void net_http2_stream_pair_basic(void **state) {
 
     /*验证数据发送 */
     /*client -> server*/
-    /* assert_true(net_endpoint_buf_append(cli_ep_base, net_ep_buf_write, "abcd", 4) == 0); */
-    /* test_net_driver_run(env->m_env->m_tdriver, 0); */
+    assert_true(net_endpoint_buf_append(cli_ep_base, net_ep_buf_write, "abcd", 4) == 0);
+    test_net_driver_run(env->m_tdriver, 0);
 
-    /* test_net_endpoint_assert_buf_memory(svr_ep, net_ep_buf_read, "abcd", 4); */
+    test_net_endpoint_assert_buf_memory(svr_ep_base, net_ep_buf_read, "abcd", 4);
 
     /*server -> client*/
     /* assert_true(net_endpoint_buf_append(svr_ep, net_ep_buf_write, "efgh", 4) == 0); */

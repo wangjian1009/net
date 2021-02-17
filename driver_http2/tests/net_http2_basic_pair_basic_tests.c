@@ -1,6 +1,5 @@
-#include <assert.h>
 #include "cmocka_all.h"
-#include "test_net_endpoint.h"
+#include "net_http2_protocol.h"
 #include "net_http2_tests.h"
 #include "net_http2_testenv.h"
 #include "net_http2_testenv_receiver.h"
@@ -8,6 +7,7 @@
 static int setup(void **state) {
     net_http2_testenv_t env = net_http2_testenv_create();
     *state = env;
+    net_http2_protocol_set_no_http_messaging(env->m_protocol, 1);
     return 0;
 }
 
