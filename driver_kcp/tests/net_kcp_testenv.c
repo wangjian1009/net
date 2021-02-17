@@ -75,7 +75,7 @@ void net_kcp_testenv_cli_create_pair_established(
 }
 
 net_kcp_endpoint_t
-net_kcp_testenv_ep_create(net_kcp_testenv_t env) {
+net_kcp_testenv_create_ep(net_kcp_testenv_t env) {
     net_endpoint_t base_endpoint =
         net_endpoint_create(
             net_driver_from_data(env->m_tdriver),
@@ -88,8 +88,8 @@ net_kcp_testenv_ep_create(net_kcp_testenv_t env) {
 }
 
 net_kcp_endpoint_t
-net_kcp_testenv_cli_ep_create(net_kcp_testenv_t env, const char * host) {
-    net_kcp_endpoint_t endpoint = net_kcp_testenv_ep_create(env);
+net_kcp_testenv_create_cli_ep(net_kcp_testenv_t env, const char * host) {
+    net_kcp_endpoint_t endpoint = net_kcp_testenv_create_ep(env);
     net_endpoint_t base_endpoint = net_kcp_endpoint_base_endpoint(endpoint);
     assert_true(base_endpoint != NULL);
         
@@ -101,7 +101,7 @@ net_kcp_testenv_cli_ep_create(net_kcp_testenv_t env, const char * host) {
     return endpoint;
 }
 
-net_acceptor_t
+net_kcp_acceptor_t
 net_kcp_testenv_create_acceptor(
     net_kcp_testenv_t env, const char * str_address,
     net_acceptor_on_new_endpoint_fun_t on_new_endpoint, void * on_new_endpoint_ctx)
@@ -118,5 +118,13 @@ net_kcp_testenv_create_acceptor(
 
     net_address_free(address);
 
-    return acceptor;
+    return net_acceptor_data(acceptor);
 }
+
+/* net_endpoint_t */
+/* net_kcp_testenv_get_svr_stream(net_kcp_testenv_t env, net_endpoint_t client_base_ep) { */
+/*     /\* net_kcp_endpoint_t cli_ep = net_endpoint_data(client_base_ep); *\/ */
+        
+/*     /\* return svr_stream; *\/ */
+/*     return NULL; */
+/* } */

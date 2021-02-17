@@ -8,6 +8,7 @@
 struct net_kcp_driver {
     mem_allocrator_t m_alloc;
     error_monitor_t m_em;
+    net_driver_t m_underline_driver;
 };
 
 mem_buffer_t net_kcp_driver_tmp_buffer(net_kcp_driver_t driver);

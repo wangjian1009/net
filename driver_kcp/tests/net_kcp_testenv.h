@@ -21,11 +21,8 @@ struct net_kcp_testenv {
 net_kcp_testenv_t net_kcp_testenv_create();
 void net_kcp_testenv_free(net_kcp_testenv_t env);
 
-net_kcp_endpoint_t net_kcp_testenv_ep_create(net_kcp_testenv_t env);
-
-net_kcp_endpoint_t
-net_kcp_testenv_cli_ep_create(
-    net_kcp_testenv_t env, const char * host);
+net_kcp_endpoint_t net_kcp_testenv_create_ep(net_kcp_testenv_t env);
+net_kcp_endpoint_t net_kcp_testenv_create_cli_ep(net_kcp_testenv_t env, const char * host);
 
 /*pair*/
 void net_kcp_testenv_cli_create_pair(
@@ -37,7 +34,7 @@ void net_kcp_testenv_cli_create_pair_established(
     const char * address);
 
 /*svr*/
-net_acceptor_t
+net_kcp_acceptor_t
 net_kcp_testenv_create_acceptor(
     net_kcp_testenv_t env, const char * address,
     net_acceptor_on_new_endpoint_fun_t on_new_endpoint, void * on_new_endpoint_ctx);

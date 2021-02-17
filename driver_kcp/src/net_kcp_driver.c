@@ -55,6 +55,7 @@ net_kcp_driver_create(
 
     kcp_driver->m_alloc = alloc;
     kcp_driver->m_em = em;
+    kcp_driver->m_underline_driver = underline_driver;
 
     return kcp_driver;
 }
@@ -81,6 +82,7 @@ static int net_kcp_driver_init(net_driver_t base_driver) {
     net_kcp_driver_t driver = net_driver_data(base_driver);
     driver->m_alloc = NULL;
     driver->m_em = NULL;
+    driver->m_underline_driver = NULL;
     return 0;
 }
 

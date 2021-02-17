@@ -4,7 +4,7 @@
 #include "net_kcp_driver_i.h"
 
 struct net_kcp_acceptor {
-    int n;
+    net_dgram_t m_dgram;
 };
 
 int net_kcp_acceptor_init(net_acceptor_t acceptor);

@@ -1,6 +1,7 @@
 #include <assert.h>
 #include "net_schedule.h"
 #include "net_address.h"
+#include "net_dgram.h"
 #include "net_driver.h"
 #include "net_endpoint.h"
 #include "net_protocol.h"
@@ -74,7 +75,17 @@ int net_kcp_acceptor_init(net_acceptor_t base_acceptor) {
     net_kcp_acceptor_t acceptor = net_acceptor_data(base_acceptor);
 
     net_address_t address = net_acceptor_address(base_acceptor);
+    if (address == NULL) {
+        CPE_ERROR(driver->m_em, "net: kcp: acceptor: init: no address!");
+        return -1;
+    }
 
+    /* acceptor->m_dgram = net_dgram_create( */
+    /*     driver->m_base_, */
+    /* net_address_t address, */
+    /* net_dgram_process_fun_t process_fun, void * process_ctx); */
+
+    
     return 0;
 }
 

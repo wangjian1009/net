@@ -1,28 +1,28 @@
 #include "cmocka_all.h"
-#include "test_net_endpoint.h"
 #include "net_kcp_tests.h"
-#include "net_kcp_endpoint.h"
-#include "net_kcp_pair_testenv.h"
+#include "net_kcp_testenv.h"
 
 static int setup(void **state) {
-    net_kcp_pair_testenv_t env = net_kcp_pair_testenv_create();
+    net_kcp_testenv_t env = net_kcp_testenv_create();
     *state = env;
     return 0;
 }
 
 static int teardown(void **state) {
-    net_kcp_pair_testenv_t env = *state;
-    net_kcp_pair_testenv_free(env);
+    net_kcp_testenv_t env = *state;
+    net_kcp_testenv_free(env);
     return 0;
 }
 
 static void net_kcp_pair_basic(void **state) {
-    /* net_kcp_pair_testenv_t env = *state; */
-    /* net_kcp_endpoint_t cli_ep = net_kcp_testenv_stream_ep_create(env->m_env); */
-    /* net_endpoint_t cli_ep_base = net_kcp_endpoint_base_endpoint(cli_ep); */
-    /* net_endpoint_set_remote_address(cli_ep_base, net_acceptor_address(env->m_acceptor)); */
-    /* net_kcp_endpoint_set_path(cli_ep, "/a/b"); */
-    
+    net_kcp_testenv_t env = *state;
+
+    net_kcp_acceptor_t acceptor = net_kcp_testenv_create_acceptor(env, "1.2.3.4:5678", NULL, NULL);
+    assert_true(acceptor);
+
+    net_kcp_endpoint_t cli_ep = net_kcp_testenv_create_cli_ep(env, "1.2.3.4:5678");
+    net_endpoint_t cli_ep_base = net_kcp_endpoint_base_endpoint(cli_ep);
+
     /* net_endpoint_t cli_underline = net_kcp_endpoint_underline(cli_ep_base); */
     /* assert_true(cli_underline != NULL); */
 
