@@ -67,6 +67,37 @@ static void net_http2_stream_pair_basic(void **state) {
     test_net_driver_run(env->m_tdriver, 0);
 
     test_net_endpoint_assert_buf_memory(cli_ep_base, net_ep_buf_read, "efgh", 4);
+
+    assert_string_equal(
+        net_endpoint_state_str(net_endpoint_state(cli_ep_base)),
+        net_endpoint_state_str(net_endpoint_state_established));
+
+    assert_string_equal(
+        net_endpoint_state_str(net_endpoint_state(svr_ep_base)),
+        net_endpoint_state_str(net_endpoint_state_established));
+    
+    /*验证关闭连接 */
+    assert_true(net_endpoint_set_state(cli_ep_base, net_endpoint_state_write_closed) == 0);
+    test_net_driver_run(env->m_tdriver, 0);
+
+    assert_string_equal(
+        net_endpoint_state_str(net_endpoint_state(cli_ep_base)),
+        net_endpoint_state_str(net_endpoint_state_write_closed));
+
+    assert_string_equal(
+        net_endpoint_state_str(net_endpoint_state(svr_ep_base)),
+        net_endpoint_state_str(net_endpoint_state_read_closed));
+    
+    assert_true(net_endpoint_set_state(svr_ep_base, net_endpoint_state_write_closed) == 0);
+    test_net_driver_run(env->m_tdriver, 0);
+
+    assert_string_equal(
+        net_endpoint_state_str(net_endpoint_state(cli_ep_base)),
+        net_endpoint_state_str(net_endpoint_state_disable));
+
+    assert_string_equal(
+        net_endpoint_state_str(net_endpoint_state(svr_ep_base)),
+        net_endpoint_state_str(net_endpoint_state_disable));
 }
 
 int net_http2_stream_pair_basic_tests() {
