@@ -16,7 +16,7 @@ int net_smux_protocol_init(net_protocol_t base_protocol) {
     protocol->m_cfg_keep_alive_interval_ms = 10 * 60 * 1000;
     protocol->m_cfg_keep_alive_timeout_ms = 30 * 60 * 1000;
     protocol->m_cfg_max_frame_size = 32768;
-    protocol->m_cfg_max_recv_buffer = 4194304;
+    protocol->m_cfg_max_session_buffer = 4194304;
     protocol->m_cfg_max_stream_buffer = 65536;
 
     protocol->m_max_session_id = 0;

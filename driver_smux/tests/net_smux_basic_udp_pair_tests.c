@@ -20,6 +20,9 @@ static void net_smux_basic_udp_pair_basic(void **state) {
     net_smux_session_t svr_session = net_smux_testenv_create_session_udp_svr(env, "1.2.3.4:5678");
     net_smux_session_t cli_session = net_smux_testenv_create_session_udp_cli(env, "1.2.3.4:5678");
 
+    net_smux_stream_t cli_stream = net_smux_stream_create(cli_session);
+
+    
 }
 
 int net_smux_basic_udp_pair_basic_tests() {

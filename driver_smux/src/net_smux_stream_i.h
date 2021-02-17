@@ -9,6 +9,7 @@ struct net_smux_stream {
     net_smux_session_t m_session;
     struct cpe_hash_entry m_hh_for_session;
     uint32_t m_stream_id;
+    net_smux_stream_state_t m_state;
 };
 
 void net_smux_stream_free_all(net_smux_session_t session);

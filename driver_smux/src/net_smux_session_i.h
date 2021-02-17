@@ -15,6 +15,12 @@ struct net_smux_session {
     uint32_t m_max_stream_id; /* next stream identifier */
     struct cpe_hash_table m_streams;
 
+    /*接受缓存剩余空间 */
+    uint32_t m_bucket;
+
+    /*等待发送的farme的优先级队列 */
+    cpe_priority_queue_t m_shaper;
+
     struct {
         net_smux_session_underline_type_t m_type;
         union {
@@ -31,7 +37,7 @@ struct net_smux_session {
     net_timer_t m_timer_timeout;
 };
 
-int net_smux_session_write_frame(
+int net_smux_session_send_frame(
     net_smux_session_t session, net_smux_cmd_t cmd, uint32_t sid);
 
 NET_END_DECL

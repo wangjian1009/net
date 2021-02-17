@@ -20,15 +20,11 @@ enum net_smux_status {
     net_smux_status_keep_alive = 0x04,
 };
 
-CPE_START_PACKED
-
 struct net_smux_frame {
     uint8_t m_ver;
     uint8_t m_cmd;
+    uint16_t m_len;
     uint32_t m_sid;
-    uint8_t m_data[];
-} CPE_PACKED;
-
-CPE_END_PACKED
+};
 
 #endif
