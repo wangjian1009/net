@@ -6,7 +6,7 @@
 #include "net_kcp_driver_i.h"
 #include "net_kcp_endpoint_i.h"
 #include "net_kcp_acceptor_i.h"
-#include "net_kcp_mux_i.h"
+#include "net_kcp_smux_i.h"
 
 static int net_kcp_driver_init(net_driver_t driver);
 static void net_kcp_driver_fini(net_driver_t driver);

@@ -4,7 +4,7 @@
 #include "net_kcp_driver_i.h"
 
 struct net_kcp_acceptor {
-    net_kcp_mux_t m_mux;
+    net_kcp_smux_t m_mux;
 };
 
 int net_kcp_acceptor_init(net_acceptor_t acceptor);

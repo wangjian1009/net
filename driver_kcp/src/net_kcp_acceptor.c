@@ -4,7 +4,7 @@
 #include "net_protocol.h"
 #include "net_acceptor.h"
 #include "net_kcp_acceptor_i.h"
-#include "net_kcp_mux_i.h"
+#include "net_kcp_smux_i.h"
 #include "net_kcp_endpoint_i.h"
 
 int net_kcp_acceptor_init(net_acceptor_t base_acceptor) {
@@ -17,7 +17,7 @@ int net_kcp_acceptor_init(net_acceptor_t base_acceptor) {
         return -1;
     }
 
-    acceptor->m_mux = net_kcp_mux_create(driver, address);
+    acceptor->m_mux = net_kcp_smux_create(driver, address);
     if (acceptor->m_mux == NULL) {
         CPE_ERROR(driver->m_em, "net: kcp: acceptor: init: create mux failed!");
         return -1;
@@ -31,7 +31,7 @@ void net_kcp_acceptor_fini(net_acceptor_t base_acceptor) {
     net_kcp_driver_t driver = net_driver_data(net_acceptor_driver(base_acceptor));
 
     if (acceptor->m_mux) {
-        net_kcp_mux_free(acceptor->m_mux);
+        net_kcp_smux_free(acceptor->m_mux);
         acceptor->m_mux = NULL;
     }
 }
