@@ -1,4 +1,5 @@
 #include "cpe/pal/pal_stdio.h"
+#include "net_schedule.h"
 #include "net_smux_manager_i.h"
 #include "net_smux_session_i.h"
 
@@ -17,7 +18,8 @@ net_smux_manager_create(net_schedule_t schedule, mem_allocrator_t alloc, error_m
     manager->m_cfg_max_frame_size = 32768;
     manager->m_cfg_max_recv_buffer = 4194304;
     manager->m_cfg_max_stream_buffer = 65536;
-    
+
+    manager->m_max_session_id = 0;
     TAILQ_INIT(&manager->m_sessions);
 
     return manager;
@@ -30,4 +32,8 @@ void net_smux_manager_free(net_smux_manager_t manager) {
     }
     
     mem_free(manager->m_alloc, manager);
+}
+
+mem_buffer_t net_smux_manager_tmp_buffer(net_smux_manager_t manager) {
+    return net_schedule_tmp_buffer(manager->m_schedule);
 }

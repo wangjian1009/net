@@ -4,8 +4,7 @@
 #include "cpe/utils/error.h"
 #include "net_smux_manager.h"
 
-NET_BEGIN_DECL
-
+typedef enum net_smux_cmd net_smux_cmd_t;
 typedef TAILQ_HEAD(net_smux_session_list, net_smux_session) net_smux_session_list_t;
 
 struct net_smux_manager {
@@ -33,12 +32,11 @@ struct net_smux_manager {
 
 	/* MaxStreamBuffer is used to control the maximum number of data per stream*/
 	uint32_t m_cfg_max_stream_buffer;
-    
+
+    uint32_t m_max_session_id;
     net_smux_session_list_t m_sessions;
 };
 
-mem_buffer_t net_http_protocol_tmp_buffer(net_smux_manager_t manager);
-
-NET_END_DECL
+mem_buffer_t net_smux_manager_tmp_buffer(net_smux_manager_t manager);
 
 #endif
