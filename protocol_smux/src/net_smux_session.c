@@ -7,6 +7,7 @@
 
 void net_smux_session_do_pint(net_timer_t timer, void * ctx);
 void net_smux_session_do_timeout(net_timer_t timer, void * ctx);
+void net_smux_session_dgram_input(net_dgram_t dgram, void * ctx, void * data, size_t data_size, net_address_t source);
 
 net_smux_session_t
 net_smux_session_create_i(
@@ -80,7 +81,14 @@ net_smux_session_create_udp(
     net_smux_session_t session = net_smux_session_create_i(manager, runing_mode, net_smux_session_underline_udp);
     if (session == NULL) return NULL;
 
-    
+    session->m_underline.m_udp.m_dgram =
+        net_dgram_create(driver, address, net_smux_session_dgram_input, session);
+    if (session->m_underline.m_udp.m_dgram == NULL) {
+        CPE_ERROR(manager->m_em, "smux: session %d: create: create dgram fail!", session->m_session_id);
+        net_smux_session_free(session);
+        return NULL;
+    }
+
     return session;
 }
 
@@ -145,6 +153,9 @@ void net_smux_session_do_pint(net_timer_t timer, void * ctx) {
 }
 
 void net_smux_session_do_timeout(net_timer_t timer, void * ctx) {
+}
+
+void net_smux_session_dgram_input(net_dgram_t dgram, void * ctx, void * data, size_t data_size, net_address_t source) {
 }
 
 int net_smux_session_write_frame(net_smux_session_t session, net_smux_cmd_t cmd, uint32_t sid) {

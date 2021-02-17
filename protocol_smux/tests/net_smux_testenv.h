@@ -1,10 +1,10 @@
 #ifndef TESTS_NET_PROTOCOL_SMUX_TESTENV_H_INCLEDED
 #define TESTS_NET_PROTOCOL_SMUX_TESTENV_H_INCLEDED
-#include "cpe/pal/pal_queue.h"
 #include "test_memory.h"
 #include "test_error.h"
 #include "test_net_endpoint.h"
-#include "net_smux_types.h"
+#include "net_smux_session.h"
+#include "net_smux_stream.h"
 
 typedef struct net_smux_testenv * net_smux_testenv_t;
 
@@ -18,5 +18,11 @@ struct net_smux_testenv {
 
 net_smux_testenv_t net_smux_testenv_create();
 void net_smux_testenv_free(net_smux_testenv_t env);
+
+net_smux_session_t
+net_smux_testenv_create_session_udp_svr(net_smux_testenv_t env, const char * address);
+
+net_smux_session_t
+net_smux_testenv_create_session_udp_udp(net_smux_testenv_t env, const char * address);
 
 #endif
