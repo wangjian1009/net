@@ -10,7 +10,7 @@ set_property(TARGET tests_net_driver_kcp PROPERTY INCLUDE_DIRECTORIES
   ${cpe_utils_base}/test_utils
   ${net_core_base}/include
   ${net_core_base}/test_utils
-  ${net_protocol_smux_base}/include
+  ${net_driver_smux_base}/include
   ${net_driver_kcp_base}/include
   ${net_driver_kcp_base}/src
   )

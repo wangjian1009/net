@@ -1,16 +1,15 @@
-#ifndef NET_SMUX_MANAGER_I_H_INCLEDED
-#define NET_SMUX_MANAGER_I_H_INCLEDED
+#ifndef NET_SMUX_PROTOCOL_I_H_INCLEDED
+#define NET_SMUX_PROTOCOL_I_H_INCLEDED
 #include "cpe/utils/buffer.h"
 #include "cpe/utils/error.h"
-#include "net_smux_manager.h"
+#include "net_smux_protocol.h"
 
 typedef enum net_smux_cmd net_smux_cmd_t;
 typedef TAILQ_HEAD(net_smux_session_list, net_smux_session) net_smux_session_list_t;
 
-struct net_smux_manager {
+struct net_smux_protocol {
     mem_allocrator_t m_alloc;
     error_monitor_t m_em;
-    net_schedule_t m_schedule;
 
 	/* SMUX Protocol version, support 1,2 */
 	uint8_t m_cfg_version;
@@ -37,6 +36,7 @@ struct net_smux_manager {
     net_smux_session_list_t m_sessions;
 };
 
-mem_buffer_t net_smux_manager_tmp_buffer(net_smux_manager_t manager);
+net_schedule_t net_smux_protocol_schedule(net_smux_protocol_t protocol);
+mem_buffer_t net_smux_protocol_tmp_buffer(net_smux_protocol_t protocol);
 
 #endif

@@ -3,13 +3,13 @@
 
 net_smux_stream_t
 net_smux_stream_create(net_smux_session_t session) {
-    net_smux_manager_t manager = session->m_manager;
+    net_smux_protocol_t protocol = session->m_protocol;
 
 	session->m_max_stream_id += 2;
     
-    net_smux_stream_t stream = mem_alloc(manager->m_alloc, sizeof(struct net_smux_stream));
+    net_smux_stream_t stream = mem_alloc(protocol->m_alloc, sizeof(struct net_smux_stream));
     if (stream == NULL) {
-        //CPE_ERROR(manager->m_em, "smux: "
+        //CPE_ERROR(protocol->m_em, "smux: "
     }
 
     stream->m_stream_id = session->m_max_stream_id;

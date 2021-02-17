@@ -13,7 +13,7 @@ struct net_smux_testenv {
     error_monitor_t m_em;
     net_schedule_t m_schedule;
     test_net_driver_t m_tdriver;
-    net_smux_manager_t m_smux_manager;
+    net_smux_protocol_t m_smux_protocol;
 };
 
 net_smux_testenv_t net_smux_testenv_create();

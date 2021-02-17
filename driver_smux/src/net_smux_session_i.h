@@ -2,12 +2,12 @@
 #define NET_SMUX_SESSION_I_H_INCLEDED
 #include "cpe/utils/hash.h"
 #include "net_smux_session.h"
-#include "net_smux_manager_i.h"
+#include "net_smux_protocol_i.h"
 
 NET_BEGIN_DECL
 
 struct net_smux_session {
-    net_smux_manager_t m_manager;
+    net_smux_protocol_t m_protocol;
     TAILQ_ENTRY(net_smux_session) m_next;
     uint32_t m_session_id;
     net_smux_session_runing_mode_t m_runing_mode;

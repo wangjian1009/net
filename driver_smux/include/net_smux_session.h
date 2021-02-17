@@ -16,7 +16,7 @@ enum net_smux_session_underline_type {
 
 net_smux_session_t
 net_smux_session_create_udp(
-    net_smux_manager_t manager,
+    net_smux_protocol_t protocol,
     net_smux_session_runing_mode_t runing_mode,
     net_driver_t driver, net_address_t address);
 

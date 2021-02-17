@@ -1,7 +1,7 @@
 #ifndef NET_SMUX_FRAME_I_H_INCLEDED
 #define NET_SMUX_FRAME_I_H_INCLEDED
 #include "cpe/pal/pal_platform.h"
-#include "net_smux_manager_i.h"
+#include "net_smux_protocol_i.h"
 
 enum net_smux_cmd {
 	/* protocol version 1 */

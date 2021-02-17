@@ -11,18 +11,18 @@ void net_smux_session_dgram_input(net_dgram_t dgram, void * ctx, void * data, si
 
 net_smux_session_t
 net_smux_session_create_i(
-    net_smux_manager_t manager,
+    net_smux_protocol_t protocol,
     net_smux_session_runing_mode_t runing_mode,
     net_smux_session_underline_type_t underline_type)
 {
-    net_smux_session_t session = mem_alloc(manager->m_alloc, sizeof(struct net_smux_session));
+    net_smux_session_t session = mem_alloc(protocol->m_alloc, sizeof(struct net_smux_session));
     if (session == NULL) {
-        CPE_ERROR(manager->m_em, "smux: session: create: alloc failed");
+        CPE_ERROR(protocol->m_em, "smux: session: create: alloc failed");
         return NULL;
     }
 
-    session->m_manager = manager;
-    session->m_session_id = ++manager->m_max_session_id;
+    session->m_protocol = protocol;
+    session->m_session_id = ++protocol->m_max_session_id;
     session->m_runing_mode = runing_mode;
     session->m_max_stream_id = runing_mode == net_smux_session_runing_mode_cli ? 1 : 0;
     session->m_timer_ping = NULL;
@@ -40,31 +40,33 @@ net_smux_session_create_i(
 
     if (cpe_hash_table_init(
             &session->m_streams,
-            manager->m_alloc,
+            protocol->m_alloc,
             (cpe_hash_fun_t) net_smux_stream_hash,
             (cpe_hash_eq_t) net_smux_stream_eq,
             CPE_HASH_OBJ2ENTRY(net_smux_stream, m_hh_for_session),
             -1) != 0)
     {
-        CPE_ERROR(manager->m_em, "smux: session %d: create: init hash table fail!", session->m_session_id);
-        mem_free(manager->m_alloc, session);
+        CPE_ERROR(protocol->m_em, "smux: session %d: create: init hash table fail!", session->m_session_id);
+        mem_free(protocol->m_alloc, session);
         return NULL;
     }
     
-    TAILQ_INSERT_TAIL(&manager->m_sessions, session, m_next);
+    TAILQ_INSERT_TAIL(&protocol->m_sessions, session, m_next);
 
     /**/
-    if (!manager->m_cfg_keep_alive_disabled) {
-        session->m_timer_ping = net_timer_auto_create(manager->m_schedule, net_smux_session_do_pint, session);
+    if (!protocol->m_cfg_keep_alive_disabled) {
+        session->m_timer_ping = net_timer_auto_create(
+            net_smux_protocol_schedule(protocol), net_smux_session_do_pint, session);
         if (session->m_timer_ping == NULL) {
-            CPE_ERROR(manager->m_em, "smux: session %d: create: create ping timer fail!", session->m_session_id);
+            CPE_ERROR(protocol->m_em, "smux: session %d: create: create ping timer fail!", session->m_session_id);
             net_smux_session_free(session);
             return NULL;
         }
 
-        session->m_timer_timeout = net_timer_auto_create(manager->m_schedule, net_smux_session_do_pint, session);
+        session->m_timer_timeout = net_timer_auto_create(
+            net_smux_protocol_schedule(protocol), net_smux_session_do_pint, session);
         if (session->m_timer_timeout == NULL) {
-            CPE_ERROR(manager->m_em, "smux: session %d: create: create timeout timer fail!", session->m_session_id);
+            CPE_ERROR(protocol->m_em, "smux: session %d: create: create timeout timer fail!", session->m_session_id);
             net_smux_session_free(session);
             return NULL;
         }
@@ -75,16 +77,16 @@ net_smux_session_create_i(
 
 net_smux_session_t
 net_smux_session_create_udp(
-    net_smux_manager_t manager, net_smux_session_runing_mode_t runing_mode,
+    net_smux_protocol_t protocol, net_smux_session_runing_mode_t runing_mode,
     net_driver_t driver, net_address_t address)
 {
-    net_smux_session_t session = net_smux_session_create_i(manager, runing_mode, net_smux_session_underline_udp);
+    net_smux_session_t session = net_smux_session_create_i(protocol, runing_mode, net_smux_session_underline_udp);
     if (session == NULL) return NULL;
 
     session->m_underline.m_udp.m_dgram =
         net_dgram_create(driver, address, net_smux_session_dgram_input, session);
     if (session->m_underline.m_udp.m_dgram == NULL) {
-        CPE_ERROR(manager->m_em, "smux: session %d: create: create dgram fail!", session->m_session_id);
+        CPE_ERROR(protocol->m_em, "smux: session %d: create: create dgram fail!", session->m_session_id);
         net_smux_session_free(session);
         return NULL;
     }
@@ -93,7 +95,7 @@ net_smux_session_create_udp(
 }
 
 void net_smux_session_free(net_smux_session_t session) {
-    net_smux_manager_t manager = session->m_manager;
+    net_smux_protocol_t protocol = session->m_protocol;
 
     switch(session->m_underline.m_type) {
     case net_smux_session_underline_udp:
@@ -123,8 +125,8 @@ void net_smux_session_free(net_smux_session_t session) {
     net_smux_stream_free_all(session);
     cpe_hash_table_fini(&session->m_streams);
     
-    TAILQ_REMOVE(&manager->m_sessions, session, m_next);
-    mem_free(manager->m_alloc, session);    
+    TAILQ_REMOVE(&protocol->m_sessions, session, m_next);
+    mem_free(protocol->m_alloc, session);    
 }
 
 net_smux_session_runing_mode_t net_smux_session_runing_mode(net_smux_session_t session) {

@@ -7,7 +7,10 @@ NET_BEGIN_DECL
 typedef enum net_smux_session_runing_mode net_smux_session_runing_mode_t;
 typedef enum net_smux_session_underline_type net_smux_session_underline_type_t;
 
-typedef struct net_smux_manager * net_smux_manager_t;
+typedef enum net_smux_endpoint_runing_mode net_smux_endpoint_runing_mode_t;
+
+typedef struct net_smux_protocol * net_smux_protocol_t;
+typedef struct net_smux_endpoint * net_smux_endpoint_t;
 typedef struct net_smux_session * net_smux_session_t;
 typedef struct net_smux_stream * net_smux_stream_t;
 

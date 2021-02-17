@@ -3,7 +3,7 @@
 #include "net_schedule.h"
 #include "net_driver.h"
 #include "net_protocol.h"
-#include "net_smux_manager.h"
+#include "net_smux_protocol.h"
 #include "net_kcp_driver_i.h"
 #include "net_kcp_endpoint_i.h"
 #include "net_kcp_acceptor_i.h"
@@ -58,7 +58,7 @@ net_kcp_driver_create(
     kcp_driver->m_em = em;
     kcp_driver->m_underline_driver = underline_driver;
 
-    kcp_driver->m_smux_manager = net_smux_manager_create(schedule, alloc, em);
+    kcp_driver->m_smux_protocol = net_smux_protocol_create(schedule, addition_name, alloc, em);
     
     return kcp_driver;
 }
@@ -85,7 +85,7 @@ static int net_kcp_driver_init(net_driver_t base_driver) {
     net_kcp_driver_t driver = net_driver_data(base_driver);
     driver->m_alloc = NULL;
     driver->m_em = NULL;
-    driver->m_smux_manager = NULL;
+    driver->m_smux_protocol = NULL;
     driver->m_underline_driver = NULL;
 
     TAILQ_INIT(&driver->m_muxes);

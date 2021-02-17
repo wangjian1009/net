@@ -19,7 +19,7 @@ int net_kcp_acceptor_init(net_acceptor_t base_acceptor) {
 
     acceptor->m_smux_session =
         net_smux_session_create_udp(
-            driver->m_smux_manager, net_smux_session_runing_mode_svr,
+            driver->m_smux_protocol, net_smux_session_runing_mode_svr,
             driver->m_underline_driver, address);
     if (acceptor->m_smux_session == NULL) {
         CPE_ERROR(driver->m_em, "net: kcp: acceptor: init: create mux failed!");
