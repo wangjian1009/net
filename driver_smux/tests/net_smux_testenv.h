@@ -23,6 +23,6 @@ net_smux_session_t
 net_smux_testenv_create_session_udp_svr(net_smux_testenv_t env, const char * address);
 
 net_smux_session_t
-net_smux_testenv_create_session_udp_udp(net_smux_testenv_t env, const char * address);
+net_smux_testenv_create_session_udp_cli(net_smux_testenv_t env, const char * address);
 
 #endif

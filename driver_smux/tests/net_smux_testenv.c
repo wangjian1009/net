@@ -1,6 +1,7 @@
 #include "cpe/pal/pal_string.h"
 #include "cmocka_all.h"
 #include "net_schedule.h"
+#include "net_address.h"
 #include "net_smux_protocol.h"
 #include "net_smux_testenv.h"
 
@@ -22,3 +23,35 @@ void net_smux_testenv_free(net_smux_testenv_t env) {
     test_error_monitor_free(env->m_tem);
     mem_free(test_allocrator(), env);
 }
+
+net_smux_session_t
+net_smux_testenv_create_session_udp_svr(net_smux_testenv_t env, const char * str_address) {
+    net_address_t address = net_address_create_auto(env->m_schedule, str_address);
+    assert_true(address != NULL);
+
+    net_smux_session_t session =
+        net_smux_session_create_udp(
+            env->m_smux_protocol, net_smux_session_runing_mode_svr,
+            net_driver_from_data(env->m_tdriver), address);
+    assert_true(session);
+
+    net_address_free(address);
+
+    return session;
+}
+
+net_smux_session_t
+net_smux_testenv_create_session_udp_cli(net_smux_testenv_t env, const char * str_address) {
+    net_address_t address = net_address_create_auto(env->m_schedule, str_address);
+    assert_true(address != NULL);
+
+    net_smux_session_t session =
+        net_smux_session_create_udp(
+            env->m_smux_protocol, net_smux_session_runing_mode_cli,
+            net_driver_from_data(env->m_tdriver), address);
+    assert_true(session);
+
+    net_address_free(address);
+
+    return session;
+}    
