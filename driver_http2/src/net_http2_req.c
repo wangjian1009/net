@@ -305,10 +305,19 @@ int net_http2_req_start_request(net_http2_req_t req, uint8_t have_follow_data) {
         return -1;
     }
 
+    req->m_have_follow_data = have_follow_data;
+
     if (endpoint->m_state != net_http2_endpoint_state_streaming) {
-        if (net_http2_req_set_req_state(req, net_http2_req_state_connecting) != 0) return -1;
+        if (net_http2_req_set_state(req, net_http2_req_state_connecting) != 0) return -1;
         return 0;
     }
+
+    return net_http2_req_do_start_request(req);
+}
+
+int net_http2_req_do_start_request(net_http2_req_t req) {
+    net_http2_endpoint_t endpoint = req->m_endpoint;
+    net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
 
     net_http2_stream_t stream =
         net_http2_stream_create(
@@ -326,7 +335,7 @@ int net_http2_req_start_request(net_http2_req_t req, uint8_t have_follow_data) {
     const nghttp2_priority_spec * pri_spec = NULL;
 
     uint8_t flags = NGHTTP2_FLAG_NONE;
-    if (!have_follow_data) {
+    if (!req->m_have_follow_data) {
         flags |= NGHTTP2_FLAG_END_STREAM;
     }
     
@@ -353,10 +362,9 @@ int net_http2_req_start_request(net_http2_req_t req, uint8_t have_follow_data) {
         return -1;
     }
 
-    req->m_have_follow_data = have_follow_data;
     net_http2_req_set_stream(req, stream);
 
-    if (net_http2_req_set_req_state(req, net_http2_req_state_head_sended) != 0) return -1;
+    if (net_http2_req_set_state(req, net_http2_req_state_head_sended) != 0) return -1;
 
     return 0;
 }
@@ -414,7 +422,7 @@ int net_http2_req_start_response(net_http2_req_t req, uint8_t have_follow_data) 
 
     req->m_have_follow_data = have_follow_data;
 
-    if (net_http2_req_set_req_state(req, net_http2_req_state_established) != 0) return -1;
+    if (net_http2_req_set_state(req, net_http2_req_state_established) != 0) return -1;
 
     return 0;
 }
@@ -624,7 +632,7 @@ void net_http2_req_clear_writer(net_http2_req_t req) {
     req->m_write_ctx_free = NULL;
 }
 
-int net_http2_req_set_reader(
+void net_http2_req_set_reader(
     net_http2_req_t req,
     void * read_ctx,
     net_http2_req_on_state_change_fun_t on_state_change,
@@ -642,8 +650,6 @@ int net_http2_req_set_reader(
     req->m_on_state_change = on_state_change;
     req->m_on_recv = on_recv;
     req->m_read_ctx_free = read_ctx_free;
-
-    return 0;
 }
 
 void net_http2_req_clear_reader(net_http2_req_t req) {
@@ -678,7 +684,7 @@ void net_http2_req_set_stream(net_http2_req_t req, net_http2_stream_t stream) {
     }
 }
 
-int net_http2_req_set_req_state(net_http2_req_t req, net_http2_req_state_t state) {
+int net_http2_req_set_state(net_http2_req_t req, net_http2_req_state_t state) {
     if (req->m_state == state) return 0;
 
     net_http2_endpoint_t endpoint = req->m_endpoint;
@@ -702,8 +708,13 @@ int net_http2_req_set_req_state(net_http2_req_t req, net_http2_req_state_t state
         }
     }
 
+    net_http2_req_state_t old_state = req->m_state;
     req->m_state = state;
 
+    if (req->m_on_state_change) {
+        if (req->m_on_state_change(req->m_read_ctx, req, old_state) != 0) return -1;
+    }
+    
     return 0;
 }
 

@@ -219,7 +219,12 @@ int net_http2_endpoint_set_state(net_http2_endpoint_t endpoint, net_http2_endpoi
         for(req = TAILQ_FIRST(&endpoint->m_reqs); req; req = next_req) {
             next_req = TAILQ_NEXT(req, m_next_for_endpoint);
             if (req->m_state != net_http2_req_state_connecting) continue;
-            
+
+            if (net_http2_req_do_start_request(req) != 0) {
+                if (net_http2_req_set_state(req, net_http2_req_state_closed) != 0) {
+                    net_http2_req_free(req);
+                }
+            }
         }
         break;
     }

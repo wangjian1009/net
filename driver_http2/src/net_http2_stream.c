@@ -79,13 +79,13 @@ int net_http2_stream_set_read_closed(net_http2_stream_t stream, uint8_t read_clo
         if (stream->m_req) {
             switch (stream->m_req->m_state) {
             case net_http2_req_state_established:
-                if (net_http2_req_set_req_state(stream->m_req, net_http2_req_state_read_closed) != 0) return -1;
+                if (net_http2_req_set_state(stream->m_req, net_http2_req_state_read_closed) != 0) return -1;
                 break;
             case net_http2_req_state_write_closed:
-                if (net_http2_req_set_req_state(stream->m_req, net_http2_req_state_closed) != 0) return -1;
+                if (net_http2_req_set_state(stream->m_req, net_http2_req_state_closed) != 0) return -1;
                 break;
             default:
-                if (net_http2_req_set_req_state(stream->m_req, net_http2_req_state_closed) != 0) return -1;
+                if (net_http2_req_set_state(stream->m_req, net_http2_req_state_closed) != 0) return -1;
                 break;
             }
         }
@@ -118,13 +118,13 @@ int net_http2_stream_set_write_closed(net_http2_stream_t stream, uint8_t write_c
         if (stream->m_req) {
             switch (stream->m_req->m_state) {
             case net_http2_req_state_established:
-                if (net_http2_req_set_req_state(stream->m_req, net_http2_req_state_write_closed) != 0) return -1;
+                if (net_http2_req_set_state(stream->m_req, net_http2_req_state_write_closed) != 0) return -1;
                 break;
             case net_http2_req_state_write_closed:
-                if (net_http2_req_set_req_state(stream->m_req, net_http2_req_state_closed) != 0) return -1;
+                if (net_http2_req_set_state(stream->m_req, net_http2_req_state_closed) != 0) return -1;
                 break;
             default:
-                if (net_http2_req_set_req_state(stream->m_req, net_http2_req_state_closed) != 0) return -1;
+                if (net_http2_req_set_state(stream->m_req, net_http2_req_state_closed) != 0) return -1;
                 break;
             }
         }

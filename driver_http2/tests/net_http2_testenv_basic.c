@@ -62,7 +62,6 @@ static int net_http2_testenv_req_on_recv(void * ctx, net_http2_req_t req, void c
 net_http2_testenv_receiver_t
 net_http2_testenv_create_req_receiver(net_http2_testenv_t env, net_http2_req_t req) {
     net_http2_testenv_receiver_t receiver = net_http2_testenv_receiver_create(env);
-    assert_true(
-        net_http2_req_set_reader(req, receiver, NULL, net_http2_testenv_req_on_recv, NULL) == 0);
+    net_http2_req_set_reader(req, receiver, NULL, net_http2_testenv_req_on_recv, NULL);
     return receiver;
 }

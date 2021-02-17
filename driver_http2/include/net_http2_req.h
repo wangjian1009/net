@@ -49,11 +49,13 @@ int net_http2_req_write(
     void * write_ctx, net_http2_req_on_write_fun_t on_write, void (*write_ctx_free)(void *),
     uint8_t have_follow_data);
 
+void net_http2_req_clear_writer(net_http2_req_t req);
+
 /*响应处理 */
 typedef int (*net_http2_req_on_state_change_fun_t)(void * ctx, net_http2_req_t req, net_http2_req_state_t old_state);
 typedef int (*net_http2_req_on_recv_fun_t)(void * ctx, net_http2_req_t req, void const * data, uint32_t data_len);
 
-int net_http2_req_set_reader(
+void net_http2_req_set_reader(
     net_http2_req_t req,
     void * read_ctx,
     net_http2_req_on_state_change_fun_t on_state_change,

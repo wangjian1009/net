@@ -37,9 +37,11 @@ struct net_http2_req {
     struct mem_buffer m_write_data_buffer;
 };
 
+int net_http2_req_do_start_request(net_http2_req_t req);
+    
 int net_http2_req_begin_write(net_http2_req_t req);
 
-int net_http2_req_set_req_state(net_http2_req_t req, net_http2_req_state_t state);
+int net_http2_req_set_state(net_http2_req_t req, net_http2_req_state_t state);
 
 void net_http2_req_set_stream(net_http2_req_t req, net_http2_stream_t stream);
 

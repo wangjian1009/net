@@ -21,6 +21,7 @@ int net_http2_stream_endpoint_get_mss(net_endpoint_t base_endpoint, uint32_t * m
 int net_http2_stream_endpoint_set_state(net_http2_stream_endpoint_t stream, net_http2_stream_endpoint_state_t state);
 int net_http2_stream_endpoint_sync_state(net_http2_stream_endpoint_t stream);
 void net_http2_stream_endpoint_set_using(net_http2_stream_endpoint_t stream, net_http2_stream_using_t using);
+void net_http2_stream_endpoint_set_req(net_http2_stream_endpoint_t stream, net_http2_req_t req);
 
 /**/
 int net_http2_stream_endpoint_delay_send_data(net_http2_stream_endpoint_t stream);

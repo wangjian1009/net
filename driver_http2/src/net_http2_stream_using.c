@@ -68,16 +68,10 @@ void net_http2_stream_using_on_http2_ep_fini(void * ctx) {
 
 void net_http2_stream_using_on_http2_ep_evt(void * ctx, net_endpoint_t endpoint, net_endpoint_monitor_evt_t evt) {
     net_http2_stream_using_t using = ctx;
-    net_http2_stream_endpoint_t stream, next_stream;
+    /*net_http2_stream_endpoint_t stream, next_stream;*/
     
     switch(evt->m_type) {
     case net_endpoint_monitor_evt_state_changed:
-        for(stream = TAILQ_FIRST(&using->m_streams); stream; stream = next_stream) {
-            next_stream = TAILQ_NEXT(stream, m_next_for_using);
-            if (net_http2_stream_endpoint_sync_state(stream) != 0) {
-                net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_deleting);
-            }
-        }
         break;
     case net_endpoint_monitor_evt_write_begin:
         break;
