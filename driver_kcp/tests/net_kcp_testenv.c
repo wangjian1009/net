@@ -78,11 +78,12 @@ net_kcp_endpoint_t
 net_kcp_testenv_create_ep(net_kcp_testenv_t env) {
     net_endpoint_t base_endpoint =
         net_endpoint_create(
-            net_driver_from_data(env->m_tdriver),
+            net_driver_from_data(env->m_kcp_driver),
             env->m_test_protocol,
             NULL);
 
     net_kcp_endpoint_t endpoint = net_kcp_endpoint_cast(base_endpoint);
+    assert_true(endpoint);
 
     return endpoint;
 }

@@ -6,6 +6,7 @@
 #include "net_kcp_driver_i.h"
 #include "net_kcp_endpoint_i.h"
 #include "net_kcp_acceptor_i.h"
+#include "net_kcp_mux_i.h"
 
 static int net_kcp_driver_init(net_driver_t driver);
 static void net_kcp_driver_fini(net_driver_t driver);
@@ -83,6 +84,9 @@ static int net_kcp_driver_init(net_driver_t base_driver) {
     driver->m_alloc = NULL;
     driver->m_em = NULL;
     driver->m_underline_driver = NULL;
+
+    TAILQ_INIT(&driver->m_muxes);
+
     return 0;
 }
 
