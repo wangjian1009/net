@@ -59,8 +59,8 @@ uint8_t net_http2_stream_read_closed(net_http2_stream_t stream) {
     return stream->m_read_closed;
 }
 
-void net_http2_stream_set_read_closed(net_http2_stream_t stream, uint8_t read_closed) {
-    if (stream->m_read_closed == read_closed) return;
+int net_http2_stream_set_read_closed(net_http2_stream_t stream, uint8_t read_closed) {
+    if (stream->m_read_closed == read_closed) return 0;
 
     net_http2_endpoint_t endpoint = stream->m_endpoint;
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
@@ -79,25 +79,27 @@ void net_http2_stream_set_read_closed(net_http2_stream_t stream, uint8_t read_cl
         if (stream->m_req) {
             switch (stream->m_req->m_state) {
             case net_http2_req_state_established:
-                net_http2_req_set_req_state(stream->m_req, net_http2_req_state_read_closed);
+                if (net_http2_req_set_req_state(stream->m_req, net_http2_req_state_read_closed) != 0) return -1;
                 break;
             case net_http2_req_state_write_closed:
-                net_http2_req_set_req_state(stream->m_req, net_http2_req_state_closed);
+                if (net_http2_req_set_req_state(stream->m_req, net_http2_req_state_closed) != 0) return -1;
                 break;
             default:
-                net_http2_req_set_req_state(stream->m_req, net_http2_req_state_closed);
+                if (net_http2_req_set_req_state(stream->m_req, net_http2_req_state_closed) != 0) return -1;
                 break;
             }
         }
     }
+
+    return 0;
 }
 
 uint8_t net_http2_stream_write_closed(net_http2_stream_t stream) {
     return stream->m_write_closed;
 }
 
-void net_http2_stream_set_write_closed(net_http2_stream_t stream, uint8_t write_closed) {
-    if (stream->m_write_closed == write_closed) return;
+int net_http2_stream_set_write_closed(net_http2_stream_t stream, uint8_t write_closed) {
+    if (stream->m_write_closed == write_closed) return 0;
 
     net_http2_endpoint_t endpoint = stream->m_endpoint;
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
@@ -116,17 +118,19 @@ void net_http2_stream_set_write_closed(net_http2_stream_t stream, uint8_t write_
         if (stream->m_req) {
             switch (stream->m_req->m_state) {
             case net_http2_req_state_established:
-                net_http2_req_set_req_state(stream->m_req, net_http2_req_state_write_closed);
+                if (net_http2_req_set_req_state(stream->m_req, net_http2_req_state_write_closed) != 0) return -1;
                 break;
             case net_http2_req_state_write_closed:
-                net_http2_req_set_req_state(stream->m_req, net_http2_req_state_closed);
+                if (net_http2_req_set_req_state(stream->m_req, net_http2_req_state_closed) != 0) return -1;
                 break;
             default:
-                net_http2_req_set_req_state(stream->m_req, net_http2_req_state_closed);
+                if (net_http2_req_set_req_state(stream->m_req, net_http2_req_state_closed) != 0) return -1;
                 break;
             }
         }
     }
+
+    return 0;
 }
 
 net_http2_req_t net_http2_stream_req(net_http2_stream_t stream) {

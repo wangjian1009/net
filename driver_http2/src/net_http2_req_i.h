@@ -39,7 +39,7 @@ struct net_http2_req {
 
 int net_http2_req_begin_write(net_http2_req_t req);
 
-void net_http2_req_set_req_state(net_http2_req_t req, net_http2_req_state_t state);
+int net_http2_req_set_req_state(net_http2_req_t req, net_http2_req_state_t state);
 
 void net_http2_req_set_stream(net_http2_req_t req, net_http2_stream_t stream);
 

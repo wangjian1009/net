@@ -98,10 +98,14 @@ int net_http2_endpoint_on_frame_recv_callback(
             if (frame->hd.flags & NGHTTP2_FLAG_END_HEADERS) {
                 switch (stream->m_runing_mode) {
                 case net_http2_stream_runing_mode_cli:
-                    net_http2_req_set_req_state(req, net_http2_req_state_established);
+                    if (net_http2_req_set_req_state(req, net_http2_req_state_established) != 0) {
+                        return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+                    }
                     break;
                 case net_http2_stream_runing_mode_svr:
-                    net_http2_req_set_req_state(req, net_http2_req_state_head_received);
+                    if (net_http2_req_set_req_state(req, net_http2_req_state_head_received) != 0) {
+                        return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+                    }
                     if (endpoint->m_accept_fun) {
                         if (endpoint->m_accept_fun(endpoint->m_accept_ctx, req) != 0) {
                             return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
@@ -112,14 +116,18 @@ int net_http2_endpoint_on_frame_recv_callback(
             }
 
             if (frame->hd.flags & NGHTTP2_FLAG_END_STREAM) {
-                net_http2_stream_set_read_closed(stream, 1);
+                if (net_http2_stream_set_read_closed(stream, 1) != 0) {
+                    return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+                }
             }
         }
         break;
     case NGHTTP2_DATA:
         if ((stream = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id))) {
             if (frame->hd.flags & NGHTTP2_FLAG_END_STREAM) {
-                net_http2_stream_set_read_closed(stream, 1);
+                if (net_http2_stream_set_read_closed(stream, 1) != 0) {
+                    return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+                }
             }
         }
         break;
@@ -229,14 +237,18 @@ int net_http2_endpoint_on_frame_send_callback(
     case NGHTTP2_HEADERS:
         if ((stream = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id))) {
             if (frame->hd.flags & NGHTTP2_FLAG_END_STREAM) {
-                net_http2_stream_set_write_closed(stream, 1);
+                if (net_http2_stream_set_write_closed(stream, 1) != 0) {
+                    return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+                }
             }
         }
         break;
     case NGHTTP2_DATA:
         if ((stream = nghttp2_session_get_stream_user_data(session, frame->hd.stream_id))) {
             if (frame->hd.flags & NGHTTP2_FLAG_END_STREAM) {
-                net_http2_stream_set_write_closed(stream, 1);
+                if (net_http2_stream_set_write_closed(stream, 1) != 0) {
+                    return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+                }                    
             }
         }
         break;

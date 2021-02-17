@@ -21,9 +21,9 @@ net_http2_stream_create(net_http2_endpoint_t endpoint, uint32_t stream_id, net_h
 void net_http2_stream_free(net_http2_stream_t stream);
 void net_http2_stream_free_no_unbind(net_http2_stream_t stream);
 
-void net_http2_stream_set_read_closed(net_http2_stream_t stream, uint8_t read_closed);
+int net_http2_stream_set_read_closed(net_http2_stream_t stream, uint8_t read_closed);
 
-void net_http2_stream_set_write_closed(net_http2_stream_t stream, uint8_t write_closed);
+int net_http2_stream_set_write_closed(net_http2_stream_t stream, uint8_t write_closed);
 
 NET_END_DECL
 

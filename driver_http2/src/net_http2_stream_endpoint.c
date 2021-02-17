@@ -309,8 +309,9 @@ int net_http2_stream_endpoint_req_on_recv(void * ctx, net_http2_req_t req, void 
     return 0;
 }
 
-void net_http2_stream_endpoint_req_on_state_change(void * ctx, net_http2_req_t req, net_http2_req_state_t old_state) {
+int net_http2_stream_endpoint_req_on_state_change(void * ctx, net_http2_req_t req, net_http2_req_state_t old_state) {
     net_http2_stream_endpoint_t stream = ctx;
+    return 0;
 }
 
 int net_http2_stream_endpoint_http2_connect(net_http2_stream_endpoint_t stream) {

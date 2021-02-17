@@ -306,7 +306,7 @@ int net_http2_req_start_request(net_http2_req_t req, uint8_t have_follow_data) {
     }
 
     if (endpoint->m_state != net_http2_endpoint_state_streaming) {
-        net_http2_req_set_req_state(req, net_http2_req_state_connecting);
+        if (net_http2_req_set_req_state(req, net_http2_req_state_connecting) != 0) return -1;
         return 0;
     }
 
@@ -356,7 +356,7 @@ int net_http2_req_start_request(net_http2_req_t req, uint8_t have_follow_data) {
     req->m_have_follow_data = have_follow_data;
     net_http2_req_set_stream(req, stream);
 
-    net_http2_req_set_req_state(req, net_http2_req_state_head_sended);
+    if (net_http2_req_set_req_state(req, net_http2_req_state_head_sended) != 0) return -1;
 
     return 0;
 }
@@ -414,7 +414,7 @@ int net_http2_req_start_response(net_http2_req_t req, uint8_t have_follow_data) 
 
     req->m_have_follow_data = have_follow_data;
 
-    net_http2_req_set_req_state(req, net_http2_req_state_established);
+    if (net_http2_req_set_req_state(req, net_http2_req_state_established) != 0) return -1;
 
     return 0;
 }
@@ -678,8 +678,8 @@ void net_http2_req_set_stream(net_http2_req_t req, net_http2_stream_t stream) {
     }
 }
 
-void net_http2_req_set_req_state(net_http2_req_t req, net_http2_req_state_t state) {
-    if (req->m_state == state) return;
+int net_http2_req_set_req_state(net_http2_req_t req, net_http2_req_state_t state) {
+    if (req->m_state == state) return 0;
 
     net_http2_endpoint_t endpoint = req->m_endpoint;
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
@@ -703,6 +703,8 @@ void net_http2_req_set_req_state(net_http2_req_t req, net_http2_req_state_t stat
     }
 
     req->m_state = state;
+
+    return 0;
 }
 
 const char *  net_http2_req_method_str(net_http2_req_method_t method) {
