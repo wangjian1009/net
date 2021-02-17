@@ -45,8 +45,8 @@ net_http2_stream_endpoint_req(net_http2_stream_endpoint_t endpoint) {
 
 net_http2_endpoint_runing_mode_t
 net_http2_stream_endpoint_runing_mode(net_http2_stream_endpoint_t endpoint) {
-    return endpoint->m_using
-        ? net_http2_endpoint_runing_mode(endpoint->m_using->m_http2_ep)
+    return endpoint->m_req
+        ? net_http2_endpoint_runing_mode(net_http2_req_endpoint(endpoint->m_req))
         : net_http2_endpoint_runing_mode_init;
 }
 
@@ -302,23 +302,36 @@ int net_http2_stream_endpoint_req_on_recv(void * ctx, net_http2_req_t req, void 
 
 int net_http2_stream_endpoint_req_on_state_change(void * ctx, net_http2_req_t req, net_http2_req_state_t old_state) {
     net_http2_stream_endpoint_t stream = ctx;
-
-    switch(net_http2_req_state(req)) {
-    case net_http2_req_state_init:
-    case net_http2_req_state_connecting:
-    case net_http2_req_state_head_sended:
-    case net_http2_req_state_head_received:
-    case net_http2_req_state_established:
-    case net_http2_req_state_read_closed:
-    case net_http2_req_state_write_closed:
-    case net_http2_req_state_closed:
-        break;
-    }
-
+    if (net_http2_stream_endpoint_sync_state(stream) != 0) return -1;
     return 0;
 }
 
 void net_http2_stream_endpoint_req_on_fini(void * ctx) {
+    net_http2_stream_endpoint_t stream = ctx;
+    net_http2_stream_driver_t driver = net_driver_data(net_endpoint_driver(stream->m_base_endpoint));
+    net_http2_req_t req = stream->m_req;
+    assert(stream->m_req);
+
+    net_http2_stream_endpoint_set_req(stream, NULL);
+
+    if (net_endpoint_is_active(stream->m_base_endpoint)) {
+        if (net_endpoint_driver_debug(stream->m_base_endpoint) >= 2) {
+            CPE_INFO(
+                driver->m_em, "http2: %s: %s: http2 connect: create req failed!",
+                net_endpoint_dump(net_http2_stream_driver_tmp_buffer(driver), stream->m_base_endpoint),
+                net_http2_endpoint_runing_mode_str(net_http2_stream_endpoint_runing_mode(stream)));
+        }
+
+        if (net_endpoint_error_source(stream->m_base_endpoint) == net_endpoint_error_source_none) {
+            net_endpoint_set_error(
+                stream->m_base_endpoint,
+                net_endpoint_error_source_network, net_endpoint_network_errno_logic, "req fini");
+        }
+
+        if (net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_error) != 0) {
+            net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_deleting);
+        }
+    }
 }
 
 void net_http2_stream_endpoint_set_req(net_http2_stream_endpoint_t stream, net_http2_req_t req) {
