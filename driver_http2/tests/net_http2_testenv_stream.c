@@ -42,19 +42,29 @@ net_http2_testenv_create_stream_acceptor(net_http2_testenv_t env, const char * s
 
 net_http2_stream_endpoint_t
 net_http2_testenv_stream_ep_other(net_http2_testenv_t env, net_http2_stream_endpoint_t ep) {
-    net_http2_req_t req = net_http2_stream_endpoint_req(ep);
-    net_http2_endpoint_t control = net_http2_req_endpoint(req);
-    if (control == NULL) return NULL;
+    net_http2_req_t from_req = net_http2_stream_endpoint_req(ep);
 
-    net_endpoint_t control_base = net_http2_endpoint_base_endpoint(control);
-    assert_true(control_base);
+    net_http2_stream_t from_stream = net_http2_req_stream(from_req);
+    if (from_stream == NULL) return NULL;
+    
+    net_http2_endpoint_t from_http_ep = net_http2_req_endpoint(from_req);
+    if (from_http_ep == NULL) return NULL;
 
-    net_endpoint_t other_base = test_net_endpoint_linked_other(env->m_tdriver, control_base);
-    if (other_base == NULL) return NULL;
+    net_endpoint_t from_http_ep_base = net_http2_endpoint_base_endpoint(from_http_ep);
+    assert_true(from_http_ep_base);
 
-    net_http2_endpoint_t other_control = net_http2_endpoint_cast(other_base);
-    assert_true(other_control);
+    net_endpoint_t other_http_ep_base = test_net_endpoint_linked_other(env->m_tdriver, from_http_ep_base);
+    if (other_http_ep_base == NULL) return NULL;
 
-    //net_http2_stream_endpoint_find_by_stream_id(other_control, net_http2_stream_endpoint_stream_id(ep));
-    return NULL;
+    net_http2_endpoint_t other_http_ep = net_http2_endpoint_cast(other_http_ep_base);
+    assert_true(other_http_ep);
+
+    net_http2_stream_t other_stream =
+        net_http2_endpoint_find_stream(other_http_ep, net_http2_stream_id(from_stream));
+    if (other_stream == NULL) return NULL;
+
+    net_http2_req_t other_req = net_http2_stream_req(other_stream);
+    if (other_req == NULL) return NULL;
+
+    return net_http2_req_reader_ctx(other_req);
 }

@@ -64,6 +64,8 @@ void net_http2_req_set_reader(
 
 void net_http2_req_clear_reader(net_http2_req_t req);
 
+void * net_http2_req_reader_ctx(net_http2_req_t req);
+
 int net_http2_req_add_res_head(net_http2_req_t req, const char * attr_name, const char * attr_value);
 const char * net_http2_req_find_res_header(net_http2_req_t req, const char * name);
 

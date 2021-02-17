@@ -659,6 +659,10 @@ void net_http2_req_clear_reader(net_http2_req_t req) {
     req->m_read_ctx_free = NULL;
 }
 
+void * net_http2_req_reader_ctx(net_http2_req_t req) {
+    return req->m_read_ctx;
+}
+
 uint8_t net_http2_req_is_writing(net_http2_req_t req) {
     return req->m_on_write != NULL;
 }
