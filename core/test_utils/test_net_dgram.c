@@ -83,7 +83,7 @@ int test_net_dgram_send(net_dgram_t base_dgram, net_address_t target, void const
         check_expected(id);
 
         struct test_net_dgram_write_setup * setup = mock_type(struct test_net_dgram_write_setup *);
-        assert_ptr_not_equal(setup, NULL);
+        assert_true(setup != NULL);
 
         dgram->m_write_policy = setup->m_write_policy;
 
@@ -145,7 +145,7 @@ void test_net_dgram_expect_write_send(net_dgram_t base_dgram, int64_t delay_ms) 
     setup->m_write_policy.m_send.m_write_delay_ms = delay_ms;
     setup->m_expect_buf = NULL;
     setup->m_expect_size = 0;
-    
+
     expect_value(test_net_dgram_send, id, net_dgram_id(base_dgram));
     will_return(test_net_dgram_send, setup);
 }
