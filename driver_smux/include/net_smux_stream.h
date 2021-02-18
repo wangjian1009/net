@@ -8,7 +8,6 @@ enum net_smux_stream_state {
     net_smux_stream_state_init,
 };
 
-net_smux_stream_t net_smux_stream_create(net_smux_session_t session);
 void net_smux_stream_free(net_smux_stream_t stream);
 
 uint32_t net_smux_stream_id(net_smux_stream_t stream);

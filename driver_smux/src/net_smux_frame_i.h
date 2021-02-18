@@ -20,11 +20,26 @@ enum net_smux_status {
     net_smux_status_keep_alive = 0x04,
 };
 
-struct net_smux_frame {
+CPE_START_PACKED
+struct net_smux_frame_head {
     uint8_t m_ver;
     uint8_t m_cmd;
     uint16_t m_len;
     uint32_t m_sid;
+} CPE_PACKED;
+CPE_END_PACKED
+
+struct net_smux_frame {
+    uint16_t m_capacity;
+    union {
+        TAILQ_ENTRY(net_smux_frame) m_next;
+        struct net_smux_frame_head m_head;
+    };
 };
+
+net_smux_frame_t net_smux_frame_create(
+    net_smux_session_t session, uint8_t cmd, uint32_t sid, uint16_t len);
+
+void net_smux_frame_free(net_smux_session_t session, net_smux_frame_t frame);
 
 #endif

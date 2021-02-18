@@ -25,10 +25,12 @@ struct net_smux_session {
         net_smux_session_underline_type_t m_type;
         union {
             struct {
-                net_endpoint_t m_endpoint;
+                net_smux_endpoint_t m_endpoint;
             } m_tcp;
             struct {
-                net_dgram_t m_dgram;
+                net_smux_dgram_t m_dgram;
+                cpe_hash_entry m_hh_for_dgram;
+                net_address_t m_remote_address;
             } m_udp;
         };
     } m_underline;
@@ -37,8 +39,18 @@ struct net_smux_session {
     net_timer_t m_timer_timeout;
 };
 
+net_smux_session_t
+net_smux_session_create_dgram(
+    net_smux_protocol_t protocol, net_smux_dgram_t dgram, net_address_t remote_address);
+
+void net_smux_session_free(net_smux_session_t session);
+
 int net_smux_session_send_frame(
-    net_smux_session_t session, net_smux_cmd_t cmd, uint32_t sid);
+    net_smux_session_t session, net_smux_frame_t frame, uint64_t expire_ms, uint64_t prio);
+
+
+int net_smux_session_dgram_eq(net_smux_session_t l, net_smux_session_t r, void * user_data);
+uint32_t net_smux_session_dgram_hash(net_smux_session_t o, void * user_data);
 
 NET_END_DECL
 

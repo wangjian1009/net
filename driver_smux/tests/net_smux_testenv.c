@@ -24,34 +24,53 @@ void net_smux_testenv_free(net_smux_testenv_t env) {
     mem_free(test_allocrator(), env);
 }
 
-net_smux_session_t
-net_smux_testenv_create_session_udp_svr(net_smux_testenv_t env, const char * str_address) {
+net_smux_dgram_t
+net_smux_testenv_create_dgram_svr(net_smux_testenv_t env, const char * str_address) {
     net_address_t address = net_address_create_auto(env->m_schedule, str_address);
     assert_true(address != NULL);
 
-    net_smux_session_t session =
-        net_smux_session_create_udp(
+    net_smux_dgram_t dgram =
+        net_smux_dgram_create(
             env->m_smux_protocol, net_smux_session_runing_mode_svr,
             net_driver_from_data(env->m_tdriver), address);
-    assert_true(session);
+    assert_true(dgram);
+
+    net_address_free(address);
+
+    return dgram;
+}
+
+net_smux_dgram_t
+net_smux_testenv_create_dgram_cli(net_smux_testenv_t env, const char * str_address) {
+    net_address_t address = NULL;
+
+    if (str_address) {
+        address = net_address_create_auto(env->m_schedule, str_address);
+        assert_true(address != NULL);
+    }
+
+    net_smux_dgram_t dgram =
+        net_smux_dgram_create(
+            env->m_smux_protocol, net_smux_session_runing_mode_cli,
+            net_driver_from_data(env->m_tdriver), address);
+    assert_true(dgram);
+
+    if (address) {
+        net_address_free(address);
+    }
+
+    return dgram;
+}    
+
+net_smux_session_t
+net_smux_testenv_dgram_open_session(
+    net_smux_testenv_t env, net_smux_dgram_t dgram, const char * str_address) {
+    net_address_t address = net_address_create_auto(env->m_schedule, str_address);
+    assert_true(address != NULL);
+    
+    net_smux_session_t session = net_smux_dgram_open_session(dgram, address);
 
     net_address_free(address);
 
     return session;
 }
-
-net_smux_session_t
-net_smux_testenv_create_session_udp_cli(net_smux_testenv_t env, const char * str_address) {
-    net_address_t address = net_address_create_auto(env->m_schedule, str_address);
-    assert_true(address != NULL);
-
-    net_smux_session_t session =
-        net_smux_session_create_udp(
-            env->m_smux_protocol, net_smux_session_runing_mode_cli,
-            net_driver_from_data(env->m_tdriver), address);
-    assert_true(session);
-
-    net_address_free(address);
-
-    return session;
-}    

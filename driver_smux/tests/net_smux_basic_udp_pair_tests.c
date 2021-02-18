@@ -17,12 +17,14 @@ static int teardown(void **state) {
 static void net_smux_basic_udp_pair_basic(void **state) {
     net_smux_testenv_t env = *state;
 
-    net_smux_session_t svr_session = net_smux_testenv_create_session_udp_svr(env, "1.2.3.4:5678");
-    net_smux_session_t cli_session = net_smux_testenv_create_session_udp_cli(env, "1.2.3.4:5678");
+    net_smux_dgram_t svr_dgram = net_smux_testenv_create_dgram_svr(env, "1.2.3.4:5678");
+    net_smux_dgram_t cli_dgram = net_smux_testenv_create_dgram_cli(env, "2.3.4.5:6789");
 
-    net_smux_stream_t cli_stream = net_smux_stream_create(cli_session);
-
+    net_smux_session_t cli_session =
+        net_smux_testenv_dgram_open_session(env, cli_dgram, "1.2.3.4:5678");
+    assert_true(cli_session);
     
+    net_smux_stream_t cli_stream = net_smux_session_open_stream(cli_session);
 }
 
 int net_smux_basic_udp_pair_basic_tests() {

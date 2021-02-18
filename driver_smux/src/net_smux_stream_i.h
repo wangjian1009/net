@@ -12,6 +12,7 @@ struct net_smux_stream {
     net_smux_stream_state_t m_state;
 };
 
+net_smux_stream_t net_smux_stream_create(net_smux_session_t session);
 void net_smux_stream_free_all(net_smux_session_t session);
 
 int net_smux_stream_eq(net_smux_stream_t l, net_smux_stream_t r, void * user_data);

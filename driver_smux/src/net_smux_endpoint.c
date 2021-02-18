@@ -7,6 +7,7 @@
 #include "net_endpoint.h"
 #include "net_address.h"
 #include "net_smux_endpoint_i.h"
+#include "net_smux_session_i.h"
 
 void net_smux_endpoint_free(net_smux_endpoint_t endpoint) {
     net_endpoint_free(endpoint->m_base_endpoint);
@@ -22,6 +23,10 @@ net_smux_endpoint_cast(net_endpoint_t base_endpoint) {
 
 net_endpoint_t net_smux_endpoint_base_endpoint(net_smux_endpoint_t endpoint) {
     return endpoint->m_base_endpoint;
+}
+
+net_smux_session_t net_smux_endpoint_session(net_smux_endpoint_t endpoint) {
+    return endpoint->m_session;
 }
 
 int net_smux_endpoint_init(net_endpoint_t base_endpoint) {
@@ -89,6 +94,24 @@ int net_smux_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoint
 
 net_smux_endpoint_runing_mode_t net_smux_endpoint_runing_mode(net_smux_endpoint_t endpoint) {
     return endpoint->m_runing_mode;
+}
+
+void net_smux_session_set_session(net_smux_endpoint_t endpoint, net_smux_session_t session) {
+    if (endpoint->m_session == session) return;
+
+    if (endpoint->m_session) {
+        assert(endpoint->m_session->m_underline.m_type == net_smux_session_underline_tcp);
+        assert(endpoint->m_session->m_underline.m_tcp.m_endpoint == endpoint);
+        endpoint->m_session->m_underline.m_tcp.m_endpoint = NULL;
+    }
+
+    endpoint->m_session = session;
+
+    if (endpoint->m_session) {
+        assert(endpoint->m_session->m_underline.m_type == net_smux_session_underline_tcp);
+        assert(endpoint->m_session->m_underline.m_tcp.m_endpoint == NULL);
+        endpoint->m_session->m_underline.m_tcp.m_endpoint = endpoint;
+    }
 }
 
 const char * net_smux_endpoint_runing_mode_str(net_smux_endpoint_runing_mode_t runing_mode) {

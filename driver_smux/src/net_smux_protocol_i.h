@@ -5,6 +5,7 @@
 #include "net_smux_protocol.h"
 
 typedef enum net_smux_cmd net_smux_cmd_t;
+typedef struct net_smux_frame * net_smux_frame_t;
 typedef TAILQ_HEAD(net_smux_session_list, net_smux_session) net_smux_session_list_t;
 
 struct net_smux_protocol {

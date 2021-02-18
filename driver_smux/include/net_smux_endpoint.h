@@ -18,6 +18,7 @@ net_smux_endpoint_runing_mode_t net_smux_endpoint_runing_mode(net_smux_endpoint_
 int net_smux_endpoint_set_runing_mode(net_smux_endpoint_t endpoint, net_smux_endpoint_runing_mode_t runing_mode);
 
 net_endpoint_t net_smux_endpoint_base_endpoint(net_smux_endpoint_t endpoint);
+net_smux_session_t net_smux_endpoint_session(net_smux_endpoint_t endpoint);
 
 /*utils*/
 const char * net_smux_endpoint_runing_mode_str(net_smux_endpoint_runing_mode_t runing_mode);

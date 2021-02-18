@@ -15,4 +15,6 @@ void net_smux_endpoint_fini(net_endpoint_t base_endpoint);
 int net_smux_endpoint_input(net_endpoint_t base_endpoint);
 int net_smux_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoint_state_t from_state);
 
+void net_smux_session_set_session(net_smux_endpoint_t endpoit, net_smux_session_t session);
+
 #endif
