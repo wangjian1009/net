@@ -1,6 +1,7 @@
 #include "cpe/pal/pal_string.h"
 #include "cmocka_all.h"
 #include "net_schedule.h"
+#include "net_protocol.h"
 #include "net_address.h"
 #include "net_smux_protocol.h"
 #include "net_smux_testenv.h"
@@ -13,7 +14,8 @@ net_smux_testenv_create() {
     env->m_schedule = net_schedule_create(test_allocrator(), env->m_em);
     env->m_tdriver = test_net_driver_create(env->m_schedule, env->m_em);
     env->m_smux_protocol = net_smux_protocol_create(env->m_schedule, "test", test_allocrator(), env->m_em);
-
+    net_protocol_set_debug(net_protocol_from_data(env->m_smux_protocol), 2);
+    
     return env;
 }
 
@@ -31,7 +33,7 @@ net_smux_testenv_create_dgram_svr(net_smux_testenv_t env, const char * str_addre
 
     net_smux_dgram_t dgram =
         net_smux_dgram_create(
-            env->m_smux_protocol, net_smux_session_runing_mode_svr,
+            env->m_smux_protocol, net_smux_runing_mode_svr,
             net_driver_from_data(env->m_tdriver), address);
     assert_true(dgram);
 
@@ -51,7 +53,7 @@ net_smux_testenv_create_dgram_cli(net_smux_testenv_t env, const char * str_addre
 
     net_smux_dgram_t dgram =
         net_smux_dgram_create(
-            env->m_smux_protocol, net_smux_session_runing_mode_cli,
+            env->m_smux_protocol, net_smux_runing_mode_cli,
             net_driver_from_data(env->m_tdriver), address);
     assert_true(dgram);
 

@@ -10,7 +10,7 @@ struct net_smux_session {
     net_smux_protocol_t m_protocol;
     TAILQ_ENTRY(net_smux_session) m_next;
     uint32_t m_session_id;
-    net_smux_session_runing_mode_t m_runing_mode;
+    net_smux_runing_mode_t m_runing_mode;
 
     uint32_t m_max_stream_id; /* next stream identifier */
     struct cpe_hash_table m_streams;
@@ -49,6 +49,9 @@ int net_smux_session_send_frame(
     net_smux_session_t session, net_smux_stream_t stream,
     net_smux_cmd_t cmd, void const * data, uint16_t len, 
     uint64_t expire_ms, uint64_t prio);
+
+int net_smux_session_input(
+    net_smux_session_t session, void const * data, uint32_t data_len);
 
 int net_smux_session_dgram_eq(net_smux_session_t l, net_smux_session_t r, void * user_data);
 uint32_t net_smux_session_dgram_hash(net_smux_session_t o, void * user_data);

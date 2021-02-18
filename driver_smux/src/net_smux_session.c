@@ -29,7 +29,7 @@ void net_smux_session_do_timeout(net_timer_t timer, void * ctx);
 net_smux_session_t
 net_smux_session_create_i(
     net_smux_protocol_t protocol,
-    net_smux_session_runing_mode_t runing_mode,
+    net_smux_runing_mode_t runing_mode,
     net_smux_session_underline_type_t underline_type)
 {
     net_smux_session_t session = mem_alloc(protocol->m_alloc, sizeof(struct net_smux_session));
@@ -41,7 +41,7 @@ net_smux_session_create_i(
     session->m_protocol = protocol;
     session->m_session_id = ++protocol->m_max_session_id;
     session->m_runing_mode = runing_mode;
-    session->m_max_stream_id = runing_mode == net_smux_session_runing_mode_cli ? 1 : 0;
+    session->m_max_stream_id = runing_mode == net_smux_runing_mode_cli ? 1 : 0;
     session->m_bucket = protocol->m_cfg_max_session_buffer;
     session->m_shaper = NULL;
     session->m_timer_ping = NULL;
@@ -187,7 +187,7 @@ void net_smux_session_free(net_smux_session_t session) {
     mem_free(protocol->m_alloc, session);    
 }
 
-net_smux_session_runing_mode_t net_smux_session_runing_mode(net_smux_session_t session) {
+net_smux_runing_mode_t net_smux_session_runing_mode(net_smux_session_t session) {
     return session->m_runing_mode;
 }
 
@@ -383,6 +383,12 @@ int net_smux_session_send_frame(
     }
 }
 
+int net_smux_session_input(
+    net_smux_session_t session, void const * data, uint32_t data_len)
+{
+    return 0;
+}
+
 int net_smux_write_request_prio_cmp(void const * i_l, void const * i_r) {
     struct net_smux_write_rquest const * l = i_l;
     struct net_smux_write_rquest const * r = i_r;
@@ -393,6 +399,17 @@ int net_smux_write_request_prio_cmp(void const * i_l, void const * i_r) {
 }
 
 void net_smux_session_print(write_stream_t ws, net_smux_session_t session) {
+    switch(session->m_underline.m_type) {
+    case net_smux_session_underline_udp:
+        if (session->m_underline.m_udp.m_dgram) {
+            net_smux_dgram_print(ws, session->m_underline.m_udp.m_dgram);
+            stream_printf(ws, ": ");
+        }
+        break;
+    case net_smux_session_underline_tcp:
+        break;
+    }
+    
     stream_printf(ws, "session %d", session->m_session_id);
 }
 
@@ -418,13 +435,4 @@ int net_smux_session_dgram_eq(net_smux_session_t l, net_smux_session_t r, void *
 uint32_t net_smux_session_dgram_hash(net_smux_session_t o, void * user_data) {
     assert(o->m_underline.m_type == net_smux_session_underline_udp);
     return net_address_hash(o->m_underline.m_udp.m_remote_address);
-}
-
-const char * net_smux_session_runing_mode_str(net_smux_session_runing_mode_t runing_mode) {
-    switch (runing_mode) {
-    case net_smux_session_runing_mode_cli:
-        return "cli";
-    case net_smux_session_runing_mode_svr:
-        return "svr";
-    }
 }

@@ -8,7 +8,7 @@ NET_BEGIN_DECL
 net_smux_dgram_t
 net_smux_dgram_create(
     net_smux_protocol_t protocol,
-    net_smux_session_runing_mode_t runing_mode,
+    net_smux_runing_mode_t runing_mode,
     net_driver_t driver,
     net_address_t local_address);
 

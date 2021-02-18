@@ -1,6 +1,9 @@
+#include <assert.h>
 #include "cpe/utils/stream_buffer.h"
+#include "cpe/utils/string_utils.h"
 #include "net_dgram.h"
 #include "net_address.h"
+#include "net_protocol.h"
 #include "net_smux_dgram_i.h"
 #include "net_smux_session_i.h"
 
@@ -9,7 +12,7 @@ void net_smux_dgram_input(net_dgram_t dgram, void * ctx, void * data, size_t dat
 net_smux_dgram_t
 net_smux_dgram_create(
     net_smux_protocol_t protocol,
-    net_smux_session_runing_mode_t runing_mode, net_driver_t driver, net_address_t local_address)
+    net_smux_runing_mode_t runing_mode, net_driver_t driver, net_address_t local_address)
 {
     net_smux_dgram_t dgram = mem_alloc(protocol->m_alloc, sizeof(struct net_smux_dgram));
     if (dgram == NULL) {
@@ -20,6 +23,7 @@ net_smux_dgram_create(
     }
 
     dgram->m_protocol = protocol;
+    dgram->m_runing_mode = runing_mode;
 
     dgram->m_dgram = net_dgram_create(driver, local_address, net_smux_dgram_input, dgram);
     if (dgram->m_dgram == NULL) {
@@ -90,7 +94,7 @@ net_smux_session_t
 net_smux_dgram_open_session(net_smux_dgram_t dgram, net_address_t remote_address) {
     net_smux_protocol_t protocol = dgram->m_protocol;
     
-    if (dgram->m_runing_mode != net_smux_session_runing_mode_cli) {
+    if (dgram->m_runing_mode != net_smux_runing_mode_cli) {
         //CPE_ERROR(protocol->m_em, "smux: dg %d:"
     }
     
@@ -108,7 +112,7 @@ net_smux_dgram_check_open_session(net_smux_dgram_t dgram, net_address_t remote_a
 }
 
 void net_smux_dgram_print(write_stream_t ws, net_smux_dgram_t dgram) {
-    stream_printf(ws, "dgram ");
+    stream_printf(ws, "%s: dgram ", net_smux_runing_mode_str(dgram->m_runing_mode));
     net_address_print(ws, net_dgram_address(dgram->m_dgram));
 }
 
@@ -122,5 +126,51 @@ const char * net_smux_dgram_dump(mem_buffer_t buffer, net_smux_dgram_t dgram) {
     return mem_buffer_make_continuous(buffer, 0);
 }
 
-void net_smux_dgram_input(net_dgram_t dgram, void * ctx, void * data, size_t data_size, net_address_t source) {
+void net_smux_dgram_input(net_dgram_t base_dgram, void * ctx, void * data, size_t data_size, net_address_t source) {
+    net_smux_dgram_t dgram = ctx;
+    assert(dgram->m_dgram == base_dgram);
+
+    net_smux_protocol_t protocol = dgram->m_protocol;
+
+    net_smux_session_t session = net_smux_dgram_find_session(dgram, source);
+    if (session == NULL) {
+        if (dgram->m_runing_mode != net_smux_runing_mode_svr) {
+            if (net_protocol_debug(net_protocol_from_data(protocol)) || net_dgram_protocol_debug(base_dgram, source)) {
+                char address_buf[128];
+                cpe_str_dup(
+                    address_buf, sizeof(address_buf),
+                    net_address_dump(net_smux_protocol_tmp_buffer(protocol), source));
+                CPE_INFO(
+                    protocol->m_em, "smux: %s: <== ignore pdu from %s",
+                    net_smux_dgram_dump(net_smux_protocol_tmp_buffer(protocol), dgram), address_buf);
+            }
+
+            return;
+        }
+
+        session = net_smux_session_create_dgram(protocol, dgram, source);
+        if (session == NULL) {
+            char address_buf[128];
+            cpe_str_dup(
+                address_buf, sizeof(address_buf),
+                net_address_dump(net_smux_protocol_tmp_buffer(protocol), source));
+
+            CPE_ERROR(
+                protocol->m_em, "smux: %s: create session of %s fail!",
+                net_smux_dgram_dump(net_smux_protocol_tmp_buffer(protocol), dgram), address_buf);
+            return;
+        }
+    }
+
+    assert(session);
+
+    if (net_smux_session_input(session, data, data_size) != 0) {
+        char address_buf[128];
+        cpe_str_dup(
+            address_buf, sizeof(address_buf),
+            net_address_dump(net_smux_protocol_tmp_buffer(protocol), source));
+        CPE_ERROR(
+            protocol->m_em, "smux: %s: <== process pdu from %s fail",
+            net_smux_dgram_dump(net_smux_protocol_tmp_buffer(protocol), dgram), address_buf);
+    }
 }

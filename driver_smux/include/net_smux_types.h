@@ -4,10 +4,10 @@
 
 NET_BEGIN_DECL
 
-typedef enum net_smux_session_runing_mode {
-    net_smux_session_runing_mode_cli,
-    net_smux_session_runing_mode_svr,
-} net_smux_session_runing_mode_t;
+typedef enum net_smux_runing_mode {
+    net_smux_runing_mode_cli,
+    net_smux_runing_mode_svr,
+} net_smux_runing_mode_t;
 
 typedef enum net_smux_session_underline_type net_smux_session_underline_type_t;
 

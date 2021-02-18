@@ -20,7 +20,7 @@ int net_kcp_acceptor_init(net_acceptor_t base_acceptor) {
     acceptor->m_smux_dgram =
         net_smux_dgram_create(
             driver->m_smux_protocol,
-            net_smux_session_runing_mode_svr,
+            net_smux_runing_mode_svr,
             driver->m_underline_driver, address);
     if (acceptor->m_smux_dgram == NULL) {
         CPE_ERROR(driver->m_em, "net: kcp: acceptor: init: create mux failed!");

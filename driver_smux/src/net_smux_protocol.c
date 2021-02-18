@@ -116,3 +116,12 @@ net_schedule_t net_smux_protocol_schedule(net_smux_protocol_t protocol) {
 mem_buffer_t net_smux_protocol_tmp_buffer(net_smux_protocol_t protocol) {
     return net_schedule_tmp_buffer(net_protocol_schedule(net_protocol_from_data(protocol)));
 }
+
+const char * net_smux_runing_mode_str(net_smux_runing_mode_t runing_mode) {
+    switch (runing_mode) {
+    case net_smux_runing_mode_cli:
+        return "cli";
+    case net_smux_runing_mode_svr:
+        return "svr";
+    }
+}
