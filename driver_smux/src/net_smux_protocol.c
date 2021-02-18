@@ -9,10 +9,11 @@
 #include "net_smux_frame_i.h"
 
 int net_smux_protocol_init(net_protocol_t base_protocol) {
+    net_schedule_t schedule = net_protocol_schedule(base_protocol);
     net_smux_protocol_t protocol = net_protocol_data(base_protocol);
 
-    protocol->m_alloc = NULL;
-    protocol->m_em = NULL;
+    protocol->m_alloc = net_schedule_allocrator(schedule);
+    protocol->m_em = net_schedule_em(schedule);
 
     protocol->m_cfg_version = 1;
     protocol->m_cfg_keep_alive_disabled = 0;
@@ -26,6 +27,8 @@ int net_smux_protocol_init(net_protocol_t base_protocol) {
     TAILQ_INIT(&protocol->m_sessions);
     TAILQ_INIT(&protocol->m_dgrams);
     TAILQ_INIT(&protocol->m_free_frames);
+
+    mem_buffer_init(&protocol->m_data_buffer, protocol->m_alloc);
 
     return 0;
 }
@@ -42,6 +45,8 @@ void net_smux_protocol_fini(net_protocol_t base_protocol) {
     while(!TAILQ_EMPTY(&protocol->m_free_frames)) {
         net_smux_frame_real_free(protocol, TAILQ_FIRST(&protocol->m_free_frames));
     }
+
+    mem_buffer_clear(&protocol->m_data_buffer);
 }
 
 net_smux_protocol_t

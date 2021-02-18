@@ -11,6 +11,7 @@
 #include "net_smux_endpoint_i.h"
 #include "net_smux_dgram_i.h"
 #include "net_smux_frame_i.h"
+#include "net_smux_pro.h"
 
 struct net_smux_write_rquest {
     uint64_t m_prio;
@@ -238,7 +239,9 @@ int net_smux_session_enqueue_frame(net_smux_session_t session, net_smux_frame_t 
     }
     
     if (cpe_priority_queue_insert(session->m_shaper, &write_request) != 0) {
-        CPE_ERROR(protocol->m_em, "smux: session %d: send frame: queue insert fail", session->m_session_id);
+        CPE_ERROR(
+            protocol->m_em, "smux: %s: send frame: queue insert fail",
+            net_smux_session_dump(net_smux_protocol_tmp_buffer(protocol), session));
         return -1;
     }
 
@@ -257,10 +260,40 @@ uint8_t net_smux_session_can_write(net_smux_session_t session) {
     }
 }
 
-int net_smux_session_write_frame(net_smux_session_t session, net_smux_frame_t frame) {
+int net_smux_session_write_frame(
+    net_smux_session_t session, net_smux_stream_t stream,
+    net_smux_cmd_t cmd, void const * data, uint16_t len)
+{
     net_smux_protocol_t protocol = session->m_protocol;
+    uint32_t frame_sz = sizeof(struct net_smux_frame) +  len;
 
     if (session->m_underline.m_type == net_smux_session_underline_udp) {
+        mem_buffer_clear_data(&protocol->m_data_buffer);
+        struct net_smux_head * frame = mem_buffer_alloc(&protocol->m_data_buffer, frame_sz);
+
+        assert(session->m_underline.m_udp.m_dgram);
+
+        frame->m_ver = protocol->m_cfg_version;
+        frame->m_cmd = cmd;
+        if (stream) {
+            CPE_COPY_HTON32(&frame->m_sid, &stream->m_stream_id);
+        }
+        else {
+            frame->m_sid = 0;
+        }
+        CPE_COPY_HTON16(&frame->m_len, &len);
+
+        if (net_dgram_send(
+                session->m_underline.m_udp.m_dgram->m_dgram,
+                session->m_underline.m_udp.m_remote_address,
+                frame, frame_sz) != 0)
+        {
+            CPE_ERROR(
+                protocol->m_em, "smux: %s: write frame error",
+                net_smux_session_dump(net_smux_protocol_tmp_buffer(protocol), session));
+            return -1;
+        }
+        
         return 0; 
     }
     else {   
@@ -277,17 +310,23 @@ int net_smux_session_write_frame(net_smux_session_t session, net_smux_frame_t fr
     }
 }
 
-int net_smux_session_send_frame(net_smux_session_t session, net_smux_frame_t frame, uint64_t expire_ms, uint64_t prio) {
+int net_smux_session_send_frame(
+    net_smux_session_t session, net_smux_stream_t stream,
+    net_smux_cmd_t cmd, void const * data, uint16_t len, 
+    uint64_t expire_ms, uint64_t prio)
+{
     if (net_smux_session_can_write(session) && cpe_priority_queue_count(session->m_shaper) == 0) {
-        net_smux_session_write_frame(session, frame);
-        net_smux_frame_free(
-            session,
-            frame->m_head.m_sid != 0 ? net_smux_session_find_stream(session, frame->m_head.m_sid) : NULL,
-            frame);
+        net_smux_session_write_frame(session, stream, cmd, data, len);
         return 0;
     }
     else {
-        return net_smux_session_enqueue_frame(session, frame, expire_ms, prio);
+        assert(0);
+        /* net_smux_frame_free( */
+        /*     session, */
+        /*     frame->m_head.m_sid != 0 ? net_smux_session_find_stream(session, frame->m_head.m_sid) : NULL, */
+        /*     frame); */
+        //return net_smux_session_enqueue_frame(session, frame, expire_ms, prio);
+        return 0;
     }
 }
 

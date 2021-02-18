@@ -46,7 +46,9 @@ net_smux_session_create_dgram(
 void net_smux_session_free(net_smux_session_t session);
 
 int net_smux_session_send_frame(
-    net_smux_session_t session, net_smux_frame_t frame, uint64_t expire_ms, uint64_t prio);
+    net_smux_session_t session, net_smux_stream_t stream,
+    net_smux_cmd_t cmd, void const * data, uint16_t len, 
+    uint64_t expire_ms, uint64_t prio);
 
 int net_smux_session_dgram_eq(net_smux_session_t l, net_smux_session_t r, void * user_data);
 uint32_t net_smux_session_dgram_hash(net_smux_session_t o, void * user_data);

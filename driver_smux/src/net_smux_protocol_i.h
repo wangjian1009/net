@@ -43,6 +43,8 @@ struct net_smux_protocol {
 
     /*frame cache*/
     net_smux_frame_list_t m_free_frames;
+
+    struct mem_buffer m_data_buffer;
 };
 
 net_schedule_t net_smux_protocol_schedule(net_smux_protocol_t protocol);

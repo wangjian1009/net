@@ -27,9 +27,9 @@ net_smux_frame_create(
 
     session->m_bucket -= len;
     
-    frame->m_head.m_cmd = cmd;
-    frame->m_head.m_len = len;
-    frame->m_head.m_sid = stream ? stream->m_stream_id : 0;
+    frame->m_cmd = cmd;
+    frame->m_len = len;
+    frame->m_sid = stream ? stream->m_stream_id : 0;
 
     return frame;
 }
@@ -37,7 +37,7 @@ net_smux_frame_create(
 void net_smux_frame_free(net_smux_session_t session, net_smux_stream_t stream, net_smux_frame_t frame) {
     net_smux_protocol_t protocol = session->m_protocol;
 
-    session->m_bucket += frame->m_head.m_len;
+    session->m_bucket += frame->m_len;
     
     TAILQ_INSERT_TAIL(&protocol->m_free_frames, frame, m_next);
 }
