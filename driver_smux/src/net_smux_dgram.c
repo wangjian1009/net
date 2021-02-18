@@ -45,7 +45,8 @@ net_smux_dgram_create(
         mem_free(protocol->m_alloc, dgram);
         return NULL;
     }
-    
+
+    TAILQ_INSERT_TAIL(&protocol->m_dgrams, dgram, m_next);
     return dgram;
 }
 
@@ -68,6 +69,7 @@ void net_smux_dgram_free(net_smux_dgram_t dgram) {
         dgram->m_dgram = NULL;
     }
 
+    TAILQ_REMOVE(&protocol->m_dgrams, dgram, m_next);
     mem_free(protocol->m_alloc, dgram);
 }
 

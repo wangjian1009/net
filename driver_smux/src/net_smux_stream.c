@@ -15,6 +15,7 @@ net_smux_stream_create(net_smux_session_t session) {
         return NULL;
     }
 
+    stream->m_session = session;
     stream->m_stream_id = session->m_max_stream_id;
     stream->m_state = net_smux_stream_state_init;
 

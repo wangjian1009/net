@@ -1,9 +1,11 @@
+#include <assert.h>
 #include "cpe/pal/pal_stdio.h"
 #include "net_schedule.h"
 #include "net_protocol.h"
 #include "net_smux_protocol_i.h"
 #include "net_smux_endpoint_i.h"
 #include "net_smux_session_i.h"
+#include "net_smux_dgram_i.h"
 
 int net_smux_protocol_init(net_protocol_t base_protocol) {
     net_smux_protocol_t protocol = net_protocol_data(base_protocol);
@@ -21,6 +23,7 @@ int net_smux_protocol_init(net_protocol_t base_protocol) {
 
     protocol->m_max_session_id = 0;
     TAILQ_INIT(&protocol->m_sessions);
+    TAILQ_INIT(&protocol->m_dgrams);
 
     return 0;
 }
@@ -28,9 +31,11 @@ int net_smux_protocol_init(net_protocol_t base_protocol) {
 void net_smux_protocol_fini(net_protocol_t base_protocol) {
     net_smux_protocol_t protocol = net_protocol_data(base_protocol);
 
-    while(!TAILQ_EMPTY(&protocol->m_sessions)) {
-        net_smux_session_free(TAILQ_FIRST(&protocol->m_sessions));
+    while(!TAILQ_EMPTY(&protocol->m_dgrams)) {
+        net_smux_dgram_free(TAILQ_FIRST(&protocol->m_dgrams));
     }
+
+    assert(TAILQ_EMPTY(&protocol->m_sessions));
 }
 
 net_smux_protocol_t
