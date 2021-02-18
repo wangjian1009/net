@@ -8,6 +8,7 @@ typedef enum net_smux_cmd net_smux_cmd_t;
 typedef struct net_smux_frame * net_smux_frame_t;
 typedef TAILQ_HEAD(net_smux_session_list, net_smux_session) net_smux_session_list_t;
 typedef TAILQ_HEAD(net_smux_dgram_list, net_smux_dgram) net_smux_dgram_list_t;
+typedef TAILQ_HEAD(net_smux_frame_list, net_smux_frame) net_smux_frame_list_t;
 
 struct net_smux_protocol {
     mem_allocrator_t m_alloc;
@@ -39,6 +40,9 @@ struct net_smux_protocol {
     net_smux_session_list_t m_sessions;
 
     net_smux_dgram_list_t m_dgrams;
+
+    /*frame cache*/
+    net_smux_frame_list_t m_free_frames;
 };
 
 net_schedule_t net_smux_protocol_schedule(net_smux_protocol_t protocol);

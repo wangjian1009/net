@@ -37,9 +37,12 @@ struct net_smux_frame {
     };
 };
 
-net_smux_frame_t net_smux_frame_create(
+net_smux_frame_t
+net_smux_frame_create(
     net_smux_session_t session, uint8_t cmd, uint32_t sid, uint16_t len);
 
 void net_smux_frame_free(net_smux_session_t session, net_smux_frame_t frame);
+
+void net_smux_frame_real_free(net_smux_protocol_t protocol, net_smux_frame_t frame);
 
 #endif

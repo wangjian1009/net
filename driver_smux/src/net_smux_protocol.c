@@ -6,6 +6,7 @@
 #include "net_smux_endpoint_i.h"
 #include "net_smux_session_i.h"
 #include "net_smux_dgram_i.h"
+#include "net_smux_frame_i.h"
 
 int net_smux_protocol_init(net_protocol_t base_protocol) {
     net_smux_protocol_t protocol = net_protocol_data(base_protocol);
@@ -24,6 +25,7 @@ int net_smux_protocol_init(net_protocol_t base_protocol) {
     protocol->m_max_session_id = 0;
     TAILQ_INIT(&protocol->m_sessions);
     TAILQ_INIT(&protocol->m_dgrams);
+    TAILQ_INIT(&protocol->m_free_frames);
 
     return 0;
 }
@@ -36,6 +38,10 @@ void net_smux_protocol_fini(net_protocol_t base_protocol) {
     }
 
     assert(TAILQ_EMPTY(&protocol->m_sessions));
+
+    while(!TAILQ_EMPTY(&protocol->m_free_frames)) {
+        net_smux_frame_real_free(protocol, TAILQ_FIRST(&protocol->m_free_frames));
+    }
 }
 
 net_smux_protocol_t

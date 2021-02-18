@@ -205,10 +205,18 @@ net_address_t net_smux_session_local_address(net_smux_session_t session) {
     }
 }
 
-net_smux_stream_t net_smux_session_open_stream(net_smux_session_t session) {
+net_smux_stream_t
+net_smux_session_open_stream(net_smux_session_t session) {
     net_smux_stream_t stream = net_smux_stream_create(session);
 
     return stream;
+}
+
+net_smux_stream_t
+net_smux_session_find_stream(net_smux_session_t session, uint32_t stream_id) {
+    struct net_smux_stream key;
+    key.m_stream_id = stream_id;
+    return cpe_hash_table_find(&session->m_streams, &key);
 }
 
 void net_smux_session_do_ping(net_timer_t timer, void * ctx) {
@@ -250,22 +258,21 @@ uint8_t net_smux_session_can_write(net_smux_session_t session) {
 int net_smux_session_write_frame(net_smux_session_t session, net_smux_frame_t frame) {
     net_smux_protocol_t protocol = session->m_protocol;
 
-    switch(session->m_underline.m_type) {
-    case net_smux_session_underline_udp:
-        break;
-    case net_smux_session_underline_tcp:
+    if (session->m_underline.m_type == net_smux_session_underline_udp) {
+        return 0; 
+    }
+    else {   
+        assert(session->m_underline.m_type == net_smux_session_underline_tcp);
+
         if (session->m_underline.m_tcp.m_endpoint == NULL) {
             CPE_ERROR(
                 protocol->m_em, "smux: session %d: write frame: no endpoint",
                 session->m_session_id);
             return -1;
         }
-        else {
-            
-        }
-        break;
+
+        return 0; 
     }
-    return 0; 
 }
 
 int net_smux_session_send_frame(net_smux_session_t session, net_smux_frame_t frame, uint64_t expire_ms, uint64_t prio) {
