@@ -2,10 +2,8 @@
 #include "net_smux_session_i.h"
 
 net_smux_stream_t
-net_smux_stream_create(net_smux_session_t session) {
+net_smux_stream_create(net_smux_session_t session, uint32_t stream_id) {
     net_smux_protocol_t protocol = session->m_protocol;
-
-	session->m_max_stream_id += 2;
 
     net_smux_stream_t stream = mem_alloc(protocol->m_alloc, sizeof(struct net_smux_stream));
     if (stream == NULL) {
@@ -16,7 +14,7 @@ net_smux_stream_create(net_smux_session_t session) {
     }
 
     stream->m_session = session;
-    stream->m_stream_id = session->m_max_stream_id;
+    stream->m_stream_id = stream_id;
     stream->m_state = net_smux_stream_state_init;
 
     cpe_hash_entry_init(&stream->m_hh_for_session);

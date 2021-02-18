@@ -145,7 +145,7 @@ void net_smux_session_free(net_smux_session_t session) {
     if (session->m_shaper) {
         struct net_smux_write_rquest * request;
         while((request = cpe_priority_queue_top(session->m_shaper))) {
-            net_smux_frame_free(session, request->m_frame);
+            net_smux_frame_free(session, NULL, request->m_frame);
             cpe_priority_queue_pop(session->m_shaper);
         }
         cpe_priority_queue_free(session->m_shaper);
@@ -207,7 +207,9 @@ net_address_t net_smux_session_local_address(net_smux_session_t session) {
 
 net_smux_stream_t
 net_smux_session_open_stream(net_smux_session_t session) {
-    net_smux_stream_t stream = net_smux_stream_create(session);
+	session->m_max_stream_id += 2;
+
+    net_smux_stream_t stream = net_smux_stream_create(session, session->m_max_stream_id);
 
     return stream;
 }
@@ -278,7 +280,10 @@ int net_smux_session_write_frame(net_smux_session_t session, net_smux_frame_t fr
 int net_smux_session_send_frame(net_smux_session_t session, net_smux_frame_t frame, uint64_t expire_ms, uint64_t prio) {
     if (net_smux_session_can_write(session) && cpe_priority_queue_count(session->m_shaper) == 0) {
         net_smux_session_write_frame(session, frame);
-        net_smux_frame_free(session, frame);
+        net_smux_frame_free(
+            session,
+            frame->m_head.m_sid != 0 ? net_smux_session_find_stream(session, frame->m_head.m_sid) : NULL,
+            frame);
         return 0;
     }
     else {

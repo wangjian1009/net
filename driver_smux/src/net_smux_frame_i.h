@@ -30,18 +30,19 @@ struct net_smux_frame_head {
 CPE_END_PACKED
 
 struct net_smux_frame {
-    uint16_t m_capacity;
     union {
         TAILQ_ENTRY(net_smux_frame) m_next;
         struct net_smux_frame_head m_head;
+        void * m_data;
     };
 };
 
 net_smux_frame_t
 net_smux_frame_create(
-    net_smux_session_t session, uint8_t cmd, uint32_t sid, uint16_t len);
+    net_smux_session_t session, net_smux_stream_t stream, uint8_t cmd, uint16_t len);
 
-void net_smux_frame_free(net_smux_session_t session, net_smux_frame_t frame);
+void net_smux_frame_free(
+    net_smux_session_t session, net_smux_stream_t stream, net_smux_frame_t frame);
 
 void net_smux_frame_real_free(net_smux_protocol_t protocol, net_smux_frame_t frame);
 

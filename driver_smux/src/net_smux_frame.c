@@ -1,11 +1,15 @@
+#include <assert.h>
 #include "net_smux_frame_i.h"
 #include "net_smux_session_i.h"
+#include "net_smux_stream_i.h"
 
 net_smux_frame_t
 net_smux_frame_create(
-    net_smux_session_t session, uint8_t cmd, uint32_t sid, uint16_t len)
+    net_smux_session_t session, net_smux_stream_t stream, uint8_t cmd, uint16_t len)
 {
     net_smux_protocol_t protocol = session->m_protocol;
+
+    assert(len <= session->m_bucket);
 
     net_smux_frame_t frame = TAILQ_FIRST(&protocol->m_free_frames);
     if (frame) {
@@ -21,12 +25,19 @@ net_smux_frame_create(
         }
     }
 
+    session->m_bucket -= len;
+    
+    frame->m_head.m_cmd = cmd;
+    frame->m_head.m_len = len;
+    frame->m_head.m_sid = stream ? stream->m_stream_id : 0;
+
     return frame;
 }
 
-void net_smux_frame_free(net_smux_session_t session, net_smux_frame_t frame) {
+void net_smux_frame_free(net_smux_session_t session, net_smux_stream_t stream, net_smux_frame_t frame) {
     net_smux_protocol_t protocol = session->m_protocol;
 
+    session->m_bucket += frame->m_head.m_len;
     
     TAILQ_INSERT_TAIL(&protocol->m_free_frames, frame, m_next);
 }
