@@ -386,6 +386,9 @@ int net_smux_session_send_frame(
 int net_smux_session_input(
     net_smux_session_t session, void const * data, uint32_t data_len)
 {
+    net_smux_protocol_t protocol = session->m_protocol;
+
+    CPE_ERROR(protocol->m_em, "smux: xxxx");
     return 0;
 }
 

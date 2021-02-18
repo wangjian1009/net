@@ -19,6 +19,7 @@ int test_net_dgram_init(net_dgram_t base_dgram) {
     test_net_dgram_t dgram = net_dgram_data(base_dgram);
 
     TAILQ_INSERT_TAIL(&driver->m_dgrams, dgram, m_next);
+    dgram->m_write_policy.m_type = test_net_dgram_write_mock;
 
     return 0;
 }
@@ -31,6 +32,7 @@ void test_net_dgram_fini(net_dgram_t base_dgram) {
 
 struct test_net_dgram_write_op_ctx {
     net_address_t m_target;
+    net_address_t m_source;
     uint32_t m_data_size;
 };
 
@@ -52,7 +54,7 @@ void test_net_dgram_write_op_cb(void * ctx, test_net_tl_op_t op) {
             write_ctx->m_data_size);
     }
 
-    net_dgram_recv(target_base_dgram, write_ctx->m_target, write_ctx + 1, write_ctx->m_data_size);
+    net_dgram_recv(target_base_dgram, write_ctx->m_source, write_ctx + 1, write_ctx->m_data_size);
 }
 
 void test_net_dgram_write_op_ctx_fini(void * ctx, test_net_tl_op_t op) {
@@ -63,6 +65,11 @@ void test_net_dgram_write_op_ctx_fini(void * ctx, test_net_tl_op_t op) {
         op_ctx->m_target = NULL;
     }
 
+    if (op_ctx->m_source) {
+        net_address_free(op_ctx->m_source);
+        op_ctx->m_source = NULL;
+    }
+    
     mem_free(test_allocrator(), op_ctx);
 }
 
@@ -87,7 +94,6 @@ int test_net_dgram_send(net_dgram_t base_dgram, net_address_t target, void const
         }
     }
 
-
     switch(dgram->m_write_policy.m_type) {
     case test_net_dgram_write_mock:
         assert(0);
@@ -101,6 +107,7 @@ int test_net_dgram_send(net_dgram_t base_dgram, net_address_t target, void const
     struct test_net_dgram_write_op_ctx * op_ctx
         = mem_alloc(test_allocrator(), sizeof(struct test_net_dgram_write_op_ctx) + data_len);
     op_ctx->m_target = net_address_copy(schedule, target);
+    op_ctx->m_source = net_dgram_address(base_dgram) ? net_address_copy(schedule, net_dgram_address(base_dgram)) : NULL;
     if (data_len) memcpy(op_ctx + 1, data, data_len);
     
     test_net_tl_op_t op = test_net_tl_op_create(
