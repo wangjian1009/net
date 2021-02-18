@@ -3,6 +3,7 @@
 #include "test_memory.h"
 #include "test_error.h"
 #include "test_net_endpoint.h"
+#include "test_net_dgram.h"
 #include "net_smux_session.h"
 #include "net_smux_dgram.h"
 #include "net_smux_stream.h"
@@ -28,6 +29,10 @@ net_smux_testenv_create_dgram_cli(net_smux_testenv_t env, const char * address);
 
 net_smux_session_t
 net_smux_testenv_dgram_open_session(
+    net_smux_testenv_t env, net_smux_dgram_t dgram, const char * address);
+
+net_smux_session_t
+net_smux_testenv_dgram_find_session(
     net_smux_testenv_t env, net_smux_dgram_t dgram, const char * address);
 
 #endif

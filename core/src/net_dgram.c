@@ -1,4 +1,5 @@
 #include "assert.h"
+#include "cpe/utils/stream_buffer.h"
 #include "net_address.h"
 #include "net_dgram_i.h"
 #include "net_driver_i.h"
@@ -26,6 +27,7 @@ net_dgram_t net_dgram_create(
         }
     }
 
+    dgram->m_id = ++schedule->m_dgram_max_id;
     dgram->m_driver = driver;
     dgram->m_address = NULL;
     dgram->m_driver_debug = driver->m_debug;
@@ -92,6 +94,10 @@ void net_dgram_real_free(net_dgram_t dgram) {
     mem_free(driver->m_schedule->m_alloc, dgram);
 }
 
+uint32_t net_dgram_id(net_dgram_t dgram) {
+    return dgram->m_id;
+}
+
 net_schedule_t net_dgram_schedule(net_dgram_t dgram) {
     return dgram->m_driver->m_schedule;
 }
@@ -104,12 +110,18 @@ net_address_t net_dgram_address(net_dgram_t dgram) {
     return dgram->m_address;
 }
 
-void net_dgram_set_address(net_dgram_t dgram, net_address_t address) {
+int net_dgram_set_address(net_dgram_t dgram, net_address_t address) {
     if (dgram->m_address) {
         net_address_free(dgram->m_address);
+        dgram->m_address = NULL;
     }
 
-    dgram->m_address = address;
+    if (address) {
+        dgram->m_address = net_address_copy(dgram->m_driver->m_schedule, address);
+        if (dgram->m_address == NULL) return -1;
+    }
+
+    return 0;
 }
 
 uint8_t net_dgram_driver_debug(net_dgram_t dgram) {
@@ -152,5 +164,24 @@ void net_dgram_recv(net_dgram_t dgram, net_address_t from, void * data, size_t d
     if (dgram->m_process_fun) {
         dgram->m_process_fun(dgram, dgram->m_process_ctx, data, data_size, from);
     }
+}
+
+void net_dgram_print(write_stream_t ws, net_dgram_t dgram) {
+    stream_printf(ws, "[%d: %s", dgram->m_id, dgram->m_driver->m_name);
+    if (dgram->m_address) {
+        stream_printf(ws, "@");
+        net_address_print(ws, dgram->m_address);
+    }
+    stream_printf(ws, "]");
+}
+
+const char * net_dgram_dump(mem_buffer_t buff, net_dgram_t dgram) {
+    struct write_stream_buffer stream = CPE_WRITE_STREAM_BUFFER_INITIALIZER(buff);
+
+    mem_buffer_clear_data(buff);
+    net_dgram_print((write_stream_t)&stream, dgram);
+    stream_putc((write_stream_t)&stream, 0);
+    
+    return mem_buffer_make_continuous(buff, 0);
 }
 

@@ -74,3 +74,16 @@ net_smux_testenv_dgram_open_session(
 
     return session;
 }
+
+net_smux_session_t
+net_smux_testenv_dgram_find_session(
+    net_smux_testenv_t env, net_smux_dgram_t dgram, const char * str_address) {
+    net_address_t address = net_address_create_auto(env->m_schedule, str_address);
+    assert_true(address != NULL);
+    
+    net_smux_session_t session = net_smux_dgram_find_session(dgram, address);
+
+    net_address_free(address);
+
+    return session;
+}

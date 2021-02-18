@@ -22,4 +22,7 @@ struct net_smux_head {
 } CPE_PACKED;
 CPE_END_PACKED
 
+void net_smux_print_frame(write_stream_t ws, struct net_smux_head const * frame);
+const char * net_smux_dump_frame(mem_buffer_t buffer, struct net_smux_head const * frame);
+
 #endif

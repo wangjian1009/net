@@ -14,6 +14,8 @@ net_smux_dgram_create(
 
 void net_smux_dgram_free(net_smux_dgram_t dgram);
 
+net_dgram_t net_smux_dgram_dgram(net_smux_dgram_t dgram);
+
 net_smux_session_t
 net_smux_dgram_find_session(net_smux_dgram_t dgram, net_address_t remote_address);
 

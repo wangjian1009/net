@@ -1,7 +1,10 @@
 #include <assert.h>
+#include "cpe/pal/pal_string.h"
 #include "cpe/utils/stream_buffer.h"
 #include "cpe/utils/priority_queue.h"
+#include "cpe/utils/string_utils.h"
 #include "net_schedule.h"
+#include "net_protocol.h"
 #include "net_address.h"
 #include "net_dgram.h"
 #include "net_timer.h"
@@ -212,6 +215,11 @@ net_smux_session_open_stream(net_smux_session_t session) {
 
     net_smux_stream_t stream = net_smux_stream_create(session, session->m_max_stream_id);
 
+    if (net_smux_session_send_frame(session, stream, net_smux_cmd_syn, NULL, 0, 0, 0) != 0) {
+        net_smux_stream_free(stream);
+        return NULL;
+    }
+
     return stream;
 }
 
@@ -260,6 +268,27 @@ uint8_t net_smux_session_can_write(net_smux_session_t session) {
     }
 }
 
+void net_smux_session_fill_frame(
+    net_smux_protocol_t protocol, void * output,
+    net_smux_stream_t stream, net_smux_cmd_t cmd, void const * data, uint16_t len)
+{
+    struct net_smux_head * frame = output;
+        
+    frame->m_ver = protocol->m_cfg_version;
+    frame->m_cmd = cmd;
+
+    if (stream) {
+        CPE_COPY_HTON32(&frame->m_sid, &stream->m_stream_id);
+    }
+    else {
+        frame->m_sid = 0;
+    }
+
+    CPE_COPY_HTON16(&frame->m_len, &len);
+
+    if (len) memcpy(frame + 1, data, len);
+}
+    
 int net_smux_session_write_frame(
     net_smux_session_t session, net_smux_stream_t stream,
     net_smux_cmd_t cmd, void const * data, uint16_t len)
@@ -269,27 +298,38 @@ int net_smux_session_write_frame(
 
     if (session->m_underline.m_type == net_smux_session_underline_udp) {
         mem_buffer_clear_data(&protocol->m_data_buffer);
-        struct net_smux_head * frame = mem_buffer_alloc(&protocol->m_data_buffer, frame_sz);
-
-        assert(session->m_underline.m_udp.m_dgram);
-
-        frame->m_ver = protocol->m_cfg_version;
-        frame->m_cmd = cmd;
-        if (stream) {
-            CPE_COPY_HTON32(&frame->m_sid, &stream->m_stream_id);
-        }
-        else {
-            frame->m_sid = 0;
-        }
-        CPE_COPY_HTON16(&frame->m_len, &len);
-
-        if (net_dgram_send(
-                session->m_underline.m_udp.m_dgram->m_dgram,
-                session->m_underline.m_udp.m_remote_address,
-                frame, frame_sz) != 0)
-        {
+        void * buf = mem_buffer_alloc(&protocol->m_data_buffer, frame_sz);
+        if (buf == NULL) {
             CPE_ERROR(
-                protocol->m_em, "smux: %s: write frame error",
+                protocol->m_em, "smux: %s: write frame: alloc buf error, sz=%d",
+                net_smux_session_dump(net_smux_protocol_tmp_buffer(protocol), session), frame_sz);
+            return -1;
+        }
+        
+        net_smux_session_fill_frame(protocol, buf, stream, cmd, data, len);
+
+        net_dgram_t dgram = session->m_underline.m_udp.m_dgram->m_dgram;
+        net_address_t remote_address = session->m_underline.m_udp.m_remote_address;
+        
+        assert(dgram);
+        assert(remote_address);
+
+        if (net_protocol_debug(net_protocol_from_data(protocol))
+            || net_dgram_protocol_debug(dgram, remote_address))
+        {
+            char session_name[128];
+            cpe_str_dup(
+                session_name, sizeof(session_name),
+                net_smux_session_dump(net_smux_protocol_tmp_buffer(protocol), session));
+            
+            CPE_INFO(
+                protocol->m_em, "smux: %s: ==> %s",
+                session_name, net_smux_dump_frame(net_smux_protocol_tmp_buffer(protocol), buf));
+        }
+        
+        if (net_dgram_send(dgram, remote_address, buf, frame_sz) != 0) {
+            CPE_ERROR(
+                protocol->m_em, "smux: %s: ==> dgram send error",
                 net_smux_session_dump(net_smux_protocol_tmp_buffer(protocol), session));
             return -1;
         }
@@ -298,11 +338,24 @@ int net_smux_session_write_frame(
     }
     else {   
         assert(session->m_underline.m_type == net_smux_session_underline_tcp);
+        assert(session->m_underline.m_tcp.m_endpoint != NULL);
 
-        if (session->m_underline.m_tcp.m_endpoint == NULL) {
+        void * buf = net_endpoint_buf_alloc(session->m_underline.m_tcp.m_endpoint->m_base_endpoint, frame_sz);
+        if (buf == NULL) {
             CPE_ERROR(
-                protocol->m_em, "smux: session %d: write frame: no endpoint",
-                session->m_session_id);
+                protocol->m_em, "smux: %s: ==> buf alloc error, len=%d",
+                net_smux_session_dump(net_smux_protocol_tmp_buffer(protocol), session), frame_sz);
+            return -1;
+        }
+
+        net_smux_session_fill_frame(protocol, buf, stream, cmd, data, len);
+
+        if (net_endpoint_buf_supply(
+                session->m_underline.m_tcp.m_endpoint->m_base_endpoint, net_ep_buf_write, frame_sz) != 0)
+        {
+            CPE_ERROR(
+                protocol->m_em, "smux: %s: ==> supply data error",
+                net_smux_session_dump(net_smux_protocol_tmp_buffer(protocol), session));
             return -1;
         }
 

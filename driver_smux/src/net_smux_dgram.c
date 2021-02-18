@@ -73,6 +73,10 @@ void net_smux_dgram_free(net_smux_dgram_t dgram) {
     mem_free(protocol->m_alloc, dgram);
 }
 
+net_dgram_t net_smux_dgram_dgram(net_smux_dgram_t dgram) {
+    return dgram->m_dgram;
+}
+
 net_smux_session_t
 net_smux_dgram_find_session(net_smux_dgram_t dgram, net_address_t remote_address) {
     struct net_smux_session key;

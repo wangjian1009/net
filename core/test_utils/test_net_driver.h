@@ -48,4 +48,7 @@ test_net_driver_find_endpoint_by_remote_addr(test_net_driver_t driver, net_addre
 net_acceptor_t
 test_net_driver_find_acceptor_by_addr(test_net_driver_t driver, net_address_t address);
 
+net_dgram_t
+test_net_driver_find_dgram_by_addr(test_net_driver_t driver, net_address_t address);
+
 #endif

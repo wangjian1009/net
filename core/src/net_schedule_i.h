@@ -69,6 +69,8 @@ struct net_schedule {
     net_driver_t m_pair_driver;
     net_driver_list_t m_drivers;
 
+    uint32_t m_dgram_max_id;
+
     uint32_t m_endpoint_max_id;
     struct cpe_hash_table m_endpoints;
 
