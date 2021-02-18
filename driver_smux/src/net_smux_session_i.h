@@ -45,6 +45,8 @@ net_smux_session_create_dgram(
 
 void net_smux_session_free(net_smux_session_t session);
 
+uint8_t net_smux_session_debug(net_smux_session_t session);
+
 int net_smux_session_send_frame(
     net_smux_session_t session, net_smux_stream_t stream,
     net_smux_cmd_t cmd, void const * data, uint16_t len, 

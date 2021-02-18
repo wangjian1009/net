@@ -24,7 +24,7 @@ net_smux_dgram_create(
 
     dgram->m_protocol = protocol;
     dgram->m_runing_mode = runing_mode;
-
+    
     dgram->m_dgram = net_dgram_create(driver, local_address, net_smux_dgram_input, dgram);
     if (dgram->m_dgram == NULL) {
         CPE_ERROR(

@@ -108,6 +108,7 @@ int test_net_dgram_send(net_dgram_t base_dgram, net_address_t target, void const
         = mem_alloc(test_allocrator(), sizeof(struct test_net_dgram_write_op_ctx) + data_len);
     op_ctx->m_target = net_address_copy(schedule, target);
     op_ctx->m_source = net_dgram_address(base_dgram) ? net_address_copy(schedule, net_dgram_address(base_dgram)) : NULL;
+    op_ctx->m_data_size = data_len;
     if (data_len) memcpy(op_ctx + 1, data, data_len);
     
     test_net_tl_op_t op = test_net_tl_op_create(

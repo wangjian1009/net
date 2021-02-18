@@ -3,6 +3,7 @@
 #include "cpe/utils/stream_buffer.h"
 #include "cpe/utils/priority_queue.h"
 #include "cpe/utils/string_utils.h"
+#include "cpe/utils/math_ex.h"
 #include "net_schedule.h"
 #include "net_protocol.h"
 #include "net_address.h"
@@ -294,7 +295,7 @@ int net_smux_session_write_frame(
     net_smux_cmd_t cmd, void const * data, uint16_t len)
 {
     net_smux_protocol_t protocol = session->m_protocol;
-    uint32_t frame_sz = sizeof(struct net_smux_frame) +  len;
+    uint32_t frame_sz = sizeof(struct net_smux_head) +  len;
 
     if (session->m_underline.m_type == net_smux_session_underline_udp) {
         mem_buffer_clear_data(&protocol->m_data_buffer);
@@ -314,9 +315,7 @@ int net_smux_session_write_frame(
         assert(dgram);
         assert(remote_address);
 
-        if (net_protocol_debug(net_protocol_from_data(protocol))
-            || net_dgram_protocol_debug(dgram, remote_address))
-        {
+        if (net_smux_session_debug(session)) {
             char session_name[128];
             cpe_str_dup(
                 session_name, sizeof(session_name),
@@ -326,7 +325,7 @@ int net_smux_session_write_frame(
                 protocol->m_em, "smux: %s: ==> %s",
                 session_name, net_smux_dump_frame(net_smux_protocol_tmp_buffer(protocol), buf));
         }
-        
+
         if (net_dgram_send(dgram, remote_address, buf, frame_sz) != 0) {
             CPE_ERROR(
                 protocol->m_em, "smux: %s: ==> dgram send error",
@@ -363,6 +362,27 @@ int net_smux_session_write_frame(
     }
 }
 
+uint8_t net_smux_session_debug(net_smux_session_t session) {
+    uint8_t d1 = net_protocol_debug(net_protocol_from_data(session->m_protocol));
+    uint8_t d2 = 0;
+    switch (session->m_underline.m_type) {
+    case net_smux_session_underline_udp:
+        if (session->m_underline.m_udp.m_dgram) {
+            d2 = net_dgram_protocol_debug(
+                session->m_underline.m_udp.m_dgram->m_dgram,
+                session->m_underline.m_udp.m_remote_address);
+        }
+        break;
+    case net_smux_session_underline_tcp:
+        if (session->m_underline.m_tcp.m_endpoint) {
+            d2 =  net_endpoint_protocol_debug(session->m_underline.m_tcp.m_endpoint->m_base_endpoint);
+        }
+        break;
+    }
+
+    return cpe_max(d1, d2);
+}
+
 int net_smux_session_send_frame(
     net_smux_session_t session, net_smux_stream_t stream,
     net_smux_cmd_t cmd, void const * data, uint16_t len, 
@@ -388,7 +408,82 @@ int net_smux_session_input(
 {
     net_smux_protocol_t protocol = session->m_protocol;
 
-    CPE_ERROR(protocol->m_em, "smux: xxxx");
+    if (data_len < sizeof(struct net_smux_head)) {
+        CPE_ERROR(
+            protocol->m_em, "smux: %s: <== ignore: data too small, len=%d",
+            net_smux_session_dump(net_smux_protocol_tmp_buffer(protocol), session), data_len);
+        return -1;
+    }
+
+    struct net_smux_head const * head = data;
+
+    if (head->m_ver != protocol->m_cfg_version) {
+        CPE_ERROR(
+            protocol->m_em, "smux: %s: <== ignore: version mismatch, expect %d, input %d",
+            net_smux_session_dump(net_smux_protocol_tmp_buffer(protocol), session),
+            protocol->m_cfg_version, head->m_ver);
+        return -1;
+    }
+
+    if (head->m_cmd < net_smux_cmd_syn || head->m_cmd > net_smux_cmd_udp) {
+        CPE_ERROR(
+            protocol->m_em, "smux: %s: <== ignore: invalid cmd %d",
+            net_smux_session_dump(net_smux_protocol_tmp_buffer(protocol), session), head->m_cmd);
+        return -1;
+    }
+
+    uint16_t pdu_data_len;
+    CPE_COPY_NTOH16(&pdu_data_len, &head->m_len);
+    uint16_t pdu_len = sizeof(struct net_smux_head) + pdu_data_len;
+    
+    if (data_len != pdu_len) {
+        CPE_ERROR(
+            protocol->m_em, "smux: %s: <== ignore: length mismatch pdu-len=%d, input-len=%d",
+            net_smux_session_dump(net_smux_protocol_tmp_buffer(protocol), session),
+            pdu_len, data_len);
+        return -1;
+    }
+
+    uint32_t sid;
+    CPE_COPY_NTOH32(&sid, &head->m_sid);
+    
+    if (net_smux_session_debug(session)) {
+        char session_name[128];
+        cpe_str_dup(
+            session_name, sizeof(session_name),
+            net_smux_session_dump(net_smux_protocol_tmp_buffer(protocol), session));
+
+        CPE_INFO(
+            protocol->m_em, "smux: %s: <== %s",
+            session_name, net_smux_dump_frame(net_smux_protocol_tmp_buffer(protocol), data));
+    }
+
+    net_smux_stream_t stream = NULL;
+
+    CPE_ERROR(protocol->m_em, "smux: xxxx: sid=%d", sid);
+    switch((net_smux_cmd_t)head->m_cmd) {
+    case net_smux_cmd_syn:
+        stream = net_smux_session_find_stream(session, sid);
+        if (stream == NULL) {
+            stream = net_smux_stream_create(session, sid);
+            if (stream == NULL) {
+                CPE_ERROR(
+                    protocol->m_em, "smux: %s: <== syn: create session fail, sid=%d",
+                    net_smux_session_dump(net_smux_protocol_tmp_buffer(protocol), session), sid);
+                return -1;
+            }
+        }
+        break;
+    case net_smux_cmd_fin:
+        break;
+    case net_smux_cmd_psh:
+        break;
+    case net_smux_cmd_nop:
+        break;
+    case net_smux_cmd_udp:
+        break;
+    }
+    
     return 0;
 }
 
