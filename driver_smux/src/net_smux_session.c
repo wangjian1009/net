@@ -212,14 +212,19 @@ net_address_t net_smux_session_local_address(net_smux_session_t session) {
 
 net_smux_stream_t
 net_smux_session_open_stream(net_smux_session_t session) {
+    net_smux_protocol_t protocol = session->m_protocol;
 	session->m_max_stream_id += 2;
 
-    net_smux_stream_t stream = net_smux_stream_create(session, session->m_max_stream_id);
+    net_smux_stream_t stream =
+        net_smux_stream_create(
+            session, session->m_max_stream_id, protocol->m_cfg_max_frame_size);
 
     if (net_smux_session_send_frame(session, stream, net_smux_cmd_syn, NULL, 0, 0, 0) != 0) {
         net_smux_stream_free(stream);
         return NULL;
     }
+
+    net_smux_stream_set_state(stream, net_smux_stream_state_established);
 
     return stream;
 }
@@ -482,7 +487,7 @@ int net_smux_session_input(
     case net_smux_cmd_syn:
         stream = net_smux_session_find_stream(session, sid);
         if (stream == NULL) {
-            stream = net_smux_stream_create(session, sid);
+            stream = net_smux_stream_create(session, sid, protocol->m_cfg_max_frame_size);
             if (stream == NULL) {
                 CPE_ERROR(
                     protocol->m_em, "smux: %s: <== syn: create session fail, sid=%d",

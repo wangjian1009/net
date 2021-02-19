@@ -11,6 +11,8 @@ struct net_smux_stream {
     uint32_t m_stream_id;
     net_smux_stream_state_t m_state;
 
+    uint32_t m_frame_size;
+    
 	uint32_t m_num_read;      /* number of consumed bytes */
 	uint32_t m_num_written;   /* count num of bytes written */
 	uint32_t m_incr;          /* counting for sending */
@@ -28,7 +30,7 @@ struct net_smux_stream {
 
 net_smux_stream_t
 net_smux_stream_create(
-    net_smux_session_t session, uint32_t stream_id);
+    net_smux_session_t session, uint32_t stream_id, uint32_t frame_size);
 
 void net_smux_stream_free(net_smux_stream_t stream);
 
