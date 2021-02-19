@@ -31,7 +31,8 @@ net_smux_session_t
 net_smux_session_create_i(
     net_smux_protocol_t protocol,
     net_smux_runing_mode_t runing_mode,
-    net_smux_session_underline_type_t underline_type)
+    net_smux_session_underline_type_t underline_type,
+    net_smux_config_t config)
 {
     net_smux_session_t session = mem_alloc(protocol->m_alloc, sizeof(struct net_smux_session));
     if (session == NULL) {
@@ -41,9 +42,10 @@ net_smux_session_create_i(
 
     session->m_protocol = protocol;
     session->m_session_id = ++protocol->m_max_session_id;
+    session->m_config = config;
     session->m_runing_mode = runing_mode;
     session->m_max_stream_id = runing_mode == net_smux_runing_mode_cli ? 1 : 0;
-    session->m_bucket = protocol->m_cfg_max_session_buffer;
+    session->m_bucket = config->m_max_session_buffer;
     session->m_shaper = NULL;
     session->m_timer_ping = NULL;
     session->m_timer_timeout = NULL;
@@ -88,7 +90,7 @@ net_smux_session_create_i(
     TAILQ_INSERT_TAIL(&protocol->m_sessions, session, m_next);
 
     /**/
-    if (!protocol->m_cfg_keep_alive_disabled) {
+    if (!config->m_keep_alive_disabled) {
         session->m_timer_ping = net_timer_auto_create(
             net_smux_protocol_schedule(protocol), net_smux_session_do_ping, session);
         if (session->m_timer_ping == NULL) {
@@ -116,7 +118,7 @@ net_smux_session_create_dgram(
     net_schedule_t schedule = net_smux_protocol_schedule(protocol);
     
     net_smux_session_t session =
-        net_smux_session_create_i(protocol, dgram->m_runing_mode, net_smux_session_underline_udp);
+        net_smux_session_create_i(protocol, dgram->m_runing_mode, net_smux_session_underline_udp, &dgram->m_config);
     if (session == NULL) return NULL;
 
     session->m_underline.m_udp.m_remote_address = net_address_copy(schedule, remote_address);
@@ -215,9 +217,8 @@ net_smux_session_open_stream(net_smux_session_t session) {
     net_smux_protocol_t protocol = session->m_protocol;
 	session->m_max_stream_id += 2;
 
-    net_smux_stream_t stream =
-        net_smux_stream_create(
-            session, session->m_max_stream_id, protocol->m_cfg_max_frame_size);
+    net_smux_stream_t stream = net_smux_stream_create(session, session->m_max_stream_id);
+    if (stream == NULL) return NULL;
 
     if (net_smux_session_send_frame(session, stream, net_smux_cmd_syn, NULL, 0, 0, 0) != 0) {
         net_smux_stream_free(stream);
@@ -273,12 +274,12 @@ uint8_t net_smux_session_can_write(net_smux_session_t session) {
 }
 
 void net_smux_session_fill_frame(
-    net_smux_protocol_t protocol, void * output,
-    net_smux_stream_t stream, net_smux_cmd_t cmd, void const * data, uint16_t len)
+    net_smux_session_t session, net_smux_stream_t stream,
+    void * output,net_smux_cmd_t cmd, void const * data, uint16_t len)
 {
     struct net_smux_head * frame = output;
         
-    frame->m_ver = protocol->m_cfg_version;
+    frame->m_ver = session->m_config->m_version;
     frame->m_cmd = cmd;
 
     if (stream) {
@@ -310,7 +311,7 @@ int net_smux_session_write_frame(
             return -1;
         }
         
-        net_smux_session_fill_frame(protocol, buf, stream, cmd, data, len);
+        net_smux_session_fill_frame(session, stream, buf, cmd, data, len);
 
         net_dgram_t dgram = session->m_underline.m_udp.m_dgram->m_dgram;
         net_address_t remote_address = session->m_underline.m_udp.m_remote_address;
@@ -350,7 +351,7 @@ int net_smux_session_write_frame(
             return -1;
         }
 
-        net_smux_session_fill_frame(protocol, buf, stream, cmd, data, len);
+        net_smux_session_fill_frame(session, stream, buf, cmd, data, len);
 
         if (net_endpoint_buf_supply(
                 session->m_underline.m_tcp.m_endpoint->m_base_endpoint, net_ep_buf_write, frame_sz) != 0)
@@ -420,11 +421,11 @@ int net_smux_session_input(
 
     struct net_smux_head const * head = data;
 
-    if (head->m_ver != protocol->m_cfg_version) {
+    if (head->m_ver != session->m_config->m_version) {
         CPE_ERROR(
             protocol->m_em, "smux: %s: <== ignore: version mismatch, expect %d, input %d",
             net_smux_session_dump(net_smux_protocol_tmp_buffer(protocol), session),
-            protocol->m_cfg_version, head->m_ver);
+            session->m_config->m_version, head->m_ver);
         return -1;
     }
 
@@ -485,7 +486,7 @@ int net_smux_session_input(
     case net_smux_cmd_syn:
         stream = net_smux_session_find_stream(session, sid);
         if (stream == NULL) {
-            stream = net_smux_stream_create(session, sid, protocol->m_cfg_max_frame_size);
+            stream = net_smux_stream_create(session, sid);
             if (stream == NULL) {
                 CPE_ERROR(
                     protocol->m_em, "smux: %s: <== syn: create session fail, sid=%d",

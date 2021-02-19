@@ -10,7 +10,8 @@ net_smux_dgram_create(
     net_smux_protocol_t protocol,
     net_smux_runing_mode_t runing_mode,
     net_driver_t driver,
-    net_address_t local_address);
+    net_address_t local_address,
+    net_smux_config_t config);
 
 void net_smux_dgram_free(net_smux_dgram_t dgram);
 

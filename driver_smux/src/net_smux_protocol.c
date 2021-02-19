@@ -15,14 +15,8 @@ int net_smux_protocol_init(net_protocol_t base_protocol) {
     protocol->m_alloc = net_schedule_allocrator(schedule);
     protocol->m_em = net_schedule_em(schedule);
 
-    protocol->m_cfg_version = 1;
-    protocol->m_cfg_keep_alive_disabled = 0;
-    protocol->m_cfg_keep_alive_interval_ms = 10 * 60 * 1000;
-    protocol->m_cfg_keep_alive_timeout_ms = 30 * 60 * 1000;
-    protocol->m_cfg_max_frame_size = 32768;
-    protocol->m_cfg_max_session_buffer = 4194304;
-    protocol->m_cfg_max_stream_buffer = 65536;
-
+    net_smux_config_init_default(&protocol->m_dft_config);
+    
     protocol->m_max_session_id = 0;
     TAILQ_INIT(&protocol->m_sessions);
     TAILQ_INIT(&protocol->m_dgrams);
@@ -113,8 +107,40 @@ net_schedule_t net_smux_protocol_schedule(net_smux_protocol_t protocol) {
     return net_protocol_schedule(net_protocol_from_data(protocol));
 }
 
+const struct net_smux_config *
+net_smux_protocol_dft_config(net_smux_protocol_t protocol) {
+    return &protocol->m_dft_config;
+}
+
+int net_smux_protocol_set_dft_config(net_smux_protocol_t protocol, net_smux_config_t cfg) {
+    assert(cfg);
+
+    if (!net_smux_config_validate(cfg, protocol->m_em)) {
+        CPE_ERROR(
+            protocol->m_em, "smux: set dft config: config error!");
+        return -1;
+    }
+
+    protocol->m_dft_config = *cfg;
+    return 0;
+}
+
 mem_buffer_t net_smux_protocol_tmp_buffer(net_smux_protocol_t protocol) {
     return net_schedule_tmp_buffer(net_protocol_schedule(net_protocol_from_data(protocol)));
+}
+
+void net_smux_config_init_default(net_smux_config_t config) {
+    config->m_version = 1;
+    config->m_keep_alive_disabled = 0;
+    config->m_keep_alive_interval_ms = 10 * 60 * 1000;
+    config->m_keep_alive_timeout_ms = 30 * 60 * 1000;
+    config->m_max_frame_size = 32768;
+    config->m_max_session_buffer = 4194304;
+    config->m_max_stream_buffer = 65536;
+}
+
+uint8_t net_smux_config_validate(net_smux_config_t config, error_monitor_t em) {
+    return 1;
 }
 
 const char * net_smux_runing_mode_str(net_smux_runing_mode_t runing_mode) {

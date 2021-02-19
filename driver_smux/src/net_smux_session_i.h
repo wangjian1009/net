@@ -9,6 +9,7 @@ NET_BEGIN_DECL
 struct net_smux_session {
     net_smux_protocol_t m_protocol;
     TAILQ_ENTRY(net_smux_session) m_next;
+    net_smux_config_t m_config;
     uint32_t m_session_id;
     net_smux_runing_mode_t m_runing_mode;
 

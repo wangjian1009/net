@@ -4,7 +4,7 @@
 #include "net_smux_pro.h"
 
 net_smux_stream_t
-net_smux_stream_create(net_smux_session_t session, uint32_t stream_id, uint32_t frame_size) {
+net_smux_stream_create(net_smux_session_t session, uint32_t stream_id) {
     net_smux_protocol_t protocol = session->m_protocol;
 
     net_smux_stream_t stream = mem_alloc(protocol->m_alloc, sizeof(struct net_smux_stream));
@@ -18,8 +18,6 @@ net_smux_stream_create(net_smux_session_t session, uint32_t stream_id, uint32_t 
 
     stream->m_session = session;
     stream->m_stream_id = stream_id;
-
-    stream->m_frame_size = frame_size;
 
 	stream->m_num_read = 0;
 	stream->m_num_written = 0;

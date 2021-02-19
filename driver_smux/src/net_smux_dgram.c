@@ -12,7 +12,8 @@ void net_smux_dgram_input(net_dgram_t dgram, void * ctx, void * data, size_t dat
 net_smux_dgram_t
 net_smux_dgram_create(
     net_smux_protocol_t protocol,
-    net_smux_runing_mode_t runing_mode, net_driver_t driver, net_address_t local_address)
+    net_smux_runing_mode_t runing_mode, net_driver_t driver, net_address_t local_address,
+    net_smux_config_t config)
 {
     net_smux_dgram_t dgram = mem_alloc(protocol->m_alloc, sizeof(struct net_smux_dgram));
     if (dgram == NULL) {
@@ -24,6 +25,7 @@ net_smux_dgram_create(
 
     dgram->m_protocol = protocol;
     dgram->m_runing_mode = runing_mode;
+    dgram->m_config = config ? *config : protocol->m_dft_config;
     
     dgram->m_dgram = net_dgram_create(driver, local_address, net_smux_dgram_input, dgram);
     if (dgram->m_dgram == NULL) {

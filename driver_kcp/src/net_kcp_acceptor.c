@@ -3,6 +3,8 @@
 #include "net_driver.h"
 #include "net_protocol.h"
 #include "net_acceptor.h"
+#include "net_smux_config.h"
+#include "net_smux_protocol.h"
 #include "net_smux_dgram.h"
 #include "net_kcp_acceptor_i.h"
 #include "net_kcp_endpoint_i.h"
@@ -17,11 +19,13 @@ int net_kcp_acceptor_init(net_acceptor_t base_acceptor) {
         return -1;
     }
 
+    struct net_smux_config smux_config = * net_smux_protocol_dft_config(driver->m_smux_protocol);
+    
     acceptor->m_smux_dgram =
         net_smux_dgram_create(
             driver->m_smux_protocol,
             net_smux_runing_mode_svr,
-            driver->m_underline_driver, address);
+            driver->m_underline_driver, address, &smux_config);
     if (acceptor->m_smux_dgram == NULL) {
         CPE_ERROR(driver->m_em, "net: kcp: acceptor: init: create mux failed!");
         return -1;

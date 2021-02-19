@@ -9,8 +9,6 @@ struct net_smux_stream {
     net_smux_session_t m_session;
     struct cpe_hash_entry m_hh_for_session;
     uint32_t m_stream_id;
-
-    uint32_t m_frame_size;
     
 	uint32_t m_num_read;      /* number of consumed bytes */
 	uint32_t m_num_written;   /* count num of bytes written */
@@ -32,8 +30,7 @@ struct net_smux_stream {
 };
 
 net_smux_stream_t
-net_smux_stream_create(
-    net_smux_session_t session, uint32_t stream_id, uint32_t frame_size);
+net_smux_stream_create(net_smux_session_t session, uint32_t stream_id);
 
 void net_smux_stream_free(net_smux_stream_t stream);
 
