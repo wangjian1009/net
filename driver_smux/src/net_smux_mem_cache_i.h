@@ -5,13 +5,9 @@
 NET_BEGIN_DECL
 
 struct net_smux_mem_block {
-    union {
-        net_smux_mem_block_t m_next;
-        struct {
-            uint16_t m_capacity;
-            uint16_t m_size;
-        };
-    };
+    net_smux_mem_block_t m_next;
+    uint16_t m_capacity;
+    uint16_t m_size;
 };
 
 struct net_smux_mem_group {
@@ -34,9 +30,9 @@ net_smux_mem_cache_create(net_smux_protocol_t protocol, net_smux_config_t config
 
 void net_smux_mem_cache_free(net_smux_mem_cache_t cache);
 
+net_smux_mem_block_t net_smux_mem_cache_alloc(net_smux_mem_cache_t cache, uint16_t len);
 void net_smux_mem_cache_release(net_smux_mem_cache_t cache, net_smux_mem_block_t block);
-net_smux_mem_block_t net_smux_mem_cache_alloc(net_smux_mem_cache_t cache, uint16_t capacity);
-    
+
 NET_END_DECL
 
 #endif

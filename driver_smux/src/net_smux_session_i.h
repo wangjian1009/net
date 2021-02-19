@@ -19,7 +19,7 @@ struct net_smux_session {
 
     net_smux_mem_cache_t m_mem_cache;
     /*接受缓存剩余空间 */
-    uint32_t m_bucket;
+    int32_t m_bucket;
 
     /*等待发送的farme的优先级队列 */
     cpe_priority_queue_t m_shaper;
