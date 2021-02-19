@@ -4,6 +4,7 @@
 #include "test_error.h"
 #include "test_net_endpoint.h"
 #include "test_net_dgram.h"
+#include "net_smux_config.h"
 #include "net_smux_session.h"
 #include "net_smux_dgram.h"
 #include "net_smux_stream.h"
@@ -16,6 +17,7 @@ struct net_smux_testenv {
     net_schedule_t m_schedule;
     test_net_driver_t m_tdriver;
     net_smux_protocol_t m_smux_protocol;
+    struct net_smux_config m_smux_config;
 };
 
 net_smux_testenv_t net_smux_testenv_create();

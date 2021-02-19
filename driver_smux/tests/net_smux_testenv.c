@@ -15,6 +15,7 @@ net_smux_testenv_create() {
     env->m_tdriver = test_net_driver_create(env->m_schedule, env->m_em);
     env->m_smux_protocol = net_smux_protocol_create(env->m_schedule, "test", test_allocrator(), env->m_em);
     net_protocol_set_debug(net_protocol_from_data(env->m_smux_protocol), 2);
+    net_smux_config_init_default(&env->m_smux_config);
     
     return env;
 }
@@ -34,7 +35,8 @@ net_smux_testenv_create_dgram_svr(net_smux_testenv_t env, const char * str_addre
     net_smux_dgram_t dgram =
         net_smux_dgram_create(
             env->m_smux_protocol, net_smux_runing_mode_svr,
-            net_driver_from_data(env->m_tdriver), address, NULL);
+            net_driver_from_data(env->m_tdriver), address,
+            &env->m_smux_config);
     assert_true(dgram);
 
     net_address_free(address);
@@ -54,7 +56,8 @@ net_smux_testenv_create_dgram_cli(net_smux_testenv_t env, const char * str_addre
     net_smux_dgram_t dgram =
         net_smux_dgram_create(
             env->m_smux_protocol, net_smux_runing_mode_cli,
-            net_driver_from_data(env->m_tdriver), address, NULL);
+            net_driver_from_data(env->m_tdriver), address,
+            &env->m_smux_config);
     assert_true(dgram);
 
     if (address) {
