@@ -15,6 +15,18 @@ net_smux_dgram_create(
     net_smux_runing_mode_t runing_mode, net_driver_t driver, net_address_t local_address,
     net_smux_config_t config)
 {
+    if (config) {
+        if (!net_smux_config_validate(config, protocol->m_em)) {
+            CPE_ERROR(
+                protocol->m_em, "smux: dgram %s: create: validate config error!",
+                net_address_dump(net_smux_protocol_tmp_buffer(protocol), local_address));
+            return NULL;
+        }
+    }
+    else {
+        config = &protocol->m_dft_config;
+    }
+    
     net_smux_dgram_t dgram = mem_alloc(protocol->m_alloc, sizeof(struct net_smux_dgram));
     if (dgram == NULL) {
         CPE_ERROR(
@@ -25,7 +37,7 @@ net_smux_dgram_create(
 
     dgram->m_protocol = protocol;
     dgram->m_runing_mode = runing_mode;
-    dgram->m_config = config ? *config : protocol->m_dft_config;
+    dgram->m_config = *config;
     
     dgram->m_dgram = net_dgram_create(driver, local_address, net_smux_dgram_input, dgram);
     if (dgram->m_dgram == NULL) {

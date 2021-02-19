@@ -20,7 +20,7 @@ struct net_smux_config {
     uint32_t m_max_frame_size;
 
 	/* MaxReceiveBuffer is used to control the maximum number of data in the buffer pool */
-	uint32_t m_max_session_buffer;
+	uint32_t m_max_recv_buffer;
 
 	/* MaxStreamBuffer is used to control the maximum number of data per stream*/
 	uint32_t m_max_stream_buffer;

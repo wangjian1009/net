@@ -135,11 +135,55 @@ void net_smux_config_init_default(net_smux_config_t config) {
     config->m_keep_alive_interval_ms = 10 * 60 * 1000;
     config->m_keep_alive_timeout_ms = 30 * 60 * 1000;
     config->m_max_frame_size = 32768;
-    config->m_max_session_buffer = 4194304;
+    config->m_max_recv_buffer = 4194304;
     config->m_max_stream_buffer = 65536;
 }
 
 uint8_t net_smux_config_validate(net_smux_config_t config, error_monitor_t em) {
+	if (config->m_version != 1 && config->m_version != 2) {
+        CPE_ERROR(em, "smux: validate config: version %d not support", config->m_version);
+        return 0;
+	}
+    
+	if (!config->m_keep_alive_disabled) {
+		if (config->m_keep_alive_interval_ms == 0) {
+			CPE_ERROR(em, "smux: validate config: keep-alive interval must be positive");
+            return 0;
+		}
+
+		if (config->m_keep_alive_timeout_ms < config->m_keep_alive_interval_ms) {
+			CPE_ERROR(em, "smux: validate config: keep-alive timeout must be larger than keep-alive interval");
+            return 0;
+		}
+	}
+
+	if (config->m_max_frame_size <= 0) {
+		CPE_ERROR(em, "smux: validate config: max frame size must be positive");
+        return 0;
+	}
+	if (config->m_max_frame_size > 65535) {
+		CPE_ERROR(em, "smux: validate config: max frame size must not be larger than 65535");
+        return 0;
+	}
+    
+	if (config->m_max_recv_buffer <= 0) {
+        CPE_ERROR(em, "smux: validate config: max receive buffer must be positive");
+        return 0;
+	}
+
+	if (config->m_max_stream_buffer <= 0) {
+		CPE_ERROR(em, "smux: validate config: max stream buffer must be positive");
+        return 0;
+	}
+	if (config->m_max_stream_buffer > config->m_max_recv_buffer) {
+		CPE_ERROR(em, "smux: validate config: max stream buffer must not be larger than max receive buffer");
+        return 0;
+	}
+	if (config->m_max_stream_buffer > INT32_MAX) {
+        CPE_ERROR(em, "smux: validate config: max stream buffer cannot be larger than 2147483647");
+        return 0;
+	}
+
     return 1;
 }
 

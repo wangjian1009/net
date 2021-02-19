@@ -45,7 +45,7 @@ net_smux_session_create_i(
     session->m_config = config;
     session->m_runing_mode = runing_mode;
     session->m_max_stream_id = runing_mode == net_smux_runing_mode_cli ? 1 : 0;
-    session->m_bucket = config->m_max_session_buffer;
+    session->m_bucket = config->m_max_recv_buffer;
     session->m_shaper = NULL;
     session->m_timer_ping = NULL;
     session->m_timer_timeout = NULL;
