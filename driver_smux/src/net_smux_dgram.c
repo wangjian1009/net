@@ -38,12 +38,22 @@ net_smux_dgram_create(
     dgram->m_protocol = protocol;
     dgram->m_runing_mode = runing_mode;
     dgram->m_config = *config;
-    
+
+    dgram->m_mem_cache = net_smux_mem_cache_create(protocol, &dgram->m_config);
+    if (dgram->m_mem_cache == NULL) {
+        CPE_ERROR(
+            protocol->m_em, "smux: dgram %s: create: create mem cache fail!",
+            net_address_dump(net_smux_protocol_tmp_buffer(protocol), local_address));
+        mem_free(protocol->m_alloc, dgram);
+        return NULL;
+    }
+
     dgram->m_dgram = net_dgram_create(driver, local_address, net_smux_dgram_input, dgram);
     if (dgram->m_dgram == NULL) {
         CPE_ERROR(
             protocol->m_em, "smux: dgram %s: create: create net dgram fail!",
             net_address_dump(net_smux_protocol_tmp_buffer(protocol), local_address));
+        net_smux_mem_cache_free(dgram->m_mem_cache);
         mem_free(protocol->m_alloc, dgram);
         return NULL;
     }
@@ -60,6 +70,7 @@ net_smux_dgram_create(
             protocol->m_em, "smux: dgram %s: create: init hash table fail!",
             net_address_dump(net_smux_protocol_tmp_buffer(protocol), local_address));
         net_dgram_free(dgram->m_dgram);
+        net_smux_mem_cache_free(dgram->m_mem_cache);
         mem_free(protocol->m_alloc, dgram);
         return NULL;
     }
@@ -85,6 +96,11 @@ void net_smux_dgram_free(net_smux_dgram_t dgram) {
     if (dgram->m_dgram) {
         net_dgram_free(dgram->m_dgram);
         dgram->m_dgram = NULL;
+    }
+
+    if (dgram->m_mem_cache) {
+        net_smux_mem_cache_free(dgram->m_mem_cache);
+        dgram->m_mem_cache = NULL;
     }
 
     TAILQ_REMOVE(&protocol->m_dgrams, dgram, m_next);

@@ -9,6 +9,7 @@ struct net_smux_dgram {
     TAILQ_ENTRY(net_smux_dgram) m_next;
     net_smux_runing_mode_t m_runing_mode;
     struct net_smux_config m_config;
+    net_smux_mem_cache_t m_mem_cache;
     net_dgram_t m_dgram;
     struct cpe_hash_table m_sessions;
 };

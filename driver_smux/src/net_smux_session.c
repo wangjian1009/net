@@ -32,7 +32,8 @@ net_smux_session_create_i(
     net_smux_protocol_t protocol,
     net_smux_runing_mode_t runing_mode,
     net_smux_session_underline_type_t underline_type,
-    net_smux_config_t config)
+    net_smux_config_t config,
+    net_smux_mem_cache_t mem_cache)
 {
     net_smux_session_t session = mem_alloc(protocol->m_alloc, sizeof(struct net_smux_session));
     if (session == NULL) {
@@ -118,7 +119,9 @@ net_smux_session_create_dgram(
     net_schedule_t schedule = net_smux_protocol_schedule(protocol);
     
     net_smux_session_t session =
-        net_smux_session_create_i(protocol, dgram->m_runing_mode, net_smux_session_underline_udp, &dgram->m_config);
+        net_smux_session_create_i(
+            protocol, dgram->m_runing_mode, net_smux_session_underline_udp,
+            &dgram->m_config, dgram->m_mem_cache);
     if (session == NULL) return NULL;
 
     session->m_underline.m_udp.m_remote_address = net_address_copy(schedule, remote_address);

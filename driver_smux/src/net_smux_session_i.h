@@ -16,7 +16,8 @@ struct net_smux_session {
 
     uint32_t m_max_stream_id; /* next stream identifier */
     struct cpe_hash_table m_streams;
-    
+
+    net_smux_mem_cache_t m_mem_cache;
     /*接受缓存剩余空间 */
     uint32_t m_bucket;
 

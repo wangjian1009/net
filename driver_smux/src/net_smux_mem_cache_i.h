@@ -26,10 +26,12 @@ struct net_smux_mem_cache {
     uint16_t m_alloced_count;
     uint32_t m_alloced_size;
     uint8_t m_group_count;
-    struct net_smux_mem_group m_groups[8];
+    struct net_smux_mem_group m_groups[12];
 };
 
-net_smux_mem_cache_t net_smux_mem_cache_create(net_smux_protocol_t protocol);
+net_smux_mem_cache_t
+net_smux_mem_cache_create(net_smux_protocol_t protocol, net_smux_config_t config);
+
 void net_smux_mem_cache_free(net_smux_mem_cache_t cache);
 
 void net_smux_mem_cache_release(net_smux_mem_cache_t cache, net_smux_mem_block_t block);
