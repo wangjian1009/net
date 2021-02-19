@@ -224,8 +224,6 @@ net_smux_session_open_stream(net_smux_session_t session) {
         return NULL;
     }
 
-    net_smux_stream_set_state(stream, net_smux_stream_state_established);
-
     return stream;
 }
 
