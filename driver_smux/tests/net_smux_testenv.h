@@ -10,6 +10,8 @@
 #include "net_smux_stream.h"
 
 typedef struct net_smux_testenv * net_smux_testenv_t;
+typedef struct net_smux_testenv_receiver * net_smux_testenv_receiver_t;
+typedef TAILQ_HEAD(net_smux_testenv_receiver_list, net_smux_testenv_receiver) net_smux_testenv_receiver_list_t;
 
 struct net_smux_testenv {
     test_error_monitor_t m_tem;
@@ -18,6 +20,9 @@ struct net_smux_testenv {
     test_net_driver_t m_tdriver;
     net_smux_protocol_t m_smux_protocol;
     struct net_smux_config m_smux_config;
+
+    /*receiver*/
+    net_smux_testenv_receiver_list_t m_receivers;
 };
 
 net_smux_testenv_t net_smux_testenv_create();

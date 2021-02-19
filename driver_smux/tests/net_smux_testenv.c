@@ -5,6 +5,7 @@
 #include "net_address.h"
 #include "net_smux_protocol.h"
 #include "net_smux_testenv.h"
+#include "net_smux_testenv_receiver.h"
 
 net_smux_testenv_t
 net_smux_testenv_create() {
@@ -16,12 +17,19 @@ net_smux_testenv_create() {
     env->m_smux_protocol = net_smux_protocol_create(env->m_schedule, "test", test_allocrator(), env->m_em);
     net_protocol_set_debug(net_protocol_from_data(env->m_smux_protocol), 2);
     net_smux_config_init_default(&env->m_smux_config);
+
+    TAILQ_INIT(&env->m_receivers);
     
     return env;
 }
 
 void net_smux_testenv_free(net_smux_testenv_t env) {
     net_smux_protocol_free(env->m_smux_protocol);
+
+    while(!TAILQ_EMPTY(&env->m_receivers)) {
+        net_smux_testenv_receiver_free(TAILQ_FIRST(&env->m_receivers));
+    }
+    
     net_schedule_free(env->m_schedule);
     test_error_monitor_free(env->m_tem);
     mem_free(test_allocrator(), env);
