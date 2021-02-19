@@ -478,7 +478,6 @@ int net_smux_session_input(
 
     net_smux_stream_t stream = NULL;
 
-    CPE_ERROR(protocol->m_em, "smux: xxxx: sid=%d", sid);
     switch((net_smux_cmd_t)head->m_cmd) {
     case net_smux_cmd_syn:
         stream = net_smux_session_find_stream(session, sid);

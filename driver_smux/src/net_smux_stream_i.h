@@ -18,11 +18,18 @@ struct net_smux_stream {
 	/* UPD command */
 	uint32_t m_peer_consumed; /* num of bytes the peer has consumed */
 	uint32_t m_peer_window;   /* peer window, initialized to 256KB, updated by peer */
+
+    /*read callback*/
+    void * m_read_ctx;
+    net_smux_stream_on_recv_fun_t m_on_recv;
+    void (*m_read_ctx_free)(void *);
 };
 
 net_smux_stream_t
 net_smux_stream_create(
     net_smux_session_t session, uint32_t stream_id);
+
+void net_smux_stream_free(net_smux_stream_t stream);
 
 void net_smux_stream_free_all(net_smux_session_t session);
 
