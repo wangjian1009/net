@@ -21,6 +21,7 @@ struct net_smux_stream {
 
     /*read callback*/
     void * m_read_ctx;
+    net_smux_stream_on_state_change_fun_t m_on_state_change;
     net_smux_stream_on_recv_fun_t m_on_recv;
     void (*m_read_ctx_free)(void *);
 };
@@ -33,7 +34,12 @@ void net_smux_stream_free(net_smux_stream_t stream);
 
 void net_smux_stream_free_all(net_smux_session_t session);
 
+void net_smux_stream_set_state(net_smux_stream_t stream, net_smux_stream_state_t state);
+
 void net_smux_stream_update_pear(net_smux_stream_t stream, uint32_t consumed, uint32_t window);
+
+void net_smux_stream_print(write_stream_t ws, net_smux_stream_t stream);
+const char * net_smux_stream_dump(mem_buffer_t buffer, net_smux_stream_t stream);
 
 int net_smux_stream_eq(net_smux_stream_t l, net_smux_stream_t r, void * user_data);
 uint32_t net_smux_stream_hash(net_smux_stream_t o, void * user_data);

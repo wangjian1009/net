@@ -6,6 +6,8 @@ NET_BEGIN_DECL
 
 enum net_smux_stream_state {
     net_smux_stream_state_init,
+    net_smux_stream_state_established,
+    net_smux_stream_state_wouldblock,
     net_smux_stream_state_closed,
 };
 
@@ -20,11 +22,13 @@ void net_smux_stream_close_and_free(net_smux_stream_t stream);
 int net_smux_stream_write(net_smux_stream_t stream, void const * data, uint32_t data_len);
     
 /*响应处理 */
+typedef void (*net_smux_stream_on_state_change_fun_t)(void * ctx, net_smux_stream_t stream, net_smux_stream_state_t old_state);
 typedef int (*net_smux_stream_on_recv_fun_t)(void * ctx, net_smux_stream_t stream, void const * data, uint32_t data_len);
 
 void net_smux_stream_set_reader(
     net_smux_stream_t stream,
     void * read_ctx,
+    net_smux_stream_on_state_change_fun_t on_state_change,
     net_smux_stream_on_recv_fun_t on_recv,
     void (*read_ctx_free)(void *));
 
