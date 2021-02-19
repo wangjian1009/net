@@ -16,6 +16,11 @@ net_smux_stream_create(net_smux_session_t session, uint32_t stream_id) {
     stream->m_session = session;
     stream->m_stream_id = stream_id;
     stream->m_state = net_smux_stream_state_init;
+	stream->m_num_read = 0;
+	stream->m_num_written = 0;
+	stream->m_incr = 0;
+	stream->m_peer_consumed = 0;
+	stream->m_peer_window = 0;
 
     cpe_hash_entry_init(&stream->m_hh_for_session);
     if (cpe_hash_table_insert_unique(&session->m_streams, stream) != 0) {
@@ -62,6 +67,11 @@ net_smux_session_t net_smux_stream_session(net_smux_stream_t stream) {
 
 net_smux_stream_state_t net_smux_stream_state(net_smux_stream_t stream) {
     return stream->m_state;
+}
+
+void net_smux_stream_update_pear(net_smux_stream_t stream, uint32_t consumed, uint32_t window) {
+    stream->m_peer_consumed = consumed;
+    stream->m_peer_window = window;
 }
 
 int net_smux_stream_eq(net_smux_stream_t l, net_smux_stream_t r, void * user_data) {

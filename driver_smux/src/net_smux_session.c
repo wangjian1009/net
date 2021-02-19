@@ -425,13 +425,6 @@ int net_smux_session_input(
         return -1;
     }
 
-    if (head->m_cmd < net_smux_cmd_syn || head->m_cmd > net_smux_cmd_udp) {
-        CPE_ERROR(
-            protocol->m_em, "smux: %s: <== ignore: invalid cmd %d",
-            net_smux_session_dump(net_smux_protocol_tmp_buffer(protocol), session), head->m_cmd);
-        return -1;
-    }
-
     uint16_t pdu_data_len;
     CPE_COPY_NTOH16(&pdu_data_len, &head->m_len);
     uint16_t pdu_len = sizeof(struct net_smux_head) + pdu_data_len;
@@ -446,6 +439,31 @@ int net_smux_session_input(
 
     uint32_t sid;
     CPE_COPY_NTOH32(&sid, &head->m_sid);
+
+    switch(head->m_cmd) {
+    case net_smux_cmd_syn:
+        break;
+    case net_smux_cmd_fin:
+        break;
+    case net_smux_cmd_psh:
+        break;
+    case net_smux_cmd_nop:
+        break;
+    case net_smux_cmd_udp:
+        if (pdu_data_len != sizeof(struct net_smux_body_udp)) {
+            CPE_ERROR(
+                protocol->m_em, "smux: %s: <== ignore udp cmd: len %d mismatch, expect %d",
+                net_smux_session_dump(net_smux_protocol_tmp_buffer(protocol), session),
+                pdu_data_len, (int)sizeof(struct net_smux_body_udp));
+            return -1;
+        }
+        break;
+    default:
+        CPE_ERROR(
+            protocol->m_em, "smux: %s: <== ignore: invalid cmd %d",
+            net_smux_session_dump(net_smux_protocol_tmp_buffer(protocol), session), head->m_cmd);
+        return -1;
+    }
     
     if (net_smux_session_debug(session)) {
         char session_name[128];
@@ -481,6 +499,24 @@ int net_smux_session_input(
     case net_smux_cmd_nop:
         break;
     case net_smux_cmd_udp:
+        stream = net_smux_session_find_stream(session, sid);
+        if (stream == NULL) {
+            CPE_ERROR(
+                protocol->m_em, "smux: %s: <== udp: stream %d not exist",
+                net_smux_session_dump(net_smux_protocol_tmp_buffer(protocol), session), sid);
+            return -1;
+        }
+        else {
+            struct net_smux_body_udp const * body = (void*)(head + 1);
+
+            uint32_t consumed;
+            CPE_COPY_NTOH32(&consumed, &body->m_consumed);
+            
+            uint32_t window;
+            CPE_COPY_NTOH32(&window, &body->m_window);
+
+            net_smux_stream_update_pear(stream, consumed, window);
+        }
         break;
     }
     

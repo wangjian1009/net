@@ -20,6 +20,12 @@ struct net_smux_head {
     uint16_t m_len;
     uint32_t m_sid;
 } CPE_PACKED;
+
+struct net_smux_body_udp {
+    uint32_t m_consumed;
+    uint32_t m_window;
+} CPE_PACKED;
+
 CPE_END_PACKED
 
 void net_smux_print_frame(write_stream_t ws, struct net_smux_head const * frame);
