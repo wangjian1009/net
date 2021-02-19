@@ -18,6 +18,10 @@ net_smux_stream_create(net_smux_session_t session, uint32_t stream_id) {
 
     stream->m_session = session;
     stream->m_stream_id = stream_id;
+    stream->m_is_processing = 0;
+    stream->m_is_free = 0;
+
+    SIMPLEQ_INIT(&stream->m_read_blocks);
 
 	stream->m_num_read = 0;
 	stream->m_num_written = 0;
@@ -49,6 +53,20 @@ net_smux_stream_create(net_smux_session_t session, uint32_t stream_id) {
 void net_smux_stream_free(net_smux_stream_t stream) {
     net_smux_session_t session = stream->m_session;
     net_smux_protocol_t protocol = session->m_protocol;
+
+    if (stream->m_is_processing) {
+        stream->m_is_free = 1;
+        return;
+    }
+
+    int32_t return_tokens = 0;
+    while(!SIMPLEQ_EMPTY(&stream->m_read_blocks)) {
+        net_smux_mem_block_t block = SIMPLEQ_FIRST(&stream->m_read_blocks);
+        return_tokens += block->m_size;
+        SIMPLEQ_REMOVE_HEAD(&stream->m_read_blocks, m_next);
+        net_smux_mem_cache_release(session->m_mem_cache, block);
+    }
+    net_smux_session_return_tokens(session, return_tokens);
 
     if (stream->m_read_ctx_free) {
         stream->m_read_ctx_free(stream->m_read_ctx);
@@ -90,10 +108,6 @@ net_smux_session_t net_smux_stream_session(net_smux_stream_t stream) {
 void net_smux_stream_close_and_free(net_smux_stream_t stream) {
     net_smux_session_send_frame(stream->m_session, stream, net_smux_cmd_fin, NULL, 0, 0, 0);
     net_smux_stream_free(stream);
-}
-
-void net_smux_stream_recv(net_smux_stream_t stream, void const * data, uint16_t data_len) {
-    
 }
 
 void net_smux_stream_update_pear(net_smux_stream_t stream, uint32_t consumed, uint32_t window) {

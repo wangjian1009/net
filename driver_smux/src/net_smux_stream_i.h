@@ -9,7 +9,11 @@ struct net_smux_stream {
     net_smux_session_t m_session;
     struct cpe_hash_entry m_hh_for_session;
     uint32_t m_stream_id;
-    
+    uint8_t m_is_processing;
+    uint8_t m_is_free;
+
+    net_smux_mem_block_list_t m_read_blocks;
+
 	uint32_t m_num_read;      /* number of consumed bytes */
 	uint32_t m_num_written;   /* count num of bytes written */
 	uint32_t m_incr;          /* counting for sending */
@@ -36,7 +40,7 @@ void net_smux_stream_free(net_smux_stream_t stream);
 
 void net_smux_stream_free_all(net_smux_session_t session);
 
-void net_smux_stream_recv(net_smux_stream_t stream, void const * data, uint16_t data_len);
+void net_smux_stream_input(net_smux_stream_t stream, void const * data, uint16_t data_len);
 void net_smux_stream_update_pear(net_smux_stream_t stream, uint32_t consumed, uint32_t window);
 
 void net_smux_stream_print(write_stream_t ws, net_smux_stream_t stream);

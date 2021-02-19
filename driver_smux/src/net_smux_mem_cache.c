@@ -21,7 +21,7 @@ int net_smux_mem_group_add(net_smux_mem_cache_t cache, uint32_t capacity) {
     group->m_capacity = capacity;
     group->m_alloc_count = 0;
     group->m_free_count = 0;
-    group->m_blocks = NULL;
+    SIMPLEQ_INIT(&group->m_blocks);
 
     cache->m_group_count++;
     return 0;
@@ -103,18 +103,17 @@ void net_smux_mem_cache_free(net_smux_mem_cache_t cache) {
         net_smux_mem_group_t group = &cache->m_groups[i];
         assert(group->m_alloc_count == group->m_free_count);
 
-        net_smux_mem_block_t block = group->m_blocks;
-        while(block) {
+        while(!SIMPLEQ_EMPTY(&group->m_blocks)) {
+            net_smux_mem_block_t block = SIMPLEQ_FIRST(&group->m_blocks);
+            SIMPLEQ_REMOVE_HEAD(&group->m_blocks, m_next);
+        
             assert(cache->m_alloced_count > 0);
             assert(cache->m_alloced_size >= group->m_capacity);
             
-            net_smux_mem_block_t to_free = block;
-            block = block->m_next;
-
             cache->m_alloced_count--;
             cache->m_alloced_size -= group->m_capacity;
             
-            mem_free(protocol->m_alloc, to_free);
+            mem_free(protocol->m_alloc, block);
         }
     }
 
@@ -140,11 +139,11 @@ net_smux_mem_group_alloc(net_smux_mem_cache_t cache, net_smux_mem_group_t group,
 
     assert(sizeof(struct net_smux_mem_block) + len <= group->m_capacity);
 
-    net_smux_mem_block_t block = group->m_blocks;
+    net_smux_mem_block_t block = SIMPLEQ_FIRST(&group->m_blocks);
     if (block) {
         assert(group->m_free_count > 0);
 
-        group->m_blocks = block->m_next;
+        SIMPLEQ_REMOVE_HEAD(&group->m_blocks, m_next);
         group->m_free_count--;
     }
     else {
@@ -168,9 +167,7 @@ net_smux_mem_group_alloc(net_smux_mem_cache_t cache, net_smux_mem_group_t group,
 
 void net_smux_mem_group_release(net_smux_mem_group_t group, net_smux_mem_block_t block) {
     assert(group->m_free_count < group->m_alloc_count);
-
-    block->m_next = group->m_blocks;
-    group->m_blocks = block;
+    SIMPLEQ_INSERT_TAIL(&group->m_blocks, block, m_next);
     group->m_free_count++;
 }
 

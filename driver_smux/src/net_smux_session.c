@@ -46,7 +46,7 @@ net_smux_session_create_i(
     session->m_config = config;
     session->m_runing_mode = runing_mode;
     session->m_max_stream_id = runing_mode == net_smux_runing_mode_cli ? 1 : 0;
-    session->m_bucket = config->m_max_recv_buffer;
+    session->m_recv_bucket = config->m_max_recv_buffer;
     session->m_shaper = NULL;
     session->m_timer_ping = NULL;
     session->m_timer_timeout = NULL;
@@ -410,6 +410,42 @@ int net_smux_session_send_frame(
     }
 }
 
+void net_smux_session_get_tokens(net_smux_session_t session, int32_t tokens) {
+    uint8_t init_have_token = session->m_recv_bucket > 0 ? 1 : 0;
+    
+    session->m_recv_bucket -= tokens;
+
+    if (session->m_recv_bucket < 0 && init_have_token) {
+        switch(session->m_underline.m_type) {
+        case net_smux_session_underline_udp:
+            break;
+        case net_smux_session_underline_tcp:
+            if (session->m_underline.m_tcp.m_endpoint) {
+                net_endpoint_set_expect_read(session->m_underline.m_tcp.m_endpoint->m_base_endpoint, 0);
+            }
+            break;
+        }
+    }
+}
+
+void net_smux_session_return_tokens(net_smux_session_t session, int32_t tokens) {
+    uint8_t init_no_token = session->m_recv_bucket < 0 ? 1 : 0;
+    
+    session->m_recv_bucket += tokens;
+
+    if (session->m_recv_bucket > 0 && init_no_token) {
+        switch(session->m_underline.m_type) {
+        case net_smux_session_underline_udp:
+            break;
+        case net_smux_session_underline_tcp:
+            if (session->m_underline.m_tcp.m_endpoint) {
+                net_endpoint_set_expect_read(session->m_underline.m_tcp.m_endpoint->m_base_endpoint, 1);
+            }
+            break;
+        }
+    }
+}
+
 int net_smux_session_input(
     net_smux_session_t session, void const * data, uint32_t data_len)
 {
@@ -501,13 +537,13 @@ int net_smux_session_input(
     case net_smux_cmd_fin:
         stream = net_smux_session_find_stream(session, sid);
         if (stream != NULL) {
-            net_smux_stream_recv(stream, NULL, 0);
+            net_smux_stream_input(stream, NULL, 0);
         }
         break;
     case net_smux_cmd_psh:
         stream = net_smux_session_find_stream(session, sid);
         if (stream != NULL) {
-            net_smux_stream_recv(stream, head + 1, pdu_data_len);
+            net_smux_stream_input(stream, head + 1, pdu_data_len);
         }
         break;
     case net_smux_cmd_nop:

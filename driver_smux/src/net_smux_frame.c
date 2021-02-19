@@ -11,7 +11,7 @@ net_smux_frame_create(
 {
     net_smux_protocol_t protocol = session->m_protocol;
 
-    assert(len <= session->m_bucket);
+    assert(len <= session->m_recv_bucket);
 
     net_smux_frame_t frame = TAILQ_FIRST(&protocol->m_free_frames);
     if (frame) {
@@ -27,8 +27,6 @@ net_smux_frame_create(
         }
     }
 
-    session->m_bucket -= len;
-    
     frame->m_cmd = cmd;
     frame->m_len = len;
     frame->m_sid = stream ? stream->m_stream_id : 0;
@@ -48,8 +46,6 @@ net_smux_frame_create(
         memcpy(frame->m_data + 1, data, len);
     }
 
-    session->m_bucket -= frame->m_len;
-
     return frame;
 }
 
@@ -60,8 +56,6 @@ void net_smux_frame_free(net_smux_session_t session, net_smux_stream_t stream, n
         net_smux_mem_cache_release(session->m_mem_cache, frame->m_data);
         frame->m_data = NULL;
     }
-    
-    session->m_bucket += frame->m_len;
     
     TAILQ_INSERT_TAIL(&protocol->m_free_frames, frame, m_next);
 }

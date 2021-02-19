@@ -19,7 +19,7 @@ struct net_smux_session {
 
     net_smux_mem_cache_t m_mem_cache;
     /*接受缓存剩余空间 */
-    int32_t m_bucket;
+    int32_t m_recv_bucket;
 
     /*等待发送的farme的优先级队列 */
     cpe_priority_queue_t m_shaper;
@@ -58,6 +58,9 @@ int net_smux_session_send_frame(
 int net_smux_session_input(
     net_smux_session_t session, void const * data, uint32_t data_len);
 
+void net_smux_session_get_tokens(net_smux_session_t session, int32_t tokens);
+void net_smux_session_return_tokens(net_smux_session_t session, int32_t tokens);
+    
 int net_smux_session_dgram_eq(net_smux_session_t l, net_smux_session_t r, void * user_data);
 uint32_t net_smux_session_dgram_hash(net_smux_session_t o, void * user_data);
 

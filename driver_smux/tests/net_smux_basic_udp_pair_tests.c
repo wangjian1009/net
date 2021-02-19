@@ -42,8 +42,8 @@ static void net_smux_basic_udp_pair_basic(void **state) {
     assert_true(svr_stream);
 
     /*发送数据 */
-    net_smux_testenv_receiver_t cli_receiver = net_smux_testenv_create_stream_receiver(env, cli_stream);
-    net_smux_testenv_receiver_t svr_receiver = net_smux_testenv_create_stream_receiver(env, svr_stream);
+    net_smux_testenv_receiver_t cli_receiver = net_smux_testenv_receiver_create(env, cli_stream);
+    net_smux_testenv_receiver_t svr_receiver = net_smux_testenv_receiver_create(env, svr_stream);
 
     /*发送数据c->s */
     assert_true(net_smux_stream_write(cli_stream, "abcd", 4) == 4);

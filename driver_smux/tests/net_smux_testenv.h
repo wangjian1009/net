@@ -42,7 +42,4 @@ net_smux_session_t
 net_smux_testenv_dgram_find_session(
     net_smux_testenv_t env, net_smux_dgram_t dgram, const char * address);
 
-net_smux_testenv_receiver_t
-net_smux_testenv_create_stream_receiver(net_smux_testenv_t env, net_smux_stream_t stream);
-
 #endif

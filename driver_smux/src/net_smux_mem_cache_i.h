@@ -5,7 +5,7 @@
 NET_BEGIN_DECL
 
 struct net_smux_mem_block {
-    net_smux_mem_block_t m_next;
+    SIMPLEQ_ENTRY(net_smux_mem_block) m_next;
     uint16_t m_capacity;
     uint16_t m_size;
 };
@@ -14,7 +14,7 @@ struct net_smux_mem_group {
     uint32_t m_capacity;
     uint16_t m_alloc_count;
     uint16_t m_free_count;
-    net_smux_mem_block_t m_blocks;
+    net_smux_mem_block_list_t m_blocks;
 };
 
 struct net_smux_mem_cache {

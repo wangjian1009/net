@@ -16,6 +16,8 @@ typedef TAILQ_HEAD(net_smux_session_list, net_smux_session) net_smux_session_lis
 typedef TAILQ_HEAD(net_smux_dgram_list, net_smux_dgram) net_smux_dgram_list_t;
 typedef TAILQ_HEAD(net_smux_frame_list, net_smux_frame) net_smux_frame_list_t;
 
+typedef SIMPLEQ_HEAD(net_smux_mem_block_list, net_smux_mem_block) net_smux_mem_block_list_t;
+
 struct net_smux_protocol {
     mem_allocrator_t m_alloc;
     error_monitor_t m_em;

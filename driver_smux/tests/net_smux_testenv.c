@@ -100,16 +100,3 @@ net_smux_testenv_dgram_find_session(
 
     return session;
 }
-
-static int net_smux_testenv_stream_on_recv(void * ctx, net_smux_stream_t stream, void const * data, uint32_t data_len) {
-    net_smux_testenv_receiver_t receiver = ctx;
-    mem_buffer_append(&receiver->m_buffer, data, data_len);
-    return 0;
-}
-
-net_smux_testenv_receiver_t
-net_smux_testenv_create_stream_receiver(net_smux_testenv_t env, net_smux_stream_t stream) {
-    net_smux_testenv_receiver_t receiver = net_smux_testenv_receiver_create(env);
-    net_smux_stream_set_reader(stream, receiver, net_smux_testenv_stream_on_recv, NULL);
-    return receiver;
-}
