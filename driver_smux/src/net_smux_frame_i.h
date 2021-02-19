@@ -3,13 +3,6 @@
 #include "cpe/pal/pal_platform.h"
 #include "net_smux_protocol_i.h"
 
-enum net_smux_status {
-    net_smux_status_new = 0x01,
-    net_smux_status_keep = 0x02,
-    net_smux_status_end = 0x03,
-    net_smux_status_keep_alive = 0x04,
-};
-
 struct net_smux_frame {
     union {
         TAILQ_ENTRY(net_smux_frame) m_next;

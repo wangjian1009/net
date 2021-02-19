@@ -7,6 +7,11 @@
 
 typedef enum net_smux_cmd net_smux_cmd_t;
 typedef struct net_smux_frame * net_smux_frame_t;
+
+typedef struct net_smux_mem_cache * net_smux_mem_cache_t;
+typedef struct net_smux_mem_block * net_smux_mem_block_t;
+typedef struct net_smux_mem_group * net_smux_mem_group_t;
+
 typedef TAILQ_HEAD(net_smux_session_list, net_smux_session) net_smux_session_list_t;
 typedef TAILQ_HEAD(net_smux_dgram_list, net_smux_dgram) net_smux_dgram_list_t;
 typedef TAILQ_HEAD(net_smux_frame_list, net_smux_frame) net_smux_frame_list_t;

@@ -3,6 +3,7 @@
 #include "cpe/utils/hash.h"
 #include "net_smux_session.h"
 #include "net_smux_protocol_i.h"
+#include "net_smux_mem_cache_i.h"
 
 NET_BEGIN_DECL
 
@@ -15,7 +16,7 @@ struct net_smux_session {
 
     uint32_t m_max_stream_id; /* next stream identifier */
     struct cpe_hash_table m_streams;
-
+    
     /*接受缓存剩余空间 */
     uint32_t m_bucket;
 
