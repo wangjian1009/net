@@ -16,7 +16,7 @@ void net_smux_print_frame(write_stream_t ws, struct net_smux_head const * frame)
         stream_printf(ws, "fin %d(len=%d)", sid, len);
         break;
     case net_smux_cmd_psh:
-        stream_printf(ws, "psh");
+        stream_printf(ws, "psh %d(len=%d)", sid, len);
         break;
     case net_smux_cmd_nop:
         stream_printf(ws, "nop");
