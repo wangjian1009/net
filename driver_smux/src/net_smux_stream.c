@@ -28,6 +28,10 @@ net_smux_stream_create(net_smux_session_t session, uint32_t stream_id, uint32_t 
 	stream->m_peer_consumed = 0;
 	stream->m_peer_window = 0;
 
+    stream->m_write_ctx = NULL;
+    stream->m_on_write_resume = NULL;
+    stream->m_write_ctx_free = NULL;
+    
     stream->m_read_ctx = NULL;
     stream->m_on_recv = NULL;
     stream->m_read_ctx_free = NULL;
@@ -51,6 +55,11 @@ void net_smux_stream_free(net_smux_stream_t stream) {
     if (stream->m_read_ctx_free) {
         stream->m_read_ctx_free(stream->m_read_ctx);
         stream->m_read_ctx_free = NULL;
+    }
+
+    if (stream->m_write_ctx_free) {
+        stream->m_write_ctx_free(stream->m_write_ctx);
+        stream->m_write_ctx_free = NULL;
     }
     
     cpe_hash_table_remove_by_ins(&session->m_streams, stream);
@@ -85,36 +94,10 @@ void net_smux_stream_close_and_free(net_smux_stream_t stream) {
     net_smux_stream_free(stream);
 }
 
-void net_smux_stream_set_reader(
-    net_smux_stream_t stream,
-    void * read_ctx,
-    net_smux_stream_on_recv_fun_t on_recv,
-    void (*read_ctx_free)(void *))
-{
-    if (stream->m_read_ctx_free) {
-        stream->m_read_ctx_free(stream->m_read_ctx);
-    }
-    
-    stream->m_read_ctx = read_ctx;
-    stream->m_on_recv = on_recv;
-    stream->m_read_ctx_free = read_ctx_free;
-}
-
-void net_smux_stream_clear_reader(net_smux_stream_t stream) {
-    stream->m_read_ctx = NULL;
-    stream->m_on_recv = NULL;
-    stream->m_read_ctx_free = NULL;
-}
-
-void * net_smux_stream_reader_ctx(net_smux_stream_t stream) {
-    return stream->m_read_ctx;
-}
-
 void net_smux_stream_update_pear(net_smux_stream_t stream, uint32_t consumed, uint32_t window) {
     stream->m_peer_consumed = consumed;
     stream->m_peer_window = window;
 }
-
 
 void net_smux_stream_print(write_stream_t ws, net_smux_stream_t stream) {
     net_smux_session_print(ws, stream->m_session);
