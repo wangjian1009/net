@@ -92,6 +92,9 @@ void net_smux_stream_close_and_free(net_smux_stream_t stream) {
     net_smux_stream_free(stream);
 }
 
+void net_smux_stream_recv(net_smux_stream_t stream, void const * data, uint16_t data_len) {
+}
+
 void net_smux_stream_update_pear(net_smux_stream_t stream, uint32_t consumed, uint32_t window) {
     stream->m_peer_consumed = consumed;
     stream->m_peer_window = window;

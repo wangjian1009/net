@@ -496,8 +496,16 @@ int net_smux_session_input(
         }
         break;
     case net_smux_cmd_fin:
+        stream = net_smux_session_find_stream(session, sid);
+        if (stream != NULL) {
+            net_smux_stream_recv(stream, NULL, 0);
+        }
         break;
     case net_smux_cmd_psh:
+        stream = net_smux_session_find_stream(session, sid);
+        if (stream != NULL) {
+            net_smux_stream_recv(stream, head + 1, pdu_data_len);
+        }
         break;
     case net_smux_cmd_nop:
         break;
