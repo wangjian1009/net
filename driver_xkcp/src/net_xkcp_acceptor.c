@@ -7,6 +7,7 @@
 #include "net_protocol.h"
 #include "net_acceptor.h"
 #include "net_xkcp_acceptor_i.h"
+#include "net_xkcp_client_i.h"
 #include "net_xkcp_endpoint_i.h"
 
 static void net_xkcp_acceptor_recv(net_dgram_t dgram, void * ctx, void * data, size_t data_size, net_address_t source);
@@ -37,6 +38,20 @@ int net_xkcp_acceptor_init(net_acceptor_t base_acceptor) {
         return -1;
     }
 
+    if (cpe_hash_table_init(
+            &acceptor->m_clients,
+            driver->m_alloc,
+            (cpe_hash_fun_t) net_xkcp_client_hash,
+            (cpe_hash_eq_t) net_xkcp_client_eq,
+            CPE_HASH_OBJ2ENTRY(net_xkcp_client, m_hh_for_acceptor),
+            -1) != 0)
+    {
+        CPE_ERROR(driver->m_em, "xkcp: acceptor: init: create update timer fail!");
+        net_timer_free(acceptor->m_update_timer);
+        net_dgram_free(acceptor->m_dgram);
+        return -1;
+    }
+    
     return 0;
 }
 
@@ -44,6 +59,17 @@ void net_xkcp_acceptor_fini(net_acceptor_t base_acceptor) {
     net_xkcp_acceptor_t acceptor = net_acceptor_data(base_acceptor);
     net_xkcp_driver_t driver = net_driver_data(net_acceptor_driver(base_acceptor));
 
+    struct cpe_hash_it client_it;
+    net_xkcp_client_t client;
+    cpe_hash_it_init(&client_it, &acceptor->m_clients);
+    client = cpe_hash_it_next(&client_it);
+    while(client) {
+        net_xkcp_client_t next = cpe_hash_it_next(&client_it);
+        net_xkcp_client_free(client);
+        client = next;
+    }
+    cpe_hash_table_fini(&acceptor->m_clients);
+    
     if (acceptor->m_update_timer) {
         net_timer_free(acceptor->m_update_timer);
         acceptor->m_update_timer = NULL;

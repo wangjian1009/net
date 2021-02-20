@@ -24,10 +24,7 @@ int net_xkcp_endpoint_init(net_endpoint_t base_endpoint) {
 void net_xkcp_endpoint_fini(net_endpoint_t base_endpoint) {
     net_xkcp_endpoint_t endpoint = net_endpoint_data(base_endpoint);
 
-    if (endpoint->m_kcp) {
-        ikcp_release(endpoint->m_kcp);
-        endpoint->m_kcp = NULL;
-    }
+    net_xkcp_endpoint_set_running_mode(endpoint, net_xkcp_endpoint_runing_mode_init);
 }
 
 int net_xkcp_endpoint_connect(net_endpoint_t base_endpoint) {
@@ -35,6 +32,22 @@ int net_xkcp_endpoint_connect(net_endpoint_t base_endpoint) {
     net_xkcp_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
     net_xkcp_endpoint_t endpoint = net_endpoint_data(base_endpoint);
 
+    net_address_t target_addr = net_endpoint_remote_address(base_endpoint);
+    if (target_addr == NULL) {
+        CPE_ERROR(
+            driver->m_em, "xkcp: %s: connect: target addr not set!",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+        return -1;
+    }
+
+    net_xkcp_connector_t connector = net_xkcp_connector_find(driver, target_addr);
+    if (connector == NULL) {
+        CPE_ERROR(
+            driver->m_em, "xkcp: %s: connect: no connector to target!",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+        return -1;
+    }
+    
     /* if (net_ws_endpoint_set_runing_mode(endpoint->m_underline, net_ws_endpoint_runing_mode_cli) != 0) { */
     /*     CPE_ERROR( */
     /*         driver->m_em, "net: xkcp: %s: connect: set undnline runing mode cli failed!", */
@@ -47,14 +60,6 @@ int net_xkcp_endpoint_connect(net_endpoint_t base_endpoint) {
     /*     net_endpoint_set_protocol_debug(base_underline, net_endpoint_driver_debug(base_endpoint)); */
     /* } */
     
-    /* net_address_t target_addr = net_endpoint_remote_address(base_endpoint); */
-    /* if (target_addr == NULL) { */
-    /*     CPE_ERROR( */
-    /*         driver->m_em, "net: xkcp: %s: connect: target addr not set!", */
-    /*         net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint)); */
-    /*     return -1; */
-    /* } */
-
     /* if (net_endpoint_set_remote_address(endpoint->m_underline->m_base_endpoint, target_addr) != 0) { */
     /*     CPE_ERROR( */
     /*         driver->m_em, "net: xkcp: %s: connect: set remote address to underline fail", */
@@ -145,9 +150,11 @@ void net_xkcp_endpoint_set_running_mode(net_xkcp_endpoint_t endpoint, net_xkcp_e
         break;
     case net_xkcp_endpoint_runing_mode_cli:
         net_xkcp_endpoint_set_connector(endpoint, NULL);
+        net_xkcp_endpoint_set_conv(endpoint, 0);
         break;
     case net_xkcp_endpoint_runing_mode_svr:
         net_xkcp_endpoint_set_client(endpoint, NULL);
+        net_xkcp_endpoint_set_conv(endpoint, 0);
         break;
     }
 

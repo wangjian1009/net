@@ -107,7 +107,16 @@ static void net_xkcp_driver_fini(net_driver_t base_driver) {
     net_xkcp_driver_t driver = net_driver_data(base_driver);
 
     if (driver->m_connections_inited) {
-        
+        struct cpe_hash_it connector_it;
+        net_xkcp_connector_t connector;
+        cpe_hash_it_init(&connector_it, &driver->m_connectors);
+        connector = cpe_hash_it_next(&connector_it);
+        while(connector) {
+            net_xkcp_connector_t next = cpe_hash_it_next(&connector_it);
+            net_xkcp_connector_free(connector);
+            connector = next;
+        }
+        cpe_hash_table_fini(&driver->m_connectors);
     }
 }
 

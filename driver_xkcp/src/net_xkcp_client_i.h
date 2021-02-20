@@ -10,4 +10,10 @@ struct net_xkcp_client {
     struct cpe_hash_table m_streams;
 };
 
+net_xkcp_client_t net_xkcp_client_create(net_xkcp_acceptor_t acceptor, net_address_t remote_address);
+void net_xkcp_client_free(net_xkcp_client_t client);
+
+int net_xkcp_client_eq(net_xkcp_client_t l, net_xkcp_client_t r, void * user_data);
+uint32_t net_xkcp_client_hash(net_xkcp_client_t o, void * user_data);
+
 #endif

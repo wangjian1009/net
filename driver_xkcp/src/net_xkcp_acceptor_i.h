@@ -7,6 +7,7 @@ struct net_xkcp_acceptor {
     net_xkcp_config_t m_config;
     net_dgram_t m_dgram;
     net_timer_t m_update_timer;
+    struct cpe_hash_table m_clients;
 };
 
 int net_xkcp_acceptor_init(net_acceptor_t acceptor);
