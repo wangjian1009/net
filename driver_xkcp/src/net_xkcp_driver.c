@@ -1,4 +1,5 @@
 #include "cpe/pal/pal_stdio.h"
+#include "cpe/pal/pal_strings.h"
 #include "cpe/utils/error.h"
 #include "net_schedule.h"
 #include "net_driver.h"
@@ -125,10 +126,14 @@ net_xkcp_driver_t net_xkcp_driver_cast(net_driver_t base_driver) {
 }
 
 void net_xkcp_config_init_default(net_xkcp_config_t config) {
+    config->m_mode = net_xkcp_mode_normal;
+	config->m_mtu = 1350;
+	config->m_send_wnd = 512;
+	config->m_recv_wnd = 512;
 }
 
 uint8_t net_xkcp_config_validate(net_xkcp_config_t config, error_monitor_t em) {
-    return 0;
+    return 1;
 }
 
 net_schedule_t net_xkcp_driver_schedule(net_xkcp_driver_t driver) {

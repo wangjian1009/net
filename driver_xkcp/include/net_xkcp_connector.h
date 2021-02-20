@@ -15,6 +15,8 @@ net_xkcp_connector_find(net_xkcp_driver_t driver, net_address_t remote_address);
 
 net_dgram_t net_xkcp_connector_dgram(net_xkcp_connector_t connector);
 
+net_xkcp_endpoint_t net_xkcp_connector_find_stream(net_xkcp_connector_t connector,  uint32_t conv);
+
 NET_END_DECL
 
 #endif

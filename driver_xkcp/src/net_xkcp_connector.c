@@ -1,4 +1,6 @@
 #include <assert.h>
+#include "cpe/pal/pal_strings.h"
+#include "cpe/utils/string_utils.h"
 #include "net_address.h"
 #include "net_driver.h"
 #include "net_dgram.h"
@@ -7,6 +9,7 @@
 #include "net_acceptor.h"
 #include "net_xkcp_connector_i.h"
 #include "net_xkcp_endpoint_i.h"
+#include "net_xkcp_utils.h"
 
 static void net_xkcp_connector_recv(net_dgram_t dgram, void * ctx, void * data, size_t data_size, net_address_t source);
 
@@ -119,6 +122,13 @@ net_dgram_t net_xkcp_connector_dgram(net_xkcp_connector_t connector) {
     return connector->m_dgram;
 }
 
+net_xkcp_endpoint_t
+net_xkcp_connector_find_stream(net_xkcp_connector_t connector, uint32_t conv) {
+    struct net_xkcp_endpoint key;
+    key.m_conv = conv;
+    return cpe_hash_table_find(&connector->m_streams, &key);
+}
+
 int net_xkcp_connector_eq(net_xkcp_connector_t l, net_xkcp_connector_t r, void * user_data) {
     return net_address_cmp(l->m_remote_address, r->m_remote_address) == 0 ? 1 : 0;
 }
@@ -130,6 +140,47 @@ uint32_t net_xkcp_connector_hash(net_xkcp_connector_t o, void * user_data) {
 static void net_xkcp_connector_recv(net_dgram_t dgram, void * ctx, void * data, size_t data_size, net_address_t source) {
     net_xkcp_connector_t connector = ctx;
     net_xkcp_driver_t driver = connector->m_driver;
+    net_driver_t base_driver = net_driver_from_data(driver);
 
-    
+    uint32_t conv = ikcp_getconv(data);
+
+    net_xkcp_endpoint_t endpoint = net_xkcp_connector_find_stream(connector, conv);
+    if (endpoint == NULL) {
+        CPE_ERROR(
+            driver->m_em, "xkcp: %s: %d: <== no stream",
+            net_address_dump(net_xkcp_driver_tmp_buffer(driver), source), conv);
+        return;
+    }
+
+    if (endpoint->m_kcp == NULL) {
+        CPE_ERROR(
+            driver->m_em, "xkcp: %s: %d: <== %d data: no bind kcp",
+            net_address_dump(net_xkcp_driver_tmp_buffer(driver), source), conv, (int)data_size);
+        return;
+    }
+
+    int nret = ikcp_input(endpoint->m_kcp, data, data_size);
+    if (nret < 0) {
+        CPE_ERROR(
+            driver->m_em, "xkcp: %s: %d: <== %d data: ikcp_input failed [%d]",
+            net_address_dump(net_xkcp_driver_tmp_buffer(driver), source), conv, (int)data_size, nret);
+        return;
+    }
+
+    if (net_driver_debug(base_driver) >= 2) {
+        char address_buf[128];
+        cpe_str_dup(
+            address_buf, sizeof(address_buf),
+            net_address_dump(net_xkcp_driver_tmp_buffer(driver), source));
+        CPE_INFO(
+            driver->m_em, "xkcp: %s: %d: <== %s",
+            address_buf, conv,
+            net_xkcp_dump_frame(net_xkcp_driver_tmp_buffer(driver), data, data_size));
+    }
+
+    net_xkcp_endpoint_kcp_forward_data(endpoint);
+
+    if (net_endpoint_is_active(endpoint->m_base_endpoint)) {
+        net_xkcp_endpoint_kcp_schedule_update(endpoint);
+    }
 }
