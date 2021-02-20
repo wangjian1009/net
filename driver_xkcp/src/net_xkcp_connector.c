@@ -7,6 +7,7 @@
 #include "net_endpoint.h"
 #include "net_protocol.h"
 #include "net_acceptor.h"
+#include "net_xkcp_config.h"
 #include "net_xkcp_connector_i.h"
 #include "net_xkcp_endpoint_i.h"
 #include "net_xkcp_utils.h"
@@ -27,12 +28,27 @@ net_xkcp_connector_create(
 
     connector->m_driver = driver;
     connector->m_max_conv = 0;
+    connector->m_config = NULL;
 
+    if (config) {
+        connector->m_config = mem_alloc(driver->m_alloc, sizeof(struct net_xkcp_config));
+        if (connector->m_config == NULL) {
+            CPE_ERROR(
+                driver->m_em, "xkcp: connector %s: create: alloc config fail!",
+                net_address_dump(net_xkcp_driver_tmp_buffer(driver), remote_address));
+            mem_free(driver->m_alloc, connector);
+            return NULL;
+        }
+
+        *connector->m_config = *config;
+    }
+    
     connector->m_remote_address = net_address_copy(net_xkcp_driver_schedule(driver), remote_address);
     if (connector->m_remote_address == NULL) {
         CPE_ERROR(
             driver->m_em, "xkcp: connector %s: create: dup address fail!",
             net_address_dump(net_xkcp_driver_tmp_buffer(driver), remote_address));
+        if (connector->m_config) mem_free(driver->m_alloc, connector->m_config);
         mem_free(driver->m_alloc, connector);
         return NULL;
     }
@@ -44,6 +60,7 @@ net_xkcp_connector_create(
             driver->m_em, "xkcp: connector %s: create: create dgram fail!",
             net_address_dump(net_xkcp_driver_tmp_buffer(driver), remote_address));
         net_address_free(connector->m_remote_address);
+        if (connector->m_config) mem_free(driver->m_alloc, connector->m_config);
         mem_free(driver->m_alloc, connector);
         return NULL;
     }
@@ -61,6 +78,7 @@ net_xkcp_connector_create(
             net_address_dump(net_xkcp_driver_tmp_buffer(driver), remote_address));
         net_dgram_free(connector->m_dgram);
         net_address_free(connector->m_remote_address);
+        if (connector->m_config) mem_free(driver->m_alloc, connector->m_config);
         mem_free(driver->m_alloc, connector);
         return NULL;
     }
@@ -73,6 +91,7 @@ net_xkcp_connector_create(
         cpe_hash_table_fini(&connector->m_streams);
         net_dgram_free(connector->m_dgram);
         net_address_free(connector->m_remote_address);
+        if (connector->m_config) mem_free(driver->m_alloc, connector->m_config);
         mem_free(driver->m_alloc, connector);
         return NULL;
     }
@@ -105,6 +124,11 @@ void net_xkcp_connector_free(net_xkcp_connector_t connector) {
     if (connector->m_remote_address) {
         net_address_free(connector->m_remote_address);
         connector->m_remote_address = NULL;
+    }
+
+    if (connector->m_config) {
+        mem_free(driver->m_alloc, connector->m_config);
+        connector->m_config = NULL;
     }
     
     cpe_hash_table_remove_by_ins(&driver->m_connectors, connector);

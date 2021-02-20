@@ -7,6 +7,7 @@ struct net_xkcp_connector {
     net_xkcp_driver_t m_driver;
     cpe_hash_entry m_hh_for_driver;
 
+    net_xkcp_config_t m_config;
     net_address_t m_remote_address;
     net_dgram_t m_dgram;
 

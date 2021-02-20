@@ -19,7 +19,7 @@ int net_xkcp_acceptor_init(net_acceptor_t base_acceptor) {
     net_xkcp_driver_t driver = net_driver_data(net_acceptor_driver(base_acceptor));
     net_xkcp_acceptor_t acceptor = net_acceptor_data(base_acceptor);
 
-    net_xkcp_config_init_default(&acceptor->m_config);
+    acceptor->m_config = NULL;
 
     net_address_t address = net_acceptor_address(base_acceptor);
     if (address == NULL) {
@@ -68,6 +68,11 @@ void net_xkcp_acceptor_fini(net_acceptor_t base_acceptor) {
         net_dgram_free(acceptor->m_dgram);
         acceptor->m_dgram = NULL;
     }
+
+    if (acceptor->m_config) {
+        mem_free(driver->m_alloc, acceptor->m_config);
+        acceptor->m_config = NULL;
+    }
 }
 
 int net_xkcp_acceptor_set_config(net_xkcp_acceptor_t acceptor, net_xkcp_config_t config) {
@@ -81,7 +86,17 @@ int net_xkcp_acceptor_set_config(net_xkcp_acceptor_t acceptor, net_xkcp_config_t
         return -1;
     }
 
-    acceptor->m_config = *config;
+    if (acceptor->m_config == NULL) {
+        acceptor->m_config = mem_alloc(driver->m_alloc, sizeof(struct net_xkcp_config));
+        if (acceptor->m_config == NULL) {
+            CPE_ERROR(
+                driver->m_em, "xkcp: acceptor %s: set config: alloc config fail!",
+                net_address_dump(net_xkcp_driver_tmp_buffer(driver), net_acceptor_address(base_acceptor)));
+            return -1;
+        }
+    }
+    
+    *acceptor->m_config = *config;
 
     return 0;
 }

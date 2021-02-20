@@ -10,6 +10,7 @@
 #include "net_xkcp_endpoint_i.h"
 #include "net_xkcp_connector_i.h"
 #include "net_xkcp_client_i.h"
+#include "net_xkcp_acceptor_i.h"
 #include "net_xkcp_utils.h"
 
 static int net_xkcp_endpoint_kcp_output(const char *buf, int len, ikcpcb *xkcp, void *user);
@@ -237,6 +238,10 @@ int net_xkcp_endpoint_set_conv(net_xkcp_endpoint_t endpoint, uint32_t conv) {
             break;
         case net_xkcp_endpoint_runing_mode_cli:
             if (endpoint->m_cli.m_connector) {
+                if (endpoint->m_cli.m_connector->m_config) {
+                    net_xkcp_apply_config(endpoint->m_kcp, endpoint->m_cli.m_connector->m_config);
+                }
+                
                 cpe_hash_entry_init(&endpoint->m_cli.m_hh_for_connector);
                 if (cpe_hash_table_insert_unique(&endpoint->m_cli.m_connector->m_streams, endpoint) != 0) {
                     CPE_ERROR(
@@ -251,6 +256,10 @@ int net_xkcp_endpoint_set_conv(net_xkcp_endpoint_t endpoint, uint32_t conv) {
             break;
         case net_xkcp_endpoint_runing_mode_svr:
             if (endpoint->m_svr.m_client) {
+                if (endpoint->m_svr.m_client->m_acceptor->m_config) {
+                    net_xkcp_apply_config(endpoint->m_kcp, endpoint->m_cli.m_connector->m_config);
+                }
+                
                 cpe_hash_entry_init(&endpoint->m_svr.m_hh_for_client);
                 if (cpe_hash_table_insert_unique(&endpoint->m_svr.m_client->m_streams, endpoint) != 0) {
                     CPE_ERROR(
