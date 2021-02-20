@@ -30,10 +30,10 @@ static void net_xkcp_pair_basic(void **state) {
     
     assert_true(net_endpoint_connect(cli_ep_base) == 0);
 
-    /* test_net_driver_run(env->m_env->m_tdriver, 0); */
-    /* assert_string_equal( */
-    /*     net_endpoint_state_str(net_endpoint_state(cli_ep_base)), */
-    /*     net_endpoint_state_str(net_endpoint_state_established)); */
+    test_net_driver_run(env->m_tdriver, 0);
+    assert_string_equal(
+        net_endpoint_state_str(net_endpoint_state(cli_ep_base)),
+        net_endpoint_state_str(net_endpoint_state_established));
 
     /* net_endpoint_t svr_ep = net_xkcp_pair_testenv_get_svr_stream(env, cli_ep_base); */
     /* assert_true(svr_ep != NULL); */

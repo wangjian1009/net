@@ -5,7 +5,9 @@
 
 struct net_xkcp_endpoint {
     net_endpoint_t m_base_endpoint;
+    uint32_t m_conv;
     ikcpcb * m_kcp;
+    net_timer_t m_kcp_update_timer;
     net_xkcp_endpoint_runing_mode_t m_runing_mode;
     union {
         struct {

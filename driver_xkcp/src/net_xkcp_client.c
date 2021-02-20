@@ -77,6 +77,13 @@ void net_xkcp_client_free(net_xkcp_client_t client) {
     cpe_hash_table_fini(&client->m_streams);
 }
 
+net_xkcp_endpoint_t
+net_xkcp_client_find_stream(net_xkcp_client_t client, uint32_t conv) {
+    struct net_xkcp_endpoint key;
+    key.m_conv = conv;
+    return cpe_hash_table_find(&client->m_streams, &key);
+}
+
 int net_xkcp_client_eq(net_xkcp_client_t l, net_xkcp_client_t r, void * user_data) {
     return net_address_cmp(l->m_remote_address, r->m_remote_address) == 0 ? 1 : 0;
 }

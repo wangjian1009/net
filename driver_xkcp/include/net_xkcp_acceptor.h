@@ -10,6 +10,9 @@ int net_xkcp_acceptor_set_config(net_xkcp_acceptor_t acceptor, net_xkcp_config_t
 
 net_dgram_t net_xkcp_acceptor_dgram(net_xkcp_acceptor_t acceptor);
 
+net_xkcp_client_t
+net_xkcp_acceptor_find_client(net_xkcp_acceptor_t acceptor, net_address_t remote_address);
+
 NET_END_DECL
 
 #endif

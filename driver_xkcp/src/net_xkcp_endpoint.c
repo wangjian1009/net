@@ -4,19 +4,33 @@
 #include "net_driver.h"
 #include "net_protocol.h"
 #include "net_endpoint.h"
+#include "net_timer.h"
 #include "net_xkcp_endpoint_i.h"
 #include "net_xkcp_connector_i.h"
 #include "net_xkcp_client_i.h"
 
-int net_xkcp_endpoint_udp_output(const char *buf, int len, ikcpcb *xkcp, void *user);
+static int net_xkcp_endpoint_kcp_output(const char *buf, int len, ikcpcb *xkcp, void *user);
+static void net_xkcp_endpoint_kcp_do_update(net_timer_t timer, void * ctx);
+static void net_xkcp_endpoint_kcp_schedule_update(net_xkcp_endpoint_t endpoint);
 
 int net_xkcp_endpoint_init(net_endpoint_t base_endpoint) {
     net_xkcp_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     net_xkcp_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
 
     endpoint->m_base_endpoint = base_endpoint;
+    endpoint->m_conv = 0;
     endpoint->m_kcp = NULL;
     endpoint->m_runing_mode = net_xkcp_endpoint_runing_mode_init;
+
+    endpoint->m_kcp_update_timer =
+        net_timer_auto_create(
+            net_endpoint_schedule(base_endpoint), net_xkcp_endpoint_kcp_do_update, base_endpoint);
+    if (endpoint->m_kcp_update_timer == NULL) {
+        CPE_ERROR(
+            driver->m_em, "xkcp: %s: init: create kcp update timer fail!",
+            net_endpoint_dump(net_xkcp_driver_tmp_buffer(driver), base_endpoint));
+        return -1;
+    }
     
     return 0;
 }
@@ -24,6 +38,11 @@ int net_xkcp_endpoint_init(net_endpoint_t base_endpoint) {
 void net_xkcp_endpoint_fini(net_endpoint_t base_endpoint) {
     net_xkcp_endpoint_t endpoint = net_endpoint_data(base_endpoint);
 
+    if (endpoint->m_kcp_update_timer) {
+        net_timer_free(endpoint->m_kcp_update_timer);
+        endpoint->m_kcp_update_timer = NULL;
+    }
+    
     net_xkcp_endpoint_set_running_mode(endpoint, net_xkcp_endpoint_runing_mode_init);
 }
 
@@ -164,7 +183,7 @@ void net_xkcp_endpoint_set_running_mode(net_xkcp_endpoint_t endpoint, net_xkcp_e
 int net_xkcp_endpoint_set_conv(net_xkcp_endpoint_t endpoint, uint32_t conv) {
     net_xkcp_driver_t driver = net_driver_data(net_endpoint_driver(endpoint->m_base_endpoint));
     
-    if (endpoint->m_kcp) {
+    if (endpoint->m_conv) {
         switch(endpoint->m_runing_mode) {
         case net_xkcp_endpoint_runing_mode_init:
             break;
@@ -179,20 +198,25 @@ int net_xkcp_endpoint_set_conv(net_xkcp_endpoint_t endpoint, uint32_t conv) {
             }
             break;
         }
-        
-        ikcp_release(endpoint->m_kcp);
-        endpoint->m_kcp = NULL;
+
+        if (endpoint->m_kcp) {
+            ikcp_release(endpoint->m_kcp);
+            endpoint->m_kcp = NULL;
+        }
     }
 
-    if (conv) {
-        endpoint->m_kcp = ikcp_create(conv, endpoint);
+    assert(endpoint->m_kcp == NULL);
+    endpoint->m_conv = conv;
+
+    if (endpoint->m_conv) {
+        endpoint->m_kcp = ikcp_create(endpoint->m_conv, endpoint);
         if (endpoint->m_kcp == NULL) {
             CPE_ERROR(
                 driver->m_em, "xkcp: %s: set conv: create kcp fail",
                 net_endpoint_dump(net_xkcp_driver_tmp_buffer(driver), endpoint->m_base_endpoint));
             return -1;
         }
-        ikcp_setoutput(endpoint->m_kcp, net_xkcp_endpoint_udp_output);
+        ikcp_setoutput(endpoint->m_kcp, net_xkcp_endpoint_kcp_output);
 
         switch(endpoint->m_runing_mode) {
         case net_xkcp_endpoint_runing_mode_init:
@@ -245,7 +269,7 @@ int net_xkcp_endpoint_set_connector(net_xkcp_endpoint_t endpoint, net_xkcp_conne
     if (endpoint->m_cli.m_connector == connector) return 0;
 
     if (endpoint->m_cli.m_connector) {
-        if (endpoint->m_kcp) {
+        if (endpoint->m_conv) {
             cpe_hash_table_remove_by_ins(&endpoint->m_cli.m_connector->m_streams, endpoint);
         }
         endpoint->m_cli.m_connector = NULL;
@@ -284,7 +308,7 @@ int net_xkcp_endpoint_set_client(net_xkcp_endpoint_t endpoint, net_xkcp_client_t
     if (endpoint->m_svr.m_client == client) return 0;
 
     if (endpoint->m_svr.m_client) {
-        if (endpoint->m_kcp) {
+        if (endpoint->m_conv) {
             cpe_hash_table_remove_by_ins(&endpoint->m_svr.m_client->m_streams, endpoint);
         }
         endpoint->m_svr.m_client = NULL;
@@ -293,7 +317,7 @@ int net_xkcp_endpoint_set_client(net_xkcp_endpoint_t endpoint, net_xkcp_client_t
     endpoint->m_svr.m_client = client;
 
     if (endpoint->m_svr.m_client) {
-        if (endpoint->m_kcp) {
+        if (endpoint->m_conv) {
             cpe_hash_entry_init(&endpoint->m_svr.m_hh_for_client);
             if (cpe_hash_table_insert_unique(&endpoint->m_svr.m_client->m_streams, endpoint) != 0) {
                 CPE_ERROR(
@@ -309,18 +333,45 @@ int net_xkcp_endpoint_set_client(net_xkcp_endpoint_t endpoint, net_xkcp_client_t
     return 0;
 }
 
-int net_xkcp_endpoint_udp_output(const char *buf, int len, ikcpcb *xkcp, void *user) {
+int net_xkcp_endpoint_kcp_output(const char *buf, int len, ikcpcb *xkcp, void *user) {
     return 0; //TODO:
 }
 
+static void net_xkcp_endpoint_kcp_schedule_update(net_xkcp_endpoint_t endpoint) {
+    if (endpoint->m_kcp == NULL) {
+        net_timer_cancel(endpoint->m_kcp_update_timer);
+    }
+    else {
+        IUINT32 cur_time_ms = (IUINT32 )net_schedule_cur_time_ms(net_endpoint_schedule(endpoint->m_base_endpoint));
+        IUINT32 next_time_ms = ikcp_check(endpoint->m_kcp, cur_time_ms);
+        assert(next_time_ms > cur_time_ms);
+        net_timer_active(endpoint->m_kcp_update_timer, next_time_ms - cur_time_ms);
+    }
+}
+
+static void net_xkcp_endpoint_kcp_do_update(net_timer_t timer, void * ctx) {
+    net_endpoint_t base_endpoint = ctx;
+    net_xkcp_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+    net_xkcp_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
+
+    if (endpoint->m_kcp) {
+        IUINT32 cur_time_ms = (IUINT32 )net_schedule_cur_time_ms(net_endpoint_schedule(base_endpoint));
+        ikcp_update(endpoint->m_kcp, cur_time_ms);
+
+        if (net_endpoint_is_active(base_endpoint) && endpoint->m_kcp) {
+            IUINT32 next_time_ms = ikcp_check(endpoint->m_kcp, cur_time_ms);
+            assert(next_time_ms > cur_time_ms);
+            net_timer_active(timer, next_time_ms - cur_time_ms);
+        }
+    }
+}
+
 int net_xkcp_endpoint_eq(net_xkcp_endpoint_t l, net_xkcp_endpoint_t r, void * user_data) {
-    int32_t lc = l->m_kcp ? l->m_kcp->conv : 0;
-    int32_t rc = r->m_kcp ? r->m_kcp->conv : 0;
-    return lc == rc ? 1 : 0;
+    return l->m_conv == r->m_conv ? 1 : 0;
 }
 
 uint32_t net_xkcp_endpoint_hash(net_xkcp_endpoint_t o, void * user_data) {
-    return o->m_kcp ? o->m_kcp->conv : 0;
+    return o->m_conv;
 }
 
 const char * net_xkcp_endpoint_runing_mode_str(net_xkcp_endpoint_runing_mode_t runing_mode) {
