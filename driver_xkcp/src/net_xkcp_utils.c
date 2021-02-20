@@ -30,7 +30,6 @@ void net_xkcp_print_frame(write_stream_t ws, const void * data, uint32_t data_le
     }
 
     uint32_t conv;
-    
 }
 
 const char * net_xkcp_dump_frame(mem_buffer_t buffer, const void * data, uint32_t data_len) {

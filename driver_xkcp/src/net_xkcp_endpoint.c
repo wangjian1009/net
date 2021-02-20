@@ -101,8 +101,14 @@ int net_xkcp_endpoint_connect(net_endpoint_t base_endpoint) {
         }
     }
 
-    net_xkcp_endpoint_set_conv(endpoint, ++endpoint->m_cli.m_connector->m_max_conv);
-    return 0;
+    if (net_xkcp_endpoint_set_conv(endpoint, ++endpoint->m_cli.m_connector->m_max_conv) != 0) {
+        CPE_ERROR(
+            driver->m_em, "xkcp: %s: connect: set conv fail!",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+        return -1;
+    }
+
+    return net_endpoint_set_state(endpoint->m_base_endpoint, net_endpoint_state_established);
 }
 
 int net_xkcp_endpoint_update(net_endpoint_t base_endpoint) {
@@ -136,6 +142,14 @@ int net_xkcp_endpoint_get_mss(net_endpoint_t base_endpoint, uint32_t * mss) {
     net_xkcp_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
     net_xkcp_endpoint_t endpoint = net_endpoint_data(base_endpoint);
 
+    if (endpoint->m_kcp == NULL) {
+        CPE_ERROR(
+            driver->m_em, "xkcp: %s: get : no bind kcp!",
+            net_endpoint_dump(net_xkcp_driver_tmp_buffer(driver), base_endpoint));
+        return -1;
+    }
+
+    *mss = endpoint->m_kcp->mss;
     return 0;
 }
 
@@ -215,6 +229,7 @@ int net_xkcp_endpoint_set_conv(net_xkcp_endpoint_t endpoint, uint32_t conv) {
         }
 
         if (endpoint->m_kcp) {
+            ikcp_flush(endpoint->m_kcp);
             ikcp_release(endpoint->m_kcp);
             endpoint->m_kcp = NULL;
         }
