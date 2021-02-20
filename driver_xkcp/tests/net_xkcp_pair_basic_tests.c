@@ -1,29 +1,29 @@
 #include "cmocka_all.h"
-#include "net_kcp_tests.h"
-#include "net_kcp_testenv.h"
+#include "net_xkcp_tests.h"
+#include "net_xkcp_testenv.h"
 
 static int setup(void **state) {
-    net_kcp_testenv_t env = net_kcp_testenv_create();
+    net_xkcp_testenv_t env = net_xkcp_testenv_create();
     *state = env;
     return 0;
 }
 
 static int teardown(void **state) {
-    net_kcp_testenv_t env = *state;
-    net_kcp_testenv_free(env);
+    net_xkcp_testenv_t env = *state;
+    net_xkcp_testenv_free(env);
     return 0;
 }
 
-static void net_kcp_pair_basic(void **state) {
-    net_kcp_testenv_t env = *state;
+static void net_xkcp_pair_basic(void **state) {
+    net_xkcp_testenv_t env = *state;
 
-    net_kcp_acceptor_t acceptor = net_kcp_testenv_create_acceptor(env, "1.2.3.4:5678", NULL, NULL);
+    net_xkcp_acceptor_t acceptor = net_xkcp_testenv_create_acceptor(env, "1.2.3.4:5678", NULL, NULL);
     assert_true(acceptor);
 
-    net_kcp_endpoint_t cli_ep = net_kcp_testenv_create_cli_ep(env, "1.2.3.4:5678");
-    net_endpoint_t cli_ep_base = net_kcp_endpoint_base_endpoint(cli_ep);
+    net_xkcp_endpoint_t cli_ep = net_xkcp_testenv_create_cli_ep(env, "1.2.3.4:5678");
+    net_endpoint_t cli_ep_base = net_xkcp_endpoint_base_endpoint(cli_ep);
 
-    /* net_endpoint_t cli_underline = net_kcp_endpoint_underline(cli_ep_base); */
+    /* net_endpoint_t cli_underline = net_xkcp_endpoint_underline(cli_ep_base); */
     /* assert_true(cli_underline != NULL); */
 
     /* test_net_endpoint_expect_connect_to_acceptor(cli_underline, "1.2.3.4:5678", 0, 0); */
@@ -35,7 +35,7 @@ static void net_kcp_pair_basic(void **state) {
     /*     net_endpoint_state_str(net_endpoint_state(cli_ep_base)), */
     /*     net_endpoint_state_str(net_endpoint_state_established)); */
 
-    /* net_endpoint_t svr_ep = net_kcp_pair_testenv_get_svr_stream(env, cli_ep_base); */
+    /* net_endpoint_t svr_ep = net_xkcp_pair_testenv_get_svr_stream(env, cli_ep_base); */
     /* assert_true(svr_ep != NULL); */
 
     /* /\*client -> server*\/ */
@@ -51,9 +51,9 @@ static void net_kcp_pair_basic(void **state) {
     /* test_net_endpoint_assert_buf_memory(cli_ep_base, net_ep_buf_read, "efgh", 4); */
 }
 
-int net_kcp_pair_basic_tests() {
+int net_xkcp_pair_basic_tests() {
 	const struct CMUnitTest ws_basic_tests[] = {
-		cmocka_unit_test_setup_teardown(net_kcp_pair_basic, setup, teardown),
+		cmocka_unit_test_setup_teardown(net_xkcp_pair_basic, setup, teardown),
 	};
 	return cmocka_run_group_tests(ws_basic_tests, NULL, NULL);
 }
