@@ -17,18 +17,18 @@ static int teardown(void **state) {
 static void net_xkcp_pair_basic(void **state) {
     net_xkcp_testenv_t env = *state;
 
-    net_xkcp_acceptor_t acceptor = net_xkcp_testenv_create_acceptor(env, "1.2.3.4:5678", NULL, NULL);
+    net_xkcp_acceptor_t acceptor = net_xkcp_testenv_create_acceptor(env, "1.2.3.4:5678", NULL);
     assert_true(acceptor);
+
+    net_xkcp_connector_t connector = net_xkcp_testenv_create_connector(env, "1.2.3.4:5678", NULL);
+    assert_true(connector);
 
     net_xkcp_endpoint_t cli_ep = net_xkcp_testenv_create_cli_ep(env, "1.2.3.4:5678");
     net_endpoint_t cli_ep_base = net_xkcp_endpoint_base_endpoint(cli_ep);
 
-    /* net_endpoint_t cli_underline = net_xkcp_endpoint_underline(cli_ep_base); */
-    /* assert_true(cli_underline != NULL); */
-
-    /* test_net_endpoint_expect_connect_to_acceptor(cli_underline, "1.2.3.4:5678", 0, 0); */
+    //test_net_dgram_expect_write_send(net_xkcp_acceptor_dgram(acceptor), 0);
     
-    /* assert_true(net_endpoint_connect(cli_ep_base) == 0); */
+    assert_true(net_endpoint_connect(cli_ep_base) == 0);
 
     /* test_net_driver_run(env->m_env->m_tdriver, 0); */
     /* assert_string_equal( */

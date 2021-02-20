@@ -13,6 +13,8 @@ void net_xkcp_connector_free(net_xkcp_connector_t connector);
 net_xkcp_connector_t
 net_xkcp_connector_find(net_xkcp_driver_t driver, net_address_t remote_address);
 
+net_dgram_t net_xkcp_connector_dgram(net_xkcp_connector_t connector);
+
 NET_END_DECL
 
 #endif

@@ -17,12 +17,14 @@ int net_xkcp_acceptor_init(net_acceptor_t base_acceptor) {
     net_xkcp_driver_t driver = net_driver_data(net_acceptor_driver(base_acceptor));
     net_xkcp_acceptor_t acceptor = net_acceptor_data(base_acceptor);
 
+    net_xkcp_config_init_default(&acceptor->m_config);
+
     net_address_t address = net_acceptor_address(base_acceptor);
     if (address == NULL) {
         CPE_ERROR(driver->m_em, "xkcp: acceptor: init: no address!");
         return -1;
     }
-    
+
     acceptor->m_dgram = net_dgram_create(driver->m_underline_driver, address, net_xkcp_acceptor_recv, base_acceptor);
     if (acceptor->m_dgram == NULL) {
         CPE_ERROR(driver->m_em, "xkcp: acceptor: init: create dgram fail!");
@@ -37,7 +39,7 @@ int net_xkcp_acceptor_init(net_acceptor_t base_acceptor) {
         net_dgram_free(acceptor->m_dgram);
         return -1;
     }
-
+    
     if (cpe_hash_table_init(
             &acceptor->m_clients,
             driver->m_alloc,
@@ -79,6 +81,26 @@ void net_xkcp_acceptor_fini(net_acceptor_t base_acceptor) {
         net_dgram_free(acceptor->m_dgram);
         acceptor->m_dgram = NULL;
     }
+}
+
+int net_xkcp_acceptor_set_config(net_xkcp_acceptor_t acceptor, net_xkcp_config_t config) {
+    net_acceptor_t base_acceptor = net_acceptor_from_data(acceptor);
+    net_xkcp_driver_t driver = net_driver_data(net_acceptor_driver(base_acceptor));
+
+    if (net_xkcp_config_validate(config, driver->m_em) != 0) {
+        CPE_ERROR(
+            driver->m_em, "xkcp: acceptor %s: set config: config error!",
+            net_address_dump(net_xkcp_driver_tmp_buffer(driver), net_acceptor_address(base_acceptor)));
+        return -1;
+    }
+
+    acceptor->m_config = *config;
+
+    return 0;
+}
+
+net_dgram_t net_xkcp_acceptor_dgram(net_xkcp_acceptor_t acceptor) {
+    return acceptor->m_dgram;
 }
 
 static void net_xkcp_acceptor_recv(net_dgram_t dgram, void * ctx, void * data, size_t data_size, net_address_t source) {

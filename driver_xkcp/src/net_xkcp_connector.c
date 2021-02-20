@@ -114,6 +114,10 @@ net_xkcp_connector_find(net_xkcp_driver_t driver, net_address_t remote_address) 
     return cpe_hash_table_find(&driver->m_connectors, &key);
 }
 
+net_dgram_t net_xkcp_connector_dgram(net_xkcp_connector_t connector) {
+    return connector->m_dgram;
+}
+
 int net_xkcp_connector_eq(net_xkcp_connector_t l, net_xkcp_connector_t r, void * user_data) {
     return net_address_cmp(l->m_remote_address, r->m_remote_address) == 0 ? 1 : 0;
 }

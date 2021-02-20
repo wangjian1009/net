@@ -7,6 +7,8 @@
 #include "net_address.h"
 #include "net_pair.h"
 #include "net_xkcp_testenv.h"
+#include "net_xkcp_config.h"
+#include "net_xkcp_acceptor.h"
 #include "net_xkcp_driver.h"
 
 net_xkcp_testenv_t net_xkcp_testenv_create() {
@@ -35,43 +37,56 @@ void net_xkcp_testenv_free(net_xkcp_testenv_t env) {
     mem_free(test_allocrator(), env);
 }
 
-void net_xkcp_testenv_cli_create_pair(
-    net_xkcp_testenv_t env, net_xkcp_endpoint_t * cli, net_xkcp_endpoint_t * svr,
-    const char * str_address)
+net_xkcp_connector_t
+net_xkcp_testenv_create_connector(
+    net_xkcp_testenv_t env, const char * str_address, const char * str_config)
 {
-    /* net_endpoint_t ep[2]; */
-    /* assert_true( */
-    /*     net_pair_endpoint_make( */
-    /*         env->m_schedule, */
-    /*         net_protocol_from_data(env->m_protocol), */
-    /*         net_protocol_from_data(env->m_protocol), */
-    /*         ep) == 0); */
+    net_address_t address = net_address_create_auto(env->m_schedule, str_address);
+    assert_true(address != NULL);
 
-    /* *cli = net_xkcp_endpoint_cast(ep[0]); */
-    /* *svr = net_xkcp_endpoint_cast(ep[1]); */
+    net_xkcp_config_t config = NULL;
+    struct net_xkcp_config config_buf;
+    if (str_config) {
+        net_xkcp_endpoint_parse_config(env, &config_buf, str_config);
+        config = &config_buf;
+    }
+    
+    net_xkcp_connector_t connector = net_xkcp_connector_create(env->m_xkcp_driver, address, config);
+    assert_true(connector);
 
-    /* if (str_address) { */
-    /*     net_address_t address = net_address_create_auto(env->m_schedule, str_address); */
-    /*     net_endpoint_set_remote_address(net_xkcp_endpoint_base_endpoint(*cli), address); */
-    /*     net_address_free(address); */
-    /* } */
+    return connector;
 }
 
-void net_xkcp_testenv_cli_create_pair_established(
-    net_xkcp_testenv_t env, net_xkcp_endpoint_t * cli, net_xkcp_endpoint_t * svr,
-    const char * str_address)
+net_xkcp_acceptor_t
+net_xkcp_testenv_create_acceptor(
+    net_xkcp_testenv_t env, const char * str_address, const char * config)
 {
-    net_xkcp_testenv_cli_create_pair(env, cli, svr, str_address);
+    net_address_t address = net_address_create_auto(env->m_schedule, str_address);
+    assert_true(address != NULL);
 
-    assert_true(net_endpoint_connect(net_xkcp_endpoint_base_endpoint(*cli)) == 0);
+    net_acceptor_t base_acceptor =
+        net_acceptor_create(
+            net_driver_from_data(env->m_xkcp_driver),
+            env->m_test_protocol, address, 0, NULL, NULL);
+    assert_true(base_acceptor);
+        
+    net_address_free(address);
 
-    assert_string_equal(
-        net_endpoint_state_str(net_endpoint_state(net_xkcp_endpoint_base_endpoint(*cli))),
-        net_endpoint_state_str(net_endpoint_state_established));
+    net_xkcp_acceptor_t acceptor = net_acceptor_data(base_acceptor);
 
-    assert_string_equal(
-        net_endpoint_state_str(net_endpoint_state(net_xkcp_endpoint_base_endpoint(*svr))),
-        net_endpoint_state_str(net_endpoint_state_established));
+    if (config) {
+        struct net_xkcp_config xkcp_config;
+        net_xkcp_endpoint_parse_config(env, &xkcp_config, config);
+        assert_true(net_xkcp_acceptor_set_config(acceptor, &xkcp_config) == 0);
+    }
+
+    return acceptor;
+}
+
+void net_xkcp_endpoint_parse_config(
+    net_xkcp_testenv_t env, net_xkcp_config_t config, const char * str_cfg)
+{
+    net_xkcp_config_init_default(config);
 }
 
 net_xkcp_endpoint_t
@@ -89,43 +104,16 @@ net_xkcp_testenv_create_ep(net_xkcp_testenv_t env) {
 }
 
 net_xkcp_endpoint_t
-net_xkcp_testenv_create_cli_ep(net_xkcp_testenv_t env, const char * host) {
+net_xkcp_testenv_create_cli_ep(net_xkcp_testenv_t env, const char * str_address) {
     net_xkcp_endpoint_t endpoint = net_xkcp_testenv_create_ep(env);
-    net_endpoint_t base_endpoint = net_xkcp_endpoint_base_endpoint(endpoint);
-    assert_true(base_endpoint != NULL);
-        
-    net_address_t address = net_address_create_auto(env->m_schedule, host);
-    assert_true(address != NULL);
-    net_endpoint_set_remote_address(base_endpoint, address);
-    net_address_free(address);
+
+    net_address_t remote_address = net_address_create_auto(env->m_schedule, str_address);
+    assert_true(remote_address != NULL);
+
+    assert_true(
+        net_endpoint_set_remote_address(net_xkcp_endpoint_base_endpoint(endpoint), remote_address) == 0);
+    net_address_free(remote_address);
 
     return endpoint;
 }
 
-net_xkcp_acceptor_t
-net_xkcp_testenv_create_acceptor(
-    net_xkcp_testenv_t env, const char * str_address,
-    net_acceptor_on_new_endpoint_fun_t on_new_endpoint, void * on_new_endpoint_ctx)
-{
-    net_address_t address = net_address_create_auto(env->m_schedule, str_address);
-    assert_true(address != NULL);
-
-    net_acceptor_t acceptor =
-        net_acceptor_create(
-            net_driver_from_data(env->m_xkcp_driver),
-            env->m_test_protocol,
-            address, 0,
-            on_new_endpoint, on_new_endpoint_ctx);
-
-    net_address_free(address);
-
-    return net_acceptor_data(acceptor);
-}
-
-/* net_endpoint_t */
-/* net_xkcp_testenv_get_svr_stream(net_xkcp_testenv_t env, net_endpoint_t client_base_ep) { */
-/*     /\* net_xkcp_endpoint_t cli_ep = net_endpoint_data(client_base_ep); *\/ */
-        
-/*     /\* return svr_stream; *\/ */
-/*     return NULL; */
-/* } */

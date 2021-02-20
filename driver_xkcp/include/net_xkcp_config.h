@@ -12,10 +12,6 @@ enum net_xkcp_mode {
 };
 
 struct net_xkcp_config {
-	/* Listen       string `json:"listen"` */
-	/* Target       string `json:"target"` */
-	/* Key          string `json:"key"` */
-	/* Crypt        string `json:"crypt"` */
     net_xkcp_mode_t m_mode;
 	uint16_t m_mtu;
     uint32_t m_send_wnd;
@@ -30,12 +26,6 @@ struct net_xkcp_config {
 	/* Resend       int    `json:"resend"` */
 	/* NoCongestion int    `json:"nc"` */
 	/* SockBuf      int    `json:"sockbuf"` */
-    uint8_t m_smux_ver;
-    uint32_t m_smux_recv_buffer;
-    uint32_t m_smux_stream_buffer;
-	/* KeepAlive    int    `json:"keepalive"` */
-	/* Log          string `json:"log"` */
-	/* TCP          bool   `json:"tcp"` */
 };
 
 void net_xkcp_config_init_default(net_xkcp_config_t config);
