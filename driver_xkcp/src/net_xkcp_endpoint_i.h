@@ -28,7 +28,7 @@ int net_xkcp_endpoint_update(net_endpoint_t base_endpoint);
 int net_xkcp_endpoint_set_no_delay(net_endpoint_t base_endpoint, uint8_t no_delay);
 int net_xkcp_endpoint_get_mss(net_endpoint_t base_endpoint, uint32_t * mss);
 
-void net_xkcp_endpoint_set_running_mode(net_xkcp_endpoint_t endpoint, net_xkcp_endpoint_runing_mode_t runing_mode);
+void net_xkcp_endpoint_set_runing_mode(net_xkcp_endpoint_t endpoint, net_xkcp_endpoint_runing_mode_t runing_mode);
 int net_xkcp_endpoint_set_conv(net_xkcp_endpoint_t endpoint, uint32_t conv);
 
 int net_xkcp_endpoint_set_connector(net_xkcp_endpoint_t endpoint, net_xkcp_connector_t connector);

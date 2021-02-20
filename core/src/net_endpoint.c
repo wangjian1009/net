@@ -338,7 +338,7 @@ uint8_t net_endpoint_is_readable(net_endpoint_t endpoint) {
     switch(endpoint->m_state) {
     case net_endpoint_state_established:
     case net_endpoint_state_write_closed:
-            return 1;
+        return 1;
     default:
         return 0;
     }

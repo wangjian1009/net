@@ -45,7 +45,7 @@ void net_xkcp_endpoint_fini(net_endpoint_t base_endpoint) {
         endpoint->m_kcp_update_timer = NULL;
     }
     
-    net_xkcp_endpoint_set_running_mode(endpoint, net_xkcp_endpoint_runing_mode_init);
+    net_xkcp_endpoint_set_runing_mode(endpoint, net_xkcp_endpoint_runing_mode_init);
 }
 
 int net_xkcp_endpoint_connect(net_endpoint_t base_endpoint) {
@@ -61,34 +61,46 @@ int net_xkcp_endpoint_connect(net_endpoint_t base_endpoint) {
         return -1;
     }
 
-    net_xkcp_connector_t connector = net_xkcp_connector_find(driver, target_addr);
-    if (connector == NULL) {
+    switch(endpoint->m_runing_mode) {
+    case net_xkcp_endpoint_runing_mode_init:
+        net_xkcp_endpoint_set_runing_mode(endpoint, net_xkcp_endpoint_runing_mode_cli);
+        break;
+    case net_xkcp_endpoint_runing_mode_cli:
+        break;
+    case net_xkcp_endpoint_runing_mode_svr:
         CPE_ERROR(
-            driver->m_em, "xkcp: %s: connect: no connector to target!",
-            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+            driver->m_em, "xkcp: %s: connect: can`t connect in runing-mode %s!",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
+            net_xkcp_endpoint_runing_mode_str(endpoint->m_runing_mode));
+        return -1;
+    }
+
+    if (endpoint->m_conv != 0) {
+        CPE_ERROR(
+            driver->m_em, "xkcp: %s: connect: already connected, conv=%d",
+            net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint),
+            endpoint->m_conv);
         return -1;
     }
     
-    /* if (net_ws_endpoint_set_runing_mode(endpoint->m_underline, net_ws_endpoint_runing_mode_cli) != 0) { */
-    /*     CPE_ERROR( */
-    /*         driver->m_em, "net: xkcp: %s: connect: set undnline runing mode cli failed!", */
-    /*         net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint)); */
-    /*     return -1; */
-    /* } */
-    
-    /* net_endpoint_t base_underline = endpoint->m_underline->m_base_endpoint; */
-    /* if (net_endpoint_driver_debug(base_endpoint) > net_endpoint_protocol_debug(base_underline)) { */
-    /*     net_endpoint_set_protocol_debug(base_underline, net_endpoint_driver_debug(base_endpoint)); */
-    /* } */
-    
-    /* if (net_endpoint_set_remote_address(endpoint->m_underline->m_base_endpoint, target_addr) != 0) { */
-    /*     CPE_ERROR( */
-    /*         driver->m_em, "net: xkcp: %s: connect: set remote address to underline fail", */
-    /*         net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint)); */
-    /*     return -1; */
-    /* } */
+    if (endpoint->m_cli.m_connector == NULL) {
+        net_xkcp_connector_t connector = net_xkcp_connector_find(driver, target_addr);
+        if (connector == NULL) {
+            CPE_ERROR(
+                driver->m_em, "xkcp: %s: connect: no connector to target!",
+                net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+            return -1;
+        }
 
-    /* return net_endpoint_connect(base_underline); */
+        if (net_xkcp_endpoint_set_connector(endpoint, connector) != 0) {
+            CPE_ERROR(
+                driver->m_em, "xkcp: %s: connect: set connector fail!",
+                net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
+            return -1;
+        }
+    }
+
+    net_xkcp_endpoint_set_conv(endpoint, ++endpoint->m_cli.m_connector->m_max_conv);
     return 0;
 }
 
@@ -153,7 +165,7 @@ net_xkcp_endpoint_runing_mode_t net_xkcp_endpoint_runing_mode(net_xkcp_endpoint_
     return endpoint->m_runing_mode;
 }
 
-void net_xkcp_endpoint_set_running_mode(net_xkcp_endpoint_t endpoint, net_xkcp_endpoint_runing_mode_t runing_mode) {
+void net_xkcp_endpoint_set_runing_mode(net_xkcp_endpoint_t endpoint, net_xkcp_endpoint_runing_mode_t runing_mode) {
     if (endpoint->m_runing_mode == runing_mode) return;
 
     net_xkcp_driver_t driver = net_driver_data(net_endpoint_driver(endpoint->m_base_endpoint));
@@ -399,6 +411,79 @@ void net_xkcp_endpoint_schedule_update(net_xkcp_endpoint_t endpoint) {
         assert(next_time_ms > cur_time_ms);
         net_timer_active(endpoint->m_kcp_update_timer, next_time_ms - cur_time_ms);
     }
+}
+
+void net_xkcp_endpoint_forward_data(net_xkcp_endpoint_t endpoint) {
+    net_driver_t base_driver = net_endpoint_driver(endpoint->m_base_endpoint);
+    net_xkcp_driver_t driver = net_driver_data(base_driver);
+    net_endpoint_t base_endpoint = endpoint->m_base_endpoint;
+    
+	while(net_endpoint_is_readable(base_endpoint)
+          && net_endpoint_expect_read(base_endpoint)
+          && endpoint->m_kcp)
+    {
+        uint32_t capacity = ikcp_peeksize(endpoint->m_kcp);
+        if (capacity == 0) break;
+
+        void * buf = net_endpoint_buf_alloc_suggest(base_endpoint, &capacity);
+        if (buf == NULL) {
+            CPE_ERROR(
+                driver->m_em, "xkcp: %s: alloc input buf fail, capacity=%d",
+                net_endpoint_dump(net_xkcp_driver_tmp_buffer(driver), base_endpoint), capacity);
+
+            if (net_endpoint_error_source(base_endpoint) == net_endpoint_error_source_none) {
+                net_endpoint_set_error(
+                    base_endpoint,
+                    net_endpoint_error_source_network, net_endpoint_network_errno_logic, "alloc buf fail!");
+            }
+            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
+                net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+            }
+            return;
+        }
+
+		int nrecv = ikcp_recv(endpoint->m_kcp, buf, capacity);
+		if (nrecv < 0) {
+            net_endpoint_buf_release(base_endpoint);
+
+            CPE_ERROR(
+                driver->m_em, "xkcp: %s: conv=%d: recv error, errno=%d!",
+                net_endpoint_dump(net_xkcp_driver_tmp_buffer(driver), base_endpoint), endpoint->m_conv,
+                nrecv);
+
+            if (net_endpoint_error_no(base_endpoint) == 0) {
+                net_endpoint_set_error(
+                    base_endpoint, net_endpoint_error_source_network,
+                    net_endpoint_network_errno_logic, NULL);
+            }
+
+            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
+                net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+            }
+
+            return;
+		}
+
+        if (net_endpoint_driver_debug(base_endpoint)) {
+            CPE_INFO(
+                driver->m_em, "xkcp: %s: conv=%d: recv %d bytes data!",
+                net_endpoint_dump(net_xkcp_driver_tmp_buffer(driver), base_endpoint), endpoint->m_conv,
+                (int)nrecv);
+        }
+        
+        if (net_endpoint_buf_supply(base_endpoint, net_ep_buf_read, nrecv) != 0) {
+            if (net_endpoint_is_active(base_endpoint)) {
+                if (!net_endpoint_have_error(base_endpoint)) {
+                    net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_logic, NULL);
+                }
+
+                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
+                    net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+                }
+            }
+            return;
+        }
+	}
 }
 
 static void net_xkcp_endpoint_kcp_do_update(net_timer_t timer, void * ctx) {

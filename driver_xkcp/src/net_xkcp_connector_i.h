@@ -10,6 +10,7 @@ struct net_xkcp_connector {
     net_address_t m_remote_address;
     net_dgram_t m_dgram;
 
+    uint32_t m_max_conv;
     struct cpe_hash_table m_streams;
 };
 

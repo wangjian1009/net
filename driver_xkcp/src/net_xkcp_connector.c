@@ -23,6 +23,7 @@ net_xkcp_connector_create(
     }
 
     connector->m_driver = driver;
+    connector->m_max_conv = 0;
 
     connector->m_remote_address = net_address_copy(net_xkcp_driver_schedule(driver), remote_address);
     if (connector->m_remote_address == NULL) {

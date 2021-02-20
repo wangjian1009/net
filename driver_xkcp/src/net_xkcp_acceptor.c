@@ -133,7 +133,7 @@ static void net_xkcp_acceptor_recv(net_dgram_t dgram, void * ctx, void * data, s
         }
 
         endpoint = net_xkcp_endpoint_cast(base_endpoint);
-        net_xkcp_endpoint_set_running_mode(endpoint, net_xkcp_endpoint_runing_mode_svr);
+        net_xkcp_endpoint_set_runing_mode(endpoint, net_xkcp_endpoint_runing_mode_svr);
 
         if (net_xkcp_endpoint_set_conv(endpoint, conv) != 0) {
             CPE_ERROR(
