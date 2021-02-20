@@ -12,6 +12,7 @@ typedef struct net_xkcp_config * net_xkcp_config_t;
 typedef struct net_xkcp_driver * net_xkcp_driver_t;
 typedef struct net_xkcp_endpoint * net_xkcp_endpoint_t;
 typedef struct net_xkcp_acceptor * net_xkcp_acceptor_t;
+typedef struct net_xkcp_client * net_xkcp_client_t;
 typedef struct net_xkcp_connector * net_xkcp_connector_t;
 
 NET_END_DECL
