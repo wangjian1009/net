@@ -407,7 +407,7 @@ int net_xkcp_endpoint_kcp_output(const char *buf, int len, ikcpcb *xkcp, void *u
     return 0;
 }
 
-void net_xkcp_endpoint_schedule_update(net_xkcp_endpoint_t endpoint) {
+void net_xkcp_endpoint_kcp_schedule_update(net_xkcp_endpoint_t endpoint) {
     if (endpoint->m_kcp == NULL) {
         net_timer_cancel(endpoint->m_kcp_update_timer);
     }
@@ -419,7 +419,7 @@ void net_xkcp_endpoint_schedule_update(net_xkcp_endpoint_t endpoint) {
     }
 }
 
-void net_xkcp_endpoint_forward_data(net_xkcp_endpoint_t endpoint) {
+void net_xkcp_endpoint_kcp_forward_data(net_xkcp_endpoint_t endpoint) {
     net_driver_t base_driver = net_endpoint_driver(endpoint->m_base_endpoint);
     net_xkcp_driver_t driver = net_driver_data(base_driver);
     net_endpoint_t base_endpoint = endpoint->m_base_endpoint;
