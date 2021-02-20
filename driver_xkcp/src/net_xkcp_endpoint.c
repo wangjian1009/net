@@ -393,9 +393,15 @@ int net_xkcp_endpoint_kcp_output(const char *buf, int len, ikcpcb *xkcp, void *u
     }
 
     if (net_driver_debug(base_driver) >= 2) {
+        char address_buf[128];
+        cpe_str_dup(
+            address_buf, sizeof(address_buf),
+            net_address_dump(net_xkcp_driver_tmp_buffer(driver), remote_address));
+
         CPE_INFO(
-            driver->m_em, "xkcp: %s: %d: ==> %d data",
-            net_address_dump(net_xkcp_driver_tmp_buffer(driver), remote_address), endpoint->m_conv, len);
+            driver->m_em, "xkcp: %s: %d: ==> %s",
+            address_buf, endpoint->m_conv,
+            net_xkcp_dump_frame(net_xkcp_driver_tmp_buffer(driver), buf, len));
     }
 
     return 0;

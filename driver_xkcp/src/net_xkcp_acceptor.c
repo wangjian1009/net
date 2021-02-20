@@ -1,5 +1,6 @@
 #include <assert.h>
 #include "cpe/pal/pal_strings.h"
+#include "cpe/utils/string_utils.h"
 #include "net_address.h"
 #include "net_driver.h"
 #include "net_dgram.h"
@@ -10,6 +11,7 @@
 #include "net_xkcp_acceptor_i.h"
 #include "net_xkcp_client_i.h"
 #include "net_xkcp_endpoint_i.h"
+#include "net_xkcp_utils.h"
 
 static void net_xkcp_acceptor_recv(net_dgram_t dgram, void * ctx, void * data, size_t data_size, net_address_t source);
 
@@ -183,8 +185,13 @@ static void net_xkcp_acceptor_recv(net_dgram_t dgram, void * ctx, void * data, s
     net_xkcp_endpoint_schedule_update(endpoint);
 
     if (net_driver_debug(base_driver) >= 2) {
+        char address_buf[128];
+        cpe_str_dup(
+            address_buf, sizeof(address_buf),
+            net_address_dump(net_xkcp_driver_tmp_buffer(driver), source));
         CPE_INFO(
-            driver->m_em, "xkcp: %s: %d: <== %d data",
-            net_address_dump(net_xkcp_driver_tmp_buffer(driver), source), conv, (int)data_size);
+            driver->m_em, "xkcp: %s: %d: <== %s",
+            address_buf, conv,
+            net_xkcp_dump_frame(net_xkcp_driver_tmp_buffer(driver), data, data_size));
     }
 }
