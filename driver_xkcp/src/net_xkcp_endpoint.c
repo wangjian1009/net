@@ -4,14 +4,16 @@
 #include "net_driver.h"
 #include "net_protocol.h"
 #include "net_endpoint.h"
+#include "net_address.h"
+#include "net_dgram.h"
 #include "net_timer.h"
 #include "net_xkcp_endpoint_i.h"
 #include "net_xkcp_connector_i.h"
 #include "net_xkcp_client_i.h"
+#include "net_xkcp_utils.h"
 
 static int net_xkcp_endpoint_kcp_output(const char *buf, int len, ikcpcb *xkcp, void *user);
 static void net_xkcp_endpoint_kcp_do_update(net_timer_t timer, void * ctx);
-static void net_xkcp_endpoint_kcp_schedule_update(net_xkcp_endpoint_t endpoint);
 
 int net_xkcp_endpoint_init(net_endpoint_t base_endpoint) {
     net_xkcp_endpoint_t endpoint = net_endpoint_data(base_endpoint);
@@ -334,10 +336,60 @@ int net_xkcp_endpoint_set_client(net_xkcp_endpoint_t endpoint, net_xkcp_client_t
 }
 
 int net_xkcp_endpoint_kcp_output(const char *buf, int len, ikcpcb *xkcp, void *user) {
-    return 0; //TODO:
+    net_endpoint_t base_endpoint = user;
+    net_driver_t base_driver = net_endpoint_driver(base_endpoint);
+    net_xkcp_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+    net_xkcp_driver_t driver = net_driver_data(base_driver);
+
+    net_address_t remote_address = NULL;
+    net_dgram_t dgram = NULL;
+
+    switch(endpoint->m_runing_mode) {
+    case net_xkcp_endpoint_runing_mode_init:
+        CPE_ERROR(
+            driver->m_em, "xkcp: %s: kcp output: can`t output in runing-mode %s",
+            net_endpoint_dump(net_xkcp_driver_tmp_buffer(driver), endpoint->m_base_endpoint),
+            net_xkcp_endpoint_runing_mode_str(endpoint->m_runing_mode));
+        return -1;
+    case net_xkcp_endpoint_runing_mode_cli:
+        if (endpoint->m_cli.m_connector == NULL) {
+            CPE_ERROR(
+                driver->m_em, "xkcp: %s: kcp output: no binding connector",
+                net_endpoint_dump(net_xkcp_driver_tmp_buffer(driver), endpoint->m_base_endpoint));
+            return -1;
+        }
+        remote_address = endpoint->m_cli.m_connector->m_remote_address;
+        dgram = endpoint->m_cli.m_connector->m_dgram;
+        break;
+    case net_xkcp_endpoint_runing_mode_svr:
+        if (endpoint->m_svr.m_client == NULL) {
+            CPE_ERROR(
+                driver->m_em, "xkcp: %s: kcp output: no binding client",
+                net_endpoint_dump(net_xkcp_driver_tmp_buffer(driver), endpoint->m_base_endpoint));
+            return -1;
+        }
+        remote_address = endpoint->m_svr.m_client->m_remote_address;
+        dgram = endpoint->m_svr.m_client->m_acceptor->m_dgram;
+        break;
+    }
+
+    if (net_dgram_send(dgram, remote_address, buf, len) != 0) {
+        CPE_ERROR(
+            driver->m_em, "xkcp: %s: ==> dgram send error",
+            net_address_dump(net_xkcp_driver_tmp_buffer(driver), remote_address));
+        return -1;
+    }
+
+    if (net_driver_debug(base_driver) >= 2) {
+        CPE_INFO(
+            driver->m_em, "xkcp: %s: %d: ==> %d data",
+            net_address_dump(net_xkcp_driver_tmp_buffer(driver), remote_address), endpoint->m_conv, len);
+    }
+
+    return 0;
 }
 
-static void net_xkcp_endpoint_kcp_schedule_update(net_xkcp_endpoint_t endpoint) {
+void net_xkcp_endpoint_schedule_update(net_xkcp_endpoint_t endpoint) {
     if (endpoint->m_kcp == NULL) {
         net_timer_cancel(endpoint->m_kcp_update_timer);
     }

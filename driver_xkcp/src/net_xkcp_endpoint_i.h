@@ -35,6 +35,8 @@ int net_xkcp_endpoint_set_connector(net_xkcp_endpoint_t endpoint, net_xkcp_conne
 
 int net_xkcp_endpoint_set_client(net_xkcp_endpoint_t endpoint, net_xkcp_client_t client);
 
+void net_xkcp_endpoint_schedule_update(net_xkcp_endpoint_t endpoint);
+
 int net_xkcp_endpoint_eq(net_xkcp_endpoint_t l, net_xkcp_endpoint_t r, void * user_data);
 uint32_t net_xkcp_endpoint_hash(net_xkcp_endpoint_t o, void * user_data);
 

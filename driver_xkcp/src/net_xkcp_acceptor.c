@@ -180,6 +180,7 @@ static void net_xkcp_acceptor_recv(net_dgram_t dgram, void * ctx, void * data, s
             net_address_dump(net_xkcp_driver_tmp_buffer(driver), source), conv, (int)data_size, nret);
         return;
     }
+    net_xkcp_endpoint_schedule_update(endpoint);
 
     if (net_driver_debug(base_driver) >= 2) {
         CPE_INFO(
