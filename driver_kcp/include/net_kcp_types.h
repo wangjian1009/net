@@ -5,9 +5,11 @@
 
 NET_BEGIN_DECL
 
+typedef struct net_kcp_config * net_kcp_config_t;
 typedef struct net_kcp_driver * net_kcp_driver_t;
 typedef struct net_kcp_endpoint * net_kcp_endpoint_t;
 typedef struct net_kcp_acceptor * net_kcp_acceptor_t;
+typedef struct net_kcp_connector * net_kcp_connector_t;
 
 NET_END_DECL
 

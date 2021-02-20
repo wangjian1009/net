@@ -97,6 +97,10 @@ static void net_kcp_driver_fini(net_driver_t base_driver) {
     net_kcp_driver_t driver = net_driver_data(base_driver);
 }
 
+net_kcp_driver_t net_kcp_driver_cast(net_driver_t base_driver) {
+    return net_driver_init_fun(base_driver) == net_kcp_driver_init ? net_driver_data(base_driver) : NULL;
+}
+
 mem_buffer_t net_kcp_driver_tmp_buffer(net_kcp_driver_t driver) {
     return net_schedule_tmp_buffer(net_driver_schedule(net_driver_from_data(driver)));
 }
