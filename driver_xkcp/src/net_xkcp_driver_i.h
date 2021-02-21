@@ -13,6 +13,7 @@ struct net_xkcp_driver {
     mem_allocrator_t m_alloc;
     error_monitor_t m_em;
     net_driver_t m_underline_driver;
+    net_xkcp_config_t m_dft_config;
     uint8_t m_connections_inited;
     struct cpe_hash_table m_connectors;
 };

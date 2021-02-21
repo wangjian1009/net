@@ -19,17 +19,27 @@ int net_xkcp_acceptor_init(net_acceptor_t base_acceptor) {
     net_xkcp_driver_t driver = net_driver_data(net_acceptor_driver(base_acceptor));
     net_xkcp_acceptor_t acceptor = net_acceptor_data(base_acceptor);
 
-    acceptor->m_config = NULL;
-
     net_address_t address = net_acceptor_address(base_acceptor);
     if (address == NULL) {
         CPE_ERROR(driver->m_em, "xkcp: acceptor: init: no address!");
         return -1;
     }
 
+    acceptor->m_config = NULL;
+    if (driver->m_dft_config) {
+        acceptor->m_config = mem_alloc(driver->m_alloc, sizeof(struct net_xkcp_config));
+        if (acceptor->m_config == NULL) {
+            CPE_ERROR(driver->m_em, "xkcp: acceptor: init: alloc config fail!");
+            return -1;
+        }
+
+        *acceptor->m_config = *driver->m_dft_config;
+    }
+
     acceptor->m_dgram = net_dgram_create(driver->m_underline_driver, address, net_xkcp_acceptor_recv, base_acceptor);
     if (acceptor->m_dgram == NULL) {
         CPE_ERROR(driver->m_em, "xkcp: acceptor: init: create dgram fail!");
+        if (acceptor->m_config) mem_free(driver->m_alloc, acceptor->m_config);
         return -1;
     }
 
@@ -43,9 +53,10 @@ int net_xkcp_acceptor_init(net_acceptor_t base_acceptor) {
     {
         CPE_ERROR(driver->m_em, "xkcp: acceptor: init: init client hash table fail!");
         net_dgram_free(acceptor->m_dgram);
+        if (acceptor->m_config) mem_free(driver->m_alloc, acceptor->m_config);
         return -1;
     }
-    
+
     return 0;
 }
 

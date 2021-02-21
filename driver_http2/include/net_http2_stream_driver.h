@@ -9,7 +9,7 @@ net_http2_stream_driver_create(
     net_schedule_t schedule, const char * addition_name, net_driver_t underline_driver,
     mem_allocrator_t alloc, error_monitor_t em);
 
-void net_http2_driver_free(net_http2_stream_driver_t stream_driver);
+void net_http2_stream_driver_free(net_http2_stream_driver_t stream_driver);
 
 net_http2_stream_driver_t
 net_http2_stream_driver_find(net_schedule_t schedule, const char * addition_name);

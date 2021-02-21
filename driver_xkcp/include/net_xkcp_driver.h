@@ -13,6 +13,9 @@ void net_xkcp_driver_free(net_xkcp_driver_t stream_driver);
 
 net_xkcp_driver_t net_xkcp_driver_cast(net_driver_t base_driver);
 
+net_xkcp_config_t net_xkcp_driver_dft_config(net_xkcp_driver_t driver);
+int net_xkcp_driver_sdte_dft_config(net_xkcp_driver_t driver, net_xkcp_config_t config);
+
 net_xkcp_driver_t
 net_xkcp_driver_find(net_schedule_t schedule, const char * addition_name);
 

@@ -58,6 +58,7 @@ net_xkcp_driver_create(
     driver->m_alloc = alloc;
     driver->m_em = em;
     driver->m_underline_driver = underline_driver;
+    driver->m_dft_config = NULL;
 
     if (cpe_hash_table_init(
             &driver->m_connectors,
@@ -119,10 +120,43 @@ static void net_xkcp_driver_fini(net_driver_t base_driver) {
         }
         cpe_hash_table_fini(&driver->m_connectors);
     }
+
+    if (driver->m_dft_config) {
+        mem_free(driver->m_alloc, driver->m_dft_config);
+        driver->m_dft_config = NULL;
+    }
 }
 
 net_xkcp_driver_t net_xkcp_driver_cast(net_driver_t base_driver) {
     return net_driver_init_fun(base_driver) == net_xkcp_driver_init ? net_driver_data(base_driver) : NULL;
+}
+
+net_xkcp_config_t
+net_xkcp_driver_dft_config(net_xkcp_driver_t driver) {
+    return driver->m_dft_config;
+}
+
+int net_xkcp_driver_sdte_dft_config(net_xkcp_driver_t driver, net_xkcp_config_t config) {
+    if (driver->m_dft_config == NULL) {
+        driver->m_dft_config = mem_alloc(driver->m_alloc, sizeof(struct net_xkcp_config));
+        if (driver->m_dft_config) {
+            CPE_ERROR(
+                driver->m_em, "xkcp: driver %s: set dft config: alloc fail!",
+                net_driver_name(net_driver_from_data(driver)));
+            return -1;
+        }
+    }
+
+    if (!net_xkcp_config_validate(config, driver->m_em)) {
+        CPE_ERROR(
+            driver->m_em, "xkcp: driver %s: set dft config: validate fail!",
+            net_driver_name(net_driver_from_data(driver)));
+        return -1;
+    }
+    
+    *driver->m_dft_config = *config;
+    
+    return 0;
 }
 
 net_schedule_t net_xkcp_driver_schedule(net_xkcp_driver_t driver) {
