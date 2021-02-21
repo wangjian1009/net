@@ -75,6 +75,11 @@ void net_xkcp_acceptor_fini(net_acceptor_t base_acceptor) {
     }
 }
 
+net_xkcp_acceptor_t net_xkcp_acceptor_cast(net_acceptor_t base_acceptor) {
+    net_xkcp_driver_t xkcp_driver = net_xkcp_driver_cast(net_acceptor_driver(base_acceptor));
+    return xkcp_driver == NULL ? NULL : net_acceptor_data(base_acceptor);
+}
+
 int net_xkcp_acceptor_set_config(net_xkcp_acceptor_t acceptor, net_xkcp_config_t config) {
     net_acceptor_t base_acceptor = net_acceptor_from_data(acceptor);
     net_xkcp_driver_t driver = net_driver_data(net_acceptor_driver(base_acceptor));
@@ -99,6 +104,10 @@ int net_xkcp_acceptor_set_config(net_xkcp_acceptor_t acceptor, net_xkcp_config_t
     *acceptor->m_config = *config;
 
     return 0;
+}
+
+net_xkcp_config_t net_xkcp_acceptor_config(net_xkcp_acceptor_t acceptor) {
+    return acceptor->m_config;
 }
 
 net_dgram_t net_xkcp_acceptor_dgram(net_xkcp_acceptor_t acceptor) {
