@@ -166,6 +166,11 @@ static void net_xkcp_connector_recv(net_dgram_t dgram, void * ctx, void * data, 
     net_xkcp_driver_t driver = connector->m_driver;
     net_driver_t base_driver = net_driver_from_data(driver);
 
+    if (source == NULL) {
+        CPE_ERROR(driver->m_em, "xkcp: <== no source address");
+        return;
+    }
+
     uint32_t conv = ikcp_getconv(data);
 
     net_xkcp_endpoint_t endpoint = net_xkcp_connector_find_stream(connector, conv);

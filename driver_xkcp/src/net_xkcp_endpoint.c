@@ -592,8 +592,9 @@ static void net_xkcp_endpoint_kcp_do_update(net_timer_t timer, void * ctx) {
 
         if (net_endpoint_is_active(base_endpoint) && endpoint->m_kcp) {
             IUINT32 next_time_ms = ikcp_check(endpoint->m_kcp, cur_time_ms);
-            assert(next_time_ms >= cur_time_ms);
-            net_timer_active(timer, next_time_ms - cur_time_ms);
+            if (next_time_ms > cur_time_ms) {
+                net_timer_active(timer, next_time_ms - cur_time_ms);
+            }
         }
     }
 }
