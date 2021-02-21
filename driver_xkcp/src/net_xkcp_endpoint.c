@@ -190,6 +190,10 @@ net_xkcp_endpoint_base_endpoint(net_xkcp_endpoint_t endpoint) {
     return endpoint->m_base_endpoint;
 }
 
+uint32_t net_xkcp_endpoint_conv(net_xkcp_endpoint_t endpoint) {
+    return endpoint->m_conv;
+}
+
 net_xkcp_endpoint_runing_mode_t net_xkcp_endpoint_runing_mode(net_xkcp_endpoint_t endpoint) {
     return endpoint->m_runing_mode;
 }

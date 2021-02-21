@@ -34,24 +34,26 @@ static void net_xkcp_pair_basic(void **state) {
         net_endpoint_state_str(net_endpoint_state_established));
 
     test_net_dgram_expect_write_send(net_xkcp_connector_dgram(connector), 0);
-    //test_net_dgram_expect_write_send(net_xkcp_acceptor_dgram(acceptor), 0);
+    test_net_dgram_expect_write_send(net_xkcp_acceptor_dgram(acceptor), 0);
     
     /*client -> server*/
     assert_true(net_endpoint_buf_append(cli_ep_base, net_ep_buf_write, "abcd", 4) == 0);
     test_net_driver_run(env->m_tdriver, 1000);
+
+    net_xkcp_client_t svr_client =
+        net_xkcp_acceptor_find_client(
+            acceptor, net_dgram_address(net_xkcp_connector_dgram(connector)));
+    assert_true(svr_client);
     
-    /* net_endpoint_t svr_ep = net_xkcp_pair_testenv_get_svr_stream(env, cli_ep_base); */
-    /* assert_true(svr_ep != NULL); */
-
-    /* /\*client -> server*\/ */
-    /* assert_true(net_endpoint_buf_append(cli_ep_base, net_ep_buf_write, "abcd", 4) == 0); */
-    /* test_net_driver_run(env->m_env->m_tdriver, 0); */
-
+    net_xkcp_endpoint_t svr_ep = net_xkcp_client_find_stream(svr_client, net_xkcp_endpoint_conv(cli_ep));
+    assert_true(svr_ep);
+    net_endpoint_t svr_ep_base = net_xkcp_endpoint_base_endpoint(svr_ep);
+    
     /* test_net_endpoint_assert_buf_memory(svr_ep, net_ep_buf_read, "abcd", 4); */
 
-    /* /\*server -> client*\/ */
-    /* assert_true(net_endpoint_buf_append(svr_ep, net_ep_buf_write, "efgh", 4) == 0); */
-    /* test_net_driver_run(env->m_env->m_tdriver, 0); */
+    /*server -> client*/
+    assert_true(net_endpoint_buf_append(svr_ep_base, net_ep_buf_write, "efgh", 4) == 0);
+    test_net_driver_run(env->m_tdriver, 1000);
 
     /* test_net_endpoint_assert_buf_memory(cli_ep_base, net_ep_buf_read, "efgh", 4); */
 }

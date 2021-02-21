@@ -17,7 +17,9 @@ net_xkcp_endpoint_create(
 net_xkcp_endpoint_t net_xkcp_endpoint_cast(net_endpoint_t base_endpoint);
 net_endpoint_t net_xkcp_endpoint_base_endpoint(net_xkcp_endpoint_t endpoint);
 
+uint32_t net_xkcp_endpoint_conv(net_xkcp_endpoint_t endpoint);
 net_xkcp_endpoint_runing_mode_t net_xkcp_endpoint_runing_mode(net_xkcp_endpoint_t endpoint);
+
 net_xkcp_connector_t net_xkcp_endpoint_connector(net_xkcp_endpoint_t endpoint);
 
 NET_END_DECL
