@@ -1,4 +1,5 @@
 #include "cpe/pal/pal_platform.h"
+#include "cpe/pal/pal_string.h"
 #include "cpe/utils/stream_buffer.h"
 #include "net_xkcp_config.h"
 #include "net_xkcp_utils.h"
@@ -23,13 +24,60 @@ void net_xkcp_apply_config(ikcpcb * kcp, net_xkcp_config_t config) {
     }
 }
 
-void net_xkcp_print_frame(write_stream_t ws, const void * data, uint32_t data_len) {
+void net_xkcp_print_frame(write_stream_t ws, const void * i_data, uint32_t data_len) {
     if (data_len < 24) {
         stream_printf(ws, "len %d too small", data_len);
         return;
     }
 
+    uint8_t const * data = i_data;
+    
     uint32_t conv;
+    CPE_COPY_LTOH32(&conv, data); data += 4;
+    stream_printf(ws, "conv=%d");
+
+    uint8_t cmd = *data; data++;
+    stream_printf(ws, ", cmd=");
+    switch(cmd) {
+    case 81:
+        stream_printf(ws, "push");
+        break;
+    case 82:
+        stream_printf(ws, "ack");
+        break;
+    case 83:
+        stream_printf(ws, "wask");
+        break;
+    case 84:
+        stream_printf(ws, "wins");
+        break;
+    default:
+        stream_printf(ws, "%d", cmd);
+        break;
+    }
+
+    uint8_t frg = *data; data++;
+    stream_printf(ws, ", frg=%d", frg);
+
+    uint16_t wnd;
+    CPE_COPY_LTOH16(&wnd, data); data += 2;
+    stream_printf(ws, ", wnd=%u", wnd);
+
+    uint32_t ts;
+    CPE_COPY_LTOH32(&ts, data); data += 4;
+    stream_printf(ws, ", ts=%u", ts);
+    
+    uint32_t sn;
+    CPE_COPY_LTOH32(&sn, data); data += 4;
+    stream_printf(ws, ", sn=%u", sn);
+
+    uint32_t uma;
+    CPE_COPY_LTOH32(&uma, data); data += 4;
+    stream_printf(ws, ", uma=%u", uma);
+
+    uint32_t len;
+    CPE_COPY_LTOH32(&len, data); data += 4;
+    stream_printf(ws, ", len=%u", len);
 }
 
 const char * net_xkcp_dump_frame(mem_buffer_t buffer, const void * data, uint32_t data_len) {

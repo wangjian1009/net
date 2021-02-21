@@ -42,12 +42,16 @@ int net_xkcp_endpoint_init(net_endpoint_t base_endpoint) {
 void net_xkcp_endpoint_fini(net_endpoint_t base_endpoint) {
     net_xkcp_endpoint_t endpoint = net_endpoint_data(base_endpoint);
 
+    if (endpoint->m_kcp) {
+        ikcp_flush(endpoint->m_kcp);
+    }
+
+    net_xkcp_endpoint_set_runing_mode(endpoint, net_xkcp_endpoint_runing_mode_init);
+
     if (endpoint->m_kcp_update_timer) {
         net_timer_free(endpoint->m_kcp_update_timer);
         endpoint->m_kcp_update_timer = NULL;
     }
-    
-    net_xkcp_endpoint_set_runing_mode(endpoint, net_xkcp_endpoint_runing_mode_init);
 }
 
 int net_xkcp_endpoint_connect(net_endpoint_t base_endpoint) {
@@ -233,7 +237,6 @@ int net_xkcp_endpoint_set_conv(net_xkcp_endpoint_t endpoint, uint32_t conv) {
         }
 
         if (endpoint->m_kcp) {
-            ikcp_flush(endpoint->m_kcp);
             ikcp_release(endpoint->m_kcp);
             endpoint->m_kcp = NULL;
         }
@@ -376,9 +379,9 @@ int net_xkcp_endpoint_set_client(net_xkcp_endpoint_t endpoint, net_xkcp_client_t
 }
 
 int net_xkcp_endpoint_kcp_output(const char *buf, int len, ikcpcb *xkcp, void *user) {
-    net_endpoint_t base_endpoint = user;
+    net_xkcp_endpoint_t endpoint = user;
+    net_endpoint_t base_endpoint = endpoint->m_base_endpoint;
     net_driver_t base_driver = net_endpoint_driver(base_endpoint);
-    net_xkcp_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     net_xkcp_driver_t driver = net_driver_data(base_driver);
 
     net_address_t remote_address = NULL;
@@ -442,7 +445,7 @@ void net_xkcp_endpoint_kcp_schedule_update(net_xkcp_endpoint_t endpoint) {
     else {
         IUINT32 cur_time_ms = (IUINT32 )net_schedule_cur_time_ms(net_endpoint_schedule(endpoint->m_base_endpoint));
         IUINT32 next_time_ms = ikcp_check(endpoint->m_kcp, cur_time_ms);
-        assert(next_time_ms > cur_time_ms);
+        assert(next_time_ms >= cur_time_ms);
         net_timer_active(endpoint->m_kcp_update_timer, next_time_ms - cur_time_ms);
     }
 }
@@ -451,6 +454,7 @@ void net_xkcp_endpoint_on_write(net_xkcp_endpoint_t endpoint) {
     net_driver_t base_driver = net_endpoint_driver(endpoint->m_base_endpoint);
     net_xkcp_driver_t driver = net_driver_data(base_driver);
     net_endpoint_t base_endpoint = endpoint->m_base_endpoint;
+    uint8_t need_schedule = 0;
 
     while(
         net_endpoint_is_writeable(base_endpoint)
@@ -464,18 +468,7 @@ void net_xkcp_endpoint_on_write(net_xkcp_endpoint_t endpoint) {
         assert(data);
 
         int rv = ikcp_send(endpoint->m_kcp, data, data_size);
-        if (rv == 0) {
-            if (net_endpoint_driver_debug(base_endpoint)) {
-                CPE_INFO(
-                    driver->m_em, "xkcp: %s: conv %d: send %d bytes data!",
-                    net_endpoint_dump(net_xkcp_driver_tmp_buffer(driver), base_endpoint),
-                    endpoint->m_conv,
-                    data_size);
-            }
-
-            net_endpoint_buf_consume(base_endpoint, net_ep_buf_write, data_size);
-        }
-        else {
+        if (rv < 0) {
             CPE_ERROR(
                 driver->m_em, "xkcp: %s: conv=%d: send error, errno=%d!",
                 net_endpoint_dump(net_xkcp_driver_tmp_buffer(driver), base_endpoint), endpoint->m_conv,
@@ -494,7 +487,24 @@ void net_xkcp_endpoint_on_write(net_xkcp_endpoint_t endpoint) {
                     net_endpoint_set_is_writing(base_endpoint, 0);
                 }
             }
+
+            return;
         }
+
+        need_schedule = 1;
+        if (net_endpoint_driver_debug(base_endpoint)) {
+            CPE_INFO(
+                driver->m_em, "xkcp: %s: conv %d: send %d bytes data!",
+                net_endpoint_dump(net_xkcp_driver_tmp_buffer(driver), base_endpoint),
+                endpoint->m_conv,
+                data_size);
+        }
+
+        net_endpoint_buf_consume(base_endpoint, net_ep_buf_write, data_size);
+    }
+
+    if (need_schedule && net_endpoint_is_active(base_endpoint) && endpoint->m_kcp) {
+        net_xkcp_endpoint_kcp_schedule_update(endpoint);
     }
 }
 
@@ -582,7 +592,7 @@ static void net_xkcp_endpoint_kcp_do_update(net_timer_t timer, void * ctx) {
 
         if (net_endpoint_is_active(base_endpoint) && endpoint->m_kcp) {
             IUINT32 next_time_ms = ikcp_check(endpoint->m_kcp, cur_time_ms);
-            assert(next_time_ms > cur_time_ms);
+            assert(next_time_ms >= cur_time_ms);
             net_timer_active(timer, next_time_ms - cur_time_ms);
         }
     }
