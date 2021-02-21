@@ -49,13 +49,13 @@ static void net_xkcp_pair_basic(void **state) {
     assert_true(svr_ep);
     net_endpoint_t svr_ep_base = net_xkcp_endpoint_base_endpoint(svr_ep);
     
-    /* test_net_endpoint_assert_buf_memory(svr_ep, net_ep_buf_read, "abcd", 4); */
+    test_net_endpoint_assert_buf_memory(svr_ep_base, net_ep_buf_read, "abcd", 4);
 
     /*server -> client*/
     assert_true(net_endpoint_buf_append(svr_ep_base, net_ep_buf_write, "efgh", 4) == 0);
     test_net_driver_run(env->m_tdriver, 1000);
 
-    /* test_net_endpoint_assert_buf_memory(cli_ep_base, net_ep_buf_read, "efgh", 4); */
+    test_net_endpoint_assert_buf_memory(cli_ep_base, net_ep_buf_read, "efgh", 4);
 }
 
 int net_xkcp_pair_basic_tests() {

@@ -21,6 +21,9 @@ struct net_xkcp_config {
 void net_xkcp_config_init_default(net_xkcp_config_t config);
 uint8_t net_xkcp_config_validate(net_xkcp_config_t config, error_monitor_t em);
 
+const char * net_xkcp_mode_str(net_xkcp_mode_t mode);
+int net_xkcp_mode_from_str(net_xkcp_mode_t * mode, const char * str_mode);
+
 NET_END_DECL
 
 #endif

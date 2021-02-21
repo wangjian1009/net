@@ -125,17 +125,6 @@ net_xkcp_driver_t net_xkcp_driver_cast(net_driver_t base_driver) {
     return net_driver_init_fun(base_driver) == net_xkcp_driver_init ? net_driver_data(base_driver) : NULL;
 }
 
-void net_xkcp_config_init_default(net_xkcp_config_t config) {
-    config->m_mode = net_xkcp_mode_normal;
-	config->m_mtu = 1350;
-	config->m_send_wnd = 512;
-	config->m_recv_wnd = 512;
-}
-
-uint8_t net_xkcp_config_validate(net_xkcp_config_t config, error_monitor_t em) {
-    return 1;
-}
-
 net_schedule_t net_xkcp_driver_schedule(net_xkcp_driver_t driver) {
     return net_driver_schedule(net_driver_from_data(driver));
 }

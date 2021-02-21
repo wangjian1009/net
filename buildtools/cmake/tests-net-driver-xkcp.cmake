@@ -8,15 +8,15 @@ set_property(TARGET tests_net_driver_xkcp PROPERTY INCLUDE_DIRECTORIES
   ${cpe_pal_base}/include
   ${cpe_utils_base}/include
   ${cpe_utils_base}/test_utils
+  ${yajl_base}/include
+  ${cpe_utils_json_base}/include
   ${net_core_base}/include
   ${net_core_base}/test_utils
   ${net_driver_xkcp_base}/include
   ${net_driver_xkcp_base}/src
   )
 
-set(tests_net_driver_xkcp_libraries
-  test_utils_net_core
-  net_driver_xkcp)
+set(tests_net_driver_xkcp_libraries test_utils_net_core net_driver_xkcp cpe_utils_json)
 
 set_property(TARGET tests_net_driver_xkcp PROPERTY LINK_LIBRARIES ${tests_net_driver_xkcp_libraries})
 

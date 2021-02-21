@@ -5,6 +5,49 @@
 #include "net_xkcp_config.h"
 #include "net_xkcp_utils.h"
 
+void net_xkcp_config_init_default(net_xkcp_config_t config) {
+    config->m_mode = net_xkcp_mode_normal;
+	config->m_mtu = 1350;
+	config->m_send_wnd = 512;
+	config->m_recv_wnd = 512;
+}
+
+uint8_t net_xkcp_config_validate(net_xkcp_config_t config, error_monitor_t em) {
+    return 1;
+}
+
+const char * net_xkcp_mode_str(net_xkcp_mode_t mode) {
+    switch(mode) {
+    case net_xkcp_mode_normal:
+        return "normal";
+    case net_xkcp_mode_fast:
+        return "fast";
+    case net_xkcp_mode_fast2:
+        return "fast2";
+    case net_xkcp_mode_fast3:
+        return "fast3";
+    }
+}
+
+int net_xkcp_mode_from_str(net_xkcp_mode_t * mode, const char * str_mode) {
+    if (strcmp(str_mode, "normal") == 0) {
+        *mode = net_xkcp_mode_normal;
+    }
+    else if (strcmp(str_mode, "fast") == 0) {
+        *mode = net_xkcp_mode_fast;
+    }
+    else if (strcmp(str_mode, "fast2") == 0) {
+        *mode = net_xkcp_mode_fast2;
+    }
+    else if (strcmp(str_mode, "fast3") == 0) {
+        *mode = net_xkcp_mode_fast3;
+    }
+    else {
+        return -1;
+    }
+    return 0;
+}
+
 void net_xkcp_apply_config(ikcpcb * kcp, net_xkcp_config_t config) {
     ikcp_setmtu(kcp, config->m_mtu);
 	ikcp_wndsize(kcp, config->m_send_wnd, config->m_recv_wnd);

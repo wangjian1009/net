@@ -1,3 +1,4 @@
+#include "yajl/yajl_tree.h"
 #include "cmocka_all.h"
 #include "net_schedule.h"
 #include "net_driver.h"
@@ -67,7 +68,8 @@ net_xkcp_testenv_create_acceptor(
     net_acceptor_t base_acceptor =
         net_acceptor_create(
             net_driver_from_data(env->m_xkcp_driver),
-            env->m_test_protocol, address, 0, NULL, NULL);
+            env->m_test_protocol, address, 0,
+            NULL, NULL);
     assert_true(base_acceptor);
         
     net_address_free(address);
@@ -87,6 +89,26 @@ void net_xkcp_endpoint_parse_config(
     net_xkcp_testenv_t env, net_xkcp_config_t config, const char * str_cfg)
 {
     net_xkcp_config_init_default(config);
+
+    char error_buf[256];
+    yajl_val cfg = yajl_tree_parse(str_cfg, error_buf, sizeof(error_buf));
+    if (cfg == NULL) {
+        fail_msg("parse json error\n%s", error_buf);
+    }
+
+    const char * str_mode = yajl_get_string(yajl_tree_get_2(cfg, "mode", yajl_t_string));
+    if (str_mode == NULL) {
+        if (net_xkcp_mode_from_str(&config->m_mode, str_mode) != 0) {
+            fail_msg("mode %s unknown", str_mode);
+        }
+    }
+
+    yajl_val mtu = yajl_tree_get_2(cfg, "mtu", yajl_t_string);
+    if (mtu) {
+        
+    }
+
+    yajl_tree_free(cfg);
 }
 
 net_xkcp_endpoint_t

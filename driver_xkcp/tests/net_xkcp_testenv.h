@@ -5,6 +5,7 @@
 #include "test_net_driver.h"
 #include "test_net_dgram.h"
 #include "test_net_protocol_endpoint.h"
+#include "test_net_endpoint.h"
 #include "net_endpoint.h"
 #include "net_xkcp_config.h"
 #include "net_xkcp_endpoint.h"
