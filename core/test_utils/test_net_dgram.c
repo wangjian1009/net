@@ -21,6 +21,20 @@ int test_net_dgram_init(net_dgram_t base_dgram) {
     TAILQ_INSERT_TAIL(&driver->m_dgrams, dgram, m_next);
     dgram->m_write_policy.m_type = test_net_dgram_write_mock;
 
+    net_address_t address = net_dgram_address(base_dgram);
+    if (address == NULL) {
+        net_address_t local_address = net_address_create_auto(net_dgram_schedule(base_dgram), "127.0.0.1");
+        net_dgram_set_address(base_dgram, local_address);
+        net_address_free(local_address);
+        address = net_dgram_address(base_dgram);
+    }
+
+    if (address) {
+        if (net_address_port(address) == 0) {
+            net_address_set_port(address, ++driver->m_dgram_auto_port_max);
+        }
+    }
+    
     return 0;
 }
 

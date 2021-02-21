@@ -218,7 +218,8 @@ void net_xkcp_endpoint_set_runing_mode(net_xkcp_endpoint_t endpoint, net_xkcp_en
 }
 
 int net_xkcp_endpoint_set_conv(net_xkcp_endpoint_t endpoint, uint32_t conv) {
-    net_xkcp_driver_t driver = net_driver_data(net_endpoint_driver(endpoint->m_base_endpoint));
+    net_endpoint_t base_endpoint = endpoint->m_base_endpoint;
+    net_xkcp_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
     
     if (endpoint->m_conv) {
         switch(endpoint->m_runing_mode) {
@@ -250,7 +251,7 @@ int net_xkcp_endpoint_set_conv(net_xkcp_endpoint_t endpoint, uint32_t conv) {
         if (endpoint->m_kcp == NULL) {
             CPE_ERROR(
                 driver->m_em, "xkcp: %s: set conv: create kcp fail",
-                net_endpoint_dump(net_xkcp_driver_tmp_buffer(driver), endpoint->m_base_endpoint));
+                net_endpoint_dump(net_xkcp_driver_tmp_buffer(driver), base_endpoint));
             return -1;
         }
         ikcp_setoutput(endpoint->m_kcp, net_xkcp_endpoint_kcp_output);
@@ -268,7 +269,7 @@ int net_xkcp_endpoint_set_conv(net_xkcp_endpoint_t endpoint, uint32_t conv) {
                 if (cpe_hash_table_insert_unique(&endpoint->m_cli.m_connector->m_streams, endpoint) != 0) {
                     CPE_ERROR(
                         driver->m_em, "xkcp: %s: set conv: conv %d duplicate",
-                        net_endpoint_dump(net_xkcp_driver_tmp_buffer(driver), endpoint->m_base_endpoint),
+                        net_endpoint_dump(net_xkcp_driver_tmp_buffer(driver), base_endpoint),
                         endpoint->m_kcp->conv);
                     ikcp_release(endpoint->m_kcp);
                     endpoint->m_kcp = NULL;
@@ -286,7 +287,7 @@ int net_xkcp_endpoint_set_conv(net_xkcp_endpoint_t endpoint, uint32_t conv) {
                 if (cpe_hash_table_insert_unique(&endpoint->m_svr.m_client->m_streams, endpoint) != 0) {
                     CPE_ERROR(
                         driver->m_em, "xkcp: %s: set conv: conv %d duplicate",
-                        net_endpoint_dump(net_xkcp_driver_tmp_buffer(driver), endpoint->m_base_endpoint),
+                        net_endpoint_dump(net_xkcp_driver_tmp_buffer(driver), base_endpoint),
                         endpoint->m_kcp->conv);
                     ikcp_release(endpoint->m_kcp);
                     endpoint->m_kcp = NULL;
@@ -418,21 +419,17 @@ int net_xkcp_endpoint_kcp_output(const char *buf, int len, ikcpcb *xkcp, void *u
 
     if (net_dgram_send(dgram, remote_address, buf, len) != 0) {
         CPE_ERROR(
-            driver->m_em, "xkcp: %s: ==> dgram send error",
-            net_address_dump(net_xkcp_driver_tmp_buffer(driver), remote_address));
+            driver->m_em, "xkcp: %s: kcp output: dgram send error",
+            net_endpoint_dump(net_xkcp_driver_tmp_buffer(driver), endpoint->m_base_endpoint));
         return -1;
     }
 
     if (net_driver_debug(base_driver) >= 2) {
-        char address_buf[128];
-        cpe_str_dup(
-            address_buf, sizeof(address_buf),
-            net_address_dump(net_xkcp_driver_tmp_buffer(driver), remote_address));
-
         CPE_INFO(
-            driver->m_em, "xkcp: %s: %d: ==> %s",
-            address_buf, endpoint->m_conv,
-            net_xkcp_dump_frame(net_xkcp_driver_tmp_buffer(driver), buf, len));
+            driver->m_em, "xkcp: %s",
+            net_xkcp_dump_frame(
+                net_xkcp_driver_tmp_buffer(driver),
+                net_dgram_address(dgram), remote_address, 1, buf, len));
     }
 
     return 0;

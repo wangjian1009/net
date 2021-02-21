@@ -1,6 +1,7 @@
 #include "cpe/pal/pal_platform.h"
 #include "cpe/pal/pal_string.h"
 #include "cpe/utils/stream_buffer.h"
+#include "net_address.h"
 #include "net_xkcp_config.h"
 #include "net_xkcp_utils.h"
 
@@ -34,10 +35,10 @@ void net_xkcp_print_frame(write_stream_t ws, const void * i_data, uint32_t data_
     
     uint32_t conv;
     CPE_COPY_LTOH32(&conv, data); data += 4;
-    stream_printf(ws, "conv=%d");
+    stream_printf(ws, "conv=%d: ");
 
     uint8_t cmd = *data; data++;
-    stream_printf(ws, ", cmd=");
+    stream_printf(ws, "cmd=");
     switch(cmd) {
     case 81:
         stream_printf(ws, "push");
@@ -80,13 +81,54 @@ void net_xkcp_print_frame(write_stream_t ws, const void * i_data, uint32_t data_
     stream_printf(ws, ", len=%u", len);
 }
 
-const char * net_xkcp_dump_frame(mem_buffer_t buffer, const void * data, uint32_t data_len) {
+void net_xkcp_print_address_pair(write_stream_t ws, net_address_t local, net_address_t remote, uint8_t is_out) {
+    if (local) {
+        net_address_print(ws, local);
+    }
+    else {
+        stream_printf(ws, "N/A");
+    }
+
+    stream_printf(ws, "--");
+
+    if (remote) {
+        net_address_print(ws, remote);
+    }
+    else {
+        stream_printf(ws, "N/A");
+    }
+
+    if (is_out) {
+        stream_printf(ws, ": ==>");
+    }
+    else {
+        stream_printf(ws, ": <==");
+    }
+}
+
+const char * net_xkcp_dump_frame(
+    mem_buffer_t buffer,
+    net_address_t local, net_address_t remote, uint8_t is_out,
+    const void * data, uint32_t data_len)
+{
     struct write_stream_buffer ws = CPE_WRITE_STREAM_BUFFER_INITIALIZER(buffer);
     mem_buffer_clear_data(buffer);
 
+    net_xkcp_print_address_pair((write_stream_t)&ws, local, remote, is_out);
+    stream_printf((write_stream_t)&ws, " ");
     net_xkcp_print_frame((write_stream_t)&ws, data, data_len);
     stream_putc((write_stream_t)&ws, 0);
     
     return mem_buffer_make_continuous(buffer, 0);
 }
 
+const char * net_xkcp_dump_address_pair(
+    mem_buffer_t buffer,
+    net_address_t local, net_address_t remote, uint8_t is_out)
+{
+    struct write_stream_buffer ws = CPE_WRITE_STREAM_BUFFER_INITIALIZER(buffer);
+    mem_buffer_clear_data(buffer);
+    net_xkcp_print_address_pair((write_stream_t)&ws, local, remote, is_out);
+    stream_putc((write_stream_t)&ws, 0);
+    return mem_buffer_make_continuous(buffer, 0);
+}

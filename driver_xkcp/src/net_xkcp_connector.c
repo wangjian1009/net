@@ -176,35 +176,34 @@ static void net_xkcp_connector_recv(net_dgram_t dgram, void * ctx, void * data, 
     net_xkcp_endpoint_t endpoint = net_xkcp_connector_find_stream(connector, conv);
     if (endpoint == NULL) {
         CPE_ERROR(
-            driver->m_em, "xkcp: %s: %d: <== no stream",
-            net_address_dump(net_xkcp_driver_tmp_buffer(driver), source), conv);
+            driver->m_em, "xkcp: %s conv %d no stream",
+            net_xkcp_dump_address_pair(net_xkcp_driver_tmp_buffer(driver), net_dgram_address(dgram), source, 0),
+            conv);
         return;
     }
 
     if (endpoint->m_kcp == NULL) {
         CPE_ERROR(
-            driver->m_em, "xkcp: %s: %d: <== %d data: no bind kcp",
-            net_address_dump(net_xkcp_driver_tmp_buffer(driver), source), conv, (int)data_size);
+            driver->m_em, "xkcp: %s conv %d stream no bind kcp",
+            net_xkcp_dump_address_pair(net_xkcp_driver_tmp_buffer(driver), net_dgram_address(dgram), source, 0),
+            conv);
         return;
     }
 
     int nret = ikcp_input(endpoint->m_kcp, data, data_size);
     if (nret < 0) {
         CPE_ERROR(
-            driver->m_em, "xkcp: %s: %d: <== %d data: ikcp_input failed [%d]",
-            net_address_dump(net_xkcp_driver_tmp_buffer(driver), source), conv, (int)data_size, nret);
+            driver->m_em, "xkcp: %s conv %d ikcp_input %d data failed [%d]",
+            net_xkcp_dump_address_pair(net_xkcp_driver_tmp_buffer(driver), net_dgram_address(dgram), source, 0),
+            conv, (int)data_size, nret);
         return;
     }
 
     if (net_driver_debug(base_driver) >= 2) {
-        char address_buf[128];
-        cpe_str_dup(
-            address_buf, sizeof(address_buf),
-            net_address_dump(net_xkcp_driver_tmp_buffer(driver), source));
         CPE_INFO(
-            driver->m_em, "xkcp: %s: %d: <== %s",
-            address_buf, conv,
-            net_xkcp_dump_frame(net_xkcp_driver_tmp_buffer(driver), data, data_size));
+            driver->m_em, "xkcp: %s",
+            net_xkcp_dump_frame(
+                net_xkcp_driver_tmp_buffer(driver), net_dgram_address(dgram), source, 0, data, data_size));
     }
 
     net_xkcp_endpoint_kcp_forward_data(endpoint);

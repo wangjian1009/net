@@ -5,6 +5,14 @@
 void net_xkcp_apply_config(ikcpcb * kcp, net_xkcp_config_t config);
 
 void net_xkcp_print_frame(write_stream_t ws, const void * data, uint32_t data_len);
-const char * net_xkcp_dump_frame(mem_buffer_t buffer, const void * data, uint32_t data_len);
+
+const char * net_xkcp_dump_frame(
+    mem_buffer_t buffer,
+    net_address_t local, net_address_t remote, uint8_t is_out,
+    const void * data, uint32_t data_len);
+
+const char * net_xkcp_dump_address_pair(
+    mem_buffer_t buffer,
+    net_address_t local, net_address_t remote, uint8_t is_out);
 
 #endif

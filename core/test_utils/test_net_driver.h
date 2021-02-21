@@ -27,7 +27,10 @@ struct test_net_driver {
     test_net_timer_list_t m_timers;
     test_net_acceptor_list_t m_acceptors;
     test_net_endpoint_list_t m_endpoints;
+
+    uint16_t m_dgram_auto_port_max;
     test_net_dgram_list_t m_dgrams;
+
     test_net_watcher_list_t m_watchers;
 
     int64_t m_cur_time_ms;

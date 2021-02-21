@@ -119,7 +119,9 @@ static void net_xkcp_acceptor_recv(net_dgram_t dgram, void * ctx, void * data, s
     net_xkcp_acceptor_t acceptor = net_acceptor_data(base_acceptor);
 
     if (source == NULL) {
-        CPE_ERROR(driver->m_em, "xkcp: <== no source address");
+        CPE_ERROR(
+            driver->m_em, "xkcp: %s source address",
+            net_xkcp_dump_address_pair(net_xkcp_driver_tmp_buffer(driver), net_dgram_address(dgram), source, 0));
         return;
     }
     
@@ -135,8 +137,9 @@ static void net_xkcp_acceptor_recv(net_dgram_t dgram, void * ctx, void * data, s
         client = net_xkcp_client_create(acceptor, source);
         if (client == NULL) {
             CPE_ERROR(
-                driver->m_em, "xkcp: %s: %d: <== new client: create error",
-                net_address_dump(net_xkcp_driver_tmp_buffer(driver), source), conv);
+                driver->m_em, "xkcp: %s conv=%d: create client error",
+                net_xkcp_dump_address_pair(net_xkcp_driver_tmp_buffer(driver), net_dgram_address(dgram), source, 0),
+                conv);
             return;
         }
     }
@@ -147,10 +150,11 @@ static void net_xkcp_acceptor_recv(net_dgram_t dgram, void * ctx, void * data, s
                 net_driver_from_data(driver),
                 net_acceptor_protocol(base_acceptor),
                 NULL);
-        if (endpoint == NULL) {
+        if (base_endpoint == NULL) {
             CPE_ERROR(
-                driver->m_em, "xkcp: %s: %d: <== create new endpoint failed",
-                net_address_dump(net_xkcp_driver_tmp_buffer(driver), source), conv);
+                driver->m_em, "xkcp: %s conv=%d: new endpoint failed",
+                net_xkcp_dump_address_pair(net_xkcp_driver_tmp_buffer(driver), net_dgram_address(dgram), source, 0),
+                conv);
             return;
         }
 
@@ -159,59 +163,62 @@ static void net_xkcp_acceptor_recv(net_dgram_t dgram, void * ctx, void * data, s
 
         if (net_xkcp_endpoint_set_conv(endpoint, conv) != 0) {
             CPE_ERROR(
-                driver->m_em, "xkcp: %s: %d: <== new endpoint: set conv failed",
-                net_address_dump(net_xkcp_driver_tmp_buffer(driver), source), conv);
+                driver->m_em, "xkcp: %s conv=%d: new endpoint: set conv failed",
+                net_xkcp_dump_address_pair(net_xkcp_driver_tmp_buffer(driver), net_dgram_address(dgram), source, 0),
+                conv);
             net_endpoint_free(base_endpoint);
             return;
         }
 
         if (net_endpoint_set_state(base_endpoint, net_endpoint_state_established) != 0) {
             CPE_ERROR(
-                driver->m_em, "xkcp: %s: %d: <== new endpoint: set established fail",
-                net_address_dump(net_xkcp_driver_tmp_buffer(driver), source), conv);
+                driver->m_em, "xkcp: %s conv=%d: new endpoint: set established fail",
+                net_xkcp_dump_address_pair(net_xkcp_driver_tmp_buffer(driver), net_dgram_address(dgram), source, 0),
+                conv);
             net_endpoint_free(base_endpoint);
             return;
         }
 
         if (net_acceptor_on_new_endpoint(base_acceptor, base_endpoint) != 0) {
             CPE_ERROR(
-                driver->m_em, "xkcp: %s: %d: <== new endpoint: accept fail",
-                net_address_dump(net_xkcp_driver_tmp_buffer(driver), source), conv);
+                driver->m_em, "xkcp: %s conv=%d: new endpoint: accept fail",
+                net_xkcp_dump_address_pair(net_xkcp_driver_tmp_buffer(driver), net_dgram_address(dgram), source, 0),
+                conv);
             net_endpoint_free(base_endpoint);
             return;
         }
 
         if (net_driver_debug(base_driver) >= 2) {
             CPE_INFO(
-                driver->m_em, "xkcp: %s: %d: <== new endpoint",
-                net_address_dump(net_xkcp_driver_tmp_buffer(driver), source), conv);
+                driver->m_em, "xkcp: %s conv=%d: new endpoint",
+                net_xkcp_dump_address_pair(net_xkcp_driver_tmp_buffer(driver), net_dgram_address(dgram), source, 0),
+                conv);
         }
     }
 
     if (endpoint->m_kcp == NULL) {
         CPE_ERROR(
-            driver->m_em, "xkcp: %s: %d: <== %d data: no bind kcp",
-            net_address_dump(net_xkcp_driver_tmp_buffer(driver), source), conv, (int)data_size);
+            driver->m_em, "xkcp: %s conv=%d: no bind kcp",
+            net_xkcp_dump_address_pair(net_xkcp_driver_tmp_buffer(driver), net_dgram_address(dgram), source, 0),
+            conv);
         return;
     }
 
     int nret = ikcp_input(endpoint->m_kcp, data, data_size);
     if (nret < 0) {
         CPE_ERROR(
-            driver->m_em, "xkcp: %s: %d: <== %d data: ikcp_input failed [%d]",
-            net_address_dump(net_xkcp_driver_tmp_buffer(driver), source), conv, (int)data_size, nret);
+            driver->m_em, "xkcp: %s conv=%d: ikcp_input %d data failed [%d]",
+            net_xkcp_dump_address_pair(net_xkcp_driver_tmp_buffer(driver), net_dgram_address(dgram), source, 0),
+            conv, (int)data_size, nret);
         return;
     }
 
     if (net_driver_debug(base_driver) >= 2) {
-        char address_buf[128];
-        cpe_str_dup(
-            address_buf, sizeof(address_buf),
-            net_address_dump(net_xkcp_driver_tmp_buffer(driver), source));
         CPE_INFO(
-            driver->m_em, "xkcp: %s: %d: <== %s",
-            address_buf, conv,
-            net_xkcp_dump_frame(net_xkcp_driver_tmp_buffer(driver), data, data_size));
+            driver->m_em, "xkcp: %s",
+            net_xkcp_dump_frame(
+                net_xkcp_driver_tmp_buffer(driver),
+                net_dgram_address(dgram), source, 0, data, data_size));
     }
 
     net_xkcp_endpoint_kcp_forward_data(endpoint);

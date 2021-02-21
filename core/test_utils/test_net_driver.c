@@ -69,7 +69,10 @@ static int test_net_driver_init(net_driver_t base_driver) {
     TAILQ_INIT(&driver->m_timers);
     TAILQ_INIT(&driver->m_acceptors);
     TAILQ_INIT(&driver->m_endpoints);
+
+    driver->m_dgram_auto_port_max = 10000;
     TAILQ_INIT(&driver->m_dgrams);
+
     TAILQ_INIT(&driver->m_watchers);
 
     driver->m_cur_time_ms = cur_time_ms();
