@@ -161,6 +161,15 @@ static void net_xkcp_acceptor_recv(net_dgram_t dgram, void * ctx, void * data, s
         endpoint = net_xkcp_endpoint_cast(base_endpoint);
         net_xkcp_endpoint_set_runing_mode(endpoint, net_xkcp_endpoint_runing_mode_svr);
 
+        if (net_xkcp_endpoint_set_client(endpoint, client) != 0) {
+            CPE_ERROR(
+                driver->m_em, "xkcp: %s conv=%d: new endpoint: set client fail",
+                net_xkcp_dump_address_pair(net_xkcp_driver_tmp_buffer(driver), net_dgram_address(dgram), source, 0),
+                conv);
+            net_endpoint_free(base_endpoint);
+            return;
+        }
+
         if (net_xkcp_endpoint_set_conv(endpoint, conv) != 0) {
             CPE_ERROR(
                 driver->m_em, "xkcp: %s conv=%d: new endpoint: set conv failed",

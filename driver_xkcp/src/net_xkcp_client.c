@@ -70,7 +70,6 @@ void net_xkcp_client_free(net_xkcp_client_t client) {
         net_xkcp_endpoint_t next = cpe_hash_it_next(&endpoint_it);
         if (net_endpoint_set_state(endpoint->m_base_endpoint, net_endpoint_state_disable) != 0) {
             net_endpoint_set_state(endpoint->m_base_endpoint, net_endpoint_state_deleting);
-            
         }
         endpoint = next;
     }

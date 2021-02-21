@@ -127,6 +127,12 @@ int net_xkcp_endpoint_update(net_endpoint_t base_endpoint) {
     case net_endpoint_state_write_closed:
         return 0;
     case net_endpoint_state_disable:
+        if (endpoint->m_kcp) {
+            ikcp_flush(endpoint->m_kcp);
+        }
+        if (endpoint->m_conv) {
+            net_xkcp_endpoint_set_conv(endpoint, 0);
+        }
         return 0;
     case net_endpoint_state_established:
         if (!net_endpoint_is_writing(endpoint->m_base_endpoint)) {
@@ -215,6 +221,17 @@ void net_xkcp_endpoint_set_runing_mode(net_xkcp_endpoint_t endpoint, net_xkcp_en
     }
 
     endpoint->m_runing_mode = runing_mode;
+
+    switch(endpoint->m_runing_mode) {
+    case net_xkcp_endpoint_runing_mode_init:
+        break;
+    case net_xkcp_endpoint_runing_mode_cli:
+        endpoint->m_cli.m_connector = NULL;
+        break;
+    case net_xkcp_endpoint_runing_mode_svr:
+        endpoint->m_svr.m_client = NULL;
+        break;
+    }
 }
 
 int net_xkcp_endpoint_set_conv(net_xkcp_endpoint_t endpoint, uint32_t conv) {
@@ -514,8 +531,10 @@ void net_xkcp_endpoint_kcp_forward_data(net_xkcp_endpoint_t endpoint) {
           && net_endpoint_expect_read(base_endpoint)
           && endpoint->m_kcp)
     {
-        uint32_t capacity = ikcp_peeksize(endpoint->m_kcp);
-        if (capacity == 0) break;
+        int ikcp_size = ikcp_peeksize(endpoint->m_kcp);
+        if (ikcp_size <= 0) break;
+
+        uint32_t capacity = ikcp_size;
 
         void * buf = net_endpoint_buf_alloc_suggest(base_endpoint, &capacity);
         if (buf == NULL) {
@@ -534,7 +553,7 @@ void net_xkcp_endpoint_kcp_forward_data(net_xkcp_endpoint_t endpoint) {
             return;
         }
 
-		int nrecv = ikcp_recv(endpoint->m_kcp, buf, capacity);
+        int nrecv = ikcp_recv(endpoint->m_kcp, buf, capacity);
 		if (nrecv < 0) {
             net_endpoint_buf_release(base_endpoint);
 

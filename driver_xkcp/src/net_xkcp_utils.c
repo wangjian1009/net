@@ -35,7 +35,7 @@ void net_xkcp_print_frame(write_stream_t ws, const void * i_data, uint32_t data_
     
     uint32_t conv;
     CPE_COPY_LTOH32(&conv, data); data += 4;
-    stream_printf(ws, "conv=%d: ");
+    stream_printf(ws, "conv=%d: ", conv);
 
     uint8_t cmd = *data; data++;
     stream_printf(ws, "cmd=");
