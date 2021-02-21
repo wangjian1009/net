@@ -15,6 +15,7 @@
 
 static int net_xkcp_endpoint_kcp_output(const char *buf, int len, ikcpcb *xkcp, void *user);
 static void net_xkcp_endpoint_kcp_do_update(net_timer_t timer, void * ctx);
+static void net_xkcp_endpoint_on_write(net_xkcp_endpoint_t endpoint);
 
 int net_xkcp_endpoint_init(net_endpoint_t base_endpoint) {
     net_xkcp_endpoint_t endpoint = net_endpoint_data(base_endpoint);
@@ -124,6 +125,9 @@ int net_xkcp_endpoint_update(net_endpoint_t base_endpoint) {
     case net_endpoint_state_disable:
         return 0;
     case net_endpoint_state_established:
+        if (!net_endpoint_is_writing(endpoint->m_base_endpoint)) {
+            net_xkcp_endpoint_on_write(endpoint);
+        }
         return 0;
     case net_endpoint_state_error:
         return 0;
@@ -440,6 +444,57 @@ void net_xkcp_endpoint_kcp_schedule_update(net_xkcp_endpoint_t endpoint) {
         IUINT32 next_time_ms = ikcp_check(endpoint->m_kcp, cur_time_ms);
         assert(next_time_ms > cur_time_ms);
         net_timer_active(endpoint->m_kcp_update_timer, next_time_ms - cur_time_ms);
+    }
+}
+
+void net_xkcp_endpoint_on_write(net_xkcp_endpoint_t endpoint) {
+    net_driver_t base_driver = net_endpoint_driver(endpoint->m_base_endpoint);
+    net_xkcp_driver_t driver = net_driver_data(base_driver);
+    net_endpoint_t base_endpoint = endpoint->m_base_endpoint;
+
+    while(
+        net_endpoint_is_writeable(base_endpoint)
+        && !net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write)
+        && !net_endpoint_is_writing(base_endpoint)
+        && endpoint->m_kcp)
+    {
+        uint32_t data_size = 0;
+        void * data = net_endpoint_buf_peak(base_endpoint, net_ep_buf_write, &data_size);
+        assert(data_size > 0);
+        assert(data);
+
+        int rv = ikcp_send(endpoint->m_kcp, data, data_size);
+        if (rv == 0) {
+            if (net_endpoint_driver_debug(base_endpoint)) {
+                CPE_INFO(
+                    driver->m_em, "xkcp: %s: conv %d: send %d bytes data!",
+                    net_endpoint_dump(net_xkcp_driver_tmp_buffer(driver), base_endpoint),
+                    endpoint->m_conv,
+                    data_size);
+            }
+
+            net_endpoint_buf_consume(base_endpoint, net_ep_buf_write, data_size);
+        }
+        else {
+            CPE_ERROR(
+                driver->m_em, "xkcp: %s: conv=%d: send error, errno=%d!",
+                net_endpoint_dump(net_xkcp_driver_tmp_buffer(driver), base_endpoint), endpoint->m_conv,
+                rv);
+
+            if (net_endpoint_error_source(base_endpoint) == net_endpoint_error_source_none) {
+                net_endpoint_set_error(
+                    base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_network_error, NULL);
+            }
+            
+            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
+                net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+            }
+            else {
+                if (net_endpoint_is_writing(base_endpoint)) {
+                    net_endpoint_set_is_writing(base_endpoint, 0);
+                }
+            }
+        }
     }
 }
 

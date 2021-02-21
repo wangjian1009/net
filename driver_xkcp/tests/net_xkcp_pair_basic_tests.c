@@ -35,6 +35,11 @@ static void net_xkcp_pair_basic(void **state) {
         net_endpoint_state_str(net_endpoint_state(cli_ep_base)),
         net_endpoint_state_str(net_endpoint_state_established));
 
+
+    /*client -> server*/
+    assert_true(net_endpoint_buf_append(cli_ep_base, net_ep_buf_write, "abcd", 4) == 0);
+    test_net_driver_run(env->m_tdriver, 0);
+    
     /* net_endpoint_t svr_ep = net_xkcp_pair_testenv_get_svr_stream(env, cli_ep_base); */
     /* assert_true(svr_ep != NULL); */
 
