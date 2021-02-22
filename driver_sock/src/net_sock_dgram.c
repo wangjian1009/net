@@ -94,7 +94,7 @@ int net_sock_dgram_init(net_dgram_t base_dgram) {
         }
         
         net_address_t effect_address = net_address_create_from_sockaddr(schedule, (struct sockaddr *)&addr, addr_len);
-        if (address == NULL) {
+        if (effect_address == NULL) {
             CPE_ERROR(net_schedule_em(schedule), "sock: dgram: create address fail");
             cpe_sock_close(dgram->m_fd);
             dgram->m_fd = -1;
@@ -106,11 +106,11 @@ int net_sock_dgram_init(net_dgram_t base_dgram) {
 
         address = net_dgram_address(base_dgram);
         
-        /* if (net_dgram_driver_debug(base_dgram) >= 2) { */
+        if (net_dgram_driver_debug(base_dgram) >= 2) {
             CPE_INFO(
                 driver->m_em, "sock: dgram: auto bind at %s",
                 net_address_dump(net_schedule_tmp_buffer(schedule), address));
-        /* } */
+        }
     }
 
     dgram->m_watcher = net_watcher_create(base_driver, _to_watcher_fd(dgram->m_fd), dgram, net_sock_dgram_receive_cb);
