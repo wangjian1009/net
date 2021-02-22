@@ -216,7 +216,7 @@ int net_sock_dgram_send(net_dgram_t base_dgram, net_address_t target, void const
         }
     }
 
-    return nret;
+    return 0;
 }
 
 static void net_sock_dgram_receive_cb(void * ctx, int fd, uint8_t do_read, uint8_t do_write) {

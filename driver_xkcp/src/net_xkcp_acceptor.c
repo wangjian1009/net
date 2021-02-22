@@ -95,7 +95,7 @@ int net_xkcp_acceptor_set_config(net_xkcp_acceptor_t acceptor, net_xkcp_config_t
     net_acceptor_t base_acceptor = net_acceptor_from_data(acceptor);
     net_xkcp_driver_t driver = net_driver_data(net_acceptor_driver(base_acceptor));
 
-    if (net_xkcp_config_validate(config, driver->m_em) != 0) {
+    if (!net_xkcp_config_validate(config, driver->m_em)) {
         CPE_ERROR(
             driver->m_em, "xkcp: acceptor %s: set config: config error!",
             net_address_dump(net_xkcp_driver_tmp_buffer(driver), net_acceptor_address(base_acceptor)));
