@@ -40,9 +40,7 @@ int net_sock_dgram_init(net_dgram_t base_dgram) {
     }
     
     net_address_t address = net_dgram_address(base_dgram);
-    if (address
-        && (!net_address_is_any(address) || net_address_port(address) != 0))
-    {
+    if (address) {
         struct sockaddr_storage addr;
         socklen_t addr_len = sizeof(addr);
 
@@ -63,41 +61,56 @@ int net_sock_dgram_init(net_dgram_t base_dgram) {
             dgram->m_fd = -1;
             return -1;
         }
-
-        if (net_dgram_driver_debug(base_dgram) >= 2) {
-            CPE_INFO(
-                driver->m_em, "sock: dgram: bind to %s",
-                net_address_dump(net_schedule_tmp_buffer(schedule), address));
-        }
     }
     else {
-        /* struct sockaddr_storage addr; */
-        /* socklen_t addr_len = sizeof(struct sockaddr_storage); */
-        /* bzero(&addr, addr_len); */
-        /* if (cpe_getsockname(dgram->m_fd, (struct sockaddr *)&addr, &addr_len) != 0) { */
-        /*     CPE_ERROR( */
-        /*         driver->m_em, "sock: dgram: sockaddr error, errno=%d (%s)", */
-        /*         cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno())); */
-        /*     cpe_sock_close(dgram->m_fd); */
-        /*     dgram->m_fd = -1; */
-        /*     return -1; */
-        /* } */
+        struct sockaddr_in addr;
+        socklen_t addr_len = sizeof(addr);
+        bzero(&addr, addr_len);
+        addr.sin_family = AF_INET;
+        addr.sin_port = 0;
+        addr.sin_addr.s_addr = INADDR_ANY;
+        
+        if (cpe_bind(dgram->m_fd, (struct sockaddr *)&addr, addr_len) != 0) {
+            CPE_ERROR(
+                driver->m_em, "sock: dgram: bind addr %s fail, errno=%d (%s)",
+                net_address_dump(net_schedule_tmp_buffer(schedule), address),
+                cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+            cpe_sock_close(dgram->m_fd);
+            dgram->m_fd = -1;
+            return -1;
+        }
+    }
 
-        /* address = net_address_create_from_sockaddr(schedule, (struct sockaddr *)&addr, addr_len); */
-        /* if (address == NULL) { */
-        /*     CPE_ERROR(net_schedule_em(schedule), "sock: dgram: create address fail"); */
-        /*     cpe_sock_close(dgram->m_fd); */
-        /*     dgram->m_fd = -1; */
-        /*     return -1; */
-        /* } */
+    if (address == NULL || net_address_is_any(address) || net_address_port(address) == 0) {
+        struct sockaddr_storage addr;
+        socklen_t addr_len = sizeof(addr);
+        if (cpe_getsockname(dgram->m_fd, (struct sockaddr *)&addr, &addr_len) != 0) {
+            CPE_ERROR(
+                driver->m_em, "sock: dgram: sockaddr error, errno=%d (%s)",
+                cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+            cpe_sock_close(dgram->m_fd);
+            dgram->m_fd = -1;
+            return -1;
+        }
+        
+        net_address_t effect_address = net_address_create_from_sockaddr(schedule, (struct sockaddr *)&addr, addr_len);
+        if (address == NULL) {
+            CPE_ERROR(net_schedule_em(schedule), "sock: dgram: create address fail");
+            cpe_sock_close(dgram->m_fd);
+            dgram->m_fd = -1;
+            return -1;
+        }
 
+        net_dgram_set_address(base_dgram, effect_address);
+        net_address_free(effect_address);
+
+        address = net_dgram_address(base_dgram);
+        
         /* if (net_dgram_driver_debug(base_dgram) >= 2) { */
-        /*     CPE_INFO( */
-        /*         driver->m_em, "sock: dgram: auto bind at %s", */
-        /*         net_address_dump(net_schedule_tmp_buffer(schedule), address)); */
+            CPE_INFO(
+                driver->m_em, "sock: dgram: auto bind at %s",
+                net_address_dump(net_schedule_tmp_buffer(schedule), address));
         /* } */
-
-        /* net_dgram_set_address(base_dgram, address); */
     }
 
     dgram->m_watcher = net_watcher_create(base_driver, _to_watcher_fd(dgram->m_fd), dgram, net_sock_dgram_receive_cb);

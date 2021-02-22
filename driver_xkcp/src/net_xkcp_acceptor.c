@@ -43,6 +43,13 @@ int net_xkcp_acceptor_init(net_acceptor_t base_acceptor) {
         return -1;
     }
 
+    if (net_address_port(address) == 0) {
+        net_address_t dgram_address = net_dgram_address(acceptor->m_dgram);
+        if (dgram_address) {
+            net_address_set_port(address, net_address_port(dgram_address));
+        }
+    }
+    
     if (cpe_hash_table_init(
             &acceptor->m_clients,
             driver->m_alloc,
