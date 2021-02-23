@@ -17,7 +17,8 @@
 static int net_xkcp_endpoint_kcp_output(const char *buf, int len, ikcpcb *xkcp, void *user);
 static void net_xkcp_endpoint_kcp_do_update(net_timer_t timer, void * ctx);
 static void net_xkcp_endpoint_on_write(net_xkcp_endpoint_t endpoint);
-
+static void net_xkcp_endpoint_apply_config(net_xkcp_endpoint_t endpoint, net_xkcp_config_t config);
+    
 int net_xkcp_endpoint_init(net_endpoint_t base_endpoint) {
     net_xkcp_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     net_xkcp_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
@@ -284,7 +285,7 @@ int net_xkcp_endpoint_set_conv(net_xkcp_endpoint_t endpoint, uint32_t conv) {
         case net_xkcp_endpoint_runing_mode_cli:
             if (endpoint->m_cli.m_connector) {
                 if (endpoint->m_cli.m_connector->m_config) {
-                    net_xkcp_apply_config(endpoint->m_kcp, endpoint->m_cli.m_connector->m_config);
+                    net_xkcp_endpoint_apply_config(endpoint, endpoint->m_cli.m_connector->m_config);
                 }
                 
                 cpe_hash_entry_init(&endpoint->m_cli.m_hh_for_connector);
@@ -302,7 +303,7 @@ int net_xkcp_endpoint_set_conv(net_xkcp_endpoint_t endpoint, uint32_t conv) {
         case net_xkcp_endpoint_runing_mode_svr:
             if (endpoint->m_svr.m_client) {
                 if (endpoint->m_svr.m_client->m_acceptor->m_config) {
-                    net_xkcp_apply_config(endpoint->m_kcp, endpoint->m_cli.m_connector->m_config);
+                    net_xkcp_endpoint_apply_config(endpoint, endpoint->m_cli.m_connector->m_config);
                 }
                 
                 cpe_hash_entry_init(&endpoint->m_svr.m_hh_for_client);
@@ -359,7 +360,7 @@ int net_xkcp_endpoint_set_connector(net_xkcp_endpoint_t endpoint, net_xkcp_conne
         }
 
         if (endpoint->m_kcp) {
-            net_xkcp_apply_config(endpoint->m_kcp, endpoint->m_cli.m_connector->m_config);
+            net_xkcp_endpoint_apply_config(endpoint, endpoint->m_cli.m_connector->m_config);
         }
     }
 
@@ -401,7 +402,7 @@ int net_xkcp_endpoint_set_client(net_xkcp_endpoint_t endpoint, net_xkcp_client_t
             }
 
             if (endpoint->m_kcp) {
-                net_xkcp_apply_config(endpoint->m_kcp, endpoint->m_svr.m_client->m_acceptor->m_config);
+                net_xkcp_endpoint_apply_config(endpoint, endpoint->m_svr.m_client->m_acceptor->m_config);
             }
         }
     }
@@ -625,6 +626,44 @@ static void net_xkcp_endpoint_kcp_do_update(net_timer_t timer, void * ctx) {
                 net_timer_active(timer, next_time_ms - cur_time_ms);
             }
         }
+    }
+}
+
+static void net_xkcp_endpoint_apply_config(net_xkcp_endpoint_t endpoint, net_xkcp_config_t config) {
+    net_endpoint_t base_endpoint = endpoint->m_base_endpoint;
+    net_xkcp_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
+    
+    if (net_endpoint_driver_debug(base_endpoint)) {
+        char buf[128];
+        cpe_str_dup(
+            buf, sizeof(buf),
+            net_endpoint_dump(net_xkcp_driver_tmp_buffer(driver), base_endpoint));
+        
+        CPE_INFO(
+            driver->m_em, "xkcp: %s: conv=%d: apply config %s!",
+            buf, endpoint->m_conv,
+            net_xkcp_config_dump(net_xkcp_driver_tmp_buffer(driver), config));
+    }
+    
+    assert(endpoint->m_kcp);
+    assert(config);
+
+    ikcp_setmtu(endpoint->m_kcp, config->m_mtu);
+	ikcp_wndsize(endpoint->m_kcp, config->m_send_wnd, config->m_recv_wnd);
+    
+    switch(config->m_mode) {
+    case net_xkcp_mode_normal:
+        ikcp_nodelay(endpoint->m_kcp, 0, 40, 2, 1);
+        break;
+    case net_xkcp_mode_fast:
+        ikcp_nodelay(endpoint->m_kcp, 0, 30, 2, 1);
+        break;
+    case net_xkcp_mode_fast2:
+        ikcp_nodelay(endpoint->m_kcp, 1, 20, 2, 1);
+        break;
+    case net_xkcp_mode_fast3:
+        ikcp_nodelay(endpoint->m_kcp, 1, 10, 2, 1);
+        break;
     }
 }
 

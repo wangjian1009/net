@@ -47,26 +47,6 @@ int net_xkcp_mode_from_str(net_xkcp_mode_t * mode, const char * str_mode) {
     return 0;
 }
 
-void net_xkcp_apply_config(ikcpcb * kcp, net_xkcp_config_t config) {
-    ikcp_setmtu(kcp, config->m_mtu);
-	ikcp_wndsize(kcp, config->m_send_wnd, config->m_recv_wnd);
-    
-    switch(config->m_mode) {
-    case net_xkcp_mode_normal:
-        ikcp_nodelay(kcp, 0, 40, 2, 1);
-        break;
-    case net_xkcp_mode_fast:
-        ikcp_nodelay(kcp, 0, 30, 2, 1);
-        break;
-    case net_xkcp_mode_fast2:
-        ikcp_nodelay(kcp, 1, 20, 2, 1);
-        break;
-    case net_xkcp_mode_fast3:
-        ikcp_nodelay(kcp, 1, 10, 2, 1);
-        break;
-    }
-}
-
 void net_xkcp_config_print(write_stream_t ws, net_xkcp_config_t config) {
     stream_printf(
         ws, "mode=%s, mut=d, send-wnd=%d, recv-wnd=%d",
