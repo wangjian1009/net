@@ -58,7 +58,6 @@ net_xkcp_driver_create(
     driver->m_alloc = alloc;
     driver->m_em = em;
     driver->m_underline_driver = underline_driver;
-    driver->m_dft_config = NULL;
 
     if (cpe_hash_table_init(
             &driver->m_connectors,
@@ -101,6 +100,7 @@ static int net_xkcp_driver_init(net_driver_t base_driver) {
     driver->m_em = NULL;
     driver->m_underline_driver = NULL;
     driver->m_connections_inited = 0;
+    driver->m_dft_config = NULL;
 
     return 0;
 }
