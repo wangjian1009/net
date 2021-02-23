@@ -121,6 +121,17 @@ int net_xkcp_acceptor_set_config(net_xkcp_acceptor_t acceptor, net_xkcp_config_t
     
     *acceptor->m_config = *config;
 
+    if (net_driver_debug(net_acceptor_driver(base_acceptor))) {
+        char buf[128];
+        cpe_str_dup(
+            buf, sizeof(buf),
+            net_address_dump(net_xkcp_driver_tmp_buffer(driver), net_acceptor_address(base_acceptor)));
+        CPE_INFO(
+            driver->m_em, "xkcp: acceptor %s: config ==> %s",
+            buf, net_xkcp_config_dump(net_xkcp_driver_tmp_buffer(driver), acceptor->m_config));
+        return -1;
+    }
+    
     return 0;
 }
 
