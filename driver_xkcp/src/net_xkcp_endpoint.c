@@ -558,7 +558,7 @@ void net_xkcp_endpoint_kcp_forward_data(net_xkcp_endpoint_t endpoint) {
 
         uint32_t capacity = ikcp_size;
 
-        void * buf = net_endpoint_buf_alloc_suggest(base_endpoint, &capacity);
+        void * buf = net_endpoint_buf_alloc_at_least(base_endpoint, &capacity);
         if (buf == NULL) {
             CPE_ERROR(
                 driver->m_em, "xkcp: %s: alloc input buf fail, capacity=%d",
@@ -578,11 +578,11 @@ void net_xkcp_endpoint_kcp_forward_data(net_xkcp_endpoint_t endpoint) {
         int nrecv = ikcp_recv(endpoint->m_kcp, buf, capacity);
 		if (nrecv < 0) {
             net_endpoint_buf_release(base_endpoint);
-
+            
             CPE_ERROR(
-                driver->m_em, "xkcp: %s: conv=%d: recv error, errno=%d!",
+                driver->m_em, "xkcp: %s: conv=%d: recv error, kcp-size=%d, capacity=%d, errno=%d!",
                 net_endpoint_dump(net_xkcp_driver_tmp_buffer(driver), base_endpoint), endpoint->m_conv,
-                nrecv);
+                ikcp_size, capacity, nrecv);
 
             if (net_endpoint_error_no(base_endpoint) == 0) {
                 net_endpoint_set_error(
@@ -645,7 +645,7 @@ static void net_xkcp_endpoint_apply_config(net_xkcp_endpoint_t endpoint, net_xkc
     assert(config);
     
     if (net_endpoint_driver_debug(base_endpoint)) {
-        char buf[128];
+        char buf[256];
         cpe_str_dup(
             buf, sizeof(buf),
             net_endpoint_dump(net_xkcp_driver_tmp_buffer(driver), base_endpoint));
