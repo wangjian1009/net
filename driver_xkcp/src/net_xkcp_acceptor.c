@@ -250,16 +250,14 @@ static void net_xkcp_acceptor_recv(net_dgram_t dgram, void * ctx, void * data, s
         CPE_ERROR(
             driver->m_em, "xkcp: %s conv=%d: ikcp_input %d data failed [%d]\n%s",
             buf, conv, (int)data_size, nret,
-            net_xkcp_dump_frame(
-                net_xkcp_driver_tmp_buffer(driver),
-                net_dgram_address(dgram), source, 0, data, data_size));
+            net_xkcp_dump_frame(net_xkcp_driver_tmp_buffer(driver), data, data_size));
         return;
     }
 
     if (net_driver_debug(base_driver) >= 2) {
         CPE_INFO(
             driver->m_em, "xkcp: %s",
-            net_xkcp_dump_frame(
+            net_xkcp_dump_frame_with_address(
                 net_xkcp_driver_tmp_buffer(driver),
                 net_dgram_address(dgram), source, 0, data, data_size));
     }

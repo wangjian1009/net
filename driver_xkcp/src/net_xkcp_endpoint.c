@@ -11,6 +11,7 @@
 #include "net_xkcp_connector_i.h"
 #include "net_xkcp_client_i.h"
 #include "net_xkcp_acceptor_i.h"
+#include "net_xkcp_config_i.h"
 #include "net_xkcp_utils.h"
 
 static int net_xkcp_endpoint_kcp_output(const char *buf, int len, ikcpcb *xkcp, void *user);
@@ -345,7 +346,7 @@ int net_xkcp_endpoint_set_connector(net_xkcp_endpoint_t endpoint, net_xkcp_conne
     endpoint->m_cli.m_connector = connector;
 
     if (endpoint->m_cli.m_connector) {
-        if (endpoint->m_kcp) {
+        if (endpoint->m_conv) {
             cpe_hash_entry_init(&endpoint->m_cli.m_hh_for_connector);
             if (cpe_hash_table_insert_unique(&endpoint->m_cli.m_connector->m_streams, endpoint) != 0) {
                 CPE_ERROR(
@@ -355,6 +356,10 @@ int net_xkcp_endpoint_set_connector(net_xkcp_endpoint_t endpoint, net_xkcp_conne
                 endpoint->m_cli.m_connector = NULL;
                 return -1;
             }
+        }
+
+        if (endpoint->m_kcp) {
+            net_xkcp_apply_config(endpoint->m_kcp, endpoint->m_cli.m_connector->m_config);
         }
     }
 
@@ -390,9 +395,13 @@ int net_xkcp_endpoint_set_client(net_xkcp_endpoint_t endpoint, net_xkcp_client_t
                 CPE_ERROR(
                     driver->m_em, "xkcp: %s: set client: conv %d duplicate",
                     net_endpoint_dump(net_xkcp_driver_tmp_buffer(driver), endpoint->m_base_endpoint),
-                    endpoint->m_kcp->conv);
+                    endpoint->m_conv);
                 endpoint->m_svr.m_client = NULL;
                 return -1;
+            }
+
+            if (endpoint->m_kcp) {
+                net_xkcp_apply_config(endpoint->m_kcp, endpoint->m_svr.m_client->m_acceptor->m_config);
             }
         }
     }
@@ -448,7 +457,7 @@ int net_xkcp_endpoint_kcp_output(const char *buf, int len, ikcpcb *xkcp, void *u
     if (net_driver_debug(base_driver) >= 2) {
         CPE_INFO(
             driver->m_em, "xkcp: %s",
-            net_xkcp_dump_frame(
+            net_xkcp_dump_frame_with_address(
                 net_xkcp_driver_tmp_buffer(driver),
                 net_dgram_address(dgram), remote_address, 1, buf, len));
     }
