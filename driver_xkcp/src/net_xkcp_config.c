@@ -49,7 +49,7 @@ int net_xkcp_mode_from_str(net_xkcp_mode_t * mode, const char * str_mode) {
 
 void net_xkcp_config_print(write_stream_t ws, net_xkcp_config_t config) {
     stream_printf(
-        ws, "mode=%s, mut=%d, send-wnd=%d, recv-wnd=%d",
+        ws, "mode=%s, mtu=%d, send-wnd=%d, recv-wnd=%d",
         net_xkcp_mode_str(config->m_mode),
         config->m_mtu,
         config->m_send_wnd,
