@@ -140,9 +140,9 @@ int net_ws_stream_endpoint_update(net_endpoint_t base_endpoint) {
                 return -1;
             }
 
-            if (net_endpoint_state(base_endpoint) == net_endpoint_state_deleting) return -1;
-
-            net_endpoint_buf_consume(base_endpoint, net_ep_buf_write, buf_size);
+            if (net_endpoint_is_active(base_endpoint)) {
+                net_endpoint_buf_consume(base_endpoint, net_ep_buf_write, buf_size);
+            }
             
             if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) return 0;
         }
