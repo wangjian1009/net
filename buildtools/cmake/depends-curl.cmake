@@ -46,6 +46,10 @@ set_property(TARGET curl PROPERTY INCLUDE_DIRECTORIES
 
 add_dependencies(curl ssl)
 
+set(curl_depends_libraries nghttp2 c-ares ssl crypto)
+
 if (OS_NAME STREQUAL "mingw")
-  target_link_libraries(curl INTERFACE ws2_32 Wldap32 Iphlpapi)
+  set(curl_depends_libraries ${curl_depends_libraries} ws2_32 Wldap32 Iphlpapi)
 endif()
+
+target_link_libraries(curl INTERFACE ${curl_depends_libraries})

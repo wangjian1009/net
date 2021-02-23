@@ -19,3 +19,5 @@ set_property(TARGET net_trans PROPERTY INCLUDE_DIRECTORIES
   )
 
 set_property(TARGET net_trans PROPERTY COMPILE_DEFINITIONS ${net_trans_compile_definitions})
+
+target_link_libraries(net_trans INTERFACE cpe_utils net_core curl)
