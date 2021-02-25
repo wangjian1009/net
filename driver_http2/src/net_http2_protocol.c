@@ -11,6 +11,7 @@ int net_http2_protocol_init(net_protocol_t base_protocol) {
     net_http2_protocol_t protocol = net_protocol_data(base_protocol);
     protocol->m_alloc = NULL;
     protocol->m_em = NULL;
+    protocol->m_cfg_idle_timeout_ms = 5 * 60 * 1000;
     protocol->m_http2_callbacks = NULL;
     protocol->m_http2_options = NULL;
     protocol->m_max_req_id = 0;

@@ -8,6 +8,7 @@ struct net_http2_endpoint {
     net_http2_endpoint_runing_mode_t m_runing_mode;
     net_http2_endpoint_state_t m_state;
     nghttp2_session * m_http2_session;
+    net_timer_t m_timeout_timer;
 
     /*req*/
     uint16_t m_req_count;

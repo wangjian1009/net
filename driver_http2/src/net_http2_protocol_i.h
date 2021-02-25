@@ -15,6 +15,7 @@ typedef TAILQ_HEAD(net_http2_processor_list, net_http2_processor) net_http2_proc
 struct net_http2_protocol {
     mem_allocrator_t m_alloc;
     error_monitor_t m_em;
+    uint32_t m_cfg_idle_timeout_ms;
     nghttp2_session_callbacks * m_http2_callbacks;
     struct nghttp2_option * m_http2_options;
     uint32_t m_max_req_id;

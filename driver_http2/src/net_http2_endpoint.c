@@ -13,6 +13,7 @@
 #include "net_http2_utils.h"
 
 extern struct wslay_event_callbacks s_net_http2_endpoint_callbacks;
+static void net_http2_endpoint_timeout(net_timer_t timer, void * ctx);
 
 void net_http2_endpoint_free(net_http2_endpoint_t endpoint) {
     net_endpoint_free(endpoint->m_base_endpoint);
@@ -38,6 +39,7 @@ int net_http2_endpoint_init(net_endpoint_t base_endpoint) {
     endpoint->m_runing_mode = net_http2_endpoint_runing_mode_init;
     endpoint->m_state = net_http2_endpoint_state_init;
     endpoint->m_http2_session = NULL;
+    endpoint->m_timeout_timer = NULL;
 
     endpoint->m_req_count = 0;
     TAILQ_INIT(&endpoint->m_reqs);
@@ -51,6 +53,19 @@ int net_http2_endpoint_init(net_endpoint_t base_endpoint) {
     TAILQ_INIT(&endpoint->m_streams);
 
     endpoint->m_in_processing = 0;
+
+    endpoint->m_timeout_timer =
+        net_timer_auto_create(net_endpoint_schedule(base_endpoint), net_http2_endpoint_timeout, endpoint);
+    if (endpoint->m_timeout_timer == NULL) {
+        CPE_ERROR(
+            protocol->m_em, "http2: %s: init: create timeout-timer",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), base_endpoint));
+        return -1;
+    }
+
+    if (protocol->m_cfg_idle_timeout_ms) {
+        net_timer_active(endpoint->m_timeout_timer, protocol->m_cfg_idle_timeout_ms);
+    }
 
     return 0;
 }
@@ -78,6 +93,11 @@ void net_http2_endpoint_fini(net_endpoint_t base_endpoint) {
         net_http2_stream_t stream = TAILQ_FIRST(&endpoint->m_streams);
         net_http2_stream_free_no_unbind(stream);
     }
+
+    if (endpoint->m_timeout_timer) {
+        net_timer_free(endpoint->m_timeout_timer);
+        endpoint->m_timeout_timer = NULL;
+    }
 }
 
 int net_http2_endpoint_input(net_endpoint_t base_endpoint) {
@@ -93,6 +113,10 @@ int net_http2_endpoint_input(net_endpoint_t base_endpoint) {
         return -1;
     }
 
+    if (protocol->m_cfg_idle_timeout_ms) {
+        net_timer_active(endpoint->m_timeout_timer, protocol->m_cfg_idle_timeout_ms);
+    }
+    
     uint32_t data_len = net_endpoint_buf_size(base_endpoint, net_ep_buf_read);
     void * data = NULL;
     if (net_endpoint_buf_peak_with_size(base_endpoint, net_ep_buf_read, data_len, &data) != 0) {
@@ -301,6 +325,27 @@ int net_http2_endpoint_set_runing_mode(net_http2_endpoint_t endpoint, net_http2_
     }
 
     return 0;
+}
+
+static void net_http2_endpoint_timeout(net_timer_t timer, void * ctx) {
+    net_http2_endpoint_t endpoint = ctx;
+    net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
+
+    if (net_endpoint_protocol_debug(endpoint->m_base_endpoint)) {
+        CPE_INFO(
+            protocol->m_em, "http2: %s: idle timeout",
+            net_endpoint_dump(net_http2_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint));
+    }
+
+    if (net_endpoint_error_source(endpoint->m_base_endpoint) == net_endpoint_error_source_none) {
+        net_endpoint_set_error(
+            endpoint->m_base_endpoint,
+            net_endpoint_error_source_network, net_endpoint_network_errno_user_closed, "idle timeout");
+    }
+
+    if (net_endpoint_set_state(endpoint->m_base_endpoint, net_endpoint_state_error) != 0) {
+        net_endpoint_set_state(endpoint->m_base_endpoint, net_endpoint_state_deleting);
+    }
 }
 
 const char * net_http2_endpoint_state_str(net_http2_endpoint_state_t state) {
