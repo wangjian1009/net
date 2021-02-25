@@ -84,6 +84,8 @@ void net_xkcp_client_free(net_xkcp_client_t client) {
     net_xkcp_acceptor_t acceptor = client->m_acceptor;
     net_xkcp_driver_t driver = net_driver_data(net_acceptor_driver(net_acceptor_from_data(acceptor)));
 
+    cpe_hash_table_remove_by_ins(&acceptor->m_clients, client);
+    
     struct cpe_hash_it endpoint_it;
     net_xkcp_endpoint_t endpoint;
     cpe_hash_it_init(&endpoint_it, &client->m_streams);
