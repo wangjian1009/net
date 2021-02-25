@@ -27,6 +27,7 @@ int net_xkcp_endpoint_init(net_endpoint_t base_endpoint) {
     endpoint->m_conv = 0;
     endpoint->m_kcp = NULL;
     endpoint->m_runing_mode = net_xkcp_endpoint_runing_mode_init;
+    endpoint->m_config = NULL;
 
     endpoint->m_kcp_update_timer =
         net_timer_auto_create(
@@ -279,16 +280,15 @@ int net_xkcp_endpoint_set_conv(net_xkcp_endpoint_t endpoint, uint32_t conv) {
         }
         ikcp_setoutput(endpoint->m_kcp, net_xkcp_endpoint_kcp_output);
 
+        if (endpoint->m_config) {
+            net_xkcp_endpoint_apply_config(endpoint, endpoint->m_config);
+        }
+
         switch(endpoint->m_runing_mode) {
         case net_xkcp_endpoint_runing_mode_init:
             break;
         case net_xkcp_endpoint_runing_mode_cli:
             if (endpoint->m_cli.m_connector) {
-                net_xkcp_config_t config = endpoint->m_cli.m_connector->m_config;
-                if (config) {
-                    net_xkcp_endpoint_apply_config(endpoint, config);
-                }
-                
                 cpe_hash_entry_init(&endpoint->m_cli.m_hh_for_connector);
                 if (cpe_hash_table_insert_unique(&endpoint->m_cli.m_connector->m_streams, endpoint) != 0) {
                     CPE_ERROR(
@@ -303,11 +303,6 @@ int net_xkcp_endpoint_set_conv(net_xkcp_endpoint_t endpoint, uint32_t conv) {
             break;
         case net_xkcp_endpoint_runing_mode_svr:
             if (endpoint->m_svr.m_client) {
-                net_xkcp_config_t config = endpoint->m_svr.m_client->m_acceptor->m_config;
-                if (config) {
-                    net_xkcp_endpoint_apply_config(endpoint, config);
-                }
-                
                 cpe_hash_entry_init(&endpoint->m_svr.m_hh_for_client);
                 if (cpe_hash_table_insert_unique(&endpoint->m_svr.m_client->m_streams, endpoint) != 0) {
                     CPE_ERROR(
@@ -344,11 +339,14 @@ int net_xkcp_endpoint_set_connector(net_xkcp_endpoint_t endpoint, net_xkcp_conne
             cpe_hash_table_remove_by_ins(&endpoint->m_cli.m_connector->m_streams, endpoint);
         }
         endpoint->m_cli.m_connector = NULL;
+        endpoint->m_config = NULL;
     }
 
     endpoint->m_cli.m_connector = connector;
 
     if (endpoint->m_cli.m_connector) {
+        endpoint->m_config = endpoint->m_cli.m_connector->m_config;
+        
         if (endpoint->m_conv) {
             cpe_hash_entry_init(&endpoint->m_cli.m_hh_for_connector);
             if (cpe_hash_table_insert_unique(&endpoint->m_cli.m_connector->m_streams, endpoint) != 0) {
@@ -361,11 +359,8 @@ int net_xkcp_endpoint_set_connector(net_xkcp_endpoint_t endpoint, net_xkcp_conne
             }
         }
 
-        if (endpoint->m_kcp) {
-            net_xkcp_config_t config = endpoint->m_cli.m_connector->m_config;
-            if (config) {
-                net_xkcp_endpoint_apply_config(endpoint, config);
-            }
+        if (endpoint->m_kcp && endpoint->m_config) {
+            net_xkcp_endpoint_apply_config(endpoint, endpoint->m_config);
         }
     }
 
@@ -390,11 +385,14 @@ int net_xkcp_endpoint_set_client(net_xkcp_endpoint_t endpoint, net_xkcp_client_t
             cpe_hash_table_remove_by_ins(&endpoint->m_svr.m_client->m_streams, endpoint);
         }
         endpoint->m_svr.m_client = NULL;
+        endpoint->m_config = NULL;
     }
 
     endpoint->m_svr.m_client = client;
 
     if (endpoint->m_svr.m_client) {
+        endpoint->m_config = endpoint->m_svr.m_client->m_acceptor->m_config;
+
         if (endpoint->m_conv) {
             cpe_hash_entry_init(&endpoint->m_svr.m_hh_for_client);
             if (cpe_hash_table_insert_unique(&endpoint->m_svr.m_client->m_streams, endpoint) != 0) {
@@ -406,11 +404,8 @@ int net_xkcp_endpoint_set_client(net_xkcp_endpoint_t endpoint, net_xkcp_client_t
                 return -1;
             }
 
-            if (endpoint->m_kcp) {
-                net_xkcp_config_t config = endpoint->m_svr.m_client->m_acceptor->m_config;
-                if (config) {
-                    net_xkcp_endpoint_apply_config(endpoint, config);
-                }
+            if (endpoint->m_kcp && endpoint->m_config) {
+                net_xkcp_endpoint_apply_config(endpoint, endpoint->m_config);
             }
         }
     }
@@ -537,6 +532,12 @@ void net_xkcp_endpoint_on_write(net_xkcp_endpoint_t endpoint) {
         }
 
         net_endpoint_buf_consume(base_endpoint, net_ep_buf_write, data_size);
+
+        if (!net_endpoint_is_writing(base_endpoint) && endpoint->m_config && endpoint->m_kcp) {
+            if (ikcp_waitsnd(endpoint->m_kcp) > endpoint->m_config->m_send_buf_size) {
+                net_endpoint_set_is_writing(base_endpoint, 1);
+            }
+        }
     }
 
     if (need_schedule && net_endpoint_is_active(base_endpoint) && endpoint->m_kcp) {
@@ -624,15 +625,24 @@ static void net_xkcp_endpoint_kcp_do_update(net_timer_t timer, void * ctx) {
     net_xkcp_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     net_xkcp_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
 
-    if (endpoint->m_kcp) {
-        IUINT32 cur_time_ms = (IUINT32 )net_schedule_cur_time_ms(net_endpoint_schedule(base_endpoint));
-        ikcp_update(endpoint->m_kcp, cur_time_ms);
+    if (endpoint->m_kcp == NULL) return;
+    
+    IUINT32 cur_time_ms = (IUINT32 )net_schedule_cur_time_ms(net_endpoint_schedule(base_endpoint));
+    ikcp_update(endpoint->m_kcp, cur_time_ms);
 
-        if (net_endpoint_is_active(base_endpoint) && endpoint->m_kcp) {
-            IUINT32 next_time_ms = ikcp_check(endpoint->m_kcp, cur_time_ms);
-            if (next_time_ms > cur_time_ms) {
-                net_timer_active(timer, next_time_ms - cur_time_ms);
-            }
+    if (!net_endpoint_is_active(base_endpoint)) return;
+    if (endpoint->m_kcp == NULL) return;
+
+    IUINT32 next_time_ms = ikcp_check(endpoint->m_kcp, cur_time_ms);
+    if (next_time_ms > cur_time_ms) {
+        net_timer_active(timer, next_time_ms - cur_time_ms);
+    }
+
+    if (net_endpoint_is_writing(base_endpoint)) {
+        if (endpoint->m_config == NULL
+            || (ikcp_waitsnd(endpoint->m_kcp) * 2) < endpoint->m_config->m_send_buf_size)
+        {
+            net_endpoint_set_is_writing(base_endpoint, 0);
         }
     }
 }

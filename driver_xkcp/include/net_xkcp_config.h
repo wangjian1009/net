@@ -15,7 +15,9 @@ struct net_xkcp_config {
     net_xkcp_mode_t m_mode;
 	uint16_t m_mtu;
     uint32_t m_send_wnd;
+    uint32_t m_send_buf_size;
     uint32_t m_recv_wnd;
+    uint32_t m_recv_buf_size;
 };
 
 void net_xkcp_config_init_default(net_xkcp_config_t config);

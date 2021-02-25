@@ -8,7 +8,9 @@ void net_xkcp_config_init_default(net_xkcp_config_t config) {
     config->m_mode = net_xkcp_mode_normal;
 	config->m_mtu = 1350;
 	config->m_send_wnd = 512;
+	config->m_send_buf_size = 8 * 1024;
 	config->m_recv_wnd = 512;
+	config->m_recv_buf_size = 8 * 1024;
 }
 
 uint8_t net_xkcp_config_validate(net_xkcp_config_t config, error_monitor_t em) {
@@ -54,11 +56,13 @@ int net_xkcp_mode_from_str(net_xkcp_mode_t * mode, const char * str_mode) {
 
 void net_xkcp_config_print(write_stream_t ws, net_xkcp_config_t config) {
     stream_printf(
-        ws, "mode=%s, mtu=%d, send-wnd=%d, recv-wnd=%d",
+        ws, "mode=%s, mtu=%d, send-wnd=%d, send-size=%d, recv-wnd=%d, recv-size",
         net_xkcp_mode_str(config->m_mode),
         config->m_mtu,
         config->m_send_wnd,
-        config->m_recv_wnd);
+        config->m_send_buf_size,
+        config->m_recv_wnd,
+        config->m_recv_buf_size);
 }
 
 const char * net_xkcp_config_dump(mem_buffer_t buffer, net_xkcp_config_t config) {
