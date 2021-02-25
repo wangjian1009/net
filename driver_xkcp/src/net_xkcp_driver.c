@@ -99,6 +99,7 @@ static int net_xkcp_driver_init(net_driver_t base_driver) {
     driver->m_alloc = NULL;
     driver->m_em = NULL;
     driver->m_underline_driver = NULL;
+    driver->m_cfg_client_timeout_ms = 5 * 60 * 1000;
     driver->m_connections_inited = 0;
     driver->m_dft_config = NULL;
 

@@ -1,9 +1,14 @@
+#include "net_timer.h"
 #include "net_driver.h"
 #include "net_acceptor.h"
 #include "net_address.h"
+#include "net_dgram.h"
 #include "net_endpoint.h"
 #include "net_xkcp_client_i.h"
 #include "net_xkcp_endpoint_i.h"
+#include "net_xkcp_utils.h"
+
+static void net_xkcp_client_timeout(net_timer_t timer, void * ctx);
 
 net_xkcp_client_t
 net_xkcp_client_create(net_xkcp_acceptor_t acceptor, net_address_t remote_address) {
@@ -28,6 +33,17 @@ net_xkcp_client_create(net_xkcp_acceptor_t acceptor, net_address_t remote_addres
         return NULL;
     }
 
+    client->m_timeout_timer =
+        net_timer_auto_create(net_xkcp_driver_schedule(driver), net_xkcp_client_timeout, client);
+    if (client->m_remote_address == NULL) {
+        CPE_ERROR(
+            driver->m_em, "xkcp: client %s: create: ceate timer failed",
+            net_address_dump(net_xkcp_driver_tmp_buffer(driver), remote_address));
+        net_address_free(client->m_remote_address);
+        mem_free(driver->m_alloc, client);
+        return NULL;
+    }
+
     if (cpe_hash_table_init(
             &client->m_streams,
             driver->m_alloc,
@@ -39,6 +55,7 @@ net_xkcp_client_create(net_xkcp_acceptor_t acceptor, net_address_t remote_addres
         CPE_ERROR(
             driver->m_em, "xkcp: client %s: create: init hash table fail!",
             net_address_dump(net_xkcp_driver_tmp_buffer(driver), remote_address));
+        net_timer_free(client->m_timeout_timer);
         net_address_free(client->m_remote_address);
         mem_free(driver->m_alloc, client);
         return NULL;
@@ -50,9 +67,14 @@ net_xkcp_client_create(net_xkcp_acceptor_t acceptor, net_address_t remote_addres
             driver->m_em, "xkcp: client %s: create: insert fail!",
             net_address_dump(net_xkcp_driver_tmp_buffer(driver), remote_address));
         cpe_hash_table_fini(&client->m_streams);
+        net_timer_free(client->m_timeout_timer);
         net_address_free(client->m_remote_address);
         mem_free(driver->m_alloc, client);
         return NULL;
+    }
+
+    if (driver->m_cfg_client_timeout_ms) {
+        net_timer_active(client->m_timeout_timer, driver->m_cfg_client_timeout_ms);
     }
     
     return client;
@@ -74,6 +96,18 @@ void net_xkcp_client_free(net_xkcp_client_t client) {
         endpoint = next;
     }
     cpe_hash_table_fini(&client->m_streams);
+
+    if (client->m_remote_address) {
+        net_address_free(client->m_remote_address);
+        client->m_remote_address = NULL;
+    }
+
+    if (client->m_timeout_timer) {
+        net_timer_free(client->m_timeout_timer);
+        client->m_timeout_timer = NULL;
+    }
+    
+    mem_free(driver->m_alloc, client);
 }
 
 net_xkcp_endpoint_t
@@ -89,4 +123,21 @@ int net_xkcp_client_eq(net_xkcp_client_t l, net_xkcp_client_t r, void * user_dat
 
 uint32_t net_xkcp_client_hash(net_xkcp_client_t o, void * user_data) {
     return net_address_hash(o->m_remote_address);
+}
+
+void net_xkcp_client_timeout(net_timer_t timer, void * ctx) {
+    net_xkcp_client_t client = ctx;
+    net_xkcp_acceptor_t acceptor = client->m_acceptor;
+    net_driver_t base_driver = net_acceptor_driver(net_acceptor_from_data(acceptor));
+    net_xkcp_driver_t driver = net_driver_data(base_driver);
+
+    if (net_driver_debug(base_driver)) {
+        CPE_INFO(
+            driver->m_em, "xkcp: %s client free",
+            net_xkcp_dump_address_pair(
+                net_xkcp_driver_tmp_buffer(driver),
+                net_dgram_address(acceptor->m_dgram), client->m_remote_address, 1));
+    }
+        
+    net_xkcp_client_free(client);
 }

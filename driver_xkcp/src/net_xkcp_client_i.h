@@ -5,8 +5,9 @@
 
 struct net_xkcp_client {
     net_xkcp_acceptor_t m_acceptor;
-    net_address_t m_remote_address;
     cpe_hash_entry m_hh_for_acceptor;
+    net_address_t m_remote_address;
+    net_timer_t m_timeout_timer;
     struct cpe_hash_table m_streams;
 };
 

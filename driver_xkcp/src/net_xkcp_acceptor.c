@@ -179,6 +179,10 @@ static void net_xkcp_acceptor_recv(net_dgram_t dgram, void * ctx, void * data, s
                 conv);
             return;
         }
+
+        if (driver->m_cfg_client_timeout_ms) {
+            net_timer_active(client->m_timeout_timer, driver->m_cfg_client_timeout_ms);
+        }
     }
 
     if (endpoint == NULL) {
