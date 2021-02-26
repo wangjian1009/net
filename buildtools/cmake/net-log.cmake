@@ -31,3 +31,5 @@ endif ()
 set_property(TARGET net_log PROPERTY INCLUDE_DIRECTORIES ${net_log_includes})
 set_property(TARGET net_log PROPERTY COMPILE_OPTIONS ${net_log_compile_options})
 set_property(TARGET net_log PROPERTY COMPILE_DEFINITIONS ${net_log_compile_definitions})
+
+target_link_libraries(net_log INTERFACE cpe_fsm net_core)
