@@ -31,6 +31,8 @@ net_dgram_t net_dgram_create(
     dgram->m_driver = driver;
     dgram->m_address = NULL;
     dgram->m_driver_debug = driver->m_debug;
+    dgram->m_is_processing = 0;
+    dgram->m_is_free = 0;
 
     dgram->m_process_fun = process_fun;
     dgram->m_process_ctx = process_ctx;
@@ -75,6 +77,11 @@ net_dgram_t net_dgram_auto_create(
 void net_dgram_free(net_dgram_t dgram) {
     net_driver_t driver = dgram->m_driver;
 
+    if (dgram->m_is_processing) {
+        dgram->m_is_free = 1;
+        return;
+    }
+    
     driver->m_dgram_fini(dgram);
 
     if (dgram->m_address) {
@@ -157,12 +164,40 @@ net_dgram_t net_dgram_from_data(void * data) {
 }
 
 int net_dgram_send(net_dgram_t dgram, net_address_t target, void const * data, size_t data_size) {
-    return dgram->m_driver->m_dgram_send(dgram, target, data, data_size);
+    uint8_t tag_local = 0;
+    if (!dgram->m_is_processing) {
+        tag_local = 0;
+        dgram->m_is_processing = 1;
+    }
+    
+    int rv = dgram->m_driver->m_dgram_send(dgram, target, data, data_size);
+
+    if (tag_local) {
+        dgram->m_is_processing = 0;
+        if (dgram->m_is_free) {
+            net_dgram_free(dgram);
+        }
+    }
+
+    return rv;
 }
 
 void net_dgram_recv(net_dgram_t dgram, net_address_t from, void * data, size_t data_size) {
+    uint8_t tag_local = 0;
+    if (!dgram->m_is_processing) {
+        tag_local = 0;
+        dgram->m_is_processing = 1;
+    }
+    
     if (dgram->m_process_fun) {
         dgram->m_process_fun(dgram, dgram->m_process_ctx, data, data_size, from);
+    }
+
+    if (tag_local) {
+        dgram->m_is_processing = 0;
+        if (dgram->m_is_free) {
+            net_dgram_free(dgram);
+        }
     }
 }
 
