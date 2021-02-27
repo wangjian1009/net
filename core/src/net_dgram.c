@@ -166,7 +166,7 @@ net_dgram_t net_dgram_from_data(void * data) {
 int net_dgram_send(net_dgram_t dgram, net_address_t target, void const * data, size_t data_size) {
     uint8_t tag_local = 0;
     if (!dgram->m_is_processing) {
-        tag_local = 0;
+        tag_local = 1;
         dgram->m_is_processing = 1;
     }
     
@@ -185,7 +185,7 @@ int net_dgram_send(net_dgram_t dgram, net_address_t target, void const * data, s
 void net_dgram_recv(net_dgram_t dgram, net_address_t from, void * data, size_t data_size) {
     uint8_t tag_local = 0;
     if (!dgram->m_is_processing) {
-        tag_local = 0;
+        tag_local = 1;
         dgram->m_is_processing = 1;
     }
     
