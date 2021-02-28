@@ -276,9 +276,11 @@ int net_ssl_endpoint_write(
         int err = SSL_get_error(endpoint->m_ssl, r);
         return net_ssl_endpoint_update_error(base_endpoint, err, r);
     }
-    
-    net_endpoint_buf_consume(from_ep, from_buf, r);
 
+    if (net_endpoint_is_active(from_ep)) {
+        net_endpoint_buf_consume(from_ep, from_buf, r);
+    }
+    
     if (net_endpoint_protocol_debug(base_endpoint)) {
         CPE_INFO(
             protocol->m_em, "ssl: %s: ==> %d data!",
