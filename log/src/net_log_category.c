@@ -29,7 +29,7 @@ net_log_category_create(net_log_schedule_t schedule, net_log_thread_t flusher, n
     assert(sender);
     
     if (id >= schedule->m_category_count) {
-        uint8_t new_count = id < 16 ? 16 : id;
+        uint8_t new_count = id < 16 ? 16 : id + 1;
         net_log_category_t * new_categories = mem_calloc(schedule->m_alloc, sizeof(net_log_category_t) * new_count);
         if (new_categories == NULL) {
             CPE_ERROR(schedule->m_em, "log: category [%d]%s: alloc categories buf fail!", id, name);
