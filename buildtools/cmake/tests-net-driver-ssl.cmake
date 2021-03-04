@@ -4,7 +4,7 @@ add_executable(tests_net_driver_ssl ${test_net_driver_ssl_source})
 
 set_property(TARGET tests_net_driver_ssl PROPERTY INCLUDE_DIRECTORIES
   ${cmocka_base}/include
-  ${openssl_base}/include
+  ${mbedtls_base}/include
   ${cpe_pal_base}/include
   ${cpe_utils_base}/include
   ${cpe_utils_base}/test_utils
@@ -17,8 +17,8 @@ set_property(TARGET tests_net_driver_ssl PROPERTY INCLUDE_DIRECTORIES
 
 set(tests_net_driver_ssl_libraries
   test_utils_cpe_utils test_utils_net_core
-  net_driver_ssl net_core  cpe_utils_yaml cpe_utils_sock cpe_utils cpe_pal
-  ssl  crypto pcre2 cmocka)
+  net_driver_ssl net_core cpe_utils_yaml cpe_utils_sock cpe_utils cpe_pal
+  mbedtls pcre2 cmocka)
 
 if (OS_NAME STREQUAL linux32 OR OS_NAME STREQUAL linux64)
   set(tests_net_driver_ssl_libraries ${tests_net_driver_ssl_libraries} m)
