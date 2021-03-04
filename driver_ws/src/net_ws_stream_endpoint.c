@@ -71,7 +71,22 @@ int net_ws_stream_endpoint_connect(net_endpoint_t base_endpoint) {
         return -1;
     }
 
-    return net_endpoint_connect(base_underline);
+    int rv = net_endpoint_connect(base_underline);
+
+    if (rv != 0) {
+        if (net_endpoint_state(base_endpoint) == net_endpoint_state_disable) {
+            if (!net_endpoint_have_error(base_endpoint)) {
+                net_endpoint_set_error(
+                    base_endpoint,
+                    net_endpoint_error_source(base_underline),
+                    net_endpoint_error_no(base_underline),
+                    net_endpoint_error_msg(base_underline));
+            }
+            net_endpoint_set_state(base_endpoint, net_endpoint_state_error);
+        }
+    }
+    
+    return rv;
 }
 
 int net_ws_stream_endpoint_update(net_endpoint_t base_endpoint) {
