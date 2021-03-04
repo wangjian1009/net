@@ -385,7 +385,7 @@ int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) 
             }
             endpoint->m_bufs[i].m_size = 0;
         }
-
+        
         if (endpoint->m_dns_query) {
             net_dns_query_free(endpoint->m_dns_query);
             endpoint->m_dns_query = NULL;
@@ -413,7 +413,7 @@ int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) 
         net_schedule_start_delay_process(schedule);
         return 0;
     case net_endpoint_state_established:
-        endpoint->m_error_source = net_endpoint_error_source_network;
+        endpoint->m_error_source = net_endpoint_error_source_none;
         endpoint->m_error_no = 0;
         if (endpoint->m_error_msg) {
             mem_free(schedule->m_alloc, endpoint->m_error_msg);
@@ -448,6 +448,7 @@ int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) 
             || state == net_endpoint_state_established))
     {
         if (endpoint->m_driver->m_endpoint_update(endpoint) != 0) return -1;
+        if (endpoint->m_state == net_endpoint_state_deleting) return -1;
     }
 
     return 0;
@@ -484,10 +485,7 @@ const char * net_endpoint_error_msg(net_endpoint_t endpoint) {
 }
 
 uint8_t net_endpoint_have_error(net_endpoint_t endpoint) {
-    return (endpoint->m_error_source == net_endpoint_error_source_network
-            && ((net_endpoint_network_errno_t)endpoint->m_error_no) == net_endpoint_network_errno_none)
-        ? 0
-        : 1;
+    return endpoint->m_error_source == net_endpoint_error_source_none ? 0 : 1;
 }
 
 int net_endpoint_set_address(net_endpoint_t endpoint, net_address_t address) {

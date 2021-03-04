@@ -7,8 +7,8 @@ struct net_mem_group {
     net_mem_group_type_t m_type;
     TAILQ_ENTRY(net_mem_group) m_next;
     uint32_t m_suggest_size;
-    uint16_t m_alloced_count;
-    uint32_t m_alloced_size;
+    uint32_t m_alloced_count;
+    uint64_t m_alloced_size;
     net_mem_block_list_t m_blocks;
 };
 

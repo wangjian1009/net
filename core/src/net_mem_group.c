@@ -61,11 +61,11 @@ net_mem_group_type_t net_mem_group_type(net_mem_group_t mem_group) {
     return mem_group->m_type;
 }
 
-uint16_t net_mem_group_alloced_count(net_mem_group_t mem_group) {
+uint32_t net_mem_group_alloced_count(net_mem_group_t mem_group) {
     return mem_group->m_alloced_count;
 }
 
-uint32_t net_mem_group_alloced_size(net_mem_group_t mem_group) {
+uint64_t net_mem_group_alloced_size(net_mem_group_t mem_group) {
     return mem_group->m_alloced_size;
 }
 
