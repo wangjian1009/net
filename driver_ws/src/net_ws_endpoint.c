@@ -271,11 +271,13 @@ int net_ws_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoint_s
         }
         break;
     case net_endpoint_state_error:
-        if (base_stream) {
-            net_endpoint_set_error(
-                base_stream,
-                net_endpoint_error_source(base_endpoint),
-                net_endpoint_error_no(base_endpoint), net_endpoint_error_msg(base_endpoint));
+        if (base_stream && net_endpoint_is_active(base_stream)) {
+            if (!net_endpoint_have_error(base_stream)) {
+                net_endpoint_set_error(
+                    base_stream,
+                    net_endpoint_error_source(base_endpoint),
+                    net_endpoint_error_no(base_endpoint), net_endpoint_error_msg(base_endpoint));
+            }
             if (net_endpoint_set_state(base_stream, net_endpoint_state_error) != 0) return -1;
         }
         break;
