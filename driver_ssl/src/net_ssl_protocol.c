@@ -286,7 +286,7 @@ int net_ssl_protocol_svr_confirm_cert(net_ssl_protocol_t protocol) {
 /*     X509_gmtime_adj(X509_getm_notBefore(x509), 0); */
 /*     X509_gmtime_adj(X509_getm_notAfter(x509), 31536000L); */
 
-/*     X509_set_pubkey(x509, protocol->m_svr.m_pkey); */
+    //X509_set_pubkey(protocol->m_svr.m_cert, protocol->m_svr.m_pkey);
 
 /*     X509_NAME * name = X509_get_subject_name(x509); */
 /*     X509_NAME_add_entry_by_txt(name, "C", MBSTRING_ASC, (unsigned char *)"CA", -1, -1, 0); */

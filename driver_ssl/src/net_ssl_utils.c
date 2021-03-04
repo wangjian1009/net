@@ -92,27 +92,27 @@ PROCESS_ERROR:
     return NULL;
 }
 
-/* void net_ssl_print_cert_info(write_stream_t ws, X509 * cert) { */
-/*     char line[128]; */
+void net_ssl_print_cert_info(write_stream_t ws, mbedtls_x509_crt * cert) {
+    char line[128];
 
-/*     stream_printf( */
-/*         ws, "subject=[%s]", */
-/*         X509_NAME_oneline(X509_get_subject_name(cert), line, sizeof(line))); */
+    /* stream_printf( */
+    /*     ws, "subject=[%s]", */
+    /*     X509_NAME_oneline(X509_get_subject_name(cert), line, sizeof(line))); */
 
-/*     stream_printf( */
-/*         ws, ", issuer=[%s]", */
-/*         X509_NAME_oneline(X509_get_issuer_name(cert), line, sizeof(line))); */
-/* } */
+    /* stream_printf( */
+    /*     ws, ", issuer=[%s]", */
+    /*     X509_NAME_oneline(X509_get_issuer_name(cert), line, sizeof(line))); */
+}
 
-/* const char * net_ssl_dump_cert_info(mem_buffer_t buffer, X509 * cert) { */
-/*     struct write_stream_buffer stream = CPE_WRITE_STREAM_BUFFER_INITIALIZER(buffer); */
+const char * net_ssl_dump_cert_info(mem_buffer_t buffer, mbedtls_x509_crt * cert) {
+    struct write_stream_buffer stream = CPE_WRITE_STREAM_BUFFER_INITIALIZER(buffer);
 
-/*     mem_buffer_clear_data(buffer); */
-/*     net_ssl_print_cert_info((write_stream_t)&stream, cert); */
-/*     stream_putc((write_stream_t)&stream, 0); */
+    mem_buffer_clear_data(buffer);
+    net_ssl_print_cert_info((write_stream_t)&stream, cert);
+    stream_putc((write_stream_t)&stream, 0);
     
-/*     return mem_buffer_make_continuous(buffer, 0); */
-/* } */
+    return mem_buffer_make_continuous(buffer, 0);
+}
 
 /* const char * net_ssl_dump_data(mem_buffer_t buffer, void const * buf, size_t size) { */
 /*     mem_buffer_clear_data(buffer); */
