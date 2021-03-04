@@ -21,8 +21,8 @@ struct net_mem_group_type_cache_big_block {
 
 struct net_mem_group_type_cache_group {
     uint32_t m_capacity;
-    uint16_t m_alloc_count;
-    uint16_t m_free_count;
+    uint32_t m_alloc_count;
+    uint32_t m_free_count;
     net_mem_group_type_cache_block_t m_blocks;
 };
 
