@@ -1,5 +1,5 @@
 #if _MSC_VER || __MINGW32__
-#define USE_OPENSSL 1
+#define USE_MBEDTLS 1
 #define USE_NGHTTP2 1
 #include "config-win32.h"
 #else
@@ -55,7 +55,7 @@
 /* #undef CURL_DISABLE_LIBCURL_OPTION */
 
 /* if the OpenSSL configuration won't be loaded automatically */
-#define CURL_DISABLE_OPENSSL_AUTO_LOAD_CONFIG 1
+/* #undef CURL_DISABLE_OPENSSL_AUTO_LOAD_CONFIG */
 
 /* to disable POP3 */
 #define CURL_DISABLE_POP3 1
@@ -494,28 +494,28 @@
 /* #undef HAVE_OLD_GSSMIT */
 
 /* Define to 1 if you have the <openssl/crypto.h> header file. */
-#define HAVE_OPENSSL_CRYPTO_H 1
+/* #undef HAVE_OPENSSL_CRYPTO_H */
 
 /* Define to 1 if you have the <openssl/err.h> header file. */
-#define HAVE_OPENSSL_ERR_H 1
+/* #undef HAVE_OPENSSL_ERR_H */
 
 /* Define to 1 if you have the <openssl/pem.h> header file. */
-#define HAVE_OPENSSL_PEM_H 1
+/* #undef HAVE_OPENSSL_PEM_H */
 
 /* Define to 1 if you have the <openssl/rsa.h> header file. */
-#define HAVE_OPENSSL_RSA_H 1
+/* #undef HAVE_OPENSSL_RSA_H */
 
 /* if you have the function SRP_Calc_client_key */
-#define HAVE_OPENSSL_SRP 1
+/* #undef HAVE_OPENSSL_SRP */
 
 /* Define to 1 if you have the <openssl/ssl.h> header file. */
-#define HAVE_OPENSSL_SSL_H 1
+/* #undef HAVE_OPENSSL_SSL_H */
 
 /* Define to 1 if you have the `OpenSSL_version' function. */
-#define HAVE_OPENSSL_VERSION 1
+/* #undef HAVE_OPENSSL_VERSION */
 
 /* Define to 1 if you have the <openssl/x509.h> header file. */
-#define HAVE_OPENSSL_X509_H 1
+/* #undef HAVE_OPENSSL_X509_H */
 
 /* Define to 1 if you have the <pem.h> header file. */
 /* #undef HAVE_PEM_H */
@@ -981,7 +981,7 @@
 #define USE_MANUAL 1
 
 /* if mbedTLS is enabled */
-/* #UNDEF USE_MBEDTLS */
+#define USE_MBEDTLS 1
 
 /* if MesaLink is enabled */
 /* #undef USE_MESALINK */
@@ -999,7 +999,7 @@
 /* #undef USE_OPENLDAP */
 
 /* if OpenSSL is in use */
-#define USE_OPENSSL 1
+/* #undef USE_OPENSSL */
 
 /* if PolarSSL is enabled */
 /* #undef USE_POLARSSL */

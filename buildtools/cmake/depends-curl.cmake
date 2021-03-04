@@ -32,7 +32,6 @@ endif ()
 add_library(curl STATIC ${curl_source})
 set_property(TARGET curl PROPERTY COMPILE_OPTIONS ${curl_compile_options})
 set_property(TARGET curl PROPERTY COMPILE_DEFINITIONS ${curl_compile_definitions})
-add_dependencies(curl crypto ssl)
 
 set_property(TARGET curl PROPERTY INCLUDE_DIRECTORIES
   ${curl_base}/include
@@ -41,12 +40,10 @@ set_property(TARGET curl PROPERTY INCLUDE_DIRECTORIES
   ${curl_base}/../c-ares/include/${OS_NAME}
   ${nghttp2_base}/lib/includes
   ${CMAKE_CURRENT_LIST_DIR}/../custom/nghttp2
-  ${openssl_base}/include
+  ${mbedtls_base}/include
   )
 
-add_dependencies(curl ssl)
-
-set(curl_depends_libraries nghttp2 c-ares ssl crypto)
+set(curl_depends_libraries nghttp2 c-ares mbedtls)
 
 if (OS_NAME STREQUAL "mingw")
   set(curl_depends_libraries ${curl_depends_libraries} ws2_32 Wldap32 Iphlpapi)
