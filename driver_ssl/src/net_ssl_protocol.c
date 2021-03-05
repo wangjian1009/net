@@ -121,7 +121,7 @@ net_ssl_protocol_create(
 
     /*client ssl_config*/
     protocol->m_cli.m_ssl_config = mem_alloc(alloc, sizeof(mbedtls_ssl_config));
-    if (protocol->m_cli.m_ssl_config) {
+    if (protocol->m_cli.m_ssl_config == NULL) {
         CPE_ERROR(em, "ssl: %s: protocol: alloc client ssl_config fail", net_protocol_name(base_protocol));
         goto INIT_ERROR;
     }
@@ -139,7 +139,7 @@ net_ssl_protocol_create(
     
     /*server ssl_config*/
     protocol->m_svr.m_ssl_config = mem_alloc(alloc, sizeof(mbedtls_ssl_config));
-    if (protocol->m_svr.m_ssl_config) {
+    if (protocol->m_svr.m_ssl_config == NULL) {
         CPE_ERROR(em, "ssl: %s: protocol: alloc svrent ssl_config fail", net_protocol_name(base_protocol));
         goto INIT_ERROR;
     }

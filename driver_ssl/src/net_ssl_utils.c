@@ -92,26 +92,20 @@ PROCESS_ERROR:
     return NULL;
 }
 
-void net_ssl_print_cert_info(write_stream_t ws, mbedtls_x509_crt * cert) {
-    char line[128];
-
-    /* stream_printf( */
-    /*     ws, "subject=[%s]", */
-    /*     X509_NAME_oneline(X509_get_subject_name(cert), line, sizeof(line))); */
-
-    /* stream_printf( */
-    /*     ws, ", issuer=[%s]", */
-    /*     X509_NAME_oneline(X509_get_issuer_name(cert), line, sizeof(line))); */
-}
-
 const char * net_ssl_dump_cert_info(mem_buffer_t buffer, mbedtls_x509_crt * cert) {
     struct write_stream_buffer stream = CPE_WRITE_STREAM_BUFFER_INITIALIZER(buffer);
 
     mem_buffer_clear_data(buffer);
-    net_ssl_print_cert_info((write_stream_t)&stream, cert);
-    stream_putc((write_stream_t)&stream, 0);
+
+    uint32_t capacity = 2048;
+    void * buf = mem_buffer_alloc(buffer, capacity);
     
-    return mem_buffer_make_continuous(buffer, 0);
+    int rv = mbedtls_x509_crt_info(buf, capacity, "\r  ", cert);
+    if (rv < 0) {
+        snprintf(buf, capacity, "mbedtls_x509_crt_info() returned -0x%04X", -rv);
+    } 
+    
+    return buf;
 }
 
 /* const char * net_ssl_dump_data(mem_buffer_t buffer, void const * buf, size_t size) { */

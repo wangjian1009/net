@@ -1,5 +1,7 @@
 #include <assert.h>
+#include "mbedtls/error.h"
 #include "cpe/pal/pal_stdio.h"
+#include "cpe/pal/pal_string.h"
 #include "cpe/utils/error.h"
 #include "net_protocol.h"
 #include "net_endpoint.h"
@@ -9,8 +11,8 @@
 #define net_ssl_endpoint_ep_write_cache net_ep_buf_user1
 #define net_ssl_endpoint_ep_read_cache net_ep_buf_user2
 
-static int net_ssl_endpoint_bio_read(void * ctx, char *out, int outlen);
-static int net_ssl_endpoint_bio_write(void * ctx, const char *in, int inlen);
+static int net_ssl_endpoint_bio_read(void * ctx, unsigned char *out, size_t outlen);
+static int net_ssl_endpoint_bio_write(void * ctx, const unsigned char *in, size_t inlen);
 
 /* static void net_ssl_endpoint_trace_cb( */
 /*     int write_p, int version, int content_type, const void *buf, size_t len, SSL *ssl, void *arg); */
@@ -297,8 +299,6 @@ int net_ssl_endpoint_do_handshake(net_endpoint_t base_endpoint, net_ssl_endpoint
     
     int r = mbedtls_ssl_handshake(endpoint->m_ssl);
 
-    if (r == MBEDTLS_ERR_SSL_WANT_READ || r == MBEDTLS_ERR_SSL_WANT_WRITE) return 0;
-
     if (r < 0) {
         return net_ssl_endpoint_update_error(base_endpoint, r);
     }
@@ -340,13 +340,13 @@ int net_ssl_endpoint_do_handshake(net_endpoint_t base_endpoint, net_ssl_endpoint
 /*     } */
 /* } */
 
-/* void net_ssl_endpoint_dump_error(net_endpoint_t base_endpoint, int val) { */
-/*     net_ssl_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint)); */
+void net_ssl_endpoint_dump_error(net_endpoint_t base_endpoint, int val) {
+    net_ssl_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
 
-/*     CPE_ERROR( */
-/*         protocol->m_em, "ssl: %s: SSL: Error was %s!", */
-/*         net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_endpoint), */
-/*         ERR_error_string(val, NULL)); */
+    CPE_ERROR(
+        protocol->m_em, "ssl: %s: SSL: Error was %s!",
+        net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_endpoint),
+        mbedtls_high_level_strerr(val));
 
 /*     int err; */
 /* 	while ((err = ERR_get_error())) { */
@@ -359,29 +359,29 @@ int net_ssl_endpoint_do_handshake(net_endpoint_t base_endpoint, net_ssl_endpoint
 /*             net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_endpoint), */
 /*             msg, lib, func); */
 /* 	} */
-/* } */
+}
 
 static int net_ssl_endpoint_update_error(net_endpoint_t base_endpoint, int ssl_error) {
     net_ssl_endpoint_t endpoint = net_endpoint_protocol_data(base_endpoint);
     net_ssl_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
 
 /*     uint8_t dirty_shutdown = 0; */
-    
-/*     switch (err) { */
-/*     case SSL_ERROR_WANT_READ: */
-/*         if (net_endpoint_protocol_debug(base_endpoint) >= 2) { */
-/*             CPE_INFO( */
-/*                 protocol->m_em, "ssl: %s: want read", */
-/*                 net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_endpoint)); */
-/*         } */
-/*         return 0; */
-/*     case SSL_ERROR_WANT_WRITE: */
-/*         if (net_endpoint_protocol_debug(base_endpoint) >= 2) { */
-/*             CPE_INFO( */
-/*                 protocol->m_em, "ssl: %s: want write", */
-/*                 net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_endpoint)); */
-/*         } */
-/*         return 0; */
+
+    switch (ssl_error) {
+    case MBEDTLS_ERR_SSL_WANT_READ:
+        if (net_endpoint_protocol_debug(base_endpoint) >= 2) {
+            CPE_INFO(
+                protocol->m_em, "ssl: %s: want read",
+                net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_endpoint));
+        }
+        return 0;
+    case MBEDTLS_ERR_SSL_WANT_WRITE:
+        if (net_endpoint_protocol_debug(base_endpoint) >= 2) {
+            CPE_INFO(
+                protocol->m_em, "ssl: %s: want write",
+                net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_endpoint));
+        }
+        return 0;
 /*     case SSL_ERROR_ZERO_RETURN: */
 /*         /\* Possibly a clean shutdown. *\/ */
 /*         if (SSL_get_shutdown(endpoint->m_ssl) & SSL_RECEIVED_SHUTDOWN) { */
@@ -398,12 +398,12 @@ static int net_ssl_endpoint_update_error(net_endpoint_t base_endpoint, int ssl_e
 /*         } */
 /*         /\* 	put_error(bev_ssl, errcode); *\/ */
 /*         break; */
-/*     default: */
-/*         net_ssl_endpoint_dump_error(base_endpoint, err); */
-/*         net_endpoint_set_error( */
-/*             base_endpoint, net_endpoint_error_source_ssl, err, ERR_reason_error_string(err)); */
-/*         return net_endpoint_set_state(base_endpoint, net_endpoint_state_error); */
-/*     } */
+    default:
+        net_ssl_endpoint_dump_error(base_endpoint, ssl_error);
+        net_endpoint_set_error(
+            base_endpoint, net_endpoint_error_source_ssl, ssl_error, mbedtls_high_level_strerr(ssl_error));
+        return net_endpoint_set_state(base_endpoint, net_endpoint_state_error);
+    }
     return 0;
 }
 
@@ -478,7 +478,6 @@ int net_ssl_endpoint_set_runing_mode(net_ssl_endpoint_t endpoint, net_ssl_endpoi
     mbedtls_ssl_set_bio(
         endpoint->m_ssl, endpoint,
         net_ssl_endpoint_bio_write, net_ssl_endpoint_bio_read, NULL);
-    /* SSL_set_bio(endpoint->m_ssl, bio, bio); */
     
     return 0;
 
@@ -506,7 +505,7 @@ SSL_SETUP_FAIL:
 /*     mbedtls_printf("%s:%d: |%d| %s\r", basename, line, level, str); */
 /* } */
 
-int net_ssl_endpoint_bio_read(void * ctx, char *out, int outlen) {
+int net_ssl_endpoint_bio_read(void * ctx, unsigned char *out, size_t outlen) {
 	if (!out) return 0;
 
     net_ssl_endpoint_t endpoint = ctx;
@@ -525,7 +524,7 @@ int net_ssl_endpoint_bio_read(void * ctx, char *out, int outlen) {
             CPE_INFO(
                 protocol->m_em, "ssl: %s: cli: bio: read: out-len=%d, buf-len=%d, read part",
                 net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
-                outlen, length);
+                (int)outlen, length);
         }
 
         length = outlen;
@@ -547,7 +546,7 @@ int net_ssl_endpoint_bio_read(void * ctx, char *out, int outlen) {
     return length;
 }
 
-int net_ssl_endpoint_bio_write(void * ctx, const char *in, int inlen) {
+int net_ssl_endpoint_bio_write(void * ctx, const unsigned char *in, size_t inlen) {
     net_ssl_endpoint_t endpoint = ctx;
     if (endpoint == NULL) return 0;
 
