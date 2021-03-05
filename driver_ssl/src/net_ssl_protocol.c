@@ -4,13 +4,14 @@
 #include "net_schedule.h"
 #include "net_ssl_protocol_i.h"
 #include "net_ssl_endpoint_i.h"
-#include "net_ssl_endpoint_bio.h"
 #include "net_ssl_utils.h"
 
 int net_ssl_protocol_init(net_protocol_t base_protocol) {
     net_ssl_protocol_t protocol = net_protocol_data(base_protocol);
     protocol->m_alloc = NULL;
     protocol->m_em = NULL;
+    protocol->m_entropy = NULL;
+    protocol->m_ctr_drbg = NULL;
     protocol->m_cli.m_ssl_config = NULL;
     protocol->m_svr.m_ssl_config = NULL;
     protocol->m_svr.m_pkey = NULL;
@@ -44,6 +45,18 @@ void net_ssl_protocol_fini(net_protocol_t base_protocol) {
         mem_free(protocol->m_alloc, protocol->m_svr.m_pkey);
         protocol->m_svr.m_pkey = NULL;
     }
+
+    if (protocol->m_ctr_drbg) {
+        mbedtls_ctr_drbg_free(protocol->m_ctr_drbg);
+        mem_free(protocol->m_alloc, protocol->m_ctr_drbg);
+        protocol->m_ctr_drbg = NULL;
+    }
+
+    if (protocol->m_entropy) {
+        mbedtls_entropy_free(protocol->m_entropy);
+        mem_free(protocol->m_alloc, protocol->m_entropy);
+        protocol->m_entropy = NULL;
+    }
 }
 
 net_ssl_protocol_t
@@ -75,9 +88,36 @@ net_ssl_protocol_create(
             net_ssl_endpoint_on_state_change,
             NULL);
 
+    int rv;
+
     net_ssl_protocol_t protocol = net_protocol_data(base_protocol);
     protocol->m_alloc = alloc;
     protocol->m_em = em;
+
+    /*entropy*/
+    protocol->m_entropy = mem_alloc(protocol->m_alloc, sizeof(mbedtls_entropy_context));
+    if (protocol->m_entropy == NULL) {
+        CPE_ERROR(em, "ssl: %s: protocol: alloc mbedtls_entropy_context fail", net_protocol_name(base_protocol));
+        goto INIT_ERROR;
+    }
+    mbedtls_entropy_init(protocol->m_entropy);
+
+    /*ctr_drgb*/
+    protocol->m_ctr_drbg = mem_alloc(alloc, sizeof(mbedtls_ctr_drbg_context));
+    if (protocol->m_ctr_drbg == NULL) {
+        CPE_ERROR(em, "ssl: %s: protocol: alloc mbedtls_ctr_drbg_context fail", net_protocol_name(base_protocol));
+        goto INIT_ERROR;
+    }
+    mbedtls_ctr_drbg_init(protocol->m_ctr_drbg);
+
+    const char * DRBG_PERSONALIZED_STR = "Mbed TLS SSL_PROTOCOL";
+    rv = mbedtls_ctr_drbg_seed(
+        protocol->m_ctr_drbg, mbedtls_entropy_func, protocol->m_entropy,
+        (const unsigned char *)DRBG_PERSONALIZED_STR, strlen(DRBG_PERSONALIZED_STR) + 1);
+    if (rv != 0) {
+        CPE_ERROR(em, "ssl: %s: protocol: mbedtls_ctr_drbg_seed returned -0x%04X", net_protocol_name(base_protocol), -rv);
+        goto INIT_ERROR;
+    }
 
     /*client ssl_config*/
     protocol->m_cli.m_ssl_config = mem_alloc(alloc, sizeof(mbedtls_ssl_config));
@@ -87,7 +127,7 @@ net_ssl_protocol_create(
     }
     mbedtls_ssl_config_init(protocol->m_cli.m_ssl_config);
 
-    int rv = mbedtls_ssl_config_defaults(
+    rv = mbedtls_ssl_config_defaults(
         protocol->m_cli.m_ssl_config, MBEDTLS_SSL_IS_CLIENT, MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT);
     if (rv != 0) {
         CPE_ERROR(
@@ -95,6 +135,7 @@ net_ssl_protocol_create(
             net_protocol_name(base_protocol), -rv);
         goto INIT_ERROR;
     }
+    mbedtls_ssl_conf_rng(protocol->m_cli.m_ssl_config, mbedtls_ctr_drbg_random, protocol->m_ctr_drbg);
     
     /*server ssl_config*/
     protocol->m_svr.m_ssl_config = mem_alloc(alloc, sizeof(mbedtls_ssl_config));
@@ -112,6 +153,7 @@ net_ssl_protocol_create(
             net_protocol_name(base_protocol), -rv);
         goto INIT_ERROR;
     }
+    mbedtls_ssl_conf_rng(protocol->m_svr.m_ssl_config, mbedtls_ctr_drbg_random, protocol->m_ctr_drbg);
     
     //SSL_CTX_set_next_proto_select_cb(protocol->m_ssl_ctx, sfox_sfox_protocol_select_next_proto_cb, protocol);
 
@@ -227,10 +269,10 @@ int net_ssl_protocol_use_cert_from_string(net_ssl_protocol_t protocol, const cha
         goto PROCESS_ERROR;
     }
     
-    /* CPE_INFO( */
-    /*     protocol->m_em, "ssl: %s: load cert: %s", */
-    /*     net_protocol_name(base_protocol), */
-    /*     net_ssl_dump_cert_info(net_schedule_tmp_buffer(schedule), x)); */
+    CPE_INFO(
+        protocol->m_em, "ssl: %s: load cert: %s",
+        net_protocol_name(base_protocol),
+        net_ssl_dump_cert_info(net_ssl_protocol_tmp_buffer(protocol), protocol->m_svr.m_cert));
 
     mbedtls_ssl_conf_ca_chain(protocol->m_svr.m_ssl_config, protocol->m_svr.m_cert, NULL);
 

@@ -1,6 +1,8 @@
 #ifndef NET_SSL_PROTOCOL_I_H_INCLEDED
 #define NET_SSL_PROTOCOL_I_H_INCLEDED
 #include "mbedtls/ssl.h"
+#include "mbedtls/entropy.h"
+#include "mbedtls/ctr_drbg.h"
 #include "cpe/utils/error.h"
 #include "cpe/utils/memory.h"
 #include "cpe/utils/buffer.h"
@@ -9,6 +11,8 @@
 struct net_ssl_protocol {
     mem_allocrator_t m_alloc;
     error_monitor_t m_em;
+    mbedtls_entropy_context * m_entropy;
+    mbedtls_ctr_drbg_context * m_ctr_drbg;
     struct {
         mbedtls_ssl_config * m_ssl_config;
     } m_cli;
