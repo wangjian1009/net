@@ -72,7 +72,7 @@ void * net_mem_group_type_cache_group_alloc(
 }
 
 void net_mem_group_type_cache_group_free(net_schedule_t schedule, net_mem_group_type_cache_group_t group, void * data) {
-    assert(group->m_free_count < group->m_alloc_count);
+    assert(group->m_free_count <= group->m_alloc_count);
 
     net_mem_group_type_cache_block_t block = data;
     block->m_next = group->m_blocks;
