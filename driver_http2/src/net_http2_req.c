@@ -26,6 +26,7 @@ net_http2_req_create(net_http2_endpoint_t endpoint) {
     req->m_stream = NULL;
     req->m_id = ++protocol->m_max_req_id;
     req->m_state = net_http2_req_state_init;
+    req->m_is_free = 0;
 
     req->m_req_head_count = 0;
     req->m_req_head_capacity = 0;
@@ -105,8 +106,12 @@ void net_http2_req_free(net_http2_req_t req) {
     assert(http_ep->m_req_count > 0);
     http_ep->m_req_count--;
     TAILQ_REMOVE(&http_ep->m_reqs, req, m_next_for_endpoint);
-    
-    mem_free(protocol->m_alloc, req);
+
+    if (req->m_is_write_started) {
+        req->m_is_free = 1;
+    } else {
+        mem_free(protocol->m_alloc, req);
+    }
 }
 
 net_http2_req_t
@@ -480,8 +485,16 @@ ssize_t net_http2_req_do_write(
     net_http2_req_t req = source->ptr;
     net_http2_endpoint_t endpoint = user_data;
     net_http2_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
+
+    assert(req->m_is_write_started);
+    if (req->m_is_free) {
+        mem_free(protocol->m_alloc, req);
+        return NGHTTP2_ERR_TEMPORAL_CALLBACK_FAILURE;
+    }
+    
     net_http2_stream_t stream = req->m_stream;
 
+    
     assert(stream);
     assert(stream->m_stream_id == stream_id);
 

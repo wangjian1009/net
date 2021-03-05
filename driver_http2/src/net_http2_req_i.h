@@ -11,6 +11,7 @@ struct net_http2_req {
     net_http2_stream_t m_stream;
     uint16_t m_id;
     net_http2_req_state_t m_state;
+    uint8_t m_is_free;
 
     /*req*/
     uint16_t m_req_head_count;
