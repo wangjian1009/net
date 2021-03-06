@@ -18,7 +18,7 @@ set_property(TARGET tests_net_driver_ws PROPERTY INCLUDE_DIRECTORIES
 set(tests_net_driver_ws_libraries
   test_utils_cpe_utils test_utils_net_core test_utils_net_driver_ws
   net_driver_ws net_core  cpe_utils_sock cpe_utils cpe_pal
-  wslay crypto cmocka)
+  wslay cmocka)
 
 # if (OS_NAME STREQUAL linux32 OR OS_NAME STREQUAL linux64)
 #   set(tests_net_driver_ws_libraries ${tests_net_driver_ws_libraries} m)

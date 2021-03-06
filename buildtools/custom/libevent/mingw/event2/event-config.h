@@ -206,7 +206,7 @@
 /* #undef EVENT__HAVE_AFUNIX_H */
 
 /* Define if the system has openssl */
-#define EVENT__HAVE_OPENSSL 1
+/* #undef EVENT__HAVE_OPENSSL */
 
 /* Define to 1 if you have the `pipe' function. */
 /* #undef EVENT__HAVE_PIPE */
