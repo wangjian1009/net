@@ -10,7 +10,6 @@ include(${CMAKE_CURRENT_LIST_DIR}/../cpe/buildtools/cmake/depends-pcre2.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../cpe/buildtools/cmake/depends-yajl.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../cpe/buildtools/cmake/cpe-utils.cmake)
 
-include(${CMAKE_CURRENT_LIST_DIR}/buildtools/cmake/depends-openssl.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/buildtools/cmake/depends-c-ares.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/buildtools/cmake/depends-nghttp2.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/buildtools/cmake/depends-curl.cmake)
