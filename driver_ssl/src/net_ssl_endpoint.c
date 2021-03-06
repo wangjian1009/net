@@ -15,9 +15,7 @@ static int net_ssl_endpoint_bio_read(void * ctx, unsigned char *out, size_t outl
 static int net_ssl_endpoint_bio_write(void * ctx, const unsigned char *in, size_t inlen);
 static void net_ssl_endpoint_ssl_fini(net_ssl_endpoint_t endpoint);
 static int net_ssl_endpoint_ssl_init(net_ssl_endpoint_t endpoint);
-
-/* static void net_ssl_endpoint_trace_cb( */
-/*     int write_p, int version, int content_type, const void *buf, size_t len, SSL *ssl, void *arg); */
+static int net_ssl_endpoint_ssl_verify(void *ctx, mbedtls_x509_crt *crt, int depth, uint32_t *flags);
 
 static int net_ssl_endpoint_do_handshake(
     net_endpoint_t base_endpoint, net_ssl_endpoint_t endpoint);
@@ -545,6 +543,8 @@ static int net_ssl_endpoint_ssl_init(net_ssl_endpoint_t endpoint) {
     }
     mbedtls_ssl_config_init(endpoint->m_ssl_config);
     mbedtls_ssl_conf_dbg(endpoint->m_ssl_config, net_ssl_endpoint_ssl_debug, endpoint);
+    mbedtls_ssl_conf_authmode(endpoint->m_ssl_config, MBEDTLS_SSL_VERIFY_REQUIRED);
+    mbedtls_ssl_conf_verify(endpoint->m_ssl_config, net_ssl_endpoint_ssl_verify, endpoint);
 
     if ((rv = mbedtls_ssl_config_defaults(
              endpoint->m_ssl_config,
@@ -598,6 +598,39 @@ static int net_ssl_endpoint_ssl_init(net_ssl_endpoint_t endpoint) {
 INIT_FAILED:
     net_ssl_endpoint_ssl_fini(endpoint);
     return -1;
+}
+
+static int net_ssl_endpoint_ssl_verify(void *ctx, mbedtls_x509_crt *crt, int depth, uint32_t *flags) {
+    net_ssl_endpoint_t endpoint = ctx;
+    net_protocol_t base_protocol = net_protocol_from_data(net_endpoint_protocol(endpoint->m_base_endpoint));
+    net_ssl_protocol_t protocol = net_protocol_data(base_protocol);
+    int ret = 0;
+
+    /*
+     * If MBEDTLS_HAVE_TIME_DATE is defined, then the certificate date and time
+     * validity checks will probably fail because this application does not set
+     * up the clock correctly. We filter out date and time related failures
+     * instead
+     */
+    *flags &= ~MBEDTLS_X509_BADCERT_FUTURE & ~MBEDTLS_X509_BADCERT_EXPIRED;
+
+    if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 2) {
+        char gp_buf[1024];
+        ret = mbedtls_x509_crt_info(gp_buf, sizeof(gp_buf), "\r  ", crt);
+        if (ret < 0) {
+            CPE_ERROR(
+                protocol->m_em, "ssl: %s: ssl verify: mbedtls_x509_crt_info() returned -0x%04X",
+                net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+                -ret);
+        } else {
+            CPE_INFO(
+                protocol->m_em, "ssl: %s: ssl verify: depth=%d\n%s",
+                net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+                depth, gp_buf);
+        }
+    }
+
+    return ret;
 }
 
 int net_ssl_endpoint_set_state(net_ssl_endpoint_t endpoint, net_ssl_endpoint_state_t state) {

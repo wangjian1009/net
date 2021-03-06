@@ -18,6 +18,7 @@ net_ssl_testenv_t net_ssl_testenv_create() {
     env->m_ssl_protocol = 
         net_ssl_protocol_create(
             env->m_schedule, NULL, test_allocrator(), env->m_em);
+    net_protocol_set_debug(net_protocol_from_data(env->m_ssl_protocol), 2);
 
     env->m_stream_driver =
         net_ssl_stream_driver_create(
