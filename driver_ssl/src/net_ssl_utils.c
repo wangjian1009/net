@@ -1,7 +1,9 @@
 #include "mbedtls/ssl.h"
 #include "mbedtls/rsa.h"
 #include "mbedtls/pem.h"
+#include "mbedtls/bignum.h"
 #include "mbedtls/x509.h"
+#include "mbedtls/x509_crl.h"
 #include "cpe/pal/pal_string.h"
 #include "cpe/pal/pal_stdio.h"
 #include "net_protocol.h"
@@ -39,15 +41,14 @@ mbedtls_pk_context * net_ssl_pkey_generate(net_ssl_protocol_t protocol) {
         CPE_ERROR(protocol->m_em, "ssl: %s: generate pkey: alloc fail", net_protocol_name(base_protocol));
         return NULL;
     }
-    
-/*     BIGNUM *a = BN_new(); */
-/*     if (a == NULL) { */
-/*         CPE_ERROR( */
-/*             em, "ssl: generate pkey: BN_new failed\n%s", */
-/*             ERR_error_string(ERR_get_error(), NULL)); */
-/*         return NULL; */
-/*     } */
-/*     BN_set_word(a, 65537); */
+
+    mbedtls_mpi a;
+    mbedtls_mpi_init(&a);
+    mbedtls_mpi_lset(&a, 65537);
+
+    mbedtls_rsa_context rsa;
+    //mbedtls_rsa_init(&rsa);
+    mbedtls_mpi_free(&a);
 
 /*     RSA *rsa = RSA_new(); */
 /*     if (rsa == NULL) { */
@@ -57,6 +58,11 @@ mbedtls_pk_context * net_ssl_pkey_generate(net_ssl_protocol_t protocol) {
 /*         BN_free(a); */
 /*         return NULL; */
 /*     } */
+
+    /* int rv = mbedtls_rsa_gen_key(&rsa, */
+    /*                      int (*f_rng)(void *, unsigned char *, size_t), */
+    /*                      void *p_rng, */
+    /*                      unsigned int nbits, int exponent ); */
     
 /*     if (RSA_generate_key_ex(rsa, 2048, a, NULL) != 1) { */
 /*         CPE_ERROR( */
@@ -92,6 +98,71 @@ PROCESS_ERROR:
     return NULL;
 }
 
+const char * net_ssl_cert_generate(
+    net_ssl_protocol_t protocol, mem_buffer_t buffer,
+    int64_t serial,
+    const char * subject_name, mbedtls_pk_context * subject_pk,
+    const char * issuer_name, mbedtls_pk_context * issuer_pk,
+    const char * passwd)
+{
+    int rv;
+
+    mbedtls_x509write_cert write_cert;
+    mbedtls_x509write_crt_init(&write_cert);
+
+    mbedtls_mpi serial_mpi;
+    mbedtls_mpi_init(&serial_mpi);
+
+    if ((rv = mbedtls_mpi_lset(&serial_mpi, serial)) < 0) {
+        CPE_ERROR(protocol->m_em, "ssl: generate cert: serial set " FMT_INT64_T " failed, -0x%04X", serial, -rv);
+        mbedtls_mpi_free(&serial_mpi);
+        goto PROCESS_ERROR;
+    }
+
+    if ((rv = mbedtls_x509write_crt_set_serial(&write_cert, &serial_mpi)) < 0) {
+        CPE_ERROR(protocol->m_em, "ssl: generate cert: set serial " FMT_INT64_T " failed, -0x%04X", serial, -rv);
+        mbedtls_mpi_free(&serial_mpi);
+        goto PROCESS_ERROR;
+    }
+    mbedtls_mpi_free(&serial_mpi);
+
+    //"YYMMDDHHMMSSZ"
+    /* mbedtls_x509write_crt_set_validity( */
+    /*     &write_cert, const char *not_before, const char *not_after); */
+
+/*     X509_gmtime_adj(X509_getm_notBefore(x509), 0); */
+/*     X509_gmtime_adj(X509_getm_notAfter(x509), 31536000L); */
+
+    if ((rv = mbedtls_x509write_crt_set_subject_name(&write_cert, subject_name)) < 0) {
+        CPE_ERROR(protocol->m_em, "ssl: generate cert: set subject-name %s failed, -0x%04X", subject_name, -rv);
+        goto PROCESS_ERROR;
+    }
+    mbedtls_x509write_crt_set_subject_key(&write_cert, subject_pk);
+
+    if ((rv = mbedtls_x509write_crt_set_issuer_name(&write_cert, issuer_name)) < 0) {
+        CPE_ERROR(protocol->m_em, "ssl: generate cert: set issuer-name %s failed, -0x%04X", issuer_name, -rv);
+        goto PROCESS_ERROR;
+    }
+    mbedtls_x509write_crt_set_issuer_key(&write_cert, issuer_pk);
+
+    mem_buffer_clear_data(buffer);
+
+    uint32_t buf_capacity = 2048;
+    void * buf = mem_buffer_alloc(buffer, buf_capacity);
+    
+    if ((rv = mbedtls_x509write_crt_pem(&write_cert, buf, buf_capacity, net_ssl_rng_from_string, (void*)passwd)) < 0) {
+        CPE_ERROR(protocol->m_em, "ssl: generate cert: write pem fail, -0x%04X", -rv);
+        goto PROCESS_ERROR;
+    }
+
+    mbedtls_x509write_crt_free(&write_cert);
+    return buf;
+
+PROCESS_ERROR:
+    mbedtls_x509write_crt_free(&write_cert);
+    return NULL;
+}
+
 const char * net_ssl_dump_cert_info(mem_buffer_t buffer, mbedtls_x509_crt * cert) {
     struct write_stream_buffer stream = CPE_WRITE_STREAM_BUFFER_INITIALIZER(buffer);
 
@@ -108,6 +179,17 @@ const char * net_ssl_dump_cert_info(mem_buffer_t buffer, mbedtls_x509_crt * cert
     return buf;
 }
 
+int net_ssl_rng_from_string(void * ctx, unsigned char * o_buf, size_t o_capacity) {
+    const char * passwd = ctx;
+    if (passwd == NULL) return 0;
+    
+    uint32_t passwd_len = strlen(passwd);
+    if (passwd_len > o_capacity) {
+    }
+    
+    return 0;
+}
+        
 /* const char * net_ssl_dump_data(mem_buffer_t buffer, void const * buf, size_t size) { */
 /*     mem_buffer_clear_data(buffer); */
 /*     struct write_stream_buffer ws = CPE_WRITE_STREAM_BUFFER_INITIALIZER(buffer); */
@@ -315,49 +397,5 @@ const char * net_ssl_dump_cert_info(mem_buffer_t buffer, mbedtls_x509_crt * cert
 /*             net_ssl_dump_data(buffer, buf, len)); */
 /*     } else { */
 /*         CPE_INFO(em, "%s%s %d bytes", prefix, direction == 1 ? "==>" : "<==", (int)len); */
-/*     } */
-/* } */
-
-/* const char * net_ssl_bio_ctrl_cmd_str(int cmd) { */
-/*     static char buf[32]; */
-
-/*     switch(cmd) { */
-/*     case BIO_CTRL_RESET: */
-/*         return "BIO_CTRL_RESET"; */
-/*     case BIO_CTRL_EOF: */
-/*         return "BIO_CTRL_EOF"; */
-/*     case BIO_CTRL_INFO: */
-/*         return "BIO_CTRL_INFO"; */
-/*     case BIO_CTRL_SET: */
-/*         return "BIO_CTRL_SET"; */
-/*     case BIO_CTRL_GET: */
-/*         return "BIO_CTRL_GET"; */
-/*     case BIO_CTRL_PUSH: */
-/*         return "BIO_CTRL_PUSH"; */
-/*     case BIO_CTRL_POP: */
-/*         return "BIO_CTRL_POP"; */
-/*     case BIO_CTRL_GET_CLOSE: */
-/*         return "BIO_CTRL_GET_CLOSE"; */
-/*     case BIO_CTRL_SET_CLOSE: */
-/*         return "BIO_CTRL_SET_CLOSE"; */
-/*     case BIO_CTRL_PENDING: */
-/*         return "BIO_CTRL_PENDING"; */
-/*     case BIO_CTRL_FLUSH: */
-/*         return "BIO_CTRL_FLUSH"; */
-/*     case BIO_CTRL_DUP: */
-/*         return "BIO_CTRL_DUP"; */
-/*     case BIO_CTRL_WPENDING: */
-/*         return "BIO_CTRL_WPENDING"; */
-/*     case BIO_CTRL_SET_CALLBACK: */
-/*         return "BIO_CTRL_SET_CALLBACK"; */
-/*     case BIO_CTRL_GET_CALLBACK: */
-/*         return "BIO_CTRL_GET_CALLBACK"; */
-/*     case BIO_CTRL_PEEK: */
-/*         return "BIO_CTRL_PEEK"; */
-/*     case BIO_CTRL_SET_FILENAME: */
-/*         return "BIO_CTRL_SET_FILENAME"; */
-/*     default: */
-/*         snprintf(buf, sizeof(buf), "unknown bio cmd %d", cmd); */
-/*         return buf; */
 /*     } */
 /* } */

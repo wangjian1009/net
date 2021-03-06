@@ -1,3 +1,4 @@
+#include "mbedtls/debug.h"
 #include "cpe/pal/pal_string.h"
 #include "cpe/pal/pal_stdio.h"
 #include "net_protocol.h"
@@ -12,8 +13,6 @@ int net_ssl_protocol_init(net_protocol_t base_protocol) {
     protocol->m_em = NULL;
     protocol->m_entropy = NULL;
     protocol->m_ctr_drbg = NULL;
-    protocol->m_cli.m_ssl_config = NULL;
-    protocol->m_svr.m_ssl_config = NULL;
     protocol->m_svr.m_pkey = NULL;
     protocol->m_svr.m_cert = NULL;
     return 0;
@@ -21,18 +20,6 @@ int net_ssl_protocol_init(net_protocol_t base_protocol) {
 
 void net_ssl_protocol_fini(net_protocol_t base_protocol) {
     net_ssl_protocol_t protocol = net_protocol_data(base_protocol);
-
-    if (protocol->m_cli.m_ssl_config) {
-        mbedtls_ssl_config_free(protocol->m_cli.m_ssl_config);
-        mem_free(protocol->m_alloc, protocol->m_cli.m_ssl_config);
-        protocol->m_cli.m_ssl_config = NULL;
-    }
-
-    if (protocol->m_svr.m_ssl_config) {
-        mbedtls_ssl_config_free(protocol->m_svr.m_ssl_config);
-        mem_free(protocol->m_alloc, protocol->m_svr.m_ssl_config);
-        protocol->m_svr.m_ssl_config = NULL;
-    }
 
     if (protocol->m_svr.m_cert) {
         mbedtls_x509_crt_free(protocol->m_svr.m_cert);
@@ -102,6 +89,8 @@ net_ssl_protocol_create(
     }
     mbedtls_entropy_init(protocol->m_entropy);
 
+    mbedtls_debug_set_threshold(4);
+    
     /*ctr_drgb*/
     protocol->m_ctr_drbg = mem_alloc(alloc, sizeof(mbedtls_ctr_drbg_context));
     if (protocol->m_ctr_drbg == NULL) {
@@ -119,42 +108,6 @@ net_ssl_protocol_create(
         goto INIT_ERROR;
     }
 
-    /*client ssl_config*/
-    protocol->m_cli.m_ssl_config = mem_alloc(alloc, sizeof(mbedtls_ssl_config));
-    if (protocol->m_cli.m_ssl_config == NULL) {
-        CPE_ERROR(em, "ssl: %s: protocol: alloc client ssl_config fail", net_protocol_name(base_protocol));
-        goto INIT_ERROR;
-    }
-    mbedtls_ssl_config_init(protocol->m_cli.m_ssl_config);
-
-    rv = mbedtls_ssl_config_defaults(
-        protocol->m_cli.m_ssl_config, MBEDTLS_SSL_IS_CLIENT, MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT);
-    if (rv != 0) {
-        CPE_ERROR(
-            em, "ssl: %s: protocol: alloc client ssl_config_defaults fail, -0x%04X",
-            net_protocol_name(base_protocol), -rv);
-        goto INIT_ERROR;
-    }
-    mbedtls_ssl_conf_rng(protocol->m_cli.m_ssl_config, mbedtls_ctr_drbg_random, protocol->m_ctr_drbg);
-    
-    /*server ssl_config*/
-    protocol->m_svr.m_ssl_config = mem_alloc(alloc, sizeof(mbedtls_ssl_config));
-    if (protocol->m_svr.m_ssl_config == NULL) {
-        CPE_ERROR(em, "ssl: %s: protocol: alloc svrent ssl_config fail", net_protocol_name(base_protocol));
-        goto INIT_ERROR;
-    }
-    mbedtls_ssl_config_init(protocol->m_svr.m_ssl_config);
-
-    rv = mbedtls_ssl_config_defaults(
-        protocol->m_svr.m_ssl_config, MBEDTLS_SSL_IS_CLIENT, MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT);
-    if (rv != 0) {
-        CPE_ERROR(
-            em, "ssl: %s: protocol: alloc svrent ssl_config_defaults fail, -0x%04X",
-            net_protocol_name(base_protocol), -rv);
-        goto INIT_ERROR;
-    }
-    mbedtls_ssl_conf_rng(protocol->m_svr.m_ssl_config, mbedtls_ctr_drbg_random, protocol->m_ctr_drbg);
-    
     //SSL_CTX_set_next_proto_select_cb(protocol->m_ssl_ctx, sfox_sfox_protocol_select_next_proto_cb, protocol);
 
     /* SSL_CTX_set_alpn_protos(protocol->m_ssl_ctx, (const unsigned char *)"\x02h2", 3); */
@@ -274,8 +227,6 @@ int net_ssl_protocol_use_cert_from_string(net_ssl_protocol_t protocol, const cha
         net_protocol_name(base_protocol),
         net_ssl_dump_cert_info(net_ssl_protocol_tmp_buffer(protocol), protocol->m_svr.m_cert));
 
-    mbedtls_ssl_conf_ca_chain(protocol->m_svr.m_ssl_config, protocol->m_svr.m_cert, NULL);
-
 /*     /\* */
 /*      * If we could set up our certificate, now proceed to the CA */
 /*      * certificates. */
@@ -314,57 +265,24 @@ int net_ssl_protocol_svr_confirm_cert(net_ssl_protocol_t protocol) {
     
     if (protocol->m_svr.m_cert != NULL) return 0;
 
-    protocol->m_svr.m_cert = mem_alloc(protocol->m_alloc, sizeof(mbedtls_x509_crt));
-    if (protocol->m_svr.m_cert) {
-        CPE_ERROR(
-            protocol->m_em, "ssl: %s: confirm cert: alloc fail!",
-            net_protocol_name(base_protocol));
+    struct mem_buffer cert_buf;
+    mem_buffer_init(&cert_buf, protocol->m_alloc);
+
+    const char * cert =
+        net_ssl_cert_generate(
+            protocol, &cert_buf,
+            1,
+            "C=CA,O=sfox.com,CN=localhost", protocol->m_svr.m_pkey,
+            "C=CA,O=sfox.com,CN=localhost", protocol->m_svr.m_pkey,
+            NULL);
+    if (cert == NULL) {
+        mem_buffer_clear(&cert_buf);
         return -1;
     }
-    mbedtls_x509_crt_init(protocol->m_svr.m_cert);
-    
-/*     ASN1_INTEGER_set(X509_get_serialNumber(x509), 1); */
 
-/*     X509_gmtime_adj(X509_getm_notBefore(x509), 0); */
-/*     X509_gmtime_adj(X509_getm_notAfter(x509), 31536000L); */
-
-    //X509_set_pubkey(protocol->m_svr.m_cert, protocol->m_svr.m_pkey);
-
-/*     X509_NAME * name = X509_get_subject_name(x509); */
-/*     X509_NAME_add_entry_by_txt(name, "C", MBSTRING_ASC, (unsigned char *)"CA", -1, -1, 0); */
-/*     X509_NAME_add_entry_by_txt(name, "O", MBSTRING_ASC, (unsigned char *)"sfox.org", -1, -1, 0); */
-/*     X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_ASC, (unsigned char *)"localhost", -1, -1, 0); */
-
-/*     /\* Now set the issuer name. *\/ */
-/*     X509_set_issuer_name(x509, name); */
-
-/*     /\* Actually sign the certificate with our key. *\/ */
-/*     if (!X509_sign(x509, protocol->m_svr.m_pkey, EVP_sha1())) { */
-/*         CPE_ERROR( */
-/*             protocol->m_em, "ssl: %s: generate cert: sign error: %s", */
-/*             net_protocol_name(base_protocol), ERR_error_string(ERR_get_error(), NULL)); */
-/*         goto PROCESS_ERROR; */
-/*     } */
-
-/*     if (SSL_CTX_use_certificate(protocol->m_ssl_ctx, x509) != 1 || ERR_peek_error() != 0) { */
-/*         CPE_ERROR( */
-/*             protocol->m_em, "ssl: %s: generate cert: SSL_CTX_use_certificate failed: %s", */
-/*             net_protocol_name(base_protocol), ERR_error_string(ERR_get_error(), NULL)); */
-/*         goto PROCESS_ERROR; */
-/*     } */
-    
-/*     CPE_INFO( */
-/*         protocol->m_em, "ssl: %s: generate cert: %s", */
-/*         net_protocol_name(base_protocol), */
-/*         net_ssl_dump_cert_info(net_schedule_tmp_buffer(schedule), x509)); */
-        
-    return 0;
-
-PROCESS_ERROR:
-    mbedtls_x509_crt_free(protocol->m_svr.m_cert);
-    mem_free(protocol->m_alloc, protocol->m_svr.m_cert);
-    protocol->m_svr.m_cert = NULL;
-    return -1;
+    int rv = net_ssl_protocol_use_cert_from_string(protocol, cert);
+    mem_buffer_clear(&cert_buf);
+    return rv;
 }
 
 int net_ssl_protocol_svr_prepaired(net_ssl_protocol_t protocol) {

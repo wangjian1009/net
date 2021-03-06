@@ -8,6 +8,7 @@ struct net_ssl_endpoint {
     net_ssl_stream_endpoint_t m_stream;
     net_ssl_endpoint_runing_mode_t m_runing_mode;
     net_ssl_endpoint_state_t m_state;
+    mbedtls_ssl_config * m_ssl_config;
 	mbedtls_ssl_context * m_ssl;
 };
 

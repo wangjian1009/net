@@ -13,6 +13,8 @@
 
 static int net_ssl_endpoint_bio_read(void * ctx, unsigned char *out, size_t outlen);
 static int net_ssl_endpoint_bio_write(void * ctx, const unsigned char *in, size_t inlen);
+static void net_ssl_endpoint_ssl_fini(net_ssl_endpoint_t endpoint);
+static int net_ssl_endpoint_ssl_init(net_ssl_endpoint_t endpoint);
 
 /* static void net_ssl_endpoint_trace_cb( */
 /*     int write_p, int version, int content_type, const void *buf, size_t len, SSL *ssl, void *arg); */
@@ -23,7 +25,6 @@ static int net_ssl_endpoint_do_handshake(
 static void net_ssl_endpoint_dump_error(net_endpoint_t base_endpoint, int val);
 
 static int net_ssl_endpoint_update_error(net_endpoint_t base_endpoint, int r);
-//static void net_ssl_endpoint_ssl_debug(void *ctx, int level, const char *file, int line, const char *str);
 
 int net_ssl_endpoint_init(net_endpoint_t base_endpoint) {
     net_ssl_endpoint_t endpoint = net_endpoint_protocol_data(base_endpoint);
@@ -33,6 +34,7 @@ int net_ssl_endpoint_init(net_endpoint_t base_endpoint) {
     endpoint->m_stream = NULL;
     endpoint->m_runing_mode = net_ssl_endpoint_runing_mode_init;
     endpoint->m_state = net_ssl_endpoint_state_init;
+    endpoint->m_ssl_config = NULL;
     endpoint->m_ssl = NULL;
     
     return 0;
@@ -54,11 +56,7 @@ void net_ssl_endpoint_fini(net_endpoint_t base_endpoint) {
         }
     }
 
-    if (endpoint->m_ssl) {
-        mbedtls_ssl_free(endpoint->m_ssl);
-        mem_free(protocol->m_alloc, endpoint->m_ssl);
-        endpoint->m_ssl = NULL;
-    }
+    net_ssl_endpoint_ssl_fini(endpoint);
 }
 
 int net_ssl_endpoint_input(net_endpoint_t base_endpoint) {
@@ -426,86 +424,17 @@ int net_ssl_endpoint_set_runing_mode(net_ssl_endpoint_t endpoint, net_ssl_endpoi
 
     endpoint->m_runing_mode = runing_mode;
 
-    if (endpoint->m_ssl) {
-        mbedtls_ssl_free(endpoint->m_ssl);
-        mem_free(protocol->m_alloc, endpoint->m_ssl);
-        endpoint->m_ssl = NULL;
-    }
-
-    if (endpoint->m_runing_mode == net_ssl_endpoint_runing_mode_init) return 0;
-    
-    endpoint->m_ssl = mem_alloc(protocol->m_alloc, sizeof(mbedtls_ssl_context));
-    if(endpoint->m_ssl == NULL) {
-        CPE_ERROR(
-            protocol->m_em, "ssl: %s: ssl init: alloc mbedtls_ssl_context fail",
-            net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint));
-        return -1;
-    }
-    mbedtls_ssl_init(endpoint->m_ssl);
-
-    int rv;
-
-    if (endpoint->m_runing_mode == net_ssl_endpoint_runing_mode_cli) {
-        if ((rv = mbedtls_ssl_setup(endpoint->m_ssl, protocol->m_cli.m_ssl_config)) != 0) {
-            CPE_ERROR(
-                protocol->m_em, "ssl: %s: ssl init: mbedtls_ssl_setup fail, -0x%04X",
-                net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
-                -rv);
-            goto SSL_SETUP_FAIL;
+    if (endpoint->m_runing_mode != net_ssl_endpoint_runing_mode_init) {
+        if (net_ssl_endpoint_ssl_init(endpoint) != 0) {
+            endpoint->m_runing_mode = net_ssl_endpoint_runing_mode_init;
+            return -1;
         }
     }
-    else {
-        assert(endpoint->m_runing_mode == net_ssl_endpoint_runing_mode_svr);
 
-        if ((rv = mbedtls_ssl_setup(endpoint->m_ssl, protocol->m_svr.m_ssl_config)) != 0) {
-            CPE_ERROR(
-                protocol->m_em, "ssl: %s: ssl init: mbedtls_ssl_setup fail, -0x%04X",
-                net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
-                -rv);
-            goto SSL_SETUP_FAIL;
-        }
-
-        /* if ((rv = mbedtls_ssl_set_hostname(endpoint->m_ssl, server_name)) != 0) { */
-        /*     mbedtls_printf("mbedtls_ssl_set_hostname() rvurned -0x%04X\n", */
-        /*         -rv); */
-        /*     goto SSL_SETUP_FAIL; */
-        /* } */
-    }
-    
-    /* SSL_set_msg_callback(endpoint->m_ssl, net_ssl_endpoint_trace_cb); */
-    /* SSL_set_msg_callback_arg(endpoint->m_ssl, endpoint); */
-
-    mbedtls_ssl_set_bio(
-        endpoint->m_ssl, endpoint,
-        net_ssl_endpoint_bio_write, net_ssl_endpoint_bio_read, NULL);
-    
     return 0;
-
-SSL_SETUP_FAIL:
-    if (endpoint->m_ssl) {
-        mbedtls_ssl_free(endpoint->m_ssl);
-        mem_free(protocol->m_alloc, endpoint->m_ssl);
-        endpoint->m_ssl = NULL;
-    }
-    endpoint->m_runing_mode = net_ssl_endpoint_runing_mode_init;
-    return -1;
 }
 
-/* static void net_ssl_endpoint_ssl_debug(void *ctx, int level, const char *file, int line, const char *str) { */
-/*     (void)ctx; */
-
-/*     const char *p, *basename; */
-
-/*     /\* Extract basename from file *\/ */
-/*     for (p = basename = file; *p != '\0'; p++) { */
-/*         if (*p == '/' || *p == '\\') */
-/*             basename = p + 1; */
-/*     } */
-
-/*     mbedtls_printf("%s:%d: |%d| %s\r", basename, line, level, str); */
-/* } */
-
-int net_ssl_endpoint_bio_read(void * ctx, unsigned char *out, size_t outlen) {
+static int net_ssl_endpoint_bio_read(void * ctx, unsigned char *out, size_t outlen) {
 	if (!out) return 0;
 
     net_ssl_endpoint_t endpoint = ctx;
@@ -546,7 +475,7 @@ int net_ssl_endpoint_bio_read(void * ctx, unsigned char *out, size_t outlen) {
     return length;
 }
 
-int net_ssl_endpoint_bio_write(void * ctx, const unsigned char *in, size_t inlen) {
+static int net_ssl_endpoint_bio_write(void * ctx, const unsigned char *in, size_t inlen) {
     net_ssl_endpoint_t endpoint = ctx;
     if (endpoint == NULL) return 0;
 
@@ -561,6 +490,114 @@ int net_ssl_endpoint_bio_write(void * ctx, const unsigned char *in, size_t inlen
     }
 
     return (int)write_size;
+}
+
+static void net_ssl_endpoint_ssl_fini(net_ssl_endpoint_t endpoint) {
+    net_ssl_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
+    
+    if (endpoint->m_ssl) {
+        mbedtls_ssl_free(endpoint->m_ssl);
+        mem_free(protocol->m_alloc, endpoint->m_ssl);
+        endpoint->m_ssl = NULL;
+    }
+
+    if (endpoint->m_ssl_config) {
+        mbedtls_ssl_config_free(endpoint->m_ssl_config);
+        mem_free(protocol->m_alloc, endpoint->m_ssl_config);
+        endpoint->m_ssl_config = NULL;
+    }
+}
+
+static void net_ssl_endpoint_ssl_debug(void *ctx, int level, const char *file, int line, const char *str) {
+    net_ssl_endpoint_t endpoint = ctx;
+
+    if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 2) {
+        net_protocol_t base_protocol = net_protocol_from_data(net_endpoint_protocol(endpoint->m_base_endpoint));
+        net_ssl_protocol_t protocol = net_protocol_data(base_protocol);
+
+        const char *p, *basename;
+        /* Extract basename from file */
+        for (p = basename = file; *p != '\0'; p++) {
+            if (*p == '/' || *p == '\\')
+                basename = p + 1;
+        }
+
+        CPE_INFO(protocol->m_em, "%s:%d: |%d| %s\r", basename, line, level, str);
+    }
+}
+
+static int net_ssl_endpoint_ssl_init(net_ssl_endpoint_t endpoint) {
+    net_protocol_t base_protocol = net_protocol_from_data(net_endpoint_protocol(endpoint->m_base_endpoint));
+    net_ssl_protocol_t protocol = net_protocol_data(base_protocol);
+    int rv;
+
+    assert(endpoint->m_ssl_config == NULL);
+    assert(endpoint->m_ssl == NULL);
+    assert(endpoint->m_runing_mode == net_ssl_endpoint_runing_mode_cli
+           || endpoint->m_runing_mode == net_ssl_endpoint_runing_mode_svr);
+    
+    endpoint->m_ssl_config = mem_alloc(protocol->m_alloc, sizeof(mbedtls_ssl_config));
+    if (endpoint->m_ssl_config == NULL) {
+        CPE_ERROR(
+            protocol->m_em, "ssl: %s: init ssl: alloc client ssl_config fail",
+            net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint));
+        goto INIT_FAILED;
+    }
+    mbedtls_ssl_config_init(endpoint->m_ssl_config);
+    mbedtls_ssl_conf_dbg(endpoint->m_ssl_config, net_ssl_endpoint_ssl_debug, endpoint);
+
+    if ((rv = mbedtls_ssl_config_defaults(
+             endpoint->m_ssl_config,
+             endpoint->m_runing_mode == net_ssl_endpoint_runing_mode_cli ? MBEDTLS_SSL_IS_CLIENT : MBEDTLS_SSL_IS_SERVER,
+             MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT))
+        != 0)
+    {
+        CPE_ERROR(
+            protocol->m_em, "ssl: %s: init ssl: alloc client ssl_config_defaults fail, -0x%04X",
+            net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            -rv);
+        goto INIT_FAILED;
+    }
+    mbedtls_ssl_conf_rng(endpoint->m_ssl_config, mbedtls_ctr_drbg_random, protocol->m_ctr_drbg);
+    
+    endpoint->m_ssl = mem_alloc(protocol->m_alloc, sizeof(mbedtls_ssl_context));
+    if(endpoint->m_ssl == NULL) {
+        CPE_ERROR(
+            protocol->m_em, "ssl: %s: ssl init: alloc mbedtls_ssl_context fail",
+            net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint));
+        goto INIT_FAILED;
+    }
+    mbedtls_ssl_init(endpoint->m_ssl);
+
+    if ((rv = mbedtls_ssl_setup(endpoint->m_ssl, endpoint->m_ssl_config)) != 0) {
+        CPE_ERROR(
+            protocol->m_em, "ssl: %s: ssl init: mbedtls_ssl_setup fail, -0x%04X",
+            net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            -rv);
+        goto INIT_FAILED;
+    }
+
+    if (endpoint->m_runing_mode == net_ssl_endpoint_runing_mode_svr) {
+        mbedtls_ssl_conf_ca_chain(endpoint->m_ssl_config, protocol->m_svr.m_cert, NULL);
+        /* if ((rv = mbedtls_ssl_set_hostname(endpoint->m_ssl, server_name)) != 0) { */
+        /*     mbedtls_printf("mbedtls_ssl_set_hostname() rvurned -0x%04X\n", */
+        /*         -rv); */
+        /*     goto SSL_SETUP_FAIL; */
+        /* } */
+    }
+    
+    /* /\* SSL_set_msg_callback(endpoint->m_ssl, net_ssl_endpoint_trace_cb); *\/ */
+    /* /\* SSL_set_msg_callback_arg(endpoint->m_ssl, endpoint); *\/ */
+
+    mbedtls_ssl_set_bio(
+        endpoint->m_ssl, endpoint,
+        net_ssl_endpoint_bio_write, net_ssl_endpoint_bio_read, NULL);
+    
+    return 0;
+
+INIT_FAILED:
+    net_ssl_endpoint_ssl_fini(endpoint);
+    return -1;
 }
 
 int net_ssl_endpoint_set_state(net_ssl_endpoint_t endpoint, net_ssl_endpoint_state_t state) {
@@ -582,6 +619,7 @@ int net_ssl_endpoint_set_state(net_ssl_endpoint_t endpoint, net_ssl_endpoint_sta
 
     switch(state) {
     case net_ssl_endpoint_state_init:
+        net_ssl_endpoint_ssl_fini(endpoint);
         break;
     case net_ssl_endpoint_state_handshake:
         break;

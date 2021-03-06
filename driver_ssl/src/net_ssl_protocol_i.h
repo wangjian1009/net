@@ -14,10 +14,6 @@ struct net_ssl_protocol {
     mbedtls_entropy_context * m_entropy;
     mbedtls_ctr_drbg_context * m_ctr_drbg;
     struct {
-        mbedtls_ssl_config * m_ssl_config;
-    } m_cli;
-    struct {
-        mbedtls_ssl_config * m_ssl_config;
         mbedtls_pk_context * m_pkey;
         mbedtls_x509_crt * m_cert;
     } m_svr;
