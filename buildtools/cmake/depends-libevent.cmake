@@ -8,7 +8,6 @@ set(libevent_source
   ${libevent_base}/bufferevent_pair.c
   ${libevent_base}/bufferevent_ratelim.c
   ${libevent_base}/bufferevent_sock.c
-  ${libevent_base}/bufferevent_openssl.c
   ${libevent_base}/event.c
   ${libevent_base}/evmap.c
   ${libevent_base}/evthread.c
