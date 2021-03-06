@@ -543,11 +543,14 @@ static int net_ssl_endpoint_ssl_init(net_ssl_endpoint_t endpoint) {
     }
     mbedtls_ssl_conf_rng(endpoint->m_ssl_config, mbedtls_ctr_drbg_random, protocol->m_ctr_drbg);
     mbedtls_ssl_conf_dbg(endpoint->m_ssl_config, net_ssl_endpoint_ssl_debug, endpoint);
-    mbedtls_ssl_conf_authmode(endpoint->m_ssl_config, MBEDTLS_SSL_VERIFY_REQUIRED);
-    mbedtls_ssl_conf_verify(endpoint->m_ssl_config, net_ssl_endpoint_ssl_verify, endpoint);
-    
+
+    if (endpoint->m_runing_mode == net_ssl_endpoint_runing_mode_cli) {
+        mbedtls_ssl_conf_authmode(endpoint->m_ssl_config, MBEDTLS_SSL_VERIFY_NONE);
+        /* mbedtls_ssl_conf_verify(endpoint->m_ssl_config, net_ssl_endpoint_ssl_verify, endpoint); */
+    }
+
     if (endpoint->m_runing_mode == net_ssl_endpoint_runing_mode_svr) {
-        mbedtls_ssl_conf_ca_chain(endpoint->m_ssl_config, protocol->m_svr.m_cert, NULL);
+        mbedtls_ssl_conf_own_cert(endpoint->m_ssl_config, protocol->m_svr.m_cert, protocol->m_svr.m_pkey);
     }
 
     endpoint->m_ssl = mem_alloc(protocol->m_alloc, sizeof(mbedtls_ssl_context));
