@@ -12,98 +12,47 @@
 #include "net_schedule.h"
 #include "net_ssl_utils.h"
 
-/* EVP_PKEY * net_ssl_pkey_from_string(error_monitor_t em, const char * key) { */
-/*     BIO * pkey_bio = BIO_new_mem_buf(key, (int)strlen(key)); */
-/*     if (pkey_bio == NULL) { */
-/*         CPE_ERROR( */
-/*             em, "ssl: pkey from string: create bio failed: %s", */
-/*             ERR_error_string(ERR_get_error(), NULL)); */
-/*         return NULL; */
-/*     } */
-
-/*     EVP_PKEY * pkey = PEM_read_bio_PrivateKey(pkey_bio, NULL, NULL, NULL); */
-/*     BIO_free(pkey_bio); */
-/*     if (pkey == NULL) { */
-/*         CPE_ERROR( */
-/*             em, "ssl: read pkey failed: %s\n%s", */
-/*             ERR_error_string(ERR_get_error(), NULL), key); */
-/*         return NULL; */
-/*     } */
-
-/*     return pkey; */
-/* } */
-
-mbedtls_pk_context * net_ssl_pkey_generate(net_ssl_protocol_t protocol) {
+mbedtls_pk_context *
+net_ssl_pkey_generate_rsa(net_ssl_protocol_t protocol) {
     net_protocol_t base_protocol = net_protocol_from_data(protocol);
-    
+    int rv;
+
     mbedtls_pk_context * pk = mem_alloc(protocol->m_alloc, sizeof(mbedtls_pk_context));
     if (pk == NULL) {
         CPE_ERROR(protocol->m_em, "ssl: %s: generate pkey: alloc fail", net_protocol_name(base_protocol));
         return NULL;
     }
-
-    mbedtls_mpi a;
-    mbedtls_mpi_init(&a);
-    mbedtls_mpi_lset(&a, 65537);
-
-    mbedtls_rsa_context rsa;
-    //mbedtls_rsa_init(&rsa);
-    mbedtls_mpi_free(&a);
-
-/*     RSA *rsa = RSA_new(); */
-/*     if (rsa == NULL) { */
-/*         CPE_ERROR( */
-/*             em, "ssl: generate pkey: RSA_new failed\n%s", */
-/*             ERR_error_string(ERR_get_error(), NULL)); */
-/*         BN_free(a); */
-/*         return NULL; */
-/*     } */
-
-    /* int rv = mbedtls_rsa_gen_key(&rsa, */
-    /*                      int (*f_rng)(void *, unsigned char *, size_t), */
-    /*                      void *p_rng, */
-    /*                      unsigned int nbits, int exponent ); */
+    mbedtls_pk_init(pk);
     
-/*     if (RSA_generate_key_ex(rsa, 2048, a, NULL) != 1) { */
-/*         CPE_ERROR( */
-/*             em, "sfox: sfox-http2: generate pkey: generate key failed\n%s", */
-/*             ERR_error_string(ERR_get_error(), NULL)); */
-/*         BN_free(a); */
-/*         RSA_free(rsa); */
-/*         return NULL; */
-/*     } */
-/*     BN_free(a); */
+    if((rv = mbedtls_pk_setup(pk, mbedtls_pk_info_from_type(MBEDTLS_PK_RSA))) != 0) {
+        char error_buf[1024];
+        CPE_ERROR(
+            protocol->m_em, "ssl: %s: generate pkey: mbedtls_pk_setup() returned -0x%04X(%s)",
+            net_protocol_name(base_protocol), -rv, net_ssl_strerror(error_buf, sizeof(error_buf), rv));
+        goto PROCESS_ERROR;
+    }
+    
+    if ((rv = mbedtls_rsa_gen_key(
+             mbedtls_pk_rsa(*pk), mbedtls_ctr_drbg_random, protocol->m_ctr_drbg, 2048, 65537)) < 0) {
+        char error_buf[1024];
+        CPE_ERROR(
+            protocol->m_em, "ssl: %s: generate pkey: mbedtls_rsa_gen_key() returned -0x%04X(%s)",
+            net_protocol_name(base_protocol), -rv, net_ssl_strerror(error_buf, sizeof(error_buf), rv));
+        goto PROCESS_ERROR;
+    }
 
-/*     EVP_PKEY* pkey = EVP_PKEY_new(); */
-/*     if (pkey == NULL) { */
-/*         CPE_ERROR( */
-/*             em, "ssl: generate pkey: PKEY_new failed\n%s", */
-/*             ERR_error_string(ERR_get_error(), NULL)); */
-/*         RSA_free(rsa); */
-/*         return NULL; */
-/*     } */
-    
-/*     if (EVP_PKEY_assign_RSA(pkey, rsa) != 1) { */
-/*         CPE_ERROR( */
-/*             em, "ssl: generate pkey: PKEY_assign_RSA failed\n%s", */
-/*             ERR_error_string(ERR_get_error(), NULL)); */
-/*         EVP_PKEY_free(pkey); */
-/*         return NULL; */
-/*     } */
-    
     return pk;
 
 PROCESS_ERROR:
+    mbedtls_pk_free(pk);
     mem_free(protocol->m_alloc, pk);
     return NULL;
 }
 
-const char * net_ssl_cert_generate(
-    net_ssl_protocol_t protocol, mem_buffer_t buffer,
-    int64_t serial,
-    const char * subject_name, mbedtls_pk_context * subject_pk,
-    const char * issuer_name, mbedtls_pk_context * issuer_pk,
-    const char * passwd)
+const char * net_ssl_cert_generate_selfsign(
+    net_ssl_protocol_t protocol, char * buf, uint32_t buf_capacity,
+    enum x509_crt_version ver, int64_t serial, 
+    const char * issuer_name, mbedtls_pk_context * issuer_pk)
 {
     int rv;
 
@@ -114,44 +63,62 @@ const char * net_ssl_cert_generate(
     mbedtls_mpi_init(&serial_mpi);
 
     if ((rv = mbedtls_mpi_lset(&serial_mpi, serial)) < 0) {
-        CPE_ERROR(protocol->m_em, "ssl: generate cert: serial set " FMT_INT64_T " failed, -0x%04X", serial, -rv);
+        char error_buf[1024];
+        CPE_ERROR(
+            protocol->m_em, "ssl: generate cert: serial set " FMT_INT64_T " failed, -0x%04X(%s)",
+            serial, -rv, net_ssl_strerror(error_buf, sizeof(error_buf), rv));
         mbedtls_mpi_free(&serial_mpi);
         goto PROCESS_ERROR;
     }
 
     if ((rv = mbedtls_x509write_crt_set_serial(&write_cert, &serial_mpi)) < 0) {
-        CPE_ERROR(protocol->m_em, "ssl: generate cert: set serial " FMT_INT64_T " failed, -0x%04X", serial, -rv);
+        char error_buf[1024];
+        CPE_ERROR(
+            protocol->m_em, "ssl: generate cert: set serial " FMT_INT64_T " failed, -0x%04X(%s)",
+            serial, -rv, net_ssl_strerror(error_buf, sizeof(error_buf), rv));
         mbedtls_mpi_free(&serial_mpi);
         goto PROCESS_ERROR;
     }
     mbedtls_mpi_free(&serial_mpi);
 
-    //"YYMMDDHHMMSSZ"
-    /* mbedtls_x509write_crt_set_validity( */
-    /*     &write_cert, const char *not_before, const char *not_after); */
-
-/*     X509_gmtime_adj(X509_getm_notBefore(x509), 0); */
-/*     X509_gmtime_adj(X509_getm_notAfter(x509), 31536000L); */
-
-    if ((rv = mbedtls_x509write_crt_set_subject_name(&write_cert, subject_name)) < 0) {
-        CPE_ERROR(protocol->m_em, "ssl: generate cert: set subject-name %s failed, -0x%04X", subject_name, -rv);
+    if ((rv = mbedtls_x509write_crt_set_subject_name(&write_cert, issuer_name)) < 0) {
+        char error_buf[1024];
+        CPE_ERROR(
+            protocol->m_em, "ssl: generate cert: set subject-name %s failed, -0x%04X(%s)",
+            issuer_name, -rv, net_ssl_strerror(error_buf, sizeof(error_buf), rv));
         goto PROCESS_ERROR;
     }
-    mbedtls_x509write_crt_set_subject_key(&write_cert, subject_pk);
+    mbedtls_x509write_crt_set_subject_key(&write_cert, issuer_pk);
 
     if ((rv = mbedtls_x509write_crt_set_issuer_name(&write_cert, issuer_name)) < 0) {
-        CPE_ERROR(protocol->m_em, "ssl: generate cert: set issuer-name %s failed, -0x%04X", issuer_name, -rv);
+        char error_buf[1024];
+        CPE_ERROR(
+            protocol->m_em, "ssl: generate cert: set issuer-name %s failed, -0x%04X(%s)",
+            issuer_name, -rv, net_ssl_strerror(error_buf, sizeof(error_buf), rv));
         goto PROCESS_ERROR;
     }
     mbedtls_x509write_crt_set_issuer_key(&write_cert, issuer_pk);
 
-    mem_buffer_clear_data(buffer);
+    mbedtls_x509write_crt_set_version(&write_cert, ver);
+    mbedtls_x509write_crt_set_md_alg(&write_cert, MBEDTLS_MD_SHA256);
 
-    uint32_t buf_capacity = 2048;
-    void * buf = mem_buffer_alloc(buffer, buf_capacity);
+    if ((rv = mbedtls_x509write_crt_set_validity(&write_cert, "20010101000000", "20301231235959")) != 0) {
+        char error_buf[1024];
+        CPE_ERROR(
+            protocol->m_em, "ssl: generate cert: set mbedtls_x509write_crt_set_validity %s failed, -0x%04X(%s)",
+            issuer_name, -rv, net_ssl_strerror(error_buf, sizeof(error_buf), rv));
+        goto PROCESS_ERROR;
+        //mbedtls_strerror( ret, buf, 1024 );
+    }
     
-    if ((rv = mbedtls_x509write_crt_pem(&write_cert, buf, buf_capacity, net_ssl_rng_from_string, (void*)passwd)) < 0) {
-        CPE_ERROR(protocol->m_em, "ssl: generate cert: write pem fail, -0x%04X", -rv);
+    if ((rv = mbedtls_x509write_crt_pem(
+             &write_cert, (unsigned char *)buf, buf_capacity,
+             mbedtls_ctr_drbg_random, protocol->m_ctr_drbg)) < 0)
+    {
+        char error_buf[1024];
+        CPE_ERROR(
+            protocol->m_em, "ssl: generate cert: write pem fail, -0x%04X(%s)",
+            -rv, net_ssl_strerror(error_buf, sizeof(error_buf), rv));
         goto PROCESS_ERROR;
     }
 
@@ -173,23 +140,20 @@ const char * net_ssl_dump_cert_info(mem_buffer_t buffer, mbedtls_x509_crt * cert
     
     int rv = mbedtls_x509_crt_info(buf, capacity, "\r  ", cert);
     if (rv < 0) {
-        snprintf(buf, capacity, "mbedtls_x509_crt_info() returned -0x%04X", -rv);
+        char error_buf[1024];
+        snprintf(
+            buf, capacity, "mbedtls_x509_crt_info() returned -0x%04X(%s)",
+            -rv, net_ssl_strerror(error_buf, sizeof(error_buf), rv));
     } 
     
     return buf;
 }
 
-int net_ssl_rng_from_string(void * ctx, unsigned char * o_buf, size_t o_capacity) {
-    const char * passwd = ctx;
-    if (passwd == NULL) return 0;
-    
-    uint32_t passwd_len = strlen(passwd);
-    if (passwd_len > o_capacity) {
-    }
-    
-    return 0;
+const char * net_ssl_strerror(char * buf, uint32_t buf_capacity, int code) {
+    mbedtls_strerror(code, buf, buf_capacity);
+    return buf;
 }
-        
+
 /* const char * net_ssl_dump_data(mem_buffer_t buffer, void const * buf, size_t size) { */
 /*     mem_buffer_clear_data(buffer); */
 /*     struct write_stream_buffer ws = CPE_WRITE_STREAM_BUFFER_INITIALIZER(buffer); */

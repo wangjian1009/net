@@ -1,6 +1,7 @@
 #ifndef NET_SSL_PROTOCOL_I_H_INCLEDED
 #define NET_SSL_PROTOCOL_I_H_INCLEDED
 #include "mbedtls/ssl.h"
+#include "mbedtls/error.h"
 #include "mbedtls/entropy.h"
 #include "mbedtls/ctr_drbg.h"
 #include "cpe/utils/error.h"

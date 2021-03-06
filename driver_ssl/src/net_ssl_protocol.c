@@ -104,14 +104,14 @@ net_ssl_protocol_create(
         protocol->m_ctr_drbg, mbedtls_entropy_func, protocol->m_entropy,
         (const unsigned char *)DRBG_PERSONALIZED_STR, strlen(DRBG_PERSONALIZED_STR) + 1);
     if (rv != 0) {
-        CPE_ERROR(em, "ssl: %s: protocol: mbedtls_ctr_drbg_seed returned -0x%04X", net_protocol_name(base_protocol), -rv);
+        char error_buf[1024];
+        CPE_ERROR(em, "ssl: %s: protocol: mbedtls_ctr_drbg_seed returned -0x%04X(%s)",
+                  net_protocol_name(base_protocol), -rv, net_ssl_strerror(error_buf, sizeof(error_buf), rv));
         goto INIT_ERROR;
     }
 
     //SSL_CTX_set_next_proto_select_cb(protocol->m_ssl_ctx, sfox_sfox_protocol_select_next_proto_cb, protocol);
-
     /* SSL_CTX_set_alpn_protos(protocol->m_ssl_ctx, (const unsigned char *)"\x02h2", 3); */
-    
     
     return protocol;
 
@@ -162,18 +162,28 @@ int net_ssl_protocol_svr_use_pkey_from_string(net_ssl_protocol_t protocol, const
             net_protocol_name(base_protocol));
         return -1;
     }
+    mbedtls_pk_init(protocol->m_svr.m_pkey);
 
-    /* protocol->m_svr.m_pkey = net_ssl_pkey_from_string(protocol->m_em, key); */
-    /* if (protocol->m_svr.m_pkey == NULL) return -1; */
-
-    /* if (SSL_CTX_use_PrivateKey(protocol->m_ssl_ctx, protocol->m_svr.m_pkey) <= 0) { */
-    /*     CPE_ERROR( */
-    /*         protocol->m_em, "ssl: %s: use pkey failed, %s", */
-    /*         net_protocol_name(base_protocol), ERR_error_string(ERR_get_error(), NULL)); */
-    /*     return -1; */
-    /* } */
+    int rv;
+    if ((rv = mbedtls_pk_parse_key(
+             protocol->m_svr.m_pkey,
+             (const unsigned char *)key, strlen(key),
+             NULL, 0)) < 0)
+    {
+        char error_buf[1024];
+        CPE_ERROR(
+            protocol->m_em, "ssl: %s: use pkey: mbedtls_pk_parse_key() returned -0x%04X(%s), key=%s!",
+            net_protocol_name(base_protocol), -rv, net_ssl_strerror(error_buf, sizeof(error_buf), rv), key);
+        goto INIT_FAILED;
+    }
 
     return 0;
+
+INIT_FAILED:
+    mbedtls_pk_free(protocol->m_svr.m_pkey);
+    mem_free(protocol->m_alloc, protocol->m_svr.m_pkey);
+    protocol->m_svr.m_pkey = NULL;
+    return -1;
 }
 
 int net_ssl_protocol_svr_confirm_pkey(net_ssl_protocol_t protocol) {
@@ -181,9 +191,15 @@ int net_ssl_protocol_svr_confirm_pkey(net_ssl_protocol_t protocol) {
     
     if (protocol->m_svr.m_pkey != NULL) return 0;
 
-    protocol->m_svr.m_pkey = net_ssl_pkey_generate(protocol);
+    protocol->m_svr.m_pkey = net_ssl_pkey_generate_rsa(protocol);
     if (protocol->m_svr.m_pkey == NULL) return -1;
 
+    if (net_protocol_debug(base_protocol)) {
+        /* CPE_INFO( */
+        /*     protocol->m_em, "ssl: %s: confirm pkey: generated %s", */
+        /*     net_protocol_name(base_protocol),  */
+    }
+    
     /* if (SSL_CTX_use_PrivateKey(protocol->m_ssl_ctx, protocol->m_svr.m_pkey) <= 0) { */
     /*     CPE_ERROR( */
     /*         protocol->m_em, "ssl: %s: use pkey failed, %s", */
@@ -206,7 +222,7 @@ int net_ssl_protocol_use_cert_from_string(net_ssl_protocol_t protocol, const cha
     }
 
     protocol->m_svr.m_cert = mem_alloc(protocol->m_alloc, sizeof(mbedtls_x509_crt));
-    if (protocol->m_svr.m_cert) {
+    if (protocol->m_svr.m_cert == NULL) {
         CPE_ERROR(
             protocol->m_em, "ssl: %s: use cert: alloc fail!",
             net_protocol_name(base_protocol));
@@ -216,9 +232,10 @@ int net_ssl_protocol_use_cert_from_string(net_ssl_protocol_t protocol, const cha
 
     int rv = mbedtls_x509_crt_parse(protocol->m_svr.m_cert, (const unsigned char *)cert, strlen(cert) + 1);
     if (rv != 0) {
+        char error_buf[1024];
         CPE_ERROR(
-            protocol->m_em, "ssl: %s: use pkey: mbedtls_x509_crt_parse() returned -0x%04X\n",
-            net_protocol_name(base_protocol), -rv);
+            protocol->m_em, "ssl: %s: use pkey: mbedtls_x509_crt_parse() returned -0x%04X(%s)",
+            net_protocol_name(base_protocol), -rv, net_ssl_strerror(error_buf, sizeof(error_buf), rv));
         goto PROCESS_ERROR;
     }
     
@@ -265,24 +282,18 @@ int net_ssl_protocol_svr_confirm_cert(net_ssl_protocol_t protocol) {
     
     if (protocol->m_svr.m_cert != NULL) return 0;
 
-    struct mem_buffer cert_buf;
-    mem_buffer_init(&cert_buf, protocol->m_alloc);
+    char cert_buf[4096];
 
     const char * cert =
-        net_ssl_cert_generate(
-            protocol, &cert_buf,
-            1,
-            "C=CA,O=sfox.com,CN=localhost", protocol->m_svr.m_pkey,
-            "C=CA,O=sfox.com,CN=localhost", protocol->m_svr.m_pkey,
-            NULL);
+        net_ssl_cert_generate_selfsign(
+            protocol, cert_buf, sizeof(cert_buf),
+            1, x509_crt_version_3,
+            "CN=Cert,O=mbed TLS,C=UK", protocol->m_svr.m_pkey);
     if (cert == NULL) {
-        mem_buffer_clear(&cert_buf);
         return -1;
     }
 
-    int rv = net_ssl_protocol_use_cert_from_string(protocol, cert);
-    mem_buffer_clear(&cert_buf);
-    return rv;
+    return net_ssl_protocol_use_cert_from_string(protocol, cert);
 }
 
 int net_ssl_protocol_svr_prepaired(net_ssl_protocol_t protocol) {

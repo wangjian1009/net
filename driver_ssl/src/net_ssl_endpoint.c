@@ -7,6 +7,7 @@
 #include "net_endpoint.h"
 #include "net_ssl_endpoint_i.h"
 #include "net_ssl_stream_endpoint_i.h"
+#include "net_ssl_utils.h"
 
 #define net_ssl_endpoint_ep_write_cache net_ep_buf_user1
 #define net_ssl_endpoint_ep_read_cache net_ep_buf_user2
@@ -292,9 +293,8 @@ int net_ssl_endpoint_write(
 
 int net_ssl_endpoint_do_handshake(net_endpoint_t base_endpoint, net_ssl_endpoint_t endpoint) {
     net_ssl_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
-    
-    int r = mbedtls_ssl_handshake(endpoint->m_ssl);
 
+    int r = mbedtls_ssl_handshake(endpoint->m_ssl);
     if (r < 0) {
         return net_ssl_endpoint_update_error(base_endpoint, r);
     }
@@ -339,10 +339,11 @@ int net_ssl_endpoint_do_handshake(net_endpoint_t base_endpoint, net_ssl_endpoint
 void net_ssl_endpoint_dump_error(net_endpoint_t base_endpoint, int val) {
     net_ssl_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
 
+    char error_buf[1024];
     CPE_ERROR(
         protocol->m_em, "ssl: %s: SSL: Error was %s!",
         net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_endpoint),
-        mbedtls_high_level_strerr(val));
+        net_ssl_strerror(error_buf, sizeof(error_buf), val));
 
 /*     int err; */
 /* 	while ((err = ERR_get_error())) { */
@@ -361,8 +362,6 @@ static int net_ssl_endpoint_update_error(net_endpoint_t base_endpoint, int ssl_e
     net_ssl_endpoint_t endpoint = net_endpoint_protocol_data(base_endpoint);
     net_ssl_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
 
-/*     uint8_t dirty_shutdown = 0; */
-
     switch (ssl_error) {
     case MBEDTLS_ERR_SSL_WANT_READ:
         if (net_endpoint_protocol_debug(base_endpoint) >= 2) {
@@ -378,26 +377,12 @@ static int net_ssl_endpoint_update_error(net_endpoint_t base_endpoint, int ssl_e
                 net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_endpoint));
         }
         return 0;
-/*     case SSL_ERROR_ZERO_RETURN: */
-/*         /\* Possibly a clean shutdown. *\/ */
-/*         if (SSL_get_shutdown(endpoint->m_ssl) & SSL_RECEIVED_SHUTDOWN) { */
-/*             return net_endpoint_set_state(base_endpoint, net_endpoint_state_disable); */
-/*         } */
-/*         else { */
-/*             dirty_shutdown = 1; */
-/*         } */
-/*         break; */
-/*     case SSL_ERROR_SYSCALL: */
-/*         /\* IO error; possibly a dirty shutdown. *\/ */
-/*         if ((r == 0 || r == -1) && ERR_peek_error() == 0) { */
-/*             dirty_shutdown = 1; */
-/*         } */
-/*         /\* 	put_error(bev_ssl, errcode); *\/ */
-/*         break; */
     default:
         net_ssl_endpoint_dump_error(base_endpoint, ssl_error);
+        char error_buf[1024];
         net_endpoint_set_error(
-            base_endpoint, net_endpoint_error_source_ssl, ssl_error, mbedtls_high_level_strerr(ssl_error));
+            base_endpoint, net_endpoint_error_source_ssl, ssl_error,
+            net_ssl_strerror(error_buf, sizeof(error_buf), ssl_error));
         return net_endpoint_set_state(base_endpoint, net_endpoint_state_error);
     }
     return 0;
@@ -525,7 +510,7 @@ static void net_ssl_endpoint_ssl_debug(void *ctx, int level, const char *file, i
 }
 
 static int net_ssl_endpoint_ssl_init(net_ssl_endpoint_t endpoint) {
-    net_protocol_t base_protocol = net_protocol_from_data(net_endpoint_protocol(endpoint->m_base_endpoint));
+    net_protocol_t base_protocol = net_endpoint_protocol(endpoint->m_base_endpoint);
     net_ssl_protocol_t protocol = net_protocol_data(base_protocol);
     int rv;
 
@@ -542,9 +527,6 @@ static int net_ssl_endpoint_ssl_init(net_ssl_endpoint_t endpoint) {
         goto INIT_FAILED;
     }
     mbedtls_ssl_config_init(endpoint->m_ssl_config);
-    mbedtls_ssl_conf_dbg(endpoint->m_ssl_config, net_ssl_endpoint_ssl_debug, endpoint);
-    mbedtls_ssl_conf_authmode(endpoint->m_ssl_config, MBEDTLS_SSL_VERIFY_REQUIRED);
-    mbedtls_ssl_conf_verify(endpoint->m_ssl_config, net_ssl_endpoint_ssl_verify, endpoint);
 
     if ((rv = mbedtls_ssl_config_defaults(
              endpoint->m_ssl_config,
@@ -552,14 +534,22 @@ static int net_ssl_endpoint_ssl_init(net_ssl_endpoint_t endpoint) {
              MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT))
         != 0)
     {
+        char error_buf[1024];
         CPE_ERROR(
-            protocol->m_em, "ssl: %s: init ssl: alloc client ssl_config_defaults fail, -0x%04X",
+            protocol->m_em, "ssl: %s: init ssl: alloc client ssl_config_defaults fail, -0x%04X(%s)",
             net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
-            -rv);
+            -rv, net_ssl_strerror(error_buf, sizeof(error_buf), rv));
         goto INIT_FAILED;
     }
     mbedtls_ssl_conf_rng(endpoint->m_ssl_config, mbedtls_ctr_drbg_random, protocol->m_ctr_drbg);
+    mbedtls_ssl_conf_dbg(endpoint->m_ssl_config, net_ssl_endpoint_ssl_debug, endpoint);
+    mbedtls_ssl_conf_authmode(endpoint->m_ssl_config, MBEDTLS_SSL_VERIFY_REQUIRED);
+    mbedtls_ssl_conf_verify(endpoint->m_ssl_config, net_ssl_endpoint_ssl_verify, endpoint);
     
+    if (endpoint->m_runing_mode == net_ssl_endpoint_runing_mode_svr) {
+        mbedtls_ssl_conf_ca_chain(endpoint->m_ssl_config, protocol->m_svr.m_cert, NULL);
+    }
+
     endpoint->m_ssl = mem_alloc(protocol->m_alloc, sizeof(mbedtls_ssl_context));
     if(endpoint->m_ssl == NULL) {
         CPE_ERROR(
@@ -570,18 +560,19 @@ static int net_ssl_endpoint_ssl_init(net_ssl_endpoint_t endpoint) {
     mbedtls_ssl_init(endpoint->m_ssl);
 
     if ((rv = mbedtls_ssl_setup(endpoint->m_ssl, endpoint->m_ssl_config)) != 0) {
+        char error_buf[1024];
         CPE_ERROR(
-            protocol->m_em, "ssl: %s: ssl init: mbedtls_ssl_setup fail, -0x%04X",
+            protocol->m_em, "ssl: %s: ssl init: mbedtls_ssl_setup fail, -0x%04X(%s)",
             net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
-            -rv);
+            -rv, net_ssl_strerror(error_buf, sizeof(error_buf), rv));
         goto INIT_FAILED;
     }
 
     if (endpoint->m_runing_mode == net_ssl_endpoint_runing_mode_svr) {
-        mbedtls_ssl_conf_ca_chain(endpoint->m_ssl_config, protocol->m_svr.m_cert, NULL);
         /* if ((rv = mbedtls_ssl_set_hostname(endpoint->m_ssl, server_name)) != 0) { */
-        /*     mbedtls_printf("mbedtls_ssl_set_hostname() rvurned -0x%04X\n", */
-        /*         -rv); */
+        //char error_buf[1024];
+        /*     mbedtls_printf("mbedtls_ssl_set_hostname() rvurned -0x%04X(%s)\n", */
+        /*         -rv, net_ssl_strerror(error_buf, sizeof(error_buf), rv)); */
         /*     goto SSL_SETUP_FAIL; */
         /* } */
     }
@@ -602,7 +593,7 @@ INIT_FAILED:
 
 static int net_ssl_endpoint_ssl_verify(void *ctx, mbedtls_x509_crt *crt, int depth, uint32_t *flags) {
     net_ssl_endpoint_t endpoint = ctx;
-    net_protocol_t base_protocol = net_protocol_from_data(net_endpoint_protocol(endpoint->m_base_endpoint));
+    net_protocol_t base_protocol = net_endpoint_protocol(endpoint->m_base_endpoint);
     net_ssl_protocol_t protocol = net_protocol_data(base_protocol);
     int ret = 0;
 
@@ -618,10 +609,11 @@ static int net_ssl_endpoint_ssl_verify(void *ctx, mbedtls_x509_crt *crt, int dep
         char gp_buf[1024];
         ret = mbedtls_x509_crt_info(gp_buf, sizeof(gp_buf), "\r  ", crt);
         if (ret < 0) {
+            char error_buf[1024];
             CPE_ERROR(
-                protocol->m_em, "ssl: %s: ssl verify: mbedtls_x509_crt_info() returned -0x%04X",
+                protocol->m_em, "ssl: %s: ssl verify: mbedtls_x509_crt_info() returned -0x%04X(%s)",
                 net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
-                -ret);
+                -ret, net_ssl_strerror(error_buf, sizeof(error_buf), ret));
         } else {
             CPE_INFO(
                 protocol->m_em, "ssl: %s: ssl verify: depth=%d\n%s",

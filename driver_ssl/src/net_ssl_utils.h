@@ -3,17 +3,21 @@
 #include "cpe/utils/utils_types.h"
 #include "net_ssl_protocol_i.h"
 
-mbedtls_pk_context * net_ssl_pkey_from_string(net_ssl_protocol_t protocol, const char * key);
-mbedtls_pk_context * net_ssl_pkey_generate(net_ssl_protocol_t protocol);
+enum x509_crt_version {
+    x509_crt_version_1,
+    x509_crt_version_2,
+    x509_crt_version_3,
+};
 
-int net_ssl_rng_from_string(void *, unsigned char *, size_t);
+mbedtls_pk_context * net_ssl_pkey_generate_rsa(net_ssl_protocol_t protocol);
 
-const char * net_ssl_cert_generate(
-    net_ssl_protocol_t protocol, mem_buffer_t tmp_buffer,
+const char * net_ssl_strerror(char * buf, uint32_t buf_capacity, int code);
+
+const char * net_ssl_cert_generate_selfsign(
+    net_ssl_protocol_t protocol, char * buf, uint32_t buf_len,
+    enum x509_crt_version ver,
     int64_t serial,
-    const char * subject_name, mbedtls_pk_context * subject_pk,
-    const char * issuer_name, mbedtls_pk_context * issuer_pk,
-    const char * passwd);
+    const char * issuer_name, mbedtls_pk_context * issuer_pk);
 
 const char * net_ssl_dump_cert_info(mem_buffer_t buffer, mbedtls_x509_crt * cert);
 
