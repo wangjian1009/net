@@ -15,4 +15,4 @@ set_property(TARGET net_driver_libevent PROPERTY INCLUDE_DIRECTORIES
   ${net_driver_libevent_base}/include
   )
 
-add_dependencies(net_driver_libevent libevent)
+target_link_libraries(net_driver_libevent INTERFACE net_driver_sock libevent)
