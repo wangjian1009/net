@@ -430,7 +430,7 @@ void net_http2_stream_endpoint_req_on_fini(void * ctx) {
         if (net_endpoint_error_source(stream->m_base_endpoint) == net_endpoint_error_source_none) {
             net_endpoint_set_error(
                 stream->m_base_endpoint,
-                net_endpoint_error_source_network, net_endpoint_network_errno_logic, "req fini");
+                net_endpoint_error_source_network, net_endpoint_network_errno_internal, "req fini");
         }
 
         if (net_endpoint_set_state(stream->m_base_endpoint, net_endpoint_state_error) != 0) {

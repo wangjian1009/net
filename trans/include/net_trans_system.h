@@ -25,7 +25,6 @@ typedef enum net_trans_task_error {
     , net_trans_task_error_net_unreachable
     , net_trans_task_error_net_down
     , net_trans_task_error_host_unreachable
-    , net_trans_task_error_connect
     , net_trans_task_error_local_cancel
     , net_trans_task_error_internal = -1
 } net_trans_task_error_t;

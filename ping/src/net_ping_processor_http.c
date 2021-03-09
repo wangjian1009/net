@@ -59,7 +59,6 @@ static void net_ping_processor_http_task_commit(net_trans_task_t trans_task, voi
         case net_trans_task_error_net_unreachable:
         case net_trans_task_error_net_down:
         case net_trans_task_error_host_unreachable:
-        case net_trans_task_error_connect:
         case net_trans_task_error_local_cancel:
         case net_trans_task_error_internal:
             net_point_processor_set_result_one(

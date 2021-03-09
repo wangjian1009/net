@@ -925,8 +925,6 @@ const char * net_trans_task_error_str(net_trans_task_error_t err) {
         return "net-down";
     case net_trans_task_error_host_unreachable:
         return "host-unreachable";
-    case net_trans_task_error_connect:
-        return "connect";
     case net_trans_task_error_local_cancel:
         return "local-cancel";
     case net_trans_task_error_internal:
@@ -958,9 +956,6 @@ int net_trans_task_error_from_str(const char * err, net_trans_task_error_t * r) 
     else if (strcmp(err, "host-unreachable") == 0) {
         *r = net_trans_task_error_host_unreachable;
     }
-    else if (strcmp(err, "connect") == 0) {
-        *r = net_trans_task_error_connect;
-    }
     else if (strcmp(err, "internal") == 0) {
         *r = net_trans_task_error_internal;
     }
@@ -978,7 +973,6 @@ uint8_t net_trans_task_error_is_network_error(net_trans_task_error_t err) {
     case net_trans_task_error_net_unreachable:
     case net_trans_task_error_net_down:
     case net_trans_task_error_host_unreachable:
-    case net_trans_task_error_connect:
         return 1;
     default:
         return 0;

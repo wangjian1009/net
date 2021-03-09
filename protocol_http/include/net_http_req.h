@@ -35,7 +35,8 @@ typedef enum net_http_res_result {
     net_http_res_complete,
     net_http_res_timeout,
     net_http_res_canceled,
-    net_http_res_disconnected,
+    net_http_res_conn_error,
+    net_http_res_conn_disconnected,
 } net_http_res_result_t;
 
 typedef net_http_res_op_result_t (*net_http_req_on_res_begin_fun_t)(void * ctx, net_http_req_t req, uint16_t code, const char * msg);

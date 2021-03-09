@@ -84,7 +84,7 @@ int test_net_driver_read_from_other(net_endpoint_t base_endpoint, net_endpoint_t
                 net_endpoint_set_error(
                     base_endpoint,
                     net_endpoint_error_source_network,
-                    net_endpoint_network_errno_logic, NULL);
+                    net_endpoint_network_errno_internal, NULL);
             }
 
             if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {

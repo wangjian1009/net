@@ -262,10 +262,10 @@ int net_http_endpoint_on_state_change(net_endpoint_t endpoint, net_endpoint_stat
     case net_endpoint_state_write_closed:
         break;
     case net_endpoint_state_disable:
-        net_http_endpoint_reset_data(http_protocol, http_ep, net_http_res_canceled);
+        net_http_endpoint_reset_data(http_protocol, http_ep, net_http_res_conn_disconnected);
         break;
     case net_endpoint_state_error:
-        net_http_endpoint_reset_data(http_protocol, http_ep, net_http_res_canceled);
+        net_http_endpoint_reset_data(http_protocol, http_ep, net_http_res_conn_error);
         break;
     case net_endpoint_state_resolving:
         break;

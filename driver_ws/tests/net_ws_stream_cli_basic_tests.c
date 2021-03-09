@@ -88,7 +88,7 @@ static void net_ws_connect_error(void **state) {
 
     test_net_endpoint_expect_connect_error(
         underline, "1.2.3.4:5678",
-        net_endpoint_error_source_network, net_endpoint_network_errno_network_error, "error1",
+        net_endpoint_error_source_network, net_endpoint_network_errno_internal, "error1",
         0);
 
     assert_true(net_endpoint_connect(ep_base) != 0);
@@ -103,7 +103,7 @@ static void net_ws_connect_error(void **state) {
     
     assert_int_equal(
         net_endpoint_error_no(ep_base),
-        net_endpoint_network_errno_network_error);
+        net_endpoint_network_errno_internal);
 
     assert_string_equal(
         net_endpoint_error_msg(ep_base),
@@ -119,7 +119,7 @@ static void net_ws_connect_error_delay(void **state) {
 
     test_net_endpoint_expect_connect_error(
         underline, "1.2.3.4:5678",
-        net_endpoint_error_source_network, net_endpoint_network_errno_network_error, "error1",
+        net_endpoint_error_source_network, net_endpoint_network_errno_internal, "error1",
         100);
 
     assert_true(net_endpoint_connect(ep_base) == 0);
@@ -140,7 +140,7 @@ static void net_ws_connect_error_delay(void **state) {
     
     assert_int_equal(
         net_endpoint_error_no(ep_base),
-        net_endpoint_network_errno_network_error);
+        net_endpoint_network_errno_internal);
 
     assert_string_equal(
         net_endpoint_error_msg(ep_base),

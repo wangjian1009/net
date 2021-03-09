@@ -365,12 +365,6 @@ int net_http2_endpoint_on_stream_close_callback(
                 stream_id);
         }
 
-        if (net_endpoint_error_source(endpoint->m_base_endpoint) == net_endpoint_error_source_none) {
-            net_endpoint_set_error(
-                endpoint->m_base_endpoint,
-                net_endpoint_error_source_network, net_endpoint_network_errno_remote_closed, NULL);
-        }
-
         if (net_endpoint_set_state(endpoint->m_base_endpoint, net_endpoint_state_disable) != 0) {
             net_endpoint_set_state(endpoint->m_base_endpoint, net_endpoint_state_deleting);
         }
@@ -385,7 +379,7 @@ int net_http2_endpoint_on_stream_close_callback(
         if (net_endpoint_error_source(endpoint->m_base_endpoint) == net_endpoint_error_source_none) {
             net_endpoint_set_error(
                 endpoint->m_base_endpoint, net_endpoint_error_source_network,
-                net_endpoint_network_errno_remote_closed, net_http2_error_code_str(error_code));
+                net_endpoint_network_errno_remote_reset, net_http2_error_code_str(error_code));
         }
 
         if (net_endpoint_set_state(endpoint->m_base_endpoint, net_endpoint_state_error) != 0) {
@@ -656,7 +650,7 @@ int net_http2_endpoint_http2_flush(net_http2_endpoint_t endpoint) {
         if (net_endpoint_error_source(endpoint->m_base_endpoint) == net_endpoint_error_source_none) {
             net_endpoint_set_error(
                 endpoint->m_base_endpoint,
-                net_endpoint_error_source_network, net_endpoint_network_errno_logic, nghttp2_strerror(rv));
+                net_endpoint_error_source_network, net_endpoint_network_errno_internal, nghttp2_strerror(rv));
         }
         if (net_endpoint_set_state(endpoint->m_base_endpoint, net_endpoint_state_error) != 0) {
             net_endpoint_set_state(endpoint->m_base_endpoint, net_endpoint_state_deleting);

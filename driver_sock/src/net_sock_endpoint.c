@@ -30,6 +30,7 @@ static void net_sock_endpoint_connect_log_connect_success(
     net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint);
 
 static void net_sock_endpoint_close_sock(net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint);
+static void net_soc_endpoint_update_error_by_errno(net_endpoint_t base_endpoint, int err);
 
 int net_sock_endpoint_init(net_endpoint_t base_endpoint) {
     net_sock_endpoint_t endpoint = net_endpoint_data(base_endpoint);
@@ -302,10 +303,7 @@ CONNECT_AGAIN:
                 goto CONNECT_AGAIN;
             }
             else {
-                net_endpoint_set_error(
-                    base_endpoint, net_endpoint_error_source_network,
-                    net_endpoint_network_errno_connect_error, cpe_sock_errstr(cpe_sock_errno()));
-
+                net_soc_endpoint_update_error_by_errno(base_endpoint, cpe_sock_errno());
                 if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) return -1;
                 return -1;
             }
@@ -446,7 +444,7 @@ static void net_sock_endpoint_on_read(net_sock_driver_t driver, net_sock_endpoin
             errno, strerror(errno));
 
         if (!net_endpoint_have_error(base_endpoint)) {
-            net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_logic, NULL);
+            net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_internal, NULL);
         }
         if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
             net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
@@ -457,7 +455,7 @@ static void net_sock_endpoint_on_read(net_sock_driver_t driver, net_sock_endpoin
     uint32_t capacity = bytes_avaliable;
     void * rbuf = net_endpoint_buf_alloc_suggest(base_endpoint, &capacity);
     if (rbuf == NULL) {
-        net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_logic, NULL);
+        net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_internal, NULL);
         if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
             net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
         }
@@ -490,7 +488,7 @@ static void net_sock_endpoint_on_read(net_sock_driver_t driver, net_sock_endpoin
         if (net_endpoint_buf_supply(base_endpoint, net_ep_buf_read, (uint32_t)bytes) != 0) {
             if (net_endpoint_is_active(base_endpoint)) {
                 if (!net_endpoint_have_error(base_endpoint)) {
-                    net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_logic, NULL);
+                    net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_internal, NULL);
                 }
 
                 if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
@@ -511,10 +509,6 @@ static void net_sock_endpoint_on_read(net_sock_driver_t driver, net_sock_endpoin
         endpoint->m_read_closed = 1;
         if (endpoint->m_watcher) {
             net_watcher_update_read(endpoint->m_watcher, 0);
-        }
-
-        if (net_endpoint_error_no(base_endpoint) == 0) {
-            net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_remote_closed, NULL);
         }
 
         if (net_endpoint_state(base_endpoint) == net_endpoint_state_established) {
@@ -540,10 +534,8 @@ static void net_sock_endpoint_on_read(net_sock_driver_t driver, net_sock_endpoin
                 net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
                 cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
 
-            if (net_endpoint_error_no(base_endpoint) == 0) {
-                net_endpoint_set_error(
-                    base_endpoint, net_endpoint_error_source_network,
-                    net_endpoint_network_errno_network_error, cpe_sock_errstr(cpe_sock_errno()));
+            if (!net_endpoint_have_error(base_endpoint)) {
+                net_soc_endpoint_update_error_by_errno(base_endpoint, cpe_sock_errno());
             }
 
             if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
@@ -594,10 +586,7 @@ static void net_sock_endpoint_on_write(net_sock_driver_t driver, net_sock_endpoi
             }
 
             endpoint->m_write_closed = 1;
-            if (net_endpoint_error_no(base_endpoint) == 0) {
-                net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_remote_closed, NULL);
-            }
-            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
+            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_disable) != 0) {
                 net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
             }
             return;
@@ -623,24 +612,13 @@ static void net_sock_endpoint_on_write(net_sock_driver_t driver, net_sock_endpoi
         
             if (err == EINTR) continue;
 
-            if (err == EPIPE) {
-                if (net_endpoint_driver_debug(base_endpoint)) {
-                    CPE_INFO(
-                        driver->m_em, "sock: %s: fd=%d: free for send recv EPIPE!",
-                        net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
-                }
+            CPE_ERROR(
+                driver->m_em, "sock: %s: fd=%d: send error, errno=%d (%s)!",
+                net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
+                err, cpe_sock_errstr(err));
 
-                net_endpoint_set_error(
-                    base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_network_error, cpe_sock_errstr(err));
-            }
-            else {
-                CPE_ERROR(
-                    driver->m_em, "sock: %s: fd=%d: send error, errno=%d (%s)!",
-                    net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
-                    err, cpe_sock_errstr(err));
-
-                net_endpoint_set_error(
-                    base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_network_error, cpe_sock_errstr(err));
+            if (!net_endpoint_have_error(base_endpoint)) {
+                net_soc_endpoint_update_error_by_errno(base_endpoint, cpe_sock_errno());
             }
 
             if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
@@ -719,7 +697,7 @@ static void net_sock_endpoint_connect_cb(void * ctx, int fd, uint8_t do_read, ui
 
         net_endpoint_set_error(
             base_endpoint, net_endpoint_error_source_network,
-            net_endpoint_network_errno_network_error,
+            net_endpoint_network_errno_internal,
             cpe_sock_errstr(cpe_sock_errno()));
         if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
             net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
@@ -757,10 +735,8 @@ static void net_sock_endpoint_connect_cb(void * ctx, int fd, uint8_t do_read, ui
                 }
             }
             else {
-                net_endpoint_set_error(
-                    base_endpoint, net_endpoint_error_source_network,
-                    net_endpoint_network_errno_connect_error,
-                    cpe_sock_errstr(err));
+                net_soc_endpoint_update_error_by_errno(base_endpoint, err);
+
                 if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
                     net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
                     return;
@@ -1052,4 +1028,31 @@ static void net_sock_endpoint_update_watcher(net_sock_driver_t driver, net_sock_
         && !net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write);
 
     net_watcher_update(endpoint->m_watcher, need_read, need_write);
+}
+
+static void net_soc_endpoint_update_error_by_errno(net_endpoint_t base_endpoint, int err) {
+    switch (cpe_sock_errno()) {
+    case ENETRESET: /* Network dropped connection on reset */
+    case ECONNABORTED: /* Software caused connection abort */
+    case ENETDOWN: /* Network is down */
+        net_endpoint_set_error(
+            base_endpoint, net_endpoint_error_source_network,
+            net_endpoint_network_errno_net_down, cpe_sock_errstr(err));
+        break;
+    case ENETUNREACH: /* Network is unreachable */
+        net_endpoint_set_error(
+            base_endpoint, net_endpoint_error_source_network,
+            net_endpoint_network_errno_net_unreachable, cpe_sock_errstr(err));
+        break;
+    case ECONNRESET: /* Connection reset by peer */
+        net_endpoint_set_error(
+            base_endpoint, net_endpoint_error_source_network,
+            net_endpoint_network_errno_remote_reset, cpe_sock_errstr(err));
+        break;
+    default:
+        net_endpoint_set_error(
+            base_endpoint, net_endpoint_error_source_network,
+            net_endpoint_network_errno_internal, cpe_sock_errstr(err));
+        break;
+    }
 }

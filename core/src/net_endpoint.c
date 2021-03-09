@@ -748,18 +748,20 @@ const char * net_endpoint_network_errno_str(net_endpoint_network_errno_t error) 
     switch(error) {
     case net_endpoint_network_errno_none:
         return "none";
-    case net_endpoint_network_errno_remote_closed:
-        return "remote-closed";
+    case net_endpoint_network_errno_remote_reset:
+        return "remote-reset";
     case net_endpoint_network_errno_dns_error:
         return "dns-error";
-    case net_endpoint_network_errno_connect_error:
-        return "connect-error";
-    case net_endpoint_network_errno_network_error:
-        return "network-error";
+    case net_endpoint_network_errno_net_unreachable:
+        return "net-unreachable";
+    case net_endpoint_network_errno_net_down:
+        return "net-down";
+    case net_endpoint_network_errno_host_unreachable:
+        return "host-unreachable";
     case net_endpoint_network_errno_user_closed:
         return "user-closed";
-    case net_endpoint_network_errno_logic:
-        return "logic";
+    case net_endpoint_network_errno_internal:
+        return "internal";
     }
 }
 

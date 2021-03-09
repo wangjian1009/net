@@ -238,8 +238,10 @@ const char * net_http_res_result_str(net_http_res_result_t res_result) {
         return "http-res-timeout";
     case net_http_res_canceled:
         return "http-res-canceled";
-    case net_http_res_disconnected:
-        return "http-res-disconnected";
+    case net_http_res_conn_error:
+        return "http-res-conn-error";
+    case net_http_res_conn_disconnected:
+        return "http-res-conn-disconnected";
     }
 }
 

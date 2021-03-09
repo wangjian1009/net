@@ -158,7 +158,7 @@ int net_pair_endpoint_connect(net_endpoint_t base_endpoint) {
             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
         net_endpoint_set_error(
             base_endpoint,
-            net_endpoint_error_source_network, net_endpoint_network_errno_logic,
+            net_endpoint_error_source_network, net_endpoint_network_errno_internal,
             "pair other disconnected");
         if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
             if (net_endpoint_driver_debug(base_endpoint) >= 2) {
@@ -179,7 +179,7 @@ int net_pair_endpoint_connect(net_endpoint_t base_endpoint) {
             net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
         net_endpoint_set_error(
             base_endpoint,
-            net_endpoint_error_source_network, net_endpoint_network_errno_logic,
+            net_endpoint_error_source_network, net_endpoint_network_errno_internal,
             "pair other disconnected");
         if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
             if (net_endpoint_driver_debug(base_endpoint) >= 2) {
@@ -256,7 +256,7 @@ int net_pair_endpoint_update(net_endpoint_t base_endpoint) {
 
                 if (net_endpoint_error_source(base_other) == net_endpoint_error_source_none) {
                     net_endpoint_set_error(
-                        base_other, net_endpoint_error_source_network, net_endpoint_network_errno_logic, NULL);
+                        base_other, net_endpoint_error_source_network, net_endpoint_network_errno_internal, NULL);
                 }
                 
                 if (net_endpoint_set_state(base_other, net_endpoint_state_error) != 0) {
@@ -281,7 +281,7 @@ int net_pair_endpoint_update(net_endpoint_t base_endpoint) {
                     net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
                 net_endpoint_set_error(
                     base_endpoint,
-                    net_endpoint_error_source_network, net_endpoint_network_errno_logic,
+                    net_endpoint_error_source_network, net_endpoint_network_errno_internal,
                     "pair other disconnected");
                 if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
                     net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
@@ -351,7 +351,7 @@ int net_pair_endpoint_update(net_endpoint_t base_endpoint) {
                 if (net_endpoint_state(base_endpoint) == net_endpoint_state_established) {
                     net_endpoint_set_error(
                         base_endpoint,
-                        net_endpoint_error_source_network, net_endpoint_network_errno_logic,
+                        net_endpoint_error_source_network, net_endpoint_network_errno_internal,
                         "pair other write error");
                     if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
                         net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
@@ -392,7 +392,7 @@ void net_pair_endpoint_delay_process(net_timer_t timer, void * ctx) {
         if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) {
             net_endpoint_set_error(
                 base_endpoint,
-                net_endpoint_error_source_network, net_endpoint_network_errno_logic,
+                net_endpoint_error_source_network, net_endpoint_network_errno_internal,
                 "unknown error in delay process");
             if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
                 net_endpoint_free(base_endpoint);

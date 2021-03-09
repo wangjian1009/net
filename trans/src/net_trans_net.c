@@ -130,12 +130,12 @@ void net_trans_check_multi_info(net_trans_manage_t mgr) {
                             err = net_trans_task_error_net_down;
                             break;
                         default:
-                            err = net_trans_task_error_connect;
+                            err = net_trans_task_error_internal;
                             break;
                         }
                     }
                     else {
-                        err = net_trans_task_error_connect;
+                        err = net_trans_task_error_internal;
                     }
                     break;
                 }

@@ -107,12 +107,13 @@ typedef enum net_local_ip_stack {
 
 typedef enum net_endpoint_network_errno {
     net_endpoint_network_errno_none,
-    net_endpoint_network_errno_remote_closed,
+    net_endpoint_network_errno_remote_reset,
     net_endpoint_network_errno_dns_error,
-    net_endpoint_network_errno_connect_error,
-    net_endpoint_network_errno_network_error,
+    net_endpoint_network_errno_net_unreachable,
+    net_endpoint_network_errno_net_down,
+    net_endpoint_network_errno_host_unreachable,
     net_endpoint_network_errno_user_closed,
-    net_endpoint_network_errno_logic,
+    net_endpoint_network_errno_internal,
 } net_endpoint_network_errno_t;
 
 typedef enum net_endpoint_error_source {

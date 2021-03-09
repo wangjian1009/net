@@ -507,7 +507,7 @@ void net_xkcp_endpoint_on_write(net_xkcp_endpoint_t endpoint) {
 
             if (net_endpoint_error_source(base_endpoint) == net_endpoint_error_source_none) {
                 net_endpoint_set_error(
-                    base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_network_error, NULL);
+                    base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_internal, NULL);
             }
             
             if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
@@ -568,7 +568,7 @@ void net_xkcp_endpoint_kcp_forward_data(net_xkcp_endpoint_t endpoint) {
             if (net_endpoint_error_source(base_endpoint) == net_endpoint_error_source_none) {
                 net_endpoint_set_error(
                     base_endpoint,
-                    net_endpoint_error_source_network, net_endpoint_network_errno_logic, "alloc buf fail!");
+                    net_endpoint_error_source_network, net_endpoint_network_errno_internal, "alloc buf fail!");
             }
             if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
                 net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
@@ -588,7 +588,7 @@ void net_xkcp_endpoint_kcp_forward_data(net_xkcp_endpoint_t endpoint) {
             if (net_endpoint_error_no(base_endpoint) == 0) {
                 net_endpoint_set_error(
                     base_endpoint, net_endpoint_error_source_network,
-                    net_endpoint_network_errno_logic, NULL);
+                    net_endpoint_network_errno_internal, NULL);
             }
 
             if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
@@ -608,7 +608,7 @@ void net_xkcp_endpoint_kcp_forward_data(net_xkcp_endpoint_t endpoint) {
         if (net_endpoint_buf_supply(base_endpoint, net_ep_buf_read, nrecv) != 0) {
             if (net_endpoint_is_active(base_endpoint)) {
                 if (!net_endpoint_have_error(base_endpoint)) {
-                    net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_logic, NULL);
+                    net_endpoint_set_error(base_endpoint, net_endpoint_error_source_network, net_endpoint_network_errno_internal, NULL);
                 }
 
                 if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {

@@ -261,7 +261,7 @@ static void net_ws_endpoint_on_msg_recv(
                 if (net_endpoint_is_active(base_stream)) {
                     if (!net_endpoint_have_error(base_stream)) {
                         net_endpoint_set_error(
-                            base_stream, net_endpoint_error_source_network, net_endpoint_network_errno_logic, "WsForwardError");
+                            base_stream, net_endpoint_error_source_network, net_endpoint_network_errno_internal, "WsForwardError");
                     }
                     if (net_endpoint_set_state(base_stream, net_endpoint_state_error) != 0) {
                         net_endpoint_set_state(base_stream, net_endpoint_state_deleting);
