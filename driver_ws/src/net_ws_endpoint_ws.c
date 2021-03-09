@@ -275,9 +275,18 @@ static void net_ws_endpoint_on_msg_recv(
         }
         break;
     case WSLAY_CONNECTION_CLOSE:
-        CPE_ERROR(
-            protocol->m_em, "ws: %s: close: not support!",
-            net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint));
+        if (endpoint->m_stream) {
+            net_endpoint_t base_stream = net_endpoint_from_data(endpoint->m_stream);
+            if (net_endpoint_is_active(base_stream)) {
+                if (net_endpoint_set_state(base_stream, net_endpoint_state_disable) != 0) {
+                    net_endpoint_set_state(base_stream, net_endpoint_state_deleting);
+                }
+            }
+        } else {
+            CPE_ERROR(
+                protocol->m_em, "ws: %s: close: not support!",
+                net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint));
+        }
         break;
     case WSLAY_PING:
         CPE_ERROR(
