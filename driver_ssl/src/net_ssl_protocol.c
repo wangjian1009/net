@@ -89,7 +89,7 @@ net_ssl_protocol_create(
     }
     mbedtls_entropy_init(protocol->m_entropy);
 
-    mbedtls_debug_set_threshold(4);
+    mbedtls_debug_set_threshold(2);
     
     /*ctr_drgb*/
     protocol->m_ctr_drbg = mem_alloc(alloc, sizeof(mbedtls_ctr_drbg_context));
