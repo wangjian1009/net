@@ -129,6 +129,7 @@ void net_pair_endpoint_fini(net_endpoint_t base_endpoint) {
 
     if (endpoint->m_delay_processor) {
         net_timer_free(endpoint->m_delay_processor);
+        endpoint->m_delay_processor = NULL;
     }
     
     if (endpoint->m_other) {
