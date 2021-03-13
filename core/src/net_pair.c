@@ -209,7 +209,7 @@ int net_pair_endpoint_update(net_endpoint_t base_endpoint) {
 
     assert(endpoint->m_other == NULL
            || endpoint->m_other->m_other == endpoint);
-    
+
     switch(net_endpoint_state(base_endpoint)) {
     case net_endpoint_state_read_closed:
         if (endpoint->m_is_state_bind && base_other) {
@@ -240,8 +240,10 @@ int net_pair_endpoint_update(net_endpoint_t base_endpoint) {
             endpoint->m_other->m_is_state_bind = 0;
 
             if (endpoint->m_is_state_bind) {
-                if (net_endpoint_set_state(base_other, net_endpoint_state_disable) != 0) {
-                    net_endpoint_set_state(base_other, net_endpoint_state_deleting);
+                if (net_endpoint_is_active(base_other)) {
+                    if (net_endpoint_set_state(base_other, net_endpoint_state_disable) != 0) {
+                        net_endpoint_set_state(base_other, net_endpoint_state_deleting);
+                    }
                 }
             }
         }
@@ -255,13 +257,15 @@ int net_pair_endpoint_update(net_endpoint_t base_endpoint) {
                 net_endpoint_t base_other = net_endpoint_from_data(endpoint->m_other);
                 assert(endpoint->m_other->m_other == endpoint);
 
-                if (net_endpoint_error_source(base_other) == net_endpoint_error_source_none) {
-                    net_endpoint_set_error(
-                        base_other, net_endpoint_error_source_network, net_endpoint_network_errno_internal, NULL);
-                }
-                
-                if (net_endpoint_set_state(base_other, net_endpoint_state_error) != 0) {
-                    net_endpoint_set_state(base_other, net_endpoint_state_deleting);
+                if (net_endpoint_is_active(base_other)) {
+                    if (net_endpoint_error_source(base_other) == net_endpoint_error_source_none) {
+                        net_endpoint_set_error(
+                            base_other, net_endpoint_error_source_network, net_endpoint_network_errno_internal, NULL);
+                    }
+
+                    if (net_endpoint_set_state(base_other, net_endpoint_state_error) != 0) {
+                        net_endpoint_set_state(base_other, net_endpoint_state_deleting);
+                    }
                 }
             }
         }
