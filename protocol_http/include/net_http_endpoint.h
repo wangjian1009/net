@@ -11,10 +11,10 @@ void net_http_endpoint_free(net_http_endpoint_t http_ep);
 net_http_endpoint_t net_http_endpoint_get(net_endpoint_t endpoint);
 
 net_http_protocol_t net_http_endpoint_protocol(net_http_endpoint_t http_ep);
-net_endpoint_t net_http_endpoint_net_ep(net_http_endpoint_t http_ep);
+net_endpoint_t net_http_endpoint_base_endpoint(net_http_endpoint_t http_ep);
 net_schedule_t net_http_endpoint_schedule(net_http_endpoint_t http_ep);
 
-net_endpoint_t net_http_endpoint_net_ep(net_http_endpoint_t http_ep);
+net_endpoint_t net_http_endpoint_base_endpoint(net_http_endpoint_t http_ep);
 
 uint32_t net_http_endpoint_reconnect_span_ms(net_http_endpoint_t http_ep);
 void net_http_endpoint_set_reconnect_span_ms(net_http_endpoint_t http_ep, uint32_t span_ms);

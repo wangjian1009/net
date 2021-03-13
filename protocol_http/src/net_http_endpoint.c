@@ -47,7 +47,7 @@ net_schedule_t net_http_endpoint_schedule(net_http_endpoint_t http_ep) {
     return net_endpoint_schedule(http_ep->m_endpoint);
 }
 
-net_endpoint_t net_http_endpoint_net_ep(net_http_endpoint_t http_ep) {
+net_endpoint_t net_http_endpoint_base_endpoint(net_http_endpoint_t http_ep) {
     return http_ep->m_endpoint;
 }
 
