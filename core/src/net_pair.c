@@ -279,7 +279,9 @@ int net_pair_endpoint_update(net_endpoint_t base_endpoint) {
         
         if (endpoint->m_is_writing) return 0;
 
-        while (!net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write)) {
+        while (!net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write)
+               && net_endpoint_is_writeable(base_endpoint))
+        {
             if (endpoint->m_other == NULL) {
                 CPE_ERROR(
                     schedule->m_em, "core: pair: %s: other end disconnected",
@@ -292,6 +294,7 @@ int net_pair_endpoint_update(net_endpoint_t base_endpoint) {
                     net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
                     return -1;
                 }
+                return -1;
             }
 
             net_endpoint_t base_other = net_endpoint_from_data(endpoint->m_other);
@@ -329,6 +332,7 @@ int net_pair_endpoint_update(net_endpoint_t base_endpoint) {
             }
 
             if (endpoint->m_other->m_is_writing) {
+                assert(net_endpoint_is_active(base_endpoint));
                 if (endpoint->m_delay_processor == NULL) {
                     endpoint->m_delay_processor = net_timer_auto_create(schedule, net_pair_endpoint_delay_process, base_endpoint);
                     if (endpoint->m_delay_processor == NULL) {
@@ -348,22 +352,36 @@ int net_pair_endpoint_update(net_endpoint_t base_endpoint) {
             int rv = net_endpoint_buf_append_from_other(base_other, net_ep_buf_read, base_endpoint, net_ep_buf_write, 0);
             endpoint->m_is_writing = 0;
 
+            if (net_endpoint_state(base_endpoint) == net_endpoint_state_deleting) return -1;
+            
             if (rv != 0) {
                 CPE_ERROR(
                     schedule->m_em, "core: pair: %s: write to other faild",
                     net_endpoint_dump(net_schedule_tmp_buffer(schedule), base_endpoint));
 
-                if (net_endpoint_state(base_endpoint) == net_endpoint_state_established) {
-                    net_endpoint_set_error(
-                        base_endpoint,
-                        net_endpoint_error_source_network, net_endpoint_network_errno_internal,
-                        "pair other write error");
-                    if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
-                        net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+                if (net_endpoint_is_active(base_endpoint)) {
+                    if (net_endpoint_state(base_other) == net_endpoint_state_deleting
+                        || net_endpoint_state(base_other) == net_endpoint_state_disable) {
+                        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_disable) != 0) {
+                            net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+                            return -1;
+                        }
+                        return 0;
+                    } else {
+                        if (net_endpoint_state(base_endpoint) == net_endpoint_state_established) {
+                            net_endpoint_set_error(
+                                base_endpoint,
+                                net_endpoint_error_source_network, net_endpoint_network_errno_internal,
+                                "pair other write error");
+                            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
+                                net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+                                return -1;
+                            }
+                        }
                         return -1;
                     }
                 }
-                return 0;
+                return -1;
             }
 
             if (net_endpoint_driver_debug(base_endpoint)) {
@@ -394,7 +412,7 @@ void net_pair_endpoint_delay_process(net_timer_t timer, void * ctx) {
     net_endpoint_t base_endpoint = ctx;
 
     if (net_pair_endpoint_update(base_endpoint) != 0) {
-        if (net_endpoint_state(base_endpoint) != net_endpoint_state_established) {
+        if (net_endpoint_is_active(base_endpoint)) {
             net_endpoint_set_error(
                 base_endpoint,
                 net_endpoint_error_source_network, net_endpoint_network_errno_internal,
