@@ -12,6 +12,7 @@
 #include "cpe/pal/pal_stdlib.h"
 #include "cpe/utils/hash_algo.h"
 #include "cpe/utils/bitarry.h"
+#include "cpe/utils/url.h"
 #include "cpe/utils/string_utils.h"
 #include "cpe/utils/stream_buffer.h"
 #include "cpe/utils/stream_mem.h"
@@ -79,6 +80,31 @@ net_address_t net_address_create_auto(net_schedule_t schedule, const char * url)
 
         return net_address_create_domain(schedule, url, port, NULL);
     }
+}
+
+net_address_t net_address_create_from_url(net_schedule_t schedule, cpe_url_t url) {
+    const char * host = cpe_url_host(url);
+    if (host == NULL || host[0] == 0) {
+        CPE_ERROR(schedule->m_em, "net_address_create_from_url: url no host");
+        return NULL;
+    }
+    
+    net_address_t address = net_address_create_auto(schedule, host);
+    if (address == NULL) return NULL;
+
+    if (cpe_url_port(url) == 0) {
+        if (strcmp(cpe_url_protocol(url), "http") == 0) {
+            net_address_set_port(address, 80);
+        }
+        else if (strcmp(cpe_url_protocol(url), "https") == 0) {
+            net_address_set_port(address, 443);
+        }
+    }
+    else {
+        net_address_set_port(address, cpe_url_port(url));
+    }
+    
+    return address;
 }
 
 net_address_t net_address_create_any(net_schedule_t schedule, net_address_type_t type, uint16_t port) {

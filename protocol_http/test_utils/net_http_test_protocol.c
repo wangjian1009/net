@@ -53,8 +53,8 @@ net_http_test_protocol_create_req(
     cpe_url_t url = cpe_url_parse(test_allocrator(), protocol->m_em, str_url);
     assert_true(url);
 
-    net_address_t address = net_address_create_auto(schedule, cpe_url_host(url));
-    if (address == NULL) fail_msg("url.host %s format error", cpe_url_host(url));
+    net_address_t address = net_address_create_from_url(schedule, url);
+    if (address == NULL) fail_msg("create address from url fail");
 
     net_http_test_conn_t conn = NULL;
     TAILQ_FOREACH(conn, &protocol->m_conns, m_next) {
@@ -69,6 +69,9 @@ net_http_test_protocol_create_req(
     if (conn == NULL) {
         conn = net_http_test_conn_create(protocol, driver, address);
         assert_true(conn);
+
+        net_endpoint_t endpoint = net_http_endpoint_base_endpoint(conn->m_endpoint);
+        assert_true(net_endpoint_connect(endpoint) == 0);
     }
 
     net_http_req_t req = net_http_req_create(conn->m_endpoint, method, str_url);

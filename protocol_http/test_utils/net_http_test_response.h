@@ -29,4 +29,6 @@ net_http_test_response_create(net_http_test_protocol_t protocol, net_http_req_t 
 
 void net_http_test_response_free(net_http_test_response_t response);
 
+const char * net_http_test_response_body_to_string(net_http_test_response_t response);
+
 #endif

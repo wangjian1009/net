@@ -112,3 +112,8 @@ void net_http_test_response_free(net_http_test_response_t response) {
     TAILQ_REMOVE(&protocol->m_responses, response, m_next);
     mem_free(test_allocrator(), response);
 }
+
+const char * net_http_test_response_body_to_string(net_http_test_response_t response) {
+    mem_buffer_append_char(&response->m_body, 0);
+    return mem_buffer_make_continuous(&response->m_body, 0);
+}

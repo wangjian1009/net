@@ -60,6 +60,8 @@ net_address_t net_address_create_local(net_schedule_t schedule, const char * pat
 
 net_address_t net_address_copy(net_schedule_t schedule, net_address_t from);
 
+net_address_t net_address_create_from_url(net_schedule_t schedule, cpe_url_t url);
+
 /*common*/
 net_address_t net_address_create_from_sockaddr(net_schedule_t schedule, struct sockaddr * addr, socklen_t addr_len);
 int net_address_to_sockaddr(net_address_t address, struct sockaddr * addr, socklen_t * addr_len);
