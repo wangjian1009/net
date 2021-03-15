@@ -1,6 +1,6 @@
 #include "cmocka_all.h"
 #include "net_http_testenv.h"
-#include "net_http_testenv_response.h"
+#include "net_http_test_response.h"
 #include "net_http_tests.h"
 #include "net_http_req.h"
 
@@ -23,7 +23,7 @@ static void http_method_head_response_no_content_lenth(void **state) {
 
     net_http_req_t req = net_http_req_create(ep, net_http_req_method_head, "/a/b/c");
 
-    net_http_testenv_response_t response = net_http_testenv_req_commit(env, req);
+    net_http_test_response_t response = net_http_test_req_commit(env->m_http_protocol, req);
 
     assert_true(response != NULL);
 
@@ -57,7 +57,7 @@ static void http_method_head_response_with_content_lenth(void **state) {
 
     net_http_req_t req = net_http_req_create(ep, net_http_req_method_head, "/a/b/c");
 
-    net_http_testenv_response_t response = net_http_testenv_req_commit(env, req);
+    net_http_test_response_t response = net_http_test_req_commit(env->m_http_protocol, req);
 
     assert_true(response != NULL);
 

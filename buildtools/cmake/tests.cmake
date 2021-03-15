@@ -1,6 +1,7 @@
 #test_utils
 include(${CMAKE_CURRENT_LIST_DIR}/test-utils-net-core.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/test-utils-net-driver-ws.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/test-utils-net-protocol-http.cmake)
 
 #tests
 include(${CMAKE_CURRENT_LIST_DIR}/tests-net-dns.cmake)

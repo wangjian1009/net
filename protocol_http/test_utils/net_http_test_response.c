@@ -1,9 +1,10 @@
+#include "test_memory.h"
 #include "cpe/utils/string_utils.h"
-#include "net_http_testenv_response.h"
+#include "net_http_test_response.h"
 
 net_http_res_op_result_t
-net_http_testenv_response_on_res_begin(void * ctx, net_http_req_t req, uint16_t code, const char * msg) {
-    net_http_testenv_response_t response = ctx;
+net_http_test_response_on_res_begin(void * ctx, net_http_req_t req, uint16_t code, const char * msg) {
+    net_http_test_response_t response = ctx;
 
     response->m_state = net_http_res_state_reading_head;
     response->m_code = code;
@@ -21,8 +22,8 @@ net_http_testenv_response_on_res_begin(void * ctx, net_http_req_t req, uint16_t 
 }
 
 net_http_res_op_result_t
-net_http_testenv_response_on_res_header(void * ctx, net_http_req_t req, const char * name, const char * value) {
-    net_http_testenv_response_t response = ctx;
+net_http_test_response_on_res_header(void * ctx, net_http_req_t req, const char * name, const char * value) {
+    net_http_test_response_t response = ctx;
 
     response->m_state = net_http_res_state_reading_head;
 
@@ -36,16 +37,16 @@ net_http_testenv_response_on_res_header(void * ctx, net_http_req_t req, const ch
 }
 
 net_http_res_op_result_t
-net_http_testenv_response_on_res_body(void * ctx, net_http_req_t req, void * data, size_t data_size) {
-    net_http_testenv_response_t response = ctx;
+net_http_test_response_on_res_body(void * ctx, net_http_req_t req, void * data, size_t data_size) {
+    net_http_test_response_t response = ctx;
     response->m_state = net_http_res_state_reading_body;
     mem_buffer_append(&response->m_body, data, data_size);
     return net_http_res_op_success;
 }
 
 net_http_res_op_result_t
-net_http_testenv_response_on_res_complete(void * ctx, net_http_req_t req, net_http_res_result_t result) {
-    net_http_testenv_response_t response = ctx;
+net_http_test_response_on_res_complete(void * ctx, net_http_req_t req, net_http_res_result_t result) {
+    net_http_test_response_t response = ctx;
 
     response->m_state = net_http_res_state_completed;
     response->m_result = result;
@@ -54,11 +55,11 @@ net_http_testenv_response_on_res_complete(void * ctx, net_http_req_t req, net_ht
     return net_http_res_op_success;
 }
 
-net_http_testenv_response_t
-net_http_testenv_response_create(net_http_testenv_t env, net_http_req_t req) {
-    net_http_testenv_response_t response = mem_alloc(test_allocrator(), sizeof(struct net_http_testenv_response));
+net_http_test_response_t
+net_http_test_response_create(net_http_test_protocol_t protocol, net_http_req_t req) {
+    net_http_test_response_t response = mem_alloc(test_allocrator(), sizeof(struct net_http_test_response));
 
-    response->m_env = env;
+    response->m_protocol = protocol;
     response->m_req_id = net_http_req_id(req);
     response->m_runing_req = req;
     response->m_state = net_http_res_state_reading_head;
@@ -71,10 +72,10 @@ net_http_testenv_response_create(net_http_testenv_t env, net_http_req_t req) {
     if (net_http_req_set_reader(
             req,
             response,
-            net_http_testenv_response_on_res_begin,
-            net_http_testenv_response_on_res_header,
-            net_http_testenv_response_on_res_body,
-            net_http_testenv_response_on_res_complete) != 0)
+            net_http_test_response_on_res_begin,
+            net_http_test_response_on_res_header,
+            net_http_test_response_on_res_body,
+            net_http_test_response_on_res_complete) != 0)
     {
         mem_free(test_allocrator(), response);
         return NULL;
@@ -82,12 +83,12 @@ net_http_testenv_response_create(net_http_testenv_t env, net_http_req_t req) {
 
     mem_buffer_init(&response->m_body, test_allocrator());
     
-    TAILQ_INSERT_TAIL(&env->m_responses, response, m_next);
+    TAILQ_INSERT_TAIL(&protocol->m_responses, response, m_next);
     return response;
 }
 
-void net_http_testenv_response_free(net_http_testenv_response_t response) {
-    net_http_testenv_t env = response->m_env;
+void net_http_test_response_free(net_http_test_response_t response) {
+    net_http_test_protocol_t protocol = response->m_protocol;
 
     if (response->m_runing_req) {
         net_http_req_clear_reader(response->m_runing_req);
@@ -108,6 +109,6 @@ void net_http_testenv_response_free(net_http_testenv_response_t response) {
     
     mem_buffer_clear(&response->m_body);
     
-    TAILQ_REMOVE(&env->m_responses, response, m_next);
+    TAILQ_REMOVE(&protocol->m_responses, response, m_next);
     mem_free(test_allocrator(), response);
 }
