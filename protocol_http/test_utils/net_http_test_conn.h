@@ -10,7 +10,7 @@ struct net_http_test_conn {
 
 net_http_test_conn_t
 net_http_test_conn_create(
-    net_http_test_protocol_t protocol, net_driver_t driver, const char * target);
+    net_http_test_protocol_t protocol, net_driver_t driver, net_address_t address);
 
 void net_http_test_conn_free(net_http_test_conn_t conn);
 

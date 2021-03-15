@@ -1,6 +1,9 @@
+#include "cmocka_all.h"
 #include "test_memory.h"
 #include "cpe/utils/url.h"
+#include "net_address.h"
 #include "net_protocol.h"
+#include "net_endpoint.h"
 #include "net_http_protocol.h"
 #include "net_http_endpoint.h"
 #include "net_http_test_protocol.h"
@@ -43,16 +46,37 @@ net_http_test_protocol_create_ep(net_http_test_protocol_t protocol, net_driver_t
 
 net_http_req_t
 net_http_test_protocol_create_req(
-    net_http_test_protocol_t protocol, net_http_req_method_t method, const char * str_url)
+    net_http_test_protocol_t protocol, net_driver_t driver, net_http_req_method_t method, const char * str_url)
 {
+    net_schedule_t schedule = net_protocol_schedule(net_protocol_from_data(protocol->m_protocol));
+    
     cpe_url_t url = cpe_url_parse(test_allocrator(), protocol->m_em, str_url);
+    assert_true(url);
 
-    /* assert_true(env->m_http_endpoint == NULL); */
-    /* env->m_http_endpoint = */
-    /*     net_http_endpoint_create(net_driver_from_data(env->m_env->m_tdriver)), */
-    /*     net_protocol_from_data(env->m_http_protocol->m_protocol); */
+    net_address_t address = net_address_create_auto(schedule, cpe_url_host(url));
+    if (address == NULL) fail_msg("url.host %s format error", cpe_url_host(url));
 
-    return NULL;
+    net_http_test_conn_t conn = NULL;
+    TAILQ_FOREACH(conn, &protocol->m_conns, m_next) {
+        net_endpoint_t endpoint = net_http_endpoint_base_endpoint(conn->m_endpoint);
+        if (net_address_cmp_opt(net_endpoint_remote_address(endpoint), address) != 0) continue;
+        if (net_endpoint_driver(endpoint) != driver) continue;
+        //TODO: 
+        //found
+        break;
+    }
+
+    if (conn == NULL) {
+        conn = net_http_test_conn_create(protocol, driver, address);
+        assert_true(conn);
+    }
+
+    net_http_req_t req = net_http_req_create(conn->m_endpoint, method, str_url);
+    assert_true(req);
+
+    net_address_free(address);
+    
+    return req;
 }
 
 net_http_test_response_t

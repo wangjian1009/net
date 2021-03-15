@@ -27,7 +27,8 @@ net_http_test_protocol_create_ep(net_http_test_protocol_t protocol, net_driver_t
 
 net_http_req_t
 net_http_test_protocol_create_req(
-    net_http_test_protocol_t protocol, net_http_req_method_t method, const char * url);
+    net_http_test_protocol_t protocol,
+    net_driver_t driver, net_http_req_method_t method, const char * url);
 
 net_http_test_response_t
 net_http_test_protocol_req_commit(net_http_test_protocol_t protocol, net_http_req_t req);

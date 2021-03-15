@@ -8,7 +8,7 @@
 
 net_http_test_conn_t
 net_http_test_conn_create(
-    net_http_test_protocol_t protocol, net_driver_t driver, const char * target)
+    net_http_test_protocol_t protocol, net_driver_t driver, net_address_t address)
 {
     net_schedule_t schedule = net_driver_schedule(driver);
     
@@ -18,10 +18,7 @@ net_http_test_conn_create(
     conn->m_endpoint = net_http_test_protocol_create_ep(protocol, driver);
     assert_true(conn->m_endpoint);
 
-    net_address_t address = net_address_create_auto(schedule, target);
-    if (address == NULL) fail_msg("address %s format error", target);
     net_endpoint_set_remote_address(net_http_endpoint_base_endpoint(conn->m_endpoint), address);
-    net_address_free(address);
 
     TAILQ_INSERT_TAIL(&protocol->m_conns, conn, m_next);
 
