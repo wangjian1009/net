@@ -1,3 +1,4 @@
+#include <assert.h>
 #include "cpe/pal/pal_string.h"
 #include "net_address.h"
 #include "net_acceptor_i.h"
@@ -10,6 +11,9 @@ net_acceptor_create(
     net_acceptor_on_new_endpoint_fun_t on_new_endpoint, void * on_new_endpoint_ctx)
 {
     net_schedule_t schedule = driver->m_schedule;
+
+    assert(driver);
+    assert(protocol);
 
     if (driver->m_acceptor_init == NULL) {
         CPE_ERROR(schedule->m_em, "core: acceptor: driver %s not support!", driver->m_name);
