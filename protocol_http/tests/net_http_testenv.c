@@ -14,7 +14,7 @@ net_http_testenv_create() {
     env->m_schedule = net_schedule_create(test_allocrator(), env->m_em);
     env->m_tdriver = test_net_driver_create(env->m_schedule, env->m_em);
 
-    env->m_http_protocol = net_http_test_protocol_create(env->m_schedule, "test");
+    env->m_http_protocol = net_http_test_protocol_create(env->m_schedule, env->m_em, "test");
 
     mem_buffer_init(&env->m_tmp_buffer, test_allocrator());
     
