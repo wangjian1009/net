@@ -5,7 +5,7 @@
 #include "net_mem_group.h"
 #include "net_mem_group_type_ringbuffer_i.h"
 
-static void init(struct ringbuffer_block * blk, int n) {
+static void init(net_mem_group_type_ringbuffer_block_t blk, int n) {
 	char * ptr = (char *)(blk+1);
 	int i;
 	for (i=0;i<n;i++) {
@@ -13,7 +13,7 @@ static void init(struct ringbuffer_block * blk, int n) {
 	}
 }
 
-static void dump(net_mem_group_type_ringbuffer_t rb, struct ringbuffer_block *blk, int size) {
+static void dump(net_mem_group_type_ringbuffer_t rb, net_mem_group_type_ringbuffer_block_t blk, int size) {
 	void * buffer;
 	int sz = net_mem_group_type_ringbuffer_data(rb, blk, size, 0, &buffer);
 	char * data = buffer;
@@ -45,7 +45,7 @@ static void ringbuffer_basic(void **state) {
     net_mem_group_type_t type = net_mem_group_type_ringbuffer_create(env->m_schedule, 128);
     net_mem_group_type_ringbuffer_t rb = net_mem_group_type_data(type);
     
-	struct ringbuffer_block * blk;
+	net_mem_group_type_ringbuffer_block_t blk;
 	blk = net_mem_group_type_ringbuffer_alloc(rb, 48);
 	blk->id = 0;
 	net_mem_group_type_ringbuffer_free(rb,blk);
@@ -59,7 +59,7 @@ static void ringbuffer_basic(void **state) {
 
 	blk = net_mem_group_type_ringbuffer_alloc(rb, 50);
 	blk->id = 1;
-	struct ringbuffer_block * next = net_mem_group_type_ringbuffer_alloc(rb, 40);
+	net_mem_group_type_ringbuffer_block_t next = net_mem_group_type_ringbuffer_alloc(rb, 40);
 	next->id = 1;
 	net_mem_group_type_ringbuffer_link(rb, blk, next);
 	CPE_INFO(env->m_em, "%s", net_mem_group_type_ringbuffer_dump(net_schedule_tmp_buffer(env->m_schedule), rb));
