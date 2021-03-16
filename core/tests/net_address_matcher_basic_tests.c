@@ -17,7 +17,7 @@ static int setup(void **state) {
         mem_alloc(test_allocrator(), sizeof(struct net_address_matcher_test_ctx));
     *state = ctx;
     ctx->m_tem = test_error_monitor_create();
-    ctx->m_schedule = net_schedule_create(test_allocrator(), test_error_monitor_em(ctx->m_tem));
+    ctx->m_schedule = net_schedule_create(test_allocrator(), test_error_monitor_em(ctx->m_tem), NULL);
     ctx->m_address_matcher = net_address_matcher_create(ctx->m_schedule);
     return 0;
 }

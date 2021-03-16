@@ -15,7 +15,7 @@ net_http2_testenv_t net_http2_testenv_create() {
     net_http2_testenv_t env = mem_alloc(test_allocrator(), sizeof(struct net_http2_testenv));
     env->m_tem = test_error_monitor_create();
     env->m_em = test_error_monitor_em(env->m_tem);
-    env->m_schedule = net_schedule_create(test_allocrator(), env->m_em);
+    env->m_schedule = net_schedule_create(test_allocrator(), env->m_em, NULL);
 
     const char * addition_name = "test";
 

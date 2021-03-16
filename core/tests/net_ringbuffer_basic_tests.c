@@ -42,7 +42,7 @@ static int teardown(void **state) {
 
 static void ringbuffer_basic(void **state) {
     net_core_testenv_t env = *state;
-    net_mem_group_type_t type = net_mem_group_type_ringbuffer_create(env->m_schedule);
+    net_mem_group_type_t type = net_mem_group_type_ringbuffer_create(env->m_schedule, 128);
     net_mem_group_type_ringbuffer_t rb = net_mem_group_type_data(type);
     
 	struct ringbuffer_block * blk;

@@ -13,7 +13,7 @@ int net_mem_group_type_cache_group_add(
     if (cache->m_group_count >= CPE_ARRAY_SIZE(cache->m_groups)) {
         CPE_INFO(
             schedule->m_em, "net: core: mem gruop type: %s: init group %d",
-            type->m_name, capacity);
+            net_mem_type_str(type->m_type), capacity);
         return -1;
     }
 
@@ -27,7 +27,7 @@ int net_mem_group_type_cache_group_add(
     if (schedule->m_debug) {
         CPE_INFO(
             schedule->m_em, "net: core: mem gruop type: %s: %d ==> %d",
-            type->m_name, cache->m_group_count, capacity);
+            net_mem_type_str(type->m_type), cache->m_group_count, capacity);
     }
     
     cache->m_group_count++;
@@ -220,7 +220,7 @@ void net_mem_group_type_cache_free(net_mem_group_type_t type, void * data, uint3
 net_mem_group_type_t
 net_mem_group_type_cache_create(net_schedule_t schedule) {
     return net_mem_group_type_create(
-        schedule, "cache",
+        schedule, net_mem_type_cache,
         sizeof(struct net_mem_group_type_cache),
         net_mem_group_type_cache_init, net_mem_group_type_cache_fini,
         net_mem_group_type_cache_suggest_size,

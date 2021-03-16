@@ -8,7 +8,7 @@ NET_BEGIN_DECL
 struct net_mem_group_type {
     net_schedule_t m_schedule;
     TAILQ_ENTRY(net_mem_group_type) m_next;
-    char m_name[32];
+    net_mem_type_t m_type;
     net_mem_group_type_fini_fun_t m_fini_fun;
     net_mem_gruop_type_suggest_size_fun_t m_suggest_size;
     net_mem_block_alloc_fun_t m_block_alloc;

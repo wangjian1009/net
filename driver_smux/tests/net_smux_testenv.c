@@ -12,7 +12,7 @@ net_smux_testenv_create() {
     net_smux_testenv_t env = mem_alloc(test_allocrator(), sizeof(struct net_smux_testenv));
     env->m_tem = test_error_monitor_create();
     env->m_em = test_error_monitor_em(env->m_tem);
-    env->m_schedule = net_schedule_create(test_allocrator(), env->m_em);
+    env->m_schedule = net_schedule_create(test_allocrator(), env->m_em, NULL);
     env->m_tdriver = test_net_driver_create(env->m_schedule, env->m_em);
     env->m_smux_protocol = net_smux_protocol_create(env->m_schedule, "test", test_allocrator(), env->m_em);
     net_protocol_set_debug(net_protocol_from_data(env->m_smux_protocol), 2);

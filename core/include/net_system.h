@@ -4,6 +4,8 @@
 
 NET_BEGIN_DECL
 
+typedef enum net_mem_type net_mem_type_t;
+typedef struct net_mem_policy * net_mem_policy_t;
 typedef struct net_schedule * net_schedule_t;
 typedef struct net_mem_group * net_mem_group_t;
 typedef struct net_mem_group_type * net_mem_group_type_t;

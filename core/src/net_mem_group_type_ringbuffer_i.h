@@ -20,7 +20,7 @@ struct net_mem_group_type_ringbuffer {
     void * m_data;
 };
 
-net_mem_group_type_t net_mem_group_type_ringbuffer_create(net_schedule_t schedule);
+net_mem_group_type_t net_mem_group_type_ringbuffer_create(net_schedule_t schedule, uint64_t size);
 
 /**/
 void net_mem_group_type_ringbuffer_link(

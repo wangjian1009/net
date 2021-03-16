@@ -15,7 +15,7 @@ net_dns_testenv_t net_dns_testenv_create() {
     env->m_alloc = NULL;
     cpe_error_monitor_init(&env->m_em_buf, cpe_error_log_to_consol, NULL);
 
-    env->m_schedule = net_schedule_create(env->m_alloc, &env->m_em_buf);
+    env->m_schedule = net_schedule_create(env->m_alloc, &env->m_em_buf, NULL);
     assert_true(env->m_schedule);
     
     env->m_dns = 

@@ -21,6 +21,7 @@
 #include "net_mem_group_type_i.h"
 #include "net_mem_group_type_basic_i.h"
 #include "net_mem_group_type_cache_i.h"
+#include "net_mem_group_type_ringbuffer_i.h"
 #include "net_protocol_noop.h"
 #include "net_protocol_null.h"
 #include "net_pair_i.h"
@@ -28,7 +29,7 @@
 static void net_schedule_do_delay_process(net_timer_t timer, void * input_ctx);
 
 net_schedule_t
-net_schedule_create(mem_allocrator_t alloc, error_monitor_t em) {
+net_schedule_create(mem_allocrator_t alloc, error_monitor_t em, net_mem_policy_t mem_policy) {
     net_schedule_t schedule;
     
     schedule = mem_alloc(alloc, sizeof(struct net_schedule));
@@ -71,12 +72,29 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em) {
     TAILQ_INIT(&schedule->m_free_mem_groups);
     TAILQ_INIT(&schedule->m_free_mem_blocks);
 
-    schedule->m_dft_mem_group_type = net_mem_group_type_cache_create(schedule);
-    if (schedule->m_dft_mem_group_type == NULL) {
-        CPE_ERROR(em, "schedule: create default mem group type fail");
+    if (mem_policy == NULL || mem_policy->m_type == net_mem_type_native) {
+        schedule->m_dft_mem_group_type = net_mem_group_type_basic_create(schedule);
+        if (schedule->m_dft_mem_group_type == NULL) {
+            CPE_ERROR(em, "schedule: create default mem group type basic fail");
+            goto INIT_FAILED;
+        }
+    } else if (mem_policy->m_type == net_mem_type_cache) {
+        schedule->m_dft_mem_group_type = net_mem_group_type_cache_create(schedule);
+        if (schedule->m_dft_mem_group_type == NULL) {
+            CPE_ERROR(em, "schedule: create default mem group type cache fail");
+            goto INIT_FAILED;
+        }
+    } else if (mem_policy->m_type == net_mem_type_ringbuffer) {
+        schedule->m_dft_mem_group_type = net_mem_group_type_cache_create(schedule);
+        if (schedule->m_dft_mem_group_type == NULL) {
+            CPE_ERROR(em, "schedule: create default mem group type ringbuffer fail");
+            goto INIT_FAILED;
+        }
+    } else {
+        CPE_ERROR(em, "schedule: not support mem type %d", mem_policy->m_type);
         goto INIT_FAILED;
     }
-    
+
     schedule->m_dft_mem_group = net_mem_group_create(schedule->m_dft_mem_group_type);
     if (schedule->m_dft_mem_group == NULL) {
         CPE_ERROR(em, "schedule: create default mem group fail");
@@ -401,5 +419,16 @@ static void net_schedule_do_delay_process(net_timer_t timer, void * input_ctx) {
         while(!TAILQ_EMPTY(&driver->m_deleting_endpoints)) {
             net_endpoint_free(TAILQ_FIRST(&driver->m_deleting_endpoints));
         }
+    }
+}
+
+const char * net_mem_type_str(net_mem_type_t mem_type) {
+    switch(mem_type) {
+    case net_mem_type_native:
+        return "native";
+    case net_mem_type_cache:
+        return "cache";
+    case net_mem_type_ringbuffer:
+        return "ringbuffer";
     }
 }

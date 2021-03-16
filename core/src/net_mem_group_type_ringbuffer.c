@@ -276,13 +276,9 @@ int net_mem_group_type_ringbuffer_init(net_mem_group_type_t type) {
     net_schedule_t schedule = type->m_schedule;
     net_mem_group_type_ringbuffer_t rb = net_mem_group_type_data(type);
 
-	rb->size = 50000;
+	rb->size = 0;
 	rb->head = 0;
-    rb->m_data = mem_alloc(schedule->m_alloc, rb->size);
-
-	struct ringbuffer_block * blk = block_ptr(rb, 0);
-	blk->length = rb->size;
-	blk->id = -1;
+    rb->m_data = NULL;
 
     return 0;
 }
@@ -315,11 +311,25 @@ void net_mem_group_type_ringbuffer_block_free(net_mem_group_type_t type, void * 
 }
 
 net_mem_group_type_t
-net_mem_group_type_ringbuffer_create(net_schedule_t schedule) {
-    return net_mem_group_type_create(
-        schedule, "ring-buffer",
-        sizeof(struct net_mem_group_type_ringbuffer),
-        net_mem_group_type_ringbuffer_init, net_mem_group_type_ringbuffer_fini,
-        net_mem_group_type_ringbuffer_suggest_size,
-        net_mem_group_type_ringbuffer_block_alloc, net_mem_group_type_ringbuffer_block_free);
+net_mem_group_type_ringbuffer_create(net_schedule_t schedule, uint64_t size) {
+    net_mem_group_type_t type =
+        net_mem_group_type_create(
+            schedule, net_mem_type_ringbuffer,
+            sizeof(struct net_mem_group_type_ringbuffer),
+            net_mem_group_type_ringbuffer_init, net_mem_group_type_ringbuffer_fini,
+            net_mem_group_type_ringbuffer_suggest_size,
+            net_mem_group_type_ringbuffer_block_alloc, net_mem_group_type_ringbuffer_block_free);
+    if (type == NULL) return NULL;
+
+    net_mem_group_type_ringbuffer_t rb = net_mem_group_type_data(type);
+
+	rb->size = (int)size;
+	rb->head = 0;
+    rb->m_data = mem_alloc(schedule->m_alloc, rb->size);
+
+	struct ringbuffer_block * blk = block_ptr(rb, 0);
+	blk->length = rb->size;
+	blk->id = -1;
+    
+    return type;
 }

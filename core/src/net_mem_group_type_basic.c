@@ -13,7 +13,7 @@ void net_mem_group_type_basic_free(net_mem_group_type_t type, void * data, uint3
 net_mem_group_type_t
 net_mem_group_type_basic_create(net_schedule_t schedule) {
     return net_mem_group_type_create(
-        schedule, "basic",
+        schedule, net_mem_type_native,
         0, NULL, NULL, NULL,
         net_mem_group_type_basic_alloc, net_mem_group_type_basic_free);
 }

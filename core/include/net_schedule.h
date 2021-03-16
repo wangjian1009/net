@@ -5,7 +5,20 @@
 
 NET_BEGIN_DECL
 
-net_schedule_t net_schedule_create(mem_allocrator_t alloc, error_monitor_t em);
+enum net_mem_type {
+    net_mem_type_native,
+    net_mem_type_cache,
+    net_mem_type_ringbuffer,
+};
+
+struct net_mem_policy {
+    net_mem_type_t m_type;
+    union {
+        uint64_t m_capacity;
+    } m_ringbuffer;
+};
+
+net_schedule_t net_schedule_create(mem_allocrator_t alloc, error_monitor_t em, net_mem_policy_t mem_policy);
 void net_schedule_free(net_schedule_t schedule);
 
 mem_allocrator_t net_schedule_allocrator(net_schedule_t schedule);
@@ -58,6 +71,9 @@ int net_debug_remote_host(net_schedule_t schedule, const char * remote, uint8_t 
 int net_debug_local_host(net_schedule_t schedule, const char * local, uint8_t protocol_debug, uint8_t driver_debug);
 int net_debug_protocol(net_schedule_t schedule, const char * protocol, uint8_t debug);
 int net_debug_driver(net_schedule_t schedule, const char * protocol, uint8_t debug);
+
+/*utils*/
+const char * net_mem_type_str(net_mem_type_t mem_type);
 
 NET_END_DECL
 
