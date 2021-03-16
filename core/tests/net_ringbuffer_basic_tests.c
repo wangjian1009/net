@@ -15,7 +15,7 @@ static void init(struct ringbuffer_block * blk, int n) {
 
 static void dump(net_mem_group_type_ringbuffer_t rb, struct ringbuffer_block *blk, int size) {
 	void * buffer;
-	int sz = ringbuffer_data(rb, blk, size, 0, &buffer);
+	int sz = net_mem_group_type_ringbuffer_data(rb, blk, size, 0, &buffer);
 	char * data = buffer;
 	if (data) {
 		int i;
@@ -46,54 +46,54 @@ static void ringbuffer_basic(void **state) {
     net_mem_group_type_ringbuffer_t rb = net_mem_group_type_data(type);
     
 	struct ringbuffer_block * blk;
-	blk = ringbuffer_alloc(rb, 48);
+	blk = net_mem_group_type_ringbuffer_alloc(rb, 48);
 	blk->id = 0;
-	ringbuffer_free(rb,blk);
-	blk = ringbuffer_alloc(rb, 48);
+	net_mem_group_type_ringbuffer_free(rb,blk);
+	blk = net_mem_group_type_ringbuffer_alloc(rb, 48);
 	blk->id = 1;
-	ringbuffer_free(rb,blk);
+	net_mem_group_type_ringbuffer_free(rb,blk);
 
-	blk = ringbuffer_alloc(rb, 80);
+	blk = net_mem_group_type_ringbuffer_alloc(rb, 80);
 	blk->id = 0;
-	ringbuffer_free(rb,blk);
+	net_mem_group_type_ringbuffer_free(rb,blk);
 
-	blk = ringbuffer_alloc(rb, 50);
+	blk = net_mem_group_type_ringbuffer_alloc(rb, 50);
 	blk->id = 1;
-	struct ringbuffer_block * next = ringbuffer_alloc(rb, 40);
+	struct ringbuffer_block * next = net_mem_group_type_ringbuffer_alloc(rb, 40);
 	next->id = 1;
-	ringbuffer_link(rb, blk, next);
+	net_mem_group_type_ringbuffer_link(rb, blk, next);
 	CPE_INFO(env->m_em, "%s", net_mem_group_type_ringbuffer_dump(net_schedule_tmp_buffer(env->m_schedule), rb));
 
-	blk = ringbuffer_alloc(rb,4);
+	blk = net_mem_group_type_ringbuffer_alloc(rb,4);
 	CPE_ERROR(env->m_em, "%p", blk);
 
-	int id = ringbuffer_collect(rb);
+	int id = net_mem_group_type_ringbuffer_collect(rb);
 	CPE_INFO(env->m_em, "collect %d",id);
 
-	blk = ringbuffer_alloc(rb,4);
+	blk = net_mem_group_type_ringbuffer_alloc(rb,4);
 	blk->id = 2;
 	init(blk,4);
 
-	next = ringbuffer_alloc(rb,5);
+	next = net_mem_group_type_ringbuffer_alloc(rb,5);
 	init(next,5);
-	ringbuffer_link(rb, blk, next);
+	net_mem_group_type_ringbuffer_link(rb, blk, next);
 
-	next = ringbuffer_alloc(rb,6);
+	next = net_mem_group_type_ringbuffer_alloc(rb,6);
 	init(next,6);
-	ringbuffer_link(rb, blk , next);
+	net_mem_group_type_ringbuffer_link(rb, blk , next);
 
 
 	dump(rb, blk , 3);
 	dump(rb, blk , 6);
 	dump(rb, blk , 16);
 
-	blk = ringbuffer_yield(rb, blk, 5);
+	blk = net_mem_group_type_ringbuffer_yield(rb, blk, 5);
 
-	next = ringbuffer_alloc(rb, 7);
-	ringbuffer_copy(rb, blk, 1, next);
+	next = net_mem_group_type_ringbuffer_alloc(rb, 7);
+	net_mem_group_type_ringbuffer_copy(rb, blk, 1, next);
 	dump(rb, next, 7);
 
-	blk = ringbuffer_yield(rb, blk , 5);
+	blk = net_mem_group_type_ringbuffer_yield(rb, blk , 5);
 
     CPE_INFO(env->m_em, "%s", net_mem_group_type_ringbuffer_dump(net_schedule_tmp_buffer(env->m_schedule), rb));
 }

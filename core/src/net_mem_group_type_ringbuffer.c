@@ -31,19 +31,8 @@ block_next(net_mem_group_type_ringbuffer_t rb, struct ringbuffer_block * blk) {
 	return block_ptr(rb, head + align_length);
 }
 
-net_mem_group_type_ringbuffer_t
-ringbuffer_new(int size) {
-	net_mem_group_type_ringbuffer_t rb = malloc(sizeof(*rb) + size);
-	rb->size = size;
-	rb->head = 0;
-	struct ringbuffer_block * blk = block_ptr(rb, 0);
-	blk->length = size;
-	blk->id = -1;
-	return rb;
-}
-
 void
-ringbuffer_link(net_mem_group_type_ringbuffer_t rb , struct ringbuffer_block * head, struct ringbuffer_block * next) {
+net_mem_group_type_ringbuffer_link(net_mem_group_type_ringbuffer_t rb , struct ringbuffer_block * head, struct ringbuffer_block * next) {
 	while (head->next >=0) {
 		head = block_ptr(rb, head->next);
 	}
@@ -75,7 +64,7 @@ _alloc(net_mem_group_type_ringbuffer_t rb, int total_size , int size) {
 }
 
 struct ringbuffer_block *
-ringbuffer_alloc(net_mem_group_type_ringbuffer_t rb, int size) {
+net_mem_group_type_ringbuffer_alloc(net_mem_group_type_ringbuffer_t rb, int size) {
 	int align_length = ALIGN(sizeof(struct ringbuffer_block) + size);
 	int i;
 	for (i=0;i<2;i++) {
@@ -111,7 +100,7 @@ _last_id(net_mem_group_type_ringbuffer_t rb) {
 }
 
 int
-ringbuffer_collect(net_mem_group_type_ringbuffer_t rb) {
+net_mem_group_type_ringbuffer_collect(net_mem_group_type_ringbuffer_t rb) {
 	int id = _last_id(rb);
 	struct ringbuffer_block *blk = block_ptr(rb, 0);
 	do {
@@ -124,7 +113,7 @@ ringbuffer_collect(net_mem_group_type_ringbuffer_t rb) {
 }
 
 void
-ringbuffer_shrink(net_mem_group_type_ringbuffer_t rb, struct ringbuffer_block * blk, int size) {
+net_mem_group_type_ringbuffer_shrink(net_mem_group_type_ringbuffer_t rb, struct ringbuffer_block * blk, int size) {
 	if (size == 0) {
 		rb->head = block_offset(rb, blk);
 		return;
@@ -153,7 +142,7 @@ _block_id(struct ringbuffer_block * blk) {
 }
 
 void
-ringbuffer_free(net_mem_group_type_ringbuffer_t rb, struct ringbuffer_block * blk) {
+net_mem_group_type_ringbuffer_free(net_mem_group_type_ringbuffer_t rb, struct ringbuffer_block * blk) {
 	if (blk == NULL)
 		return;
 	int id = _block_id(blk);
@@ -166,7 +155,7 @@ ringbuffer_free(net_mem_group_type_ringbuffer_t rb, struct ringbuffer_block * bl
 }
 
 int
-ringbuffer_data(net_mem_group_type_ringbuffer_t rb, struct ringbuffer_block * blk, int size, int skip, void **ptr) {
+net_mem_group_type_ringbuffer_data(net_mem_group_type_ringbuffer_t rb, struct ringbuffer_block * blk, int size, int skip, void **ptr) {
 	int length = blk->length - sizeof(struct ringbuffer_block) - blk->offset;
 	for (;;) {
 		if (length > skip) {
@@ -198,7 +187,9 @@ ringbuffer_data(net_mem_group_type_ringbuffer_t rb, struct ringbuffer_block * bl
 }
 
 void *
-ringbuffer_copy(net_mem_group_type_ringbuffer_t rb, struct ringbuffer_block * from, int skip, struct ringbuffer_block * to) {
+net_mem_group_type_ringbuffer_copy(
+    net_mem_group_type_ringbuffer_t rb, struct ringbuffer_block * from, int skip, struct ringbuffer_block * to)
+{
 	int size = to->length - sizeof(struct ringbuffer_block);
 	int length = from->length - sizeof(struct ringbuffer_block) - from->offset;
 	char * ptr = (char *)(to+1);
@@ -230,7 +221,7 @@ ringbuffer_copy(net_mem_group_type_ringbuffer_t rb, struct ringbuffer_block * fr
 }
 
 struct ringbuffer_block *
-ringbuffer_yield(net_mem_group_type_ringbuffer_t rb, struct ringbuffer_block *blk, int skip) {
+net_mem_group_type_ringbuffer_yield(net_mem_group_type_ringbuffer_t rb, struct ringbuffer_block *blk, int skip) {
 	int length = blk->length - sizeof(struct ringbuffer_block) - blk->offset;
 	for (;;) {
 		if (length > skip) {
@@ -310,7 +301,7 @@ uint32_t net_mem_group_type_ringbuffer_suggest_size(net_mem_group_type_t type) {
     return 0;
 }
 
-void * net_mem_group_type_ringbuffer_alloc(
+void * net_mem_group_type_ringbuffer_block_alloc(
     net_mem_group_type_t type, uint32_t * capacity, net_mem_alloc_capacity_policy_t policy)
 {
     net_schedule_t schedule = type->m_schedule;
@@ -318,7 +309,7 @@ void * net_mem_group_type_ringbuffer_alloc(
     return NULL;
 }
 
-void net_mem_group_type_ringbuffer_free(net_mem_group_type_t type, void * data, uint32_t capacity) {
+void net_mem_group_type_ringbuffer_block_free(net_mem_group_type_t type, void * data, uint32_t capacity) {
     net_schedule_t schedule = type->m_schedule;
     net_mem_group_type_ringbuffer_t ringbuffer = net_mem_group_type_data(type);
 }
@@ -330,5 +321,5 @@ net_mem_group_type_ringbuffer_create(net_schedule_t schedule) {
         sizeof(struct net_mem_group_type_ringbuffer),
         net_mem_group_type_ringbuffer_init, net_mem_group_type_ringbuffer_fini,
         net_mem_group_type_ringbuffer_suggest_size,
-        net_mem_group_type_ringbuffer_alloc, net_mem_group_type_ringbuffer_free);
+        net_mem_group_type_ringbuffer_block_alloc, net_mem_group_type_ringbuffer_block_free);
 }
