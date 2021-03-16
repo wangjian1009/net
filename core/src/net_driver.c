@@ -155,6 +155,7 @@ void net_driver_free(net_driver_t driver) {
     }
 
     while(!TAILQ_EMPTY(&driver->m_dgrams)) {
+        assert(!TAILQ_FIRST(&driver->m_dgrams)->m_is_processing);
         net_dgram_free(TAILQ_FIRST(&driver->m_dgrams));
     }
 
