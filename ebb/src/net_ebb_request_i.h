@@ -20,6 +20,7 @@ struct net_ebb_request {
     uint16_t m_version_minor;
     uint16_t m_number_of_headers;
     int8_t m_keep_alive;
+    char * m_host;
     char * m_path;
     const char * m_path_to_processor;
     net_ebb_request_header_list_t m_headers;

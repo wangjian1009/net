@@ -1,4 +1,5 @@
 #include <assert.h>
+#include "cpe/pal/pal_string.h"
 #include "cpe/utils/stream_buffer.h"
 #include "cpe/utils/string_utils.h"
 #include "net_endpoint.h"
@@ -38,6 +39,7 @@ net_ebb_request_t net_ebb_request_create(net_endpoint_t base_endpoint) {
     request->m_number_of_headers = 0;
     request->m_transfer_encoding = net_ebb_request_transfer_encoding_identity;
     request->m_keep_alive = -1;
+    request->m_host = NULL;
     request->m_path = NULL;
     request->m_state = net_ebb_request_state_reading;
     request->m_response = NULL;
@@ -58,6 +60,11 @@ void net_ebb_request_free(net_ebb_request_t request) {
     if (request->m_response) {
         net_ebb_response_free(request->m_response);
         request->m_response = NULL;
+    }
+
+    if (request->m_host) {
+        mem_free(service->m_alloc, request->m_host);
+        request->m_host = NULL;
     }
 
     if (request->m_path) {
@@ -300,6 +307,71 @@ void net_ebb_request_on_uri(net_ebb_request_t request, const char* at, size_t le
             net_endpoint_dump(net_ebb_protocol_tmp_buffer(service), base_endpoint),
             request->m_request_id, (int)length, at);
     }
+
+    const char * sep = cpe_strnstr(at, "://", length);
+    if (sep == NULL) {
+        if (net_endpoint_protocol_debug(base_endpoint)) {
+            CPE_INFO(
+                service->m_em, "ebb: %s: req %d: uri: no protocol sep",
+                net_endpoint_dump(net_ebb_protocol_tmp_buffer(service), base_endpoint),
+                request->m_request_id);
+        }
+    }
+    else {
+        length -= (sep - at) + 3;
+        at = sep + 3;
+    }
+
+    const char * host_port_last = cpe_strnchr(at, '/', length);
+    if (host_port_last == NULL) host_port_last = cpe_strnchr(at, '?', length);
+    if (host_port_last == NULL) host_port_last = at + length;
+
+    request->m_host = cpe_str_mem_dup_range(service->m_alloc, at, host_port_last);
+    if (request->m_host == NULL) {
+        CPE_ERROR(
+            service->m_em, "ebb: %s: req %d: dup host %.*s fail",
+            net_endpoint_dump(net_ebb_protocol_tmp_buffer(service), base_endpoint),
+            request->m_request_id, (int)(host_port_last - at), at);
+        net_ebb_endpoint_schedule_close(base_endpoint);
+        return;
+    }
+
+    length -= (host_port_last - at);
+    at = host_port_last;
+
+    if (request->m_path == NULL) {
+        request->m_path = cpe_str_mem_dup_len(service->m_alloc, at, length);
+        if (request->m_path == NULL) {
+            CPE_ERROR(
+                service->m_em, "ebb: %s: req %d: on uri: dup path %.*s fail!",
+                net_endpoint_dump(net_ebb_protocol_tmp_buffer(service), base_endpoint),
+                request->m_request_id, (int)length, at);
+            net_ebb_endpoint_schedule_close(base_endpoint);
+            return;
+        }
+
+        request->m_path_to_processor = request->m_path;
+
+        net_ebb_mount_point_t mp = net_ebb_mount_point_find_by_path(service, &request->m_path_to_processor);
+        if (mp == NULL) {
+            CPE_ERROR(
+                service->m_em, "ebb: %s: req %d: on uri: find processor at  path %s fail!",
+                net_endpoint_dump(net_ebb_protocol_tmp_buffer(service), base_endpoint),
+                request->m_request_id, request->m_path);
+            net_ebb_endpoint_schedule_close(base_endpoint);
+            return;
+        }
+
+        net_ebb_request_set_processor(request, mp);
+
+        if (net_endpoint_protocol_debug(base_endpoint)) {
+            CPE_INFO(
+                service->m_em, "ebb: %s: req %d: uri: %s[%s] (host=%s, full-path=%s)",
+                net_endpoint_dump(net_ebb_protocol_tmp_buffer(service), base_endpoint),
+                request->m_request_id, request->m_processor->m_name, request->m_path_to_processor,
+                request->m_host, request->m_path);
+        }
+    }
 }
 
 void net_ebb_request_on_fragment(net_ebb_request_t request, const char* at, size_t length) {
@@ -340,6 +412,7 @@ void net_ebb_request_on_header_value(net_ebb_request_t request, const char* at, 
             service->m_em, "ebb: %s: req %d: header [%d]???: set value %.*s no header of index",
             net_endpoint_dump(net_ebb_protocol_tmp_buffer(service), base_endpoint),
             request->m_request_id, header_index, (int)length, at);
+        net_ebb_endpoint_schedule_close(base_endpoint);
         return;
     }
 
@@ -400,7 +473,7 @@ void net_ebb_request_on_complete(net_ebb_request_t request) {
             service->m_em, "ebb: %s: req %d: on all complete",
             net_endpoint_dump(net_ebb_protocol_tmp_buffer(service), base_endpoint), request->m_request_id);
     }
-    
+
     if (request->m_state != net_ebb_request_state_complete) {
         net_ebb_processor_t processor = request->m_processor;
         if (processor && processor->m_request_on_complete) {
@@ -414,6 +487,9 @@ void net_ebb_request_on_complete(net_ebb_request_t request) {
 
     if (request->m_state == net_ebb_request_state_processing) {
         if (request->m_processor == NULL) {
+            /* CPE_INFO( */
+            /*     service->m_em, "ebb: %s: req %d: no processor, auto donw", */
+            /*     net_endpoint_dump(net_ebb_protocol_tmp_buffer(service), base_endpoint), request->m_request_id); */
         }
     }
 
