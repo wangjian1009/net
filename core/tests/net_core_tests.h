@@ -4,6 +4,8 @@
 
 int net_address_matcher_basic_tests();
 
+int net_ringbuffer_basic_tests();
+
 int net_pair_basic_tests();
 int net_pair_established_tests();
 
