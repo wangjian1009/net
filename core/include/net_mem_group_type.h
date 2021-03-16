@@ -13,8 +13,12 @@ typedef int (*net_mem_group_type_init_fun_t)(net_mem_group_type_t type);
 typedef void (*net_mem_group_type_fini_fun_t)(net_mem_group_type_t type);
 typedef uint32_t (*net_mem_gruop_type_suggest_size_fun_t)(net_mem_group_type_t type);
 
-typedef void * (*net_mem_block_alloc_fun_t)(net_mem_group_type_t type, uint32_t * capacity, net_mem_alloc_capacity_policy_t policy);
-typedef void (*net_mem_block_free_fun_t)(net_mem_group_type_t type, void * data, uint32_t capacity);
+typedef void * (*net_mem_block_alloc_fun_t)(
+    net_mem_group_type_t type, uint32_t ep_id, uint32_t * capacity, net_mem_alloc_capacity_policy_t policy);
+typedef void (*net_mem_block_free_fun_t)(
+    net_mem_group_type_t type, void * data, uint32_t capacity);
+typedef void (*net_mem_block_update_ep_fun_t)(
+    net_mem_group_type_t type, uint32_t ep_id, void * data, uint32_t capacity);
 
 net_mem_group_type_t
 net_mem_group_type_create(
@@ -25,7 +29,8 @@ net_mem_group_type_create(
     net_mem_gruop_type_suggest_size_fun_t suggest_size,
     /*block*/
     net_mem_block_alloc_fun_t block_alloc,
-    net_mem_block_free_fun_t block_free);
+    net_mem_block_free_fun_t block_free,
+    net_mem_block_update_ep_fun_t block_update_ep);
 
 void net_mem_group_type_free(net_mem_group_type_t mem_group);
 

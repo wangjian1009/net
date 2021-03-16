@@ -304,18 +304,53 @@ uint32_t net_mem_group_type_ringbuffer_suggest_size(net_mem_group_type_t type) {
 }
 
 void * net_mem_group_type_ringbuffer_block_alloc(
-    net_mem_group_type_t type, uint32_t * capacity, net_mem_alloc_capacity_policy_t policy)
+    net_mem_group_type_t type, uint32_t ep_id, uint32_t * capacity, net_mem_alloc_capacity_policy_t policy)
 {
     net_schedule_t schedule = type->m_schedule;
-    net_mem_group_type_ringbuffer_t ringbuffer = net_mem_group_type_data(type);
+    net_mem_group_type_ringbuffer_t rb = net_mem_group_type_data(type);
 
-    
-    return NULL;
+	struct net_mem_group_type_ringbuffer_block * blk = net_mem_group_type_ringbuffer_alloc(rb , *capacity);
+	while (blk == NULL) {
+		int collect_id = net_mem_group_type_ringbuffer_collect(rb);
+        net_endpoint_t old_ep = net_endpoint_find(schedule, collect_id);
+        if (old_ep != NULL) {
+            uint8_t i;
+            for (i = 0; i < CPE_ARRAY_SIZE(old_ep->m_bufs); ++i) {
+                TAILQ_INIT(&old_ep->m_bufs[i].m_blocks);
+                old_ep->m_bufs[i].m_size = 0;
+            }
+            old_ep->m_tb = NULL;
+
+            if (!net_endpoint_have_error(old_ep)) {
+                net_endpoint_set_error(
+                    old_ep,
+                    net_endpoint_error_source_network, net_endpoint_network_errno_internal, "ringbuffer-block-retrieve");
+            }
+            if (net_endpoint_set_state(old_ep, net_endpoint_state_error) != 0) {
+                net_endpoint_set_state(old_ep, net_endpoint_state_deleting);
+            }
+        }
+        else {
+            return NULL;
+        }
+
+		if (ep_id == collect_id) {
+			return NULL;
+		}
+		blk = net_mem_group_type_ringbuffer_alloc(rb , *capacity);
+	}
+
+    return blk ? (blk + 1) : NULL;
 }
 
 void net_mem_group_type_ringbuffer_block_free(net_mem_group_type_t type, void * data, uint32_t capacity) {
     net_schedule_t schedule = type->m_schedule;
-    net_mem_group_type_ringbuffer_t ringbuffer = net_mem_group_type_data(type);
+    net_mem_group_type_ringbuffer_t rb = net_mem_group_type_data(type);
+}
+
+void net_mem_group_type_ringbuffer_block_update_ep(net_mem_group_type_t type, uint32_t ep_id, void * data, uint32_t capacity) {
+    net_schedule_t schedule = type->m_schedule;
+    net_mem_group_type_ringbuffer_t rb = net_mem_group_type_data(type);
 }
 
 net_mem_group_type_t
@@ -326,7 +361,9 @@ net_mem_group_type_ringbuffer_create(net_schedule_t schedule, uint64_t size) {
             sizeof(struct net_mem_group_type_ringbuffer),
             net_mem_group_type_ringbuffer_init, net_mem_group_type_ringbuffer_fini,
             net_mem_group_type_ringbuffer_suggest_size,
-            net_mem_group_type_ringbuffer_block_alloc, net_mem_group_type_ringbuffer_block_free);
+            net_mem_group_type_ringbuffer_block_alloc,
+            net_mem_group_type_ringbuffer_block_free,
+            net_mem_group_type_ringbuffer_block_update_ep);
     if (type == NULL) return NULL;
 
     net_mem_group_type_ringbuffer_t rb = net_mem_group_type_data(type);

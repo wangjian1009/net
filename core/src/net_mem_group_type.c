@@ -11,7 +11,8 @@ net_mem_group_type_create(
     net_mem_gruop_type_suggest_size_fun_t suggest_size,
     /*block*/
     net_mem_block_alloc_fun_t block_alloc,
-    net_mem_block_free_fun_t block_free)
+    net_mem_block_free_fun_t block_free,
+    net_mem_block_update_ep_fun_t block_update_ep)
 {
     net_mem_group_type_t type = mem_alloc(schedule->m_alloc, sizeof(struct net_mem_group_type) + capacity);
     if (type == NULL) {
@@ -26,6 +27,7 @@ net_mem_group_type_create(
     type->m_suggest_size = suggest_size;
     type->m_block_alloc = block_alloc;
     type->m_block_free = block_free;
+    type->m_block_update_ep = block_update_ep;
 
     if (init_fun && init_fun(type) != 0) {
         CPE_ERROR(schedule->m_em, "net: core: mem group type: %s: init fail", net_mem_type_str(mem_type));

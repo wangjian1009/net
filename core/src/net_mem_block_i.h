@@ -8,6 +8,7 @@ struct net_mem_block {
     TAILQ_ENTRY(net_mem_block) m_next_for_group;
     net_endpoint_t m_endpoint;
     TAILQ_ENTRY(net_mem_block) m_next_for_endpoint;
+    uint32_t m_ep_id;
     net_endpoint_buf_type_t m_buf_type;
     uint32_t m_len;
     uint32_t m_capacity;
@@ -16,7 +17,7 @@ struct net_mem_block {
 
 net_mem_block_t
 net_mem_block_create(
-    net_mem_group_t group, uint32_t capacity, net_mem_alloc_capacity_policy_t policy);
+    net_mem_group_t group, uint32_t ep_id, uint32_t capacity, net_mem_alloc_capacity_policy_t policy);
 
 void net_mem_block_free(net_mem_block_t mem_bloc);
 void net_mem_block_real_free(net_mem_block_t mem_block);

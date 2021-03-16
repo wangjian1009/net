@@ -49,7 +49,7 @@ net_endpoint_block_alloc(net_endpoint_t endpoint, uint32_t * capacity, net_mem_a
 
     assert(endpoint->m_tb == NULL);
 
-    endpoint->m_tb = net_mem_block_create(endpoint->m_mem_group, *capacity, policy);
+    endpoint->m_tb = net_mem_block_create(endpoint->m_mem_group, endpoint->m_id, *capacity, policy);
     if (endpoint->m_tb == NULL) {
         return NULL;
     }
@@ -456,7 +456,8 @@ int net_endpoint_buf_append(net_endpoint_t endpoint, net_endpoint_buf_type_t buf
         net_mem_block_append(last_block, i_data, size);
     }
     else {
-        net_mem_block_t new_block = net_mem_block_create(endpoint->m_mem_group, size, net_mem_alloc_capacity_at_least);
+        net_mem_block_t new_block = net_mem_block_create(
+            endpoint->m_mem_group, endpoint->m_id, size, net_mem_alloc_capacity_at_least);
         if (new_block == NULL) return -1;
 
         memcpy(new_block->m_data, i_data, size);
@@ -493,7 +494,7 @@ int net_endpoint_buf_append_from_other(
             return -1;
         }
 
-        net_mem_block_t tb = net_mem_block_create(endpoint->m_mem_group, size, 0);
+        net_mem_block_t tb = net_mem_block_create(endpoint->m_mem_group, endpoint->m_id, size, 0);
         if (tb == NULL) return -1;
 
         while(!TAILQ_EMPTY(&other->m_bufs[from].m_blocks)) {
@@ -578,7 +579,7 @@ int net_endpoint_buf_append_from_self(
             return -1;
         }
         
-        net_mem_block_t tb = net_mem_block_create(endpoint->m_mem_group, size, net_mem_alloc_capacity_at_least);
+        net_mem_block_t tb = net_mem_block_create(endpoint->m_mem_group, endpoint->m_id, size, net_mem_alloc_capacity_at_least);
         if (tb == NULL) return -1;
 
         while(!TAILQ_EMPTY(&endpoint->m_bufs[from].m_blocks)) {
@@ -662,7 +663,9 @@ net_mem_block_t net_endpoint_buf_combine(net_endpoint_t endpoint, net_endpoint_b
     if (endpoint->m_bufs[buf_type].m_size == 0) return NULL;
     
     net_mem_block_t block =
-        net_mem_block_create(endpoint->m_mem_group, endpoint->m_bufs[buf_type].m_size, net_mem_alloc_capacity_at_least);
+        net_mem_block_create(
+            endpoint->m_mem_group, endpoint->m_id,
+            endpoint->m_bufs[buf_type].m_size, net_mem_alloc_capacity_at_least);
     if (block == NULL) {
         return NULL;
     }

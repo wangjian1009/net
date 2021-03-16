@@ -25,7 +25,8 @@ net_mem_group_type_t net_mem_group_type_ringbuffer_create(net_schedule_t schedul
 
 /**/
 void net_mem_group_type_ringbuffer_link(
-    net_mem_group_type_ringbuffer_t rb , net_mem_group_type_ringbuffer_block_t prev, net_mem_group_type_ringbuffer_block_t next);
+    net_mem_group_type_ringbuffer_t rb,
+    net_mem_group_type_ringbuffer_block_t prev, net_mem_group_type_ringbuffer_block_t next);
 
 net_mem_group_type_ringbuffer_block_t
 net_mem_group_type_ringbuffer_alloc(
@@ -45,7 +46,8 @@ int net_mem_group_type_ringbuffer_data(
 
 void *
 net_mem_group_type_ringbuffer_copy(
-    net_mem_group_type_ringbuffer_t rb, net_mem_group_type_ringbuffer_block_t from, int skip, net_mem_group_type_ringbuffer_block_t to);
+    net_mem_group_type_ringbuffer_t rb,
+    net_mem_group_type_ringbuffer_block_t from, int skip, net_mem_group_type_ringbuffer_block_t to);
 
 net_mem_group_type_ringbuffer_block_t
 net_mem_group_type_ringbuffer_yield(

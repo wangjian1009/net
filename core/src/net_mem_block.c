@@ -7,7 +7,7 @@
 void net_mem_block_set_size(net_mem_block_t block, uint32_t size);
 
 net_mem_block_t
-net_mem_block_create(net_mem_group_t group, uint32_t capacity, net_mem_alloc_capacity_policy_t policy) {
+net_mem_block_create(net_mem_group_t group, uint32_t ep_id, uint32_t capacity, net_mem_alloc_capacity_policy_t policy) {
     net_schedule_t schedule = group->m_type->m_schedule;
     
     net_mem_block_t block = TAILQ_FIRST(&schedule->m_free_mem_blocks);
@@ -25,11 +25,12 @@ net_mem_block_create(net_mem_group_t group, uint32_t capacity, net_mem_alloc_cap
     block->m_group = group;
 
     block->m_endpoint = NULL;
+    block->m_ep_id = ep_id;
     block->m_buf_type = 0;
 
     block->m_len = 0;
     block->m_capacity = capacity;
-    block->m_data = group->m_type->m_block_alloc(group->m_type, &block->m_capacity, policy);
+    block->m_data = group->m_type->m_block_alloc(group->m_type, ep_id, &block->m_capacity, policy);
     if (block->m_data == NULL) {
         CPE_ERROR(schedule->m_em, "core: mem block: alloc buffer fail, capacity=%d!", block->m_capacity);
         block->m_group = (net_mem_group_t)schedule;
@@ -118,6 +119,14 @@ void net_mem_block_set_size(net_mem_block_t block, uint32_t size) {
 
 void net_mem_block_link(net_mem_block_t block, net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type) {
     assert(block->m_endpoint == NULL);
+
+    if (block->m_ep_id != endpoint->m_id) {
+        if (endpoint->m_mem_group->m_type->m_block_update_ep) {
+            endpoint->m_mem_group->m_type->m_block_update_ep(
+                endpoint->m_mem_group->m_type, endpoint->m_id, block->m_data, block->m_capacity);
+        }
+        block->m_ep_id = endpoint->m_id;
+    }
 
     TAILQ_INSERT_TAIL(&endpoint->m_bufs[buf_type].m_blocks, block, m_next_for_endpoint);
     block->m_endpoint = endpoint;

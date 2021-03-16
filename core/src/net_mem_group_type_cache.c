@@ -151,7 +151,7 @@ uint32_t net_mem_group_type_cache_suggest_size(net_mem_group_type_t type) {
 }
 
 void * net_mem_group_type_cache_alloc(
-    net_mem_group_type_t type, uint32_t * capacity, net_mem_alloc_capacity_policy_t policy)
+    net_mem_group_type_t type, uint32_t ep_id, uint32_t * capacity, net_mem_alloc_capacity_policy_t policy)
 {
     net_schedule_t schedule = type->m_schedule;
     net_mem_group_type_cache_t cache = net_mem_group_type_data(type);
@@ -224,6 +224,6 @@ net_mem_group_type_cache_create(net_schedule_t schedule) {
         sizeof(struct net_mem_group_type_cache),
         net_mem_group_type_cache_init, net_mem_group_type_cache_fini,
         net_mem_group_type_cache_suggest_size,
-        net_mem_group_type_cache_alloc, net_mem_group_type_cache_free);
+        net_mem_group_type_cache_alloc, net_mem_group_type_cache_free, NULL);
 }
 
