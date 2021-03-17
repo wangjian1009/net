@@ -7,6 +7,7 @@ net_ringbuffer_testenv_t net_ringbuffer_testenv_create() {
     net_ringbuffer_testenv_t env = mem_alloc(test_allocrator(), sizeof(struct net_ringbuffer_testenv));
     env->m_env = net_core_testenv_create();
     env->m_rb = NULL;
+    env->m_mem_group = NULL;
     return env;
 }
 
@@ -24,7 +25,7 @@ void net_ringbuffer_testenv_create_rb(net_ringbuffer_testenv_t env, uint64_t siz
 net_endpoint_t net_ringbuffer_testenv_create_ep(net_ringbuffer_testenv_t env) {
     net_endpoint_t ep = net_endpoint_create(
         net_driver_from_data(env->m_env->m_tdriver),
-        net_protocol_from_data(env->m_env->m_tprotocol),
+        env->m_env->m_tprotocol,
         env->m_mem_group);
 
     return ep;

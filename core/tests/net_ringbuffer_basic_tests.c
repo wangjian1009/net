@@ -18,7 +18,9 @@ static int teardown(void **state) {
 static void ringbuffer_basic(void **state) {
     net_ringbuffer_testenv_t env = *state;
     net_ringbuffer_testenv_create_rb(env, 128);
-    
+
+    net_endpoint_t ep1 = net_ringbuffer_testenv_create_ep(env);
+
 	/* net_mem_group_type_ringbuffer_block_t blk; */
 	/* blk = net_mem_group_type_ringbuffer_alloc(rb, 48); */
 	/* blk->id = 0; */
