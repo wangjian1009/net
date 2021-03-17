@@ -157,6 +157,15 @@ uint32_t net_endpoint_buf_size(net_endpoint_t endpoint, net_endpoint_buf_type_t 
     return endpoint->m_bufs[buf_type].m_size;
 }
 
+uint32_t net_endpoint_buf_size_total(net_endpoint_t endpoint) {
+    uint32_t total_size = 0;
+    uint8_t i;
+    for(i = 0; i < CPE_ARRAY_SIZE(endpoint->m_bufs); ++i) {
+        total_size += endpoint->m_bufs[i].m_size;
+    }
+    return total_size;
+}
+
 void net_endpoint_buf_clear(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
 

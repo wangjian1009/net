@@ -4,6 +4,7 @@
 #include "cpe/utils/stream_buffer.h"
 #include "net_mem_group_type_ringbuffer_i.h"
 #include "net_mem_group_type_i.h"
+#include "net_mem_block_i.h"
 #include "net_endpoint_i.h"
 
 #define ALIGN(s) (((s) + 3 ) & ~3)
@@ -43,7 +44,7 @@ void net_mem_group_type_ringbuffer_link(
 }
 
 static net_mem_group_type_ringbuffer_block_t
-_alloc(net_mem_group_type_ringbuffer_t rb, int total_size , int size) {
+net_mem_group_type_ringbuffer_do_alloc(net_mem_group_type_ringbuffer_t rb, int total_size , int size) {
 	net_mem_group_type_ringbuffer_block_t blk = block_ptr(rb, rb->head);
 	int align_length = ALIGN(sizeof(struct net_mem_group_type_ringbuffer_block) + size);
 	blk->length = sizeof(struct net_mem_group_type_ringbuffer_block) + size;
@@ -69,7 +70,7 @@ net_mem_group_type_ringbuffer_block_t
 net_mem_group_type_ringbuffer_alloc(net_mem_group_type_ringbuffer_t rb, int size) {
 	int align_length = ALIGN(sizeof(struct net_mem_group_type_ringbuffer_block) + size);
 	int i;
-	for (i=0;i<2;i++) {
+	for (i=0; i<2; i++) {
 		int free_size = 0;
 		net_mem_group_type_ringbuffer_block_t blk = block_ptr(rb, rb->head);
 		do {
@@ -77,7 +78,7 @@ net_mem_group_type_ringbuffer_alloc(net_mem_group_type_ringbuffer_t rb, int size
 				return NULL;
 			free_size += ALIGN(blk->length);
 			if (free_size >= align_length) {
-				return _alloc(rb, free_size , size);
+				return net_mem_group_type_ringbuffer_do_alloc(rb, free_size , size);
 			}
 			blk = block_next(rb, blk);
 		} while(blk);
@@ -87,7 +88,7 @@ net_mem_group_type_ringbuffer_alloc(net_mem_group_type_ringbuffer_t rb, int size
 }
 
 static int
-_last_id(net_mem_group_type_ringbuffer_t rb) {
+net_mem_group_type_ringbuffer_last_id(net_mem_group_type_ringbuffer_t rb) {
 	int i;
 	for (i=0;i<2;i++) {
 		net_mem_group_type_ringbuffer_block_t blk = block_ptr(rb, rb->head);
@@ -99,19 +100,6 @@ _last_id(net_mem_group_type_ringbuffer_t rb) {
 		rb->head = 0;
 	}
 	return -1;
-}
-
-int
-net_mem_group_type_ringbuffer_collect(net_mem_group_type_ringbuffer_t rb) {
-	int id = _last_id(rb);
-	net_mem_group_type_ringbuffer_block_t blk = block_ptr(rb, 0);
-	do {
-		if (blk->length >= sizeof(struct net_mem_group_type_ringbuffer_block) && blk->id == id) {
-			blk->id = -1;
-		}
-		blk = block_next(rb, blk);
-	} while(blk);
-	return id;
 }
 
 void
@@ -309,36 +297,57 @@ void * net_mem_group_type_ringbuffer_block_alloc(
     net_schedule_t schedule = type->m_schedule;
     net_mem_group_type_ringbuffer_t rb = net_mem_group_type_data(type);
 
+    int pre_collect_id = -1;
 	struct net_mem_group_type_ringbuffer_block * blk = net_mem_group_type_ringbuffer_alloc(rb , *capacity);
 	while (blk == NULL) {
-		int collect_id = net_mem_group_type_ringbuffer_collect(rb);
-        net_endpoint_t old_ep = net_endpoint_find(schedule, collect_id);
-        if (old_ep != NULL) {
-            uint8_t i;
-            for (i = 0; i < CPE_ARRAY_SIZE(old_ep->m_bufs); ++i) {
-                TAILQ_INIT(&old_ep->m_bufs[i].m_blocks);
-                old_ep->m_bufs[i].m_size = 0;
-            }
-            old_ep->m_tb = NULL;
+		int collect_id = net_mem_group_type_ringbuffer_last_id(rb);
 
-            if (!net_endpoint_have_error(old_ep)) {
-                net_endpoint_set_error(
-                    old_ep,
-                    net_endpoint_error_source_network, net_endpoint_network_errno_internal, "ringbuffer-block-retrieve");
-            }
-            if (net_endpoint_set_state(old_ep, net_endpoint_state_error) != 0) {
-                net_endpoint_set_state(old_ep, net_endpoint_state_deleting);
-            }
-        }
-        else {
+        net_endpoint_t old_ep = net_endpoint_find(schedule, collect_id);
+        if (old_ep == NULL) {
+            CPE_ERROR(
+                schedule->m_em, "core: ringbuffer: endpoint %d: block owner of %d not exist",
+                ep_id, collect_id);
             return NULL;
         }
 
 		if (ep_id == collect_id) {
-			return NULL;
-		}
+            CPE_ERROR(
+                schedule->m_em, "core: ringbuffer: endpoint %d: ep %s: state=%s, block by self, buf-size=%d",
+                ep_id, net_endpoint_dump(net_schedule_tmp_buffer(schedule), old_ep),
+                net_endpoint_state_str(net_endpoint_state(old_ep)),
+                net_endpoint_buf_size_total(old_ep));
+            return NULL;
+        }
+
+        /*endpont.m_tp是不会被动释放的，所以可能导致被tp阻塞，这种情况下需要确保被同一个ep占用导致死循环 */
+        if (collect_id == pre_collect_id) {
+            CPE_ERROR(
+                schedule->m_em, "core: ringbuffer: endpoint %d: ep %s: state=%s, block-again, tmp-buf=%d",
+                ep_id, net_endpoint_dump(net_schedule_tmp_buffer(schedule), old_ep),
+                net_endpoint_state_str(net_endpoint_state(old_ep)),
+                old_ep->m_tb ? old_ep->m_tb->m_capacity : 0);
+            return NULL;
+        }
+        
+        if (!net_endpoint_is_active(old_ep)) {
+            CPE_ERROR(
+                schedule->m_em, "core: ringbuffer: endpoint %d: old ep %s state=%s, still have data",
+                ep_id, net_endpoint_dump(net_schedule_tmp_buffer(schedule), old_ep),
+                net_endpoint_state_str(net_endpoint_state(old_ep)));
+            return NULL;
+        }
+
+        if (!net_endpoint_have_error(old_ep)) {
+            net_endpoint_set_error(
+                old_ep,
+                net_endpoint_error_source_network, net_endpoint_network_errno_internal, "ringbuffer-block-retrieve");
+        }
+        if (net_endpoint_set_state(old_ep, net_endpoint_state_error) != 0) {
+            net_endpoint_set_state(old_ep, net_endpoint_state_deleting);
+        }
+
 		blk = net_mem_group_type_ringbuffer_alloc(rb , *capacity);
-	}
+    }
 
     return blk ? (blk + 1) : NULL;
 }
@@ -346,6 +355,8 @@ void * net_mem_group_type_ringbuffer_block_alloc(
 void net_mem_group_type_ringbuffer_block_free(net_mem_group_type_t type, void * data, uint32_t capacity) {
     net_schedule_t schedule = type->m_schedule;
     net_mem_group_type_ringbuffer_t rb = net_mem_group_type_data(type);
+
+    
 }
 
 void net_mem_group_type_ringbuffer_block_update_ep(net_mem_group_type_t type, uint32_t ep_id, void * data, uint32_t capacity) {

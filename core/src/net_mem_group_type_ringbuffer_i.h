@@ -32,9 +32,6 @@ net_mem_group_type_ringbuffer_block_t
 net_mem_group_type_ringbuffer_alloc(
     net_mem_group_type_ringbuffer_t rb, int size);
 
-int net_mem_group_type_ringbuffer_collect(
-    net_mem_group_type_ringbuffer_t rb);
-
 void net_mem_group_type_ringbuffer_shrink(
     net_mem_group_type_ringbuffer_t rb, net_mem_group_type_ringbuffer_block_t blk, int size);
 

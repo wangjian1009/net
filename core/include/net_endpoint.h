@@ -74,6 +74,7 @@ uint8_t net_endpoint_have_error(net_endpoint_t endpoint);
 
 /*    check */
 uint32_t net_endpoint_buf_size(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type);
+uint32_t net_endpoint_buf_size_total(net_endpoint_t endpoint);
 uint8_t net_endpoint_buf_is_empty(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type);
 void net_endpoint_buf_clear(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type);
 
