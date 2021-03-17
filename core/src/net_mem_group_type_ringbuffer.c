@@ -32,23 +32,11 @@ block_next(net_mem_group_type_ringbuffer_t rb, net_mem_group_type_ringbuffer_blo
 	return block_ptr(rb, head + align_length);
 }
 
-void net_mem_group_type_ringbuffer_link(
-    net_mem_group_type_ringbuffer_t rb,
-    net_mem_group_type_ringbuffer_block_t head, net_mem_group_type_ringbuffer_block_t next)
-{
-	while (head->next >=0) {
-		head = block_ptr(rb, head->next);
-	}
-	next->id = head->id;
-	head->next = block_offset(rb, next);
-}
-
 static net_mem_group_type_ringbuffer_block_t
 net_mem_group_type_ringbuffer_do_alloc(net_mem_group_type_ringbuffer_t rb, int total_size , int size) {
 	net_mem_group_type_ringbuffer_block_t blk = block_ptr(rb, rb->head);
 	int align_length = ALIGN(sizeof(struct net_mem_group_type_ringbuffer_block) + size);
 	blk->length = sizeof(struct net_mem_group_type_ringbuffer_block) + size;
-	blk->offset = 0;
 	blk->next = -1;
 	blk->id = -1;
 	net_mem_group_type_ringbuffer_block_t next = block_next(rb, blk);
@@ -87,8 +75,7 @@ net_mem_group_type_ringbuffer_alloc(net_mem_group_type_ringbuffer_t rb, int size
 	return NULL;
 }
 
-static int
-net_mem_group_type_ringbuffer_last_id(net_mem_group_type_ringbuffer_t rb) {
+static int net_mem_group_type_ringbuffer_last_id(net_mem_group_type_ringbuffer_t rb) {
 	int i;
 	for (i=0;i<2;i++) {
 		net_mem_group_type_ringbuffer_block_t blk = block_ptr(rb, rb->head);
@@ -102,8 +89,9 @@ net_mem_group_type_ringbuffer_last_id(net_mem_group_type_ringbuffer_t rb) {
 	return -1;
 }
 
-void
-net_mem_group_type_ringbuffer_shrink(net_mem_group_type_ringbuffer_t rb, net_mem_group_type_ringbuffer_block_t blk, int size) {
+void net_mem_group_type_ringbuffer_shrink(
+    net_mem_group_type_ringbuffer_t rb, net_mem_group_type_ringbuffer_block_t blk, int size)
+{
 	if (size == 0) {
 		rb->head = block_offset(rb, blk);
 		return;
@@ -123,115 +111,33 @@ net_mem_group_type_ringbuffer_shrink(net_mem_group_type_ringbuffer_t rb, net_mem
 	rb->head = block_offset(rb, blk);
 }
 
-static int
-_block_id(net_mem_group_type_ringbuffer_block_t blk) {
+static int net_mem_group_type_ringbuffer_block_id(net_mem_group_type_ringbuffer_block_t blk) {
 	assert(blk->length >= sizeof(struct net_mem_group_type_ringbuffer_block));
 	int id = blk->id;
 	assert(id>=0);
 	return id;
 }
 
-void
-net_mem_group_type_ringbuffer_free(net_mem_group_type_ringbuffer_t rb, net_mem_group_type_ringbuffer_block_t blk) {
-	if (blk == NULL)
-		return;
-	int id = _block_id(blk);
-	blk->id = -1;
-	while (blk->next >= 0) {
-		blk = block_ptr(rb, blk->next);
-		assert(_block_id(blk) == id);
-		blk->id = -1;
-	}
-}
-
-int net_mem_group_type_ringbuffer_data(
-    net_mem_group_type_ringbuffer_t rb, net_mem_group_type_ringbuffer_block_t blk, int size, int skip, void **ptr)
-{
-	int length = blk->length - sizeof(struct net_mem_group_type_ringbuffer_block) - blk->offset;
-	for (;;) {
-		if (length > skip) {
-			if (length - skip >= size) {
-				char * start = (char *)(blk + 1);
-				*ptr = (start + blk->offset + skip);
-				return size;
-			}
-			*ptr = NULL;
-			int ret = length - skip;
-			while (blk->next >= 0) {
-				blk = block_ptr(rb, blk->next);
-				ret += blk->length - sizeof(struct net_mem_group_type_ringbuffer_block);
-				if (ret >= size)
-					return size;
-			}
-			return ret;
-		}
-		if (blk->next < 0) {
-			assert(length == skip);
-			*ptr = NULL;
-			return 0;
-		}
-		blk = block_ptr(rb, blk->next);
-		assert(blk->offset == 0);
-		skip -= length;
-		length = blk->length - sizeof(struct net_mem_group_type_ringbuffer_block);
-	}
-}
-
-void *
-net_mem_group_type_ringbuffer_copy(
-    net_mem_group_type_ringbuffer_t rb,
-    net_mem_group_type_ringbuffer_block_t from, int skip, net_mem_group_type_ringbuffer_block_t to)
-{
-	int size = to->length - sizeof(struct net_mem_group_type_ringbuffer_block);
-	int length = from->length - sizeof(struct net_mem_group_type_ringbuffer_block) - from->offset;
-	char * ptr = (char *)(to+1);
-	for (;;) {
-		if (length > skip) {
-			char * src = (char *)(from + 1);
-			src += from->offset + skip;
-			length -= skip;
-			while (length < size) {
-				memcpy(ptr, src, length);
-				assert(from->next >= 0);
-				from = block_ptr(rb , from->next);
-				assert(from->offset == 0);
-				ptr += length;
-				size -= length;
-				length = from->length - sizeof(struct net_mem_group_type_ringbuffer_block);
-				src =  (char *)(from + 1);
-			}
-			memcpy(ptr, src , size);
-			to->id = from->id;
-			return (char *)(to + 1);
-		}
-		assert(from->next >= 0);
-		from = block_ptr(rb, from->next);
-		assert(from->offset == 0);
-		skip -= length;
-		length = from->length - sizeof(struct net_mem_group_type_ringbuffer_block);
-	}
-}
-
-net_mem_group_type_ringbuffer_block_t
-net_mem_group_type_ringbuffer_yield(
-    net_mem_group_type_ringbuffer_t rb, net_mem_group_type_ringbuffer_block_t blk, int skip)
-{
-	int length = blk->length - sizeof(struct net_mem_group_type_ringbuffer_block) - blk->offset;
-	for (;;) {
-		if (length > skip) {
-			blk->offset += skip;
-			return blk;
-		}
-		blk->id = -1;
-		if (blk->next < 0) {
-			return NULL;
-		}
-		blk = block_ptr(rb, blk->next);
-		assert(blk->offset == 0);
-		skip -= length;
-		length = blk->length - sizeof(struct net_mem_group_type_ringbuffer_block);
-	}
-}
+/* net_mem_group_type_ringbuffer_block_t */
+/* net_mem_group_type_ringbuffer_yield( */
+/*     net_mem_group_type_ringbuffer_t rb, net_mem_group_type_ringbuffer_block_t blk, int skip) */
+/* { */
+/* 	int length = blk->length - sizeof(struct net_mem_group_type_ringbuffer_block) - blk->offset; */
+/* 	for (;;) { */
+/* 		if (length > skip) { */
+/* 			blk->offset += skip; */
+/* 			return blk; */
+/* 		} */
+/* 		blk->id = -1; */
+/* 		if (blk->next < 0) { */
+/* 			return NULL; */
+/* 		} */
+/* 		blk = block_ptr(rb, blk->next); */
+/* 		assert(blk->offset == 0); */
+/* 		skip -= length; */
+/* 		length = blk->length - sizeof(struct net_mem_group_type_ringbuffer_block); */
+/* 	} */
+/* } */
 
 void net_mem_group_type_ringbuffer_print(write_stream_t ws, net_mem_group_type_ringbuffer_t rb) {
 	net_mem_group_type_ringbuffer_block_t blk = block_ptr(rb, 0);
@@ -245,7 +151,7 @@ void net_mem_group_type_ringbuffer_print(write_stream_t ws, net_mem_group_type_r
 			stream_printf(ws, "[%u : %d]", (unsigned)(blk->length - sizeof(*blk)), block_offset(rb,blk));
 			stream_printf(ws, " id=%d",blk->id);
 			if (blk->id >=0) {
-				stream_printf(ws, " offset=%d next=%d",blk->offset, blk->next);
+				stream_printf(ws, " next=%d", blk->next);
 			}
 		} else {
 			stream_printf(ws, "<%u : %d>", blk->length, block_offset(rb,blk));
@@ -298,7 +204,7 @@ void * net_mem_group_type_ringbuffer_block_alloc(
     net_mem_group_type_ringbuffer_t rb = net_mem_group_type_data(type);
 
     int pre_collect_id = -1;
-	struct net_mem_group_type_ringbuffer_block * blk = net_mem_group_type_ringbuffer_alloc(rb , *capacity);
+    net_mem_group_type_ringbuffer_block_t blk = net_mem_group_type_ringbuffer_alloc(rb , *capacity);
 	while (blk == NULL) {
 		int collect_id = net_mem_group_type_ringbuffer_last_id(rb);
 
@@ -356,12 +262,24 @@ void net_mem_group_type_ringbuffer_block_free(net_mem_group_type_t type, void * 
     net_schedule_t schedule = type->m_schedule;
     net_mem_group_type_ringbuffer_t rb = net_mem_group_type_data(type);
 
-    
+    net_mem_group_type_ringbuffer_block_t blk = ((net_mem_group_type_ringbuffer_block_t)data) - 1;
+
+	int id = net_mem_group_type_ringbuffer_block_id(blk);
+	blk->id = -1;
+	while (blk->next >= 0) {
+		blk = block_ptr(rb, blk->next);
+		assert(net_mem_group_type_ringbuffer_block_id(blk) == id);
+		blk->id = -1;
+	}
 }
 
 void net_mem_group_type_ringbuffer_block_update_ep(net_mem_group_type_t type, uint32_t ep_id, void * data, uint32_t capacity) {
     net_schedule_t schedule = type->m_schedule;
     net_mem_group_type_ringbuffer_t rb = net_mem_group_type_data(type);
+
+    net_mem_group_type_ringbuffer_block_t blk = ((net_mem_group_type_ringbuffer_block_t)data) - 1;
+    assert(blk->id != -1);
+    blk->id = ep_id;
 }
 
 net_mem_group_type_t
