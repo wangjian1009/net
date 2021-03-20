@@ -2,6 +2,8 @@
 #include "prometheus_tests.h"
 #include "prometheus_testenv.h"
 #include "prometheus_counter.h"
+#include "prometheus_metric.h"
+#include "prometheus_metric_sample.h"
 
 static int setup(void **state) {
     prometheus_testenv_t env = prometheus_testenv_create();
@@ -27,12 +29,12 @@ static void test_counter_inc(void **state) {
         2, (const char *[]){"foo", "bar"});
     assert_true(c);
 
-    /* prom_counter_inc(c, sample_labels_a); */
+    /* prometheus_counter_inc(c, sample_labels_a); */
 
-    /* prom_metric_sample_t *sample = prom_metric_sample_from_labels(c, sample_labels_a); */
+    /* prometheus_metric_sample_t *sample = prometheus_metric_sample_from_labels(c, sample_labels_a); */
     /* TEST_ASSERT_EQUAL_DOUBLE(1.0, sample->r_value); */
 
-    /* sample = prom_metric_sample_from_labels(c, sample_labels_b); */
+    /* sample = prometheus_metric_sample_from_labels(c, sample_labels_b); */
     /* TEST_ASSERT_EQUAL_DOUBLE(0.0, sample->r_value); */
 
     prometheus_counter_free(c);
@@ -42,19 +44,20 @@ static void test_counter_inc(void **state) {
 static void test_counter_add(void **state) {
     prometheus_testenv_t env = *state;
 
+    const char * keys[] = {"foo", "bar"};
     prometheus_counter_t c =
         prometheus_counter_create(
-            env->m_manager,
-            "test_counter", "counter under test",
-            2, (const char *[]){"foo", "bar"});
+            env->m_manager, "test_counter", "counter under test", CPE_ARRAY_SIZE(keys), keys);
     assert_true(c);
 
     prometheus_counter_add(c, 100000000.1, sample_labels_a);
-    /* prom_metric_sample_t *sample = prom_metric_sample_from_labels(c, sample_labels_a); */
-    /* TEST_ASSERT_EQUAL_DOUBLE(100000000.1, sample->r_value); */
 
-    /* sample = prom_metric_sample_from_labels(c, sample_labels_b); */
-    /* TEST_ASSERT_EQUAL_DOUBLE(0.0, sample->r_value); */
+    prometheus_metric_t metric = prometheus_metric_from_data(c);
+    prometheus_metric_sample_t sample = prometheus_metric_sample_from_labels(metric, sample_labels_a);
+    assert_float_equal(100000000.1, prometheus_metric_sample_r_value(sample), 0.0001);
+
+    sample = prometheus_metric_sample_from_labels(metric, sample_labels_b);
+    assert_float_equal(0.0, prometheus_metric_sample_r_value(sample), 0.0001);
 
     prometheus_counter_free(c);
     c = NULL;

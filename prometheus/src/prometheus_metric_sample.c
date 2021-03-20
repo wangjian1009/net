@@ -64,6 +64,14 @@ void prometheus_metric_sample_free_all(prometheus_metric_t metric) {
     }
 }
 
+const char * prometheus_metric_sample_l_value(prometheus_metric_sample_t sample) {
+    return sample->m_l_value;
+}
+
+double prometheus_metric_sample_r_value(prometheus_metric_sample_t sample) {
+    return sample->m_r_value;
+}
+        
 int prometheus_metric_sample_add(prometheus_metric_sample_t sample, double r_value) {
     prometheus_metric_t metric = sample->m_metric;
     prometheus_manager_t manager = metric->m_manager;

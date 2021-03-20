@@ -17,6 +17,7 @@ prometheus_metric_create(
     prometheus_metric_type_t type = manager->m_metric_types[category];
   
     prometheus_metric_t metric = mem_alloc(manager->m_alloc, sizeof(struct prometheus_metric));
+    metric->m_manager = manager;
     metric->m_type = type;
     metric->m_name = name;
     metric->m_help = help;

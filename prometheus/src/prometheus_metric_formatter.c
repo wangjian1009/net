@@ -9,6 +9,8 @@ prometheus_metric_formatter_t
 prometheus_metric_formatter_create(prometheus_manager_t manager) {
     prometheus_metric_formatter_t formatter = mem_alloc(manager->m_alloc, sizeof(struct prometheus_metric_formatter));
     
+    formatter->m_manager = manager;
+
     formatter->string_builder = prometheus_string_builder_create(manager);
     if (formatter->string_builder == NULL) {
         prometheus_metric_formatter_free(formatter);
