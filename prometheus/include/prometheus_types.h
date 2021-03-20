@@ -1,11 +1,12 @@
 #ifndef PROMETHEUS_TYPES_H_INCLEDED
 #define PROMETHEUS_TYPES_H_INCLEDED
-#include "net_system.h"
+#include "cpe/pal/pal_types.h"
 
-NET_BEGIN_DECL
+CPE_BEGIN_DECL
 
 typedef struct prometheus_manager * prometheus_manager_t;
+typedef struct prometheus_collector * prometheus_collector_t;
 
-NET_END_DECL
+CPE_END_DECL
 
 #endif

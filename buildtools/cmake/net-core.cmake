@@ -19,4 +19,4 @@ set_property(TARGET net_core PROPERTY COMPILE_DEFINITIONS
   PCRE2_CODE_UNIT_WIDTH=8
   )
 
-target_link_libraries(net_core INTERFACE cpe_utils_sock pcre2)
+target_link_libraries(net_core INTERFACE cpe_utils cpe_utils_sock pcre2)

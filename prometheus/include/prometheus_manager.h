@@ -3,13 +3,13 @@
 #include "cpe/utils/utils_types.h"
 #include "prometheus_types.h"
 
-NET_BEGIN_DECL
+CPE_BEGIN_DECL
 
 prometheus_manager_t
-prometheus_manager_create(
-    mem_allocrator_t alloc, error_monitor_t em, net_schedule_t schedule, net_driver_t driver);
+prometheus_manager_create(mem_allocrator_t alloc, error_monitor_t em);
+
 void prometheus_manager_free(prometheus_manager_t manager);
 
-NET_END_DECL
+CPE_END_DECL
 
 #endif

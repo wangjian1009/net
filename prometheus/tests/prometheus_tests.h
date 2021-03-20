@@ -1,0 +1,7 @@
+#ifndef TESTS_PROMETHEUS_TESTS_H_INCLEDED
+#define TESTS_PROMETHEUS_TESTS_H_INCLEDED
+#include "prometheus_types.h"
+
+int prometheus_counter_basic_tests();
+
+#endif
