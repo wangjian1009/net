@@ -2,64 +2,64 @@
 #include "cpe/pal/pal_string.h"
 #include "net_protocol.h"
 #include "net_schedule.h"
-#include "net_ebb_protocol_i.h"
-#include "net_ebb_endpoint_i.h"
-#include "net_ebb_request_i.h"
-#include "net_ebb_request_header_i.h"
-#include "net_ebb_mount_point_i.h"
-#include "net_ebb_processor_i.h"
-#include "net_ebb_response_i.h"
+#include "net_http_svr_protocol_i.h"
+#include "net_http_svr_endpoint_i.h"
+#include "net_http_svr_request_i.h"
+#include "net_http_svr_request_header_i.h"
+#include "net_http_svr_mount_point_i.h"
+#include "net_http_svr_processor_i.h"
+#include "net_http_svr_response_i.h"
 
-static int net_ebb_protocol_init(net_protocol_t protocol);
-static void net_ebb_protocol_fini(net_protocol_t protocol);
+static int net_http_svr_protocol_init(net_protocol_t protocol);
+static void net_http_svr_protocol_fini(net_protocol_t protocol);
 
-net_ebb_protocol_t
-net_ebb_protocol_create(net_schedule_t schedule, const char * protocol_name) {
+net_http_svr_protocol_t
+net_http_svr_protocol_create(net_schedule_t schedule, const char * protocol_name) {
     net_protocol_t protocol =
         net_protocol_create(
             schedule,
             protocol_name,
             /*protocol*/
-            sizeof(struct net_ebb_protocol),
-            net_ebb_protocol_init,
-            net_ebb_protocol_fini,
+            sizeof(struct net_http_svr_protocol),
+            net_http_svr_protocol_init,
+            net_http_svr_protocol_fini,
             /*endpoint*/
-            sizeof(struct net_ebb_endpoint),
-            net_ebb_endpoint_init,
-            net_ebb_endpoint_fini,
-            net_ebb_endpoint_input,
+            sizeof(struct net_http_svr_endpoint),
+            net_http_svr_endpoint_init,
+            net_http_svr_endpoint_fini,
+            net_http_svr_endpoint_input,
             NULL,
             NULL);
     if (protocol == NULL) {
-        CPE_ERROR(net_schedule_em(schedule), "ebb: %s: create protocol fail!", protocol_name);
+        CPE_ERROR(net_schedule_em(schedule), "http_svr: %s: create protocol fail!", protocol_name);
         return NULL;
     }
     net_protocol_set_debug(protocol, 2);
 
-    net_ebb_protocol_t service = net_protocol_data(protocol);
+    net_http_svr_protocol_t service = net_protocol_data(protocol);
     
     return service;
 }
 
-void net_ebb_protocol_free(net_ebb_protocol_t service) {
+void net_http_svr_protocol_free(net_http_svr_protocol_t service) {
     net_protocol_free(net_protocol_from_data(service));
 }
 
-net_protocol_t net_ebb_protocol_to_protocol(net_ebb_protocol_t service) {
+net_protocol_t net_http_svr_protocol_to_protocol(net_http_svr_protocol_t service) {
     return net_protocol_from_data(service);
 }
 
-net_ebb_mount_point_t net_ebb_protocol_root(net_ebb_protocol_t service) {
+net_http_svr_mount_point_t net_http_svr_protocol_root(net_http_svr_protocol_t service) {
     return service->m_root;
 }
 
-mem_buffer_t net_ebb_protocol_tmp_buffer(net_ebb_protocol_t service) {
-    net_protocol_t protocol = net_ebb_protocol_to_protocol(service);
+mem_buffer_t net_http_svr_protocol_tmp_buffer(net_http_svr_protocol_t service) {
+    net_protocol_t protocol = net_http_svr_protocol_to_protocol(service);
     return net_schedule_tmp_buffer(net_protocol_schedule(protocol));
 }
 
-static int net_ebb_protocol_init(net_protocol_t protocol) {
-    net_ebb_protocol_t service = net_protocol_data(protocol);
+static int net_http_svr_protocol_init(net_protocol_t protocol) {
+    net_http_svr_protocol_t service = net_protocol_data(protocol);
 
     service->m_em = net_schedule_em(net_protocol_schedule(protocol));
     service->m_alloc = net_schedule_allocrator(net_protocol_schedule(protocol));
@@ -79,51 +79,51 @@ static int net_ebb_protocol_init(net_protocol_t protocol) {
     mem_buffer_init(&service->m_data_buffer, NULL);
     mem_buffer_init(&service->m_search_path_buffer, NULL);
 
-    net_ebb_processor_t dft_processor = net_ebb_processor_create_root(service);
+    net_http_svr_processor_t dft_processor = net_http_svr_processor_create_root(service);
     if (dft_processor == NULL) {
-        CPE_ERROR(service->m_em, "ebb: %s: create dft processor fail!", net_protocol_name(protocol));
+        CPE_ERROR(service->m_em, "http_svr: %s: create dft processor fail!", net_protocol_name(protocol));
         return -1;
     }
     
     const char * root_mp_name = "root";
-    service->m_root = net_ebb_mount_point_create(
+    service->m_root = net_http_svr_mount_point_create(
         service, root_mp_name, root_mp_name + strlen(root_mp_name), NULL, NULL, dft_processor);
     if (service->m_root == NULL) {
-        CPE_ERROR(service->m_em, "ebb: %s: create root mount point fail!", net_protocol_name(protocol));
-        net_ebb_processor_free(dft_processor);
+        CPE_ERROR(service->m_em, "http_svr: %s: create root mount point fail!", net_protocol_name(protocol));
+        net_http_svr_processor_free(dft_processor);
         return -1;
     }
     
     return 0;
 }
 
-static void net_ebb_protocol_fini(net_protocol_t protocol) {
-    net_ebb_protocol_t service = net_protocol_data(protocol);
+static void net_http_svr_protocol_fini(net_protocol_t protocol) {
+    net_http_svr_protocol_t service = net_protocol_data(protocol);
     assert(TAILQ_EMPTY(&service->m_connections));
 
     if (service->m_root) {
-        net_ebb_mount_point_free(service->m_root);
+        net_http_svr_mount_point_free(service->m_root);
         service->m_root = NULL;
     }
     
     while(!TAILQ_EMPTY(&service->m_processors)) {
-        net_ebb_processor_free(TAILQ_FIRST(&service->m_processors));
+        net_http_svr_processor_free(TAILQ_FIRST(&service->m_processors));
     }
     
     while(!TAILQ_EMPTY(&service->m_free_requests)) {
-        net_ebb_request_real_free(TAILQ_FIRST(&service->m_free_requests));
+        net_http_svr_request_real_free(TAILQ_FIRST(&service->m_free_requests));
     }
 
     while(!TAILQ_EMPTY(&service->m_free_request_headers)) {
-        net_ebb_request_header_real_free(TAILQ_FIRST(&service->m_free_request_headers));
+        net_http_svr_request_header_real_free(TAILQ_FIRST(&service->m_free_request_headers));
     }
 
     while(!TAILQ_EMPTY(&service->m_free_responses)) {
-        net_ebb_response_real_free(TAILQ_FIRST(&service->m_free_responses));
+        net_http_svr_response_real_free(TAILQ_FIRST(&service->m_free_responses));
     }
     
     while (!TAILQ_EMPTY(&service->m_free_mount_points)) {
-        net_ebb_mount_point_real_free(TAILQ_FIRST(&service->m_free_mount_points));
+        net_http_svr_mount_point_real_free(TAILQ_FIRST(&service->m_free_mount_points));
     }
 
     mem_buffer_clear(&service->m_data_buffer);
@@ -179,7 +179,7 @@ struct {
     , { "video/x-msvideo", "avi" }
 };
 
-const char * net_ebb_protocol_mine_from_postfix(net_ebb_protocol_t service, const char * postfix) {
+const char * net_http_svr_protocol_mine_from_postfix(net_http_svr_protocol_t service, const char * postfix) {
     uint16_t i;
     for(i = 0; i < CPE_ARRAY_SIZE(s_common_mine_type_defs); ++i) {
         if (strcasecmp(postfix, s_common_mine_type_defs[i].m_postfix) == 0) {

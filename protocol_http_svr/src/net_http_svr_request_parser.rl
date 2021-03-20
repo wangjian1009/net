@@ -1,34 +1,7 @@
-/* This file is part of the libebb web server library
- *
- * Copyright (c) 2008 Ryan Dahl (ry@ndahl.us)
- * All rights reserved.
- *
- * This parser is based on code from Zed Shaw's Mongrel.
- * Copyright (c) 2005 Zed A. Shaw
- * 
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
- * 
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
- */
 #include <assert.h>
 #include "cpe/pal/pal_stdio.h"
-#include "net_ebb_request_parser.h"
-#include "net_ebb_request_i.h"
+#include "net_http_svr_request_parser.h"
+#include "net_http_svr_request_i.h"
 
 #if defined CALLBACK
 #undef CALLBACK
@@ -52,19 +25,19 @@ static int unhex[] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
 #define CONTENT_LENGTH (parser->current_request->content_length)
 #define CALLBACK(FOR)                                                                  \
     if (CURRENT && parser->FOR##_mark) {                                               \
-        net_ebb_request_on_##FOR(CURRENT, parser->FOR##_mark, p - parser->FOR##_mark); \
+        net_http_svr_request_on_##FOR(CURRENT, parser->FOR##_mark, p - parser->FOR##_mark); \
     }
 #define HEADER_CALLBACK(FOR)                                                                                         \
     if (CURRENT && parser->FOR##_mark) {                                                                             \
-        net_ebb_request_on_##FOR(CURRENT, parser->FOR##_mark, p - parser->FOR##_mark, CURRENT->m_number_of_headers); \
+        net_http_svr_request_on_##FOR(CURRENT, parser->FOR##_mark, p - parser->FOR##_mark, CURRENT->m_number_of_headers); \
     }
 #define END_REQUEST                           \
     if (CURRENT)                              \
-        net_ebb_request_on_complete(CURRENT); \
+        net_http_svr_request_on_complete(CURRENT); \
     CURRENT = NULL;
 
 %%{
-  machine net_ebb_request_parser;
+  machine net_http_svr_request_parser;
 
   action mark_header_field   { parser->header_field_mark   = p; }
   action mark_header_value   { parser->header_value_mark   = p; }
@@ -110,8 +83,8 @@ static int unhex[] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
     }
   }
 
-  action use_identity_encoding { if(CURRENT) CURRENT->m_transfer_encoding = net_ebb_request_transfer_encoding_identity; }
-  action use_chunked_encoding { if(CURRENT) CURRENT->m_transfer_encoding = net_ebb_request_transfer_encoding_chunked; }
+  action use_identity_encoding { if(CURRENT) CURRENT->m_transfer_encoding = net_http_svr_request_transfer_encoding_identity; }
+  action use_chunked_encoding { if(CURRENT) CURRENT->m_transfer_encoding = net_http_svr_request_transfer_encoding_chunked; }
 
   action set_keep_alive { if(CURRENT) CURRENT->m_keep_alive = TRUE; }
   action set_not_keep_alive { if(CURRENT) CURRENT->m_keep_alive = FALSE; }
@@ -144,7 +117,7 @@ static int unhex[] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
 
   action end_headers {
     if(CURRENT)
-        net_ebb_request_on_head_complete(CURRENT);
+        net_http_svr_request_on_head_complete(CURRENT);
   }
 
   action add_to_chunk_size {
@@ -174,7 +147,7 @@ static int unhex[] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
 
   action body_logic {
     if(CURRENT) { 
-      if(CURRENT->m_transfer_encoding == net_ebb_request_transfer_encoding_chunked) {
+      if(CURRENT->m_transfer_encoding == net_http_svr_request_transfer_encoding_chunked) {
         fnext ChunkedBody;
       } else {
         /* this is pretty stupid. i'd prefer to combine this with skip_chunk_data */
@@ -221,20 +194,20 @@ static int unhex[] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
 
 #  headers
 
-  Method = ( "COPY"      %{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_copy;      }
-           | "DELETE"    %{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_delete;    }
-           | "GET"       %{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_get;       }
-           | "HEAD"      %{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_head;      }
-           | "LOCK"      %{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_lock;      }
-           | "MKCOL"     %{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_mkcol;     }
-           | "MOVE"      %{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_move;      }
-           | "OPTIONS"   %{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_options;   }
-           | "POST"      %{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_post;      }
-           | "PROPFIND"  %{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_propfind;  }
-           | "PROPPATCH" %{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_proppatch; }
-           | "PUT"       %{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_put;       }
-           | "TRACE"     %{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_trace;     }
-           | "UNLOCK"    %{ if(CURRENT) CURRENT->m_method = net_ebb_request_method_unlock;    }
+  Method = ( "COPY"      %{ if(CURRENT) CURRENT->m_method = net_http_svr_request_method_copy;      }
+           | "DELETE"    %{ if(CURRENT) CURRENT->m_method = net_http_svr_request_method_delete;    }
+           | "GET"       %{ if(CURRENT) CURRENT->m_method = net_http_svr_request_method_get;       }
+           | "HEAD"      %{ if(CURRENT) CURRENT->m_method = net_http_svr_request_method_head;      }
+           | "LOCK"      %{ if(CURRENT) CURRENT->m_method = net_http_svr_request_method_lock;      }
+           | "MKCOL"     %{ if(CURRENT) CURRENT->m_method = net_http_svr_request_method_mkcol;     }
+           | "MOVE"      %{ if(CURRENT) CURRENT->m_method = net_http_svr_request_method_move;      }
+           | "OPTIONS"   %{ if(CURRENT) CURRENT->m_method = net_http_svr_request_method_options;   }
+           | "POST"      %{ if(CURRENT) CURRENT->m_method = net_http_svr_request_method_post;      }
+           | "PROPFIND"  %{ if(CURRENT) CURRENT->m_method = net_http_svr_request_method_propfind;  }
+           | "PROPPATCH" %{ if(CURRENT) CURRENT->m_method = net_http_svr_request_method_proppatch; }
+           | "PUT"       %{ if(CURRENT) CURRENT->m_method = net_http_svr_request_method_put;       }
+           | "TRACE"     %{ if(CURRENT) CURRENT->m_method = net_http_svr_request_method_trace;     }
+           | "UNLOCK"    %{ if(CURRENT) CURRENT->m_method = net_http_svr_request_method_unlock;    }
            ); # Not allowing extension methods
 
   HTTP_Version = "HTTP/" digit+ $version_major "." digit+ $version_minor;
@@ -295,16 +268,16 @@ static int unhex[] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
 %% write data;
 
 static void
-skip_body(const char** p, net_ebb_request_parser* parser, size_t nskip) {
+skip_body(const char** p, net_http_svr_request_parser* parser, size_t nskip) {
     if (CURRENT  && nskip > 0) {
-        net_ebb_request_on_body(CURRENT, *p, nskip);
+        net_http_svr_request_on_body(CURRENT, *p, nskip);
     }
     if (CURRENT) CURRENT->m_body_read += nskip;
     parser->chunk_size -= nskip;
     *p += nskip;
     if (0 == parser->chunk_size) {
         parser->eating = FALSE;
-        if (CURRENT && CURRENT->m_transfer_encoding == net_ebb_request_transfer_encoding_identity) {
+        if (CURRENT && CURRENT->m_transfer_encoding == net_http_svr_request_transfer_encoding_identity) {
             END_REQUEST;
         }
     } else {
@@ -312,7 +285,7 @@ skip_body(const char** p, net_ebb_request_parser* parser, size_t nskip) {
     }
 }
 
-void net_ebb_request_parser_init(net_ebb_request_parser* parser) {
+void net_http_svr_request_parser_init(net_http_svr_request_parser* parser) {
     int cs = 0;
     %% write init;
     parser->cs = cs;
@@ -330,7 +303,7 @@ void net_ebb_request_parser_init(net_ebb_request_parser* parser) {
 }
 
 /** exec **/
-size_t net_ebb_request_parser_execute(net_ebb_request_parser* parser, const char* buffer, size_t len) {
+size_t net_http_svr_request_parser_execute(net_http_svr_request_parser* parser, const char* buffer, size_t len) {
     const char *p, *pe;
     int cs = parser->cs;
 
@@ -368,11 +341,11 @@ size_t net_ebb_request_parser_execute(net_ebb_request_parser* parser, const char
     return (p - buffer);
 }
 
-int net_ebb_request_parser_has_error(net_ebb_request_parser *parser) {
-    return parser->cs == net_ebb_request_parser_error;
+int net_http_svr_request_parser_has_error(net_http_svr_request_parser *parser) {
+    return parser->cs == net_http_svr_request_parser_error;
 }
 
-int net_ebb_request_parser_is_finished(net_ebb_request_parser *parser) {
-    return parser->cs == net_ebb_request_parser_first_final;
+int net_http_svr_request_parser_is_finished(net_http_svr_request_parser *parser) {
+    return parser->cs == net_http_svr_request_parser_first_final;
 }
 
