@@ -2,6 +2,8 @@
 #define TESTS_PROMETHEUS_TESTS_H_INCLEDED
 #include "prometheus_types.h"
 
+int prometheus_manager_basic_tests();
+
 int prometheus_counter_basic_tests();
 
 #endif
