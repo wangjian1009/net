@@ -4,7 +4,6 @@
 #include "cpe/utils/stream_buffer.h"
 #include "prometheus_metric_i.h"
 #include "prometheus_metric_type_i.h"
-#include "prometheus_metric_formatter_i.h"
 #include "prometheus_metric_sample_i.h"
 #include "prometheus_collector_metric_i.h"
 
@@ -25,7 +24,6 @@ prometheus_metric_create(
     metric->m_name = cpe_str_mem_dup(manager->m_alloc, name);
     metric->m_help = cpe_str_mem_dup(manager->m_alloc, help);
     //metric->m_buckets = NULL;
-    metric->m_formatter = NULL;
     metric->m_label_key_count = 0;
     metric->m_label_keys = NULL;
     TAILQ_INIT(&metric->m_collectors);
@@ -66,13 +64,6 @@ prometheus_metric_create(
         metric->m_label_key_count++;
     }
 
-    metric->m_formatter = prometheus_metric_formatter_create(manager);
-    if (metric->m_formatter == NULL) {
-        CPE_ERROR(manager->m_em, "prometheus: %s: create formatter fail", name);
-        prometheus_metric_free(metric);
-        return NULL;
-    }
-
     return metric;
 }
 
@@ -92,11 +83,6 @@ void prometheus_metric_free(prometheus_metric_t metric) {
         metric->m_label_keys = NULL;
     }
     metric->m_label_key_count = 0;
-
-    if (metric->m_formatter) {
-        prometheus_metric_formatter_free(metric->m_formatter);
-        metric->m_formatter = NULL;
-    }
 
     prometheus_metric_sample_free_all(metric);
 

@@ -13,7 +13,6 @@ struct prometheus_metric {
 
     struct cpe_hash_table m_samples;
     /* prom_histogram_buckets_t * buckets; /\**< buckets          Array of histogram bucket upper bound values *\/ */
-    prometheus_metric_formatter_t m_formatter;
     uint8_t m_label_key_count;
     const char * * m_label_keys;
 };
