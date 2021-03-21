@@ -29,16 +29,16 @@ static void test_counter_inc(void **state) {
         2, (const char *[]){"foo", "bar"});
     assert_true(c);
 
-    /* prometheus_counter_inc(c, sample_labels_a); */
+    prometheus_counter_inc(c, sample_labels_a);
 
-    /* prometheus_metric_sample_t *sample = prometheus_metric_sample_from_labels(c, sample_labels_a); */
-    /* TEST_ASSERT_EQUAL_DOUBLE(1.0, sample->r_value); */
+    prometheus_metric_sample_t sample =
+        prometheus_metric_sample_from_labels(prometheus_metric_from_data(c), sample_labels_a);
+    assert_float_equal(1.0, prometheus_metric_sample_r_value(sample), 0.0001);
 
-    /* sample = prometheus_metric_sample_from_labels(c, sample_labels_b); */
-    /* TEST_ASSERT_EQUAL_DOUBLE(0.0, sample->r_value); */
+    sample = prometheus_metric_sample_from_labels(prometheus_metric_from_data(c), sample_labels_b);
+    assert_float_equal(0.0, prometheus_metric_sample_r_value(sample), 0.0001);
 
     prometheus_counter_free(c);
-    c = NULL;
 }
 
 static void test_counter_add(void **state) {

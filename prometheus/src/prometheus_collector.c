@@ -75,6 +75,10 @@ int prometheus_collector_add_metric(prometheus_collector_t collector, prometheus
     return 0;
 }
 
+prometheus_collector_t prometheus_collector_default(prometheus_manager_t manager) {
+    return manager->m_collector_default;
+}
+
 void * prometheus_collector_data(prometheus_collector_t collector) {
     return collector + 1;
 }

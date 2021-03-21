@@ -26,11 +26,17 @@ static int setup(void **state) {
         prometheus_counter_create(
             env->m_env->m_manager,
             "test_counter", "counter under test", 1, label);
+    prometheus_collector_add_metric(
+        prometheus_collector_default(env->m_env->m_manager),
+        prometheus_metric_from_data(env->m_test_counter));
 
     env->m_test_gauge =
         prometheus_gauge_create(
             env->m_env->m_manager,
             "test_gauge", "gauge under test", 1, label);
+    prometheus_collector_add_metric(
+        prometheus_collector_default(env->m_env->m_manager),
+        prometheus_metric_from_data(env->m_test_gauge));
     
     /* test_histogram = prom_collector_registry_must_register_metric(prom_histogram_new( */
     /*   "test_histogram", "histogram under test", prom_histogram_buckets_linear(5.0, 5.0, 2), 0, NULL)); */

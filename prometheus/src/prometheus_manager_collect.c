@@ -42,13 +42,24 @@ void prometheus_manager_collect(write_stream_t ws, prometheus_manager_t manager)
     prometheus_collector_t collector;
 
     TAILQ_FOREACH(collector, &manager->m_collectors, m_next) {
-        /*   prom_map_t *metrics = collector->collect_fn(collector); */
-        /*   if (metrics == NULL) return 1; */
-
         prometheus_collector_metric_t collector_metric;
+
+        if (collector->m_collect) {
+            TAILQ_FOREACH(collector_metric, &collector->m_metrics, m_next_for_collector) {
+                collector_metric->m_state = prometheus_metric_not_collect;
+            }
+            collector->m_collect(collector);
+        }
+        else {
+            TAILQ_FOREACH(collector_metric, &collector->m_metrics, m_next_for_collector) {
+                collector_metric->m_state = prometheus_metric_collected;
+            }
+        }
+        
         TAILQ_FOREACH(collector_metric, &collector->m_metrics, m_next_for_collector) {
-            prometheus_metric_t metric = collector_metric->m_metric;
-            prometheus_manager_collect_metric(ws, metric);
+            if (collector_metric->m_state == prometheus_metric_collected) {
+                prometheus_manager_collect_metric(ws, collector_metric->m_metric);
+            }
         }
     }
 }
