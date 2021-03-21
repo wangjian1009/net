@@ -16,12 +16,14 @@ prometheus_metric_create(
     uint8_t label_key_count, const char **label_keys)
 {
     prometheus_metric_type_t type = manager->m_metric_types[category];
-  
+    assert(name);
+    assert(help);
+
     prometheus_metric_t metric = mem_alloc(manager->m_alloc, sizeof(struct prometheus_metric));
     metric->m_manager = manager;
     metric->m_type = type;
-    metric->m_name = name;
-    metric->m_help = help;
+    metric->m_name = cpe_str_mem_dup(manager->m_alloc, name);
+    metric->m_help = cpe_str_mem_dup(manager->m_alloc, help);
     //metric->m_buckets = NULL;
     metric->m_formatter = NULL;
     metric->m_label_key_count = 0;
@@ -97,6 +99,17 @@ void prometheus_metric_free(prometheus_metric_t metric) {
     }
 
     prometheus_metric_sample_free_all(metric);
+
+    if (metric->m_name) {
+        mem_free(manager->m_alloc, metric->m_name);
+        metric->m_name = NULL;
+    }
+
+    if (metric->m_help) {
+        mem_free(manager->m_alloc, metric->m_help);
+        metric->m_help = NULL;
+    }
+    
     cpe_hash_table_fini(&metric->m_samples);
     
     mem_free(manager->m_alloc, metric);

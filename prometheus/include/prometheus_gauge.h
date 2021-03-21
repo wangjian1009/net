@@ -12,6 +12,13 @@ prometheus_gauge_create(
 
 void prometheus_gauge_free(prometheus_gauge_t gauge);
 
+int prometheus_gauge_destroy(prometheus_gauge_t gauge);
+int prometheus_gauge_inc(prometheus_gauge_t gauge, const char **label_values);
+int prometheus_gauge_dec(prometheus_gauge_t gauge, const char **label_values);
+int prometheus_gauge_add(prometheus_gauge_t gauge, double r_value, const char **label_values);
+int prometheus_gauge_sub(prometheus_gauge_t gauge, double r_value, const char **label_values);
+int prometheus_gauge_set(prometheus_gauge_t gauge, double r_value, const char **label_values);
+
 CPE_END_DECL
 
 #endif

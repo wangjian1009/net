@@ -7,8 +7,8 @@ struct prometheus_metric {
     prometheus_manager_t m_manager;
     struct cpe_hash_entry m_hh_for_manager;
     prometheus_metric_type_t m_type;
-    const char * m_name;
-    const char * m_help;
+    char * m_name;
+    char * m_help;
     prometheus_collector_metric_list_t m_collectors;
 
     struct cpe_hash_table m_samples;
