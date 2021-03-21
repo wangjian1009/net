@@ -4,6 +4,7 @@
 #include "prometheus_metric.h"
 #include "prometheus_collector.h"
 #include "prometheus_process_provider_i.h"
+#include "prometheus_process_collector_i.h"
 #include "prometheus_process_stat_i.h"
 #include "prometheus_process_fds_i.h"
 #include "prometheus_process_limits_i.h"
@@ -35,7 +36,7 @@ prometheus_process_provider_create(
     provider->m_max_fds = NULL;
     provider->m_virtual_memory_max_bytes = NULL;
 
-    provider->m_collector = NULL;
+    TAILQ_INIT(&provider->m_collectors);
 
     /*初始化完成，后续可以free */
 
@@ -138,27 +139,6 @@ prometheus_process_provider_create(
         goto INIT_ERROR;
     }
 
-    provider->m_collector = prometheus_collector_create(provider->m_manager, "process");
-    if (provider->m_collector == NULL) {
-        CPE_ERROR(provider->m_em, "prometheus: process: create: create collector fail!");
-        goto INIT_ERROR;
-    }
-
-    //self->collect_fn = &prom_collector_process_collect;
-
-    if (prometheus_collector_add_metric(provider->m_collector, prometheus_metric_from_data(provider->m_max_fds)) != 0
-        || prometheus_collector_add_metric(provider->m_collector, prometheus_metric_from_data(provider->m_virtual_memory_max_bytes)) != 0
-        || prometheus_collector_add_metric(provider->m_collector, prometheus_metric_from_data(provider->m_cpu_seconds_total)) != 0
-        || prometheus_collector_add_metric(provider->m_collector, prometheus_metric_from_data(provider->m_virtual_memory_bytes)) != 0
-        || prometheus_collector_add_metric(provider->m_collector, prometheus_metric_from_data(provider->m_resident_memory_bytes)) != 0
-        || prometheus_collector_add_metric(provider->m_collector, prometheus_metric_from_data(provider->m_start_time_seconds)) != 0
-        || prometheus_collector_add_metric(provider->m_collector, prometheus_metric_from_data(provider->m_open_fds)) != 0
-        )
-    {
-        CPE_ERROR(provider->m_em, "prometheus: process: create: collector add metric!");
-        goto INIT_ERROR;
-    }
-    
     return provider;
 
 INIT_ERROR:
@@ -166,8 +146,53 @@ INIT_ERROR:
     return NULL;
 }
 
-void prometheus_process_provider_free(prometheus_process_provider_t process_provider) {
+void prometheus_process_provider_free(prometheus_process_provider_t provider) {
+    if (provider->m_cpu_seconds_total) {
+        prometheus_gauge_free(provider->m_cpu_seconds_total);
+        provider->m_cpu_seconds_total = NULL;
+    }
+
+    if (provider->m_virtual_memory_bytes) {
+        prometheus_gauge_free(provider->m_virtual_memory_bytes);
+        provider->m_virtual_memory_bytes = NULL;
+    }
+    
+    /* prometheus_gauge_t m_resident_memory_bytes; */
+    /* prometheus_gauge_t m_start_time_seconds; */
+    
+    /* prometheus_gauge_t m_open_fds; */
+
+    /* prometheus_gauge_t m_max_fds; */
+    /* prometheus_gauge_t m_virtual_memory_max_bytes; */
+
+    while(!TAILQ_EMPTY(&provider->m_collectors)) {
+        prometheus_process_collector_free(TAILQ_FIRST(&provider->m_collectors));
+    }
+
+    mem_free(provider->m_alloc, provider);
 }
+
+/* prometheus_collector_t */
+/* prometheus_process_collector_create(prometheus_manager_t manager, const char * name) { */
+    /* provider->m_collector = prometheus_collector_create(provider->m_manager, "process"); */
+    /* if (provider->m_collector == NULL) { */
+    /*     CPE_ERROR(provider->m_em, "prometheus: process: create: create collector fail!"); */
+    /*     goto INIT_ERROR; */
+    /* } */
+
+    /* if (prometheus_collector_add_metric(provider->m_collector, prometheus_metric_from_data(provider->m_max_fds)) != 0 */
+    /*     || prometheus_collector_add_metric(provider->m_collector, prometheus_metric_from_data(provider->m_virtual_memory_max_bytes)) != 0 */
+    /*     || prometheus_collector_add_metric(provider->m_collector, prometheus_metric_from_data(provider->m_cpu_seconds_total)) != 0 */
+    /*     || prometheus_collector_add_metric(provider->m_collector, prometheus_metric_from_data(provider->m_virtual_memory_bytes)) != 0 */
+    /*     || prometheus_collector_add_metric(provider->m_collector, prometheus_metric_from_data(provider->m_resident_memory_bytes)) != 0 */
+    /*     || prometheus_collector_add_metric(provider->m_collector, prometheus_metric_from_data(provider->m_start_time_seconds)) != 0 */
+    /*     || prometheus_collector_add_metric(provider->m_collector, prometheus_metric_from_data(provider->m_open_fds)) != 0 */
+    /*     ) */
+    /* { */
+    /*     CPE_ERROR(provider->m_em, "prometheus: process: create: collector add metric!"); */
+    /*     goto INIT_ERROR; */
+    /* } */
+/* } */
 
 /* prom_map_t *prom_collector_process_collect(prom_collector_t *self); */
 

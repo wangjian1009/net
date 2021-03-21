@@ -14,6 +14,7 @@ typedef enum prometheus_metric_collect_state prometheus_metric_collect_state_t;
 
 typedef struct prometheus_counter * prometheus_counter_t;
 typedef struct prometheus_gauge * prometheus_gauge_t;
+typedef struct prometheus_histogram * prometheus_histogram_t;
 
 CPE_END_DECL
 

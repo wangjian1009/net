@@ -8,7 +8,8 @@ struct prometheus_collector {
     TAILQ_ENTRY(prometheus_collector) m_next;
     char * m_name;
     prometheus_collector_metric_list_t m_metrics;
-    //prom_collect_fn * collect_fn;
+    prometheus_collector_fini_fun_t m_fini;
+    prometheus_collector_collect_fun_t m_collect;
 };
 
 #endif

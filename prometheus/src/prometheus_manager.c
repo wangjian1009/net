@@ -1,3 +1,4 @@
+#include <assert.h>
 #include "cpe/pal/pal_strings.h"
 #include "cpe/utils/stream_buffer.h"
 #include "prometheus_manager_i.h"
@@ -20,6 +21,7 @@ prometheus_manager_create(mem_allocrator_t alloc, error_monitor_t em) {
 
     bzero(manager->m_metric_types, sizeof(manager->m_metric_types));
 
+    manager->m_collector_default = NULL;
     TAILQ_INIT(&manager->m_collectors);
 
     mem_buffer_init(&manager->m_tmp_buffer, alloc);
@@ -34,7 +36,14 @@ prometheus_manager_create(mem_allocrator_t alloc, error_monitor_t em) {
         prometheus_manager_free(manager);
         return NULL;
     }
-    
+
+    manager->m_collector_default =
+        prometheus_collector_create(manager, "default", 0, NULL, NULL, NULL);
+    if (manager->m_collector_default == NULL) {
+        prometheus_manager_free(manager);
+        return NULL;
+    }
+
     return manager;
 }
 
@@ -42,6 +51,7 @@ void prometheus_manager_free(prometheus_manager_t manager) {
     while(!TAILQ_EMPTY(&manager->m_collectors)) {
         prometheus_collector_free(TAILQ_FIRST(&manager->m_collectors));
     }
+    assert(manager->m_collector_default == NULL);
 
     uint8_t i;
     for(i = 0; i < CPE_ARRAY_SIZE(manager->m_metric_types); ++i) {

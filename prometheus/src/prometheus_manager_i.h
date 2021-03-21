@@ -26,6 +26,7 @@ struct prometheus_manager {
     struct cpe_hash_table m_metrics;
 
     /*collector*/
+    prometheus_collector_t m_collector_default;
     prometheus_collector_list_t m_collectors;
 
     /**/
