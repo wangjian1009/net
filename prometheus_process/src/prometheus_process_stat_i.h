@@ -8,7 +8,7 @@
  */
 struct prometheus_process_stat {
     int pid;                                   // (1) pid  %d
-    char *comm;                                // (2) comm  %s
+    char comm[128];                            // (2) comm  %s
     char state;                                // (3) state  %c
     int ppid;                                  // (4) ppid  %d
     int pgrp;                                  // (5) pgrp  %d
@@ -65,6 +65,7 @@ void prometheus_process_stat_init(prometheus_process_stat_t process_stat);
 void prometheus_process_stat_fini(prometheus_process_stat_t process_stat);
 
 int prometheus_process_stat_read(
-    prometheus_manager_t manager, prometheus_process_stat_t process_stat, const char * data);
+    prometheus_process_provider_t provider,
+    prometheus_process_stat_t process_stat, const char * data);
 
 #endif

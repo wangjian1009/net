@@ -9,6 +9,8 @@ typedef struct prometheus_manager * prometheus_manager_t;
 typedef struct prometheus_collector * prometheus_collector_t;
 typedef struct prometheus_metric * prometheus_metric_t;
 typedef struct prometheus_metric_sample * prometheus_metric_sample_t;
+typedef struct prometheus_collector_metric * prometheus_collector_metric_t;
+typedef enum prometheus_metric_collect_state prometheus_metric_collect_state_t;
 
 typedef struct prometheus_counter * prometheus_counter_t;
 typedef struct prometheus_gauge * prometheus_gauge_t;

@@ -72,7 +72,7 @@ void prometheus_process_limits_load(
 /*     prometheus_process_limits_file_t * f, prometheus_map_t * data, */
 /*     prometheus_process_limits_current_row_t * current_row); */
 
-int prometheus_process_limits_rdp_next_token(prometheus_process_limits_file_t * f);
-uint8_t prometheus_process_limits_rdp_match(prometheus_process_limits_file_t * f, const char * token);
+/* int prometheus_process_limits_rdp_next_token(prometheus_process_limits_file_t * f); */
+/* uint8_t prometheus_process_limits_rdp_match(prometheus_process_limits_file_t * f, const char * token); */
 
 #endif

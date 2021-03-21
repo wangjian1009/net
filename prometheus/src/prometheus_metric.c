@@ -6,6 +6,7 @@
 #include "prometheus_metric_type_i.h"
 #include "prometheus_metric_formatter_i.h"
 #include "prometheus_metric_sample_i.h"
+#include "prometheus_collector_metric_i.h"
 
 prometheus_metric_t
 prometheus_metric_create(
@@ -25,7 +26,8 @@ prometheus_metric_create(
     metric->m_formatter = NULL;
     metric->m_label_key_count = 0;
     metric->m_label_keys = NULL;
-
+    TAILQ_INIT(&metric->m_collectors);
+    
     if (cpe_hash_table_init(
             &metric->m_samples,
             manager->m_alloc,
@@ -74,6 +76,10 @@ prometheus_metric_create(
 
 void prometheus_metric_free(prometheus_metric_t metric) {
     prometheus_manager_t manager = metric->m_manager;
+
+    while(!TAILQ_EMPTY(&metric->m_collectors)) {
+        prometheus_collector_metric_free(TAILQ_FIRST(&metric->m_collectors));
+    }
 
     if (metric->m_label_keys) {
         uint8_t i;

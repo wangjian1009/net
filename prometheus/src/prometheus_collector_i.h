@@ -5,12 +5,10 @@
 
 struct prometheus_collector {
     prometheus_manager_t m_manager;
-    const char * name;
-    struct cpe_hash_table m_metrics;
+    TAILQ_ENTRY(prometheus_collector) m_next;
+    char * m_name;
+    prometheus_collector_metric_list_t m_metrics;
     //prom_collect_fn * collect_fn;
-    /* prom_string_builder_t * string_builder; */
-    /* const char * proc_limits_file_path; */
-    /* const char * proc_stat_file_path; */
 };
 
 #endif

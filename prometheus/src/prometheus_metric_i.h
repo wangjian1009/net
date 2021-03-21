@@ -9,6 +9,8 @@ struct prometheus_metric {
     prometheus_metric_type_t m_type;
     const char * m_name;
     const char * m_help;
+    prometheus_collector_metric_list_t m_collectors;
+
     struct cpe_hash_table m_samples;
     /* prom_histogram_buckets_t * buckets; /\**< buckets          Array of histogram bucket upper bound values *\/ */
     prometheus_metric_formatter_t m_formatter;

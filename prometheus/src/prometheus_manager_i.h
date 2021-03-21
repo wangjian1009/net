@@ -11,6 +11,10 @@ typedef struct prometheus_metric_type * prometheus_metric_type_t;
 typedef struct prometheus_metric_formatter * prometheus_metric_formatter_t;
 typedef struct prometheus_string_builder * prometheus_string_builder_t;
 
+typedef TAILQ_HEAD(prometheus_metric_list, prometheus_metric) prometheus_metric_list_t;
+typedef TAILQ_HEAD(prometheus_collector_list, prometheus_collector) prometheus_collector_list_t;
+typedef TAILQ_HEAD(prometheus_collector_metric_list, prometheus_collector_metric) prometheus_collector_metric_list_t;
+
 struct prometheus_manager {
     mem_allocrator_t m_alloc;
     error_monitor_t m_em;
@@ -20,6 +24,9 @@ struct prometheus_manager {
 
     /*metric*/
     struct cpe_hash_table m_metrics;
+
+    /*collector*/
+    prometheus_collector_list_t m_collectors;
 
     /**/
     struct mem_buffer m_tmp_buffer;

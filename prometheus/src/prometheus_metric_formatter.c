@@ -1,6 +1,6 @@
 #include <assert.h>
 #include "cpe/pal/pal_stdio.h"
-//#include "prom_collector_t.h"
+#include "prometheus_collector_i.h"
 #include "prometheus_metric_formatter_i.h"
 #include "prometheus_metric_i.h"
 #include "prometheus_string_builder_i.h"
