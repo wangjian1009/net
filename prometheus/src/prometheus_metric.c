@@ -159,7 +159,7 @@ prometheus_metric_sample_histogram_from_labels(prometheus_metric_t metric, const
     struct prometheus_metric_sample_histogram key;
     key.m_l_value = (char*)l_value;
     
-    prometheus_metric_sample_histogram_t sample = cpe_hash_table_find(&metric->m_samples, &key);
+    prometheus_metric_sample_histogram_t sample = cpe_hash_table_find(&metric->m_sample_histograms, &key);
     if (sample == NULL) {
         sample = prometheus_metric_sample_histogram_create(metric, l_value, metric->m_buckets, label_values);
         if (sample == NULL) return NULL;
@@ -186,7 +186,7 @@ void prometheus_metric_print_l_value(
         stream_printf(ws, "_%s", suffix);
     }
 
-    if (metric->m_label_key_count == 0) return;
+    if (metric->m_label_key_count == 0 && addition_count == 0) return;
 
     stream_putc(ws, '{');
     uint8_t i;

@@ -42,6 +42,8 @@ prometheus_metric_sample_histogram_create(
         mem_free(manager->m_alloc, histogram);
         return NULL;
     }
+
+    TAILQ_INIT(&histogram->m_samples);
     
     /*初始化完成，后续可以调用free */
     const char * addition_key = "le";
