@@ -90,7 +90,7 @@ static void test_must_register(void **state) {
     assert_float_equal(2.0, prometheus_metric_sample_r_value(test_sample_b), 0.001);
 }
 
-void test_dump(void ** state) {
+static void test_dump(void ** state) {
     struct prometheus_manager_test_env * env = *state;
     
     const char *labels[] = {"foo"};
@@ -129,8 +129,16 @@ void test_dump(void ** state) {
     mem_buffer_clear(&data_buffer);
 }
 
+static void test_validate_metric_name(void ** state) {
+    struct prometheus_manager_test_env * env = *state;
+
+    assert_true(
+        prometheus_manager_validate_metric_name(env->m_env->m_manager, "this_is_a_name09"));
+}
+
 int prometheus_manager_basic_tests() {
 	const struct CMUnitTest tests[] = {
+		cmocka_unit_test_setup_teardown(test_validate_metric_name, setup, teardown),
 		cmocka_unit_test_setup_teardown(test_large_registry, setup, teardown),
 		cmocka_unit_test_setup_teardown(test_must_register, setup, teardown),
 		cmocka_unit_test_setup_teardown(test_dump, setup, teardown),

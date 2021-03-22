@@ -10,6 +10,8 @@ prometheus_manager_create(mem_allocrator_t alloc, error_monitor_t em);
 
 void prometheus_manager_free(prometheus_manager_t manager);
 
+uint8_t prometheus_manager_validate_metric_name(prometheus_manager_t manager, const char *metric_name);
+
 void prometheus_manager_collect(write_stream_t ws, prometheus_manager_t manager);
 const char * prometheus_manager_collect_dump(mem_buffer_t buffer, prometheus_manager_t manager);
 

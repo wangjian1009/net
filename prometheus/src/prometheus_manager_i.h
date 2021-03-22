@@ -1,5 +1,6 @@
 #ifndef PROMETHEUS_MANAGER_I_H_INCLEDED
 #define PROMETHEUS_MANAGER_I_H_INCLEDED
+#include "pcre2.h"
 #include "cpe/pal/pal_queue.h"
 #include "cpe/utils/error.h"
 #include "cpe/utils/memory.h"
@@ -21,6 +22,8 @@ struct prometheus_manager {
     mem_allocrator_t m_alloc;
     error_monitor_t m_em;
 
+    pcre2_code * m_metric_name_re;
+    
     /*metric type*/
     prometheus_metric_type_t m_metric_types[4];
 

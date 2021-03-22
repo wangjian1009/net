@@ -3,6 +3,7 @@
 #include "prometheus_types.h"
 
 int prometheus_manager_basic_tests();
+int prometheus_collector_basic_tests();
 
 int prometheus_counter_basic_tests();
 
