@@ -97,8 +97,8 @@ void test_dump(void ** state) {
     prometheus_counter_inc(env->m_test_counter, labels);
     prometheus_gauge_set(env->m_test_gauge, 2.0, labels);
 
-    /* r = prom_histogram_observe(test_histogram, 3.0, NULL); */
-    /* r = prom_histogram_observe(test_histogram, 7.0, NULL); */
+    assert_true(prometheus_histogram_observe(env->m_test_histogram, 3.0, NULL) == 0);
+    assert_true(prometheus_histogram_observe(env->m_test_histogram, 7.0, NULL) == 0);
 
     struct mem_buffer data_buffer;
     mem_buffer_init(&data_buffer, test_allocrator());
@@ -122,7 +122,7 @@ void test_dump(void ** state) {
 
     for (int i = 0; i < CPE_ARRAY_SIZE(expected); i++) {
         if (strstr(result, expected[i]) == NULL) {
-            //assert_true(strstr(result, expected[i]) != NULL);
+            fail_msg("find msg fail: %s\nCONTENT:\n%s", expected[i], result);
         }
     }
 

@@ -7,9 +7,7 @@ struct prometheus_metric_sample_histogram {
     prometheus_metric_t m_metric;
     cpe_hash_entry m_hh_for_metric;
     char * m_l_value;
-    prometheus_histogram_buckets_t m_buckets;
-    prometheus_metric_sample_list_t m_samples_in_order;
-    struct cpe_hash_table m_samples;
+    prometheus_metric_sample_list_t m_samples;
 };
 
 prometheus_metric_sample_histogram_t

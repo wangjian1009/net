@@ -17,8 +17,8 @@ struct prometheus_metric_sample {
         } m_owner_metric;
         struct {
             prometheus_metric_sample_histogram_t m_histogram;
-            cpe_hash_entry m_hh;
             TAILQ_ENTRY(prometheus_metric_sample) m_next;
+            double m_upper_bound;
         } m_owner_histogram;
     };
     char * m_l_value;
@@ -31,7 +31,7 @@ prometheus_metric_sample_create_for_metric(
 
 prometheus_metric_sample_t
 prometheus_metric_sample_create_for_histogram(
-    prometheus_metric_sample_histogram_t histogram, const char * l_value, double r_value);
+    prometheus_metric_sample_histogram_t histogram, const char * l_value, double r_value, double upper_bound);
 
 void prometheus_metric_sample_free(prometheus_metric_sample_t sample);
 

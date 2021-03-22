@@ -23,26 +23,12 @@ prometheus_metric_sample_histogram_create(
     }
 
     histogram->m_metric = metric;
-    histogram->m_buckets = buckets;
-    
-    if (cpe_hash_table_init(
-            &histogram->m_samples,
-            manager->m_alloc,
-            (cpe_hash_fun_t) prometheus_metric_sample_hash,
-            (cpe_hash_eq_t) prometheus_metric_sample_eq,
-            CPE_HASH_OBJ2ENTRY(prometheus_metric_sample, m_owner_histogram.m_hh),
-            -1) != 0)
-    {
-        mem_free(manager->m_alloc, histogram);
-        return NULL;
-    }
     
     histogram->m_l_value = cpe_str_mem_dup(manager->m_alloc, l_value);
     if (histogram->m_l_value == NULL) {
         CPE_ERROR(
             manager->m_em, "prometheus: %s: %s: create: dup l_value fail",
             metric->m_name, l_value);
-        cpe_hash_table_fini(&histogram->m_samples);
         mem_free(manager->m_alloc, histogram);
         return NULL;
     }
@@ -53,7 +39,6 @@ prometheus_metric_sample_histogram_create(
             manager->m_em, "prometheus: %s: %s: create: duplicate",
             metric->m_name, l_value);
         mem_free(manager->m_alloc, histogram->m_l_value);
-        cpe_hash_table_fini(&histogram->m_samples);
         mem_free(manager->m_alloc, histogram);
         return NULL;
     }
@@ -62,12 +47,13 @@ prometheus_metric_sample_histogram_create(
     const char * addition_key = "le";
 
     /*buckets */
-    for (int i = 0; i < histogram->m_buckets->m_count; i++) {
+    for (int i = 0; i < buckets->m_count; i++) {
+        double upper_bound = buckets->m_upper_bounds[i];
+        
         char bucket_key_buf[50];
         const char * addition_value =
             prometheus_metric_sample_histogram_bucket_to_str(
-                bucket_key_buf, sizeof(bucket_key_buf),
-                histogram->m_buckets->m_upper_bounds[i]);
+                bucket_key_buf, sizeof(bucket_key_buf), upper_bound);
 
         const char *l_value =
             prometheus_metric_dump_l_value(
@@ -75,7 +61,7 @@ prometheus_metric_sample_histogram_create(
                 NULL, 1, &addition_key, &addition_value);
         if (l_value == NULL) goto INIT_FAILED;
 
-        if (prometheus_metric_sample_create_for_histogram(histogram, l_value, 0.0) == NULL) goto INIT_FAILED;
+        if (prometheus_metric_sample_create_for_histogram(histogram, l_value, 0.0, upper_bound) == NULL) goto INIT_FAILED;
     }
 
     /*inf*/
@@ -85,21 +71,21 @@ prometheus_metric_sample_histogram_create(
             &manager->m_tmp_buffer, histogram->m_metric, label_values,
             NULL, 1, &addition_key, &inf_addition_value);
     if (inf_l_value == NULL) goto INIT_FAILED;
-    if (prometheus_metric_sample_create_for_histogram(histogram, inf_l_value, 0.0) == NULL) goto INIT_FAILED;
+    if (prometheus_metric_sample_create_for_histogram(histogram, inf_l_value, 0.0, 0.0) == NULL) goto INIT_FAILED;
 
     /*count*/
     const char * count_l_value =
         prometheus_metric_dump_l_value(
             &manager->m_tmp_buffer, histogram->m_metric, label_values, "count", 0, NULL, NULL);
     if (count_l_value == NULL) goto INIT_FAILED;
-    if (prometheus_metric_sample_create_for_histogram(histogram, count_l_value, 0.0) == NULL) goto INIT_FAILED;
+    if (prometheus_metric_sample_create_for_histogram(histogram, count_l_value, 0.0, 0.0) == NULL) goto INIT_FAILED;
     
     /*summary*/
     const char * sum_l_value =
         prometheus_metric_dump_l_value(
             &manager->m_tmp_buffer, histogram->m_metric, label_values, "sum", 0, NULL, NULL);
     if (sum_l_value == NULL) goto INIT_FAILED;
-    if (prometheus_metric_sample_create_for_histogram(histogram, sum_l_value, 0.0) == NULL) goto INIT_FAILED;
+    if (prometheus_metric_sample_create_for_histogram(histogram, sum_l_value, 0.0, 0.0) == NULL) goto INIT_FAILED;
     
     return histogram;
 
@@ -112,23 +98,13 @@ void prometheus_metric_sample_histogram_free(prometheus_metric_sample_histogram_
     prometheus_metric_t metric = histogram->m_metric;
     prometheus_manager_t manager = metric->m_manager;
 
-    while(!TAILQ_EMPTY(&histogram->m_samples_in_order)) {
-        prometheus_metric_sample_free(TAILQ_FIRST(&histogram->m_samples_in_order));
+    while(!TAILQ_EMPTY(&histogram->m_samples)) {
+        prometheus_metric_sample_free(TAILQ_FIRST(&histogram->m_samples));
     }
-
-    assert(cpe_hash_table_count(&histogram->m_samples) == 0);
-    cpe_hash_table_fini(&histogram->m_samples);
 
     mem_free(manager->m_alloc, histogram->m_l_value);
     histogram->m_l_value = NULL;
 
-    if (histogram->m_buckets != NULL
-        && histogram->m_buckets != manager->m_histogram_default_buckets)
-    {
-        prometheus_histogram_buckets_free(histogram->m_buckets);
-    }
-    histogram->m_buckets = NULL;
-    
     cpe_hash_table_remove_by_ins(&metric->m_sample_histograms, histogram);
     mem_free(manager->m_alloc, histogram);
 }
@@ -155,79 +131,75 @@ char * prometheus_metric_sample_histogram_bucket_to_str(char * buf, size_t buf_c
 }
 
 int prometheus_metric_sample_histogram_observe(prometheus_metric_sample_histogram_t histogram, double value) {
-    /* int r = 0; */
+    prometheus_metric_t metric = histogram->m_metric;
+    prometheus_manager_t manager = metric->m_manager;
 
-    /* // Update the counter for the proper bucket if found */
-    /* int bucket_count = prometheus_histogram_buckets_count(histogram->m_buckets); */
-    /* for (int i = (bucket_count - 1); i >= 0; i--) { */
-    /*     if (value > histogram->m_buckets->m_upper_bounds[i]) { */
-    /*         break; */
-    /*     } */
+    int rv = 0;
+    
+    /*sum*/
+    prometheus_metric_sample_t sum_sample = TAILQ_LAST(&histogram->m_samples, prometheus_metric_sample_list);
+    if (sum_sample == NULL) {
+        CPE_ERROR(
+            manager->m_em, "prometheus: %s: %s: observe: no sum sample",
+            metric->m_name, histogram->m_l_value);
+        return -1;
+    }
 
-    /*     char bucket_key_buf[50]; */
-    /*     const char * bucket_key = */
-    /*         prometheus_metric_sample_histogram_bucket_to_str( */
-    /*             bucket_key_buf, sizeof(bucket_key_buf), histogram->m_buckets->m_upper_bounds[i]); */
-    /*     if (bucket_key == NULL) return -1; */
+    if (prometheus_metric_sample_add(sum_sample, value) != 0) {
+        CPE_ERROR(
+            manager->m_em, "prometheus: %s: %s: observe: add count sample",
+            metric->m_name, histogram->m_l_value);
+        rv = -1;
+    }
 
-    /*     const char * l_value = prometheus_map_get(histogram->l_values, bucket_key); */
-    /*     if (l_value == NULL) { */
-    /*         /\* prometheus_free((void *)bucket_key); *\/ */
-    /*         /\* PROM_METRIC_SAMPLE_HISTOGRAM_OBSERVE_HANDLE_UNLOCK(1); *\/ */
-    /*     } */
+    /*count*/
+    prometheus_metric_sample_t count_sample = TAILQ_PREV(sum_sample, prometheus_metric_sample_list, m_owner_histogram.m_next);
+    if (count_sample == NULL) {
+        CPE_ERROR(
+            manager->m_em, "prometheus: %s: %s: observe: no count sample",
+            metric->m_name, histogram->m_l_value);
+        return -1;
+    }
+    if (prometheus_metric_sample_add(count_sample, 1.0) != 0) {
+        CPE_ERROR(
+            manager->m_em, "prometheus: %s: %s: observe: count sample inc fail",
+            metric->m_name, histogram->m_l_value);
+        rv = -1;
+    }
 
-    /*     prometheus_metric_sample_t *sample = prometheus_map_get(histogram->samples, l_value); */
-    /*     if (sample == NULL) { */
-    /*         PROM_METRIC_SAMPLE_HISTOGRAM_OBSERVE_HANDLE_UNLOCK(1) */
-    /*             } */
+    /*inf*/
+    prometheus_metric_sample_t inf_sample = TAILQ_PREV(count_sample, prometheus_metric_sample_list, m_owner_histogram.m_next);
+    if (inf_sample == NULL) {
+        CPE_ERROR(
+            manager->m_em, "prometheus: %s: %s: observe: no inf sample",
+            metric->m_name, histogram->m_l_value);
+        return -1;
+    }
+    if (prometheus_metric_sample_add(inf_sample, 1.0) != 0) {
+        CPE_ERROR(
+            manager->m_em, "prometheus: %s: %s: observe: inf sample inc fail",
+            metric->m_name, histogram->m_l_value);
+        rv = -1;
+    }
 
-    /*     if (prometheus_metric_sample_add(sample, 1.0) != 0) return -1; */
-    /* } */
+    /*buckets*/
+    prometheus_metric_sample_t bucket_sample;
+    for(bucket_sample = TAILQ_PREV(inf_sample, prometheus_metric_sample_list, m_owner_histogram.m_next);
+        bucket_sample;
+        bucket_sample = TAILQ_PREV(bucket_sample, prometheus_metric_sample_list, m_owner_histogram.m_next))
+    {
+        if (value > bucket_sample->m_owner_histogram.m_upper_bound) {
+            break;
+        }
 
-    /* // Update the +Inf and count samples */
-    /* const char *inf_l_value = prometheus_map_get(histogram->l_values, "+Inf"); */
-    /* if (inf_l_value == NULL) { */
-    /*     PROM_METRIC_SAMPLE_HISTOGRAM_OBSERVE_HANDLE_UNLOCK(1); */
-    /* } */
+        if (prometheus_metric_sample_add(bucket_sample, 1.0) != 0) {
+            CPE_ERROR(
+                manager->m_em, "prometheus: %s: %s: observe: buckeet sample inc fail",
+                metric->m_name, histogram->m_l_value);
+            rv = -1;
+        }
+    }
 
-    /* prometheus_metric_sample_t *inf_sample = prometheus_map_get(histogram->samples, inf_l_value); */
-    /* if (inf_sample == NULL) { */
-    /*     PROM_METRIC_SAMPLE_HISTOGRAM_OBSERVE_HANDLE_UNLOCK(1); */
-    /* } */
-
-    /* r = prometheus_metric_sample_add(inf_sample, 1.0); */
-    /* if (r) { */
-    /*     PROM_METRIC_SAMPLE_HISTOGRAM_OBSERVE_HANDLE_UNLOCK(1); */
-    /* } */
-
-    /* const char *count_l_value = prometheus_map_get(histogram->l_values, "count"); */
-    /* if (count_l_value == NULL) { */
-    /*     PROM_METRIC_SAMPLE_HISTOGRAM_OBSERVE_HANDLE_UNLOCK(1); */
-    /* } */
-
-    /* prometheus_metric_sample_t *count_sample = prometheus_map_get(histogram->samples, count_l_value); */
-    /* if (count_sample == NULL) { */
-    /*     PROM_METRIC_SAMPLE_HISTOGRAM_OBSERVE_HANDLE_UNLOCK(1); */
-    /* } */
-
-    /* r = prometheus_metric_sample_add(count_sample, 1.0); */
-    /* if (r) { */
-    /*     PROM_METRIC_SAMPLE_HISTOGRAM_OBSERVE_HANDLE_UNLOCK(1); */
-    /* } */
-
-    /* // Update the sum sample */
-    /* const char *sum_l_value = prometheus_map_get(histogram->l_values, "sum"); */
-    /* if (sum_l_value == NULL) { */
-    /*     PROM_METRIC_SAMPLE_HISTOGRAM_OBSERVE_HANDLE_UNLOCK(1); */
-    /* } */
-
-    /* prometheus_metric_sample_t *sum_sample = prometheus_map_get(histogram->samples, sum_l_value); */
-    /* if (sum_sample == NULL) { */
-    /*     PROM_METRIC_SAMPLE_HISTOGRAM_OBSERVE_HANDLE_UNLOCK(1); */
-    /* } */
-
-    /* r = prometheus_metric_sample_add(sum_sample, value); */
-    /* PROM_METRIC_SAMPLE_HISTOGRAM_OBSERVE_HANDLE_UNLOCK(r); */
     return 0;
 }
 

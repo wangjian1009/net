@@ -3,6 +3,7 @@
 #include "prometheus_manager_i.h"
 #include "prometheus_metric_i.h"
 #include "prometheus_metric_sample_i.h"
+#include "prometheus_metric_sample_histogram_i.h"
 #include "prometheus_collector_metric_i.h"
 #include "prometheus_collector_i.h"
 
@@ -27,14 +28,9 @@ void prometheus_manager_collect_metric(write_stream_t ws, prometheus_metric_t me
 
     prometheus_metric_sample_histogram_t histogram;
     while((histogram = cpe_hash_it_next(&histogram_it))) {
-    /*         for (prometheus_linked_list_node_t * current_hist_node = hist_sample->l_value_list->head; current_hist_node != NULL; */
-    /*              current_hist_node = current_hist_node->next) { */
-    /*             const char * hist_key = (const char *)current_hist_node->item; */
-    /*             prometheus_metric_sample_t * sample = (prometheus_metric_sample_t *)prometheus_map_get(hist_sample->samples, hist_key); */
-    /*             if (sample == NULL) return 1; */
-    /*             r = prometheus_metric_formatter_load_sample(formatter, sample); */
-    /*             if (r) return r; */
-    /*         } */
+        TAILQ_FOREACH(sample, &histogram->m_samples, m_owner_histogram.m_next) {
+            stream_printf(ws, "%s %.17g\n", sample->m_l_value, sample->m_r_value);
+        }
     }
 }
 

@@ -6,7 +6,7 @@
 struct prometheus_histogram_buckets {
     prometheus_manager_t m_manager;
     TAILQ_ENTRY(prometheus_histogram_buckets) m_next;
-    int m_count;                    /* Number of buckets */
+    uint16_t m_count;                    /* Number of buckets */
     double * m_upper_bounds;  /* The bucket values */
 };
 

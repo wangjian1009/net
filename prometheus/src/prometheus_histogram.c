@@ -16,6 +16,8 @@ prometheus_histogram_create(
             manager, prometheus_metric_histogram,
             name, help, label_key_count, label_keys);
     if (metric == NULL) {
+        CPE_ERROR(manager->m_em, "prometheus: %s: ceate fail", name);
+        return NULL;
     }
     
     prometheus_histogram_t histogram = prometheus_metric_data(metric);
@@ -50,10 +52,11 @@ void prometheus_histogram_free(prometheus_histogram_t histogram) {
 }
 
 int prometheus_histogram_observe(prometheus_histogram_t histogram, double value, const char **label_values) {
-  /* prometheus_metric_sample_histogram_t *h_sample = prometheus_metric_sample_histogram_from_labels(self, label_values); */
-  /* if (h_sample == NULL) return 1; */
-  /* return prometheus_metric_sample_histogram_observe(h_sample, value); */
-    return 0;
+    prometheus_metric_t metric = prometheus_metric_from_data(histogram);
+    
+    prometheus_metric_sample_histogram_t h_sample = prometheus_metric_sample_histogram_from_labels(metric, label_values);
+    if (h_sample == NULL) return -1;
+    return prometheus_metric_sample_histogram_observe(h_sample, value);
 }
 
 prometheus_metric_type_t

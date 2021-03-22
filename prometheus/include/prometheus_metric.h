@@ -22,7 +22,7 @@ prometheus_metric_sample_from_labels(
     prometheus_metric_t metric, const char **label_values);
 
 prometheus_metric_sample_histogram_t
-prom_metric_sample_histogram_from_labels(
+prometheus_metric_sample_histogram_from_labels(
     prometheus_metric_t metric, const char **label_values);
 
 prometheus_metric_t prometheus_metric_from_data(void * data);
