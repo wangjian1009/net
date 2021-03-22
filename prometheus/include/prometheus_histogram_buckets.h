@@ -6,7 +6,7 @@ extern prometheus_histogram_buckets_t prometheus_histogram_default_buckets;
 
 prometheus_histogram_buckets_t
 prometheus_histogram_buckets_create(
-    prometheus_manager_t manager, size_t count, double bucket, ...);
+    prometheus_manager_t manager, uint16_t count, double bucket, ...);
 
 prometheus_histogram_buckets_t
 prometheus_histogram_buckets_linear(
@@ -18,6 +18,7 @@ prometheus_histogram_buckets_exponential(
 
 void prometheus_histogram_buckets_free(prometheus_histogram_buckets_t histogram_buckets);
 
-size_t prometheus_histogram_buckets_count(prometheus_histogram_buckets_t histogram_buckets);
+uint16_t prometheus_histogram_buckets_count(prometheus_histogram_buckets_t histogram_buckets);
+double prometheus_histogram_buckets_upper_bound(prometheus_histogram_buckets_t histogram_buckets, uint16_t idx);
 
 #endif

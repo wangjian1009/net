@@ -8,7 +8,6 @@ set_property(TARGET tests_net_prometheus PROPERTY INCLUDE_DIRECTORIES
   ${cpe_utils_base}/include
   ${cpe_utils_base}/test_utils
   ${net_prometheus_base}/include
-  ${net_prometheus_base}/src
   )
 
 set(tests_net_prometheus_libraries net_prometheus test_utils_cpe_utils cmocka)

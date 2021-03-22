@@ -9,6 +9,8 @@ int main(void) {
     if (prometheus_counter_basic_tests() != 0) rv = -1;
     if (prometheus_gauge_basic_tests() != 0) rv = -1;
 
+    if (prometheus_histogram_buckets_basic_tests() != 0) rv = -1;
+
     return rv;
 }
 

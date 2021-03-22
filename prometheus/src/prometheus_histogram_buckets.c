@@ -1,9 +1,10 @@
+#include <assert.h>
 #include "cpe/pal/pal_stdarg.h"
 #include "cpe/pal/pal_stdlib.h"
 #include "prometheus_histogram_buckets_i.h"
 
 prometheus_histogram_buckets_t
-prometheus_histogram_buckets_create(prometheus_manager_t manager, size_t count, double bucket, ...) {
+prometheus_histogram_buckets_create(prometheus_manager_t manager, uint16_t count, double bucket, ...) {
     prometheus_histogram_buckets_t buckets = mem_alloc(manager->m_alloc, sizeof(struct prometheus_histogram_buckets));
     if (buckets == NULL) {
         CPE_ERROR(manager->m_em, "prometheus: buckets create: alloc fail, count=%d", (int)count);
@@ -124,6 +125,11 @@ void prometheus_histogram_buckets_free(prometheus_histogram_buckets_t buckets) {
     mem_free(manager->m_alloc, buckets);
 }
 
-size_t prometheus_histogram_buckets_count(prometheus_histogram_buckets_t buckets) {
+uint16_t prometheus_histogram_buckets_count(prometheus_histogram_buckets_t buckets) {
     return buckets->m_count;
+}
+
+double prometheus_histogram_buckets_upper_bound(prometheus_histogram_buckets_t histogram_buckets, uint16_t idx) {
+    assert(idx < histogram_buckets->m_count);
+    return histogram_buckets->m_upper_bounds[idx];
 }
