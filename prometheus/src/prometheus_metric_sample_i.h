@@ -3,16 +3,35 @@
 #include "prometheus_metric_sample.h"
 #include "prometheus_metric_i.h"
 
+enum prometheus_metric_sample_owner_type {
+    prometheus_metric_sample_owner_metric,
+    prometheus_metric_sample_owner_histogram,
+};
+
 struct prometheus_metric_sample {
-    prometheus_metric_t m_metric;
-    cpe_hash_entry m_hh_for_metric;
+    enum prometheus_metric_sample_owner_type m_owner_type;
+    union {
+        struct {
+            prometheus_metric_t m_metric;
+            cpe_hash_entry m_hh;
+        } m_owner_metric;
+        struct {
+            prometheus_metric_sample_histogram_t m_histogram;
+            cpe_hash_entry m_hh;
+            TAILQ_ENTRY(prometheus_metric_sample) m_next;
+        } m_owner_histogram;
+    };
     char * m_l_value;
     double m_r_value;
 };
 
 prometheus_metric_sample_t
-prometheus_metric_sample_create(
+prometheus_metric_sample_create_for_metric(
     prometheus_metric_t metric, const char * l_value, double r_value);
+
+prometheus_metric_sample_t
+prometheus_metric_sample_create_for_histogram(
+    prometheus_metric_sample_histogram_t histogram, const char * l_value, double r_value);
 
 void prometheus_metric_sample_free(prometheus_metric_sample_t sample);
 

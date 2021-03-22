@@ -7,6 +7,7 @@
 #include "prometheus_metric_type_i.h"
 #include "prometheus_counter_i.h"
 #include "prometheus_gauge_i.h"
+#include "prometheus_histogram_buckets_i.h"
 
 prometheus_manager_t
 prometheus_manager_create(mem_allocrator_t alloc, error_monitor_t em) {
@@ -20,6 +21,8 @@ prometheus_manager_create(mem_allocrator_t alloc, error_monitor_t em) {
     manager->m_em = em;
 
     bzero(manager->m_metric_types, sizeof(manager->m_metric_types));
+
+    manager->m_histogram_default_buckets = NULL;
 
     manager->m_collector_default = NULL;
     TAILQ_INIT(&manager->m_collectors);
@@ -58,6 +61,11 @@ void prometheus_manager_free(prometheus_manager_t manager) {
         if (manager->m_metric_types[i]) {
             prometheus_metric_type_free(manager->m_metric_types[i]);
         }
+    }
+
+    if (manager->m_histogram_default_buckets) {
+        prometheus_histogram_buckets_free(manager->m_histogram_default_buckets);
+        manager->m_histogram_default_buckets = NULL;
     }
 
     mem_buffer_clear(&manager->m_tmp_buffer);

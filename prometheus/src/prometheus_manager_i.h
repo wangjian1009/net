@@ -12,8 +12,10 @@ typedef struct prometheus_metric_formatter * prometheus_metric_formatter_t;
 typedef struct prometheus_string_builder * prometheus_string_builder_t;
 
 typedef TAILQ_HEAD(prometheus_metric_list, prometheus_metric) prometheus_metric_list_t;
+typedef TAILQ_HEAD(prometheus_metric_sample_list, prometheus_metric_sample) prometheus_metric_sample_list_t;
 typedef TAILQ_HEAD(prometheus_collector_list, prometheus_collector) prometheus_collector_list_t;
 typedef TAILQ_HEAD(prometheus_collector_metric_list, prometheus_collector_metric) prometheus_collector_metric_list_t;
+typedef TAILQ_HEAD(prometheus_histogram_buckets_list, prometheus_histogram_buckets) prometheus_histogram_buckets_list_t;
 
 struct prometheus_manager {
     mem_allocrator_t m_alloc;
@@ -29,6 +31,10 @@ struct prometheus_manager {
     prometheus_collector_t m_collector_default;
     prometheus_collector_list_t m_collectors;
 
+    /**/
+    prometheus_histogram_buckets_t m_histogram_default_buckets;
+    prometheus_histogram_buckets_list_t m_histogram_bucketses;
+    
     /**/
     struct mem_buffer m_tmp_buffer;
 };

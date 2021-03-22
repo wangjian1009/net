@@ -12,16 +12,21 @@ void prometheus_manager_collect_metric(write_stream_t ws, prometheus_metric_t me
     stream_printf(ws, "# HELP %s %s\n", metric->m_name, metric->m_help);
     stream_printf(ws, "# TYPE %s %s\n", metric->m_name, prometheus_metric_category_str(category));
 
+    /*sample-value*/
     struct cpe_hash_it sample_it;
     cpe_hash_it_init(&sample_it, &metric->m_samples);
 
     prometheus_metric_sample_t sample;
     while((sample = cpe_hash_it_next(&sample_it))) {
-        if (category == prometheus_metric_histogram) {
-    /*         prometheus_metric_sample_histogram_t * hist_sample = (prometheus_metric_sample_histogram_t *)prometheus_map_get(metric->samples, key); */
+        stream_printf(ws, "%s %.17g\n", sample->m_l_value, sample->m_r_value);
+    }
 
-    /*         if (hist_sample == NULL) return 1; */
+    /*sample-histogram*/
+    struct cpe_hash_it histogram_it;
+    cpe_hash_it_init(&histogram_it, &metric->m_sample_histograms);
 
+    prometheus_metric_sample_histogram_t histogram;
+    while((histogram = cpe_hash_it_next(&histogram_it))) {
     /*         for (prometheus_linked_list_node_t * current_hist_node = hist_sample->l_value_list->head; current_hist_node != NULL; */
     /*              current_hist_node = current_hist_node->next) { */
     /*             const char * hist_key = (const char *)current_hist_node->item; */
@@ -30,12 +35,7 @@ void prometheus_manager_collect_metric(write_stream_t ws, prometheus_metric_t me
     /*             r = prometheus_metric_formatter_load_sample(formatter, sample); */
     /*             if (r) return r; */
     /*         } */
-        } else {
-            stream_printf(ws, "%s %.17g\n", sample->m_l_value, sample->m_r_value);
-        }
     }
-
-    stream_printf(ws, "\n");
 }
 
 void prometheus_manager_collect(write_stream_t ws, prometheus_manager_t manager) {

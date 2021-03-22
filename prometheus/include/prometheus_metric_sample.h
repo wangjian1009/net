@@ -7,6 +7,8 @@ CPE_BEGIN_DECL
 const char * prometheus_metric_sample_l_value(prometheus_metric_sample_t sample);
 double prometheus_metric_sample_r_value(prometheus_metric_sample_t sample);
 
+prometheus_metric_t prometheus_metric_sample_metric(prometheus_metric_sample_t sample);
+
 int prometheus_metric_sample_add(prometheus_metric_sample_t sample, double r_value);
 int prometheus_metric_sample_sub(prometheus_metric_sample_t sample, double r_value);
 int prometheus_metric_sample_set(prometheus_metric_sample_t sample, double r_value);

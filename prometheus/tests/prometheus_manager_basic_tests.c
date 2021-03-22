@@ -9,12 +9,14 @@
 #include "prometheus_metric_sample.h"
 #include "prometheus_counter.h"
 #include "prometheus_gauge.h"
+#include "prometheus_histogram.h"
+#include "prometheus_histogram_buckets.h"
 
 struct prometheus_manager_test_env {
     prometheus_testenv_t m_env;
     prometheus_counter_t  m_test_counter;;
     prometheus_gauge_t m_test_gauge;
-    //prometheus_histogram_t m_test_histogram;
+    prometheus_histogram_t m_test_histogram;
 };
 
 static int setup(void **state) {
@@ -39,10 +41,17 @@ static int setup(void **state) {
         prometheus_collector_default(env->m_env->m_manager),
         prometheus_metric_from_data(env->m_test_gauge));
     
-    /* test_histogram = prom_collector_registry_must_register_metric(prom_histogram_new( */
-    /*   "test_histogram", "histogram under test", prom_histogram_buckets_linear(5.0, 5.0, 2), 0, NULL)); */
+    env->m_test_histogram =
+        prometheus_histogram_create(
+            env->m_env->m_manager,
+            "test_histogram", "histogram under test",
+            prometheus_histogram_buckets_linear(env->m_env->m_manager, 5.0, 5.0, 2),
+            0, NULL);
+    prometheus_collector_add_metric(
+        prometheus_collector_default(env->m_env->m_manager),
+        prometheus_metric_from_data(env->m_test_histogram));
 
-  return 0;
+    return 0;
 }
 
 static int teardown(void **state) {

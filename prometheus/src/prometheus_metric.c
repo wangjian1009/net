@@ -5,6 +5,7 @@
 #include "prometheus_metric_i.h"
 #include "prometheus_metric_type_i.h"
 #include "prometheus_metric_sample_i.h"
+#include "prometheus_metric_sample_histogram_i.h"
 #include "prometheus_collector_metric_i.h"
 
 prometheus_metric_t
@@ -23,7 +24,7 @@ prometheus_metric_create(
     metric->m_type = type;
     metric->m_name = cpe_str_mem_dup(manager->m_alloc, name);
     metric->m_help = cpe_str_mem_dup(manager->m_alloc, help);
-    //metric->m_buckets = NULL;
+    metric->m_buckets = NULL;
     metric->m_label_key_count = 0;
     metric->m_label_keys = NULL;
     TAILQ_INIT(&metric->m_collectors);
@@ -33,9 +34,22 @@ prometheus_metric_create(
             manager->m_alloc,
             (cpe_hash_fun_t) prometheus_metric_sample_hash,
             (cpe_hash_eq_t) prometheus_metric_sample_eq,
-            CPE_HASH_OBJ2ENTRY(prometheus_metric_sample, m_hh_for_metric),
+            CPE_HASH_OBJ2ENTRY(prometheus_metric_sample, m_owner_metric.m_hh),
             -1) != 0)
     {
+        mem_free(manager->m_alloc, metric);
+        return NULL;
+    }
+
+    if (cpe_hash_table_init(
+            &metric->m_sample_histograms,
+            manager->m_alloc,
+            (cpe_hash_fun_t) prometheus_metric_sample_histogram_hash,
+            (cpe_hash_eq_t) prometheus_metric_sample_histogram_eq,
+            CPE_HASH_OBJ2ENTRY(prometheus_metric_sample_histogram, m_hh_for_metric),
+            -1) != 0)
+    {
+        cpe_hash_table_fini(&metric->m_samples);
         mem_free(manager->m_alloc, metric);
         return NULL;
     }
@@ -85,6 +99,7 @@ void prometheus_metric_free(prometheus_metric_t metric) {
     metric->m_label_key_count = 0;
 
     prometheus_metric_sample_free_all(metric);
+    prometheus_metric_sample_histogram_free_all(metric);
 
     if (metric->m_name) {
         mem_free(manager->m_alloc, metric->m_name);
@@ -97,6 +112,7 @@ void prometheus_metric_free(prometheus_metric_t metric) {
     }
     
     cpe_hash_table_fini(&metric->m_samples);
+    cpe_hash_table_fini(&metric->m_sample_histograms);
     
     mem_free(manager->m_alloc, metric);
 }
@@ -126,10 +142,27 @@ prometheus_metric_sample_from_labels(
 
     prometheus_metric_sample_t sample = cpe_hash_table_find(&metric->m_samples, &key);
     if (sample == NULL) {
-        sample = prometheus_metric_sample_create(metric, l_value, 0.0);
+        sample = prometheus_metric_sample_create_for_metric(metric, l_value, 0.0);
         if (sample == NULL) return NULL;
     }
 
+    return sample;
+}
+
+prometheus_metric_sample_histogram_t
+prometheus_metric_sample_histogram_from_labels(prometheus_metric_t metric, const char **label_values) {
+    prometheus_manager_t manager = metric->m_manager;
+
+    const char * l_value = prometheus_metric_dump_l_value(&manager->m_tmp_buffer, metric, label_values, NULL);
+    
+    struct prometheus_metric_sample_histogram key;
+    key.m_l_value = (char*)l_value;
+    
+    prometheus_metric_sample_histogram_t sample = cpe_hash_table_find(&metric->m_samples, &key);
+    if (sample == NULL) {
+        sample = prometheus_metric_sample_histogram_create(metric, l_value, metric->m_buckets, label_values);
+        if (sample == NULL) return NULL;
+    }
     return sample;
 }
 
