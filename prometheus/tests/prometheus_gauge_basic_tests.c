@@ -61,10 +61,73 @@ static void test_gauge_dec(void ** state) {
     prometheus_gauge_free(g);
 }
 
+static void test_gauge_add(void ** state) {
+    prometheus_testenv_t env = *state;
+
+    prometheus_gauge_t g = prometheus_gauge_create(
+        env->m_manager, "test_gauge", "gauge under test", 2,
+        (const char *[]){"foo", "bar"});
+    assert_true(g);
+
+    prometheus_gauge_add(g, 100000000.1, sample_labels_a);
+
+    prometheus_metric_sample_t sample =
+        prometheus_metric_sample_from_labels(prometheus_metric_from_data(g), sample_labels_a);
+    assert_float_equal(100000000.1, prometheus_metric_sample_r_value(sample), 0.0001);
+
+    sample = prometheus_metric_sample_from_labels(prometheus_metric_from_data(g), sample_labels_b);
+    assert_float_equal(0.0, prometheus_metric_sample_r_value(sample), 0.0001); 
+
+    prometheus_gauge_free(g);
+}
+
+static void test_gauge_sub(void ** state) {
+    prometheus_testenv_t env = *state;
+
+    prometheus_gauge_t g = prometheus_gauge_create(
+        env->m_manager, "test_gauge", "gauge under test", 2,
+        (const char *[]){"foo", "bar"});
+    assert_true(g);
+
+    prometheus_gauge_sub(g, 100000000.1, sample_labels_a);
+
+    prometheus_metric_sample_t sample =
+        prometheus_metric_sample_from_labels(prometheus_metric_from_data(g), sample_labels_a);
+    assert_float_equal(-100000000.1, prometheus_metric_sample_r_value(sample), 0.0001);
+
+    sample = prometheus_metric_sample_from_labels(prometheus_metric_from_data(g), sample_labels_b);
+    assert_float_equal(0.0, prometheus_metric_sample_r_value(sample), 0.0001);
+
+    prometheus_gauge_free(g);
+}
+
+static void test_gauge_set(void ** state) {
+    prometheus_testenv_t env = *state;
+
+    prometheus_gauge_t g = prometheus_gauge_create(
+        env->m_manager, "test_gauge", "gauge under test", 2,
+        (const char *[]){"foo", "bar"});
+    assert_true(g);
+
+    prometheus_gauge_set(g, 100000000.1, sample_labels_a);
+
+    prometheus_metric_sample_t sample =
+        prometheus_metric_sample_from_labels(prometheus_metric_from_data(g), sample_labels_a);
+    assert_float_equal(100000000.1, prometheus_metric_sample_r_value(sample), 0.0001);
+
+    sample = prometheus_metric_sample_from_labels(prometheus_metric_from_data(g), sample_labels_b);
+    assert_float_equal(0.0, prometheus_metric_sample_r_value(sample), 0.0001);
+
+    prometheus_gauge_free(g);
+}
+
 int prometheus_gauge_basic_tests() {
 	const struct CMUnitTest tests[] = {
 		cmocka_unit_test_setup_teardown(test_gauge_inc, setup, teardown),
 		cmocka_unit_test_setup_teardown(test_gauge_dec, setup, teardown),
+		cmocka_unit_test_setup_teardown(test_gauge_add, setup, teardown),
+		cmocka_unit_test_setup_teardown(test_gauge_sub, setup, teardown),
+		cmocka_unit_test_setup_teardown(test_gauge_set, setup, teardown),
 	};
 	return cmocka_run_group_tests(tests, NULL, NULL);
 }
