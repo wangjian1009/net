@@ -7,12 +7,14 @@ set_property(TARGET tests_net_prometheus_process PROPERTY INCLUDE_DIRECTORIES
   ${cpe_pal_base}/include
   ${cpe_utils_base}/include
   ${cpe_utils_base}/test_utils
+  ${cpe_vfs_base}/include
+  ${cpe_vfs_base}/test_utils
   ${net_prometheus_base}/include
   ${net_prometheus_process_base}/include
   ${net_prometheus_process_base}/src
   )
 
-set(tests_net_prometheus_process_libraries net_prometheus_process test_utils_cpe_utils cmocka)
+set(tests_net_prometheus_process_libraries net_prometheus_process test_utils_cpe_utils test_utils_cpe_vfs cmocka)
 
 set_property(TARGET tests_net_prometheus_process PROPERTY LINK_LIBRARIES ${tests_net_prometheus_process_libraries})
 
