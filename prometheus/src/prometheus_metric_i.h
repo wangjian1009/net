@@ -26,9 +26,13 @@ prometheus_metric_create(
     uint8_t label_key_count, const char **label_keys);
 
 void prometheus_metric_print_l_value(
-    write_stream_t ws, prometheus_metric_t metric, const char ** label_values, const char * suffix);
+    write_stream_t ws, prometheus_metric_t metric, const char ** label_values,
+    const char * suffix,
+    uint8_t addition_count, const char ** addition_keys, const char ** addition_values);
 
 char * prometheus_metric_dump_l_value(
-    mem_buffer_t buffer, prometheus_metric_t metric, const char ** label_values, const char * suffix);
+    mem_buffer_t buffer, prometheus_metric_t metric, const char ** label_values,
+    const char * suffix,
+    uint8_t addition_count, const char ** addition_keys, const char ** addition_values);
 
 #endif

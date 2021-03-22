@@ -18,6 +18,7 @@ prometheus_metric_create(
     prometheus_metric_type_t type = manager->m_metric_types[category];
     assert(name);
     assert(help);
+    assert(type);
 
     prometheus_metric_t metric = mem_alloc(manager->m_alloc, sizeof(struct prometheus_metric));
     metric->m_manager = manager;
@@ -135,7 +136,7 @@ prometheus_metric_sample_from_labels(
 {
     prometheus_manager_t manager = metric->m_manager;
 
-    const char * l_value = prometheus_metric_dump_l_value(&manager->m_tmp_buffer, metric, label_values, NULL);
+    const char * l_value = prometheus_metric_dump_l_value(&manager->m_tmp_buffer, metric, label_values, NULL, 0, NULL, NULL);
 
     struct prometheus_metric_sample key;
     key.m_l_value = (char*)l_value;
@@ -153,7 +154,7 @@ prometheus_metric_sample_histogram_t
 prometheus_metric_sample_histogram_from_labels(prometheus_metric_t metric, const char **label_values) {
     prometheus_manager_t manager = metric->m_manager;
 
-    const char * l_value = prometheus_metric_dump_l_value(&manager->m_tmp_buffer, metric, label_values, NULL);
+    const char * l_value = prometheus_metric_dump_l_value(&manager->m_tmp_buffer, metric, label_values, NULL, 0, NULL, NULL);
     
     struct prometheus_metric_sample_histogram key;
     key.m_l_value = (char*)l_value;
@@ -175,7 +176,9 @@ void * prometheus_metric_data(prometheus_metric_t metric) {
 }
 
 void prometheus_metric_print_l_value(
-    write_stream_t ws, prometheus_metric_t metric, const char ** label_values, const char * suffix)
+    write_stream_t ws, prometheus_metric_t metric, const char ** label_values,
+    const char * suffix,
+    uint8_t addition_count, const char ** addition_keys, const char ** addition_values)
 {
     stream_printf(ws, "%s", metric->m_name);
 
@@ -187,20 +190,31 @@ void prometheus_metric_print_l_value(
 
     stream_putc(ws, '{');
     uint8_t i;
-    for (int i = 0; i < metric->m_label_key_count; i++) {
+    for(i = 0; i < metric->m_label_key_count; i++) {
         if (i > 0) stream_putc(ws, ',');
         stream_printf(ws, "%s=\"%s\"", metric->m_label_keys[i], label_values[i]);
     }
+
+    uint8_t j;
+    for(j = 0; j < addition_count; ++j) {
+        if (i > 0 || j > 0) stream_putc(ws, ',');
+        stream_printf(ws, "%s=\"%s\"", addition_keys[j], addition_values[j]);
+    }
+    
     stream_putc(ws, '}');
 }
 
 char * prometheus_metric_dump_l_value(
-    mem_buffer_t buffer, prometheus_metric_t metric, const char ** label_values, const char * suffix)
+    mem_buffer_t buffer, prometheus_metric_t metric, const char ** label_values,
+    const char * suffix,
+    uint8_t addition_count, const char ** addition_keys, const char ** addition_values)
 {
     struct write_stream_buffer stream = CPE_WRITE_STREAM_BUFFER_INITIALIZER(buffer);
 
     mem_buffer_clear_data(buffer);
-    prometheus_metric_print_l_value((write_stream_t)&stream, metric, label_values, suffix);
+    prometheus_metric_print_l_value(
+        (write_stream_t)&stream, metric, label_values,
+        suffix, addition_count, addition_keys, addition_values);
     stream_putc((write_stream_t)&stream, 0);
 
     return mem_buffer_make_continuous(buffer, 0);

@@ -7,26 +7,6 @@
 #include "prometheus_histogram_buckets_i.h"
 #include "prometheus_metric_sample_i.h"
 
-static const char *
-prometheus_metric_sample_histogram_l_value_for_bucket(
-    mem_buffer_t buffer, prometheus_metric_sample_histogram_t histogram, const char **label_values, double bucket);
-
-static const char *
-prometheus_metric_sample_histogram_l_value_for_inf(
-    mem_buffer_t buffer, prometheus_metric_sample_histogram_t histogram, const char ** label_values);
-
-static int prometheus_metric_sample_histogram_init_bucket_samples(
-    prometheus_metric_sample_histogram_t histogram, const char **label_values);
-
-static int prometheus_metric_sample_histogram_init_inf(
-    prometheus_metric_sample_histogram_t histogram, const char **label_values);
-
-static int prometheus_metric_sample_histogram_init_count(
-    prometheus_metric_sample_histogram_t histogram, const char **label_values);
-
-static int prometheus_metric_sample_histogram_init_summary(
-    prometheus_metric_sample_histogram_t histogram, const char **label_values);
-
 prometheus_metric_sample_histogram_t
 prometheus_metric_sample_histogram_create(
     prometheus_metric_t metric, const char * l_value, prometheus_histogram_buckets_t buckets, const char **label_values)
@@ -79,27 +59,53 @@ prometheus_metric_sample_histogram_create(
     }
     
     /*初始化完成，后续可以调用free */
-    if (prometheus_metric_sample_histogram_init_bucket_samples(histogram, label_values) != 0) {
-        prometheus_metric_sample_histogram_free(histogram);
-        return NULL;
+    const char * addition_key = "le";
+
+    /*buckets */
+    for (int i = 0; i < histogram->m_buckets->m_count; i++) {
+        char bucket_key_buf[50];
+        const char * addition_value =
+            prometheus_metric_sample_histogram_bucket_to_str(
+                bucket_key_buf, sizeof(bucket_key_buf),
+                histogram->m_buckets->m_upper_bounds[i]);
+
+        const char *l_value =
+            prometheus_metric_dump_l_value(
+                &manager->m_tmp_buffer, metric, label_values,
+                NULL, 1, &addition_key, &addition_value);
+        if (l_value == NULL) goto INIT_FAILED;
+
+        if (prometheus_metric_sample_create_for_histogram(histogram, l_value, 0.0) == NULL) goto INIT_FAILED;
     }
+
+    /*inf*/
+    const char * inf_addition_value = "+Inf";
+    const char * inf_l_value =
+        prometheus_metric_dump_l_value(
+            &manager->m_tmp_buffer, histogram->m_metric, label_values,
+            NULL, 1, &addition_key, &inf_addition_value);
+    if (inf_l_value == NULL) goto INIT_FAILED;
+    if (prometheus_metric_sample_create_for_histogram(histogram, inf_l_value, 0.0) == NULL) goto INIT_FAILED;
+
+    /*count*/
+    const char * count_l_value =
+        prometheus_metric_dump_l_value(
+            &manager->m_tmp_buffer, histogram->m_metric, label_values, "count", 0, NULL, NULL);
+    if (count_l_value == NULL) goto INIT_FAILED;
+    if (prometheus_metric_sample_create_for_histogram(histogram, count_l_value, 0.0) == NULL) goto INIT_FAILED;
     
-    if (prometheus_metric_sample_histogram_init_inf(histogram, label_values) != 0) {
-        prometheus_metric_sample_histogram_free(histogram);
-        return NULL;
-    }
-
-    if (prometheus_metric_sample_histogram_init_count(histogram, label_values) != 0) {
-        prometheus_metric_sample_histogram_free(histogram);
-        return NULL;
-    }
-
-    if (prometheus_metric_sample_histogram_init_summary(histogram, label_values) != 0) {
-        prometheus_metric_sample_histogram_free(histogram);
-        return NULL;
-    }
+    /*summary*/
+    const char * sum_l_value =
+        prometheus_metric_dump_l_value(
+            &manager->m_tmp_buffer, histogram->m_metric, label_values, "sum", 0, NULL, NULL);
+    if (sum_l_value == NULL) goto INIT_FAILED;
+    if (prometheus_metric_sample_create_for_histogram(histogram, sum_l_value, 0.0) == NULL) goto INIT_FAILED;
     
     return histogram;
+
+INIT_FAILED:
+    prometheus_metric_sample_histogram_free(histogram);
+    return NULL;
 }
 
 void prometheus_metric_sample_histogram_free(prometheus_metric_sample_histogram_t histogram) {
@@ -116,6 +122,13 @@ void prometheus_metric_sample_histogram_free(prometheus_metric_sample_histogram_
     mem_free(manager->m_alloc, histogram->m_l_value);
     histogram->m_l_value = NULL;
 
+    if (histogram->m_buckets != NULL
+        && histogram->m_buckets != manager->m_histogram_default_buckets)
+    {
+        prometheus_histogram_buckets_free(histogram->m_buckets);
+    }
+    histogram->m_buckets = NULL;
+    
     cpe_hash_table_remove_by_ins(&metric->m_sample_histograms, histogram);
     mem_free(manager->m_alloc, histogram);
 }
@@ -139,109 +152,6 @@ char * prometheus_metric_sample_histogram_bucket_to_str(char * buf, size_t buf_c
         strcat(buf, ".0");
     }
     return buf;
-}
-
-static int prometheus_metric_sample_histogram_init_bucket_samples(
-    prometheus_metric_sample_histogram_t histogram, const char **label_values)
-{
-    prometheus_manager_t manager = histogram->m_metric->m_manager;
-    
-    int bucket_count = prometheus_histogram_buckets_count(histogram->m_buckets);
-
-    // For each bucket, create an prometheus_metric_sample_t with an appropriate l_value and default value of 0.0. The
-    // l_value will contain the metric name, user labels, and finally, the le label and bucket value.
-    for (int i = 0; i < bucket_count; i++) {
-        const char *l_value =
-            prometheus_metric_sample_histogram_l_value_for_bucket(
-                &manager->m_tmp_buffer, histogram, label_values, histogram->m_buckets->m_upper_bounds[i]);
-        if (l_value == NULL) return -1;
-
-    /*     r = prometheus_linked_list_append(histogram->l_value_list, prometheus_strdup(l_value)); */
-    /*     if (r) return r; */
-
-        char bucket_key_buf[50];
-        const char * bucket_key = prometheus_metric_sample_histogram_bucket_to_str(
-            bucket_key_buf, sizeof(bucket_key_buf), histogram->m_buckets->m_upper_bounds[i]);
-        if (bucket_key == NULL) return -1;
-
-    /*     r = prometheus_map_set(histogram->l_values, bucket_key, (char *)l_value); */
-    /*     if (r) return r; */
-
-    /*     prometheus_metric_sample_t *sample = prometheus_metric_sample_new(PROM_HISTOGRAM, l_value, 0.0); */
-    /*     if (sample == NULL) return 1; */
-
-    /*     r = prometheus_map_set(histogram->samples, l_value, sample); */
-    /*     if (r) return r; */
-
-    /*     prometheus_free((void *)bucket_key); */
-    }
-
-    return 0;
-}
-
-static int prometheus_metric_sample_histogram_init_inf(
-    prometheus_metric_sample_histogram_t histogram, const char ** label_values)
-{
-    prometheus_manager_t manager = histogram->m_metric->m_manager;
-
-    const char *inf_l_value = prometheus_metric_sample_histogram_l_value_for_inf(&manager->m_tmp_buffer, histogram, label_values);
-    if (inf_l_value == NULL) return -1;
-
-    /* r = prometheus_linked_list_append(histogram->l_value_list, prometheus_strdup(inf_l_value)); */
-    /* if (r) return r; */
-
-    /* r = prometheus_map_set(histogram->l_values, "+Inf", (char *)inf_l_value); */
-    /* if (r) return r; */
-
-    /* prometheus_metric_sample_t *inf_sample = prometheus_metric_sample_new(PROM_HISTOGRAM, (char *)inf_l_value, 0.0); */
-    /* if (inf_sample == NULL) return 1; */
-
-    /* return prometheus_map_set(histogram->samples, inf_l_value, inf_sample); */
-    return -1;
-}
-
-static int prometheus_metric_sample_histogram_init_count(
-    prometheus_metric_sample_histogram_t histogram, const char **label_values)
-{
-    /* r = prometheus_metric_formatter_load_l_value(histogram->metric_formatter, name, "count", label_count, label_keys, label_values); */
-    /* if (r) return r; */
-
-    /* const char *count_l_value = prometheus_metric_formatter_dump(histogram->metric_formatter); */
-    /* if (count_l_value == NULL) return 1; */
-
-    /* r = prometheus_linked_list_append(histogram->l_value_list, prometheus_strdup(count_l_value)); */
-    /* if (r) return r; */
-
-    /* r = prometheus_map_set(histogram->l_values, "count", (char *)count_l_value); */
-    /* if (r) return r; */
-
-    /* prometheus_metric_sample_t *count_sample = prometheus_metric_sample_new(PROM_HISTOGRAM, count_l_value, 0.0); */
-    /* if (count_sample == NULL) return 1; */
-
-    /* return prometheus_map_set(histogram->samples, count_l_value, count_sample); */
-    return -1;
-}
-
-static int prometheus_metric_sample_histogram_init_summary(
-    prometheus_metric_sample_histogram_t histogram, const char **label_values)
-{
-    /* r = prometheus_metric_formatter_load_l_value(histogram->metric_formatter, name, "sum", label_count, label_keys, label_values); */
-    /* if (r) return r; */
-
-    /* const char *sum_l_value = prometheus_metric_formatter_dump(histogram->metric_formatter); */
-    /* if (sum_l_value == NULL) return 1; */
-
-    /* r = prometheus_linked_list_append(histogram->l_value_list, prometheus_strdup(sum_l_value)); */
-    /* if (r) return r; */
-
-    /* r = prometheus_map_set(histogram->l_values, "sum", (char *)sum_l_value); */
-    /* if (r) return r; */
-
-    /* prometheus_metric_sample_t *sum_sample = prometheus_metric_sample_new(PROM_HISTOGRAM, sum_l_value, 0.0); */
-    /* if (sum_sample == NULL) return 1; */
-
-    /* return prometheus_map_set(histogram->samples, sum_l_value, sum_sample); */
-    return -1;
 }
 
 int prometheus_metric_sample_histogram_observe(prometheus_metric_sample_histogram_t histogram, double value) {
@@ -319,66 +229,6 @@ int prometheus_metric_sample_histogram_observe(prometheus_metric_sample_histogra
     /* r = prometheus_metric_sample_add(sum_sample, value); */
     /* PROM_METRIC_SAMPLE_HISTOGRAM_OBSERVE_HANDLE_UNLOCK(r); */
     return 0;
-}
-
-static const char *
-prometheus_metric_sample_histogram_l_value_for_bucket(
-    mem_buffer_t buffer, prometheus_metric_sample_histogram_t histogram, const char **label_values, double bucket)
-{
-    prometheus_metric_t metric = histogram->m_metric;
-
-    struct write_stream_buffer ws = CPE_WRITE_STREAM_BUFFER_INITIALIZER(buffer);
-    mem_buffer_clear_data(buffer);
-
-    stream_printf((write_stream_t)&ws, "%s", metric->m_name);
-
-    stream_putc((write_stream_t)&ws, '{');
-    uint8_t i;
-    for (int i = 0; i < metric->m_label_key_count; i++) {
-        if (i > 0) stream_putc((write_stream_t)&ws, ',');
-        stream_printf((write_stream_t)&ws, "%s=\"%s\"", metric->m_label_keys[i], label_values[i]);
-    }
-
-    if (i > 0) stream_putc((write_stream_t)&ws, ',');
-
-    char bucket_key_buf[50];
-    stream_printf(
-        (write_stream_t)&ws, "le=\"%s\"",
-        prometheus_metric_sample_histogram_bucket_to_str(bucket_key_buf, sizeof(bucket_key_buf), bucket));
-    
-    stream_putc((write_stream_t)&ws, '}');
-    
-    stream_putc((write_stream_t)&ws, 0);
-
-    return mem_buffer_make_continuous(buffer, 0);
-}
-
-static const char *
-prometheus_metric_sample_histogram_l_value_for_inf(
-    mem_buffer_t buffer, prometheus_metric_sample_histogram_t histogram, const char ** label_values)
-{
-    prometheus_metric_t metric = histogram->m_metric;
-
-    struct write_stream_buffer ws = CPE_WRITE_STREAM_BUFFER_INITIALIZER(buffer);
-    mem_buffer_clear_data(buffer);
-
-    stream_printf((write_stream_t)&ws, "%s", metric->m_name);
-
-    stream_putc((write_stream_t)&ws, '{');
-    uint8_t i;
-    for (int i = 0; i < metric->m_label_key_count; i++) {
-        if (i > 0) stream_putc((write_stream_t)&ws, ',');
-        stream_printf((write_stream_t)&ws, "%s=\"%s\"", metric->m_label_keys[i], label_values[i]);
-    }
-
-    if (i > 0) stream_putc((write_stream_t)&ws, ',');
-    stream_printf((write_stream_t)&ws, "le=\"+Inf\"");
-    
-    stream_putc((write_stream_t)&ws, '}');
-    
-    stream_putc((write_stream_t)&ws, 0);
-
-    return mem_buffer_make_continuous(buffer, 0);
 }
 
 uint32_t prometheus_metric_sample_histogram_hash(prometheus_metric_sample_histogram_t sample, void * user_data) {

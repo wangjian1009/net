@@ -55,3 +55,9 @@ int prometheus_histogram_observe(prometheus_histogram_t histogram, double value,
   /* return prometheus_metric_sample_histogram_observe(h_sample, value); */
     return 0;
 }
+
+prometheus_metric_type_t
+prometheus_histogram_type_create(prometheus_manager_t manager) {
+    return prometheus_metric_type_create(
+        manager, prometheus_metric_histogram, sizeof(struct prometheus_histogram));
+}
