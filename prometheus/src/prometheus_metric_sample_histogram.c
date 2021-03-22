@@ -205,6 +205,19 @@ int prometheus_metric_sample_histogram_observe(prometheus_metric_sample_histogra
     return 0;
 }
 
+prometheus_metric_sample_t
+prometheus_metric_sample_histogram_find_sample_by_l_value(
+    prometheus_metric_sample_histogram_t histogram, const char * l_value)
+{
+    prometheus_metric_sample_t sample;
+
+    TAILQ_FOREACH(sample, &histogram->m_samples, m_owner_histogram.m_next) {
+        if (strcmp(sample->m_l_value, l_value) == 0) return sample;
+    }
+
+    return NULL;
+}
+
 uint32_t prometheus_metric_sample_histogram_hash(prometheus_metric_sample_histogram_t sample, void * user_data) {
     return cpe_hash_str(sample->m_l_value, strlen(sample->m_l_value));
 }
