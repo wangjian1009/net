@@ -6,5 +6,6 @@ int prometheus_manager_basic_tests();
 int prometheus_collector_basic_tests();
 
 int prometheus_counter_basic_tests();
+int prometheus_gauge_basic_tests();
 
 #endif
