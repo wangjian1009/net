@@ -43,9 +43,8 @@ uint8_t prometheus_process_limits_rdp_data_line(
     prometheus_process_limits_parse_ctx_t ctx, prometheus_process_limits_row_t row);
 uint8_t prometheus_process_limits_rdp_limit(
     prometheus_process_limits_parse_ctx_t ctx, prometheus_process_limits_row_t row);
-/* uint8_t prometheus_process_limits_rdp_word_and_space( */
-/*     prometheus_process_limits_file_t * f, prometheus_map_t * data, */
-/*     prometheus_process_limits_current_row_t * current_row); */
+uint8_t prometheus_process_limits_rdp_word_and_space(
+    prometheus_process_limits_parse_ctx_t ctx, prometheus_process_limits_row_t row);
 uint8_t prometheus_process_limits_rdp_word(
     prometheus_process_limits_parse_ctx_t ctx, prometheus_process_limits_row_t row);
 uint8_t prometheus_process_limits_rdp_soft_limit(

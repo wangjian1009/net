@@ -53,6 +53,11 @@ void prometheus_process_limits_row_set_units(
 {
 }
 
+void prometheus_process_limits_row_set_limit(
+    prometheus_process_provider_t provider, prometheus_process_limits_row_t row, const char * units)
+{
+}
+
 /**
  * @brief Returns a map. Each key is a key in /proc/[pid]/limits. Each value is a pointer to a
  * prometheus_process_limits_row_t. Returns NULL upon failure.
@@ -204,40 +209,42 @@ uint8_t prometheus_process_limits_rdp_data_line(
 /* /\** */
 /*  * @brief EBNF: limit = { word_and_space } , word ; */
 /*  *\/ */
-/* uint8_t prometheus_process_limits_rdp_limit(prometheus_process_limits_file_t f, prometheus_map_t * map, */
-/*     prometheus_process_limits_current_row_t * current_row) { */
-/*     size_t current_index = f->index; */
-/*     while (prometheus_process_limits_rdp_word_and_space(f, map, current_row)) { */
-/*     } */
+uint8_t prometheus_process_limits_rdp_limit(
+    prometheus_process_limits_parse_ctx_t ctx, prometheus_process_limits_row_t row)
+{
+    size_t current_index = ctx->m_index;
+    while (prometheus_process_limits_rdp_word_and_space(ctx, row)) {
+    }
 
-/*     if (prometheus_process_limits_rdp_word(f, map, current_row)) { */
-/*         size_t size = f->index - current_index + 1; // Add one for \0 */
-/*         char limit[size]; */
-/*         for (int i = 0; i < size - 1; i++) { */
-/*             limit[i] = f->buf[current_index + i]; */
-/*         } */
-/*         limit[size - 1] = '\0'; */
-/*         prometheus_process_limits_current_row_set_limit(current_row, limit); */
-/*         return true; */
-/*     } */
-/*     return false; */
-/* } */
+    if (prometheus_process_limits_rdp_word(ctx, row)) {
+        size_t size = ctx->m_index - current_index + 1; // Add one for \0
+        char limit[size];
+        for (int i = 0; i < size - 1; i++) {
+            limit[i] = ctx->m_buf[current_index + i];
+        }
+        limit[size - 1] = '\0';
+        prometheus_process_limits_row_set_limit(ctx->m_provider, row, limit);
+        return 1;
+    }
+    return 0;
+}
 
-/* /\** */
-/*  * @brief EBNF: word_and_space = letter, { letter }, " " ; */
-/*  *\/ */
-/* uint8_t prometheus_process_limits_rdp_word_and_space(prometheus_process_limits_file_t f, prometheus_map_t * map, */
-/*     prometheus_process_limits_current_row_t * current_row) { */
-/*     size_t current_index = f->index; */
-/*     if (prometheus_process_limits_rdp_word(f, map, current_row) && f->buf[f->index] == ' ') { */
-/*         f->index++; */
-/*         if (f->index + 1 < f->size && f->buf[f->index + 1] != ' ' && f->buf[f->index + 1] != '\t') { */
-/*             return true; */
-/*         } */
-/*     } */
-/*     f->index = current_index; */
-/*     return false; */
-/* } */
+/**
+ * @brief EBNF: word_and_space = letter, { letter }, " " ;
+ */
+uint8_t prometheus_process_limits_rdp_word_and_space(
+    prometheus_process_limits_parse_ctx_t ctx, prometheus_process_limits_row_t row)
+{
+    size_t current_index = ctx->m_index;
+    if (prometheus_process_limits_rdp_word(ctx, row) && ctx->m_buf[ctx->m_index] == ' ') {
+        ctx->m_index++;
+        if (ctx->m_index + 1 < ctx->m_size && ctx->m_buf[ctx->m_index + 1] != ' ' && ctx->m_buf[ctx->m_index + 1] != '\t') {
+            return 1;
+        }
+    }
+    ctx->m_index = current_index;
+    return 0;
+}
 
 uint8_t prometheus_process_limits_rdp_word(
     prometheus_process_limits_parse_ctx_t ctx, prometheus_process_limits_row_t row)
