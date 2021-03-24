@@ -18,4 +18,6 @@ struct prometheus_process_testenv {
 prometheus_process_testenv_t prometheus_process_testenv_create();
 void prometheus_process_testenv_free(prometheus_process_testenv_t env);
 
+void prometheus_process_install_limits(prometheus_process_testenv_t env, const char * data);
+
 #endif

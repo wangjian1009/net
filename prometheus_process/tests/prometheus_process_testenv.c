@@ -1,3 +1,4 @@
+#include "cmocka_all.h"
 #include "prometheus_manager.h"
 #include "prometheus_process_testenv.h"
 
@@ -10,7 +11,9 @@ prometheus_process_testenv_create() {
     env->m_manager = prometheus_manager_create(test_allocrator(), env->m_em);
     env->m_provider =
         prometheus_process_provider_create(
-            env->m_manager, env->m_em, test_allocrator(), NULL, NULL);
+            env->m_manager, env->m_em, test_allocrator(),
+            "/test/limits",
+            "/test/proc");
     return env;
 }
 
@@ -20,4 +23,9 @@ void prometheus_process_testenv_free(prometheus_process_testenv_t env) {
     test_vfs_testenv_free(env->m_vfs_env);
     test_error_monitor_free(env->m_tem);
     mem_free(test_allocrator(), env);
+}
+
+void prometheus_process_install_limits(prometheus_process_testenv_t env, const char * data) {
+    assert_true(
+        test_vfs_testenv_install_file_str(env->m_vfs_env, "/test/limits", data) == 0);
 }
