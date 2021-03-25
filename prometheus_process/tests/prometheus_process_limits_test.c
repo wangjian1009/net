@@ -2,27 +2,27 @@
 #include "cpe/pal/pal_stdio.h"
 #include "cpe/pal/pal_stdlib.h"
 #include "cpe/pal/pal_string.h"
+#include "cpe/vfs/vfs_file.h"
 #include "prometheus_process_tests.h"
-#include "prometheus_process_testenv.h"
-#include "prometheus_process_limits_i.h"
+#include "prometheus_process_limits_testenv.h"
 
 static int setup(void **state) {
-    prometheus_process_testenv_t env = prometheus_process_testenv_create();
+    prometheus_process_limits_testenv_t env = prometheus_process_limits_testenv_create();
     *state = env;
     return 0;
 }
 
 static int teardown(void **state) {
-    prometheus_process_testenv_t env = *state;
-    prometheus_process_testenv_free(env);
+    prometheus_process_limits_testenv_t env = *state;
+    prometheus_process_limits_testenv_free(env);
     return 0;
 }
 
 static void file_parsing(void **state) {
-    prometheus_process_testenv_t env = *state;
+    prometheus_process_limits_testenv_t env = *state;
     
     prometheus_process_install_limits(
-        env,
+        env->m_env,
         "Limit                     Soft Limit           Hard Limit           Units\n"
         "Max cpu time              unlimited            unlimited            seconds\n"
         "Max file size             unlimited            unlimited            bytes\n"
@@ -42,178 +42,158 @@ static void file_parsing(void **state) {
         "Max realtime timeout      unlimited            unlimited            us\n"
         );
 
-  /* prom_process_limits_file_t *f = prom_process_limits_file_new(path); */
-  /* char *result = strstr(f->buf, "Max realtime timeout"); */
-  /* TEST_ASSERT_NOT_NULL(result); */
+    assert_true(prometheus_process_limits_testenv_load(env) == 0);
 
-  /* prom_map_t *m = prom_process_limits(f); */
-  /* if (!m) TEST_FAIL(); */
+    assert_int_equal(16, env->m_row_count);
 
-  /* TEST_ASSERT_EQUAL_INT(16, prom_map_size(m)); */
+    prometheus_process_limits_row_t row =
+        prometheus_process_limits_testenv_find_row(env, "Max cpu time");
+    assert_true(row != NULL);
+    assert_int_equal(-1, row->soft);
+    assert_int_equal(-1, row->hard);
+    assert_string_equal("Max cpu time", row->limit);
+    assert_string_equal("seconds", row->units);
 
-  /* prom_process_limits_row_t *row = (prom_process_limits_row_t *)prom_map_get(m, "Max cpu time"); */
-  /* if (!row) TEST_FAIL(); */
-  /* TEST_ASSERT_EQUAL_INT(-1, row->soft); */
-  /* TEST_ASSERT_EQUAL_INT(-1, row->hard); */
-  /* TEST_ASSERT_EQUAL_STRING("Max cpu time", row->limit); */
-  /* TEST_ASSERT_EQUAL_STRING("seconds", row->units); */
+    row = prometheus_process_limits_testenv_find_row(env, "Max file size");
+    assert_int_equal(-1, row->soft);
+    assert_int_equal(-1, row->hard);
+    assert_string_equal("Max file size", row->limit);
+    assert_string_equal("bytes", row->units);
 
-  /* row = (prom_process_limits_row_t *)prom_map_get(m, "Max file size"); */
-  /* TEST_ASSERT_EQUAL_INT(-1, row->soft); */
-  /* TEST_ASSERT_EQUAL_INT(-1, row->hard); */
-  /* TEST_ASSERT_EQUAL_STRING("Max file size", row->limit); */
-  /* TEST_ASSERT_EQUAL_STRING("bytes", row->units); */
+    row = prometheus_process_limits_testenv_find_row(env, "Max data size");
+    assert_int_equal(-1, row->soft);
+    assert_int_equal(-1, row->hard);
+    assert_string_equal("Max data size", row->limit);
+    assert_string_equal("bytes", row->units);
 
-  /* row = (prom_process_limits_row_t *)prom_map_get(m, "Max data size"); */
-  /* TEST_ASSERT_EQUAL_INT(-1, row->soft); */
-  /* TEST_ASSERT_EQUAL_INT(-1, row->hard); */
-  /* TEST_ASSERT_EQUAL_STRING("Max data size", row->limit); */
-  /* TEST_ASSERT_EQUAL_STRING("bytes", row->units); */
+    row = prometheus_process_limits_testenv_find_row(env, "Max stack size");
+    assert_int_equal(8388608, row->soft);
+    assert_int_equal(-1, row->hard);
+    assert_string_equal("Max stack size", row->limit);
+    assert_string_equal("bytes", row->units);
 
-  /* row = (prom_process_limits_row_t *)prom_map_get(m, "Max stack size"); */
-  /* TEST_ASSERT_EQUAL_INT(8388608, row->soft); */
-  /* TEST_ASSERT_EQUAL_INT(-1, row->hard); */
-  /* TEST_ASSERT_EQUAL_STRING("Max stack size", row->limit); */
-  /* TEST_ASSERT_EQUAL_STRING("bytes", row->units); */
+    row = prometheus_process_limits_testenv_find_row(env, "Max processes");
+    assert_int_equal(-1, row->soft);
+    assert_int_equal(-1, row->hard);
+    assert_string_equal("Max processes", row->limit);
+    assert_string_equal("processes", row->units);
 
-  /* row = (prom_process_limits_row_t *)prom_map_get(m, "Max processes"); */
-  /* TEST_ASSERT_EQUAL_INT(-1, row->soft); */
-  /* TEST_ASSERT_EQUAL_INT(-1, row->hard); */
-  /* TEST_ASSERT_EQUAL_STRING("Max processes", row->limit); */
-  /* TEST_ASSERT_EQUAL_STRING("processes", row->units); */
-
-  /* row = (prom_process_limits_row_t *)prom_map_get(m, "Max pending signals"); */
-  /* TEST_ASSERT_EQUAL_INT(23701, row->soft); */
-  /* TEST_ASSERT_EQUAL_INT(23701, row->hard); */
-  /* TEST_ASSERT_EQUAL_STRING("Max pending signals", row->limit); */
-  /* TEST_ASSERT_EQUAL_STRING("signals", row->units); */
-
-  /* prom_map_destroy(m); */
-  /* m = NULL; */
-  /* prom_process_limits_file_destroy(f); */
-  /* f = NULL; */
+    row = prometheus_process_limits_testenv_find_row(env, "Max pending signals");
+    assert_int_equal(23701, row->soft);
+    assert_int_equal(23701, row->hard);
+    assert_string_equal("Max pending signals", row->limit);
+    assert_string_equal("signals", row->units);
 }
 
 static void rdp_next_token(void **state) {
-  /* prom_process_limits_file_t f = {.size = 4, .index = 0, .buf = " \t!"}; */
-  /* prom_process_limits_file_t *fp = &f; */
-  /* prom_process_limits_rdp_next_token(fp); */
+    prometheus_process_limits_testenv_t env = *state;
 
-  /* TEST_ASSERT_EQUAL_INT(2, fp->index); */
-  /* TEST_ASSERT_EQUAL_INT('!', fp->buf[fp->index]); */
+    struct prometheus_process_limits_parse_ctx ctx = {env->m_env->m_provider, " \t!", 4, 0, NULL, NULL};
+    assert_true(prometheus_process_limits_rdp_next_token(&ctx) == 0);
+
+    assert_int_equal(2, ctx.m_index);
+    assert_int_equal('!', ctx.m_buf[ctx.m_index]);
 }
 
 static void rdp_match(void **state) {
-  /* prom_process_limits_file_t f = {.size = 4, .index = 0, .buf = "foo"}; */
-  /* prom_process_limits_file_t *fp = &f; */
+    prometheus_process_limits_testenv_t env = *state;
 
-  /* TEST_ASSERT_TRUE(prom_process_limits_rdp_match(fp, "foo")); */
+    struct prometheus_process_limits_parse_ctx ctx = {env->m_env->m_provider, "foo", 4, 0, NULL, NULL};
+    assert_true(prometheus_process_limits_rdp_next_token(&ctx) == 0);
+    assert_true(prometheus_process_limits_rdp_match(&ctx, "foo"));
 }
 
 static void rdp_hard_limit(void **state) {
-  // Test unlimited value
-  /* prom_process_limits_file_t f = {.size = 13, .index = 0, .buf = "unlimited   "}; */
-  /* prom_process_limits_file_t *fp = &f; */
+    prometheus_process_limits_testenv_t env = *state;
 
-  /* prom_process_limits_current_row_t *cr = prom_process_limits_current_row_new(); */
-  /* prom_map_t *m = prom_map_new(); */
+    struct prometheus_process_limits_parse_ctx ctx = {env->m_env->m_provider, "unlimited   ", 13, 0, NULL, NULL};
+    
+    struct prometheus_process_limits_row row;
+    prometheus_process_limits_row_init(env->m_env->m_provider, &row);
 
-  /* TEST_ASSERT_TRUE(prom_process_limits_rdp_hard_limit(fp, m, cr)); */
-  /* TEST_ASSERT_EQUAL_INT(-1, cr->hard); */
+    assert_true(prometheus_process_limits_rdp_hard_limit(&ctx, &row));
+    assert_int_equal(-1, row.hard);
 
-  /* prom_process_limits_current_row_clear(cr); */
+    prometheus_process_limits_row_fini(env->m_env->m_provider, &row);
 
-  /* // Test int value */
-  /* fp->buf = "123  "; */
-  /* fp->size = 6; */
-  /* fp->index = 0; */
+    /* Test int value*/
+    ctx.m_buf = "123  ";
+    ctx.m_size = 6;
+    ctx.m_index = 0;
 
-  /* TEST_ASSERT_TRUE(prom_process_limits_rdp_hard_limit(fp, m, cr)); */
-  /* TEST_ASSERT_EQUAL_INT(123, cr->hard); */
+    assert_true(prometheus_process_limits_rdp_hard_limit(&ctx, &row));
+    assert_int_equal(123, row.hard);
 
-  /* prom_map_destroy(m); */
-  /* m = NULL; */
-  /* prom_process_limits_current_row_destroy(cr); */
-  /* cr = NULL; */
+    prometheus_process_limits_row_fini(env->m_env->m_provider, &row);
 }
 
 static void rdp_word(void **state) {
-  /* // Test unlimited value */
-  /* prom_process_limits_file_t f = {.size = 13, .index = 0, .buf = "unlimited   "}; */
-  /* prom_process_limits_file_t *fp = &f; */
+    prometheus_process_limits_testenv_t env = *state;
 
-  /* prom_process_limits_current_row_t *cr = prom_process_limits_current_row_new(); */
-  /* prom_map_t *m = prom_map_new(); */
+    /* Test unlimited value */
+    struct prometheus_process_limits_parse_ctx ctx = {env->m_env->m_provider, "unlimited   ", 13, 0, NULL, NULL};
 
-  /* TEST_ASSERT_TRUE(prom_process_limits_rdp_word(fp, m, cr)); */
-  /* TEST_ASSERT_EQUAL_INT(9, fp->index); */
+    struct prometheus_process_limits_row row;
+    prometheus_process_limits_row_init(env->m_env->m_provider, &row);
 
-  /* prom_map_destroy(m); */
-  /* m = NULL; */
-  /* prom_process_limits_current_row_destroy(cr); */
-  /* cr = NULL; */
+    assert_true(prometheus_process_limits_rdp_word(&ctx, &row));
+    assert_int_equal(9, ctx.m_index);
+
+    prometheus_process_limits_row_fini(env->m_env->m_provider, &row);
 }
 
 static void rdp_word_and_space(void **state) {
-  /* prom_process_limits_file_t f = {.size = 8, .index = 0, .buf = "foo bar"}; */
-  /* prom_process_limits_file_t *fp = &f; */
+    prometheus_process_limits_testenv_t env = *state;
 
-  /* prom_process_limits_current_row_t *cr = prom_process_limits_current_row_new(); */
-  /* prom_map_t *m = prom_map_new(); */
+    struct prometheus_process_limits_parse_ctx ctx = {env->m_env->m_provider, "foo bar", 8, 0, NULL, NULL};
 
-  /* TEST_ASSERT_TRUE(prom_process_limits_rdp_word_and_space(fp, m, cr)); */
-  /* TEST_ASSERT_EQUAL_INT(4, fp->index); */
-  /* TEST_ASSERT_EQUAL_INT('b', fp->buf[fp->index]); */
+    struct prometheus_process_limits_row row;
+    prometheus_process_limits_row_init(env->m_env->m_provider, &row);
 
-  /* prom_map_destroy(m); */
-  /* m = NULL; */
-  /* prom_process_limits_current_row_destroy(cr); */
-  /* cr = NULL; */
+    assert_true(prometheus_process_limits_rdp_word_and_space(&ctx, &row));
+    assert_int_equal(4, ctx.m_index);
+    assert_int_equal('b', ctx.m_buf[ctx.m_index]);
+
+    prometheus_process_limits_row_fini(env->m_env->m_provider, &row);
 }
 
 static void rdp_limit(void **state) {
-  /* prom_process_limits_file_t f = {.size = 16, .index = 0, .buf = "Max cpu time   "}; */
-  /* prom_process_limits_file_t *fp = &f; */
+    prometheus_process_limits_testenv_t env = *state;
 
-  /* prom_process_limits_current_row_t *cr = prom_process_limits_current_row_new(); */
-  /* prom_map_t *m = prom_map_new(); */
+    struct prometheus_process_limits_parse_ctx ctx = {env->m_env->m_provider, "Max cpu time   ", 16, 0, NULL, NULL};
 
-  /* TEST_ASSERT_TRUE(prom_process_limits_rdp_limit(fp, m, cr)); */
-  /* TEST_ASSERT_EQUAL_INT(12, fp->index); */
-  /* TEST_ASSERT_EQUAL_INT(' ', fp->buf[fp->index]); */
-  /* TEST_ASSERT_EQUAL_STRING("Max cpu time", cr->limit); */
+    struct prometheus_process_limits_row row;
+    prometheus_process_limits_row_init(env->m_env->m_provider, &row);
 
-  /* prom_map_destroy(m); */
-  /* m = NULL; */
-  /* prom_process_limits_current_row_destroy(cr); */
-  /* cr = NULL; */
+    assert_true(prometheus_process_limits_rdp_limit(&ctx,&row));
+    assert_int_equal(12, ctx.m_index);
+    assert_int_equal(' ', ctx.m_buf[ctx.m_index]);
+    assert_string_equal("Max cpu time", row.limit);
+
+    prometheus_process_limits_row_fini(env->m_env->m_provider, &row);
 }
 
 static void rdp_letter(void ** state) {
-  /* prom_process_limits_file_t f = {.size = 4, .index = 0, .buf = "foo"}; */
-  /* prom_process_limits_file_t *fp = &f; */
+    prometheus_process_limits_testenv_t env = *state;
 
-  /* prom_process_limits_current_row_t *cr = prom_process_limits_current_row_new(); */
-  /* prom_map_t *m = prom_map_new(); */
+    struct prometheus_process_limits_parse_ctx ctx = {env->m_env->m_provider, "foo", 4, 0, NULL, NULL};
 
-  /* TEST_ASSERT_TRUE(prom_process_limits_rdp_letter(fp, m, cr)); */
+    struct prometheus_process_limits_row row;
+    prometheus_process_limits_row_init(env->m_env->m_provider, &row);
 
-  /* fp->size = 1; */
-  /* fp->index = 0; */
-  /* fp->buf = ""; */
+    assert_true(prometheus_process_limits_rdp_letter(&ctx, &row));
 
-  /* TEST_ASSERT_FALSE(prom_process_limits_rdp_letter(fp, m, cr)); */
+    ctx.m_size = 1;
+    ctx.m_index = 0;
+    ctx.m_buf = "";
+    assert_false(prometheus_process_limits_rdp_letter(&ctx,&row));
 
-  /* fp->size = 2; */
-  /* fp->index = 0; */
-  /* fp->buf = "2"; */
+    ctx.m_size = 2;
+    ctx.m_index = 0;
+    ctx.m_buf = "2";
+    assert_false(prometheus_process_limits_rdp_letter(&ctx, &row));
 
-  /* TEST_ASSERT_FALSE(prom_process_limits_rdp_letter(fp, m, cr)); */
-
-  /* prom_map_destroy(m); */
-  /* m = NULL; */
-  /* prom_process_limits_current_row_destroy(cr); */
-  /* cr = NULL; */
+    prometheus_process_limits_row_fini(env->m_env->m_provider, &row);
 }
 
 int prometheus_process_limits_basic_tests() {

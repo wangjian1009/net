@@ -3,6 +3,7 @@
 #include "cpe/pal/pal_queue.h"
 #include "cpe/utils/memory.h"
 #include "cpe/utils/error.h"
+#include "cpe/utils/buffer.h"
 #include "prometheus_process_provider.h"
 
 typedef struct prometheus_process_stat * prometheus_process_stat_t;
@@ -16,6 +17,7 @@ typedef TAILQ_HEAD(prometheus_process_collector_list, prometheus_process_collect
 struct prometheus_process_provider {
     error_monitor_t m_em;
     mem_allocrator_t m_alloc;
+    vfs_mgr_t m_vfs_mgr;
     prometheus_manager_t m_manager;
     char * m_limits_path;
     char * m_stat_path;
@@ -31,6 +33,7 @@ struct prometheus_process_provider {
     prometheus_gauge_t m_virtual_memory_max_bytes;
 
     prometheus_process_collector_list_t m_collectors;
+    struct mem_buffer m_data_buffer;
 };
 
 #endif

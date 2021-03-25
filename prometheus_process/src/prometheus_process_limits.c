@@ -3,6 +3,7 @@
 #include "cpe/pal/pal_unistd.h"
 #include "cpe/pal/pal_stdio.h"
 #include "cpe/pal/pal_string.h"
+#include "cpe/vfs/vfs_file.h"
 #include "cpe/utils/string_utils.h"
 #include "prometheus_gauge.h"
 #include "prometheus_process_limits_i.h"
@@ -51,11 +52,49 @@ void prometheus_process_limits_row_fini(
 void prometheus_process_limits_row_set_units(
     prometheus_process_provider_t provider, prometheus_process_limits_row_t row, const char * units)
 {
+    if (row->units) {
+        mem_free(provider->m_alloc, row->units);
+        row->units = NULL;
+    }
+
+    row->units = units ? cpe_str_mem_dup(provider->m_alloc, units) : NULL;
 }
 
 void prometheus_process_limits_row_set_limit(
-    prometheus_process_provider_t provider, prometheus_process_limits_row_t row, const char * units)
+    prometheus_process_provider_t provider, prometheus_process_limits_row_t row, const char * limit)
 {
+    if (row->limit) {
+        mem_free(provider->m_alloc, row->limit);
+        row->limit = NULL;
+    }
+
+    row->limit = limit ? cpe_str_mem_dup(provider->m_alloc, limit) : NULL;
+}
+
+int prometheus_process_limits_load(
+    prometheus_process_provider_t provider,
+    void * ctx, prometheus_process_on_row_fun_t on_row)
+{
+    mem_buffer_clear_data(&provider->m_data_buffer);
+
+    ssize_t rv = vfs_file_load_to_buffer_by_path(
+        &provider->m_data_buffer, provider->m_vfs_mgr, provider->m_limits_path);
+    if (rv < 0) {
+        CPE_ERROR(
+            provider->m_em, "prometheus: process: load limit: open file %s fail, error=%d (%s)",
+            provider->m_limits_path, errno, strerror(errno));
+        return -1;
+    }
+
+    if (rv == 0) {
+        CPE_ERROR(provider->m_em, "prometheus: process: load limit: file %s is empty", provider->m_limits_path);
+        return -1;
+    }
+    
+    return prometheus_process_limits_parse(
+        provider,
+        mem_buffer_make_continuous(&provider->m_data_buffer, 0), (uint32_t)rv,
+        ctx, on_row);
 }
 
 /**

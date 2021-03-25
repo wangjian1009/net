@@ -20,6 +20,18 @@ struct prometheus_process_limits_parse_ctx {
     prometheus_process_on_row_fun_t m_on_row;
 };
 
+void prometheus_process_limits_row_init(prometheus_process_provider_t provider, prometheus_process_limits_row_t row);
+void prometheus_process_limits_row_fini(prometheus_process_provider_t provider, prometheus_process_limits_row_t row);
+void prometheus_process_limits_row_set_units(
+    prometheus_process_provider_t provider, prometheus_process_limits_row_t row, const char * units);
+void prometheus_process_limits_row_set_limit(
+    prometheus_process_provider_t provider, prometheus_process_limits_row_t row, const char * limit);
+
+/*limits*/
+int prometheus_process_limits_load(
+    prometheus_process_provider_t provider,
+    void * ctx, prometheus_process_on_row_fun_t on_row);
+
 int prometheus_process_limits_parse(
     prometheus_process_provider_t provider,
     const char * data, uint32_t data_size,

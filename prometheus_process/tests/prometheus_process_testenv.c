@@ -11,7 +11,9 @@ prometheus_process_testenv_create() {
     env->m_manager = prometheus_manager_create(test_allocrator(), env->m_em);
     env->m_provider =
         prometheus_process_provider_create(
-            env->m_manager, env->m_em, test_allocrator(),
+            env->m_manager,
+            env->m_em, test_allocrator(),
+            env->m_vfs_env->m_mgr,
             "/test/limits",
             "/test/proc");
     return env;
