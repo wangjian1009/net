@@ -34,6 +34,8 @@ void prometheus_process_limits_testenv_on_row(void * ctx, prometheus_process_lim
     save_row->hard = row->hard;
     prometheus_process_limits_row_set_units(env->m_env->m_provider, save_row, row->units);
     prometheus_process_limits_row_set_limit(env->m_env->m_provider, save_row, row->limit);
+
+    env->m_row_count++;
 }
 
 int prometheus_process_limits_testenv_load(prometheus_process_limits_testenv_t env) {

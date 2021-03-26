@@ -90,7 +90,9 @@ int prometheus_process_limits_load(
         CPE_ERROR(provider->m_em, "prometheus: process: load limit: file %s is empty", provider->m_limits_path);
         return -1;
     }
-    
+
+    mem_buffer_append_char(&provider->m_data_buffer, 0);
+
     return prometheus_process_limits_parse(
         provider,
         mem_buffer_make_continuous(&provider->m_data_buffer, 0), (uint32_t)rv,
