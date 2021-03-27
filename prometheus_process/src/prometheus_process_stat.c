@@ -1,5 +1,9 @@
+#include "cpe/pal/pal_strings.h"
+#include "cpe/pal/pal_string.h"
 #include "cpe/pal/pal_stdio.h"
 #include "cpe/pal/pal_unistd.h"
+#include "cpe/pal/pal_errno.h" 
+#include "cpe/vfs/vfs_file.h"
 #include "prometheus_process_stat_i.h"
 
 int prometheus_process_stat_read(
@@ -113,4 +117,36 @@ int prometheus_process_stat_read(
         &process_stat->exit_code               // (52) exit_code  %d  (since Linux 3.5)  [PT]
         );
     return 0;
+}
+
+void prometheus_process_stat_init(prometheus_process_stat_t process_stat) {
+    bzero(process_stat, sizeof(*process_stat));
+}
+
+void prometheus_process_stat_fini(prometheus_process_stat_t process_stat) {
+}
+
+int prometheus_process_stat_load(
+    prometheus_process_provider_t provider, prometheus_process_stat_t process_stat)
+{
+    mem_buffer_clear_data(&provider->m_data_buffer);
+
+    ssize_t rv = vfs_file_load_to_buffer_by_path(
+        &provider->m_data_buffer, provider->m_vfs_mgr, provider->m_stat_path);
+    if (rv < 0) {
+        CPE_ERROR(
+            provider->m_em, "prometheus: process: load stat: open file %s fail, error=%d (%s)",
+            provider->m_stat_path, errno, strerror(errno));
+        return -1;
+    }
+
+    if (rv == 0) {
+        CPE_ERROR(provider->m_em, "prometheus: process: load stat: file %s is empty", provider->m_stat_path);
+        return -1;
+    }
+
+    mem_buffer_append_char(&provider->m_data_buffer, 0);
+
+    return prometheus_process_stat_read(
+        provider, process_stat, mem_buffer_make_continuous(&provider->m_data_buffer, 0));
 }

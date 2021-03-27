@@ -15,7 +15,7 @@ prometheus_process_testenv_create() {
             env->m_em, test_allocrator(),
             env->m_vfs_env->m_mgr,
             "/test/limits",
-            "/test/proc");
+            "/test/stat");
 
     mem_buffer_init(&env->m_dump_buffer, test_allocrator());
     return env;
@@ -37,4 +37,9 @@ const char * prometheus_process_testenv_collect(prometheus_process_testenv_t env
 void prometheus_process_install_limits(prometheus_process_testenv_t env, const char * data) {
     assert_true(
         test_vfs_testenv_install_file_str(env->m_vfs_env, "/test/limits", data) == 0);
+}
+
+void prometheus_process_install_stat(prometheus_process_testenv_t env, const char * data) {
+    assert_true(
+        test_vfs_testenv_install_file_str(env->m_vfs_env, "/test/stat", data) == 0);
 }

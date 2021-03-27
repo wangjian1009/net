@@ -65,9 +65,9 @@ static void test_virtual_memory_max_bytes(void **state) {
             collector, prometheus_process_provider_virtual_memory_max_bytes(env->m_provider)) == 0);
 
     assert_string_equal(
-        "# HELP process_max_fds Maximum number of open file descriptors.\n"
-        "# TYPE process_max_fds gauge\n"
-        "process_max_fds 1048576\n",
+        "# HELP process_virtual_memory_max_bytes Maximum amount of virtual memory available in bytes.\n"
+        "# TYPE process_virtual_memory_max_bytes gauge\n"
+        "process_virtual_memory_max_bytes -1\n",
         prometheus_process_testenv_collect(env));
 }
 

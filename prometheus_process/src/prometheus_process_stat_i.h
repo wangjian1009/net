@@ -68,4 +68,8 @@ int prometheus_process_stat_read(
     prometheus_process_provider_t provider,
     prometheus_process_stat_t process_stat, const char * data);
 
+int prometheus_process_stat_load(
+    prometheus_process_provider_t provider,
+    prometheus_process_stat_t process_stat);
+
 #endif

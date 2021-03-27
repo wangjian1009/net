@@ -1,11 +1,14 @@
 #include <assert.h>
 #include "cpe/pal/pal_string.h"
+#include "cpe/pal/pal_unistd.h"
 #include "prometheus_collector.h"
 #include "prometheus_collector_metric.h"
+#include "prometheus_metric.h"
 #include "prometheus_gauge.h"
 #include "prometheus_process_collector_i.h"
 #include "prometheus_process_limits_i.h"
 #include "prometheus_process_fds_i.h"
+#include "prometheus_process_stat_i.h"
 
 int prometheus_process_collector_init(prometheus_collector_t base_collector) {
     prometheus_process_collector_t collector = prometheus_collector_data(base_collector);
@@ -33,30 +36,29 @@ void prometheus_process_collector_on_row(void * i_ctx, prometheus_process_limits
     prometheus_process_provider_t provider = ctx->m_collector->m_provider;
 
     if (strcmp(row->limit, "Max open files") == 0) {
-        if (ctx->m_max_fds != NULL) {
-            prometheus_gauge_t guage = prometheus_gauge_cast(prometheus_collector_metric_metric(ctx->m_max_fds));
-            if (prometheus_gauge_set(guage, row->soft, NULL) != 0) {
-                CPE_ERROR(
-                    provider->m_em, "prometheus: process: collect: limit.%s: set gauge failed", row->limit);
-                return;
-            }
+        if (ctx->m_max_fds == NULL) return;
 
-            prometheus_collector_metric_set_state(ctx->m_max_fds, prometheus_metric_collected);
+        prometheus_gauge_t guage = prometheus_gauge_cast(prometheus_collector_metric_metric(ctx->m_max_fds));
+        if (prometheus_gauge_set(guage, row->soft, NULL) != 0) {
+            CPE_ERROR(
+                provider->m_em, "prometheus: process: collect: limit.%s: set gauge failed", row->limit);
+            return;
         }
+
+        prometheus_collector_metric_set_state(ctx->m_max_fds, prometheus_metric_collected);
     }
     else if (strcmp(row->limit, "Max address space") == 0) {
-    }
-    
-/*   // Retrieve the *prom_process_limits_row_t for Max address space */
-/*   prom_process_limits_row_t *virtual_memory_max_bytes = */
-/*       (prom_process_limits_row_t *)prom_map_get(limits_map, "Max address space"); */
-/*   if (virtual_memory_max_bytes == NULL) { */
-/*     prom_process_limits_file_destroy(limits_f); */
-/*     prom_map_destroy(limits_map); */
-/*     return NULL; */
-/*   } */
+        if (ctx->m_virtual_memory_max_bytes == NULL) return;
 
-    
+        prometheus_gauge_t guage = prometheus_gauge_cast(prometheus_collector_metric_metric(ctx->m_virtual_memory_max_bytes));
+        if (prometheus_gauge_set(guage, row->soft, NULL) != 0) {
+            CPE_ERROR(
+                provider->m_em, "prometheus: process: collect: limit.%s: set gauge failed", row->limit);
+            return;
+        }
+
+        prometheus_collector_metric_set_state(ctx->m_virtual_memory_max_bytes, prometheus_metric_collected);
+    }
 }
 
 void prometheus_process_collector_from_limits(prometheus_collector_t base_collector) {
@@ -101,69 +103,73 @@ void prometheus_process_collector_from_state(prometheus_collector_t base_collect
         prometheus_collector_metric_find_by_metric(
             base_collector, prometheus_process_provider_resident_memory_bytes(provider));
     
-    /* prometheus_gauge_t m_cpu_seconds_total; */
-    /* prometheus_gauge_t m_virtual_memory_bytes; */
-    /* prometheus_gauge_t m_resident_memory_bytes; */
-    /* prometheus_gauge_t m_start_time_seconds; */
+    prometheus_collector_metric_t start_time_seconds =
+        prometheus_collector_metric_find_by_metric(
+            base_collector, prometheus_process_provider_start_time_seconds(provider));
+
+    if (cpu_seconds_total == NULL
+        && virtual_memory_bytes == NULL
+        && resident_memory_bytes == NULL
+        && start_time_seconds == NULL) return;
+
+    struct prometheus_process_stat process_stat;
+    prometheus_process_stat_init(&process_stat);
+
+    if (prometheus_process_stat_load(provider, &process_stat) != 0) {
+        CPE_ERROR(provider->m_em, "prometheus: process: collect: process stat fail");
+        return;
+    }
+
+    if (cpu_seconds_total != NULL) {
+        prometheus_metric_t metric = prometheus_collector_metric_metric(cpu_seconds_total);
+        prometheus_gauge_t guage = prometheus_gauge_cast(metric);
+        double value = (double)(process_stat.utime + process_stat.stime) / (double)sysconf(_SC_CLK_TCK);
+        if (prometheus_gauge_set(guage, value, NULL) != 0) {
+            CPE_ERROR(
+                provider->m_em, "prometheus: process: collect: %s: set gauge failed", prometheus_metric_name(metric));
+            return;
+        }
+
+        prometheus_collector_metric_set_state(cpu_seconds_total, prometheus_metric_collected);
+    }
+
+    if (virtual_memory_bytes != NULL) {
+        prometheus_metric_t metric = prometheus_collector_metric_metric(virtual_memory_bytes);
+        prometheus_gauge_t guage = prometheus_gauge_cast(metric);
+        if (prometheus_gauge_set(guage, process_stat.vsize, NULL) != 0) {
+            CPE_ERROR(
+                provider->m_em, "prometheus: process: collect: %s: set gauge failed", prometheus_metric_name(metric));
+            return;
+        }
+
+        prometheus_collector_metric_set_state(virtual_memory_bytes, prometheus_metric_collected);
+    }
+
+    if (resident_memory_bytes != NULL) {
+        prometheus_metric_t metric = prometheus_collector_metric_metric(resident_memory_bytes);
+        prometheus_gauge_t guage = prometheus_gauge_cast(metric);
+        if (prometheus_gauge_set(guage, process_stat.rss * sysconf(_SC_PAGE_SIZE), NULL) != 0) {
+            CPE_ERROR(
+                provider->m_em, "prometheus: process: collect: %s: set gauge failed", prometheus_metric_name(metric));
+            return;
+        }
+
+        prometheus_collector_metric_set_state(resident_memory_bytes, prometheus_metric_collected);
+    }
+
+    if (start_time_seconds != NULL) {
+        prometheus_metric_t metric = prometheus_collector_metric_metric(start_time_seconds);
+        prometheus_gauge_t guage = prometheus_gauge_cast(metric);
+        if (prometheus_gauge_set(guage, process_stat.starttime, NULL) != 0) {
+            CPE_ERROR(
+                provider->m_em, "prometheus: process: collect: %s: set gauge failed", prometheus_metric_name(metric));
+            return;
+        }
+
+        prometheus_collector_metric_set_state(start_time_seconds, prometheus_metric_collected);
+    }
     
-/*   // Set the metric values for max_fds and virtual_memory_max_bytes */
-/*   r = prom_gauge_set(prom_process_max_fds, max_fds->soft, NULL); */
-/*   if (r) return NULL; */
-/*   r = prom_gauge_set(prom_process_virtual_memory_max_bytes, virtual_memory_max_bytes->soft, NULL); */
-/*   if (r) return NULL; */
-
-/*   // Aloocate and create a *prom_process_stat_file_t */
-/*   prom_process_stat_file_t *stat_f = prom_process_stat_file_new(self->proc_stat_file_path); */
-/*   if (stat_f == NULL) { */
-/*     prom_process_limits_file_destroy(limits_f); */
-/*     prom_map_destroy(limits_map); */
-/*     return self->metrics; */
-/*   } */
-
-/*   // Allocate and create a *prom_process_stat_t from *prom_process_stat_file_t */
-/*   prom_process_stat_t *stat = prom_process_stat_new(stat_f); */
-
-/*   // Set the metrics related to the stat file */
-/*   r = prom_gauge_set(prom_process_cpu_seconds_total, ((stat->utime + stat->stime) / sysconf(_SC_CLK_TCK)), NULL); */
-/*   if (r) { */
-/*     prom_process_limits_file_destroy(limits_f); */
-/*     prom_map_destroy(limits_map); */
-/*     prom_process_stat_file_destroy(stat_f); */
-/*     prom_process_stat_destroy(stat); */
-/*     return NULL; */
-/*   } */
-/*   r = prom_gauge_set(prom_process_virtual_memory_bytes, stat->vsize, NULL); */
-/*   if (r) { */
-/*     prom_process_limits_file_destroy(limits_f); */
-/*     prom_map_destroy(limits_map); */
-/*     prom_process_stat_file_destroy(stat_f); */
-/*     prom_process_stat_destroy(stat); */
-/*     return NULL; */
-/*   } */
-/*   r = prom_gauge_set(prom_process_resident_memory_bytes, stat->rss*sysconf(_SC_PAGE_SIZE), NULL); */
-/*   if (r) { */
-/*     prom_process_limits_file_destroy(limits_f); */
-/*     prom_map_destroy(limits_map); */
-/*     prom_process_stat_file_destroy(stat_f); */
-/*     prom_process_stat_destroy(stat); */
-/*     return NULL; */
-/*   } */
-/*   r = prom_gauge_set(prom_process_start_time_seconds, stat->starttime, NULL); */
-/*   if (r) { */
-/*     prom_process_limits_file_destroy(limits_f); */
-/*     prom_map_destroy(limits_map); */
-/*     prom_process_stat_file_destroy(stat_f); */
-/*     prom_process_stat_destroy(stat); */
-/*     return NULL; */
-/*   } */
-/*   r = prom_gauge_set(prom_process_open_fds, prom_process_fds_count(NULL), NULL); */
-/*   if (r) { */
-/*     prom_process_limits_file_destroy(limits_f); */
-/*     prom_map_destroy(limits_map); */
-/*     prom_process_stat_file_destroy(stat_f); */
-/*     prom_process_stat_destroy(stat); */
-/*     return NULL; */
-/*   } */
+    prometheus_process_stat_fini(&process_stat);
 }
 
 void prometheus_process_collector_open_fds(prometheus_collector_t base_collector) {
@@ -176,6 +182,14 @@ void prometheus_process_collector_open_fds(prometheus_collector_t base_collector
             base_collector, prometheus_process_provider_open_fds(provider));
     if (open_fds == NULL) return;
 
+/*   r = prom_gauge_set(prom_process_open_fds, prom_process_fds_count(NULL), NULL); */
+/*   if (r) { */
+/*     prom_process_limits_file_destroy(limits_f); */
+/*     prom_map_destroy(limits_map); */
+/*     prom_process_stat_file_destroy(stat_f); */
+/*     prom_process_stat_destroy(stat); */
+/*     return NULL; */
+/*   } */
     
 }
 
