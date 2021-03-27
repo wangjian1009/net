@@ -1,3 +1,4 @@
+#include "cpe/pal/pal_unistd.h"
 #include "cmocka_all.h"
 #include "prometheus_manager.h"
 #include "prometheus_process_testenv.h"
@@ -13,9 +14,7 @@ prometheus_process_testenv_create() {
         prometheus_process_provider_create(
             env->m_manager,
             env->m_em, test_allocrator(),
-            env->m_vfs_env->m_mgr,
-            "/test/limits",
-            "/test/stat");
+            env->m_vfs_env->m_mgr);
 
     mem_buffer_init(&env->m_dump_buffer, test_allocrator());
     return env;
@@ -34,12 +33,20 @@ const char * prometheus_process_testenv_collect(prometheus_process_testenv_t env
     return prometheus_manager_collect_dump(&env->m_dump_buffer, env->m_manager);
 }
 
-void prometheus_process_install_limits(prometheus_process_testenv_t env, const char * data) {
+void prometheus_process_install_linux_limits(prometheus_process_testenv_t env, const char * data) {
+    int pid = (int)getpid();
+    char limit_path[64];
+    snprintf(limit_path, sizeof(limit_path), "/proc/%d/limits", pid);
+
     assert_true(
-        test_vfs_testenv_install_file_str(env->m_vfs_env, "/test/limits", data) == 0);
+        test_vfs_testenv_install_file_str(env->m_vfs_env, limit_path, data) == 0);
 }
 
-void prometheus_process_install_stat(prometheus_process_testenv_t env, const char * data) {
+void prometheus_process_install_linux_stat(prometheus_process_testenv_t env, const char * data) {
+    int pid = (int)getpid();
+    char stat_path[64];
+    snprintf(stat_path, sizeof(stat_path), "/proc/%d/stat", pid);
+
     assert_true(
-        test_vfs_testenv_install_file_str(env->m_vfs_env, "/test/stat", data) == 0);
+        test_vfs_testenv_install_file_str(env->m_vfs_env, stat_path, data) == 0);
 }

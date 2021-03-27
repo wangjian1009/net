@@ -77,17 +77,21 @@ int prometheus_process_linux_limits_load(
 {
     mem_buffer_clear_data(&provider->m_data_buffer);
 
+    int pid = (int)getpid();
+    char limit_path[64];
+    snprintf(limit_path, sizeof(limit_path), "/proc/%d/limits", pid);
+
     ssize_t rv = vfs_file_load_to_buffer_by_path(
-        &provider->m_data_buffer, provider->m_vfs_mgr, provider->m_limits_path);
+        &provider->m_data_buffer, provider->m_vfs_mgr, limit_path);
     if (rv < 0) {
         CPE_ERROR(
             provider->m_em, "prometheus: process: load limit: open file %s fail, error=%d (%s)",
-            provider->m_limits_path, errno, strerror(errno));
+            limit_path, errno, strerror(errno));
         return -1;
     }
 
     if (rv == 0) {
-        CPE_ERROR(provider->m_em, "prometheus: process: load limit: file %s is empty", provider->m_limits_path);
+        CPE_ERROR(provider->m_em, "prometheus: process: load limit: file %s is empty", limit_path);
         return -1;
     }
 

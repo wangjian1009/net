@@ -131,17 +131,21 @@ int prometheus_process_linux_stat_load(
 {
     mem_buffer_clear_data(&provider->m_data_buffer);
 
+    int pid = (int)getpid();
+    char stat_path[64];
+    snprintf(stat_path, sizeof(stat_path), "/proc/%d/stat", pid);
+
     ssize_t rv = vfs_file_load_to_buffer_by_path(
-        &provider->m_data_buffer, provider->m_vfs_mgr, provider->m_stat_path);
+        &provider->m_data_buffer, provider->m_vfs_mgr, stat_path);
     if (rv < 0) {
         CPE_ERROR(
             provider->m_em, "prometheus: process: load stat: open file %s fail, error=%d (%s)",
-            provider->m_stat_path, errno, strerror(errno));
+            stat_path, errno, strerror(errno));
         return -1;
     }
 
     if (rv == 0) {
-        CPE_ERROR(provider->m_em, "prometheus: process: load stat: file %s is empty", provider->m_stat_path);
+        CPE_ERROR(provider->m_em, "prometheus: process: load stat: file %s is empty", stat_path);
         return -1;
     }
 

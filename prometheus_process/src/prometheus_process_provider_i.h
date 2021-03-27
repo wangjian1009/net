@@ -19,8 +19,6 @@ struct prometheus_process_provider {
     mem_allocrator_t m_alloc;
     vfs_mgr_t m_vfs_mgr;
     prometheus_manager_t m_manager;
-    char * m_limits_path;
-    char * m_stat_path;
 
     prometheus_gauge_t m_cpu_seconds_total;
     prometheus_gauge_t m_virtual_memory_bytes;

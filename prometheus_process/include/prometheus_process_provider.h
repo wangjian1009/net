@@ -7,8 +7,7 @@
 prometheus_process_provider_t
 prometheus_process_provider_create(
     prometheus_manager_t manager,
-    error_monitor_t em, mem_allocrator_t alloc, vfs_mgr_t vfs,
-    const char * limits_path, const char *stat_path);
+    error_monitor_t em, mem_allocrator_t alloc, vfs_mgr_t vfs);
 
 void prometheus_process_provider_free(
     prometheus_process_provider_t provider);

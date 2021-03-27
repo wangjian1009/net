@@ -12,8 +12,7 @@
 prometheus_process_provider_t
 prometheus_process_provider_create(
     prometheus_manager_t manager,
-    error_monitor_t em, mem_allocrator_t alloc, vfs_mgr_t vfs,
-    const char * limits_path, const char *stat_path)
+    error_monitor_t em, mem_allocrator_t alloc, vfs_mgr_t vfs)
 {
     prometheus_process_provider_t provider = mem_alloc(alloc, sizeof(struct prometheus_process_provider));
     if (provider == NULL) {
@@ -25,8 +24,6 @@ prometheus_process_provider_create(
     provider->m_em = em;
     provider->m_vfs_mgr = vfs;
     provider->m_manager = manager;
-    provider->m_limits_path = NULL;
-    provider->m_stat_path = NULL;
 
     provider->m_cpu_seconds_total = NULL;
     provider->m_virtual_memory_bytes = NULL;
@@ -42,31 +39,6 @@ prometheus_process_provider_create(
     mem_buffer_init(&provider->m_data_buffer, provider->m_alloc);
 
     /*初始化完成，后续可以free */
-
-    int pid = (int)getpid();
-    char path_buf[50];
-
-    /*lmits path*/
-    if (limits_path == NULL) {
-        snprintf(path_buf, sizeof(path_buf), "/proc/%d/limits", pid);
-        limits_path = path_buf;
-    }
-    provider->m_limits_path = cpe_str_mem_dup(provider->m_alloc, limits_path);
-    if (provider->m_limits_path == NULL) {
-        CPE_ERROR(provider->m_em, "prometheus: process: dup limits path %s fail!", limits_path);
-        goto INIT_ERROR;
-    }
-
-    /*stat path*/
-    if (stat_path == NULL) {
-        snprintf(path_buf, sizeof(path_buf), "/proc/%d/stat", pid);
-        stat_path = path_buf;
-    }
-    provider->m_stat_path = cpe_str_mem_dup(provider->m_alloc, stat_path);
-    if (provider->m_stat_path == NULL) {
-        CPE_ERROR(provider->m_em, "prometheus: process: dup stat path %s fail!", stat_path);
-        goto INIT_ERROR;
-    }
 
     /*metric*/
     /* /proc/[pid]stat cutime + cstime / 100 */
@@ -190,16 +162,6 @@ void prometheus_process_provider_free(prometheus_process_provider_t provider) {
         provider->m_virtual_memory_max_bytes = NULL;
     }
 
-    if (provider->m_limits_path) {
-        mem_free(provider->m_alloc, provider->m_limits_path);
-        provider->m_limits_path = NULL;
-    }
-
-    if (provider->m_stat_path) {
-        mem_free(provider->m_alloc, provider->m_stat_path);
-        provider->m_stat_path = NULL;
-    }
-    
     mem_buffer_clear(&provider->m_data_buffer);
 
     mem_free(provider->m_alloc, provider);

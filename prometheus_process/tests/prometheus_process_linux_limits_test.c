@@ -21,7 +21,7 @@ static int teardown(void **state) {
 static void file_parsing(void **state) {
     prometheus_process_linux_limits_testenv_t env = *state;
 
-    prometheus_process_install_limits(
+    prometheus_process_install_linux_limits(
         env->m_env,
         "Limit                     Soft Limit           Hard Limit           Units\n"
         "Max cpu time              unlimited            unlimited            seconds\n"

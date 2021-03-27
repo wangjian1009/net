@@ -7,7 +7,7 @@ static int setup(void **state) {
     prometheus_process_testenv_t env = prometheus_process_testenv_create();
     *state = env;
 
-    prometheus_process_install_limits(
+    prometheus_process_install_linux_limits(
         env,
         "Limit                     Soft Limit           Hard Limit           Units\n"
         "Max cpu time              unlimited            unlimited            seconds\n"
