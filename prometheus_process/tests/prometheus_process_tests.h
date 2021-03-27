@@ -4,4 +4,6 @@
 
 int prometheus_process_limits_basic_tests();
 
+int prometheus_process_collector_limits_tests();
+
 #endif
