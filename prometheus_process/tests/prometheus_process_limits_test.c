@@ -20,7 +20,7 @@ static int teardown(void **state) {
 
 static void file_parsing(void **state) {
     prometheus_process_limits_testenv_t env = *state;
-    
+
     prometheus_process_install_limits(
         env->m_env,
         "Limit                     Soft Limit           Hard Limit           Units\n"

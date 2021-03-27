@@ -37,7 +37,7 @@ static int teardown(void **state) {
     return 0;
 }
 
-static void aa(void **state) {
+static void test_cpu_seconds_total(void **state) {
     prometheus_process_testenv_t env = *state;
 
     prometheus_collector_t collector = prometheus_process_collector_create(env->m_provider, "test");
@@ -47,12 +47,14 @@ static void aa(void **state) {
         prometheus_collector_add_metric(
             collector, prometheus_process_provider_cpu_seconds_total(env->m_provider)) == 0);
 
-    
+    assert_string_equal(
+        "aa",
+        prometheus_process_testenv_collect(env));
 }
 
 int prometheus_process_collector_limits_tests() {
 	const struct CMUnitTest tests[] = {
-        cmocka_unit_test_setup_teardown(aa, setup, teardown),
+        cmocka_unit_test_setup_teardown(test_cpu_seconds_total, setup, teardown),
 	};
 	return cmocka_run_group_tests(tests, NULL, NULL);
 }

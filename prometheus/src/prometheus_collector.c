@@ -29,7 +29,7 @@ prometheus_collector_create(
         
     TAILQ_INIT(&collector->m_metrics);
 
-    if (init && !init(collector)) {
+    if (init && init(collector) != 0) {
         CPE_ERROR(manager->m_em, "prometheus: collector %s: init fail", name);
         if (collector->m_name) mem_free(manager->m_alloc, collector->m_name);
         mem_free(manager->m_alloc, collector);

@@ -137,7 +137,11 @@ prometheus_process_collector_create(prometheus_process_provider_t provider, cons
             prometheus_process_collector_init,
             prometheus_process_collector_fini,
             prometheus_process_collector_collect);
-
+    if (base_collector == NULL) {
+        CPE_ERROR(provider->m_em, "prometheus: process: create collector %s fail!", name);
+        return NULL;
+    }
+    
     prometheus_process_collector_t collector = prometheus_collector_data(base_collector);
     collector->m_provider = provider;
     TAILQ_INSERT_TAIL(&provider->m_collectors, collector, m_next);

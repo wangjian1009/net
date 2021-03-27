@@ -30,7 +30,7 @@ void prometheus_process_testenv_free(prometheus_process_testenv_t env) {
     mem_free(test_allocrator(), env);
 }
 
-const char * prometheus_process_collect_dump(prometheus_process_testenv_t env) {
+const char * prometheus_process_testenv_collect(prometheus_process_testenv_t env) {
     return prometheus_manager_collect_dump(&env->m_dump_buffer, env->m_manager);
 }
 

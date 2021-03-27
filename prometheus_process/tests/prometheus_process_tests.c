@@ -6,6 +6,8 @@ int main(void) {
 
     if (prometheus_process_limits_basic_tests() != 0) rv = -1;
 
+    if (prometheus_process_collector_limits_tests() != 0) rv = -1;
+
     return rv;
 }
 
