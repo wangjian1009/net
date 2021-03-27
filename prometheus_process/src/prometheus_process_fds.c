@@ -1,3 +1,4 @@
+#include "cpe/pal/pal_string.h"
 #include "cpe/pal/pal_dirent.h"
 #include "cpe/pal/pal_stdio.h"
 #include "cpe/pal/pal_unistd.h"

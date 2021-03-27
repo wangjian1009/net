@@ -37,7 +37,7 @@ static int teardown(void **state) {
     return 0;
 }
 
-static void test_cpu_seconds_total(void **state) {
+static void test_max_fds(void **state) {
     prometheus_process_testenv_t env = *state;
 
     prometheus_collector_t collector = prometheus_process_collector_create(env->m_provider, "test");
@@ -45,16 +45,36 @@ static void test_cpu_seconds_total(void **state) {
 
     assert_true(
         prometheus_collector_add_metric(
-            collector, prometheus_process_provider_cpu_seconds_total(env->m_provider)) == 0);
+            collector, prometheus_process_provider_max_fds(env->m_provider)) == 0);
 
     assert_string_equal(
-        "aa",
+        "# HELP process_max_fds Maximum number of open file descriptors.\n"
+        "# TYPE process_max_fds gauge\n"
+        "process_max_fds 1048576\n",
+        prometheus_process_testenv_collect(env));
+}
+
+static void test_virtual_memory_max_bytes(void **state) {
+    prometheus_process_testenv_t env = *state;
+
+    prometheus_collector_t collector = prometheus_process_collector_create(env->m_provider, "test");
+    assert_true(collector);
+
+    assert_true(
+        prometheus_collector_add_metric(
+            collector, prometheus_process_provider_virtual_memory_max_bytes(env->m_provider)) == 0);
+
+    assert_string_equal(
+        "# HELP process_max_fds Maximum number of open file descriptors.\n"
+        "# TYPE process_max_fds gauge\n"
+        "process_max_fds 1048576\n",
         prometheus_process_testenv_collect(env));
 }
 
 int prometheus_process_collector_limits_tests() {
 	const struct CMUnitTest tests[] = {
-        cmocka_unit_test_setup_teardown(test_cpu_seconds_total, setup, teardown),
+        cmocka_unit_test_setup_teardown(test_max_fds, setup, teardown),
+        cmocka_unit_test_setup_teardown(test_virtual_memory_max_bytes, setup, teardown),
 	};
 	return cmocka_run_group_tests(tests, NULL, NULL);
 }

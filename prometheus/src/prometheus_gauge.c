@@ -24,6 +24,10 @@ void prometheus_gauge_free(prometheus_gauge_t gauge) {
     prometheus_metric_free(prometheus_metric_from_data(gauge));
 }
 
+prometheus_gauge_t prometheus_gauge_cast(prometheus_metric_t metric) {
+    return metric->m_type->m_category == prometheus_metric_gauge ? (void*)(metric + 1) : NULL;
+}
+
 int prometheus_gauge_inc(prometheus_gauge_t gauge, const char ** label_values) {
     prometheus_metric_t metric = prometheus_metric_from_data(gauge);
     prometheus_metric_sample_t sample = prometheus_metric_sample_from_labels(metric, label_values);

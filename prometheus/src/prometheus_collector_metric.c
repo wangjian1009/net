@@ -42,6 +42,19 @@ prometheus_collector_metric_find(prometheus_collector_t collector, const char * 
     return NULL;
 }
 
+prometheus_collector_metric_t
+prometheus_collector_metric_find_by_metric(
+    prometheus_collector_t collector, prometheus_metric_t metric)
+{
+    prometheus_collector_metric_t collector_metric;
+
+    TAILQ_FOREACH(collector_metric, &collector->m_metrics, m_next_for_collector) {
+        if (collector_metric->m_metric == metric) return collector_metric;
+    }
+
+    return NULL;
+}
+
 prometheus_collector_t
 prometheus_collector_metric_collector(prometheus_collector_metric_t collector_metric) {
     return collector_metric->m_collector;

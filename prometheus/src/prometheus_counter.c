@@ -23,6 +23,10 @@ void prometheus_counter_free(prometheus_counter_t counter) {
     prometheus_metric_free(prometheus_metric_from_data(counter));
 }
 
+prometheus_counter_t prometheus_counter_cast(prometheus_metric_t metric) {
+    return metric->m_type->m_category == prometheus_metric_counter ? (void*)(metric + 1) : NULL;
+}
+
 int prometheus_counter_inc(prometheus_counter_t counter, const char **label_values) {
     prometheus_metric_t metric = prometheus_metric_from_data(counter);
     prometheus_metric_sample_t sample = prometheus_metric_sample_from_labels(metric, label_values);

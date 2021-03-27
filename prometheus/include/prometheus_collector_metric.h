@@ -10,7 +10,12 @@ enum prometheus_metric_collect_state {
 };
 
 prometheus_collector_metric_t
-prometheus_collector_metric_find(prometheus_collector_t collector, const char * name);
+prometheus_collector_metric_find(
+    prometheus_collector_t collector, const char * name);
+
+prometheus_collector_metric_t
+prometheus_collector_metric_find_by_metric(
+    prometheus_collector_t collector, prometheus_metric_t metric);
 
 prometheus_collector_t
 prometheus_collector_metric_collector(prometheus_collector_metric_t metric);

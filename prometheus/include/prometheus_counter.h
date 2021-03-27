@@ -12,6 +12,8 @@ prometheus_counter_create(
 
 void prometheus_counter_free(prometheus_counter_t counter);
 
+prometheus_counter_t prometheus_counter_cast(prometheus_metric_t metric);
+
 int prometheus_counter_inc(prometheus_counter_t counter, const char **label_values);
 int prometheus_counter_add(prometheus_counter_t counter, double r_value, const char **label_values);
 
