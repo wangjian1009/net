@@ -1,6 +1,7 @@
 #include <assert.h>
 #include "prometheus_collector.h"
 #include "prometheus_process_collector_i.h"
+#include "prometheus_process_limits_i.h"
 
 int prometheus_process_collector_init(prometheus_collector_t base_collector) {
     prometheus_process_collector_t collector = prometheus_collector_data(base_collector);
@@ -16,22 +17,18 @@ void prometheus_process_collector_fini(prometheus_collector_t base_collector) {
     TAILQ_REMOVE(&provider->m_collectors, collector, m_next);
 }
 
+void prometheus_process_collector_on_row(void * ctx, prometheus_process_limits_row_t row) {
+    prometheus_process_collector_t collector = ctx;
+}
+
 void prometheus_process_collector_collect(prometheus_collector_t base_collector) {
     prometheus_process_collector_t collector = prometheus_collector_data(base_collector);
     prometheus_process_provider_t provider = collector->m_provider;
     assert(provider);
     
-/*   PROM_ASSERT(self != NULL); */
-/*   if (self == NULL) return NULL; */
-
-/*   int r = 0; */
-
-/*   // Allocate and create a *prom_process_limits_file_t */
-/*   prom_process_limits_file_t *limits_f = prom_process_limits_file_new(self->proc_limits_file_path); */
-/*   if (limits_f == NULL) { */
-/*     prom_process_limits_file_destroy(limits_f); */
-/*     return NULL; */
-/*   } */
+    if (prometheus_process_limits_load(provider, provider, prometheus_process_collector_on_row) != 0) {
+        CPE_ERROR(provider->m_em, "prometheus: process: collect: process limit fail");
+    }
 
 /*   // Allocate and create a *prom_map_t from prom_process_limits_file_t. This is the main storage container for the */
 /*   // limits metric data */

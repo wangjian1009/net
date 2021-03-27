@@ -205,25 +205,37 @@ void prometheus_process_provider_free(prometheus_process_provider_t provider) {
     mem_free(provider->m_alloc, provider);
 }
 
-/* prometheus_collector_t */
-/* prometheus_process_collector_create(prometheus_manager_t manager, const char * name) { */
-    /* provider->m_collector = prometheus_collector_create(provider->m_manager, "process"); */
-    /* if (provider->m_collector == NULL) { */
-    /*     CPE_ERROR(provider->m_em, "prometheus: process: create: create collector fail!"); */
-    /*     goto INIT_ERROR; */
-    /* } */
+prometheus_metric_t
+prometheus_process_provider_cpu_seconds_total(prometheus_process_provider_t provider) {
+    return prometheus_metric_from_data(provider->m_cpu_seconds_total);
+}
 
-    /* if (prometheus_collector_add_metric(provider->m_collector, prometheus_metric_from_data(provider->m_max_fds)) != 0 */
-    /*     || prometheus_collector_add_metric(provider->m_collector, prometheus_metric_from_data(provider->m_virtual_memory_max_bytes)) != 0 */
-    /*     || prometheus_collector_add_metric(provider->m_collector, prometheus_metric_from_data(provider->m_cpu_seconds_total)) != 0 */
-    /*     || prometheus_collector_add_metric(provider->m_collector, prometheus_metric_from_data(provider->m_virtual_memory_bytes)) != 0 */
-    /*     || prometheus_collector_add_metric(provider->m_collector, prometheus_metric_from_data(provider->m_resident_memory_bytes)) != 0 */
-    /*     || prometheus_collector_add_metric(provider->m_collector, prometheus_metric_from_data(provider->m_start_time_seconds)) != 0 */
-    /*     || prometheus_collector_add_metric(provider->m_collector, prometheus_metric_from_data(provider->m_open_fds)) != 0 */
-    /*     ) */
-    /* { */
-    /*     CPE_ERROR(provider->m_em, "prometheus: process: create: collector add metric!"); */
-    /*     goto INIT_ERROR; */
-    /* } */
-/* } */
+prometheus_metric_t
+prometheus_process_provider_virtual_memory_bytes(prometheus_process_provider_t provider){
+    return prometheus_metric_from_data(provider->m_virtual_memory_bytes);
+}
+        
+prometheus_metric_t
+prometheus_process_provider_resident_memory_bytes(prometheus_process_provider_t provider) {
+    return prometheus_metric_from_data(provider->m_resident_memory_bytes);
+}
 
+prometheus_metric_t
+prometheus_process_provider_start_time_seconds(prometheus_process_provider_t provider) {
+    return prometheus_metric_from_data(provider->m_start_time_seconds);
+}
+
+prometheus_metric_t
+prometheus_process_provider_open_fds(prometheus_process_provider_t provider) {
+    return prometheus_metric_from_data(provider->m_open_fds);
+}
+
+prometheus_metric_t
+prometheus_process_provider_max_fds(prometheus_process_provider_t provider) {
+    return prometheus_metric_from_data(provider->m_max_fds);
+}
+
+prometheus_metric_t
+prometheus_process_provider_virtual_memory_max_bytes(prometheus_process_provider_t provider) {
+    return prometheus_metric_from_data(provider->m_virtual_memory_max_bytes);
+}
