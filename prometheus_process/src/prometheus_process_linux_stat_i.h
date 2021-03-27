@@ -1,12 +1,12 @@
-#ifndef PROMETHEUS_PROCESS_STATS_I_H
-#define PROMETHEUS_PROCESS_STATS_I_H
+#ifndef PROMETHEUS_PROCESS_LINUX_STATS_I_H
+#define PROMETHEUS_PROCESS_LINUX_STATS_I_H
 #include "prometheus_gauge.h"
 #include "prometheus_process_provider_i.h"
 
 /**
  * @brief Refer to man proc and search for /proc/[pid]/stat
  */
-struct prometheus_process_stat {
+struct prometheus_process_linux_stat {
     int pid;                                   // (1) pid  %d
     char comm[128];                            // (2) comm  %s
     char state;                                // (3) state  %c
@@ -61,15 +61,15 @@ struct prometheus_process_stat {
     int exit_code;                             // (52) exit_code  %d  (since Linux 3.5)  [PT]
 };
 
-void prometheus_process_stat_init(prometheus_process_stat_t process_stat);
-void prometheus_process_stat_fini(prometheus_process_stat_t process_stat);
+void prometheus_process_linux_stat_init(prometheus_process_linux_stat_t process_stat);
+void prometheus_process_linux_stat_fini(prometheus_process_linux_stat_t process_stat);
 
-int prometheus_process_stat_read(
+int prometheus_process_linux_stat_read(
     prometheus_process_provider_t provider,
-    prometheus_process_stat_t process_stat, const char * data);
+    prometheus_process_linux_stat_t process_stat, const char * data);
 
-int prometheus_process_stat_load(
+int prometheus_process_linux_stat_load(
     prometheus_process_provider_t provider,
-    prometheus_process_stat_t process_stat);
+    prometheus_process_linux_stat_t process_stat);
 
 #endif

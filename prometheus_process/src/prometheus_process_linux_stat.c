@@ -4,10 +4,10 @@
 #include "cpe/pal/pal_unistd.h"
 #include "cpe/pal/pal_errno.h" 
 #include "cpe/vfs/vfs_file.h"
-#include "prometheus_process_stat_i.h"
+#include "prometheus_process_linux_stat_i.h"
 
-int prometheus_process_stat_read(
-    prometheus_process_provider_t provider, prometheus_process_stat_t process_stat, const char * data)
+int prometheus_process_linux_stat_read(
+    prometheus_process_provider_t provider, prometheus_process_linux_stat_t process_stat, const char * data)
 {
     sscanf(
         data,
@@ -119,15 +119,15 @@ int prometheus_process_stat_read(
     return 0;
 }
 
-void prometheus_process_stat_init(prometheus_process_stat_t process_stat) {
+void prometheus_process_linux_stat_init(prometheus_process_linux_stat_t process_stat) {
     bzero(process_stat, sizeof(*process_stat));
 }
 
-void prometheus_process_stat_fini(prometheus_process_stat_t process_stat) {
+void prometheus_process_linux_stat_fini(prometheus_process_linux_stat_t process_stat) {
 }
 
-int prometheus_process_stat_load(
-    prometheus_process_provider_t provider, prometheus_process_stat_t process_stat)
+int prometheus_process_linux_stat_load(
+    prometheus_process_provider_t provider, prometheus_process_linux_stat_t process_stat)
 {
     mem_buffer_clear_data(&provider->m_data_buffer);
 
@@ -147,6 +147,6 @@ int prometheus_process_stat_load(
 
     mem_buffer_append_char(&provider->m_data_buffer, 0);
 
-    return prometheus_process_stat_read(
+    return prometheus_process_linux_stat_read(
         provider, process_stat, mem_buffer_make_continuous(&provider->m_data_buffer, 0));
 }

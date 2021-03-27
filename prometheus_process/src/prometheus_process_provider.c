@@ -5,9 +5,9 @@
 #include "prometheus_collector.h"
 #include "prometheus_process_provider_i.h"
 #include "prometheus_process_collector_i.h"
-#include "prometheus_process_stat_i.h"
-#include "prometheus_process_fds_i.h"
-#include "prometheus_process_limits_i.h"
+#include "prometheus_process_linux_stat_i.h"
+#include "prometheus_process_linux_fds_i.h"
+#include "prometheus_process_linux_limits_i.h"
 
 prometheus_process_provider_t
 prometheus_process_provider_create(

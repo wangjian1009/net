@@ -6,9 +6,9 @@
 #include "prometheus_metric.h"
 #include "prometheus_gauge.h"
 #include "prometheus_process_collector_i.h"
-#include "prometheus_process_limits_i.h"
-#include "prometheus_process_fds_i.h"
-#include "prometheus_process_stat_i.h"
+#include "prometheus_process_linux_limits_i.h"
+#include "prometheus_process_linux_fds_i.h"
+#include "prometheus_process_linux_stat_i.h"
 
 int prometheus_process_collector_init(prometheus_collector_t base_collector) {
     prometheus_process_collector_t collector = prometheus_collector_data(base_collector);
@@ -31,7 +31,7 @@ struct prometheus_process_collector_limits_ctx {
     prometheus_collector_metric_t m_virtual_memory_max_bytes;
 };
 
-void prometheus_process_collector_on_row(void * i_ctx, prometheus_process_limits_row_t row) {
+void prometheus_process_collector_on_row(void * i_ctx, prometheus_process_linux_limits_row_t row) {
     struct prometheus_process_collector_limits_ctx * ctx = i_ctx;
     prometheus_process_provider_t provider = ctx->m_collector->m_provider;
 
@@ -81,7 +81,7 @@ void prometheus_process_collector_from_limits(prometheus_collector_t base_collec
         return;
     }
 
-    if (prometheus_process_limits_load(provider, &limit_ctx, prometheus_process_collector_on_row) != 0) {
+    if (prometheus_process_linux_limits_load(provider, &limit_ctx, prometheus_process_collector_on_row) != 0) {
         CPE_ERROR(provider->m_em, "prometheus: process: collect: process limit fail");
     }
 }
@@ -112,10 +112,10 @@ void prometheus_process_collector_from_state(prometheus_collector_t base_collect
         && resident_memory_bytes == NULL
         && start_time_seconds == NULL) return;
 
-    struct prometheus_process_stat process_stat;
-    prometheus_process_stat_init(&process_stat);
+    struct prometheus_process_linux_stat process_stat;
+    prometheus_process_linux_stat_init(&process_stat);
 
-    if (prometheus_process_stat_load(provider, &process_stat) != 0) {
+    if (prometheus_process_linux_stat_load(provider, &process_stat) != 0) {
         CPE_ERROR(provider->m_em, "prometheus: process: collect: process stat fail");
         return;
     }
@@ -169,7 +169,7 @@ void prometheus_process_collector_from_state(prometheus_collector_t base_collect
         prometheus_collector_metric_set_state(start_time_seconds, prometheus_metric_collected);
     }
     
-    prometheus_process_stat_fini(&process_stat);
+    prometheus_process_linux_stat_fini(&process_stat);
 }
 
 void prometheus_process_collector_open_fds(prometheus_collector_t base_collector) {

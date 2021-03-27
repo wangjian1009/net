@@ -4,9 +4,9 @@
 #include "cpe/pal/pal_unistd.h"
 #include "cpe/pal/pal_errno.h"
 #include "cpe/pal/pal_strings.h"
-#include "prometheus_process_fds_i.h"
+#include "prometheus_process_linux_fds_i.h"
 
-int prometheus_process_fds_count(prometheus_process_provider_t provider, const char * path) {
+int prometheus_process_linux_fds_count(prometheus_process_provider_t provider, const char * path) {
     int r = 0;
 
     char path_buf[50];

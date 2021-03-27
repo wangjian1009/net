@@ -6,10 +6,10 @@
 #include "cpe/utils/buffer.h"
 #include "prometheus_process_provider.h"
 
-typedef struct prometheus_process_stat * prometheus_process_stat_t;
+typedef struct prometheus_process_linux_stat * prometheus_process_linux_stat_t;
 
-typedef struct prometheus_process_limits_row * prometheus_process_limits_row_t;
-typedef struct prometheus_process_limits_parse_ctx * prometheus_process_limits_parse_ctx_t;
+typedef struct prometheus_process_linux_limits_row * prometheus_process_linux_limits_row_t;
+typedef struct prometheus_process_linux_limits_parse_ctx * prometheus_process_linux_limits_parse_ctx_t;
     
 typedef struct prometheus_process_collector * prometheus_process_collector_t;
 typedef TAILQ_HEAD(prometheus_process_collector_list, prometheus_process_collector) prometheus_process_collector_list_t;
