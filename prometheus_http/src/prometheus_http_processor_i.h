@@ -10,6 +10,8 @@ struct prometheus_http_processor {
     error_monitor_t m_em;
     mem_allocrator_t m_alloc;
     prometheus_manager_t m_manager;
+    net_http_svr_protocol_t m_http_svr;
+    net_http_svr_processor_t m_http_processor;
 };
 
 #endif

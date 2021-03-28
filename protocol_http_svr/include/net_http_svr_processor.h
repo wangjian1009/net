@@ -24,7 +24,8 @@ net_http_svr_processor_create(
 
 void net_http_svr_processor_free(net_http_svr_processor_t processor);
 
-net_http_svr_processor_t net_http_svr_processor_find_by_name(net_http_svr_protocol_t service, const char * name);
+net_http_svr_processor_t
+net_http_svr_processor_find_by_name(net_http_svr_protocol_t service, const char * name);
 
 void * net_http_svr_processor_ctx(net_http_svr_processor_t processor);
 
