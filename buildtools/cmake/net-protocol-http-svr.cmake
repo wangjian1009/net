@@ -19,3 +19,5 @@ set_property(TARGET net_protocol_http_svr PROPERTY INCLUDE_DIRECTORIES
   ${net_protocol_http_svr_base}/include
   ${net_protocol_http_svr_base}/src
   )
+
+target_link_libraries(net_protocol_http_svr INTERFACE net_core)
