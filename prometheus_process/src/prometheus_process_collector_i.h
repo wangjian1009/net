@@ -9,4 +9,10 @@ struct prometheus_process_collector {
 
 void prometheus_process_collector_free(prometheus_process_collector_t collector);
 
+#if CPE_OS_MAC
+void prometheus_process_collector_mac_collect(prometheus_collector_t base_collector);
+#endif
+
+void prometheus_process_collector_linux_collect(prometheus_collector_t base_collector);
+
 #endif

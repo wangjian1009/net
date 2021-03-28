@@ -76,26 +76,24 @@ static int teardown(void **state) {
 static void test_cpu_seconds_total(void **state) {
     prometheus_process_testenv_t env = *state;
 
-    prometheus_collector_t collector = prometheus_process_collector_create(env->m_provider, "test");
+    prometheus_collector_t collector = prometheus_process_collector_create_linux(env->m_provider, "test");
     assert_true(collector);
 
     assert_true(
         prometheus_collector_add_metric(
             collector, prometheus_process_provider_cpu_seconds_total(env->m_provider)) == 0);
 
-    sysconf(_SC_CLK_TCK);
-
-    assert_string_equal(
+    assert_string_match(
         "# HELP process_cpu_seconds_total Total user and system CPU time spent in seconds.\n"
         "# TYPE process_cpu_seconds_total gauge\n"
-        "process_cpu_seconds_total 0\n",
+        "process_cpu_seconds_total 0.07\\d*\n",
         prometheus_process_testenv_collect(env));
 }
 
 static void test_virtual_memory_bytes(void **state) {
     prometheus_process_testenv_t env = *state;
 
-    prometheus_collector_t collector = prometheus_process_collector_create(env->m_provider, "test");
+    prometheus_collector_t collector = prometheus_process_collector_create_linux(env->m_provider, "test");
     assert_true(collector);
 
     assert_true(
@@ -112,7 +110,7 @@ static void test_virtual_memory_bytes(void **state) {
 static void test_resident_memory_bytes(void **state) {
     prometheus_process_testenv_t env = *state;
 
-    prometheus_collector_t collector = prometheus_process_collector_create(env->m_provider, "test");
+    prometheus_collector_t collector = prometheus_process_collector_create_linux(env->m_provider, "test");
     assert_true(collector);
 
     assert_true(
@@ -135,7 +133,7 @@ static void test_resident_memory_bytes(void **state) {
 static void test_start_time_seconds(void **state) {
     prometheus_process_testenv_t env = *state;
 
-    prometheus_collector_t collector = prometheus_process_collector_create(env->m_provider, "test");
+    prometheus_collector_t collector = prometheus_process_collector_create_linux(env->m_provider, "test");
     assert_true(collector);
 
     assert_true(

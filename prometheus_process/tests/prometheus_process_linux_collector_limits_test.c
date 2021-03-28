@@ -40,7 +40,7 @@ static int teardown(void **state) {
 static void test_max_fds(void **state) {
     prometheus_process_testenv_t env = *state;
 
-    prometheus_collector_t collector = prometheus_process_collector_create(env->m_provider, "test");
+    prometheus_collector_t collector = prometheus_process_collector_create_linux(env->m_provider, "test");
     assert_true(collector);
 
     assert_true(
@@ -57,7 +57,7 @@ static void test_max_fds(void **state) {
 static void test_virtual_memory_max_bytes(void **state) {
     prometheus_process_testenv_t env = *state;
 
-    prometheus_collector_t collector = prometheus_process_collector_create(env->m_provider, "test");
+    prometheus_collector_t collector = prometheus_process_collector_create_linux(env->m_provider, "test");
     assert_true(collector);
 
     assert_true(

@@ -22,6 +22,10 @@ void prometheus_process_testenv_free(prometheus_process_testenv_t env);
 
 const char * prometheus_process_testenv_collect(prometheus_process_testenv_t env);
 
+/*linux*/
+prometheus_collector_t
+prometheus_process_collector_create_linux(prometheus_process_provider_t provider, const char * name);
+
 void prometheus_process_install_linux_limits(prometheus_process_testenv_t env, const char * data);
 void prometheus_process_install_linux_stat(prometheus_process_testenv_t env, const char * data);
 
