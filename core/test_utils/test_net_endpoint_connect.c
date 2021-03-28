@@ -165,7 +165,7 @@ void test_net_endpoint_id_expect_connect_success(
     }
 
     if (target) {
-        expect_string(test_net_endpoint_connect, remote_addr, target);
+        expect_string(test_net_endpoint_connect, remote_addr, mem_buffer_strdup(&driver->m_setup_buffer, target));
     }
     else {
         expect_any(test_net_endpoint_connect, remote_addr);
@@ -192,7 +192,7 @@ void test_net_endpoint_id_expect_connect_error(
 {
     expect_value(test_net_endpoint_connect, id, ep_id);
     if (target) {
-        expect_string(test_net_endpoint_connect, remote_addr, target);
+        expect_string(test_net_endpoint_connect, remote_addr, mem_buffer_strdup(&driver->m_setup_buffer, target));
     }
     else {
         expect_any(test_net_endpoint_connect, remote_addr);
@@ -218,7 +218,7 @@ void test_net_endpoint_id_expect_connect_to_acceptor(
 {
     expect_value(test_net_endpoint_connect, id, ep_id);
     if (target) {
-        expect_string(test_net_endpoint_connect, remote_addr, target);
+        expect_string(test_net_endpoint_connect, remote_addr, mem_buffer_strdup(&driver->m_setup_buffer, target));
     }
     else {
         expect_any(test_net_endpoint_connect, remote_addr);
@@ -257,7 +257,7 @@ void test_net_endpoint_id_expect_connect_to_endpoint(
 {
     expect_value(test_net_endpoint_connect, id, ep_id);
     if (target) {
-        expect_string(test_net_endpoint_connect, remote_addr, target);
+        expect_string(test_net_endpoint_connect, remote_addr, mem_buffer_strdup(&driver->m_setup_buffer, target));
     }
     else {
         expect_any(test_net_endpoint_connect, remote_addr);

@@ -7,7 +7,11 @@ set_property(TARGET test_utils_net_protocol_http_svr PROPERTY INCLUDE_DIRECTORIE
   ${net_core_includes}
   ${net_core_base}/test_utils
   ${cpe_utils_base}/test_utils
+  ${net_protocol_http_base}/include
+  ${net_protocol_http_base}/test_utils
   ${net_protocol_http_svr_base}/include
   )
 
-target_link_libraries(test_utils_net_protocol_http_svr INTERFACE net_protocol_http_svr test_utils_net_core)
+target_link_libraries(
+  test_utils_net_protocol_http_svr INTERFACE
+  net_protocol_http_svr test_utils_net_protocol_http test_utils_net_core)

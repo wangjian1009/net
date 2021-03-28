@@ -9,6 +9,8 @@ set_property(TARGET tests_net_prometheus_http PROPERTY INCLUDE_DIRECTORIES
   ${cpe_utils_base}/test_utils
   ${net_core_base}/include
   ${net_core_base}/test_utils
+  ${net_protocol_http_base}/include
+  ${net_protocol_http_base}/test_utils
   ${net_protocol_http_svr_base}/include
   ${net_protocol_http_svr_base}/test_utils
   ${net_prometheus_base}/include

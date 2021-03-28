@@ -44,6 +44,23 @@ net_http_test_protocol_create_ep(net_http_test_protocol_t protocol, net_driver_t
     return net_http_endpoint_create(driver, protocol->m_protocol);
 }
 
+net_http_test_conn_t
+net_http_test_protocol_find_usable_ep(
+    net_http_test_protocol_t protocol, net_address_t address, net_driver_t driver)
+{
+    net_http_test_conn_t conn = NULL;
+    TAILQ_FOREACH(conn, &protocol->m_conns, m_next) {
+        net_endpoint_t endpoint = net_http_endpoint_base_endpoint(conn->m_endpoint);
+        if (net_address_cmp_opt(net_endpoint_remote_address(endpoint), address) != 0) continue;
+        if (net_endpoint_driver(endpoint) != driver) continue;
+        //TODO:
+        //found
+        break;
+    }
+
+    return NULL;
+}
+
 net_http_req_t
 net_http_test_protocol_create_req(
     net_http_test_protocol_t protocol, net_driver_t driver, net_http_req_method_t method, const char * str_url)
@@ -56,16 +73,7 @@ net_http_test_protocol_create_req(
     net_address_t address = net_address_create_from_url(schedule, url);
     if (address == NULL) fail_msg("create address from url fail");
 
-    net_http_test_conn_t conn = NULL;
-    TAILQ_FOREACH(conn, &protocol->m_conns, m_next) {
-        net_endpoint_t endpoint = net_http_endpoint_base_endpoint(conn->m_endpoint);
-        if (net_address_cmp_opt(net_endpoint_remote_address(endpoint), address) != 0) continue;
-        if (net_endpoint_driver(endpoint) != driver) continue;
-        //TODO: 
-        //found
-        break;
-    }
-
+    net_http_test_conn_t conn = net_http_test_protocol_find_usable_ep(protocol, address, driver);
     if (conn == NULL) {
         conn = net_http_test_conn_create(protocol, driver, address);
         assert_true(conn);
