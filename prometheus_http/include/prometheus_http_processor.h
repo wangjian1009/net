@@ -10,6 +10,6 @@ prometheus_http_processor_create(
     prometheus_manager_t manager,
     error_monitor_t em, mem_allocrator_t alloc);
 
-void prometheus_process_provider_free(prometheus_http_processor_t processor);
+void prometheus_http_processor_free(prometheus_http_processor_t processor);
 
 #endif
