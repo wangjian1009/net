@@ -12,13 +12,16 @@ prometheus_http_testenv_create() {
     env->m_manager = prometheus_manager_create(test_allocrator(), env->m_em);
     env->m_net_schedule = net_schedule_create(test_allocrator(), env->m_em, NULL);
     env->m_net_driver = test_net_driver_create(env->m_net_schedule, env->m_em);
-    env->m_http_svr_env = net_http_svr_testenv_create(env->m_net_schedule);
+    env->m_http_svr_env = net_http_svr_testenv_create(env->m_net_schedule, env->m_net_driver);
+
     env->m_http_processor =
         prometheus_http_processor_create(
             env->m_http_svr_env->m_protocol,
             env->m_manager,
             env->m_em, test_allocrator());
 
+    net_http_svr_testenv_listen(env->m_http_svr_env, "127.0.0.1:1234");
+    
     return env;
 }
 
