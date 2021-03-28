@@ -12,6 +12,7 @@ struct prometheus_http_processor {
     prometheus_manager_t m_manager;
     net_http_svr_protocol_t m_http_svr;
     net_http_svr_processor_t m_http_processor;
+    struct mem_buffer m_collect_buffer;
 };
 
 #endif

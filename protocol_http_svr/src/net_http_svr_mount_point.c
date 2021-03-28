@@ -294,7 +294,9 @@ void net_http_svr_mount_point_clear_path(net_http_svr_mount_point_t mount_point)
 }
 
 net_http_svr_mount_point_t
-net_http_svr_mount_point_mount(net_http_svr_mount_point_t from, const char * path, void * processor_env, net_http_svr_processor_t processor) {
+net_http_svr_mount_point_mount(
+    net_http_svr_mount_point_t from, const char * path, void * processor_env, net_http_svr_processor_t processor)
+{
     net_http_svr_protocol_t service = from->m_service;
     const char * sep;
     net_http_svr_mount_point_t mp = from;
