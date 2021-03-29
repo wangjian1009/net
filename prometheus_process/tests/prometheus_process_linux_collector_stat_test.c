@@ -85,7 +85,7 @@ static void test_cpu_seconds_total(void **state) {
 
     assert_string_match(
         "# HELP process_cpu_seconds_total Total user and system CPU time spent in seconds.\n"
-        "# TYPE process_cpu_seconds_total gauge\n"
+        "# TYPE process_cpu_seconds_total counter\n"
         "process_cpu_seconds_total 0.07\\d*\n",
         prometheus_process_testenv_collect(env));
 }

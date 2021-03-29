@@ -43,6 +43,13 @@ int prometheus_counter_add(prometheus_counter_t counter, double r_value, const c
     return prometheus_metric_sample_add(sample, r_value);
 }
 
+int prometheus_counter_set(prometheus_counter_t counter, double r_value, const char **label_values) {
+    prometheus_metric_t metric = prometheus_metric_from_data(counter);
+    prometheus_metric_sample_t sample = prometheus_metric_sample_from_labels(metric, label_values);
+    if (sample == NULL) return -1;
+    return prometheus_metric_sample_set(sample, r_value);
+}
+
 prometheus_metric_type_t
 prometheus_counter_type_create(prometheus_manager_t manager) {
     return prometheus_metric_type_create(

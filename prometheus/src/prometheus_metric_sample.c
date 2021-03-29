@@ -163,7 +163,19 @@ int prometheus_metric_sample_set(prometheus_metric_sample_t sample, double r_val
     prometheus_metric_t metric = prometheus_metric_sample_metric(sample);
     prometheus_manager_t manager = metric->m_manager;
     
-    if (prometheus_metric_category(metric) != prometheus_metric_gauge) {
+    switch(prometheus_metric_category(metric)) {
+    case prometheus_metric_counter:
+        if (r_value < sample->m_r_value) {
+            CPE_ERROR(
+                metric->m_manager->m_em,
+                "prometheus: %s: %s: set small value for category %s",
+                metric->m_name, sample->m_l_value, prometheus_metric_category_str(prometheus_metric_category(metric)));
+            return -1;
+        }
+        break;
+    case prometheus_metric_gauge:
+        break;
+    default:
         CPE_ERROR(
             metric->m_manager->m_em,
             "prometheus: %s: %s: can`t sub for category %s",

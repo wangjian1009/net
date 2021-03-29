@@ -5,6 +5,7 @@
 #include "prometheus_collector_metric.h"
 #include "prometheus_metric.h"
 #include "prometheus_gauge.h"
+#include "prometheus_counter.h"
 #include "prometheus_process_collector_i.h"
 #include "prometheus_process_linux_limits_i.h"
 #include "prometheus_process_linux_fds_i.h"
@@ -108,11 +109,11 @@ void prometheus_process_collector_from_state(prometheus_collector_t base_collect
 
     if (cpu_seconds_total != NULL) {
         prometheus_metric_t metric = prometheus_collector_metric_metric(cpu_seconds_total);
-        prometheus_gauge_t guage = prometheus_gauge_cast(metric);
+        prometheus_counter_t counter = prometheus_counter_cast(metric);
         double value = (double)(process_stat.utime + process_stat.stime) / (double)sysconf(_SC_CLK_TCK);
-        if (prometheus_gauge_set(guage, value, NULL) != 0) {
+        if (prometheus_counter_set(counter, value, NULL) != 0) {
             CPE_ERROR(
-                provider->m_em, "prometheus: process: collect: %s: set gauge failed", prometheus_metric_name(metric));
+                provider->m_em, "prometheus: process: collect: %s: set counter failed", prometheus_metric_name(metric));
             return;
         }
 

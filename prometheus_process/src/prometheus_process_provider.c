@@ -1,6 +1,7 @@
 #include "cpe/pal/pal_unistd.h"
 #include "cpe/utils/string_utils.h"
 #include "prometheus_gauge.h"
+#include "prometheus_counter.h"
 #include "prometheus_metric.h"
 #include "prometheus_collector.h"
 #include "prometheus_process_provider_i.h"
@@ -43,7 +44,7 @@ prometheus_process_provider_create(
     /*metric*/
     /* /proc/[pid]stat cutime + cstime / 100 */
     provider->m_cpu_seconds_total =
-        prometheus_gauge_create(
+        prometheus_counter_create(
             provider->m_manager,
             "process_cpu_seconds_total",
             "Total user and system CPU time spent in seconds.", 0, NULL);
@@ -128,7 +129,7 @@ void prometheus_process_provider_free(prometheus_process_provider_t provider) {
     }
     
     if (provider->m_cpu_seconds_total) {
-        prometheus_gauge_free(provider->m_cpu_seconds_total);
+        prometheus_counter_free(provider->m_cpu_seconds_total);
         provider->m_cpu_seconds_total = NULL;
     }
 

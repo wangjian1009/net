@@ -20,7 +20,7 @@ struct prometheus_process_provider {
     vfs_mgr_t m_vfs_mgr;
     prometheus_manager_t m_manager;
 
-    prometheus_gauge_t m_cpu_seconds_total;
+    prometheus_counter_t m_cpu_seconds_total;
     prometheus_gauge_t m_virtual_memory_bytes;
     prometheus_gauge_t m_resident_memory_bytes;
     prometheus_gauge_t m_start_time_seconds;
