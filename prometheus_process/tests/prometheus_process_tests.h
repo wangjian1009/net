@@ -5,5 +5,6 @@
 int prometheus_process_linux_limits_basic_tests();
 int prometheus_process_linux_collector_limits_tests();
 int prometheus_process_linux_collector_stat_tests();
+int prometheus_process_linux_collector_basic_tests();
 
 #endif

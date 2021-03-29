@@ -28,5 +28,6 @@ prometheus_process_collector_create_linux(prometheus_process_provider_t provider
 
 void prometheus_process_install_linux_limits(prometheus_process_testenv_t env, const char * data);
 void prometheus_process_install_linux_stat(prometheus_process_testenv_t env, const char * data);
+void prometheus_process_install_linux_fds(prometheus_process_testenv_t env, uint32_t count);
 
 #endif

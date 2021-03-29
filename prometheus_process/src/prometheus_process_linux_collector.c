@@ -114,10 +114,10 @@ void prometheus_process_collector_from_state(prometheus_collector_t base_collect
         if (prometheus_counter_set(counter, value, NULL) != 0) {
             CPE_ERROR(
                 provider->m_em, "prometheus: process: collect: %s: set counter failed", prometheus_metric_name(metric));
-            return;
         }
-
-        prometheus_collector_metric_set_state(cpu_seconds_total, prometheus_metric_collected);
+        else {
+            prometheus_collector_metric_set_state(cpu_seconds_total, prometheus_metric_collected);
+        }
     }
 
     if (virtual_memory_bytes != NULL) {
@@ -126,10 +126,10 @@ void prometheus_process_collector_from_state(prometheus_collector_t base_collect
         if (prometheus_gauge_set(guage, process_stat.vsize, NULL) != 0) {
             CPE_ERROR(
                 provider->m_em, "prometheus: process: collect: %s: set gauge failed", prometheus_metric_name(metric));
-            return;
         }
-
-        prometheus_collector_metric_set_state(virtual_memory_bytes, prometheus_metric_collected);
+        else {
+            prometheus_collector_metric_set_state(virtual_memory_bytes, prometheus_metric_collected);
+        }
     }
 
     if (resident_memory_bytes != NULL) {
@@ -138,10 +138,10 @@ void prometheus_process_collector_from_state(prometheus_collector_t base_collect
         if (prometheus_gauge_set(guage, process_stat.rss * sysconf(_SC_PAGE_SIZE), NULL) != 0) {
             CPE_ERROR(
                 provider->m_em, "prometheus: process: collect: %s: set gauge failed", prometheus_metric_name(metric));
-            return;
         }
-
-        prometheus_collector_metric_set_state(resident_memory_bytes, prometheus_metric_collected);
+        else {
+            prometheus_collector_metric_set_state(resident_memory_bytes, prometheus_metric_collected);
+        }
     }
 
     if (start_time_seconds != NULL) {
@@ -150,10 +150,10 @@ void prometheus_process_collector_from_state(prometheus_collector_t base_collect
         if (prometheus_gauge_set(guage, process_stat.starttime, NULL) != 0) {
             CPE_ERROR(
                 provider->m_em, "prometheus: process: collect: %s: set gauge failed", prometheus_metric_name(metric));
-            return;
         }
-
-        prometheus_collector_metric_set_state(start_time_seconds, prometheus_metric_collected);
+        else {
+            prometheus_collector_metric_set_state(start_time_seconds, prometheus_metric_collected);
+        }
     }
     
     prometheus_process_linux_stat_fini(&process_stat);
@@ -167,16 +167,22 @@ void prometheus_process_collector_open_fds(prometheus_collector_t base_collector
     prometheus_collector_metric_t open_fds =
         prometheus_collector_metric_find_by_metric(
             base_collector, prometheus_process_provider_open_fds(provider));
-    if (open_fds == NULL) return;
-
-/*   r = prom_gauge_set(prom_process_open_fds, prom_process_fds_count(NULL), NULL); */
-/*   if (r) { */
-/*     prom_process_limits_file_destroy(limits_f); */
-/*     prom_map_destroy(limits_map); */
-/*     prom_process_stat_file_destroy(stat_f); */
-/*     prom_process_stat_destroy(stat); */
-/*     return NULL; */
-/*   } */
+    if (open_fds != NULL) {
+        prometheus_metric_t metric = prometheus_collector_metric_metric(open_fds);
+        prometheus_gauge_t guage = prometheus_gauge_cast(metric);
+        uint32_t count = 0;
+        if (prometheus_process_linux_fds_count(provider, &count) != 0) {
+            CPE_ERROR(
+                provider->m_em, "prometheus: process: collect: %s: get count fail", prometheus_metric_name(metric));
+        }
+        else if (prometheus_gauge_set(guage, count, NULL) != 0) {
+            CPE_ERROR(
+                provider->m_em, "prometheus: process: collect: %s: set gauge failed", prometheus_metric_name(metric));
+        }
+        else {
+            prometheus_collector_metric_set_state(open_fds, prometheus_metric_collected);
+        }
+    }
 }
 
 void prometheus_process_collector_linux_collect(prometheus_collector_t base_collector) {

@@ -50,3 +50,23 @@ void prometheus_process_install_linux_stat(prometheus_process_testenv_t env, con
     assert_true(
         test_vfs_testenv_install_file_str(env->m_vfs_env, stat_path, data) == 0);
 }
+
+void prometheus_process_install_linux_fds(prometheus_process_testenv_t env, uint32_t count) {
+    int pid = (int)getpid();
+    char path[64];
+    size_t n = snprintf(path, sizeof(path), "/proc/%d/fd", pid);
+
+    assert_true(test_vfs_testenv_install_dir(env->m_vfs_env, path) == 0);
+
+    snprintf(path + n, sizeof(path) - n, "/.");
+    assert_true(test_vfs_testenv_install_dir(env->m_vfs_env, path) == 0);
+    
+    snprintf(path + n, sizeof(path) - n, "/..");
+    assert_true(test_vfs_testenv_install_dir(env->m_vfs_env, path) == 0);
+
+    uint32_t i;
+    for(i = 0; i < count; ++i) {
+        snprintf(path + n, sizeof(path) - n, "/%d", i + 1);
+        assert_true(test_vfs_testenv_install_file_str(env->m_vfs_env, path, "") == 0);
+    }
+}
