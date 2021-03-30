@@ -20,4 +20,18 @@ set_property(TARGET net_trans PROPERTY INCLUDE_DIRECTORIES
 
 set_property(TARGET net_trans PROPERTY COMPILE_DEFINITIONS ${net_trans_compile_definitions})
 
-target_link_libraries(net_trans INTERFACE cpe_utils net_core curl)
+set(net_trans_libraries
+  cpe_utils net_core curl)
+
+if (OS_NAME MATCHES "linux")
+  set(net_trans_libraries ${net_trans_libraries} z)
+elseif (OS_NAME MATCHES "mac")
+  set(net_trans_libraries ${net_trans_libraries} z)
+elseif (OS_NAME MATCHES "android")
+  set(net_trans_libraries ${net_trans_libraries} z)
+elseif (OS_NAME MATCHES "vc")
+elseif (OS_NAME MATCHES "mingw")
+  set(net_trans_libraries ${net_trans_libraries} z)
+endif()
+
+target_link_libraries(net_trans INTERFACE ${net_trans_libraries})
