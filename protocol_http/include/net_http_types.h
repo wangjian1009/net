@@ -23,6 +23,9 @@ typedef enum net_http_req_state {
 typedef enum net_http_req_method {
     net_http_req_method_get,
     net_http_req_method_post,
+    net_http_req_method_put,
+    net_http_req_method_delete,
+    net_http_req_method_patch,
     net_http_req_method_head,
 } net_http_req_method_t;
 

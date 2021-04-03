@@ -239,10 +239,10 @@ int net_ssl_protocol_use_cert_from_string(net_ssl_protocol_t protocol, const cha
         goto PROCESS_ERROR;
     }
     
-    CPE_INFO(
-        protocol->m_em, "ssl: %s: load cert: %s",
-        net_protocol_name(base_protocol),
-        net_ssl_dump_cert_info(net_ssl_protocol_tmp_buffer(protocol), protocol->m_svr.m_cert));
+    /* CPE_INFO( */
+    /*     protocol->m_em, "ssl: %s: load cert: %s", */
+    /*     net_protocol_name(base_protocol), */
+    /*     net_ssl_dump_cert_info(net_ssl_protocol_tmp_buffer(protocol), protocol->m_svr.m_cert)); */
 
 /*     /\* */
 /*      * If we could set up our certificate, now proceed to the CA */

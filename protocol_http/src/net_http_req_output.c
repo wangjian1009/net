@@ -132,6 +132,15 @@ int net_http_req_do_send_first_line(
     case net_http_req_method_post:
         str_method = "POST";
         break;
+    case net_http_req_method_put:
+        str_method = "PUT";
+        break;
+    case net_http_req_method_delete:
+        str_method = "DELETE";
+        break;
+    case net_http_req_method_patch:
+        str_method = "PATCH";
+        break;
     case net_http_req_method_head:
         str_method = "HEAD";
         break;
