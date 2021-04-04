@@ -19,6 +19,7 @@ struct net_http_req {
     uint8_t m_req_have_keep_alive;
     uint32_t m_head_size;
     uint32_t m_body_size;
+    uint32_t m_body_supply_size;
     uint32_t m_flushed_size;
     
     /*res*/

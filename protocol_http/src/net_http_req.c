@@ -11,7 +11,7 @@ net_http_req_create(net_http_endpoint_t http_ep, net_http_req_method_t method, c
     net_http_protocol_t http_protocol = net_http_endpoint_protocol(http_ep);
     
     net_http_req_t pre_req = TAILQ_FIRST(&http_ep->m_reqs);
-    if (pre_req) {
+    if (pre_req && !pre_req->m_is_free) {
         if (pre_req->m_req_state != net_http_req_state_completed) {
             CPE_ERROR(
                 http_protocol->m_em, "http: %s: req: create: pre req still in prepare!",
@@ -51,6 +51,7 @@ net_http_req_create(net_http_endpoint_t http_ep, net_http_req_method_t method, c
     req->m_req_have_keep_alive = 0;
     req->m_head_size = 0;
     req->m_body_size = 0;
+    req->m_body_supply_size = 0;
     req->m_flushed_size = 0;
 
     req->m_res_ignore = 0;
@@ -91,10 +92,14 @@ void net_http_req_free_force(net_http_req_t req) {
 }
 
 void net_http_req_free(net_http_req_t req) {
+    net_http_endpoint_t http_ep = req->m_http_ep;
+    net_http_protocol_t http_protocol = net_http_endpoint_protocol(http_ep);
+    
     /*数据还没有发送，或者响应没有收到，则标记后返回，等待后续清理 */
     if (req->m_flushed_size < (req->m_head_size + req->m_body_size)
         || !req->m_res_completed)
     {
+        CPE_ERROR(http_protocol->m_em, "xxx 1");
         net_http_req_clear_reader(req);
         req->m_is_free = 1;
         return;

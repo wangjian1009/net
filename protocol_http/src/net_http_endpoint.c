@@ -59,81 +59,6 @@ net_http_connection_type_t net_http_endpoint_connection_type(net_http_endpoint_t
     return http_ep->m_connection_type;
 }
 
-int net_http_endpoint_set_remote(net_http_endpoint_t http_ep, const char * url) {
-    net_http_protocol_t http_protocol = net_http_endpoint_protocol(http_ep);;
-
-    if (net_endpoint_state(http_ep->m_endpoint) != net_endpoint_state_disable) {
-        CPE_ERROR(
-            http_protocol->m_em,
-            "http: %s: set remote and path: can`t set remote in state %s",
-            net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint),
-            net_endpoint_state_str(net_endpoint_state(http_ep->m_endpoint)));
-        return -1;
-    }
-    
-    const char * addr_begin;
-    if (cpe_str_start_with(url, "http://")) {
-        addr_begin = url + 7;
-    }
-    else if (cpe_str_start_with(url, "https://")) {
-        addr_begin = url + 8;
-    }
-    else {
-        CPE_ERROR(
-            http_protocol->m_em,
-            "http: %s: set remote and path: url %s check protocol fail!",
-            net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint), url);
-        return -1;
-    }
-
-    const char * addr_end = strchr(addr_begin, '/');
-
-    const char * str_address = NULL;
-    const char * path = NULL;
-    
-    if (addr_end) {
-        mem_buffer_t tmp_buffer = net_http_protocol_tmp_buffer(http_protocol);
-        mem_buffer_clear_data(tmp_buffer);
-        str_address = mem_buffer_strdup_range(tmp_buffer, addr_begin, addr_end);
-        if (str_address == NULL) {
-            CPE_ERROR(
-                http_protocol->m_em,
-                "http: %s: set remote and path: url %s address dup fail!",
-                net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint), url);
-            return -1;
-        }
-        path = addr_end;
-    }
-    else {
-        str_address = addr_begin;
-    }
-
-    net_address_t address = net_address_create_auto(net_endpoint_schedule(http_ep->m_endpoint), str_address);
-    if (address == NULL) {
-        CPE_ERROR(
-            http_protocol->m_em,
-            "http: %s: set remote and path: url %s address format error!",
-            net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint), url);
-        return -1;
-    }
-
-    /* if (net_address_port(address) == 0) { */
-    /*     net_address_set_port(address, http_ep->m_ssl_ctx ? 443 : 80); */
-    /* } */
-        
-    if (net_endpoint_set_remote_address(http_ep->m_endpoint, address) != 0) {
-        CPE_ERROR(
-            http_protocol->m_em,
-            "http: %s: set remote and path: url %s set remote address fail!",
-            net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint), url);
-        net_address_free(address);
-        return -1;
-    }
-    net_address_free(address);
-
-    return 0;
-}
-
 int net_http_endpoint_init(net_endpoint_t endpoint) {
     net_http_endpoint_t http_ep = net_endpoint_protocol_data(endpoint);
     net_http_protocol_t http_protocol = net_protocol_data(net_endpoint_protocol(endpoint));
@@ -306,63 +231,48 @@ int net_http_endpoint_flush(net_http_endpoint_t http_ep) {
     else {
         uint32_t buf_sz = net_endpoint_buf_size(http_ep->m_endpoint, net_ep_buf_http_out);
         if (buf_sz == 0) return 0;
-
+        
         net_http_req_t req, next_req;
         for(req = TAILQ_FIRST(&http_ep->m_reqs); buf_sz > 0 && req != NULL; req = next_req) {
             next_req = TAILQ_NEXT(req, m_next);
 
             uint32_t req_total_sz = req->m_head_size + req->m_body_size;
-            uint32_t req_sz = req_total_sz - req->m_flushed_size;
-            if (req_sz == 0) continue;
+            if (req_total_sz == 0) { /*没有任何数据需要处理 */
+                if (req->m_is_free) { /*已经释放，则继续处理后续请求 */
+                    net_http_req_free_force(req);
+                    continue;
+                }
+                else { /*没有释放，则等待数据到来 */
+                    return 0;
+                }
+            }
 
-            char * buf;
-            if (net_endpoint_buf_peak_with_size(http_ep->m_endpoint, net_ep_buf_http_out, buf_sz, (void**)&buf) != 0 || buf == NULL) {
+            if (req->m_flushed_size == 0) { /*没有发送任何数据 */
+                if (req->m_is_free) { /*已经释放，还没有发送，则把需要发送的数据清理掉 */
+                    uint32_t supply_size = req->m_head_size + req->m_body_supply_size;
+                    assert(net_endpoint_buf_size(http_ep->m_endpoint, net_ep_buf_http_out) >= supply_size);
+                    net_endpoint_buf_consume(http_ep->m_endpoint, net_ep_buf_http_out, supply_size);
+                    net_http_req_free_force(req);
+                    continue;
+                }
+            }
+
+            assert(req_total_sz >= req->m_flushed_size);
+            uint32_t req_to_send_sz = req_total_sz - req->m_flushed_size;
+            if (req_to_send_sz == 0) continue;
+
+            if (req_to_send_sz > buf_sz) req_to_send_sz = buf_sz;
+
+            if (net_endpoint_buf_append_from_self(http_ep->m_endpoint, net_ep_buf_write, net_ep_buf_http_out, req_to_send_sz) != 0) {
                 CPE_ERROR(
-                    http_protocol->m_em, "http: %s: peek size %d fail",
-                    net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint), buf_sz);
+                    http_protocol->m_em,
+                    "http: %s: <<< move http-out buf to write buf fail!",
+                    net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint));
                 return -1;
             }
 
-            if (req_sz > buf_sz) req_sz = buf_sz;
-        
-            if (req->m_flushed_size == 0) {
-                if (req_sz < req->m_head_size) { /*头部确保单次发送 */
-                    return 0;
-                }
-
-                if (req->m_head_size > 4 && req_sz >= req->m_head_size) {
-                    char * p = buf + req->m_head_size - 4;
-                    *p = 0;
-
-                    if (net_endpoint_protocol_debug(http_ep->m_endpoint) >= 2) {
-                        CPE_INFO(
-                            http_protocol->m_em, "http: %s: req %d: >>> head=%d/%d, body=%d/%d\n%s",
-                            net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), req->m_http_ep->m_endpoint),
-                            req->m_id,
-                            req->m_head_size,
-                            req->m_head_size,
-                            req_sz - req->m_head_size,
-                            req->m_body_size,
-                            buf);
-                    }
-
-                    *p = '\r';
-                }
-            }
-
-            if (req->m_data_sended || !req->m_is_free) {
-                if (net_endpoint_buf_append_from_self(http_ep->m_endpoint, net_ep_buf_write, net_ep_buf_http_out, req_sz) != 0) {
-                    CPE_ERROR(
-                        http_protocol->m_em,
-                        "http: %s: <<< move http-out buf to write buf fail!",
-                        net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint));
-                    return -1;
-                }
-                req->m_data_sended = 1;
-            }
-            
-            req->m_flushed_size += req_sz;
-            buf_sz -= req_sz;
+            req->m_flushed_size += req_to_send_sz;
+            buf_sz -= req_to_send_sz;
         }
         
         if (buf_sz > 0) {
