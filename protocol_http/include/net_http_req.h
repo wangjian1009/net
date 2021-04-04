@@ -4,6 +4,11 @@
 
 NET_BEGIN_DECL
 
+struct net_http_req_it {
+    net_http_req_t (*next)(net_http_req_it_t it);
+    char data[64];
+};
+
 net_http_req_t net_http_req_create(net_http_endpoint_t http_ep, net_http_req_method_t method, const char * url);
 void net_http_req_free(net_http_req_t req);
 

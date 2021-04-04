@@ -59,39 +59,13 @@ int net_http_endpoint_do_process(net_http_protocol_t http_protocol, net_http_end
         uint16_t head_line_count = CPE_ARRAY_SIZE(head_lines);
         net_http_endpoint_do_parse_head_lines(buf, head_lines, &head_line_count);
 
-        net_http_req_t req;
-        
-        if (http_ep->m_request_id_tag) {
-            uint32_t request_id;
-            if (net_http_endpoint_do_parse_request_id(http_ep->m_request_id_tag, &request_id, head_lines, head_line_count) != 0) {
-                CPE_INFO(
-                    http_protocol->m_em, "http: %s: <== no request-id tag %s",
-                    net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
-                    http_ep->m_request_id_tag);
-                req = NULL;
-            }
-            else { 
-                TAILQ_FOREACH(req, &http_ep->m_reqs, m_next) {
-                    if (req->m_id == request_id) break;
-                }
-
-                if (req == NULL) {
-                    CPE_INFO(
-                        http_protocol->m_em,
-                        "http: %s: req %d not exist, ignore!",
-                        net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint), request_id);
-                }
-            }
-        }
-        else {
-            req = TAILQ_FIRST(&http_ep->m_reqs);
-            if (req == NULL) {
-                CPE_ERROR(
-                    http_protocol->m_em,
-                    "http: %s: input without req or upgraded-processor!",
-                    net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint));
-                return -1;
-            }
+        net_http_req_t req = TAILQ_FIRST(&http_ep->m_reqs);
+        if (req == NULL) {
+            CPE_ERROR(
+                http_protocol->m_em,
+                "http: %s: input without req or upgraded-processor!",
+                net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint));
+            return -1;
         }
 
         uint8_t head_line_num = 0;

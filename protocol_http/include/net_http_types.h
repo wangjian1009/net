@@ -7,6 +7,7 @@ NET_BEGIN_DECL
 typedef struct net_http_protocol * net_http_protocol_t;
 typedef struct net_http_endpoint * net_http_endpoint_t;
 typedef struct net_http_req * net_http_req_t;
+typedef struct net_http_req_it * net_http_req_it_t;
 
 typedef enum net_http_connection_type {
     net_http_connection_type_keep_alive,

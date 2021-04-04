@@ -21,10 +21,9 @@ void net_http_endpoint_set_reconnect_span_ms(net_http_endpoint_t http_ep, uint32
 
 net_http_connection_type_t net_http_endpoint_connection_type(net_http_endpoint_t http_ep);
 
-const char * net_http_endpoint_request_id_tag(net_http_endpoint_t http_ep);
-int net_http_endpoint_set_request_id_tag(net_http_endpoint_t http_ep, const char * tag);
-
 int net_http_endpoint_flush(net_http_endpoint_t http_ep);
+
+void net_http_endpoint_reqs(net_http_req_it_t it, net_http_endpoint_t http_ep);
 
 void * net_http_endpoint_data(net_http_endpoint_t http_ep);
 net_http_endpoint_t net_http_endpoint_from_data(void * data);

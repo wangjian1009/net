@@ -4,5 +4,6 @@
 
 int net_http_method_get_tests();
 int net_http_method_head_tests();
+int net_http_req_basic_tests();
 
 #endif

@@ -141,7 +141,6 @@ int net_http_endpoint_init(net_endpoint_t endpoint) {
 
     http_ep->m_endpoint = endpoint;
     http_ep->m_connection_type = net_http_connection_type_keep_alive;
-    http_ep->m_request_id_tag = NULL;
     http_ep->m_req_count = 0;
     TAILQ_INIT(&http_ep->m_reqs);
     
@@ -151,16 +150,7 @@ int net_http_endpoint_init(net_endpoint_t endpoint) {
 void net_http_endpoint_fini(net_endpoint_t endpoint) {
     net_http_endpoint_t http_ep = net_endpoint_protocol_data(endpoint);
     net_http_protocol_t http_protocol = net_protocol_data(net_endpoint_protocol(endpoint));
-
-    while(!TAILQ_EMPTY(&http_ep->m_reqs)) {
-        net_http_req_cancel_and_free_i(TAILQ_FIRST(&http_ep->m_reqs), 1);
-    }
-
-    if (http_ep->m_request_id_tag) {
-        mem_free(http_protocol->m_alloc, http_ep->m_request_id_tag);
-        http_ep->m_request_id_tag = NULL;
-    }
-
+    net_http_endpoint_reset_data(http_protocol, http_ep, net_http_res_canceled);
     http_ep->m_endpoint = NULL;
 }
 
@@ -194,8 +184,9 @@ int net_http_endpoint_input(net_endpoint_t endpoint) {
 
             if (http_ep->m_current_res.m_state == net_http_res_state_completed) {
                 if (http_ep->m_current_res.m_req) {
-                    net_http_req_free_i(http_ep->m_current_res.m_req, 1);
-                    assert(http_ep->m_current_res.m_req == NULL);
+                    net_http_req_t to_free = http_ep->m_current_res.m_req;
+                    http_ep->m_current_res.m_req = NULL;
+                    net_http_req_free_force(to_free);
                 }
 
                 bzero(&http_ep->m_current_res, sizeof(http_ep->m_current_res));
@@ -322,25 +313,7 @@ int net_http_endpoint_flush(net_http_endpoint_t http_ep) {
 
             uint32_t req_total_sz = req->m_head_size + req->m_body_size;
             uint32_t req_sz = req_total_sz - req->m_flushed_size;
-            if (req_sz == 0) {
-                if (req->m_free_after_processed) {
-                    if (!req->m_data_sended) {
-                        CPE_INFO(
-                            http_protocol->m_em, "http: %s: req %d skip(no data send)",
-                            net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint),
-                            req->m_id);
-                        net_http_req_free_i(req, 1);
-                    }
-                    else if (http_ep->m_request_id_tag != NULL) {
-                        CPE_INFO(
-                            http_protocol->m_em, "http: %s: req %d skip(send complete, ep support id match)",
-                            net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint),
-                            req->m_id);
-                        net_http_req_free_i(req, 1);
-                    }
-                }
-                continue;
-            }
+            if (req_sz == 0) continue;
 
             char * buf;
             if (net_endpoint_buf_peak_with_size(http_ep->m_endpoint, net_ep_buf_http_out, buf_sz, (void**)&buf) != 0 || buf == NULL) {
@@ -377,7 +350,7 @@ int net_http_endpoint_flush(net_http_endpoint_t http_ep) {
                 }
             }
 
-            if (req->m_data_sended || !req->m_free_after_processed) {
+            if (req->m_data_sended || !req->m_is_free) {
                 if (net_endpoint_buf_append_from_self(http_ep->m_endpoint, net_ep_buf_write, net_ep_buf_http_out, req_sz) != 0) {
                     CPE_ERROR(
                         http_protocol->m_em,
@@ -403,38 +376,11 @@ int net_http_endpoint_flush(net_http_endpoint_t http_ep) {
     return 0;
 }
 
-const char * net_http_endpoint_request_id_tag(net_http_endpoint_t http_endpoint) {
-    return http_endpoint->m_request_id_tag ? http_endpoint->m_request_id_tag : "";
-}
-
-int net_http_endpoint_set_request_id_tag(net_http_endpoint_t http_endpoint, const char * tag) {
-    net_http_protocol_t http_protocol = net_http_endpoint_protocol(http_endpoint);
-    char * new_tag = NULL;
-
-    if (tag) {
-        new_tag = cpe_str_mem_dup(http_protocol->m_alloc, tag);
-        if (new_tag == NULL) {
-            CPE_ERROR(
-                http_protocol->m_em,
-                "http: %s: dup tag %s fal",
-                net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_endpoint->m_endpoint),
-                tag);
-            return -1;
-        }
-    }
-
-    if (http_endpoint->m_request_id_tag) {
-        mem_free(http_protocol->m_alloc, http_endpoint->m_request_id_tag);
-    }
-
-    http_endpoint->m_request_id_tag = new_tag;
-    
-    return 0;
-}
-
 static void net_http_endpoint_reset_data(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_res_result_t result) {
     http_ep->m_connection_type = net_http_connection_type_keep_alive;
 
+    bzero(&http_ep->m_current_res, sizeof(http_ep->m_current_res));
+    
     while(!TAILQ_EMPTY(&http_ep->m_reqs)) {
         net_http_req_t req = TAILQ_FIRST(&http_ep->m_reqs);
 
@@ -446,6 +392,6 @@ static void net_http_endpoint_reset_data(net_http_protocol_t http_protocol, net_
             req->m_res_on_complete(req->m_res_ctx, req, result);
         }
 
-        net_http_req_free_i(req, 1);
+        net_http_req_free_force(req);
     }
 }

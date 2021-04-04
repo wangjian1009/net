@@ -17,7 +17,6 @@ struct net_http_endpoint {
     int64_t m_connecting_time_ms;
     net_timer_t m_process_timer;
 
-    char * m_request_id_tag;
     uint16_t m_req_count;
     net_http_req_list_t m_reqs;
 
