@@ -190,6 +190,27 @@ int net_http_endpoint_on_state_change(net_endpoint_t endpoint, net_endpoint_stat
     return 0;
 }
 
+net_http_req_t net_http_endpoint_receiving_req(net_http_endpoint_t http_ep) {
+    return http_ep->m_current_res.m_req;
+}
+
+static net_http_req_t net_http_endpoint_req_next(net_http_req_it_t it) {
+    net_http_req_t * data = (net_http_req_t *)it->data;
+
+    net_http_req_t r = *data;
+
+    if (r) {
+        *data = TAILQ_NEXT(r, m_next);
+    }
+
+    return r;
+}
+
+void net_http_endpoint_reqs(net_http_req_it_t it, net_http_endpoint_t http_ep) {
+    *(net_http_req_t *)it->data = TAILQ_FIRST(&http_ep->m_reqs);
+    it->next = net_http_endpoint_req_next;
+}
+
 int net_http_endpoint_write_head_pair(
     net_http_endpoint_t http_ep, net_http_req_t http_req, const char * attr_name, const char * attr_value)
 {
