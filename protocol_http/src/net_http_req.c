@@ -9,6 +9,19 @@ static void net_http_req_on_timeout(net_timer_t timer, void * ctx);
 net_http_req_t
 net_http_req_create(net_http_endpoint_t http_ep, net_http_req_method_t method, const char * url) {
     net_http_protocol_t http_protocol = net_http_endpoint_protocol(http_ep);
+
+    switch(net_endpoint_state(http_ep->m_endpoint)) {
+    case net_endpoint_state_write_closed:
+    case net_endpoint_state_error:
+    case net_endpoint_state_deleting:
+        CPE_ERROR(
+            http_protocol->m_em, "http: %s: req: create: can`t create req in state %s!",
+            net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint),
+            net_endpoint_state_str(net_endpoint_state(http_ep->m_endpoint)));
+        return NULL;
+    default:
+        break;
+    }
     
     net_http_req_t pre_req = TAILQ_FIRST(&http_ep->m_reqs);
     if (pre_req && !pre_req->m_is_free) {
@@ -41,9 +54,7 @@ net_http_req_create(net_http_endpoint_t http_ep, net_http_req_method_t method, c
 
     req->m_http_ep = http_ep;
     req->m_id = ++http_protocol->m_max_req_id;
-    req->m_data_sended = 0;
     req->m_is_free = 0;
-    req->m_on_complete_processed = 0;
     req->m_on_complete_processed = 0;
 
     req->m_req_method = method;
@@ -99,7 +110,23 @@ void net_http_req_free(net_http_req_t req) {
     if (req->m_flushed_size < (req->m_head_size + req->m_body_size)
         || !req->m_res_completed)
     {
-        CPE_ERROR(http_protocol->m_em, "xxx 1");
+        if (req->m_flushed_size > 0 && req->m_req_state != net_http_req_state_completed) {
+            CPE_ERROR(
+                http_protocol->m_em,
+                "http: %s: req %d free in part generated state",
+                net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint),
+                req->m_id);
+            net_endpoint_set_error(
+                http_ep->m_endpoint,
+                net_endpoint_error_source_network,
+                net_endpoint_network_errno_internal,
+                "free part generated req");
+            if (net_endpoint_set_state(http_ep->m_endpoint, net_endpoint_state_error) != 0) {
+                net_endpoint_set_state(http_ep->m_endpoint, net_endpoint_state_deleting);
+            }
+            return;
+        }
+        
         net_http_req_clear_reader(req);
         req->m_is_free = 1;
         return;

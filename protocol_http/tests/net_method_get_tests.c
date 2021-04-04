@@ -30,6 +30,7 @@ static void http_get_req_no_body(void **state) {
     assert_string_equal(
         net_http_testenv_ep_recv_write(env, ep),
         "GET /a/b/c HTTP/1.1\r\n"
+        "Content-Length: 0\r\n"
         "Connection: Keep-Alive\r\n"
         "\r\n"
         );

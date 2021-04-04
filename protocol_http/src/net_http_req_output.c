@@ -87,13 +87,24 @@ int net_http_req_write_body_full(net_http_req_t http_req, void const * data, siz
         if (net_http_req_write_head_pair(http_req, "Content-Length", buf) != 0) return -1;
         assert(http_req->m_body_size == data_sz);
     }
+    else {
+        if (http_req->m_body_size != data_sz) {
+            CPE_ERROR(
+                http_protocol->m_em, "http: %s: req %d: head.bodysize=%d, but supply %d!",
+                net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint),
+                http_req->m_id, http_req->m_body_size, (int)data_sz);
+            return -1;
+        }
+    }
 
     if (net_http_req_complete_head(http_protocol, http_ep, http_req) != 0) return -1;
+    assert(http_req->m_req_state == net_http_req_state_prepare_body);
     
     if (net_http_endpoint_write(http_protocol, http_ep, http_req, data, (uint32_t)data_sz) != 0) return -1;
-
     assert(http_req->m_body_supply_size == 0);
     http_req->m_body_supply_size = data_sz;
+
+    http_req->m_req_state = net_http_req_state_completed;
     
     return 0;
 }
@@ -102,24 +113,26 @@ int net_http_req_write_commit(net_http_req_t http_req) {
     net_http_endpoint_t http_ep = http_req->m_http_ep;
     net_http_protocol_t http_protocol = net_http_endpoint_protocol(http_req->m_http_ep);
 
-    if (http_req->m_req_state != net_http_req_state_prepare_head
-        && http_req->m_req_state != net_http_req_state_prepare_body)
-    {
-        CPE_ERROR(
-            http_protocol->m_em, "http: %s: req %d: req-state=%s, can`t commit!",
-            net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_req->m_http_ep->m_endpoint),
-            http_req->m_id,
-            net_http_req_state_str(http_req->m_req_state));
-        return -1;
+    if (http_req->m_req_state == net_http_req_state_prepare_head) {
+        if (http_req->m_body_size == 0) {
+            if (net_http_req_write_head_pair(http_req, "Content-Length", "0") != 0) return -1;
+        }
+        if (net_http_req_complete_head(http_protocol, http_ep, http_req) != 0) return -1;
+        assert(http_req->m_req_state == net_http_req_state_prepare_body);
     }
 
-    if (http_req->m_req_state == net_http_req_state_prepare_head) {
-        if (net_http_req_complete_head(http_protocol, http_ep, http_req) != 0) return -1;
+    if (http_req->m_req_state == net_http_req_state_prepare_body) {
+        if (http_req->m_body_size != http_req->m_body_supply_size) {
+            CPE_ERROR(
+                http_protocol->m_em, "http: %s: req %d: head.bodysize=%d, but only %d!",
+                net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint),
+                http_req->m_id, http_req->m_body_size, http_req->m_body_supply_size);
+            return -1;
+        }
+        http_req->m_req_state = net_http_req_state_completed;
     }
 
     if (net_http_endpoint_flush(http_req->m_http_ep) != 0) return -1;
-
-    http_req->m_req_state = net_http_req_state_completed;
 
     return 0;
 }

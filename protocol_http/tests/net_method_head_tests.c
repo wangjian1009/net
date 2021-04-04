@@ -30,6 +30,7 @@ static void http_method_head_response_no_content_lenth(void **state) {
     assert_string_equal(
         net_http_testenv_ep_recv_write(env, ep),
         "HEAD /a/b/c HTTP/1.1\r\n"
+        "Content-Length: 0\r\n"
         "Connection: Keep-Alive\r\n"
         "\r\n"
         );
@@ -40,8 +41,8 @@ static void http_method_head_response_no_content_lenth(void **state) {
             "HTTP/1.1 301 Moved Permanently\r\n"
             "Location: https://157.240.211.35/\r\n"
             "Content-Type: text/html; charset=\"utf-8\"\r\n"
-            "Connection: keep-alive\r\n"
             "Content-Length: 0\r\n"
+            "Connection: keep-alive\r\n"
             "\r\n")
         == 0);
 
@@ -64,6 +65,7 @@ static void http_method_head_response_with_content_lenth(void **state) {
     assert_string_equal(
         net_http_testenv_ep_recv_write(env, ep),
         "HEAD /a/b/c HTTP/1.1\r\n"
+        "Content-Length: 0\r\n"
         "Connection: Keep-Alive\r\n"
         "\r\n"
         );

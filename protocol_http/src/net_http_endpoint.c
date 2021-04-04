@@ -231,7 +231,7 @@ int net_http_endpoint_flush(net_http_endpoint_t http_ep) {
     else {
         uint32_t buf_sz = net_endpoint_buf_size(http_ep->m_endpoint, net_ep_buf_http_out);
         if (buf_sz == 0) return 0;
-        
+
         net_http_req_t req, next_req;
         for(req = TAILQ_FIRST(&http_ep->m_reqs); buf_sz > 0 && req != NULL; req = next_req) {
             next_req = TAILQ_NEXT(req, m_next);
@@ -252,6 +252,8 @@ int net_http_endpoint_flush(net_http_endpoint_t http_ep) {
                     uint32_t supply_size = req->m_head_size + req->m_body_supply_size;
                     assert(net_endpoint_buf_size(http_ep->m_endpoint, net_ep_buf_http_out) >= supply_size);
                     net_endpoint_buf_consume(http_ep->m_endpoint, net_ep_buf_http_out, supply_size);
+                    assert(supply_size <= buf_sz);
+                    buf_sz -= supply_size;
                     net_http_req_free_force(req);
                     continue;
                 }
