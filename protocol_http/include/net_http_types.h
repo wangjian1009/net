@@ -15,6 +15,11 @@ typedef enum net_http_connection_type {
     net_http_connection_type_upgrade
 } net_http_connection_type_t;
 
+typedef enum net_http_transfer_encoding {
+    net_http_transfer_identity,
+    net_http_transfer_chunked,
+} net_http_transfer_encoding_t;
+
 typedef enum net_http_req_state {
     net_http_req_state_prepare_head,
     net_http_req_state_prepare_body,
@@ -29,12 +34,6 @@ typedef enum net_http_req_method {
     net_http_req_method_patch,
     net_http_req_method_head,
 } net_http_req_method_t;
-
-typedef enum net_http_res_state {
-    net_http_res_state_reading_head,
-    net_http_res_state_reading_body,
-    net_http_res_state_completed,
-} net_http_res_state_t;
 
 NET_END_DECL
 

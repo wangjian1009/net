@@ -41,7 +41,9 @@ typedef enum net_http_res_result {
 typedef int (*net_http_req_on_res_begin_fun_t)(void * ctx, net_http_req_t req, uint16_t code, const char * msg);
 typedef int (*net_http_req_on_res_head_fun_t)(void * ctx, net_http_req_t req, const char * name, const char * value);
 typedef int (*net_http_req_on_res_body_fun_t)(void * ctx, net_http_req_t req, void * data, size_t data_size);
-typedef void (*net_http_req_on_res_complete_fun_t)(void * ctx, net_http_req_t req, net_http_res_result_t result);
+typedef void (*net_http_req_on_res_complete_fun_t)(
+    void * ctx, net_http_req_t req, net_http_res_result_t result,
+    void * body, uint32_t body_size);
 
 int net_http_req_set_reader(
     net_http_req_t req,
@@ -53,12 +55,13 @@ int net_http_req_set_reader(
 
 void net_http_req_clear_reader(net_http_req_t req);
 
+uint8_t net_http_req_res_completed(net_http_req_t req);
 uint16_t net_http_req_res_code(net_http_req_t req);
 const char * net_http_req_res_message(net_http_req_t req);
 uint32_t net_http_req_res_length(net_http_req_t req);
 
-const char * net_http_res_state_str(net_http_res_state_t res_state);
 
+const char * net_http_transfer_encoding_str(net_http_transfer_encoding_t transfer_encoding);
 const char * net_http_res_result_str(net_http_res_result_t res_result);
 
 NET_END_DECL

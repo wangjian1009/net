@@ -28,15 +28,8 @@ int net_http_req_write_head_host(net_http_req_t http_req) {
     }
     
     char buf[256];
-    int n = snprintf(
-        buf, sizeof(buf), "Host: %s:%d\r\n",
-        net_address_host(net_http_protocol_tmp_buffer(http_protocol), address),
-        net_address_port(address));
-
-    if (net_http_endpoint_write(http_protocol, http_req->m_http_ep, http_req, buf, (uint32_t)n) != 0) return -1;
-
-    http_req->m_head_size += n;
-    return 0;
+    return net_http_endpoint_write_head_pair(
+        http_req->m_http_ep, http_req, "Host", net_address_host_inline(buf, sizeof(buf), address));
 }
 
 int net_http_req_write_head_pair(net_http_req_t http_req, const char * attr_name, const char * attr_value) {
@@ -54,25 +47,27 @@ int net_http_req_write_head_pair(net_http_req_t http_req, const char * attr_name
     
     if (strcasecmp(attr_name, "Content-Length") == 0) {
         http_req->m_body_size = atoi(attr_value);
+        net_http_req_head_tag_set(http_req, net_http_req_head_content_length);
     }
     else if (strcasecmp(attr_name, "Connection") == 0) {
-        http_req->m_req_have_keep_alive = 1;
+        net_http_req_head_tag_set(http_req, net_http_req_head_connection);
     }
-    
-    char buf[256];
-    int n = snprintf(buf, sizeof(buf), "%s: %s\r\n", attr_name, attr_value);
+    else if (strcasecmp(attr_name, "Transfer-Encoding") == 0) {
+        /* if (strcasecmp(attr_name, "chunked") == 0) { */
+        /* } */
+        /* else if ( */
+        /*     } */
+        net_http_req_head_tag_set(http_req, net_http_req_head_transfer_encoding);
+    }
 
-    if (net_http_endpoint_write(http_protocol, http_ep, http_req, buf, (uint32_t)n) != 0) return -1;
-
-    http_req->m_head_size += n;
-    return 0;
+    return net_http_endpoint_write_head_pair(http_req->m_http_ep, http_req, attr_name, attr_value);
 }
 
 int net_http_req_write_body_full(net_http_req_t http_req, void const * data, size_t data_sz) {
     net_http_endpoint_t http_ep = http_req->m_http_ep;
     net_http_protocol_t http_protocol = net_http_endpoint_protocol(http_ep);
 
-    if (http_req->m_req_state != net_http_req_state_prepare_head) {
+    if (http_req->m_req_state == net_http_req_state_completed) {
         CPE_ERROR(
             http_protocol->m_em, "http: %s: req %d: req-state=%s, can`t write body full!",
             net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint),
@@ -81,29 +76,57 @@ int net_http_req_write_body_full(net_http_req_t http_req, void const * data, siz
         return -1;
     }
     
-    if (http_req->m_body_size == 0) {
-        char buf[64];
-        snprintf(buf, sizeof(buf), "%d", (uint32_t)data_sz);
-        if (net_http_req_write_head_pair(http_req, "Content-Length", buf) != 0) return -1;
-        assert(http_req->m_body_size == data_sz);
-    }
-    else {
-        if (http_req->m_body_size != data_sz) {
+    if (http_req->m_req_state == net_http_req_state_prepare_head) {
+        switch(http_req->m_req_transfer_encoding) {
+        case net_http_transfer_identity:
+            if (!net_http_req_head_tag_is_set(http_req, net_http_req_head_content_length)) {
+                assert(http_req->m_body_size == 0);
+                http_req->m_body_size = data_sz;
+            }
+            else {
+                if (http_req->m_body_size != data_sz) {
+                    CPE_ERROR(
+                        http_protocol->m_em, "http: %s: req %d: head.bodysize=%d, but supply %d!",
+                        net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint),
+                        http_req->m_id, http_req->m_body_size, (int)data_sz);
+                    return -1;
+                }
+            }
+            break;
+        default:
             CPE_ERROR(
-                http_protocol->m_em, "http: %s: req %d: head.bodysize=%d, but supply %d!",
+                http_protocol->m_em, "http: %s: req %d: write body: not support transform-encoding %s",
                 net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint),
-                http_req->m_id, http_req->m_body_size, (int)data_sz);
+                http_req->m_id,
+                net_http_transfer_encoding_str(http_req->m_req_transfer_encoding));
             return -1;
         }
+
+        if (net_http_req_complete_head(http_protocol, http_ep, http_req) != 0) return -1;
+        assert(http_req->m_req_state == net_http_req_state_prepare_body);
     }
 
-    if (net_http_req_complete_head(http_protocol, http_ep, http_req) != 0) return -1;
     assert(http_req->m_req_state == net_http_req_state_prepare_body);
-    
-    if (net_http_endpoint_write(http_protocol, http_ep, http_req, data, (uint32_t)data_sz) != 0) return -1;
-    assert(http_req->m_body_supply_size == 0);
-    http_req->m_body_supply_size = data_sz;
 
+    if (http_req->m_body_supply_size != 0) {
+        CPE_ERROR(
+            http_protocol->m_em, "http: %s: req %d: already send body %d!",
+            net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint),
+            http_req->m_id,
+            http_req->m_body_supply_size);
+        return -1;
+    }
+
+    switch(http_req->m_req_transfer_encoding) {
+    case net_http_transfer_identity:
+        if (net_http_endpoint_write(http_protocol, http_ep, http_req, data, (uint32_t)data_sz) != 0) return -1;
+        http_req->m_body_supply_size = data_sz;
+        break;
+    case net_http_transfer_chunked:
+        assert(0);
+        break;
+    }
+    
     http_req->m_req_state = net_http_req_state_completed;
     
     return 0;
@@ -114,9 +137,6 @@ int net_http_req_write_commit(net_http_req_t http_req) {
     net_http_protocol_t http_protocol = net_http_endpoint_protocol(http_req->m_http_ep);
 
     if (http_req->m_req_state == net_http_req_state_prepare_head) {
-        if (http_req->m_body_size == 0) {
-            if (net_http_req_write_head_pair(http_req, "Content-Length", "0") != 0) return -1;
-        }
         if (net_http_req_complete_head(http_protocol, http_ep, http_req) != 0) return -1;
         assert(http_req->m_req_state == net_http_req_state_prepare_body);
     }
@@ -171,14 +191,22 @@ int net_http_req_do_send_first_line(
 }
 
 static int net_http_req_complete_head(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t http_req) {
-    if (!http_req->m_req_have_keep_alive) {
-        if (net_http_req_write_head_pair(
-                http_req, "Connection",
-                http_ep->m_connection_type == net_http_connection_type_keep_alive
-                ? "Keep-Alive"
-                : http_ep->m_connection_type == net_http_connection_type_close
-                ? "Close"
-                : "Upgrade") != 0) return -1;
+    if (http_req->m_req_transfer_encoding == net_http_transfer_identity
+        && !net_http_req_head_tag_is_set(http_req, net_http_req_head_content_length))
+    {
+        char buf[32];
+        snprintf(buf, sizeof(buf), "%d", http_req->m_body_size);
+        if (net_http_endpoint_write_head_pair(http_ep, http_req, "Content-Length", buf) != 0) return -1;
+        net_http_req_head_tag_set(http_req, net_http_req_head_content_length);
+    }
+    
+    if (!net_http_req_head_tag_is_set(http_req, net_http_req_head_connection)) {
+        const char * connection =
+            http_ep->m_connection_type == net_http_connection_type_keep_alive ? "Keep-Alive"
+            : http_ep->m_connection_type == net_http_connection_type_close ? "Close"
+            : "Upgrade";
+        if (net_http_endpoint_write_head_pair(http_ep, http_req, "Connection", connection) != 0) return -1;
+        net_http_req_head_tag_set(http_req, net_http_req_head_connection);
     }
 
     if (net_http_endpoint_write(http_protocol, http_ep, http_req, "\r\n", 2) != 0) return -1;

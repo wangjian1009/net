@@ -5,6 +5,15 @@
 
 NET_BEGIN_DECL
 
+enum net_http_req_head_tag {
+    net_http_req_head_connection,
+    net_http_req_head_content_length,
+    net_http_req_head_transfer_encoding,
+};
+
+#define net_http_req_head_tag_set(__req, __flag) ((__req)->m_head_tags &= (0x01 << (__flag)))
+#define net_http_req_head_tag_is_set(__req, __flag) (((__req)->m_head_tags & (0x01 << (__flag))) ? 1 : 0)
+
 struct net_http_req {
     net_http_endpoint_t m_http_ep;
     TAILQ_ENTRY(net_http_req) m_next;
@@ -15,7 +24,8 @@ struct net_http_req {
     /*req*/
     net_http_req_method_t m_req_method;
     net_http_req_state_t m_req_state;
-    uint8_t m_req_have_keep_alive;
+    net_http_transfer_encoding_t m_req_transfer_encoding;
+    uint32_t m_head_tags;
     uint32_t m_head_size;
     uint32_t m_body_size;
     uint32_t m_body_supply_size;

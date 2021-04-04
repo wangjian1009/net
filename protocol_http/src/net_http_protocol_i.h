@@ -8,11 +8,6 @@ NET_BEGIN_DECL
 
 typedef TAILQ_HEAD(net_http_req_list, net_http_req) net_http_req_list_t;
 
-typedef enum net_http_trans_encoding {
-    net_http_trans_encoding_none
-    , net_http_trans_encoding_trunked
-} net_http_trans_encoding_t;
-
 typedef enum net_http_trunked_state {
     net_http_trunked_length
     , net_http_trunked_content

@@ -59,7 +59,8 @@ net_http_req_create(net_http_endpoint_t http_ep, net_http_req_method_t method, c
 
     req->m_req_method = method;
     req->m_req_state = net_http_req_state_prepare_head;
-    req->m_req_have_keep_alive = 0;
+    req->m_req_transfer_encoding = net_http_transfer_identity;
+    req->m_head_tags = 0;
     req->m_head_size = 0;
     req->m_body_size = 0;
     req->m_body_supply_size = 0;
@@ -106,14 +107,12 @@ void net_http_req_free(net_http_req_t req) {
     net_http_endpoint_t http_ep = req->m_http_ep;
     net_http_protocol_t http_protocol = net_http_endpoint_protocol(http_ep);
 
-    CPE_ERROR(http_protocol->m_em, "xx 1");
     /*响应已经接受的情况下，可以直接free */
     if (req->m_res_completed) {
         net_http_req_free_force(req);
         return;
     }
 
-    CPE_ERROR(http_protocol->m_em, "xx 2");
     /*没有发送任何数据，只需要标注删除 */
     if (req->m_flushed_size == 0) {
         net_http_req_clear_reader(req);
@@ -121,7 +120,6 @@ void net_http_req_free(net_http_req_t req) {
         return;
     }
 
-    CPE_ERROR(http_protocol->m_em, "xx 3");
     /*数据已经发送，但是请求本身不完整，这种错误无法后续恢复，需要重置整个连接 */
     if (req->m_req_state != net_http_req_state_completed) {
         CPE_ERROR(
@@ -140,7 +138,6 @@ void net_http_req_free(net_http_req_t req) {
         return;
     }
 
-    CPE_ERROR(http_protocol->m_em, "xx 4");
     /*数据部分发送，响应没有处理，则设置标记，等待后续处理 */
     net_http_req_clear_reader(req);
     req->m_is_free = 1;
@@ -214,6 +211,10 @@ void net_http_req_clear_reader(net_http_req_t req) {
     req->m_res_on_complete = NULL;
 }
 
+uint8_t net_http_req_res_completed(net_http_req_t req) {
+    return req->m_res_completed;
+}
+
 uint16_t net_http_req_res_code(net_http_req_t req) {
     return req->m_res_code;
 }
@@ -227,7 +228,7 @@ uint32_t net_http_req_res_length(net_http_req_t req) {
         return 0;
     }
 
-    return req->m_http_ep->m_current_res.m_trans_encoding == net_http_trans_encoding_none
+    return req->m_http_ep->m_current_res.m_trans_encoding == net_http_transfer_identity
         ? req->m_http_ep->m_current_res.m_res_content.m_length
         : 0;
 }
@@ -235,7 +236,7 @@ uint32_t net_http_req_res_length(net_http_req_t req) {
 void net_http_req_cancel_and_free(net_http_req_t req) {
     if (!req->m_on_complete_processed && req->m_res_on_complete) {
         req->m_on_complete_processed = 1;
-        req->m_res_on_complete(req->m_res_ctx, req, net_http_res_canceled);
+        req->m_res_on_complete(req->m_res_ctx, req, net_http_res_canceled, NULL, 0);
     }
     net_http_req_free(req);
 }
@@ -249,12 +250,23 @@ void net_http_req_cancel_and_free_by_id(net_http_endpoint_t http_ep, uint16_t re
 
 const char * net_http_res_state_str(net_http_res_state_t res_state) {
     switch(res_state) {
-    case net_http_res_state_reading_head:
-        return "http-res-reading-head";
+    case net_http_res_state_reading_head_first:
+        return "http-res-reading-head-first";
+    case net_http_res_state_reading_head_follow:
+        return "http-res-reading-head-follow";
     case net_http_res_state_reading_body:
         return "http-res-reading-body";
     case net_http_res_state_completed:
         return "http-res-completed";
+    }
+}
+
+const char * net_http_transfer_encoding_str(net_http_transfer_encoding_t transfer_encoding) {
+    switch(transfer_encoding) {
+    case net_http_transfer_identity:
+        return "identity";
+    case net_http_transfer_chunked:
+        return "chunked";
     }
 }
 
@@ -280,7 +292,7 @@ static void net_http_req_on_timeout(net_timer_t timer, void * ctx) {
         && req->m_res_on_complete)
     {
         req->m_on_complete_processed = 1;
-        req->m_res_on_complete(req->m_res_ctx, req, net_http_res_timeout);
+        req->m_res_on_complete(req->m_res_ctx, req, net_http_res_timeout, NULL, 0);
     }
 
     net_http_req_free(req);

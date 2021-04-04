@@ -74,3 +74,10 @@ int net_http_testenv_ep_send_response(net_http_testenv_t env, net_http_endpoint_
     
     return net_endpoint_buf_append(ep, net_ep_buf_read, response, sz);
 }
+
+int net_http_testenv_send_response(net_http_testenv_t env, net_http_endpoint_t ep, const char * data) {
+    return net_endpoint_buf_append(
+        net_http_endpoint_base_endpoint(ep),
+        net_ep_buf_read,
+        data, strlen(data));
+}

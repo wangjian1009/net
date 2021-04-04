@@ -9,6 +9,7 @@
 #include "cpe/utils/sha1.h"
 #include "net_endpoint.h"
 #include "net_protocol.h"
+#include "net_schedule.h"
 #include "net_address.h"
 #include "net_timer.h"
 #include "net_http_endpoint_i.h"
@@ -92,7 +93,7 @@ int net_http_endpoint_input(net_endpoint_t endpoint) {
     /*     "http: <<< input buf %d\n%s", */
     /*     isz, */
     /*     mem_buffer_dump_data(net_http_protocol_tmp_buffer(http_protocol), idata, isz, 0)); */
-    
+
     if (net_endpoint_buf_append_from_self(http_ep->m_endpoint, net_ep_buf_http_in, net_ep_buf_read, 0) != 0) {
         CPE_ERROR(
             http_protocol->m_em,
@@ -108,29 +109,20 @@ int net_http_endpoint_input(net_endpoint_t endpoint) {
             if (net_http_endpoint_do_process(http_protocol, http_ep, endpoint) != 0) return -1;
 
             if (http_ep->m_current_res.m_state == net_http_res_state_completed) {
-                if (http_ep->m_current_res.m_req) {
-                    net_http_req_t to_free = http_ep->m_current_res.m_req;
-                    http_ep->m_current_res.m_req = NULL;
-                    net_http_req_free_force(to_free);
-                }
+                assert(http_ep->m_current_res.m_req);
+                net_http_req_t to_free = http_ep->m_current_res.m_req;
+                http_ep->m_current_res.m_req = NULL;
+                net_http_req_free_force(to_free);
 
                 bzero(&http_ep->m_current_res, sizeof(http_ep->m_current_res));
-                http_ep->m_current_res.m_state = net_http_res_state_reading_head;
+                http_ep->m_current_res.m_state = net_http_res_state_reading_head_first;
                     
                 if (http_ep->m_connection_type == net_http_connection_type_close) {
                     if (net_endpoint_set_state(endpoint, net_endpoint_state_disable) != 0) {
+                        net_endpoint_set_state(endpoint, net_endpoint_state_deleting);
                         return -1;
                     }
-                    else {
-                        return 0;
-                    }
                 }
-                else {
-                    //if (net_http_endpoint_flush(http_ep) != 0) return -1;
-                }
-            }
-            else {
-                return 0; /*当前请求没有完成，比如还需要等待后续数据 */
             }
         }
         else {
@@ -186,7 +178,7 @@ int net_http_endpoint_on_state_change(net_endpoint_t endpoint, net_endpoint_stat
     case net_endpoint_state_resolving:
         break;
     case net_endpoint_state_connecting:
-        http_ep->m_connecting_time_ms = cur_time_ms();
+        http_ep->m_connecting_time_ms = net_schedule_cur_time_ms(net_endpoint_schedule(endpoint));
         break;
     case net_endpoint_state_established:
         break;
@@ -195,6 +187,37 @@ int net_http_endpoint_on_state_change(net_endpoint_t endpoint, net_endpoint_stat
         return -1;
     }
 
+    return 0;
+}
+
+int net_http_endpoint_write_head_pair(
+    net_http_endpoint_t http_ep, net_http_req_t http_req, const char * attr_name, const char * attr_value)
+{
+    net_http_protocol_t http_protocol = net_http_endpoint_protocol(http_ep);
+    
+    uint32_t name_len = strlen(attr_name);
+    uint32_t value_len = strlen(attr_value);
+    uint32_t total_sz = name_len + value_len + 4;
+
+    uint32_t buf_sz = total_sz;
+    uint8_t * buf = net_endpoint_buf_alloc_at_least(http_ep->m_endpoint, &buf_sz);
+    if (buf == NULL) {
+        CPE_ERROR(
+            http_protocol->m_em,
+            "http: %s: write head pair, alloc buf fail, size=%d!",
+            net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint),
+            total_sz);
+        return -1;
+    }
+
+    memcpy(buf, attr_name, name_len); buf += name_len;
+    memcpy(buf, ": ", 2); buf += 2;
+    memcpy(buf, attr_value, value_len); buf += value_len;
+    memcpy(buf, "\r\n", 2);
+
+    if (net_endpoint_buf_supply(http_ep->m_endpoint, net_ep_buf_http_out, total_sz) != 0) return -1;
+
+    http_req->m_head_size += total_sz;
     return 0;
 }
 
@@ -236,7 +259,6 @@ int net_http_endpoint_flush(net_http_endpoint_t http_ep) {
         for(req = TAILQ_FIRST(&http_ep->m_reqs); buf_sz > 0 && req != NULL; req = next_req) {
             next_req = TAILQ_NEXT(req, m_next);
 
-            CPE_ERROR(http_protocol->m_em, "xx: req=%d: head=%d,body=%d", req->m_id, req->m_head_size, req->m_body_size);
             uint32_t req_total_sz = req->m_head_size + req->m_body_size;
             if (req_total_sz == 0) { /*没有任何数据需要处理 */
                 if (req->m_is_free) { /*已经释放，则继续处理后续请求 */
@@ -248,7 +270,6 @@ int net_http_endpoint_flush(net_http_endpoint_t http_ep) {
                 }
             }
 
-            CPE_ERROR(http_protocol->m_em, "xx: req=%d: flushed=%d", req->m_id, req->m_flushed_size);
             if (req->m_flushed_size == 0) { /*没有发送任何数据 */
                 if (req->m_is_free) { /*已经释放，还没有发送，则把需要发送的数据清理掉 */
                     uint32_t supply_size = req->m_head_size + req->m_body_supply_size;
@@ -263,7 +284,6 @@ int net_http_endpoint_flush(net_http_endpoint_t http_ep) {
 
             assert(req_total_sz >= req->m_flushed_size);
             uint32_t req_to_send_sz = req_total_sz - req->m_flushed_size;
-            CPE_ERROR(http_protocol->m_em, "xx: req=%d: req-to-send=%d", req->m_id, req_to_send_sz);
             if (req_to_send_sz == 0) continue;
 
             if (req_to_send_sz > buf_sz) req_to_send_sz = buf_sz;
@@ -303,7 +323,7 @@ static void net_http_endpoint_reset_data(net_http_protocol_t http_protocol, net_
             && req->m_res_on_complete)
         {
             req->m_on_complete_processed = 1;
-            req->m_res_on_complete(req->m_res_ctx, req, result);
+            req->m_res_on_complete(req->m_res_ctx, req, result, NULL, 0);
         }
 
         net_http_req_free_force(req);

@@ -9,7 +9,6 @@ struct net_http_test_response {
     TAILQ_ENTRY(net_http_test_response) m_next;
     uint32_t m_req_id;
     net_http_req_t m_runing_req;
-    net_http_res_state_t m_state;
     net_http_res_result_t m_result;
 
     uint16_t m_code;
@@ -29,6 +28,11 @@ net_http_test_response_create(net_http_test_protocol_t protocol, net_http_req_t 
 
 void net_http_test_response_free(net_http_test_response_t response);
 
+const char * net_http_test_response_find_head_value(net_http_test_response_t response, const char * name);
+
 const char * net_http_test_response_body_to_string(net_http_test_response_t response);
+
+void net_http_test_response_print(write_stream_t ws, net_http_test_response_t response);
+const char * net_http_test_response_dump(mem_buffer_t buffer, net_http_test_response_t response);
 
 #endif

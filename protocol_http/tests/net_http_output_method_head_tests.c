@@ -45,10 +45,6 @@ static void http_method_head_response_no_content_lenth(void **state) {
             "Connection: keep-alive\r\n"
             "\r\n")
         == 0);
-
-    assert_string_equal(
-        net_http_res_state_str(response->m_state),
-        net_http_res_state_str(net_http_res_state_completed));
 }
 
 static void http_method_head_response_with_content_lenth(void **state) {
@@ -80,13 +76,9 @@ static void http_method_head_response_with_content_lenth(void **state) {
             "Content-Length: 0\r\n"
             "\r\n")
         == 0);
-
-    assert_string_equal(
-        net_http_res_state_str(response->m_state),
-        net_http_res_state_str(net_http_res_state_completed));
 }
 
-int net_http_method_head_tests() {
+int net_http_output_method_head_tests() {
 	const struct CMUnitTest tests[] = {
 		cmocka_unit_test_setup_teardown(http_method_head_response_with_content_lenth, setup, teardown),
 		cmocka_unit_test_setup_teardown(http_method_head_response_no_content_lenth, setup, teardown),

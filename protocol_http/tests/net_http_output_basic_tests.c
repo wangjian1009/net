@@ -100,7 +100,7 @@ static void http_req_free_part_send_not_complete(void **state) {
     assert_true(req2 == NULL);
 }
 
-int net_http_req_basic_tests() {
+int net_http_output_basic_tests() {
 	const struct CMUnitTest tests[] = {
 		cmocka_unit_test_setup_teardown(http_req_create_prev_not_complete, setup, teardown),
 		cmocka_unit_test_setup_teardown(http_req_free_before_head, setup, teardown),
