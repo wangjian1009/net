@@ -23,7 +23,7 @@ net_http_req_create(net_http_endpoint_t http_ep, net_http_req_method_t method, c
         break;
     }
     
-    net_http_req_t pre_req = TAILQ_FIRST(&http_ep->m_reqs);
+    net_http_req_t pre_req = TAILQ_LAST(&http_ep->m_reqs, net_http_req_list);
     if (pre_req && !pre_req->m_is_free) {
         if (pre_req->m_req_state != net_http_req_state_completed) {
             CPE_ERROR(
@@ -65,7 +65,7 @@ net_http_req_create(net_http_endpoint_t http_ep, net_http_req_method_t method, c
     req->m_body_supply_size = 0;
     req->m_flushed_size = 0;
 
-    req->m_res_ignore = 0;
+    req->m_res_completed = 0;
     req->m_res_ctx = NULL;
     req->m_res_on_begin = NULL;
     req->m_res_on_head = NULL;
@@ -105,34 +105,45 @@ void net_http_req_free_force(net_http_req_t req) {
 void net_http_req_free(net_http_req_t req) {
     net_http_endpoint_t http_ep = req->m_http_ep;
     net_http_protocol_t http_protocol = net_http_endpoint_protocol(http_ep);
-    
-    /*数据还没有发送，或者响应没有收到，则标记后返回，等待后续清理 */
-    if (req->m_flushed_size < (req->m_head_size + req->m_body_size)
-        || !req->m_res_completed)
-    {
-        if (req->m_flushed_size > 0 && req->m_req_state != net_http_req_state_completed) {
-            CPE_ERROR(
-                http_protocol->m_em,
-                "http: %s: req %d free in part generated state",
-                net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint),
-                req->m_id);
-            net_endpoint_set_error(
-                http_ep->m_endpoint,
-                net_endpoint_error_source_network,
-                net_endpoint_network_errno_internal,
-                "free part generated req");
-            if (net_endpoint_set_state(http_ep->m_endpoint, net_endpoint_state_error) != 0) {
-                net_endpoint_set_state(http_ep->m_endpoint, net_endpoint_state_deleting);
-            }
-            return;
-        }
-        
+
+    CPE_ERROR(http_protocol->m_em, "xx 1");
+    /*响应已经接受的情况下，可以直接free */
+    if (req->m_res_completed) {
+        net_http_req_free_force(req);
+        return;
+    }
+
+    CPE_ERROR(http_protocol->m_em, "xx 2");
+    /*没有发送任何数据，只需要标注删除 */
+    if (req->m_flushed_size == 0) {
         net_http_req_clear_reader(req);
         req->m_is_free = 1;
         return;
     }
 
-    net_http_req_free_force(req);
+    CPE_ERROR(http_protocol->m_em, "xx 3");
+    /*数据已经发送，但是请求本身不完整，这种错误无法后续恢复，需要重置整个连接 */
+    if (req->m_req_state != net_http_req_state_completed) {
+        CPE_ERROR(
+            http_protocol->m_em,
+            "http: %s: req %d free in part generated state",
+            net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint),
+            req->m_id);
+        net_endpoint_set_error(
+            http_ep->m_endpoint,
+            net_endpoint_error_source_network,
+            net_endpoint_network_errno_internal,
+            "free part generated req");
+        if (net_endpoint_set_state(http_ep->m_endpoint, net_endpoint_state_error) != 0) {
+            net_endpoint_set_state(http_ep->m_endpoint, net_endpoint_state_deleting);
+        }
+        return;
+    }
+
+    CPE_ERROR(http_protocol->m_em, "xx 4");
+    /*数据部分发送，响应没有处理，则设置标记，等待后续处理 */
+    net_http_req_clear_reader(req);
+    req->m_is_free = 1;
 }
 
 void net_http_req_real_free(net_http_req_t req) {
@@ -222,7 +233,7 @@ uint32_t net_http_req_res_length(net_http_req_t req) {
 }
 
 void net_http_req_cancel_and_free(net_http_req_t req) {
-    if (!req->m_res_ignore && !req->m_on_complete_processed && req->m_res_on_complete) {
+    if (!req->m_on_complete_processed && req->m_res_on_complete) {
         req->m_on_complete_processed = 1;
         req->m_res_on_complete(req->m_res_ctx, req, net_http_res_canceled);
     }
@@ -265,8 +276,7 @@ const char * net_http_res_result_str(net_http_res_result_t res_result) {
 static void net_http_req_on_timeout(net_timer_t timer, void * ctx) {
     net_http_req_t req = ctx;
 
-    if (!req->m_res_ignore
-        && !req->m_on_complete_processed
+    if (!req->m_on_complete_processed
         && req->m_res_on_complete)
     {
         req->m_on_complete_processed = 1;

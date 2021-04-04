@@ -23,7 +23,6 @@ struct net_http_req {
     
     /*res*/
     void * m_res_ctx;
-    uint8_t m_res_ignore;
     uint8_t m_res_completed;
     net_http_req_on_res_begin_fun_t m_res_on_begin;
     net_http_req_on_res_head_fun_t m_res_on_head;

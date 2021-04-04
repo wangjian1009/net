@@ -30,12 +30,6 @@ int net_http_req_write_commit(net_http_req_t http_req);
 const char * net_http_req_state_str(net_http_req_state_t req_state);
 
 /*read*/
-typedef enum net_http_res_op_result {
-    net_http_res_op_success,
-    net_http_res_op_ignore,
-    net_http_res_op_error_and_close,
-} net_http_res_op_result_t;
-
 typedef enum net_http_res_result {
     net_http_res_complete,
     net_http_res_timeout,
@@ -44,10 +38,10 @@ typedef enum net_http_res_result {
     net_http_res_conn_disconnected,
 } net_http_res_result_t;
 
-typedef net_http_res_op_result_t (*net_http_req_on_res_begin_fun_t)(void * ctx, net_http_req_t req, uint16_t code, const char * msg);
-typedef net_http_res_op_result_t (*net_http_req_on_res_head_fun_t)(void * ctx, net_http_req_t req, const char * name, const char * value);
-typedef net_http_res_op_result_t (*net_http_req_on_res_body_fun_t)(void * ctx, net_http_req_t req, void * data, size_t data_size);
-typedef net_http_res_op_result_t (*net_http_req_on_res_complete_fun_t)(void * ctx, net_http_req_t req, net_http_res_result_t result);
+typedef int (*net_http_req_on_res_begin_fun_t)(void * ctx, net_http_req_t req, uint16_t code, const char * msg);
+typedef int (*net_http_req_on_res_head_fun_t)(void * ctx, net_http_req_t req, const char * name, const char * value);
+typedef int (*net_http_req_on_res_body_fun_t)(void * ctx, net_http_req_t req, void * data, size_t data_size);
+typedef void (*net_http_req_on_res_complete_fun_t)(void * ctx, net_http_req_t req, net_http_res_result_t result);
 
 int net_http_req_set_reader(
     net_http_req_t req,

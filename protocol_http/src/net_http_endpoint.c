@@ -236,6 +236,7 @@ int net_http_endpoint_flush(net_http_endpoint_t http_ep) {
         for(req = TAILQ_FIRST(&http_ep->m_reqs); buf_sz > 0 && req != NULL; req = next_req) {
             next_req = TAILQ_NEXT(req, m_next);
 
+            CPE_ERROR(http_protocol->m_em, "xx: req=%d: head=%d,body=%d", req->m_id, req->m_head_size, req->m_body_size);
             uint32_t req_total_sz = req->m_head_size + req->m_body_size;
             if (req_total_sz == 0) { /*没有任何数据需要处理 */
                 if (req->m_is_free) { /*已经释放，则继续处理后续请求 */
@@ -247,6 +248,7 @@ int net_http_endpoint_flush(net_http_endpoint_t http_ep) {
                 }
             }
 
+            CPE_ERROR(http_protocol->m_em, "xx: req=%d: flushed=%d", req->m_id, req->m_flushed_size);
             if (req->m_flushed_size == 0) { /*没有发送任何数据 */
                 if (req->m_is_free) { /*已经释放，还没有发送，则把需要发送的数据清理掉 */
                     uint32_t supply_size = req->m_head_size + req->m_body_supply_size;
@@ -261,6 +263,7 @@ int net_http_endpoint_flush(net_http_endpoint_t http_ep) {
 
             assert(req_total_sz >= req->m_flushed_size);
             uint32_t req_to_send_sz = req_total_sz - req->m_flushed_size;
+            CPE_ERROR(http_protocol->m_em, "xx: req=%d: req-to-send=%d", req->m_id, req_to_send_sz);
             if (req_to_send_sz == 0) continue;
 
             if (req_to_send_sz > buf_sz) req_to_send_sz = buf_sz;
@@ -296,8 +299,7 @@ static void net_http_endpoint_reset_data(net_http_protocol_t http_protocol, net_
     while(!TAILQ_EMPTY(&http_ep->m_reqs)) {
         net_http_req_t req = TAILQ_FIRST(&http_ep->m_reqs);
 
-        if (!req->m_res_ignore
-            && !req->m_on_complete_processed
+        if (!req->m_on_complete_processed
             && req->m_res_on_complete)
         {
             req->m_on_complete_processed = 1;

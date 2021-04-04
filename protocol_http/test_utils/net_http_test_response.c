@@ -2,8 +2,7 @@
 #include "cpe/utils/string_utils.h"
 #include "net_http_test_response.h"
 
-net_http_res_op_result_t
-net_http_test_response_on_res_begin(void * ctx, net_http_req_t req, uint16_t code, const char * msg) {
+int net_http_test_response_on_res_begin(void * ctx, net_http_req_t req, uint16_t code, const char * msg) {
     net_http_test_response_t response = ctx;
 
     response->m_state = net_http_res_state_reading_head;
@@ -18,11 +17,10 @@ net_http_test_response_on_res_begin(void * ctx, net_http_req_t req, uint16_t cod
         response->m_code_msg = cpe_str_mem_dup(test_allocrator(), msg);
     }
     
-    return net_http_res_op_success;
+    return 0;
 }
 
-net_http_res_op_result_t
-net_http_test_response_on_res_header(void * ctx, net_http_req_t req, const char * name, const char * value) {
+int net_http_test_response_on_res_header(void * ctx, net_http_req_t req, const char * name, const char * value) {
     net_http_test_response_t response = ctx;
 
     response->m_state = net_http_res_state_reading_head;
@@ -33,26 +31,22 @@ net_http_test_response_on_res_header(void * ctx, net_http_req_t req, const char 
         response->m_head_count++;
     }
     
-    return net_http_res_op_success;
+    return 0;
 }
 
-net_http_res_op_result_t
-net_http_test_response_on_res_body(void * ctx, net_http_req_t req, void * data, size_t data_size) {
+int net_http_test_response_on_res_body(void * ctx, net_http_req_t req, void * data, size_t data_size) {
     net_http_test_response_t response = ctx;
     response->m_state = net_http_res_state_reading_body;
     mem_buffer_append(&response->m_body, data, data_size);
-    return net_http_res_op_success;
+    return 0;
 }
 
-net_http_res_op_result_t
-net_http_test_response_on_res_complete(void * ctx, net_http_req_t req, net_http_res_result_t result) {
+void net_http_test_response_on_res_complete(void * ctx, net_http_req_t req, net_http_res_result_t result) {
     net_http_test_response_t response = ctx;
 
     response->m_state = net_http_res_state_completed;
     response->m_result = result;
     response->m_runing_req = NULL;
-    
-    return net_http_res_op_success;
 }
 
 net_http_test_response_t
