@@ -12,6 +12,7 @@ struct net_http_svr_request {
     net_http_svr_processor_t m_processor;
     TAILQ_ENTRY(net_http_svr_request) m_next_for_processor;
     uint32_t m_request_id;
+    struct cpe_hash_entry m_hh_for_protocol;
     void * m_processor_request;
     net_http_svr_request_method_t m_method;
     net_http_svr_request_transfer_encoding_t m_transfer_encoding;
@@ -47,6 +48,9 @@ void net_http_svr_request_on_complete(net_http_svr_request_t request);
 
 void net_http_svr_request_set_processor(net_http_svr_request_t request, net_http_svr_mount_point_t mp);
 void net_http_svr_request_set_state(net_http_svr_request_t request, net_http_svr_request_state_t state);
+
+uint32_t net_http_svr_request_hash(net_http_svr_request_t o);
+int net_http_svr_request_eq(net_http_svr_request_t l, net_http_svr_request_t r);
 
 #define net_http_svr_request_has_body(request)                               \
     (request->transfer_encoding == HTTP_SVR_CHUNKED || request->content_length > 0)

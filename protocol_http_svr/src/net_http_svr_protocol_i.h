@@ -4,6 +4,7 @@
 #include "cpe/utils/memory.h"
 #include "cpe/utils/error.h"
 #include "cpe/utils/buffer.h"
+#include "cpe/utils/hash.h"
 #include "net_http_svr_protocol.h"
 
 typedef TAILQ_HEAD(net_http_svr_endpoint_list, net_http_svr_endpoint) net_http_svr_endpoint_list_t;
@@ -23,6 +24,7 @@ struct net_http_svr_protocol {
     uint32_t m_request_sz;
     
     uint32_t m_max_request_id;
+    struct cpe_hash_table m_requests;
     net_http_svr_endpoint_list_t m_connections;
 
     struct mem_buffer m_data_buffer; 

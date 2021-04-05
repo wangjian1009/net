@@ -76,12 +76,25 @@ static int net_http_svr_protocol_init(net_protocol_t protocol) {
     TAILQ_INIT(&service->m_free_mount_points);
     TAILQ_INIT(&service->m_free_responses);
 
+    if (cpe_hash_table_init(
+            &service->m_requests,
+            service->m_alloc,
+            (cpe_hash_fun_t) net_http_svr_request_hash,
+            (cpe_hash_eq_t) net_http_svr_request_eq,
+            CPE_HASH_OBJ2ENTRY(net_http_svr_request, m_hh_for_protocol),
+            -1) != 0)
+    {
+        CPE_ERROR(service->m_em, "http_svr: %s: create request hash table fail!", net_protocol_name(protocol));
+        return -1;
+    }
+    
     mem_buffer_init(&service->m_data_buffer, NULL);
     mem_buffer_init(&service->m_search_path_buffer, NULL);
 
     net_http_svr_processor_t dft_processor = net_http_svr_processor_create_root(service);
     if (dft_processor == NULL) {
         CPE_ERROR(service->m_em, "http_svr: %s: create dft processor fail!", net_protocol_name(protocol));
+        cpe_hash_table_fini(&service->m_requests);
         return -1;
     }
     
@@ -91,6 +104,7 @@ static int net_http_svr_protocol_init(net_protocol_t protocol) {
     if (service->m_root == NULL) {
         CPE_ERROR(service->m_em, "http_svr: %s: create root mount point fail!", net_protocol_name(protocol));
         net_http_svr_processor_free(dft_processor);
+        cpe_hash_table_fini(&service->m_requests);
         return -1;
     }
     
@@ -126,6 +140,9 @@ static void net_http_svr_protocol_fini(net_protocol_t protocol) {
         net_http_svr_mount_point_real_free(TAILQ_FIRST(&service->m_free_mount_points));
     }
 
+    assert(cpe_hash_table_count(&service->m_requests) == 0);
+    cpe_hash_table_fini(&service->m_requests);
+    
     mem_buffer_clear(&service->m_data_buffer);
     mem_buffer_clear(&service->m_search_path_buffer);
 }

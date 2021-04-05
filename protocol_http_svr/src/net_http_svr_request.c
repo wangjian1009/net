@@ -9,7 +9,8 @@
 #include "net_http_svr_processor_i.h"
 #include "net_http_svr_response_i.h"
 
-net_http_svr_request_t net_http_svr_request_create(net_endpoint_t base_endpoint) {
+net_http_svr_request_t
+net_http_svr_request_create(net_endpoint_t base_endpoint) {
     net_http_svr_endpoint_t connection = net_endpoint_protocol_data(base_endpoint);
     net_http_svr_protocol_t service = net_http_svr_endpoint_service(base_endpoint);
 
@@ -45,6 +46,17 @@ net_http_svr_request_t net_http_svr_request_create(net_endpoint_t base_endpoint)
     request->m_response = NULL;
     TAILQ_INIT(&request->m_headers);
 
+    cpe_hash_entry_init(&request->m_hh_for_protocol);
+    if (cpe_hash_table_insert_unique(&service->m_requests, request) != 0) {
+        CPE_ERROR(
+            service->m_em, "http_svr: %s: req %d: id duplicate!", 
+            net_endpoint_dump(net_http_svr_protocol_tmp_buffer(service), base_endpoint),
+            request->m_request_id);
+        request->m_base_endpoint = (void*)service;
+        TAILQ_INSERT_TAIL(&service->m_free_requests, request, m_next_for_connection);
+        return NULL;
+    }
+    
     TAILQ_INSERT_TAIL(&connection->m_requests, request, m_next_for_connection);
     
     return request;
@@ -76,6 +88,8 @@ void net_http_svr_request_free(net_http_svr_request_t request) {
         net_http_svr_request_header_free(TAILQ_FIRST(&request->m_headers));
     }
 
+    cpe_hash_table_remove_by_ins(&service->m_requests, request);
+
     TAILQ_REMOVE(&connection->m_requests, request, m_next_for_connection);
     
     request->m_base_endpoint = (void*)service;
@@ -92,6 +106,13 @@ void net_http_svr_request_real_free(net_http_svr_request_t request) {
 
 uint32_t net_http_svr_request_id(net_http_svr_request_t request) {
     return request->m_request_id;
+}
+
+net_http_svr_request_t
+net_http_svr_request_find(net_http_svr_protocol_t service, uint32_t id) {
+    struct net_http_svr_request key;
+    key.m_request_id = id;
+    return cpe_hash_table_find(&service->m_requests, &key);
 }
 
 net_http_svr_request_method_t net_http_svr_request_method(net_http_svr_request_t request) {
@@ -494,6 +515,14 @@ void net_http_svr_request_on_complete(net_http_svr_request_t request) {
     }
 
     net_http_svr_endpoint_check_remove_done_requests(connection);
+}
+
+uint32_t net_http_svr_request_hash(net_http_svr_request_t o) {
+    return o->m_request_id;
+}
+
+int net_http_svr_request_eq(net_http_svr_request_t l, net_http_svr_request_t r) {
+    return l->m_request_id == r->m_request_id ? 1 : 0;
 }
 
 const char * net_http_svr_request_method_str(net_http_svr_request_method_t method) {
