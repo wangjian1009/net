@@ -64,6 +64,9 @@ uint32_t net_http_req_res_length(net_http_req_t req);
 const char * net_http_transfer_encoding_str(net_http_transfer_encoding_t transfer_encoding);
 const char * net_http_res_result_str(net_http_res_result_t res_result);
 
+/*net_http_req_it*/
+#define net_http_req_it_next(__it) ((__it)->next(__it))
+
 NET_END_DECL
 
 #endif

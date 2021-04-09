@@ -234,11 +234,11 @@ static int net_http_req_process_response_head_follow_line(
         }
     } else if (strcasecmp(name, "Connection") == 0) {
         if (strcasecmp(value, "keep-alive") == 0) {
-            http_ep->m_connection_type = net_http_connection_type_keep_alive;
+            http_ep->m_current_res.m_connection_type = net_http_connection_type_keep_alive;
         } else if (strcasecmp(value, "close") == 0) {
-            http_ep->m_connection_type = net_http_connection_type_close;
+            http_ep->m_current_res.m_connection_type = net_http_connection_type_close;
         } else if (strcasecmp(value, "upgrade") == 0) {
-            http_ep->m_connection_type = net_http_connection_type_upgrade;
+            http_ep->m_current_res.m_connection_type = net_http_connection_type_upgrade;
         }
     } else if (strcasecmp(name, "Transfer-Encoding") == 0) {
         if (strcasecmp(value, "chunked") == 0) {
@@ -347,7 +347,9 @@ static int net_http_endpoint_input_body_consume_body_part(
     return 0;
 }
 
-static int net_http_endpoint_input_body_encoding_none(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_endpoint_t endpoint) {
+static int net_http_endpoint_input_body_encoding_none(
+    net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_endpoint_t endpoint)
+{
     if (http_ep->m_connection_type != net_http_connection_type_close && http_ep->m_current_res.m_res_content.m_length == 0) {
         if (net_http_req_input_body_set_complete(http_protocol, http_ep, endpoint, net_http_res_complete) != 0) return -1;
         return 0;
@@ -390,7 +392,9 @@ static int net_http_endpoint_input_body_encoding_none(net_http_protocol_t http_p
     return 0;
 }
 
-static int net_http_endpoint_input_body_encoding_trunked(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_endpoint_t endpoint) {
+static int net_http_endpoint_input_body_encoding_trunked(
+    net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_endpoint_t endpoint)
+{
     uint32_t buf_sz;
     
     while(

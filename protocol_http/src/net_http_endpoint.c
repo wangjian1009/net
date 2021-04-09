@@ -56,6 +56,14 @@ net_http_protocol_t net_http_endpoint_protocol(net_http_endpoint_t http_ep) {
     return net_protocol_data(net_endpoint_protocol(http_ep->m_endpoint));
 }
 
+uint8_t net_http_endpoint_auto_free(net_http_endpoint_t http_ep) {
+    return http_ep->m_auto_free;
+}
+
+void net_http_endpoint_set_auto_free(net_http_endpoint_t http_ep, uint8_t auto_free) {
+    http_ep->m_auto_free = auto_free;
+}
+
 net_http_connection_type_t net_http_endpoint_connection_type(net_http_endpoint_t http_ep) {
     return http_ep->m_connection_type;
 }
@@ -65,6 +73,7 @@ int net_http_endpoint_init(net_endpoint_t endpoint) {
     net_http_protocol_t http_protocol = net_protocol_data(net_endpoint_protocol(endpoint));
     net_schedule_t schedule = net_endpoint_schedule(endpoint);
 
+    http_ep->m_auto_free = 0;
     http_ep->m_endpoint = endpoint;
     http_ep->m_connection_type = net_http_connection_type_keep_alive;
     http_ep->m_req_count = 0;
@@ -114,10 +123,13 @@ int net_http_endpoint_input(net_endpoint_t endpoint) {
                 http_ep->m_current_res.m_req = NULL;
                 net_http_req_free_force(to_free);
 
+                uint8_t close_connection = http_ep->m_current_res.m_connection_type == net_http_connection_type_close;
                 bzero(&http_ep->m_current_res, sizeof(http_ep->m_current_res));
                 http_ep->m_current_res.m_state = net_http_res_state_reading_head_first;
-                    
-                if (http_ep->m_connection_type == net_http_connection_type_close) {
+                http_ep->m_current_res.m_trans_encoding = net_http_transfer_identity;
+                http_ep->m_current_res.m_connection_type = net_http_connection_type_keep_alive;
+
+                if (close_connection) {
                     if (net_endpoint_set_state(endpoint, net_endpoint_state_disable) != 0) {
                         net_endpoint_set_state(endpoint, net_endpoint_state_deleting);
                         return -1;
@@ -170,9 +182,11 @@ int net_http_endpoint_on_state_change(net_endpoint_t endpoint, net_endpoint_stat
     case net_endpoint_state_write_closed:
         break;
     case net_endpoint_state_disable:
+        if (http_ep->m_auto_free) return -1;
         net_http_endpoint_reset_data(http_protocol, http_ep, net_http_res_conn_disconnected);
         break;
     case net_endpoint_state_error:
+        if (http_ep->m_auto_free) return -1;
         net_http_endpoint_reset_data(http_protocol, http_ep, net_http_res_conn_error);
         break;
     case net_endpoint_state_resolving:

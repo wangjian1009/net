@@ -41,7 +41,7 @@ void test_net_endpoint_write_op_cb(void * ctx, test_net_tl_op_t op) {
     struct test_net_endpoint_write_op * write_op = test_net_tl_op_data(op);
 
     net_endpoint_t to_endpoint = net_endpoint_find(schedule, write_op->m_ep_id);
-    if (to_endpoint != NULL) {
+    if (to_endpoint != NULL && net_endpoint_state(to_endpoint) != net_endpoint_state_deleting) {
         if (net_endpoint_driver_debug(to_endpoint) >= 2) {
             CPE_INFO(
                 net_schedule_em(schedule), "test: %s: << %d data",

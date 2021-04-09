@@ -43,8 +43,9 @@ net_http_svr_response_create(net_http_svr_request_t request) {
     response->m_header_count = 0;
     response->m_head_connection_setted = 0;
     response->m_transfer_encoding = net_http_svr_request_transfer_encoding_unknown;
+    //response->m_keep_alive = 
     request->m_response = response;
-
+    
     /* CPE_ERROR( */
     /*     service->m_em, "http_svr: %s: response: created!", */
     /*     net_endpoint_dump(net_http_svr_protocol_tmp_buffer(service), base_endpoint)); */
@@ -151,6 +152,10 @@ int net_http_svr_response_append_head(net_http_svr_response_t response, const ch
     stream_printf((write_stream_t)&ws, "\r\n");
     
     response->m_header_count++;
+
+    if (strcasecmp(name, "connection") == 0) {
+        response->m_head_connection_setted = 1;
+    }
     
     return net_http_svr_response_append(response, mem_buffer_make_continuous(buffer, 0), (uint32_t)mem_buffer_size(buffer));
 }
