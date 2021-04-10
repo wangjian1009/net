@@ -10,6 +10,9 @@ struct net_http_svr_request_header_it {
     char data[64];
 };
 
+net_http_svr_request_header_t
+net_http_svr_request_header_find_by_name(net_http_svr_request_t request, const char * name);
+
 void net_http_svr_request_headers(net_http_svr_request_t request, net_http_svr_request_header_it_t it);
 const char * net_http_svr_request_header_name(net_http_svr_request_header_t header);
 const char * net_http_svr_request_header_value(net_http_svr_request_header_t header);

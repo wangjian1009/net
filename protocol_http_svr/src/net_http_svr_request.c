@@ -152,6 +152,42 @@ void net_http_svr_request_schedule_close_connection(net_http_svr_request_t reque
     net_http_svr_endpoint_schedule_close(request->m_base_endpoint);
 }
 
+const char * net_http_svr_request_find_header_value(net_http_svr_request_t request, const char * name) {
+    net_http_svr_request_header_t header = net_http_svr_request_header_find_by_name(request, name);
+    return header ? header->m_value : NULL;
+}
+
+const char * net_http_svr_request_content_type(net_http_svr_request_t request) {
+    return net_http_svr_request_find_header_value(request, "Content-Type");
+}
+
+uint8_t net_http_svr_request_content_part_is_text(const char * value) {
+    if (strcasecmp(value, "text") == 0) return 1;
+    if (strcasecmp(value, "json") == 0) return 1;
+    return 0;
+}
+
+uint8_t net_http_svr_request_content_is_text(net_http_svr_request_t request) {
+    net_http_svr_request_header_t header = net_http_svr_request_header_find_by_name(request, "Content-Type");
+    if (header == NULL) return 0;
+
+    char * sep = strchr(header->m_value, '/');
+    if (sep == NULL) {
+        return net_http_svr_request_content_part_is_text(header->m_value);
+    }
+    else {
+        *sep = 0;
+        uint8_t is_text = net_http_svr_request_content_part_is_text(header->m_value);
+        *sep = '/';
+
+        if (!is_text) {
+            is_text = net_http_svr_request_content_part_is_text(sep + 1);
+        }
+
+        return is_text;
+    }
+}
+
 uint8_t net_http_svr_request_should_keep_alive(net_http_svr_request_t request) {
     if (request->m_keep_alive == -1) {
         if (request->m_version_major == 1) {
@@ -458,10 +494,20 @@ void net_http_svr_request_on_body(net_http_svr_request_t request, const char* at
     net_http_svr_protocol_t service = net_http_svr_endpoint_service(base_endpoint);
 
     if (net_endpoint_protocol_debug(base_endpoint)) {
-        CPE_INFO(
-            service->m_em, "http_svr: %s: req %d: on body: %.*s",
-            net_endpoint_dump(net_http_svr_protocol_tmp_buffer(service), base_endpoint),
-            request->m_request_id, (int)length, at);
+        if (net_http_svr_request_content_is_text(request)) {
+            CPE_INFO(
+                service->m_em, "http_svr: %s: req %d: on body: %.*s",
+                net_endpoint_dump(net_http_svr_protocol_tmp_buffer(service), base_endpoint),
+                request->m_request_id, (int)length, at);
+        } else {
+            char buf[512];
+            cpe_str_dup(buf, sizeof(buf), net_endpoint_dump(net_http_svr_protocol_tmp_buffer(service), base_endpoint));
+            
+            CPE_INFO(
+                service->m_em, "http_svr: %s: req %d: on body:\n%s",
+                buf, request->m_request_id,
+                mem_buffer_dump_data(net_http_svr_protocol_tmp_buffer(service), at, length, 0));
+        }
     }
 }
 

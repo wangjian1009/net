@@ -12,7 +12,8 @@ struct net_http_svr_request_header {
     char m_buf[128];
 };
 
-net_http_svr_request_header_t net_http_svr_request_header_create(net_http_svr_request_t request, uint16_t index, const char * name, size_t name_len);
+net_http_svr_request_header_t net_http_svr_request_header_create(
+    net_http_svr_request_t request, uint16_t index, const char * name, size_t name_len);
 void net_http_svr_request_header_free(net_http_svr_request_header_t header);
 void net_http_svr_request_header_real_free(net_http_svr_request_header_t header);
 

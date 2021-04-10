@@ -129,3 +129,14 @@ net_http_svr_request_header_find_by_index(net_http_svr_request_t request, uint16
     
     return NULL;
 }
+
+net_http_svr_request_header_t
+net_http_svr_request_header_find_by_name(net_http_svr_request_t request, const char * name) {
+    net_http_svr_request_header_t header;
+    
+    TAILQ_FOREACH_REVERSE(header, &request->m_headers, net_http_svr_request_header_list, m_next) {
+        if (strcasecmp(header->m_name, name) == 0) return header;
+    }
+    
+    return NULL;
+}

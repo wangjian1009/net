@@ -54,6 +54,10 @@ const char * net_http_svr_request_relative_path(net_http_svr_request_t request);
 net_http_svr_request_state_t net_http_svr_request_state(net_http_svr_request_t request);
 void net_http_svr_request_schedule_close_connection(net_http_svr_request_t request);
 
+const char * net_http_svr_request_find_header_value(net_http_svr_request_t request, const char * name);
+const char * net_http_svr_request_content_type(net_http_svr_request_t request);
+uint8_t net_http_svr_request_content_is_text(net_http_svr_request_t request);
+
 void net_http_svr_request_print_full(write_stream_t ws, net_http_svr_request_t request);
 const char * net_http_svr_request_dump_full(mem_buffer_t buffer, net_http_svr_request_t request);
 
