@@ -75,7 +75,9 @@ int64_t test_net_driver_run(test_net_driver_t driver, int64_t duration_ms) {
         test_net_tl_op_free(op);
     }
     
-    return driver->m_cur_time_ms - begin_time_ms;
+    uint16_t effect_time_ms = driver->m_cur_time_ms - begin_time_ms;
+    driver->m_cur_time_ms = end_time_ms;
+    return effect_time_ms;
 }
 
 void test_net_tl_op_cb_free(void * ctx, test_net_tl_op_t op) {

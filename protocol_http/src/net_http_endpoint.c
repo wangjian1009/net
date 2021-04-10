@@ -204,6 +204,17 @@ int net_http_endpoint_on_state_change(net_endpoint_t endpoint, net_endpoint_stat
     return 0;
 }
 
+uint16_t net_http_endpoint_runing_req_count(net_http_endpoint_t http_ep) {
+    uint16_t count = 0;
+    
+    net_http_req_t req;
+    TAILQ_FOREACH(req, &http_ep->m_reqs, m_next) {
+        if (!req->m_res_completed) count++;
+    }
+
+    return count;
+}
+
 net_http_req_t net_http_endpoint_receiving_req(net_http_endpoint_t http_ep) {
     return http_ep->m_current_res.m_req;
 }

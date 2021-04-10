@@ -23,6 +23,8 @@ net_http_connection_type_t net_http_endpoint_connection_type(net_http_endpoint_t
 
 int net_http_endpoint_flush(net_http_endpoint_t http_ep);
 
+uint16_t net_http_endpoint_runing_req_count(net_http_endpoint_t http_ep);
+
 net_http_req_t net_http_endpoint_receiving_req(net_http_endpoint_t http_ep);
 void net_http_endpoint_reqs(net_http_req_it_t it, net_http_endpoint_t http_ep);
 
