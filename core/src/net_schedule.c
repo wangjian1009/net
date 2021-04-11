@@ -167,7 +167,11 @@ void net_schedule_free(net_schedule_t schedule) {
     }
 
     while(!TAILQ_EMPTY(&schedule->m_local_ip_stack_monitors)) {
-        net_local_ip_stack_monitor_free(TAILQ_FIRST(&schedule->m_local_ip_stack_monitors));
+        net_local_ip_stack_monitor_t monitor = TAILQ_FIRST(&schedule->m_local_ip_stack_monitors);
+#if CPE_UNIT_TEST
+        monitor->m_is_processing = 0;
+#endif
+        net_local_ip_stack_monitor_free(monitor);
     }
     
     if (schedule->m_pair_driver) {
