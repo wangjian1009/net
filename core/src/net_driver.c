@@ -6,6 +6,7 @@
 #include "net_endpoint_i.h"
 #include "net_dgram_i.h"
 #include "net_watcher_i.h"
+#include "net_progress_i.h"
 #include "net_timer_i.h"
 
 net_driver_t
@@ -126,6 +127,8 @@ net_driver_create(
 
     TAILQ_INIT(&driver->m_free_watchers);
     TAILQ_INIT(&driver->m_watchers);
+
+    TAILQ_INIT(&driver->m_progresses);
     
     TAILQ_INIT(&driver->m_free_timers);
     TAILQ_INIT(&driver->m_timers);
@@ -168,6 +171,10 @@ void net_driver_free(net_driver_t driver) {
         net_dgram_free(TAILQ_FIRST(&driver->m_dgrams));
     }
 
+    while(!TAILQ_EMPTY(&driver->m_progresses)) {
+        net_progress_free(TAILQ_FIRST(&driver->m_progresses));
+    }
+    
     while(!TAILQ_EMPTY(&driver->m_watchers)) {
         net_watcher_free(TAILQ_FIRST(&driver->m_watchers));
     }

@@ -5,6 +5,7 @@
 
 NET_BEGIN_DECL
 
+net_progress_t net_progress_auto_create(net_schedule_t schedule, const char * cmd, const char * mode);
 net_progress_t net_progress_create(net_driver_t driver, const char * cmd, const char * mode);
 void net_progress_free(net_progress_t progress);
 

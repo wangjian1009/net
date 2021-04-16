@@ -72,6 +72,8 @@ struct net_driver {
 
     net_watcher_list_t m_watchers;
     net_watcher_list_t m_free_watchers;
+
+    net_progress_list_t m_progresses;
 };
 
 NET_END_DECL

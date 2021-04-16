@@ -25,6 +25,7 @@ typedef TAILQ_HEAD(net_endpoint_next_list, net_endpoint_next) net_endpoint_next_
 typedef TAILQ_HEAD(net_endpoint_monitor_list, net_endpoint_monitor) net_endpoint_monitor_list_t;
 typedef TAILQ_HEAD(net_dgram_list, net_dgram) net_dgram_list_t;
 typedef TAILQ_HEAD(net_watcher_list, net_watcher) net_watcher_list_t;
+typedef TAILQ_HEAD(net_progress_list, net_progress) net_progress_list_t;
 typedef TAILQ_HEAD(net_timer_list, net_timer) net_timer_list_t;
 typedef TAILQ_HEAD(net_address_rule_list, net_address_rule) net_address_rule_list_t;
 typedef TAILQ_HEAD(net_address_list, net_address_in_cache) net_address_list_t;
