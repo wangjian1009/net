@@ -136,7 +136,7 @@ int net_endpoint_buf_supply(net_endpoint_t endpoint, net_endpoint_buf_type_t buf
     if (size > 0) {
         assert(size <= endpoint->m_tb->m_capacity);
         endpoint->m_tb->m_len = size;
-        net_mem_block_link(endpoint->m_tb, endpoint, buf_type);
+        net_mem_block_link_endpoint(endpoint->m_tb, endpoint, buf_type);
         endpoint->m_tb = NULL;
         return net_endpoint_buf_on_supply(schedule, endpoint, buf_type, size);
     }
@@ -364,7 +364,7 @@ int net_endpoint_buf_by_sep(
             }
         }
         sz += (uint32_t)block->m_len;
-        block = TAILQ_NEXT(block, m_next_for_endpoint);
+        block = TAILQ_NEXT(block, m_endpoint.m_next);
     }
     
     *r_data = NULL;
@@ -390,7 +390,7 @@ static uint8_t net_endpoint_block_match_forward(
 
         if (look_str_len == 0) return 1;
 
-        block = TAILQ_NEXT(block, m_next_for_endpoint);
+        block = TAILQ_NEXT(block, m_endpoint.m_next);
         if (block == NULL) return 0;
 
         block_pos = 0;
@@ -444,7 +444,7 @@ int net_endpoint_buf_by_str(
             }
         }
         sz += block->m_len;
-        block = TAILQ_NEXT(block, m_next_for_endpoint);
+        block = TAILQ_NEXT(block, m_endpoint.m_next);
     }
     
     *r_data = NULL;
@@ -472,7 +472,7 @@ int net_endpoint_buf_append(net_endpoint_t endpoint, net_endpoint_buf_type_t buf
         memcpy(new_block->m_data, i_data, size);
         new_block->m_len = size;
 
-        net_mem_block_link(new_block, endpoint, buf_type);
+        net_mem_block_link_endpoint(new_block, endpoint, buf_type);
     }
     
     return net_endpoint_buf_on_supply(schedule, endpoint, buf_type, size);
@@ -525,13 +525,13 @@ int net_endpoint_buf_append_from_other(
         }
         assert(size == 0);
 
-        net_mem_block_link(tb, endpoint, buf_type);
+        net_mem_block_link_endpoint(tb, endpoint, buf_type);
     }
     else {
         while(!TAILQ_EMPTY(&other->m_bufs[from].m_blocks)) {
             net_mem_block_t block = TAILQ_FIRST(&other->m_bufs[from].m_blocks);
             net_mem_block_unlink(block);
-            net_mem_block_link(block, endpoint, buf_type);
+            net_mem_block_link_endpoint(block, endpoint, buf_type);
             moved_size += block->m_len;
         }
     }
@@ -610,13 +610,13 @@ int net_endpoint_buf_append_from_self(
         }
         assert(size == 0);
 
-        net_mem_block_link(tb, endpoint, buf_type);
+        net_mem_block_link_endpoint(tb, endpoint, buf_type);
     }
     else {
         while(!TAILQ_EMPTY(&endpoint->m_bufs[from].m_blocks)) {
             net_mem_block_t block = TAILQ_FIRST(&endpoint->m_bufs[from].m_blocks);
             net_mem_block_unlink(block);
-            net_mem_block_link(block, endpoint, buf_type);
+            net_mem_block_link_endpoint(block, endpoint, buf_type);
             moved_size += block->m_len;
         }
 
@@ -686,7 +686,7 @@ net_mem_block_t net_endpoint_buf_combine(net_endpoint_t endpoint, net_endpoint_b
         net_mem_block_free(old_block);
     }
 
-    net_mem_block_link(block, endpoint, buf_type);
+    net_mem_block_link_endpoint(block, endpoint, buf_type);
 
     return block;
 }
@@ -695,7 +695,7 @@ uint32_t net_endpoint_buf_calc_size(net_endpoint_t endpoint, net_endpoint_buf_ty
     uint32_t size = 0;
 
     net_mem_block_t block;
-    TAILQ_FOREACH(block, &endpoint->m_bufs[buf_type].m_blocks, m_next_for_endpoint) {
+    TAILQ_FOREACH(block, &endpoint->m_bufs[buf_type].m_blocks, m_endpoint.m_next) {
         size += block->m_len;
     }
     

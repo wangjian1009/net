@@ -7,7 +7,7 @@ struct net_sock_progress {
     net_watcher_t m_watcher;
 };
 
-int net_sock_progress_init(net_progress_t base_progress, const char * cmd, const char * mode);
+int net_sock_progress_init(net_progress_t base_progress, const char * cmd, net_progress_runing_mode_t mode);
 void net_sock_progress_fini(net_progress_t base_progress);
 
 #endif
