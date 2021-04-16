@@ -45,7 +45,11 @@ net_driver_create(
     uint16_t watcher_capacity,
     net_watcher_init_fun_t watcher_init,
     net_watcher_fini_fun_t watcher_fini,
-    net_watcher_update_fun_t watcher_update)
+    net_watcher_update_fun_t watcher_update,
+    /*progress*/
+    uint16_t progress_capacity,
+    net_progress_init_fun_t progress_init,
+    net_progress_fini_fun_t progress_fini)
 {
     net_driver_t driver;
 

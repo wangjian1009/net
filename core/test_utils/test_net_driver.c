@@ -7,6 +7,7 @@
 #include "test_net_dgram.h"
 #include "test_net_acceptor.h"
 #include "test_net_watcher.h"
+#include "test_net_progress.h"
 #include "test_net_tl_op.h"
 
 static int test_net_driver_init(net_driver_t driver);
@@ -51,7 +52,11 @@ test_net_driver_create(net_schedule_t schedule, error_monitor_t em) {
         sizeof(struct test_net_watcher),
         test_net_watcher_init,
         test_net_watcher_fini,
-        test_net_watcher_update);
+        test_net_watcher_update,
+        /*progress*/
+        sizeof(struct test_net_progress),
+        test_net_progress_init,
+        test_net_progress_fini);
 
     test_net_driver_t driver = net_driver_data(base_driver);
     driver->m_em = em;

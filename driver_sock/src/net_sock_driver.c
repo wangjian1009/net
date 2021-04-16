@@ -7,6 +7,7 @@
 #include "net_sock_driver_i.h"
 #include "net_sock_acceptor_i.h"
 #include "net_sock_endpoint_i.h"
+#include "net_sock_progress_i.h"
 #include "net_sock_dgram.h"
 
 static void net_sock_driver_fini(net_driver_t driver);
@@ -71,7 +72,11 @@ net_sock_driver_create(
         watcher_capacity,
         watcher_init,
         watcher_fini,
-        watcher_update);
+        watcher_update,
+        /*progress*/
+        sizeof(struct net_sock_progress),
+        net_sock_progress_init,
+        net_sock_progress_fini);
 
     if (base_driver == NULL) return NULL;
 

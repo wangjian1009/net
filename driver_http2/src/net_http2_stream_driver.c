@@ -59,7 +59,9 @@ net_http2_stream_driver_create(
             /*dgram*/
             0, NULL, NULL, NULL,
             /*watcher*/
-            0, NULL, NULL, NULL);
+            0, NULL, NULL, NULL,
+            /*progress*/
+            0, NULL, NULL);
 
     net_http2_stream_driver_t ws_driver = net_driver_data(base_driver);
 

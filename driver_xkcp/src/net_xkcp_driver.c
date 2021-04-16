@@ -51,7 +51,9 @@ net_xkcp_driver_create(
             /*dgram*/
             0, NULL, NULL, NULL,
             /*watcher*/
-            0, NULL, NULL, NULL);
+            0, NULL, NULL, NULL,
+            /*progress*/
+            0, NULL, NULL);
 
     net_xkcp_driver_t driver = net_driver_data(base_driver);
 

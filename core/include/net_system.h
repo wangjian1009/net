@@ -28,6 +28,7 @@ typedef struct net_ipset * net_ipset_t;
 typedef struct net_address_matcher * net_address_matcher_t;
 typedef struct net_address_rule * net_address_rule_t;
 typedef struct net_dns_query * net_dns_query_t;
+typedef struct net_progress * net_progress_t;
 
 typedef struct net_address_data_ipv4 * net_address_data_ipv4_t;
 typedef struct net_address_data_ipv6 * net_address_data_ipv6_t;

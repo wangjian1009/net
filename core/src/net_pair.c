@@ -445,5 +445,7 @@ net_driver_t net_pair_driver_create(net_schedule_t schedule) {
         /*dgram*/
         0, NULL, NULL, NULL,
         /*watcher*/
-        0, NULL, NULL, NULL);
+        0, NULL, NULL, NULL,
+        /*progress*/
+        0, NULL, NULL);
 }
