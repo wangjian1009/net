@@ -8,6 +8,7 @@
 
 typedef struct net_sock_acceptor * net_sock_acceptor_t;
 typedef struct net_sock_dgram * net_sock_dgram_t;
+typedef struct net_sock_progress * net_sock_progress_t;
 
 struct net_sock_driver {
     mem_allocrator_t m_alloc;

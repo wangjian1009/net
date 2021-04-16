@@ -32,7 +32,7 @@ typedef int (*net_watcher_init_fun_t)(net_watcher_t watcher, int fd);
 typedef void (*net_watcher_fini_fun_t)(net_watcher_t watcher, int fd);
 typedef void (*net_watcher_update_fun_t)(net_watcher_t watcher, int fd, uint8_t expect_read, uint8_t expect_write);
 
-typedef int (*net_progress_init_fun_t)(net_progress_t progress);
+typedef int (*net_progress_init_fun_t)(net_progress_t progress, const char * cmd, const char * mode);
 typedef void (*net_progress_fini_fun_t)(net_progress_t progress);
 
 net_driver_t

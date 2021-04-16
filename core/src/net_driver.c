@@ -107,6 +107,11 @@ net_driver_create(
     driver->m_watcher_init = watcher_init;
     driver->m_watcher_fini = watcher_fini;
     driver->m_watcher_update = watcher_update;
+
+    /*progress*/
+    driver->m_progress_capacity = progress_capacity;
+    driver->m_progress_init = progress_init;
+    driver->m_progress_fini = progress_fini;
     
     /*runtime*/
     TAILQ_INIT(&driver->m_free_acceptors);

@@ -50,6 +50,11 @@ struct net_driver {
     net_watcher_init_fun_t m_watcher_init;
     net_watcher_fini_fun_t m_watcher_fini;
     net_watcher_update_fun_t m_watcher_update;
+
+    /*progress*/
+    uint16_t m_progress_capacity;
+    net_progress_init_fun_t m_progress_init;
+    net_progress_fini_fun_t m_progress_fini;
     
     /*runtime*/
     net_acceptor_list_t m_acceptors;
