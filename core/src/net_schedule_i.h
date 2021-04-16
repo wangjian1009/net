@@ -66,14 +66,19 @@ struct net_schedule {
 
     net_protocol_list_t m_protocols;
 
-    /**/
+    /*pair*/
     net_driver_t m_pair_driver;
     net_driver_list_t m_drivers;
 
+    /*dgram*/
     uint32_t m_dgram_max_id;
 
+    /*endpoint*/
     uint32_t m_endpoint_max_id;
     struct cpe_hash_table m_endpoints;
+
+    /*progress*/
+    net_progress_list_t m_progresses;
 
     /*mem*/
     net_mem_group_type_list_t m_mem_group_types;

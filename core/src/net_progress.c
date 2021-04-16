@@ -38,6 +38,7 @@ net_progress_create(
     }
 
     progress->m_driver = driver;
+    progress->m_id = ++schedule->m_endpoint_max_id;
     progress->m_mode = mode;
     progress->m_mem_group = schedule->m_dft_mem_group;
     progress->m_data_watch_fun = data_watch_fun;
@@ -67,6 +68,10 @@ void net_progress_free(net_progress_t progress) {
     TAILQ_REMOVE(&driver->m_progresses, progress, m_next_for_driver);
 
     mem_free(schedule->m_alloc, progress);
+}
+
+uint32_t net_progress_id(net_progress_t progress) {
+    return progress->m_id;
 }
 
 net_driver_t net_progress_driver(net_progress_t progress) {

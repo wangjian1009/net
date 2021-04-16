@@ -12,4 +12,12 @@ struct test_net_progress {
 int test_net_progress_init(net_progress_t base_progress, const char * cmd, net_progress_runing_mode_t mode);
 void test_net_progress_fini(net_progress_t base_progress);
 
+void test_net_progress_expect_execute_begin_success(
+    test_net_driver_t driver, uint32_t ep_id, const char * cmd, net_progress_runing_mode_t mode);
+
+void test_net_progress_expect_execute_begin_fail(
+    test_net_driver_t driver, uint32_t ep_id, const char * cmd, net_progress_runing_mode_t mode);
+
+void test_net_progress_expect_fini(test_net_driver_t driver, uint32_t ep_id);
+
 #endif

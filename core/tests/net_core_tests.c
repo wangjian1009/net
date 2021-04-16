@@ -11,6 +11,8 @@ int main(void) {
     if (net_pair_basic_tests() != 0) rv = -1;
     if (net_pair_established_tests() != 0) rv = -1;
 
+    if (net_progress_basic_tests() != 0) rv = -1;
+
     return rv;
 }
 

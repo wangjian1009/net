@@ -9,4 +9,6 @@ int net_ringbuffer_basic_tests();
 int net_pair_basic_tests();
 int net_pair_established_tests();
 
+int net_progress_basic_tests();
+
 #endif

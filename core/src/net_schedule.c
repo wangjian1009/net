@@ -63,6 +63,7 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em, net_mem_policy_t
     TAILQ_INIT(&schedule->m_debug_setups);
     TAILQ_INIT(&schedule->m_drivers);
     TAILQ_INIT(&schedule->m_protocols);
+    TAILQ_INIT(&schedule->m_progresses);
     TAILQ_INIT(&schedule->m_mem_group_types);
     TAILQ_INIT(&schedule->m_free_local_ip_stack_monitors);
     TAILQ_INIT(&schedule->m_free_addresses);
@@ -182,6 +183,7 @@ void net_schedule_free(net_schedule_t schedule) {
     while(!TAILQ_EMPTY(&schedule->m_drivers)) {
         net_driver_free(TAILQ_LAST(&schedule->m_drivers, net_driver_list));
     }
+    assert(TAILQ_EMPTY(&schedule->m_progresses));
 
     if (schedule->m_noop_protocol) {
         net_protocol_free(schedule->m_noop_protocol);
