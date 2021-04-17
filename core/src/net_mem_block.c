@@ -121,10 +121,10 @@ void net_mem_block_set_size(net_mem_block_t block, uint32_t size) {
     case net_mem_block_bind_progress: {
         net_progress_t progress = block->m_progress.m_progress;
         if (progress) {
-            assert(progress->m_size >= block->m_len);
+            assert(progress->m_block_size >= block->m_len);
 
-            progress->m_size -= block->m_len;
-            progress->m_size += size;
+            progress->m_block_size -= block->m_len;
+            progress->m_block_size += size;
         }
         break;
     }
@@ -169,7 +169,7 @@ void net_mem_block_link_progress(net_mem_block_t block, net_progress_t progress)
 
     TAILQ_INSERT_TAIL(&progress->m_blocks, block, m_progress.m_next);
     block->m_progress.m_progress = progress;
-    progress->m_size += block->m_len;
+    progress->m_block_size += block->m_len;
 
     block->m_bind_type = net_mem_block_bind_progress;
 }
@@ -192,8 +192,8 @@ void net_mem_block_unlink(net_mem_block_t block) {
     case net_mem_block_bind_progress:
         if (block->m_progress.m_progress) {
             net_progress_t progress = block->m_progress.m_progress;
-            assert(progress->m_size >= block->m_len);
-            progress->m_size -= block->m_len;
+            assert(progress->m_block_size >= block->m_len);
+            progress->m_block_size -= block->m_len;
 
             TAILQ_REMOVE(&progress->m_blocks, block, m_endpoint.m_next);
             block->m_progress.m_progress = NULL;

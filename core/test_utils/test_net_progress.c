@@ -55,6 +55,28 @@ void test_net_progress_expect_execute_begin_success(
 void test_net_progress_expect_execute_begin_fail(
     test_net_driver_t driver, uint32_t ep_id, const char * cmd, net_progress_runing_mode_t e_mode)
 {
+    if (ep_id) {
+        expect_value(test_net_progress_init, id, ep_id);
+    }
+    else {
+        expect_any(test_net_progress_init, id);
+    }
+
+    if (cmd) {
+        expect_string(test_net_progress_init, cmd, mem_buffer_strdup(&driver->m_setup_buffer, cmd));
+    }
+    else {
+        expect_any(test_net_progress_init, cmd);
+    }
+
+    const char * mode = net_progress_runing_mode_str(e_mode);
+    expect_string(test_net_progress_init, mode, mode);
+
+    struct test_net_progress_init_setup * setup =
+        mem_buffer_alloc(&driver->m_setup_buffer, sizeof(struct test_net_progress_init_setup));
+    setup->m_rv = -1;
+
+    will_return(test_net_progress_init, setup);
 }
 
 void test_net_progress_expect_fini(test_net_driver_t driver, uint32_t ep_id) {
