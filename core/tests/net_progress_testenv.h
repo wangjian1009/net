@@ -16,7 +16,7 @@ net_progress_testenv_t net_progress_testenv_create();
 void net_progress_testenv_free(net_progress_testenv_t env);
 
 net_progress_t
-net_progress_testenv_run_cmd_read(net_progress_testenv_t env, const char * cmd);
+net_progress_testenv_run_cmd_read(net_progress_testenv_t env, const char * cmd, const char * argv[]);
 
 const char * net_progress_testenv_buffer_to_string(net_progress_testenv_t env);
 

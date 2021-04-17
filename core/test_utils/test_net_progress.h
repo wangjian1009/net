@@ -9,7 +9,9 @@ struct test_net_progress {
     test_net_tl_op_t m_tl_op;
 };
 
-int test_net_progress_init(net_progress_t base_progress, const char * cmd, net_progress_runing_mode_t mode);
+int test_net_progress_init(
+    net_progress_t base_progress,
+    const char * cmd, const char * argv[], net_progress_runing_mode_t mode);
 void test_net_progress_fini(net_progress_t base_progress);
 
 void test_net_progress_expect_execute_begin_success(

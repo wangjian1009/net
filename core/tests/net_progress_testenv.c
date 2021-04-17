@@ -35,11 +35,11 @@ void net_progress_testenv_data_watch(void * ctx, net_progress_t progress) {
 }
 
 net_progress_t
-net_progress_testenv_run_cmd_read(net_progress_testenv_t env, const char * cmd) {
+net_progress_testenv_run_cmd_read(net_progress_testenv_t env, const char * cmd, const char * argv[]) {
     net_progress_t progress = 
         net_progress_auto_create(
-            env->m_env->m_schedule, cmd, net_progress_runing_mode_read,
-            net_progress_testenv_data_watch, env);
+            env->m_env->m_schedule, cmd, argv, net_progress_runing_mode_read,
+            net_progress_testenv_data_watch, env, net_progress_debug_text);
 
     return progress;
 }

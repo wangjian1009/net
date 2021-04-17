@@ -1,4 +1,5 @@
 #include <assert.h>
+#include "cpe/pal/pal_string.h"
 #include "cpe/utils/math_ex.h"
 #include "cpe/utils/stream_buffer.h"
 #include "cpe/utils/string_utils.h"
@@ -15,14 +16,14 @@ static int net_progress_buf_on_consume(net_schedule_t schedule, net_progress_t p
 
 net_progress_t
 net_progress_auto_create(
-    net_schedule_t schedule, const char * cmd, net_progress_runing_mode_t mode,
-    net_progress_update_fun_t update_fun, void * ctx)
+    net_schedule_t schedule, const char * cmd, const char * argv[], net_progress_runing_mode_t mode,
+    net_progress_update_fun_t update_fun, void * ctx, enum net_progress_debug_mode debug)
 {
     net_driver_t driver;
 
     TAILQ_FOREACH(driver, &schedule->m_drivers, m_next_for_schedule) {
         if (driver->m_progress_init) {
-            return net_progress_create(driver, cmd, mode, update_fun, ctx);
+            return net_progress_create(driver, cmd, argv, mode, update_fun, ctx, debug);
         }
     }
     
@@ -31,8 +32,8 @@ net_progress_auto_create(
 
 net_progress_t
 net_progress_create(
-    net_driver_t driver, const char * cmd, net_progress_runing_mode_t mode,
-    net_progress_update_fun_t update_fun, void * ctx)
+    net_driver_t driver, const char * cmd, const char * argv[], net_progress_runing_mode_t mode,
+    net_progress_update_fun_t update_fun, void * ctx, enum net_progress_debug_mode debug)
 {
     net_schedule_t schedule = driver->m_schedule;
 
@@ -45,6 +46,7 @@ net_progress_create(
     progress->m_driver = driver;
     progress->m_id = ++schedule->m_endpoint_max_id;
     progress->m_mode = mode;
+    progress->m_debug = debug;
     progress->m_cmd = NULL;
     progress->m_mem_group = schedule->m_dft_mem_group;
     progress->m_update_fun = update_fun;
@@ -52,11 +54,15 @@ net_progress_create(
     progress->m_state = net_progress_state_runing;
     progress->m_block_size = 0;
     progress->m_tb = NULL;
+    progress->m_exit_stat = 0;
+    progress->m_errno = 0;
+    progress->m_error_msg = NULL;
+
     TAILQ_INIT(&progress->m_blocks);
 
     progress->m_cmd = cpe_str_mem_dup(schedule->m_alloc, cmd);
 
-    if (driver->m_progress_init(progress, cmd, mode) != 0) {
+    if (driver->m_progress_init(progress, cmd, argv, mode) != 0) {
         CPE_ERROR(
             schedule->m_em, "net: progress: create: start cmd fail, mode=%s, cmd=%s!",
             net_progress_runing_mode_str(mode),
@@ -82,8 +88,18 @@ void net_progress_free(net_progress_t progress) {
 
     net_progress_buf_clear(progress);
 
+    if (progress->m_cmd) {
+        mem_free(schedule->m_alloc, progress->m_cmd);
+        progress->m_cmd = NULL;
+    }
+    
+    if (progress->m_error_msg) {
+        mem_free(schedule->m_alloc, progress->m_error_msg);
+        progress->m_error_msg = NULL;
+    }
+    
     TAILQ_REMOVE(&driver->m_progresses, progress, m_next_for_driver);
-
+    
     mem_free(schedule->m_alloc, progress);
 }
 
@@ -101,6 +117,18 @@ net_progress_runing_mode_t net_progress_runing_mode(net_progress_t progress) {
 
 net_progress_state_t net_progress_state(net_progress_t progress) {
     return progress->m_state;
+}
+
+int net_progress_exit_state(net_progress_t progress) {
+    return progress->m_exit_stat;
+}
+
+int net_progress_errno(net_progress_t progress) {
+    return progress->m_errno;
+}
+
+const char * net_progress_error_msg(net_progress_t progress) {
+    return progress->m_error_msg;
 }
 
 static net_mem_block_t
@@ -231,13 +259,14 @@ int net_progress_buf_append_char(net_progress_t progress, uint8_t c) {
     return net_progress_buf_append(progress, &c, sizeof(c));
 }
 
-int net_progress_complete(net_progress_t progress) {
+int net_progress_set_complete(net_progress_t progress, int exit_stat) {
     net_schedule_t schedule = progress->m_driver->m_schedule;
     
     switch(progress->m_state) {
     case net_progress_state_runing:
         break;
     case net_progress_state_complete:
+    case net_progress_state_error:
         CPE_ERROR(
             schedule->m_em, "core: %s: complete: can`t complete in state=%s",
             net_progress_dump(&schedule->m_tmp_buffer, progress),
@@ -245,10 +274,48 @@ int net_progress_complete(net_progress_t progress) {
         return -1;
     }
 
-    CPE_INFO(
-        schedule->m_em, "core: %s: complete",
-        net_progress_dump(&schedule->m_tmp_buffer, progress));
+    if (progress->m_debug != net_progress_debug_none) {
+        CPE_INFO(
+            schedule->m_em, "core: %s: complete, exit-stat=%d",
+            net_progress_dump(&schedule->m_tmp_buffer, progress), exit_stat);
+    }
+
+    progress->m_exit_stat = exit_stat;
     progress->m_state = net_progress_state_complete;
+
+    if (progress->m_update_fun) {
+        progress->m_update_fun(progress->m_update_ctx, progress);
+    }
+    
+    return 0;
+}
+
+int net_progress_set_error(net_progress_t progress, int err, const char * error_msg) {
+    net_schedule_t schedule = progress->m_driver->m_schedule;
+    
+    switch(progress->m_state) {
+    case net_progress_state_runing:
+        break;
+    case net_progress_state_complete:
+    case net_progress_state_error:
+        CPE_ERROR(
+            schedule->m_em, "core: %s: error: can`t error in state=%s",
+            net_progress_dump(&schedule->m_tmp_buffer, progress),
+            net_progress_state_str(progress->m_state));
+        return -1;
+    }
+
+    if (progress->m_debug != net_progress_debug_none) {
+        CPE_INFO(
+            schedule->m_em, "core: %s: error: errno=%d (%s), error-msg=%s",
+            net_progress_dump(&schedule->m_tmp_buffer, progress),
+            err, strerror(err), error_msg);
+    }
+
+    progress->m_errno = err;
+    assert(progress->m_error_msg == NULL);
+    progress->m_error_msg = error_msg ? cpe_str_mem_dup(schedule->m_alloc, error_msg) : NULL;
+    progress->m_state = net_progress_state_error;
 
     if (progress->m_update_fun) {
         progress->m_update_fun(progress->m_update_ctx, progress);
@@ -448,6 +515,8 @@ const char * net_progress_state_str(net_progress_state_t state) {
         return "runing";
     case net_progress_state_complete:
         return "complete";
+    case net_progress_state_error:
+        return "error";
     }
 }
 

@@ -20,9 +20,10 @@ static void net_progress_basic(void **state) {
 
     test_net_progress_expect_execute_begin_success(
         env->m_env->m_tdriver, 0, "cmd1", net_progress_runing_mode_read);
-    
+
+    const char * argv[] = { NULL };
     net_progress_t progress =
-        net_progress_testenv_run_cmd_read(env, "cmd1");
+        net_progress_testenv_run_cmd_read(env, "cmd1", argv);
 
     assert_string_equal(
         net_progress_state_str(net_progress_state_runing),
@@ -35,10 +36,14 @@ static void net_progress_basic(void **state) {
         "abcdde",
         net_progress_testenv_buffer_to_string(env));
 
-    assert_true(net_progress_complete(progress) == 0);
+    assert_true(net_progress_set_complete(progress, 2) == 0);
     assert_string_equal(
         net_progress_state_str(net_progress_state_complete),
         net_progress_state_str(net_progress_state(progress)));
+
+    assert_int_equal(
+        2,
+        net_progress_exit_state(progress));
     
     test_net_progress_expect_fini(env->m_env->m_tdriver, 0);
     net_progress_free(progress);

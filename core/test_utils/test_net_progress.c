@@ -5,7 +5,10 @@ struct test_net_progress_init_setup {
     int m_rv;
 };
 
-int test_net_progress_init(net_progress_t base_progress, const char * cmd, net_progress_runing_mode_t e_mode) {
+int test_net_progress_init(
+    net_progress_t base_progress,
+    const char * cmd, const char * argv[], net_progress_runing_mode_t e_mode)
+{
     uint32_t id = net_progress_id(base_progress);
     const char * mode = net_progress_runing_mode_str(e_mode);
 

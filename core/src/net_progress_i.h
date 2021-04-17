@@ -9,6 +9,7 @@ struct net_progress {
     net_driver_t m_driver;
     uint32_t m_id;
     char * m_cmd;
+    enum net_progress_debug_mode m_debug;
     TAILQ_ENTRY(net_progress) m_next_for_driver;
     net_progress_runing_mode_t m_mode;
     net_mem_group_t m_mem_group;
@@ -18,6 +19,9 @@ struct net_progress {
     net_mem_block_t m_tb;
     net_mem_block_list_t m_blocks;
     uint32_t m_block_size;
+    int m_exit_stat;
+    int m_errno;
+    char * m_error_msg;
 };
 
 NET_END_DECL
