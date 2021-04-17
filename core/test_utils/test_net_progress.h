@@ -20,6 +20,11 @@ void test_net_progress_expect_execute_begin_success(
 void test_net_progress_expect_execute_begin_fail(
     test_net_driver_t driver, uint32_t ep_id, const char * cmd, net_progress_runing_mode_t mode);
 
+void test_net_progress_expect_execute_complete(
+    test_net_driver_t driver,
+    const char * cmd, net_progress_runing_mode_t mode,
+    int exit_rv, const char * output, int64_t delay_ms);
+
 void test_net_progress_expect_fini(test_net_driver_t driver, uint32_t ep_id);
 
 #endif
