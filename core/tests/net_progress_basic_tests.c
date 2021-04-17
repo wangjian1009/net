@@ -35,6 +35,11 @@ static void net_progress_basic(void **state) {
         "abcdde",
         net_progress_testenv_buffer_to_string(env));
 
+    assert_true(net_progress_complete(progress) == 0);
+    assert_string_equal(
+        net_progress_state_str(net_progress_state_complete),
+        net_progress_state_str(net_progress_state(progress)));
+    
     test_net_progress_expect_fini(env->m_env->m_tdriver, 0);
     net_progress_free(progress);
 }

@@ -195,8 +195,7 @@ int net_progress_buf_supply(net_progress_t progress, uint32_t size) {
         progress->m_tb->m_len = size;
         net_mem_block_link_progress(progress->m_tb, progress);
         progress->m_tb = NULL;
-        //TODO: return net_progress_buf_on_supply(schedule, progress, size);
-        return 0;
+        return net_progress_buf_on_supply(schedule, progress);
     }
     else {
         net_mem_block_free(progress->m_tb);
@@ -230,6 +229,32 @@ int net_progress_buf_append(net_progress_t progress, void const * i_data, uint32
 
 int net_progress_buf_append_char(net_progress_t progress, uint8_t c) {
     return net_progress_buf_append(progress, &c, sizeof(c));
+}
+
+int net_progress_complete(net_progress_t progress) {
+    net_schedule_t schedule = progress->m_driver->m_schedule;
+    
+    switch(progress->m_state) {
+    case net_progress_state_runing:
+        break;
+    case net_progress_state_complete:
+        CPE_ERROR(
+            schedule->m_em, "core: %s: complete: can`t complete in state=%s",
+            net_progress_dump(&schedule->m_tmp_buffer, progress),
+            net_progress_state_str(progress->m_state));
+        return -1;
+    }
+
+    CPE_INFO(
+        schedule->m_em, "core: %s: complete",
+        net_progress_dump(&schedule->m_tmp_buffer, progress));
+    progress->m_state = net_progress_state_complete;
+
+    if (progress->m_update_fun) {
+        progress->m_update_fun(progress->m_update_ctx, progress);
+    }
+    
+    return 0;
 }
 
 uint32_t net_progress_buf_size(net_progress_t progress) {

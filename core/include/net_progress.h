@@ -42,6 +42,7 @@ void net_progress_buf_release(net_progress_t progress);
 int net_progress_buf_supply(net_progress_t progress, uint32_t size);
 int net_progress_buf_append(net_progress_t progress, void const * data, uint32_t size);
 int net_progress_buf_append_char(net_progress_t progress, uint8_t c);
+int net_progress_complete(net_progress_t progress);
 
 /*buf.read*/
 void * net_progress_buf_peak(net_progress_t progress, uint32_t * size);
