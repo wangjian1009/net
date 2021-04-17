@@ -7,6 +7,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/test-utils-net-protocol-http-svr.cmake)
 #tests
 include(${CMAKE_CURRENT_LIST_DIR}/tests-net-dns.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/tests-net-core.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/tests-net-driver-sock.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/tests-net-driver-ssl.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/tests-net-driver-ws.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/tests-net-driver-http2.cmake)
