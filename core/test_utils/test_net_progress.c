@@ -1,4 +1,5 @@
 #include "cmocka_all.h"
+#include "cpe/pal/pal_string.h"
 #include "net_schedule.h"
 #include "test_net_progress.h"
 #include "test_net_tl_op.h"
@@ -125,6 +126,7 @@ void test_net_progress_expect_execute_begin_success(
     setup->m_rv = 0;
     setup->m_delay_exit = -1;
     setup->m_exit_stat = -1;
+    setup->m_output_size = 0;
     setup->m_output = NULL;
 
     test_net_progress_expect_execute_setup_init(driver, ep_id, cmd, e_mode, setup);
@@ -138,6 +140,7 @@ void test_net_progress_expect_execute_begin_fail(
     setup->m_rv = -1;
     setup->m_delay_exit = -1;
     setup->m_exit_stat = -1;
+    setup->m_output_size = 0;
     setup->m_output = NULL;
 
     test_net_progress_expect_execute_setup_init(driver, ep_id, cmd, e_mode, setup);
@@ -152,6 +155,7 @@ void test_net_progress_expect_execute_complete(
     setup->m_rv = 0;
     setup->m_delay_exit = delay_ms;
     setup->m_exit_stat = exit_rv;
+    setup->m_output_size = output ? strlen(output) : 0;
     setup->m_output = output ? mem_buffer_strdup(&driver->m_setup_buffer, output) : NULL;
 
     test_net_progress_expect_execute_setup_init(driver, 0, cmd, mode, setup);
