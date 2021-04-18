@@ -132,6 +132,10 @@ net_progress_state_t net_progress_state(net_progress_t progress) {
     return progress->m_state;
 }
 
+net_progress_debug_mode_t net_progress_debug_mode(net_progress_t progress) {
+    return progress->m_debug;
+}
+
 int net_progress_exit_state(net_progress_t progress) {
     return progress->m_exit_stat;
 }

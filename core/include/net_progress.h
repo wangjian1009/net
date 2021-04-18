@@ -49,6 +49,7 @@ uint32_t net_progress_id(net_progress_t progress);
 net_driver_t net_progress_driver(net_progress_t progress);
 net_progress_runing_mode_t net_progress_runing_mode(net_progress_t progress);
 net_progress_state_t net_progress_state(net_progress_t progress);
+net_progress_debug_mode_t net_progress_debug_mode(net_progress_t progress);
 
 int net_progress_exit_state(net_progress_t progress);
 int net_progress_errno(net_progress_t progress);

@@ -1,4 +1,5 @@
 #include "cmocka_all.h"
+#include "net_schedule.h"
 #include "test_net_progress.h"
 #include "test_net_tl_op.h"
 
@@ -22,6 +23,20 @@ void test_net_progress_complete_op_cb(void * ctx, test_net_tl_op_t op) {
     struct test_net_progress_complete_op * complete_op = test_net_tl_op_data(op);
     net_progress_t progress = net_progress_find(schedule, complete_op->m_ep_id);
     if (progress != NULL) {
+        switch(net_progress_debug_mode(progress)) {
+        case net_progress_debug_none:
+            break;
+        case net_progress_debug_text:
+            CPE_INFO(
+                net_schedule_em(schedule), "test: %s: << %d data\n%.*s",
+                net_progress_dump(net_schedule_tmp_buffer(schedule), progress),
+                complete_op->m_setup->m_output_size,
+                complete_op->m_setup->m_output_size, (const char *)complete_op->m_setup->m_output);
+            break;
+        case net_progress_debug_binary:
+            break;
+        }
+        
         net_progress_buf_append(
             progress,
             complete_op->m_setup->m_output, complete_op->m_setup->m_output_size);

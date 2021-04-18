@@ -155,6 +155,19 @@ static void net_sock_progress_on_read(net_sock_progress_t progress) {
             net_progress_set_complete(base_progress, stat);
             return;
         } else {
+            switch(net_progress_debug_mode(base_progress)) {
+            case net_progress_debug_none:
+                break;
+            case net_progress_debug_text:
+                CPE_INFO(
+                    driver->m_em, "sock: %s: << %d data\n%.*s",
+                    net_progress_dump(net_sock_driver_tmp_buffer(driver), base_progress),
+                    (int)rv, (int)rv, (const char *)buf);
+                break;
+            case net_progress_debug_binary:
+                break;
+            }
+            
             if (net_progress_buf_supply(base_progress, (uint32_t)rv) != 0) {
                 CPE_ERROR(
                     driver->m_em, "sock: %s: supply fail",
