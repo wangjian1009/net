@@ -72,6 +72,7 @@ net_progress_create(
     }
     
     TAILQ_INSERT_TAIL(&driver->m_progresses, progress, m_next_for_driver);
+    TAILQ_INSERT_TAIL(&schedule->m_progresses, progress, m_next_for_schedule);
     return progress;
 }
 
@@ -99,8 +100,20 @@ void net_progress_free(net_progress_t progress) {
     }
     
     TAILQ_REMOVE(&driver->m_progresses, progress, m_next_for_driver);
+    TAILQ_REMOVE(&schedule->m_progresses, progress, m_next_for_schedule);
     
     mem_free(schedule->m_alloc, progress);
+}
+
+net_progress_t
+net_progress_find(net_schedule_t schedule, uint32_t ep_id) {
+    net_progress_t progress;
+
+    TAILQ_FOREACH(progress, &schedule->m_progresses, m_next_for_schedule) {
+        if (progress->m_id == ep_id) return progress;
+    }
+
+    return NULL;
 }
 
 uint32_t net_progress_id(net_progress_t progress) {

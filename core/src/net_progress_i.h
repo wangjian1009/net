@@ -11,6 +11,7 @@ struct net_progress {
     char * m_cmd;
     enum net_progress_debug_mode m_debug;
     TAILQ_ENTRY(net_progress) m_next_for_driver;
+    TAILQ_ENTRY(net_progress) m_next_for_schedule;
     net_progress_runing_mode_t m_mode;
     net_mem_group_t m_mem_group;
     void * m_update_ctx;

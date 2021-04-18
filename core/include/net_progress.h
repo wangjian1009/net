@@ -42,6 +42,9 @@ net_progress_create(
 
 void net_progress_free(net_progress_t progress);
 
+net_progress_t
+net_progress_find(net_schedule_t schedule, uint32_t ep_id);
+
 uint32_t net_progress_id(net_progress_t progress);
 net_driver_t net_progress_driver(net_progress_t progress);
 net_progress_runing_mode_t net_progress_runing_mode(net_progress_t progress);
