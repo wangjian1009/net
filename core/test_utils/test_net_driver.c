@@ -80,7 +80,7 @@ static int test_net_driver_init(net_driver_t base_driver) {
 
     TAILQ_INIT(&driver->m_watchers);
 
-    driver->m_cur_time_ms = cur_time_ms();
+    driver->m_cur_time_ms = 100;
     TAILQ_INIT(&driver->m_tl_ops);
 
     mem_buffer_init(&driver->m_setup_buffer, test_allocrator());

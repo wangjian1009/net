@@ -60,7 +60,7 @@ int64_t test_net_driver_run(test_net_driver_t driver, int64_t duration_ms) {
     int64_t begin_time_ms = driver->m_cur_time_ms;
     int64_t end_time_ms = begin_time_ms + duration_ms;
     test_net_tl_op_t op;
-    
+
     while((op = TAILQ_FIRST(&driver->m_tl_ops)) != NULL) {
         if (op->m_execute_at_ms > end_time_ms) break;
 
@@ -77,6 +77,7 @@ int64_t test_net_driver_run(test_net_driver_t driver, int64_t duration_ms) {
     
     uint16_t effect_time_ms = driver->m_cur_time_ms - begin_time_ms;
     driver->m_cur_time_ms = end_time_ms;
+
     return effect_time_ms;
 }
 
