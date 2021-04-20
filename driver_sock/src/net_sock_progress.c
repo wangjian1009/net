@@ -61,12 +61,12 @@ int net_sock_progress_init(
         }
         dup_args[arg_count] = NULL;
 
-        closefrom(3);
-  
+        closefrom(4);
+
         if (execv(cmd, dup_args) != 0) {
-            fprintf(stderr, "execute %s fail, errno=%d (%s)", cmd, errno, strerror(errno));
+            CPE_ERROR(driver->m_em, "execute %s fail, errno=%d (%s)", cmd, errno, strerror(errno));
         }
-        
+
         _exit(errno);
     }
 
