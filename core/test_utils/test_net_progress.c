@@ -55,14 +55,15 @@ int test_net_progress_init(
     uint32_t id = net_progress_id(base_progress);
     const char * mode = net_progress_runing_mode_str(e_mode);
 
-    char cmd[1024];
+    size_t cmd_capacity = 512;
+    char * cmd = mem_buffer_alloc(&driver->m_setup_buffer, cmd_capacity);
     int n;
 
-    n = snprintf(cmd, sizeof(cmd), "%s", cmd_bin);
+    n = snprintf(cmd, cmd_capacity, "%s", cmd_bin);
     int i;
     for(i = 0; i < 100; ++i) {
         if (cmd_argv[i] == NULL) break;
-        n += snprintf(cmd + n, sizeof(cmd) - n, " %s", cmd_argv[i]);
+        n += snprintf(cmd + n, cmd_capacity - n, " %s", cmd_argv[i]);
     }
     
     check_expected(id);

@@ -817,7 +817,7 @@ const char * net_address_host_inline(void * buf, uint32_t capacity, net_address_
         inet_ntop(AF_INET6, &((struct net_address_ipv4v6 *)address)->m_ipv6, buf, INET6_ADDRSTRLEN);
         return buf;
     case net_address_domain:
-        return ((struct net_address_domain *)address)->m_url;
+        return &((struct net_address_domain *)address)->m_url[0];
     case net_address_local:
         return ((struct net_address_local *)address)->m_path;
     }
