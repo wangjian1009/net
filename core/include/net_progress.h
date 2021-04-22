@@ -56,6 +56,7 @@ net_progress_state_t net_progress_state(net_progress_t progress);
 
 /*设置属性 */
 int net_progress_append_arg(net_progress_t progress, const char * arg);
+int net_progress_append_args(net_progress_t progress, const char * args[], uint16_t count);
 uint16_t net_progress_arg_count(net_progress_t progress);
 const char * net_progress_arg_at(net_progress_t progress, uint16_t pos);
 char * * net_progress_argv(net_progress_t progress);

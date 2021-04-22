@@ -190,6 +190,15 @@ net_progress_debug_mode_t net_progress_debug_mode(net_progress_t progress) {
     return progress->m_debug;
 }
 
+int net_progress_append_args(net_progress_t progress, const char * args[], uint16_t count) {
+    uint16_t i;
+    for (i = 0; i < count; ++i) {
+        if (net_progress_append_arg(progress, args[i]) != 0) return -1;
+    }
+
+    return 0;
+}
+
 int net_progress_append_arg(net_progress_t progress, const char * arg) {
     net_schedule_t schedule = progress->m_driver->m_schedule;
     
