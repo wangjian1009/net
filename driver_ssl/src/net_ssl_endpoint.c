@@ -495,7 +495,7 @@ static void net_ssl_endpoint_ssl_debug(void *ctx, int level, const char *file, i
     net_ssl_endpoint_t endpoint = ctx;
 
     if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 2) {
-        net_protocol_t base_protocol = net_protocol_from_data(net_endpoint_protocol(endpoint->m_base_endpoint));
+        net_protocol_t base_protocol = net_endpoint_protocol(endpoint->m_base_endpoint);
         net_ssl_protocol_t protocol = net_protocol_data(base_protocol);
 
         const char *p, *basename;
