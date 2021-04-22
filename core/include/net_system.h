@@ -31,6 +31,7 @@ typedef struct net_dns_query * net_dns_query_t;
 typedef enum net_progress_runing_mode net_progress_runing_mode_t;
 typedef enum net_progress_state net_progress_state_t;
 typedef enum net_progress_debug_mode net_progress_debug_mode_t;
+typedef enum net_progress_path_search_policy net_progress_path_search_policy_t;
 typedef struct net_progress * net_progress_t;
 
 typedef struct net_address_data_ipv4 * net_address_data_ipv4_t;

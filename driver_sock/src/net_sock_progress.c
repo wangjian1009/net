@@ -13,13 +13,11 @@
 static void net_sock_progress_on_event(void * ctx, int fd, uint8_t do_read, uint8_t do_write);
 static void net_sock_progress_check_close(net_sock_progress_t progress, uint8_t do_kill, int * stat);
 
-int net_sock_progress_init(
-    net_progress_t base_progress,
-    const char * cmd, const char * argv[], net_progress_runing_mode_t mode)
-{
+int net_sock_progress_init(net_progress_t base_progress) {
     net_driver_t base_driver = net_progress_driver(base_progress);
     net_sock_driver_t driver = net_driver_data(base_driver);
     net_sock_progress_t progress = net_progress_data(base_progress);
+    net_progress_runing_mode_t mode = net_progress_runing_mode(base_progress);
 
     int pfd[2];
     if (pipe(pfd) < 0) {
@@ -51,20 +49,37 @@ int net_sock_progress_init(
             }
         }
 
-        uint16_t arg_count = 0;
-        while(argv[arg_count] != NULL) arg_count++;
-
-        char * * dup_args = malloc(sizeof(char*) * (arg_count + 1));
-        uint16_t i;
-        for(i = 0; i < arg_count; i++) {
-            dup_args[i] = strdup(argv[i]);
-        }
-        dup_args[arg_count] = NULL;
-
         closefrom(4);
 
-        if (execv(cmd, dup_args) != 0) {
-            CPE_ERROR(driver->m_em, "execute %s fail, errno=%d (%s)", cmd, errno, strerror(errno));
+        int rv = -1;
+        const char * searh_path = NULL;
+        
+        switch(net_progress_path_search_policy(base_progress)) {
+        case net_progress_path_search_none:
+            rv = execv(net_progress_cmd(base_progress), net_progress_argv(base_progress));
+            break;
+        case net_progress_path_search_auto:
+            if ((searh_path = net_progress_search_path(base_progress))) {
+                setenv("PATH", searh_path, 1);
+            }
+            rv = execvp(net_progress_cmd(base_progress), net_progress_argv(base_progress));
+            break;
+        case net_progress_path_search_external:
+            rv = execvp(net_progress_cmd(base_progress), net_progress_argv(base_progress));
+            break;
+        case net_progress_path_search_internal:
+            if ((searh_path = net_progress_search_path(base_progress))) {
+                setenv("PATH", searh_path, 1);
+            }
+            rv = execv(net_progress_cmd(base_progress), net_progress_argv(base_progress));
+            break;
+        }
+
+        if (rv != 0) {
+            CPE_ERROR(
+                driver->m_em, "execute %s fail, errno=%d (%s)",
+                net_progress_dump(net_sock_driver_tmp_buffer(driver), base_progress),
+                errno, strerror(errno));
         }
 
         _exit(errno);

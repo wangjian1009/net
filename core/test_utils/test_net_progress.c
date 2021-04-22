@@ -45,25 +45,21 @@ void test_net_progress_complete_op_cb(void * ctx, test_net_tl_op_t op) {
     }
 }
 
-int test_net_progress_init(
-    net_progress_t base_progress,
-    const char * cmd_bin, const char * cmd_argv[], net_progress_runing_mode_t e_mode)
-{
+int test_net_progress_init(net_progress_t base_progress) {
     net_driver_t base_driver = net_progress_driver(base_progress);
     test_net_driver_t driver = test_net_driver_cast(base_driver);
     
     uint32_t id = net_progress_id(base_progress);
-    const char * mode = net_progress_runing_mode_str(e_mode);
+    const char * mode = net_progress_runing_mode_str(net_progress_runing_mode(base_progress));
 
     size_t cmd_capacity = 512;
     char * cmd = mem_buffer_alloc(&driver->m_setup_buffer, cmd_capacity);
     int n;
 
-    n = snprintf(cmd, cmd_capacity, "%s", cmd_bin);
+    n = snprintf(cmd, cmd_capacity, "%s", net_progress_cmd(base_progress));
     int i;
-    for(i = 0; i < 100; ++i) {
-        if (cmd_argv[i] == NULL) break;
-        n += snprintf(cmd + n, cmd_capacity - n, " %s", cmd_argv[i]);
+    for(i = 0; i < net_progress_arg_count(base_progress); ++i) {
+        n += snprintf(cmd + n, cmd_capacity - n, " %s", net_progress_arg_at(base_progress, i));
     }
     
     check_expected(id);

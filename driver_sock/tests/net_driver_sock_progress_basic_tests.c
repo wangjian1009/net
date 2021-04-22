@@ -19,14 +19,15 @@ static int teardown(void **state) {
 static void driver_sock_progress_basic_test(void **state) {
     net_driver_sock_testenv_t env = *state;
 
-    const char * argv[] = { "-la", NULL };
-    
     net_progress_t progress =
         net_progress_create(
-            net_driver_from_data(env->m_driver), "/bin/ls", argv,
-            net_progress_runing_mode_read,
-            NULL, NULL, net_progress_debug_text);
+            net_driver_from_data(env->m_driver), "/bin/ls",
+            net_progress_runing_mode_read, net_progress_debug_text);
     assert_true(progress);
+
+    net_progress_append_arg(progress, "-la");
+
+    assert_true(net_progress_start(progress) == 0);
 
     assert_int_equal(1, event_base_dispatch(env->m_event_base));
 

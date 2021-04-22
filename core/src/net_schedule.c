@@ -1,6 +1,7 @@
 #include "assert.h"
 #include "cpe/pal/pal_stdlib.h"
 #include "cpe/pal/pal_strings.h"
+#include "cpe/utils/string_utils.h"
 #include "net_schedule_i.h"
 #include "net_local_ip_stack_monitor_i.h"
 #include "net_driver_i.h"
@@ -58,6 +59,8 @@ net_schedule_create(mem_allocrator_t alloc, error_monitor_t em, net_mem_policy_t
     schedule->m_endpoint_driver_capacity = 0;
     schedule->m_local_ip_stack = net_local_ip_stack_ipv4;
     schedule->m_domain_address_rule = NULL;
+    schedule->m_progress_path_search_policy = net_progress_path_search_none;
+    schedule->m_progress_search_path = NULL;
 
     TAILQ_INIT(&schedule->m_local_ip_stack_monitors);
     TAILQ_INIT(&schedule->m_debug_setups);
@@ -214,6 +217,12 @@ void net_schedule_free(net_schedule_t schedule) {
         schedule->m_domain_address_rule = NULL;
     }
 
+    if (schedule->m_progress_search_path) {
+        mem_free(schedule->m_alloc, schedule->m_progress_search_path);
+        schedule->m_progress_search_path = NULL;
+    }
+
+    /*free*/
     while(!TAILQ_EMPTY(&schedule->m_free_local_ip_stack_monitors)) {
         net_local_ip_stack_monitor_real_free(TAILQ_FIRST(&schedule->m_free_local_ip_stack_monitors));
     }
@@ -283,6 +292,40 @@ uint8_t net_schedule_debug(net_schedule_t schedule) {
 
 void net_schedule_set_debug(net_schedule_t schedule, uint8_t debug) {
     schedule->m_debug = debug;
+}
+
+net_progress_path_search_policy_t
+net_schedule_progress_path_search_policy(net_schedule_t schedule) {
+    return schedule->m_progress_path_search_policy;
+}
+
+void net_schedule_progress_set_path_search_policy(
+    net_schedule_t schedule, net_progress_path_search_policy_t policy)
+{
+    schedule->m_progress_path_search_policy = policy;
+}
+
+const char * net_schedule_progress_search_path(net_schedule_t schedule) {
+    return schedule->m_progress_search_path;
+}
+
+int net_schedule_progress_set_search_path(net_schedule_t schedule, const char * path) {
+    char * new_path = NULL;
+    if (path) {
+        new_path = cpe_str_mem_dup(schedule->m_alloc, path);
+        if (new_path == NULL) {
+            CPE_ERROR(schedule->m_em, "core: progress: setsearch path: dup path %s fail", path);
+            return -1;
+        }
+    }
+
+    if (schedule->m_progress_search_path) {
+        mem_free(schedule->m_alloc, schedule->m_progress_search_path);
+    }
+
+    schedule->m_progress_search_path = new_path;
+    
+    return 0;
 }
 
 void net_schedule_set_dns_resolver(

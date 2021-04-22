@@ -16,14 +16,12 @@ static int net_progress_buf_on_consume(net_schedule_t schedule, net_progress_t p
 
 net_progress_t
 net_progress_auto_create(
-    net_schedule_t schedule, const char * cmd, const char * argv[], net_progress_runing_mode_t mode,
-    net_progress_update_fun_t update_fun, void * ctx, enum net_progress_debug_mode debug)
-{
+    net_schedule_t schedule, const char * cmd, net_progress_runing_mode_t mode, net_progress_debug_mode_t debug) {
     net_driver_t driver;
 
     TAILQ_FOREACH(driver, &schedule->m_drivers, m_next_for_schedule) {
         if (driver->m_progress_init) {
-            return net_progress_create(driver, cmd, argv, mode, update_fun, ctx, debug);
+            return net_progress_create(driver, cmd, mode, debug);
         }
     }
     
@@ -32,8 +30,7 @@ net_progress_auto_create(
 
 net_progress_t
 net_progress_create(
-    net_driver_t driver, const char * cmd, const char * argv[], net_progress_runing_mode_t mode,
-    net_progress_update_fun_t update_fun, void * ctx, enum net_progress_debug_mode debug)
+    net_driver_t driver, const char * cmd, net_progress_runing_mode_t mode, net_progress_debug_mode_t debug)
 {
     net_schedule_t schedule = driver->m_schedule;
 
@@ -48,10 +45,15 @@ net_progress_create(
     progress->m_mode = mode;
     progress->m_debug = debug;
     progress->m_cmd = NULL;
+    progress->m_arg_count = 0;
+    progress->m_arg_capacity = 0;
+    progress->m_argv = NULL;
     progress->m_mem_group = schedule->m_dft_mem_group;
-    progress->m_update_fun = update_fun;
-    progress->m_update_ctx = ctx;
-    progress->m_state = net_progress_state_runing;
+    progress->m_path_search_policy = schedule->m_progress_path_search_policy;
+    progress->m_search_path = NULL;
+    progress->m_update_fun = NULL;
+    progress->m_update_ctx = NULL;
+    progress->m_state = net_progress_state_init;
     progress->m_block_size = 0;
     progress->m_tb = NULL;
     progress->m_exit_stat = 0;
@@ -61,16 +63,21 @@ net_progress_create(
     TAILQ_INIT(&progress->m_blocks);
 
     progress->m_cmd = cpe_str_mem_dup(schedule->m_alloc, cmd);
-
-    if (driver->m_progress_init(progress, cmd, argv, mode) != 0) {
-        CPE_ERROR(
-            schedule->m_em, "net: progress: create: start cmd fail, mode=%s, cmd=%s!",
-            net_progress_runing_mode_str(mode),
-            cmd);
+    if (progress->m_cmd == NULL) {
+        CPE_ERROR(schedule->m_em, "core: progress %s: crate: dup cmd fail", cmd);
         mem_free(schedule->m_alloc, progress);
         return NULL;
     }
-    
+
+    progress->m_arg_capacity = 8;
+    progress->m_argv = mem_alloc(schedule->m_alloc, sizeof(char*) * progress->m_arg_capacity);
+    if (progress->m_argv == NULL) {
+        CPE_ERROR(schedule->m_em, "core: progress %s: crate: create argv fail, capacity=%d", cmd, progress->m_arg_capacity);
+        mem_free(schedule->m_alloc, progress);
+        return NULL;
+    }
+    progress->m_argv[0] = NULL;
+
     TAILQ_INSERT_TAIL(&driver->m_progresses, progress, m_next_for_driver);
     TAILQ_INSERT_TAIL(&schedule->m_progresses, progress, m_next_for_schedule);
     return progress;
@@ -80,7 +87,9 @@ void net_progress_free(net_progress_t progress) {
     net_driver_t driver = progress->m_driver;
     net_schedule_t schedule = driver->m_schedule;
 
-    driver->m_progress_fini(progress);
+    if (progress->m_state != net_progress_state_init) {
+        driver->m_progress_fini(progress);
+    }
 
     if (progress->m_tb) {
         net_mem_block_free(progress->m_tb);
@@ -92,6 +101,21 @@ void net_progress_free(net_progress_t progress) {
     if (progress->m_cmd) {
         mem_free(schedule->m_alloc, progress->m_cmd);
         progress->m_cmd = NULL;
+    }
+
+    if (progress->m_argv) {
+        uint16_t i;
+        for (i = 0; i < progress->m_arg_count; i++) {
+            mem_free(schedule->m_alloc, progress->m_argv[i]);
+        }
+        mem_free(schedule->m_alloc, progress->m_argv);
+        progress->m_arg_capacity = 0;
+        progress->m_arg_count = 0;
+    }
+
+    if (progress->m_search_path) {
+        mem_free(schedule->m_alloc, progress->m_search_path);
+        progress->m_search_path = NULL;
     }
     
     if (progress->m_error_msg) {
@@ -116,12 +140,42 @@ net_progress_find(net_schedule_t schedule, uint32_t ep_id) {
     return NULL;
 }
 
+int net_progress_start(net_progress_t progress) {
+    net_schedule_t schedule = progress->m_driver->m_schedule;
+
+    if (progress->m_state != net_progress_state_init) {
+        CPE_ERROR(
+            schedule->m_em, "core: %s: can`t start in state %s",
+            net_progress_dump(&schedule->m_tmp_buffer, progress),
+            net_progress_state_str(progress->m_state));
+        return -1;
+    }
+
+    progress->m_state = net_progress_state_runing;
+    if (progress->m_driver->m_progress_init(progress) != 0) {
+        if (progress->m_state == net_progress_state_runing) {
+            progress->m_state = net_progress_state_init;
+        }
+        
+        CPE_ERROR(
+            schedule->m_em, "core: %s: start cmd fail!",
+            net_progress_dump(&schedule->m_tmp_buffer, progress));
+        return -1;
+    }
+
+    return 0;
+}
+
 uint32_t net_progress_id(net_progress_t progress) {
     return progress->m_id;
 }
 
 net_driver_t net_progress_driver(net_progress_t progress) {
     return progress->m_driver;
+}
+
+const char * net_progress_cmd(net_progress_t progress) {
+    return progress->m_cmd;
 }
 
 net_progress_runing_mode_t net_progress_runing_mode(net_progress_t progress) {
@@ -134,6 +188,131 @@ net_progress_state_t net_progress_state(net_progress_t progress) {
 
 net_progress_debug_mode_t net_progress_debug_mode(net_progress_t progress) {
     return progress->m_debug;
+}
+
+int net_progress_append_arg(net_progress_t progress, const char * arg) {
+    net_schedule_t schedule = progress->m_driver->m_schedule;
+    
+    if (progress->m_state != net_progress_state_init) {
+        CPE_ERROR(
+            schedule->m_em, "core: %s: can`t append arg in state %s",
+            net_progress_dump(&schedule->m_tmp_buffer, progress),
+            net_progress_state_str(progress->m_state));
+        return -1;
+    }
+
+    if (progress->m_arg_count + 1 + 1 > progress->m_arg_capacity) {
+        uint16_t new_capacity = progress->m_arg_capacity < 16 ? 16 : progress->m_arg_capacity * 2;
+        char * * new_argv = mem_alloc(schedule->m_alloc, sizeof(char*) * new_capacity);
+        if (new_argv == NULL) {
+            CPE_ERROR(
+                schedule->m_em, "core: %s: append arg: create argv buf fail, capacity=%d",
+                net_progress_dump(&schedule->m_tmp_buffer, progress), new_capacity);
+            return -1;
+        }
+
+        if (progress->m_argv) {
+            memcpy(new_argv, progress->m_argv, sizeof(char*) * progress->m_arg_count);
+            mem_free(schedule->m_alloc, progress->m_argv);
+        }
+
+        progress->m_argv = new_argv;
+        progress->m_arg_capacity = new_capacity;
+        progress->m_argv[progress->m_arg_count] = NULL;
+    }
+
+    progress->m_argv[progress->m_arg_count] = cpe_str_mem_dup(schedule->m_alloc, arg);
+    if (progress->m_argv[progress->m_arg_count] == NULL) {
+        CPE_ERROR(
+            schedule->m_em, "core: %s: append arg: dup arg %s fail",
+            net_progress_dump(&schedule->m_tmp_buffer, progress), arg);
+        return -1;
+    }
+    progress->m_arg_count++;
+    assert(progress->m_arg_count < progress->m_arg_capacity);
+    progress->m_argv[progress->m_arg_count] = NULL;
+
+    return 0;
+}
+
+uint16_t net_progress_arg_count(net_progress_t progress) {
+    return progress->m_arg_count;
+}
+
+const char * net_progress_arg_at(net_progress_t progress, uint16_t pos) {
+    assert(pos < progress->m_arg_count);
+    return progress->m_argv[pos];
+}
+
+char * * net_progress_argv(net_progress_t progress) {
+    return progress->m_argv;
+}
+
+net_progress_path_search_policy_t net_progress_path_search_policy(net_progress_t progress) {
+    return progress->m_path_search_policy;
+}
+
+int net_progress_set_path_search_policy(net_progress_t progress, net_progress_path_search_policy_t policy) {
+    net_schedule_t schedule = progress->m_driver->m_schedule;
+    
+    if (progress->m_state != net_progress_state_init) {
+        CPE_ERROR(
+            schedule->m_em, "core: %s: can`t set search policy in state %s",
+            net_progress_dump(&schedule->m_tmp_buffer, progress),
+            net_progress_state_str(progress->m_state));
+        return -1;
+    }
+
+    progress->m_path_search_policy = policy;
+
+    return 0;
+}
+
+const char * net_progress_search_path(net_progress_t progress) {
+    net_schedule_t schedule = progress->m_driver->m_schedule;
+    return progress->m_search_path ? progress->m_search_path : schedule->m_progress_search_path;
+}
+
+int net_progress_set_search_path(net_progress_t progress, const char * path) {
+    net_schedule_t schedule = progress->m_driver->m_schedule;
+    
+    char * new_path = NULL;
+    if (path) {
+        new_path = cpe_str_mem_dup(schedule->m_alloc, path);
+        if (new_path == NULL) {
+            CPE_ERROR(
+                schedule->m_em, "core: %s: set search path: dup path %s fail",
+                net_progress_dump(&schedule->m_tmp_buffer, progress), path);
+            return -1;
+        }
+    }
+
+    if (progress->m_search_path) {
+        mem_free(schedule->m_alloc, progress->m_search_path);
+    }
+
+    progress->m_search_path = new_path;
+    
+    return 0;
+}
+
+int net_progress_set_reader(
+    net_progress_t progress, net_progress_update_fun_t update_fun, void * ctx)
+{
+    net_schedule_t schedule = progress->m_driver->m_schedule;
+    
+    if (progress->m_state != net_progress_state_init) {
+        CPE_ERROR(
+            schedule->m_em, "core: %s: can`t set read in state %s",
+            net_progress_dump(&schedule->m_tmp_buffer, progress),
+            net_progress_state_str(progress->m_state));
+        return -1;
+    }
+    
+    progress->m_update_fun = update_fun;
+    progress->m_update_ctx = ctx;
+
+    return 0;
 }
 
 int net_progress_exit_state(net_progress_t progress) {
@@ -280,6 +459,7 @@ int net_progress_set_complete(net_progress_t progress, int exit_stat) {
     net_schedule_t schedule = progress->m_driver->m_schedule;
     
     switch(progress->m_state) {
+    case net_progress_state_init:
     case net_progress_state_runing:
         break;
     case net_progress_state_complete:
@@ -311,6 +491,7 @@ int net_progress_set_error(net_progress_t progress, int err, const char * error_
     net_schedule_t schedule = progress->m_driver->m_schedule;
     
     switch(progress->m_state) {
+    case net_progress_state_init:
     case net_progress_state_runing:
         break;
     case net_progress_state_complete:
@@ -504,7 +685,14 @@ net_progress_t net_progress_from_data(void * data) {
 }
 
 void net_progress_print(write_stream_t ws, net_progress_t progress) {
-    stream_printf(ws, "[%d: %s]", progress->m_id, progress->m_cmd);
+    stream_printf(ws, "[%d: %s", progress->m_id, progress->m_cmd);
+
+    uint16_t i;
+    for(i = 0; i < progress->m_arg_count; ++i) {
+        stream_printf(ws, " %s", progress->m_argv[i]);
+    }
+    
+    stream_printf(ws, "]");
 }
 
 const char * net_progress_dump(mem_buffer_t buff, net_progress_t progress) {
@@ -528,6 +716,8 @@ const char * net_progress_runing_mode_str(net_progress_runing_mode_t mode) {
 
 const char * net_progress_state_str(net_progress_state_t state) {
     switch(state) {
+    case net_progress_state_init:
+        return "init";
     case net_progress_state_runing:
         return "runing";
     case net_progress_state_complete:

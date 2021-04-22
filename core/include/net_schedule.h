@@ -66,6 +66,13 @@ void net_schedule_set_local_ip_stack(net_schedule_t schedule, net_local_ip_stack
 int net_schedule_local_ip_stack_detect(net_schedule_t schedule);
 const char * net_local_ip_stack_str(net_local_ip_stack_t ipstack);
 
+/*progress*/
+net_progress_path_search_policy_t net_schedule_progress_path_search_policy(net_schedule_t schedule);
+void net_schedule_progress_set_path_search_policy(net_schedule_t schedule, net_progress_path_search_policy_t policy);
+
+const char * net_schedule_progress_search_path(net_schedule_t schedule);
+int net_schedule_progress_set_search_path(net_schedule_t schedule, const char * path);
+
 /*debug*/
 int net_debug_remote_host(net_schedule_t schedule, const char * remote, uint8_t protocol_debug, uint8_t driver_debug);
 int net_debug_local_host(net_schedule_t schedule, const char * local, uint8_t protocol_debug, uint8_t driver_debug);

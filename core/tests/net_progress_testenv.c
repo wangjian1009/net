@@ -38,9 +38,22 @@ net_progress_t
 net_progress_testenv_run_cmd_read(net_progress_testenv_t env, const char * cmd, const char * argv[]) {
     net_progress_t progress = 
         net_progress_auto_create(
-            env->m_env->m_schedule, cmd, argv, net_progress_runing_mode_read,
-            net_progress_testenv_data_watch, env, net_progress_debug_text);
+            env->m_env->m_schedule, cmd, net_progress_runing_mode_read, net_progress_debug_text);
+    assert_true(progress);
+    
+    net_progress_set_reader(progress, net_progress_testenv_data_watch, env);
 
+    uint16_t i;
+    for(i = 0; i < 100; ++i) {
+        if (argv[i] == NULL) break;
+        net_progress_append_arg(progress, argv[i]);
+    }
+
+    if (net_progress_start(progress) != 0) {
+        net_progress_free(progress);
+        return NULL;
+    }
+    
     return progress;
 }
 

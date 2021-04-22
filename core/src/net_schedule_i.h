@@ -6,6 +6,7 @@
 #include "cpe/utils/buffer.h"
 #include "cpe/utils/hash.h"
 #include "net_schedule.h"
+#include "net_progress.h"
 
 NET_BEGIN_DECL
 
@@ -78,6 +79,8 @@ struct net_schedule {
     struct cpe_hash_table m_endpoints;
 
     /*progress*/
+    net_progress_path_search_policy_t m_progress_path_search_policy;
+    char * m_progress_search_path;
     net_progress_list_t m_progresses;
 
     /*mem*/
