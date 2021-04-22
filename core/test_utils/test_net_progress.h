@@ -4,9 +4,7 @@
 #include "test_net_driver.h"
 
 struct test_net_progress {
-    test_net_driver_t m_driver;
-    TAILQ_ENTRY(test_net_progress) m_next;
-    test_net_tl_op_t m_tl_op;
+    uint8_t m_verify_fini;
 };
 
 int test_net_progress_init(net_progress_t base_progress);
@@ -18,11 +16,11 @@ void test_net_progress_expect_execute_begin_success(
 void test_net_progress_expect_execute_begin_fail(
     test_net_driver_t driver, uint32_t ep_id, const char * cmd, net_progress_runing_mode_t mode);
 
+void test_net_progress_expect_fini(test_net_driver_t driver, uint32_t ep_id);
+
 void test_net_progress_expect_execute_complete(
     test_net_driver_t driver,
     const char * cmd, net_progress_runing_mode_t mode,
     int exit_rv, const char * output, int64_t delay_ms);
-
-void test_net_progress_expect_fini(test_net_driver_t driver, uint32_t ep_id);
 
 #endif

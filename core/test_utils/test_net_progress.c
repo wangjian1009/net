@@ -10,6 +10,7 @@ struct test_net_progress_init_setup {
     int m_exit_stat;
     uint32_t m_output_size;
     void * m_output;
+    uint8_t m_verify_fini;
 };
 
 struct test_net_progress_complete_op {
@@ -48,6 +49,9 @@ void test_net_progress_complete_op_cb(void * ctx, test_net_tl_op_t op) {
 int test_net_progress_init(net_progress_t base_progress) {
     net_driver_t base_driver = net_progress_driver(base_progress);
     test_net_driver_t driver = test_net_driver_cast(base_driver);
+
+    struct test_net_progress * progress = net_progress_data(base_progress);
+    progress->m_verify_fini = 1;
     
     uint32_t id = net_progress_id(base_progress);
     const char * mode = net_progress_runing_mode_str(net_progress_runing_mode(base_progress));
@@ -67,7 +71,8 @@ int test_net_progress_init(net_progress_t base_progress) {
     check_expected(mode);
 
     struct test_net_progress_init_setup * setup = mock_type(struct test_net_progress_init_setup *);
-
+    progress->m_verify_fini = setup->m_verify_fini;
+    
     if (setup->m_delay_exit >= 0) {
         test_net_tl_op_t op =
             test_net_tl_op_create(
@@ -85,10 +90,14 @@ int test_net_progress_init(net_progress_t base_progress) {
 }
 
 void test_net_progress_fini(net_progress_t base_progress) {
-    uint32_t id = net_progress_id(base_progress);
+    struct test_net_progress * progress = net_progress_data(base_progress);
 
-    check_expected(id);
-    function_called();
+    if (progress->m_verify_fini) {
+        uint32_t id = net_progress_id(base_progress);
+    
+        check_expected(id);
+        function_called();
+    }
 }
 
 void test_net_progress_expect_execute_setup_init(
@@ -125,7 +134,8 @@ void test_net_progress_expect_execute_begin_success(
     setup->m_exit_stat = -1;
     setup->m_output_size = 0;
     setup->m_output = NULL;
-
+    setup->m_verify_fini = 1;
+    
     test_net_progress_expect_execute_setup_init(driver, ep_id, cmd, e_mode, setup);
 }
 
@@ -139,6 +149,7 @@ void test_net_progress_expect_execute_begin_fail(
     setup->m_exit_stat = -1;
     setup->m_output_size = 0;
     setup->m_output = NULL;
+    setup->m_verify_fini = 1;
 
     test_net_progress_expect_execute_setup_init(driver, ep_id, cmd, e_mode, setup);
 }
@@ -154,6 +165,7 @@ void test_net_progress_expect_execute_complete(
     setup->m_exit_stat = exit_rv;
     setup->m_output_size = output ? strlen(output) : 0;
     setup->m_output = output ? mem_buffer_strdup(&driver->m_setup_buffer, output) : NULL;
+    setup->m_verify_fini = 0;
 
     test_net_progress_expect_execute_setup_init(driver, 0, cmd, mode, setup);
 }
