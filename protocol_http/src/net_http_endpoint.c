@@ -164,7 +164,7 @@ int net_http_endpoint_input(net_endpoint_t endpoint) {
             CPE_ERROR(
                 http_protocol->m_em,
                 "http: %s: process http input, buf-size=%d, no any processed",
-                net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint),
+                net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
                 before_process_size);
             break;
         }
