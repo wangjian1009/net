@@ -5,6 +5,7 @@
 int net_ssl_stream_cli_basic_tests();
 int net_ssl_stream_svr_basic_tests();
 int net_ssl_stream_pair_basic_tests();
+int net_ssl_stream_pair_big_response_tests();
 
 #endif
 
