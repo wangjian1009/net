@@ -31,6 +31,7 @@ if (OS_NAME STREQUAL linux32 OR OS_NAME STREQUAL linux64 OR OS_NAME STREQUAL and
   list(APPEND libevent_source ${libevent_base}/epoll.c)
 elseif (OS_NAME STREQUAL mac OR OS_NAME STREQUAL ios)
   list(APPEND libevent_source ${libevent_base}/kqueue.c)
+  list(APPEND libevent_compile_options -Wno-deprecated-declarations -Wno-incompatible-pointer-types -Qunused-arguments)
 elseif (OS_NAME STREQUAL mingw)
   list(APPEND libevent_source
     ${libevent_base}/bufferevent_async.c
