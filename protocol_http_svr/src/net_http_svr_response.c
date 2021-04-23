@@ -297,11 +297,13 @@ int net_http_svr_response_append_body_identity_data(net_http_svr_response_t resp
     }
     
     if (net_endpoint_buf_append(base_endpoint, net_ep_buf_write, data, data_size) != 0) {
-        CPE_ERROR(
-            service->m_em, "http_svr: %s: req %d: append body: write %d data fail!",
-            net_endpoint_dump(net_http_svr_protocol_tmp_buffer(service), base_endpoint),
-            request->m_request_id, data_size);
-        net_http_svr_request_schedule_close_connection(request);
+        if (net_endpoint_state(base_endpoint) != net_endpoint_state_deleting) {
+            CPE_ERROR(
+                service->m_em, "http_svr: %s: req %d: append body: write %d data fail!",
+                net_endpoint_dump(net_http_svr_protocol_tmp_buffer(service), base_endpoint),
+                request->m_request_id, data_size);
+            net_http_svr_request_schedule_close_connection(request);
+        }
         return -1;
     }
 
@@ -466,11 +468,13 @@ int net_http_svr_response_append_body_chunked_block(net_http_svr_response_t resp
         || net_endpoint_buf_append(base_endpoint, net_ep_buf_write, data, data_size) != 0
         || net_endpoint_buf_append(base_endpoint, net_ep_buf_write, "\r\n", 2) != 0)
     {
-        CPE_ERROR(
-            service->m_em, "http_svr: %s: req %d: trunked %d: qppend trunked data!",
-            net_endpoint_dump(net_http_svr_protocol_tmp_buffer(service), base_endpoint),
-            request->m_request_id, response->m_chunked.m_trunk_count);
-        net_http_svr_request_schedule_close_connection(request);
+        if (net_endpoint_state(base_endpoint) != net_endpoint_state_deleting) {
+            CPE_ERROR(
+                service->m_em, "http_svr: %s: req %d: trunked %d: qppend trunked data!",
+                net_endpoint_dump(net_http_svr_protocol_tmp_buffer(service), base_endpoint),
+                request->m_request_id, response->m_chunked.m_trunk_count);
+            net_http_svr_request_schedule_close_connection(request);
+        }
         return -1;
     }
 
@@ -526,11 +530,13 @@ int net_http_svr_response_append_complete(net_http_svr_response_t response) {
             }
 
             if (net_endpoint_buf_append(base_endpoint, net_ep_buf_write, "0\r\n\r\n", 5) != 0) {
-                CPE_ERROR(
-                    service->m_em, "http_svr: %s: req %d: append complete: trunked append last trunk fail!",
-                    net_endpoint_dump(net_http_svr_protocol_tmp_buffer(service), base_endpoint),
-                    request->m_request_id);
-                net_http_svr_request_schedule_close_connection(request);
+                if (net_endpoint_state(base_endpoint) != net_endpoint_state_deleting) {
+                    CPE_ERROR(
+                        service->m_em, "http_svr: %s: req %d: append complete: trunked append last trunk fail!",
+                        net_endpoint_dump(net_http_svr_protocol_tmp_buffer(service), base_endpoint),
+                        request->m_request_id);
+                    net_http_svr_request_schedule_close_connection(request);
+                }
                 return -1;
             }
             break;
@@ -592,11 +598,13 @@ static int net_http_svr_response_append_head_last(net_http_svr_response_t respon
     }
     
     if (net_endpoint_buf_append(base_endpoint, net_ep_buf_write, "\r\n", 2) != 0) {
-        CPE_ERROR(
-            service->m_em, "http_svr: %s: req %d: head %d: write head end fail!",
-            net_endpoint_dump(net_http_svr_protocol_tmp_buffer(service), base_endpoint),
-            request->m_request_id, response->m_header_count);
-        net_http_svr_request_schedule_close_connection(request);
+        if (net_endpoint_state(base_endpoint) != net_endpoint_state_deleting) {
+            CPE_ERROR(
+                service->m_em, "http_svr: %s: req %d: head %d: write head end fail!",
+                net_endpoint_dump(net_http_svr_protocol_tmp_buffer(service), base_endpoint),
+                request->m_request_id, response->m_header_count);
+            net_http_svr_request_schedule_close_connection(request);
+        }
         return -1;
     }
     
@@ -610,11 +618,13 @@ static int net_http_svr_response_append(net_http_svr_response_t response, void c
     net_http_svr_protocol_t service = net_http_svr_endpoint_service(base_endpoint);
     
     if (net_endpoint_buf_append(base_endpoint, net_ep_buf_write, data, data_size) != 0) {
-        CPE_ERROR(
-            service->m_em, "http_svr: %s: req %d: write response fail!",
-            net_endpoint_dump(net_http_svr_protocol_tmp_buffer(service), base_endpoint),
-            request->m_request_id);
-        net_http_svr_request_schedule_close_connection(request);
+        if (net_endpoint_state(base_endpoint) != net_endpoint_state_deleting) {
+            CPE_ERROR(
+                service->m_em, "http_svr: %s: req %d: write response fail!",
+                net_endpoint_dump(net_http_svr_protocol_tmp_buffer(service), base_endpoint),
+                request->m_request_id);
+            net_http_svr_request_schedule_close_connection(request);
+        }
         return -1;
     }
     

@@ -136,7 +136,9 @@ static void net_http_svr_endpoint_close_cb(net_timer_t timer, void * ctx) {
 
 void net_http_svr_endpoint_schedule_close(net_endpoint_t base_endpoint) {
     net_http_svr_endpoint_t connection = net_endpoint_protocol_data(base_endpoint);
-    net_timer_active(connection->m_timer_close, 0);
+    if (connection->m_timer_close) {
+        net_timer_active(connection->m_timer_close, 0);
+    }
 }
 
 void net_http_svr_endpoint_check_remove_done_requests(net_http_svr_endpoint_t connection) {
