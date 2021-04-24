@@ -109,13 +109,23 @@ static int test_net_endpoint_connect_apply_setup(
         return 0;
     }
     case test_net_endpoint_connect_setup_endpoint: {
-        test_net_endpoint_link_t link =
+        test_net_endpoint_link_t link_c2s =
             test_net_endpoint_link_create(
                 net_endpoint_data(base_endpoint),
                 net_endpoint_data(setup->m_endpoint.m_endpoint),
                 setup->m_endpoint.m_write_delay_ms);
-        if (link == NULL) return -1;
-        return net_endpoint_set_state(base_endpoint, net_endpoint_state_established);
+        if (link_c2s == NULL) return -1;
+        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_established) != 0) return -1;
+
+        test_net_endpoint_link_t link_s2c =
+            test_net_endpoint_link_create(
+                net_endpoint_data(setup->m_endpoint.m_endpoint),
+                net_endpoint_data(base_endpoint),
+                setup->m_endpoint.m_write_delay_ms);
+        if (link_s2c == NULL) return -1;
+        if (net_endpoint_set_state(setup->m_endpoint.m_endpoint, net_endpoint_state_established) != 0) return -1;
+        
+        return 0;
     }
     }
 }
