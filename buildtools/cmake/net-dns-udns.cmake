@@ -13,3 +13,5 @@ set_property(TARGET net_dns_udns PROPERTY INCLUDE_DIRECTORIES
   ${CMAKE_CURRENT_LIST_DIR}/../../dns/include
   ${net_dns_udns_base}/include
   )
+
+target_link_libraries(net_dns_udns INTERFACE net_dns udns)

@@ -6,6 +6,7 @@
 #include "cpe/utils/error.h"
 #include "net_http_types.h"
 #include "net_system.h"
+#include "net_dns_system.h"
 
 typedef struct url_runner * url_runner_t;
 typedef enum url_runner_mode url_runner_mode_t;
@@ -26,6 +27,7 @@ struct url_runner {
     struct event * m_sig_events[8];
 
     net_schedule_t m_net_schedule;
+    net_dns_manage_t m_dns_manage;
     net_driver_t m_net_driver;
     
     url_runner_mode_t m_mode;
@@ -43,6 +45,7 @@ void url_runner_free(url_runner_t runner);
 
 /*主要操作 */
 int url_runner_init_net(url_runner_t runner);
+int url_runner_init_dns(url_runner_t runner);
 int url_runner_set_mode(url_runner_t runner, url_runner_mode_t mode);
 int url_runner_start(url_runner_t runner, const char * method, const char * url, const char * body);
 

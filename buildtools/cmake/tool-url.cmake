@@ -17,14 +17,17 @@ set(tool_url_includes
     ${libevent_custom}
     ${cpe_pal_base}/include
     ${cpe_utils_base}/include
+    ${cpe_utils_sock_base}/include
     ${net_core_base}/include
+    ${net_dns_base}/include
+    ${net_dns_udns_base}/include
     ${net_driver_libevent_base}/include
     ${net_protocol_http_base}/include
     ${net_driver_ssl_base}/include
     )
 
 set(tool_url_link_libraries
-  cpe_utils net_trans net_driver_ssl net_driver_libevent net_protocol_http argtable2)
+  cpe_utils net_trans net_dns net_dns_udns net_driver_ssl net_driver_libevent net_protocol_http argtable2)
 
 add_executable(tool_url ${tool_url_source})
 set_property(TARGET tool_url PROPERTY INCLUDE_DIRECTORIES ${tool_url_includes})

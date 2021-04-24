@@ -8,7 +8,7 @@ endif
 
 PROJECT_BASE:=$(PWD)
 
-TOOL_URL_OUTPUT_BASE=$(PROJECT_BASE)/../../build
+TOOL_URL_OUTPUT_BASE=$(PROJECT_BASE)/../build
 TOOL_URL_OUTPUT_PATH=$(TOOL_URL_OUTPUT_BASE)/run
 OUTPUT_PATH:=$(TOOL_URL_OUTPUT_BASE)/build
 tool_url_output:=$(TOOL_URL_OUTPUT_PATH)/tool_url
@@ -26,7 +26,7 @@ tool_url: $(OUTPUT_PATH)/Makefile
 $(tool_url_output): tool_url
 
 run-tool: $(tool_url_output)
-	$(tool_url_output) -v 
+	$(tool_url_output) --url=https://www.baidu.com
 
 $(OUTPUT_PATH)/Makefile:
 	mkdir -p $(OUTPUT_PATH) \

@@ -1,5 +1,7 @@
 #include <assert.h>
 #include "cpe/pal/pal_string.h"
+#include "cpe/utils/url.h"
+#include "net_address.h"
 #include "net_endpoint.h" 
 #include "net_ssl_stream_driver.h"
 #include "net_http_protocol.h"
@@ -39,7 +41,7 @@ void url_runner_internal_fini(url_runner_t runner) {
     }
 }
 
-int url_runner_internal_create_endpoint(url_runner_t runner) {
+int url_runner_internal_create_endpoint(url_runner_t runner, const char * str_url) {
     runner->m_internal.m_http_endpoint =
         net_http_endpoint_create(
             runner->m_net_driver, runner->m_internal.m_http_protocol);
@@ -52,7 +54,28 @@ int url_runner_internal_create_endpoint(url_runner_t runner) {
     net_endpoint_t base_endpoint = net_http_endpoint_base_endpoint(runner->m_internal.m_http_endpoint);
     net_endpoint_set_protocol_debug(base_endpoint, 2);
     net_endpoint_set_driver_debug(base_endpoint, 2);
+
+    cpe_url_t url = cpe_url_parse(runner->m_alloc, runner->m_em, str_url);
+    if (url == NULL) {
+        CPE_ERROR(runner->m_em, "tool: url %s format error", str_url);
+        return -1;
+    }
     
+    net_address_t address = net_address_create_from_url(runner->m_net_schedule, url);
+    if (address == NULL) {
+        CPE_ERROR(runner->m_em, "tool: create address from url %s fail", str_url);
+        cpe_url_free(url);
+        return -1;
+    }
+    cpe_url_free(url);
+    
+    if (net_endpoint_set_remote_address(base_endpoint, address)) {
+        CPE_ERROR(runner->m_em, "tool: set remote address fail");
+        net_address_free(address);
+        return -1;
+    }
+    net_address_free(address);
+
     net_endpoint_set_data_watcher(
         base_endpoint,
         runner,
@@ -97,7 +120,7 @@ int url_runner_internal_start_req(
 int url_runner_internal_start(
     url_runner_t runner, const char * method, const char * url, const char * body)
 {
-    if (url_runner_internal_create_endpoint(runner) != 0) return -1;
+    if (url_runner_internal_create_endpoint(runner, url) != 0) return -1;
     if (url_runner_internal_start_req(runner, method, url, body) != 0) return -1;
 
     if (net_endpoint_connect(
@@ -117,5 +140,9 @@ static void url_runner_internal_on_req_complete(
     url_runner_t runner = ctx;
     assert(runner->m_mode == url_runner_mode_internal);
 
-    
+    assert(runner->m_internal.m_http_req == req);
+    runner->m_internal.m_http_req = NULL;
+
+    net_http_req_free(req);
+    url_runner_loop_break(runner);
 }

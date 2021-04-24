@@ -7,14 +7,12 @@
 #include "url_runner.h"
 
 int main(int argc, char * argv[]) {
-    struct arg_str * log_dir = arg_str0(NULL, "log-dir", NULL, "log file name");
     struct arg_str * method = arg_str0(NULL, "method", NULL, "method");
     struct arg_str * url = arg_str1(NULL, "url", NULL, "url");
     struct arg_end * use_end = arg_end(50);
     void * use_argtable[] = {
         method,
         url,
-        log_dir,
         use_end
     };
     int use_nerrors;
@@ -49,7 +47,7 @@ int main(int argc, char * argv[]) {
     if (runner == NULL) return -1;
 
     error_monitor_t em = runner->m_em;
-    
+
     if (use_nerrors == 0) {
 #ifdef WIN32
         WSADATA wsaData;
@@ -66,7 +64,9 @@ int main(int argc, char * argv[]) {
         }
 #endif
 
+    CPE_ERROR(em, "xxxx 222");
         if (url_runner_init_net(runner) != 0) goto COMPLETE;
+        if (url_runner_init_dns(runner) != 0) goto COMPLETE;
         if (url_runner_set_mode(runner, url_runner_mode_internal) != 0) goto COMPLETE;
 
         // Setup signal handler
@@ -84,13 +84,14 @@ int main(int argc, char * argv[]) {
 
         url_runner_init_stop_sig(runner, SIGTERM);
 
+        CPE_ERROR(em, "xxxx 333");
         if (url_runner_start(
                 runner, method->count ? method->sval[0] : "get",
                 url->sval[0], NULL) != 0)
         {
             return -1;
         }
-        
+
         url_runner_loop_run(runner);
 
         rv = 0;
@@ -103,7 +104,26 @@ int main(int argc, char * argv[]) {
 #if WIN32 || __MINGW32__
         WSACleanup();
 #endif
+    } else if (common_nerrors == 0) {
+        if (common_help->count) {
+            goto PRINT_HELP;
+        }
+    } else {
+        goto PRINT_HELP;
     }
+    
+    goto EXIT;
 
-    return 0;
+PRINT_HELP:
+    printf("%s:\n", argv[0]);
+    printf("usage 1: %s ", argv[0]);
+    arg_print_syntax(stdout, use_argtable, "\n");
+    printf("usage 2: %s ", argv[0]);
+    arg_print_syntax(stdout, common_argtable, "\n");
+
+EXIT:
+    arg_freetable(use_argtable, sizeof(use_argtable) / sizeof(use_argtable[0]));
+    arg_freetable(common_argtable, sizeof(common_argtable) / sizeof(common_argtable[0]));
+
+    return rv;
 }
