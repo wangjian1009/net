@@ -10,6 +10,8 @@ int main(void) {
 
     if (net_http_input_basic_tests() != 0) rv = -1;
 
+    if (net_https_basic_tests() != 0) rv = -1;
+    
     return rv;
 }
 

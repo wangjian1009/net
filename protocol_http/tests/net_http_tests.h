@@ -8,4 +8,6 @@ int net_http_output_method_head_tests();
 
 int net_http_input_basic_tests();
 
+int net_https_basic_tests();
+
 #endif

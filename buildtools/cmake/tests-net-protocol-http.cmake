@@ -10,6 +10,7 @@ set_property(TARGET tests_net_protocol_http PROPERTY INCLUDE_DIRECTORIES
   ${cpe_utils_base}/test_utils
   ${net_core_base}/include
   ${net_core_base}/test_utils
+  ${net_driver_ssl_base}/include
   ${net_protocol_http_base}/include
   ${net_protocol_http_base}/test_utils
   ${net_protocol_http_base}/src
@@ -18,11 +19,8 @@ set_property(TARGET tests_net_protocol_http PROPERTY INCLUDE_DIRECTORIES
 set(tests_net_protocol_http_libraries
   test_utils_cpe_utils
   test_utils_net_core
-  test_utils_net_protocol_http)
-
-if (OS_NAME STREQUAL linux32 OR OS_NAME STREQUAL linux64)
-  set(tests_net_protocol_http_libraries ${tests_net_protocol_http_libraries} m)
-endif()
+  test_utils_net_protocol_http
+  net_driver_ssl)
 
 set_property(TARGET tests_net_protocol_http PROPERTY LINK_LIBRARIES ${tests_net_protocol_http_libraries})
 

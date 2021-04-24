@@ -3,6 +3,7 @@
 #include "cpe/utils/url.h"
 #include "net_address.h"
 #include "net_endpoint.h" 
+#include "net_driver.h"
 #include "net_ssl_stream_driver.h"
 #include "net_http_protocol.h"
 #include "net_http_endpoint.h"
@@ -15,6 +16,22 @@ static void url_runner_internal_on_req_complete(
 
 int url_runner_internal_init(url_runner_t runner) {
     runner->m_internal.m_http_protocol = net_http_protocol_create(runner->m_net_schedule, "tool");
+    if (runner->m_internal.m_http_protocol == NULL) {
+        CPE_ERROR(runner->m_em, "tool: create http protocol fail");
+        return -1;
+    }
+    
+    net_ssl_stream_driver_t stream_driver =
+        net_ssl_stream_driver_create(
+            runner->m_net_schedule, "tool", runner->m_net_driver, runner->m_alloc, runner->m_em);
+    if (stream_driver == NULL) {
+        CPE_ERROR(runner->m_em, "tool: create ssl driver fail");
+        net_http_protocol_free(runner->m_internal.m_http_protocol);
+        runner->m_internal.m_http_protocol = NULL;
+        return -1;
+    }
+
+    runner->m_internal.m_ssl_driver = net_driver_from_data(stream_driver);
     runner->m_internal.m_http_endpoint = NULL;
     runner->m_internal.m_http_req = NULL;
     return 0;
@@ -34,6 +51,11 @@ void url_runner_internal_fini(url_runner_t runner) {
         net_http_endpoint_free(runner->m_internal.m_http_endpoint);
         runner->m_internal.m_http_endpoint = NULL;
     }
+
+    if (runner->m_internal.m_ssl_driver) {
+        net_driver_free(runner->m_internal.m_ssl_driver);
+        runner->m_internal.m_ssl_driver = NULL;
+    }
     
     if (runner->m_internal.m_http_protocol) {
         net_http_protocol_free(runner->m_internal.m_http_protocol);
@@ -42,11 +64,30 @@ void url_runner_internal_fini(url_runner_t runner) {
 }
 
 int url_runner_internal_create_endpoint(url_runner_t runner, const char * str_url) {
-    runner->m_internal.m_http_endpoint =
-        net_http_endpoint_create(
-            runner->m_net_driver, runner->m_internal.m_http_protocol);
+    cpe_url_t url = cpe_url_parse(runner->m_alloc, runner->m_em, str_url);
+    if (url == NULL) {
+        CPE_ERROR(runner->m_em, "tool: url %s format error", str_url);
+        return -1;
+    }
+
+    net_driver_t driver = NULL;
+    
+    if (strcasecmp(cpe_url_protocol(url), "http") == 0) {
+        driver = runner->m_net_driver;
+    }
+    else if (strcasecmp(cpe_url_protocol(url), "https") == 0) {
+        driver = runner->m_internal.m_ssl_driver;
+    }
+    else {
+        CPE_ERROR(runner->m_em, "url: not support protocol %s", cpe_url_protocol(url));
+        cpe_url_free(url);
+        return -1;
+    }
+    
+    runner->m_internal.m_http_endpoint = net_http_endpoint_create(driver, runner->m_internal.m_http_protocol);
     if (runner->m_internal.m_http_endpoint == NULL) {
         CPE_ERROR(runner->m_em, "tool: create endpoint fail");
+        cpe_url_free(url);
         return -1;
     }
     net_http_endpoint_set_auto_free(runner->m_internal.m_http_endpoint, 1);
@@ -55,12 +96,6 @@ int url_runner_internal_create_endpoint(url_runner_t runner, const char * str_ur
     net_endpoint_set_protocol_debug(base_endpoint, 2);
     net_endpoint_set_driver_debug(base_endpoint, 2);
 
-    cpe_url_t url = cpe_url_parse(runner->m_alloc, runner->m_em, str_url);
-    if (url == NULL) {
-        CPE_ERROR(runner->m_em, "tool: url %s format error", str_url);
-        return -1;
-    }
-    
     net_address_t address = net_address_create_from_url(runner->m_net_schedule, url);
     if (address == NULL) {
         CPE_ERROR(runner->m_em, "tool: create address from url %s fail", str_url);

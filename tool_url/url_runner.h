@@ -36,6 +36,7 @@ struct url_runner {
             net_http_protocol_t m_http_protocol;
             net_http_endpoint_t m_http_endpoint;
             net_http_req_t m_http_req;
+            net_driver_t m_ssl_driver;
         } m_internal;
     };
 };

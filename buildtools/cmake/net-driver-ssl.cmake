@@ -3,7 +3,6 @@ set(net_driver_ssl_base ${CMAKE_CURRENT_LIST_DIR}/../../driver_ssl)
 file(GLOB net_driver_ssl_source ${net_driver_ssl_base}/src/*.c)
 
 add_library(net_driver_ssl STATIC ${net_driver_ssl_source})
-add_dependencies(net_driver_ssl mbedtls)
 
 target_include_directories(net_driver_ssl
   PUBLIC
@@ -14,3 +13,4 @@ target_include_directories(net_driver_ssl
   ${net_driver_ssl_base}/include
   )
 
+target_link_libraries(net_driver_ssl INTERFACE mbedtls)
