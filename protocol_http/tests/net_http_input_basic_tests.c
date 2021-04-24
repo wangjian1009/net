@@ -44,6 +44,8 @@ static void http_input_basic(void **state) {
         "body.size=0\n"
         ,
         net_http_test_response_dump(&env->m_tmp_buffer, response));
+
+    assert_true(net_http_req_find(ep, response->m_req_id) == NULL);
 }
 
 int net_http_input_basic_tests() {

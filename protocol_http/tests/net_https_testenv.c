@@ -18,7 +18,6 @@ net_https_testenv_create() {
     env->m_tdriver = test_net_driver_create(env->m_schedule, env->m_em);
 
     env->m_http_protocol = net_http_test_protocol_create(env->m_schedule, env->m_em, "test");
-    net_protocol_set_debug(net_protocol_from_data(env->m_http_protocol), 1);
 
     env->m_ssl_driver =
         net_ssl_stream_driver_create(
