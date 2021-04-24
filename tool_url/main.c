@@ -7,11 +7,13 @@
 #include "url_runner.h"
 
 int main(int argc, char * argv[]) {
-    struct arg_lit * daemonize = arg_lit0("d", NULL, "daemonize");
     struct arg_str * log_dir = arg_str0(NULL, "log-dir", NULL, "log file name");
+    struct arg_str * method = arg_str0(NULL, "method", NULL, "method");
+    struct arg_str * url = arg_str1(NULL, "url", NULL, "url");
     struct arg_end * use_end = arg_end(50);
     void * use_argtable[] = {
-        daemonize,
+        method,
+        url,
         log_dir,
         use_end
     };
@@ -53,12 +55,6 @@ int main(int argc, char * argv[]) {
         WSADATA wsaData;
 #endif
 
-#if defined CPE_OS_LINUX || defined CPE_OS_MAC
-        if (daemonize->count) {
-            cpe_daemonize(em);
-        }
-#endif
-
 #if WIN32 || __MINGW32__
         if (WSAStartup(MAKEWORD(2, 0), &wsaData) != 0) {
             CPE_ERROR(em, "entry: WSAStartup Error !");
@@ -71,6 +67,7 @@ int main(int argc, char * argv[]) {
 #endif
 
         if (url_runner_init_net(runner) != 0) goto COMPLETE;
+        if (url_runner_set_mode(runner, url_runner_mode_internal) != 0) goto COMPLETE;
 
         // Setup signal handler
 #if defined SIGPIPE
@@ -87,6 +84,13 @@ int main(int argc, char * argv[]) {
 
         url_runner_init_stop_sig(runner, SIGTERM);
 
+        if (url_runner_start(
+                runner, method->count ? method->sval[0] : "get",
+                url->sval[0], NULL) != 0)
+        {
+            return -1;
+        }
+        
         url_runner_loop_run(runner);
 
         rv = 0;
