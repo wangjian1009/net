@@ -299,17 +299,21 @@ int net_http_endpoint_write(
 int net_http_endpoint_flush(net_http_endpoint_t http_ep) {
     net_http_protocol_t http_protocol = net_http_endpoint_protocol(http_ep);
 
+    net_endpoint_t base_endpoint = http_ep->m_endpoint;
+    
     if (http_ep->m_connection_type == net_http_connection_type_upgrade) {
-        if (net_endpoint_buf_append_from_self(http_ep->m_endpoint, net_ep_buf_write, net_ep_buf_http_out, 0) != 0) {
+        int rv = net_endpoint_buf_append_from_self(base_endpoint, net_ep_buf_write, net_ep_buf_http_out, 0);
+        if (net_endpoint_state(base_endpoint) == net_endpoint_state_deleting) return -1;
+        if (rv != 0) {
             CPE_ERROR(
                 http_protocol->m_em,
                 "http: %s: <<< move http-out buf to write buf fail!",
-                net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint));
+                net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), base_endpoint));
             return -1;
         }
     }
     else {
-        uint32_t buf_sz = net_endpoint_buf_size(http_ep->m_endpoint, net_ep_buf_http_out);
+        uint32_t buf_sz = net_endpoint_buf_size(base_endpoint, net_ep_buf_http_out);
         if (buf_sz == 0) return 0;
 
         net_http_req_t req, next_req;
@@ -330,8 +334,8 @@ int net_http_endpoint_flush(net_http_endpoint_t http_ep) {
             if (req->m_flushed_size == 0) { /*没有发送任何数据 */
                 if (req->m_is_free) { /*已经释放，还没有发送，则把需要发送的数据清理掉 */
                     uint32_t supply_size = req->m_head_size + req->m_body_supply_size;
-                    assert(net_endpoint_buf_size(http_ep->m_endpoint, net_ep_buf_http_out) >= supply_size);
-                    net_endpoint_buf_consume(http_ep->m_endpoint, net_ep_buf_http_out, supply_size);
+                    assert(net_endpoint_buf_size(base_endpoint, net_ep_buf_http_out) >= supply_size);
+                    net_endpoint_buf_consume(base_endpoint, net_ep_buf_http_out, supply_size);
                     assert(supply_size <= buf_sz);
                     buf_sz -= supply_size;
                     net_http_req_free_force(req);
@@ -345,7 +349,9 @@ int net_http_endpoint_flush(net_http_endpoint_t http_ep) {
 
             if (req_to_send_sz > buf_sz) req_to_send_sz = buf_sz;
 
-            if (net_endpoint_buf_append_from_self(http_ep->m_endpoint, net_ep_buf_write, net_ep_buf_http_out, req_to_send_sz) != 0) {
+            int rv = net_endpoint_buf_append_from_self(base_endpoint, net_ep_buf_write, net_ep_buf_http_out, req_to_send_sz);
+            if (net_endpoint_state(base_endpoint) == net_endpoint_state_deleting) return -1;
+            if (rv != 0) {
                 CPE_ERROR(
                     http_protocol->m_em,
                     "http: %s: <<< move http-out buf to write buf fail!",
