@@ -109,7 +109,13 @@ void net_http_req_free(net_http_req_t req) {
 
     /*响应已经接受的情况下，可以直接free */
     if (req->m_res_completed) {
-        net_http_req_free_force(req);
+        if (http_ep->m_current_res.m_req == req) {
+            net_http_req_clear_reader(req);
+            req->m_is_free = 1;
+            return;
+        } else {
+            net_http_req_free_force(req);
+        }
         return;
     }
 
