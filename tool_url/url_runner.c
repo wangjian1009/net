@@ -1,5 +1,6 @@
 #include <assert.h>
 #include "cpe/pal/pal_strings.h"
+#include "cpe/pal/pal_stdio.h"
 #include "cpe/utils_sock/getdnssvraddrs.h"
 #include "event2/event.h"
 #include "net_driver.h"
@@ -20,7 +21,16 @@ url_runner_create(mem_allocrator_t alloc) {
     bzero(runner, sizeof(*runner));
 
     runner->m_alloc = alloc;
-    cpe_error_monitor_init(&runner->m_em_buf, cpe_error_log_to_consol, NULL);
+    runner->m_log_file = fopen("log.txt", "wb");
+    if (runner->m_log_file) {
+        cpe_error_monitor_init(&runner->m_em_buf, cpe_error_log_to_file, runner->m_log_file);
+    }
+    else {
+        cpe_error_monitor_init(&runner->m_em_buf, cpe_error_log_to_consol, NULL);
+    }
+
+    runner->m_output = stdout;
+    
     runner->m_em = &runner->m_em_buf;
     runner->m_sig_event_count = 0;
 
@@ -59,7 +69,12 @@ void url_runner_free(url_runner_t runner) {
         event_base_free(runner->m_event_base);
         runner->m_event_base = NULL;
     }
-    
+
+    if (runner->m_log_file) {
+        fclose(runner->m_log_file);
+        runner->m_log_file = NULL;
+    }
+
     mem_free(runner->m_alloc, runner);
 }
 

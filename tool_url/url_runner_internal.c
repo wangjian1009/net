@@ -11,6 +11,10 @@
 #include "url_runner.h"
 
 static void url_runner_internal_on_endpoint_fini(void * ctx, net_endpoint_t endpoint);
+static int url_runner_internal_on_res_begin(void * ctx, net_http_req_t req, uint16_t code, const char * msg);
+static int url_runner_internal_on_res_head(void * ctx, net_http_req_t req, const char * name, const char * value);
+static int url_runner_internal_on_res_body(void * ctx, net_http_req_t req, void * data, size_t data_size);
+
 static void url_runner_internal_on_req_complete(
     void * ctx, net_http_req_t req, net_http_res_result_t result, void * body, uint32_t body_size);
 
@@ -138,7 +142,11 @@ int url_runner_internal_start_req(
 	}
 
     if (net_http_req_set_reader(
-            runner->m_internal.m_http_req, runner, NULL, NULL, NULL,
+            runner->m_internal.m_http_req,
+            runner,
+            url_runner_internal_on_res_begin,
+            url_runner_internal_on_res_head,
+            url_runner_internal_on_res_body,
             url_runner_internal_on_req_complete) != 0) return -1;
 
     if (net_http_req_write_head_host(runner->m_internal.m_http_req) != 0) return -1;
@@ -173,6 +181,24 @@ int url_runner_internal_start(
 static void url_runner_internal_on_endpoint_fini(void * ctx, net_endpoint_t endpoint) {
     url_runner_t runner = ctx;
     runner->m_internal.m_http_endpoint = NULL;
+}
+
+static int url_runner_internal_on_res_begin(void * ctx, net_http_req_t req, uint16_t code, const char * msg) {
+    url_runner_t runner = ctx;
+    fprintf(runner->m_output, "%d %s\n", code, msg);
+    return 0;
+}
+
+static int url_runner_internal_on_res_head(void * ctx, net_http_req_t req, const char * name, const char * value) {
+    url_runner_t runner = ctx;
+    fprintf(runner->m_output, "%s: %s\n", name, value);
+    return 0;
+}
+    
+static int url_runner_internal_on_res_body(void * ctx, net_http_req_t req, void * data, size_t data_size) {
+    url_runner_t runner = ctx;
+    fprintf(runner->m_output, "%.*s\n", (int)data_size, (const char *)data);
+    return 0;
 }
 
 static void url_runner_internal_on_req_complete(

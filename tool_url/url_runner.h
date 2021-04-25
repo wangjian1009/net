@@ -18,9 +18,12 @@ enum url_runner_mode {
 
 struct url_runner {
     mem_allocrator_t m_alloc;
+    FILE * m_log_file;
     struct error_monitor m_em_buf;
     error_monitor_t m_em;
 
+    FILE * m_output;
+    
     /*net*/
     struct event_base * m_event_base;
     uint8_t m_sig_event_count;
