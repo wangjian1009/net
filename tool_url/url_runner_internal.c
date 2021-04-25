@@ -1,6 +1,7 @@
 #include <assert.h>
 #include "cpe/pal/pal_string.h"
 #include "cpe/utils/url.h"
+#include "cpe/utils/string_utils.h"
 #include "net_address.h"
 #include "net_endpoint.h" 
 #include "net_driver.h"
@@ -126,15 +127,36 @@ int url_runner_internal_create_endpoint(url_runner_t runner, const char * str_ur
 
 int url_runner_internal_start_req(
     url_runner_t runner,
-    const char * method,
+    const char * str_method,
     const char * url,
     const char * header[], uint16_t header_count, 
     const char * body)
 {
+    net_http_req_method_t method = net_http_req_method_get;
+
+    if (strcasecmp(str_method, "get") == 0) {
+        method = net_http_req_method_get;
+    }
+    else if (strcasecmp(str_method, "post") == 0) {
+        method = net_http_req_method_post;
+    }
+    else if (strcasecmp(str_method, "put") == 0) {
+        method = net_http_req_method_put;
+    }
+    else if (strcasecmp(str_method, "delete") == 0) {
+        method = net_http_req_method_delete;
+    }
+    else if (strcasecmp(str_method, "patch") == 0) {
+        method = net_http_req_method_patch;
+    }
+    else if (strcasecmp(str_method, "head") == 0) {
+        method =net_http_req_method_head;
+    }
+    
     runner->m_internal.m_http_req =
         net_http_req_create(
             runner->m_internal.m_http_endpoint,
-            net_http_req_method_get,
+            method,
             url);
 	if (runner->m_internal.m_http_req == NULL) {
 		CPE_ERROR(runner->m_em, "tool: internal: http req create fail");
@@ -153,7 +175,19 @@ int url_runner_internal_start_req(
 
     uint32_t i;
     for(i = 0; i < header_count; ++i) {
-        //net_http_req_write_head_pair(runner->m_internal.m_http_req, header[i],
+        const char * head_line = header[i];
+        const char * sep = strchr(head_line, ':');
+
+        if (sep == NULL) {
+            CPE_ERROR(runner->m_em, "url: head format error: %s", head_line);
+            continue;
+        }
+
+        sep = cpe_str_trim_tail((char*)sep, head_line);
+        char * head_name = cpe_str_mem_dup_range(NULL, head_line, sep);
+        net_http_req_write_head_pair(
+            runner->m_internal.m_http_req,
+            head_name, cpe_str_trim_head((char*)(sep + 1)));
     }
 
     if (body) {
