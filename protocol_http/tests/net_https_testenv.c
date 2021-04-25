@@ -86,6 +86,26 @@ net_https_testenv_create_ep(net_https_testenv_t env) {
     return env->m_https_endpoint;
 }
 
+int net_https_testenv_close_read(net_https_testenv_t env) {
+    assert_true(env->m_ssl_cli_endpoint);
+
+    net_ssl_endpoint_t cli_ssl_endpoint = net_ssl_stream_endpoint_underline(env->m_ssl_cli_endpoint);
+    assert_true(cli_ssl_endpoint);
+    
+    return net_endpoint_set_state(
+        net_ssl_endpoint_base_endpoint(cli_ssl_endpoint), net_endpoint_state_read_closed);
+}
+
+int net_https_testenv_close_write(net_https_testenv_t env) {
+    assert_true(env->m_ssl_cli_endpoint);
+
+    net_ssl_endpoint_t cli_ssl_endpoint = net_ssl_stream_endpoint_underline(env->m_ssl_cli_endpoint);
+    assert_true(cli_ssl_endpoint);
+    
+    return net_endpoint_set_state(
+        net_ssl_endpoint_base_endpoint(cli_ssl_endpoint), net_endpoint_state_write_closed);
+}
+
 int net_https_testenv_send_response(net_https_testenv_t env, const char * data) {
     return net_endpoint_buf_append(
         net_ssl_stream_endpoint_base_endpoint(env->m_ssl_svr_endpoint),

@@ -135,6 +135,16 @@ int net_http_endpoint_input(net_endpoint_t endpoint) {
                         return -1;
                     }
                 }
+
+                /*连接处于半关闭状态，最后一个请求接收完成，则主动关闭连接 */
+                if (TAILQ_EMPTY(&http_ep->m_reqs)
+                    && net_endpoint_state(endpoint) == net_endpoint_state_write_closed)
+                {
+                    if (net_endpoint_set_state(endpoint, net_endpoint_state_disable) != 0) {
+                        net_endpoint_set_state(endpoint, net_endpoint_state_deleting);
+                        return -1;
+                    }
+                }
             }
         }
         else {
@@ -179,15 +189,16 @@ int net_http_endpoint_on_state_change(net_endpoint_t endpoint, net_endpoint_stat
 
     switch(net_endpoint_state(endpoint)) {
     case net_endpoint_state_read_closed:
+        return net_endpoint_set_state(endpoint, net_endpoint_state_disable);
     case net_endpoint_state_write_closed:
         break;
     case net_endpoint_state_disable:
-        if (http_ep->m_auto_free) return -1;
         net_http_endpoint_reset_data(http_protocol, http_ep, net_http_res_conn_disconnected);
+        if (http_ep->m_auto_free) return -1;
         break;
     case net_endpoint_state_error:
-        if (http_ep->m_auto_free) return -1;
         net_http_endpoint_reset_data(http_protocol, http_ep, net_http_res_conn_error);
+        if (http_ep->m_auto_free) return -1;
         break;
     case net_endpoint_state_resolving:
         break;

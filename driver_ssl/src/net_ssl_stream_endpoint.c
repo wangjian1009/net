@@ -114,18 +114,7 @@ int net_ssl_stream_endpoint_update(net_endpoint_t base_endpoint) {
 
     switch(net_endpoint_state(base_endpoint)) {
     case net_endpoint_state_read_closed:
-        if (base_underline && net_endpoint_is_active(base_endpoint)) {
-            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_read_closed) != 0) {
-                net_endpoint_set_state(base_underline, net_endpoint_state_deleting);
-            }
-        }
-        return 0;
     case net_endpoint_state_write_closed:
-        if (base_underline && net_endpoint_is_active(base_underline)) {
-            if (net_endpoint_set_state(base_underline, net_endpoint_state_disable) != 0) {
-                net_endpoint_set_state(base_underline, net_endpoint_state_deleting);
-            }
-        }
         return 0;
     case net_endpoint_state_disable:
         if (base_underline && net_endpoint_is_active(base_underline)) {
