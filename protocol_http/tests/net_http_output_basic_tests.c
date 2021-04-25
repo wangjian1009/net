@@ -99,12 +99,27 @@ static void http_req_free_part_send_not_complete(void **state) {
     assert_true(req2 == NULL);
 }
 
+static void http_req_write_error(void **state) {
+    net_http_testenv_t env = *state;
+    net_http_testenv_create_ep_established(env);
+
+    /* net_http_req_t req1 = net_http_req_create(env->m_http_endpoint, net_http_req_method_get, "/a"); */
+    /* assert_true(req1); */
+    /* assert_true(net_http_req_write_head_pair(req1, "h1", "v1") == 0); */
+    /* assert_true(net_http_endpoint_flush(env->m_http_endpoint) == 0); */
+    /* net_http_req_free(req1); */
+
+    /* net_http_req_t req2 = net_http_req_create(env->m_http_endpoint, net_http_req_method_get, "/b"); */
+    /* assert_true(req2 == NULL); */
+}
+
 int net_http_output_basic_tests() {
 	const struct CMUnitTest tests[] = {
 		cmocka_unit_test_setup_teardown(http_req_create_prev_not_complete, setup, teardown),
 		cmocka_unit_test_setup_teardown(http_req_free_before_head, setup, teardown),
 		cmocka_unit_test_setup_teardown(http_req_free_part_send_complete, setup, teardown),
 		cmocka_unit_test_setup_teardown(http_req_free_part_send_not_complete, setup, teardown),
+		cmocka_unit_test_setup_teardown(http_req_write_error, setup, teardown),
 	};
 	return cmocka_run_group_tests(tests, NULL, NULL);
 }

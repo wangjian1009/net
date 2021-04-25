@@ -1,5 +1,6 @@
 #include "cpe/pal/pal_string.h"
 #include "cmocka_all.h"
+#include "net_address.h"
 #include "net_schedule.h"
 #include "net_http_testenv.h"
 #include "net_http_protocol.h"
@@ -16,6 +17,7 @@ net_http_testenv_create() {
 
     env->m_http_protocol = net_http_test_protocol_create(env->m_schedule, env->m_em, "test");
     env->m_http_endpoint = NULL;
+    env->m_svr_endpoint = NULL;
     
     mem_buffer_init(&env->m_tmp_buffer, test_allocrator());
     
@@ -43,8 +45,22 @@ void net_http_testenv_create_ep(net_http_testenv_t env) {
 void net_http_testenv_create_ep_established(net_http_testenv_t env) {
     net_http_testenv_create_ep(env);
 
-    net_endpoint_t ep = net_endpoint_from_protocol_data(env->m_schedule, env->m_http_endpoint);
-    assert_true(net_endpoint_set_state(ep, net_endpoint_state_established) == 0);
+    assert_true(env->m_svr_endpoint == NULL);
+    env->m_svr_endpoint =
+        net_endpoint_create(
+            net_driver_from_data(env->m_tdriver),
+            net_schedule_noop_protocol(env->m_schedule),
+            NULL);
+
+    net_endpoint_t base_endpoint = net_endpoint_from_protocol_data(env->m_schedule, env->m_http_endpoint);
+
+    net_address_t address = net_address_create_auto(env->m_schedule, "1.1.1.1:1");
+    net_endpoint_set_remote_address(base_endpoint, address);
+    net_address_free(address);
+
+    test_net_endpoint_expect_connect_to_endpoint(base_endpoint, "1.1.1.1:1", env->m_svr_endpoint, 0, 0);
+    
+    assert_true(net_endpoint_connect(base_endpoint) == 0);
 }
 
 const char *

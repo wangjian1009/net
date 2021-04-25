@@ -17,6 +17,7 @@ struct net_http_testenv {
     test_net_driver_t m_tdriver;
     net_http_test_protocol_t m_http_protocol;
     net_http_endpoint_t m_http_endpoint;
+    net_endpoint_t m_svr_endpoint;
     struct mem_buffer m_tmp_buffer;
 };
 
