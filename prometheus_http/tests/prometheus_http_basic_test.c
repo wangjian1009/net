@@ -1,8 +1,10 @@
 #include "cmocka_all.h"
+#include "test_net_endpoint.h"
+#include "net_http_test_response.h"
+#include "net_http_endpoint.h"
 #include "prometheus_metric.h"
 #include "prometheus_counter.h"
 #include "prometheus_collector.h"
-#include "net_http_test_response.h"
 #include "prometheus_http_tests.h"
 #include "prometheus_http_testenv.h"
 
@@ -82,11 +84,56 @@ static void test_path_error(void **state) {
     assert_string_equal("", net_http_test_response_body_to_string(response));
 }
 
+static void test_response_write_error(void **state) {
+    prometheus_http_testenv_t env = *state;
+
+    prometheus_counter_t counter = 
+        prometheus_counter_create(env->m_manager, "TestName", "TestHelp", 0, NULL);
+
+    prometheus_collector_add_metric(
+        prometheus_collector_default(env->m_manager),
+        prometheus_metric_from_data(counter));
+
+    prometheus_counter_add(counter, 1234.0, NULL);
+    
+    CPE_ERROR(env->m_em, "xxxxx: 11");
+    net_http_req_t req =
+        net_http_svr_testenv_create_req(
+            env->m_http_svr_env, net_http_req_method_get, "metric");
+    assert_true(req != NULL);
+
+    CPE_ERROR(env->m_em, "xxxxx: 22");
+    net_endpoint_t svr_ep = net_http_svr_testenv_req_svr_endpoint(env->m_http_svr_env, req);
+    assert_true(svr_ep != NULL);
+    CPE_ERROR(env->m_em, "xxxxx: 33: %d", net_endpoint_id(svr_ep));
+    test_net_endpoint_expect_write_error(
+        svr_ep,
+        net_endpoint_error_source_network, net_endpoint_network_errno_internal, "write error", 0);
+    
+    net_http_test_response_t response = 
+        net_http_svr_testenv_req_commit(env->m_http_svr_env, req);
+
+    test_net_driver_run(env->m_net_driver, 0);
+
+    assert_string_equal(
+        net_http_res_result_str(net_http_res_conn_error),
+        net_http_res_result_str(response->m_result));
+
+    /* assert_int_equal(200,  response->m_code); */
+    
+    /* assert_string_equal( */
+    /*     "# HELP TestName TestHelp\n" */
+    /*     "# TYPE TestName counter\n" */
+    /*     "TestName 1234\n", */
+    /*     net_http_test_response_body_to_string(response)); */
+}
+
 int prometheus_http_basic_tests() {
 	const struct CMUnitTest tests[] = {
         cmocka_unit_test_setup_teardown(test_get, setup, teardown),
         cmocka_unit_test_setup_teardown(test_method_error, setup, teardown),
         cmocka_unit_test_setup_teardown(test_path_error, setup, teardown),
+        cmocka_unit_test_setup_teardown(test_response_write_error, setup, teardown),
 	};
 	return cmocka_run_group_tests(tests, NULL, NULL);
 }

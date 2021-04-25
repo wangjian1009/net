@@ -146,3 +146,52 @@ test_net_endpoint_linked_other(test_net_driver_t driver, net_endpoint_t base_end
 
     return net_endpoint_from_data(other_ep);
 }
+
+struct test_net_endpoint_error_op {
+    uint32_t m_ep_id;
+    net_endpoint_error_source_t m_error_source;
+    int m_error_no;
+    const char * m_error_msg;
+};
+
+void test_net_endpoint_error_op_cb(void * ctx, test_net_tl_op_t op) {
+    test_net_driver_t driver = op->m_driver;
+    net_schedule_t schedule = net_driver_schedule(net_driver_from_data(driver));
+
+    struct test_net_endpoint_error_op * error_op = test_net_tl_op_data(op);
+
+    net_endpoint_t to_endpoint = net_endpoint_find(schedule, error_op->m_ep_id);
+    if (to_endpoint != NULL && net_endpoint_state(to_endpoint) != net_endpoint_state_deleting) {
+        net_endpoint_set_error(to_endpoint, error_op->m_error_source, error_op->m_error_no, error_op->m_error_msg);
+        if (net_endpoint_set_state(to_endpoint, net_endpoint_state_error) != 0) {
+            net_endpoint_set_state(to_endpoint, net_endpoint_state_deleting);
+        }
+    }
+}
+
+
+void test_net_endpoint_error(
+    test_net_driver_t driver, net_endpoint_t base_endpoint,
+    net_endpoint_error_source_t error_source, int error_no, const char * error_msg,
+    int64_t delay_ms)
+{
+    if (delay_ms == 0) {
+        net_endpoint_set_error(base_endpoint, error_source, error_no, error_msg);
+        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
+            net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+        }
+    }
+    else {
+        test_net_tl_op_t op = test_net_tl_op_create(
+            driver, delay_ms,
+            sizeof(struct test_net_endpoint_error_op),
+            test_net_endpoint_error_op_cb, NULL, NULL);
+        assert_true(op != NULL);
+
+        struct test_net_endpoint_error_op * error_op = test_net_tl_op_data(op);
+        error_op->m_ep_id = net_endpoint_id(base_endpoint);
+        error_op->m_error_source = error_source;
+        error_op->m_error_no = error_no;
+        error_op->m_error_msg = error_msg ? mem_buffer_strdup(&driver->m_setup_buffer, error_msg) : NULL;
+    }
+}

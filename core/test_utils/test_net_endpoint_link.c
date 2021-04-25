@@ -12,11 +12,17 @@ test_net_endpoint_link_create(test_net_endpoint_t a, test_net_endpoint_t z, int6
 
     a->m_write_policy.m_type = test_net_endpoint_write_link;
     a->m_write_policy.m_link.m_link = link;
+    a->m_write_policy.m_link.m_error_source = net_endpoint_error_source_none;
+    a->m_write_policy.m_link.m_error_no = 0;
+    a->m_write_policy.m_link.m_error_msg = NULL;
     a->m_write_policy.m_link.m_write_delay_ms = write_delay_ms;
     link->m_a = a;
 
     z->m_write_policy.m_type = test_net_endpoint_write_link;
     z->m_write_policy.m_link.m_link = link;
+    z->m_write_policy.m_link.m_error_source = net_endpoint_error_source_none;
+    z->m_write_policy.m_link.m_error_no = 0;
+    z->m_write_policy.m_link.m_error_msg = NULL;
     z->m_write_policy.m_link.m_write_delay_ms = write_delay_ms;
     link->m_z = z;
     

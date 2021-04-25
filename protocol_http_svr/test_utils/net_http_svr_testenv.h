@@ -33,4 +33,7 @@ net_http_svr_testenv_create_req(
 net_http_test_response_t
 net_http_svr_testenv_req_commit(net_http_svr_testenv_t env, net_http_req_t req);
 
+net_endpoint_t
+net_http_svr_testenv_req_svr_endpoint(net_http_svr_testenv_t env, net_http_req_t req);
+
 #endif

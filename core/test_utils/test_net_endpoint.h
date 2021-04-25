@@ -21,11 +21,15 @@ struct test_net_endpoint_write_policy {
         struct {
             test_net_endpoint_link_t m_link;
             int64_t m_write_delay_ms;
+            net_endpoint_error_source_t m_error_source;
+            int m_error_no;
+            const char * m_error_msg;
         } m_link;
         struct {
             net_endpoint_error_source_t m_error_source;
             int m_error_no;
             char * m_error_msg;
+            int64_t m_error_delay_ms;
         } m_error;
     };
 };
@@ -50,6 +54,12 @@ void test_net_endpoint_write_policy_clear(test_net_endpoint_t base_endpoint);
 net_endpoint_t test_net_endpoint_linked_other(test_net_driver_t driver, net_endpoint_t base_endpoint);
 
 test_net_endpoint_t test_net_endpoint_cast(net_endpoint_t base_endpoint);
+
+/*error*/
+void test_net_endpoint_error(
+    test_net_driver_t driver, net_endpoint_t base_endpoint,
+    net_endpoint_error_source_t error_source, int error_no, const char * error_msg,
+    int64_t delay_ms);
 
 /*endpoint by id*/
 void test_net_endpoint_id_expect_connect_success(
@@ -107,11 +117,11 @@ void test_net_endpoint_expect_write_noop(net_endpoint_t base_endpoint);
 /*utils.write.noop*/
 void test_net_next_endpoint_expect_write_error(
     test_net_driver_t driver,
-    net_endpoint_error_source_t error_source, int err_no, const char * error_msg);
+    net_endpoint_error_source_t error_source, int err_no, const char * error_msg, int64_t delay_ms);
 
 void test_net_endpoint_expect_write_error(
     net_endpoint_t base_endpoint,
-    net_endpoint_error_source_t error_source, int err_no, const char * error_msg);
+    net_endpoint_error_source_t error_source, int err_no, const char * error_msg, int64_t delay_ms);
 
 /*utils.read*/
 int test_net_driver_read_from_other(

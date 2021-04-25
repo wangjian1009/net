@@ -4,6 +4,8 @@
 #include "net_address.h"
 #include "net_acceptor.h"
 #include "test_net_endpoint.h"
+#include "net_http_req.h"
+#include "net_http_endpoint.h"
 #include "net_http_svr_protocol.h"
 #include "net_http_svr_testenv.h"
 
@@ -80,4 +82,10 @@ net_http_svr_testenv_create_req(net_http_svr_testenv_t env, net_http_req_method_
 net_http_test_response_t
 net_http_svr_testenv_req_commit(net_http_svr_testenv_t env, net_http_req_t req) {
     return net_http_test_protocol_req_commit(env->m_cli_protocol, req);
+}
+
+net_endpoint_t
+net_http_svr_testenv_req_svr_endpoint(net_http_svr_testenv_t env, net_http_req_t req) {
+    net_http_endpoint_t http_ep = net_http_req_endpoint(req);
+    return test_net_endpoint_linked_other(env->m_driver, net_http_endpoint_base_endpoint(http_ep));
 }

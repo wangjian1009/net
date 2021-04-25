@@ -111,7 +111,7 @@ static void http_req_write_error(void **state) {
     test_net_endpoint_expect_write_error(
         net_http_endpoint_base_endpoint(env->m_http_endpoint),
         net_endpoint_error_source_network,
-        net_endpoint_network_errno_internal, "write error");
+        net_endpoint_network_errno_internal, "write error", 0);
         
     assert_true(net_http_endpoint_flush(env->m_http_endpoint) == 0);
     assert_string_equal(
