@@ -27,7 +27,7 @@ struct net_https_testenv {
 net_https_testenv_t net_https_testenv_create();
 void net_https_testenv_free(net_https_testenv_t env);
 
-net_http_endpoint_t net_https_testenv_create_ep(net_https_testenv_t env);
+void net_https_testenv_create_ep(net_https_testenv_t env);
 int net_https_testenv_send_response(net_https_testenv_t env, const char * data);
 
 int net_https_testenv_close_read(net_https_testenv_t env);

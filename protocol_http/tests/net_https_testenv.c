@@ -45,8 +45,7 @@ void net_https_testenv_free(net_https_testenv_t env) {
     mem_free(test_allocrator(), env);
 }
 
-net_http_endpoint_t
-net_https_testenv_create_ep(net_https_testenv_t env) {
+void net_https_testenv_create_ep(net_https_testenv_t env) {
     assert_true(env->m_https_endpoint == NULL);
 
     env->m_ssl_svr_endpoint =
@@ -82,8 +81,6 @@ net_https_testenv_create_ep(net_https_testenv_t env) {
         0, 0);
     
     assert_true(net_endpoint_connect(base_endpoint) == 0);
-
-    return env->m_https_endpoint;
 }
 
 int net_https_testenv_close_read(net_https_testenv_t env) {
