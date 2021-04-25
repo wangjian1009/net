@@ -15,7 +15,8 @@ net_http_testenv_create() {
     env->m_tdriver = test_net_driver_create(env->m_schedule, env->m_em);
 
     env->m_http_protocol = net_http_test_protocol_create(env->m_schedule, env->m_em, "test");
-
+    env->m_http_endpoint = NULL;
+    
     mem_buffer_init(&env->m_tmp_buffer, test_allocrator());
     
     return env;
@@ -28,30 +29,28 @@ void net_http_testenv_free(net_http_testenv_t env) {
     mem_free(test_allocrator(), env);
 }
 
-net_http_endpoint_t
-net_http_testenv_create_ep(net_http_testenv_t env) {
-    net_http_endpoint_t http_ep =
+void net_http_testenv_create_ep(net_http_testenv_t env) {
+    assert_true(env->m_http_endpoint == NULL);
+    env->m_http_endpoint =
         net_http_endpoint_create(
             net_driver_from_data(env->m_tdriver),
             env->m_http_protocol->m_protocol);
 
-    net_endpoint_t ep = net_endpoint_from_protocol_data(env->m_schedule, http_ep);
+    net_endpoint_t ep = net_endpoint_from_protocol_data(env->m_schedule, env->m_http_endpoint);
     //test_net_endpoint_expect_write_noop(ep);
-
-    return http_ep;
 }
 
-net_http_endpoint_t
-net_http_testenv_create_ep_established(net_http_testenv_t env) {
-    net_http_endpoint_t http_ep = net_http_testenv_create_ep(env);
-    net_endpoint_t ep = net_endpoint_from_protocol_data(env->m_schedule, http_ep);
+void net_http_testenv_create_ep_established(net_http_testenv_t env) {
+    net_http_testenv_create_ep(env);
+
+    net_endpoint_t ep = net_endpoint_from_protocol_data(env->m_schedule, env->m_http_endpoint);
     assert_true(net_endpoint_set_state(ep, net_endpoint_state_established) == 0);
-    return http_ep;
 }
 
 const char *
-net_http_testenv_ep_recv_write(net_http_testenv_t env, net_http_endpoint_t http_ep) {
-    net_endpoint_t ep = net_endpoint_from_protocol_data(env->m_schedule, http_ep);
+net_http_testenv_ep_recv_write(net_http_testenv_t env) {
+    assert_true(env->m_http_endpoint != NULL);
+    net_endpoint_t ep = net_endpoint_from_protocol_data(env->m_schedule, env->m_http_endpoint);
     
     uint32_t sz = net_endpoint_buf_size(ep, net_ep_buf_write);
 
@@ -66,8 +65,9 @@ net_http_testenv_ep_recv_write(net_http_testenv_t env, net_http_endpoint_t http_
     return o_buf;
 }
 
-int net_http_testenv_ep_send_response(net_http_testenv_t env, net_http_endpoint_t http_ep, const char * response) {
-    net_endpoint_t ep = net_endpoint_from_protocol_data(env->m_schedule, http_ep);
+int net_http_testenv_ep_send_response(net_http_testenv_t env, const char * response) {
+    assert_true(env->m_http_endpoint != NULL);
+    net_endpoint_t ep = net_endpoint_from_protocol_data(env->m_schedule, env->m_http_endpoint);
 
     uint32_t sz = strlen(response);
     if (sz == 0) return 0;
@@ -75,9 +75,11 @@ int net_http_testenv_ep_send_response(net_http_testenv_t env, net_http_endpoint_
     return net_endpoint_buf_append(ep, net_ep_buf_read, response, sz);
 }
 
-int net_http_testenv_send_response(net_http_testenv_t env, net_http_endpoint_t ep, const char * data) {
+int net_http_testenv_send_response(net_http_testenv_t env, const char * data) {
+    assert_true(env->m_http_endpoint);
+    
     return net_endpoint_buf_append(
-        net_http_endpoint_base_endpoint(ep),
+        net_http_endpoint_base_endpoint(env->m_http_endpoint),
         net_ep_buf_read,
         data, strlen(data));
 }
