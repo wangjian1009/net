@@ -124,6 +124,7 @@ int url_runner_internal_start_req(
     url_runner_t runner,
     const char * method,
     const char * url,
+    const char * header[], uint16_t header_count, 
     const char * body)
 {
     runner->m_internal.m_http_req =
@@ -138,25 +139,30 @@ int url_runner_internal_start_req(
 
     if (net_http_req_set_reader(
             runner->m_internal.m_http_req, runner, NULL, NULL, NULL,
-            url_runner_internal_on_req_complete) != 0
-        || net_http_req_write_head_pair(runner->m_internal.m_http_req, "Content-Type", "application/json") != 0
-        || net_http_req_write_head_host(runner->m_internal.m_http_req)
-        || (body
-            && net_http_req_write_body_full(runner->m_internal.m_http_req, body, strlen(body)) != 0)
-        || net_http_req_write_commit(runner->m_internal.m_http_req) != 0)
-    {
-        CPE_ERROR(runner->m_em, "tool: internal: http start req fail!");
-        return -1;
+            url_runner_internal_on_req_complete) != 0) return -1;
+
+    if (net_http_req_write_head_host(runner->m_internal.m_http_req) != 0) return -1;
+
+    uint32_t i;
+    for(i = 0; i < header_count; ++i) {
+        //net_http_req_write_head_pair(runner->m_internal.m_http_req, header[i],
     }
+
+    if (body) {
+        if (net_http_req_write_body_full(runner->m_internal.m_http_req, body, strlen(body)) != 0) return -1;
+    }
+    
+    if (net_http_req_write_commit(runner->m_internal.m_http_req) != 0) return -1;
     
     return 0;
 }
 
 int url_runner_internal_start(
-    url_runner_t runner, const char * method, const char * url, const char * body)
+    url_runner_t runner, const char * method, const char * url,
+    const char * header[], uint16_t header_count, const char * body)
 {
     if (url_runner_internal_create_endpoint(runner, url) != 0) return -1;
-    if (url_runner_internal_start_req(runner, method, url, body) != 0) return -1;
+    if (url_runner_internal_start_req(runner, method, url, header, header_count, body) != 0) return -1;
 
     if (net_endpoint_connect(
             net_http_endpoint_base_endpoint(runner->m_internal.m_http_endpoint)) != 0) return -1;

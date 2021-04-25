@@ -48,7 +48,12 @@ void url_runner_free(url_runner_t runner);
 int url_runner_init_net(url_runner_t runner);
 int url_runner_init_dns(url_runner_t runner);
 int url_runner_set_mode(url_runner_t runner, url_runner_mode_t mode);
-int url_runner_start(url_runner_t runner, const char * method, const char * url, const char * body);
+int url_runner_start(
+    url_runner_t runner,
+    const char * method,
+    const char * url,
+    const char * header[], uint16_t header_count,
+    const char * body);
 
 void url_runner_loop_run(url_runner_t runner);
 void url_runner_loop_break(url_runner_t runner);
@@ -58,6 +63,8 @@ int url_runner_init_stop_sig(url_runner_t runner, int sig);
 int url_runner_internal_init(url_runner_t runner);
 void url_runner_internal_fini(url_runner_t runner);
 int url_runner_internal_start(
-    url_runner_t runner, const char * method, const char * url, const char * body);
+    url_runner_t runner,
+    const char * method, const char * url,
+    const char * header[], uint16_t header_count, const char * body);
     
 #endif

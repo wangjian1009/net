@@ -7,12 +7,16 @@
 #include "url_runner.h"
 
 int main(int argc, char * argv[]) {
-    struct arg_str * method = arg_str0(NULL, "method", NULL, "method");
+    struct arg_str * request = arg_str0(NULL, "request", NULL, "request");
     struct arg_str * url = arg_str1(NULL, "url", NULL, "url");
+    struct arg_str * header = arg_strn(NULL, "header", NULL, 0, 100, "header");
+    struct arg_str * data = arg_str0(NULL, "data", NULL, "data");
     struct arg_end * use_end = arg_end(50);
     void * use_argtable[] = {
-        method,
+        request,
         url,
+        header,
+        data,
         use_end
     };
     int use_nerrors;
@@ -64,7 +68,6 @@ int main(int argc, char * argv[]) {
         }
 #endif
 
-    CPE_ERROR(em, "xxxx 222");
         if (url_runner_init_net(runner) != 0) goto COMPLETE;
         if (url_runner_init_dns(runner) != 0) goto COMPLETE;
         if (url_runner_set_mode(runner, url_runner_mode_internal) != 0) goto COMPLETE;
@@ -84,10 +87,12 @@ int main(int argc, char * argv[]) {
 
         url_runner_init_stop_sig(runner, SIGTERM);
 
-        CPE_ERROR(em, "xxxx 333");
         if (url_runner_start(
-                runner, method->count ? method->sval[0] : "get",
-                url->sval[0], NULL) != 0)
+                runner,
+                request->count ? request->sval[0] : "get",
+                url->sval[0],
+                header->sval, header->count,
+                data->count ? data->sval[0] : NULL) != 0)
         {
             return -1;
         }

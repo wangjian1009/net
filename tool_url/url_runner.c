@@ -211,12 +211,16 @@ int url_runner_set_mode(url_runner_t runner, url_runner_mode_t mode) {
     return 0;
 }
 
-int url_runner_start(url_runner_t runner, const char * method, const char * url, const char * body) {
+int url_runner_start(
+    url_runner_t runner,
+    const char * method, const char * url,
+    const char * header[], uint16_t header_count, const char * body)
+{
     switch (runner->m_mode) {
     case url_runner_mode_init:
         CPE_ERROR(runner->m_em, "not support start in mode init");
         return -1;
     case url_runner_mode_internal:
-        return url_runner_internal_start(runner, method, url, body);
+        return url_runner_internal_start(runner, method, url, header, header_count, body);
     }
 }
