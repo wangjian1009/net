@@ -95,12 +95,12 @@ void url_runner_loop_run(url_runner_t runner) {
 }
 
 void url_runner_loop_break(url_runner_t runner) {
-    ev_break(runner->m_event_base, 0);
+    ev_break(runner->m_event_base, EVBREAK_ALL);
 }
 
 void sfox_runner_stop_signal_cb(EV_P_ ev_signal *watcher, int revents) {
     url_runner_t runner = watcher->data;
-    ev_break(runner->m_event_base, 0);
+    url_runner_loop_break(runner);
 }
 
 int url_runner_init_stop_sig(url_runner_t runner, int sig) {
