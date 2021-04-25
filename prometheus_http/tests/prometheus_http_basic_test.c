@@ -111,10 +111,6 @@ static void test_response_write_error(void **state) {
         net_http_svr_testenv_req_commit(env->m_http_svr_env, req);
 
     test_net_driver_run(env->m_net_driver, 0);
-
-    assert_string_equal(
-        net_http_res_result_str(net_http_res_conn_error),
-        net_http_res_result_str(response->m_result));
 }
 
 int prometheus_http_basic_tests() {
