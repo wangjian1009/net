@@ -9,6 +9,7 @@ typedef enum test_net_endpoint_write_policy_type {
     test_net_endpoint_write_keep,
     test_net_endpoint_write_remove,
     test_net_endpoint_write_link,
+    test_net_endpoint_write_error,
 } test_net_endpoint_write_policy_type_t;
 
 struct test_net_endpoint_write_policy {
@@ -21,6 +22,11 @@ struct test_net_endpoint_write_policy {
             test_net_endpoint_link_t m_link;
             int64_t m_write_delay_ms;
         } m_link;
+        struct {
+            net_endpoint_error_source_t m_error_source;
+            int m_error_no;
+            char * m_error_msg;
+        } m_error;
     };
 };
 
@@ -97,6 +103,15 @@ void test_net_endpoint_expect_write_keep(
 /*utils.write.noop*/
 void test_net_next_endpoint_expect_write_noop(test_net_driver_t driver);
 void test_net_endpoint_expect_write_noop(net_endpoint_t base_endpoint);
+
+/*utils.write.noop*/
+void test_net_next_endpoint_expect_write_error(
+    test_net_driver_t driver,
+    net_endpoint_error_source_t error_source, int err_no, const char * error_msg);
+
+void test_net_endpoint_expect_write_error(
+    net_endpoint_t base_endpoint,
+    net_endpoint_error_source_t error_source, int err_no, const char * error_msg);
 
 /*utils.read*/
 int test_net_driver_read_from_other(

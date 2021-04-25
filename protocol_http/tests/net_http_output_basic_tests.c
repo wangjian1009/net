@@ -103,14 +103,25 @@ static void http_req_write_error(void **state) {
     net_http_testenv_t env = *state;
     net_http_testenv_create_ep_established(env);
 
-    /* net_http_req_t req1 = net_http_req_create(env->m_http_endpoint, net_http_req_method_get, "/a"); */
-    /* assert_true(req1); */
-    /* assert_true(net_http_req_write_head_pair(req1, "h1", "v1") == 0); */
-    /* assert_true(net_http_endpoint_flush(env->m_http_endpoint) == 0); */
-    /* net_http_req_free(req1); */
+    net_http_req_t req = net_http_req_create(env->m_http_endpoint, net_http_req_method_get, "/a");
+    assert_true(req);
+    assert_true(net_http_req_write_head_pair(req, "h1", "v1") == 0);
+    net_http_test_response_t response = net_http_test_response_create(env->m_http_protocol, req);
 
-    /* net_http_req_t req2 = net_http_req_create(env->m_http_endpoint, net_http_req_method_get, "/b"); */
-    /* assert_true(req2 == NULL); */
+    test_net_endpoint_expect_write_error(
+        net_http_endpoint_base_endpoint(env->m_http_endpoint),
+        net_endpoint_error_source_network,
+        net_endpoint_network_errno_internal, "write error");
+        
+    assert_true(net_http_endpoint_flush(env->m_http_endpoint) == 0);
+    assert_string_equal(
+        net_endpoint_state_str(net_endpoint_state_error),
+        net_endpoint_state_str(net_endpoint_state(net_http_endpoint_base_endpoint(env->m_http_endpoint))));
+
+    assert_true(net_http_req_find(env->m_http_endpoint, response->m_req_id) == NULL);
+    assert_string_equal(
+        net_http_res_result_str(net_http_res_conn_error),
+        net_http_res_result_str(response->m_result));
 }
 
 int net_http_output_basic_tests() {

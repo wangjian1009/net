@@ -124,7 +124,7 @@ static int test_net_endpoint_connect_apply_setup(
                 setup->m_endpoint.m_write_delay_ms);
         if (link_s2c == NULL) return -1;
         if (net_endpoint_set_state(setup->m_endpoint.m_endpoint, net_endpoint_state_established) != 0) return -1;
-        
+
         return 0;
     }
     }

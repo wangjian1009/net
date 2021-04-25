@@ -19,6 +19,7 @@ void test_net_endpoint_write_policy_clear(test_net_endpoint_t endpoint) {
     case test_net_endpoint_write_noop:
     case test_net_endpoint_write_keep:
     case test_net_endpoint_write_remove:
+    case test_net_endpoint_write_error:
         break;
     case test_net_endpoint_write_link:
         test_net_endpoint_link_free(endpoint->m_write_policy.m_link.m_link);
@@ -130,6 +131,16 @@ PROCESS_AGAIN:
             endpoint->m_write_policy.m_link.m_write_delay_ms);
         break;
     }
+    case test_net_endpoint_write_error:
+        net_endpoint_set_error(
+            base_endpoint,
+            endpoint->m_write_policy.m_error.m_error_source,
+            endpoint->m_write_policy.m_error.m_error_no,
+            endpoint->m_write_policy.m_error.m_error_msg);
+        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
+            net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+        }
+        break;
     }
 
 PROCESSED:
@@ -141,6 +152,7 @@ PROCESSED:
     }
 }
 
+/*keep*/
 static void test_net_driver_do_expect_write_keep(
     test_net_driver_t driver, uint32_t id, net_endpoint_buf_type_t buf_type)
 {
@@ -170,6 +182,7 @@ void test_net_endpoint_expect_write_keep(
     test_net_driver_do_expect_write_keep(driver, net_endpoint_id(base_endpoint), buf_type);
 }
 
+/*noop*/
 static void test_net_driver_do_expect_write_noop(test_net_driver_t driver, uint32_t id) {
     struct test_net_endpoint_write_setup * setup =
         mem_buffer_alloc(&driver->m_setup_buffer, sizeof(struct test_net_endpoint_write_setup));
@@ -189,4 +202,43 @@ void test_net_next_endpoint_expect_write_noop(test_net_driver_t driver) {
 void test_net_endpoint_expect_write_noop(net_endpoint_t base_endpoint) {
     test_net_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
     test_net_driver_do_expect_write_noop(driver, net_endpoint_id(base_endpoint));
+}
+
+/*error*/
+static void test_net_driver_do_expect_write_error(
+    test_net_driver_t driver, uint32_t id,
+    net_endpoint_error_source_t error_source, int error_no, const char * error_msg)
+{
+    struct test_net_endpoint_write_setup * setup =
+        mem_buffer_alloc(&driver->m_setup_buffer, sizeof(struct test_net_endpoint_write_setup));
+    setup->m_write_policy.m_type = test_net_endpoint_write_error;
+    setup->m_write_policy.m_error.m_error_source = error_source;
+    setup->m_write_policy.m_error.m_error_no = error_no;
+    setup->m_write_policy.m_error.m_error_msg = error_msg ? mem_buffer_strdup(&driver->m_setup_buffer, error_msg) : NULL;
+    setup->m_expect_buf = NULL;
+    setup->m_expect_size = 0;
+    
+    expect_value(test_net_endpoint_write, id, id);
+    will_return(test_net_endpoint_write, setup);
+}
+
+void test_net_next_endpoint_expect_write_error(
+    test_net_driver_t driver,
+    net_endpoint_error_source_t error_source, int err_no, const char * error_msg)
+{
+    net_schedule_t schedule = net_driver_schedule(net_driver_from_data(driver));
+    test_net_driver_do_expect_write_error(
+        driver, net_schedule_next_endpoint_id(schedule), error_source, err_no, error_msg);
+}
+
+void test_net_endpoint_expect_write_error(
+    net_endpoint_t base_endpoint,
+    net_endpoint_error_source_t error_source, int err_no, const char * error_msg)
+{
+    test_net_driver_t driver = test_net_driver_cast(net_endpoint_driver(base_endpoint));
+    test_net_endpoint_t endpoint = test_net_endpoint_cast(base_endpoint);
+    test_net_endpoint_write_policy_clear(endpoint);
+    
+    test_net_driver_do_expect_write_error(
+        driver, net_endpoint_id(base_endpoint), error_source, err_no, error_msg);
 }
