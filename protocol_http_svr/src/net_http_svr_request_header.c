@@ -6,9 +6,11 @@
 
 net_http_svr_request_header_t
 net_http_svr_request_header_create(net_http_svr_request_t request, uint16_t index, const char * name, size_t name_len) {
+    net_http_svr_protocol_t service = request->m_service;
+    
     net_endpoint_t base_endpoint = request->m_base_endpoint;
-    net_http_svr_protocol_t service = net_http_svr_endpoint_service(base_endpoint);
-
+    if (base_endpoint == NULL) return NULL;
+    
     net_http_svr_request_header_t header = TAILQ_FIRST(&service->m_free_request_headers);
     if (header) {
         TAILQ_REMOVE(&service->m_free_request_headers, header, m_next);
@@ -51,7 +53,7 @@ net_http_svr_request_header_create(net_http_svr_request_t request, uint16_t inde
 
 void net_http_svr_request_header_free(net_http_svr_request_header_t header) {
     net_http_svr_request_t request = header->m_request;
-    net_http_svr_protocol_t service = net_http_svr_endpoint_service(request->m_base_endpoint);
+    net_http_svr_protocol_t service = request->m_service;
 
     if (header->m_name) {
         if (header->m_name < header->m_buf || header->m_name >= (header->m_buf + sizeof(header->m_buf))) {
@@ -81,8 +83,10 @@ void net_http_svr_request_header_real_free(net_http_svr_request_header_t header)
 
 int net_http_svr_request_header_set_value(net_http_svr_request_header_t header, const char * value, size_t value_len) {
     net_http_svr_request_t request = header->m_request;
+    net_http_svr_protocol_t service = request->m_service;
+    
     net_endpoint_t base_endpoint = request->m_base_endpoint;
-    net_http_svr_protocol_t service = net_http_svr_endpoint_service(base_endpoint);
+    if (base_endpoint == NULL) return -1;
 
     if (header->m_value) {
         if (header->m_value < header->m_buf || header->m_value >= (header->m_buf + sizeof(header->m_buf))) {

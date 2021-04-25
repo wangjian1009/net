@@ -28,9 +28,12 @@ net_http_svr_request_create(net_endpoint_t base_endpoint) {
         }
     }
 
+    request->m_service = service;
     request->m_base_endpoint = base_endpoint;
     request->m_processor = NULL;
     request->m_request_id = ++service->m_max_request_id;
+    request->m_is_processing = 0;
+    request->m_is_free = 0;
     request->m_method = net_http_svr_request_method_unknown;
     request->m_expect_continue = 0;
     request->m_body_read = 0;
@@ -63,8 +66,12 @@ net_http_svr_request_create(net_endpoint_t base_endpoint) {
 }
 
 void net_http_svr_request_free(net_http_svr_request_t request) {
-    net_http_svr_endpoint_t connection = net_endpoint_protocol_data(request->m_base_endpoint);
-    net_http_svr_protocol_t service = net_http_svr_endpoint_service(request->m_base_endpoint);
+    net_http_svr_protocol_t service = request->m_service;
+    
+    if (request->m_is_processing) {
+        request->m_is_free = 1;
+        return;
+    }
 
     net_http_svr_request_set_processor(request, NULL);
     assert(request->m_processor == NULL);
@@ -90,7 +97,10 @@ void net_http_svr_request_free(net_http_svr_request_t request) {
 
     cpe_hash_table_remove_by_ins(&service->m_requests, request);
 
-    TAILQ_REMOVE(&connection->m_requests, request, m_next_for_connection);
+    if (request->m_base_endpoint) {
+        net_http_svr_endpoint_t connection = net_endpoint_protocol_data(request->m_base_endpoint);
+        TAILQ_REMOVE(&connection->m_requests, request, m_next_for_connection);
+    }
     
     request->m_base_endpoint = (void*)service;
     TAILQ_INSERT_TAIL(&service->m_free_requests, request, m_next_for_connection);
@@ -149,7 +159,9 @@ net_http_svr_request_state_t net_http_svr_request_state(net_http_svr_request_t r
 
 void net_http_svr_request_schedule_close_connection(net_http_svr_request_t request) {
     net_http_svr_request_set_state(request, net_http_svr_request_state_complete);
-    net_http_svr_endpoint_schedule_close(request->m_base_endpoint);
+    if (request->m_base_endpoint) {
+        net_http_svr_endpoint_schedule_close(request->m_base_endpoint);
+    }
 }
 
 const char * net_http_svr_request_find_header_value(net_http_svr_request_t request, const char * name) {
@@ -213,31 +225,65 @@ net_http_svr_request_t net_http_svr_request_from_data(void * data) {
     return ((net_http_svr_request_t)data) - 1;
 }
 
+void net_http_svr_request_clear_endpoint(net_http_svr_request_t request) {
+    if (request->m_base_endpoint) {
+        net_http_svr_endpoint_t connection = net_endpoint_protocol_data(request->m_base_endpoint);
+        TAILQ_REMOVE(&connection->m_requests, request, m_next_for_connection);
+        request->m_base_endpoint = NULL;
+    }
+}
+
 void net_http_svr_request_set_processor(net_http_svr_request_t request, net_http_svr_mount_point_t mp) {
     if (request->m_processor) {
+        uint8_t tag_local = 0;
+        if (!request->m_is_processing) {
+            tag_local = 1;
+            request->m_is_processing = 1;
+        }
+        
         if (request->m_processor->m_request_fini) {
             request->m_processor->m_request_fini(request->m_processor->m_ctx, request);
         }
         TAILQ_REMOVE(&request->m_processor->m_requests, request, m_next_for_processor);
+
+        if (tag_local) {
+            request->m_is_processing = 0;
+            if (request->m_is_free) {
+                net_http_svr_request_free(request);
+            }
+        }
     }
 
     request->m_processor = mp ? mp->m_processor : NULL;
 
     if (request->m_processor) {
+        uint8_t tag_local = 0;
+        if (!request->m_is_processing) {
+            tag_local = 1;
+            request->m_is_processing = 1;
+        }
+        
         if (request->m_processor->m_request_init) {
             request->m_processor->m_request_init(request->m_processor->m_ctx, mp->m_processor_env, request);
         }
         TAILQ_INSERT_TAIL(&request->m_processor->m_requests, request, m_next_for_processor);
+
+        if (tag_local) {
+            request->m_is_processing = 0;
+            if (request->m_is_free) {
+                net_http_svr_request_free(request);
+            }
+        }
     }
 }
 
 void net_http_svr_request_set_state(net_http_svr_request_t request, net_http_svr_request_state_t state) {
+    net_http_svr_protocol_t service = request->m_service;
+
     if (request->m_state == state) return;
 
-    if (net_endpoint_protocol_debug(request->m_base_endpoint)) {
+    if (request->m_base_endpoint && net_endpoint_protocol_debug(request->m_base_endpoint)) {
         net_endpoint_t base_endpoint = request->m_base_endpoint;
-        net_http_svr_endpoint_t connection = net_endpoint_protocol_data(base_endpoint);
-        net_http_svr_protocol_t service = net_http_svr_endpoint_service(base_endpoint);
 
         CPE_INFO(
             service->m_em, "http_svr: %s: req %d: state %s ==> %s",
@@ -302,9 +348,10 @@ const char * net_http_svr_request_dump(mem_buffer_t buffer, net_http_svr_request
 }
 
 void net_http_svr_request_on_path(net_http_svr_request_t request, const char* at, size_t length) {
+    net_http_svr_protocol_t service = request->m_service;
+    
     net_endpoint_t base_endpoint = request->m_base_endpoint;
-    net_http_svr_endpoint_t connection = net_endpoint_protocol_data(base_endpoint);
-    net_http_svr_protocol_t service = net_http_svr_endpoint_service(base_endpoint);
+    if (base_endpoint == NULL) return;
 
     assert(request->m_path == NULL);
     
@@ -341,10 +388,11 @@ void net_http_svr_request_on_path(net_http_svr_request_t request, const char* at
 }
 
 void net_http_svr_request_on_query_string(net_http_svr_request_t request, const char* at, size_t length) {
-    net_endpoint_t base_endpoint = request->m_base_endpoint;
-    net_http_svr_endpoint_t connection = net_endpoint_protocol_data(base_endpoint);
-    net_http_svr_protocol_t service = net_http_svr_endpoint_service(base_endpoint);
+    net_http_svr_protocol_t service = request->m_service;
     
+    net_endpoint_t base_endpoint = request->m_base_endpoint;
+    if (base_endpoint == NULL) return;
+
     if (net_endpoint_protocol_debug(base_endpoint)) {
         CPE_INFO(
             service->m_em, "http_svr: %s: req %d: query string: %.*s",
@@ -354,10 +402,11 @@ void net_http_svr_request_on_query_string(net_http_svr_request_t request, const 
 }
 
 void net_http_svr_request_on_uri(net_http_svr_request_t request, const char* at, size_t length) {
+    net_http_svr_protocol_t service = request->m_service;
+
     net_endpoint_t base_endpoint = request->m_base_endpoint;
-    net_http_svr_endpoint_t connection = net_endpoint_protocol_data(base_endpoint);
-    net_http_svr_protocol_t service = net_http_svr_endpoint_service(base_endpoint);
-    
+    if (base_endpoint == NULL) return;
+        
     if (net_endpoint_protocol_debug(base_endpoint)) {
         CPE_INFO(
             service->m_em, "http_svr: %s: req %d: uri: %.*s",
@@ -432,9 +481,10 @@ void net_http_svr_request_on_uri(net_http_svr_request_t request, const char* at,
 }
 
 void net_http_svr_request_on_fragment(net_http_svr_request_t request, const char* at, size_t length) {
+    net_http_svr_protocol_t service = request->m_service;
+
     net_endpoint_t base_endpoint = request->m_base_endpoint;
-    net_http_svr_endpoint_t connection = net_endpoint_protocol_data(base_endpoint);
-    net_http_svr_protocol_t service = net_http_svr_endpoint_service(base_endpoint);
+    if (base_endpoint == NULL) return;
 
     if (net_endpoint_protocol_debug(base_endpoint) >= 2) {
         CPE_INFO(
@@ -445,9 +495,10 @@ void net_http_svr_request_on_fragment(net_http_svr_request_t request, const char
 }
 
 void net_http_svr_request_on_header_field(net_http_svr_request_t request, const char* at, size_t length, int header_index) {
+    net_http_svr_protocol_t service = request->m_service;
+    
     net_endpoint_t base_endpoint = request->m_base_endpoint;
-    net_http_svr_endpoint_t connection = net_endpoint_protocol_data(base_endpoint);
-    net_http_svr_protocol_t service = net_http_svr_endpoint_service(base_endpoint);
+    if (base_endpoint == NULL) return;
 
     net_http_svr_request_header_t header = net_http_svr_request_header_create(request, (uint16_t)header_index, at, length);
     if (header == NULL) {
@@ -459,10 +510,11 @@ void net_http_svr_request_on_header_field(net_http_svr_request_t request, const 
 }
 
 void net_http_svr_request_on_header_value(net_http_svr_request_t request, const char* at, size_t length, int header_index) {
-    net_endpoint_t base_endpoint = request->m_base_endpoint;
-    net_http_svr_endpoint_t connection = net_endpoint_protocol_data(base_endpoint);
-    net_http_svr_protocol_t service = net_http_svr_endpoint_service(base_endpoint);
+    net_http_svr_protocol_t service = request->m_service;
 
+    net_endpoint_t base_endpoint = request->m_base_endpoint;
+    if (base_endpoint == NULL) return;
+    
     net_http_svr_request_header_t header = net_http_svr_request_header_find_by_index(request, header_index);
     if (header == NULL) {
         CPE_ERROR(
@@ -489,9 +541,10 @@ void net_http_svr_request_on_header_value(net_http_svr_request_t request, const 
 }
 
 void net_http_svr_request_on_body(net_http_svr_request_t request, const char* at, size_t length) {
+    net_http_svr_protocol_t service = request->m_service;
+    
     net_endpoint_t base_endpoint = request->m_base_endpoint;
-    net_http_svr_endpoint_t connection = net_endpoint_protocol_data(base_endpoint);
-    net_http_svr_protocol_t service = net_http_svr_endpoint_service(base_endpoint);
+    if (base_endpoint == NULL) return;
 
     if (net_endpoint_protocol_debug(base_endpoint)) {
         if (net_http_svr_request_content_is_text(request)) {
@@ -512,9 +565,10 @@ void net_http_svr_request_on_body(net_http_svr_request_t request, const char* at
 }
 
 void net_http_svr_request_on_head_complete(net_http_svr_request_t request) {
+    net_http_svr_protocol_t service = request->m_service;
+    
     net_endpoint_t base_endpoint = request->m_base_endpoint;
-    net_http_svr_endpoint_t connection = net_endpoint_protocol_data(base_endpoint);
-    net_http_svr_protocol_t service = net_http_svr_endpoint_service(base_endpoint);
+    if (base_endpoint == NULL) return;
 
     if (net_endpoint_protocol_debug(base_endpoint) >= 2) {
         CPE_INFO(
@@ -526,14 +580,30 @@ void net_http_svr_request_on_head_complete(net_http_svr_request_t request) {
     
     net_http_svr_processor_t processor = request->m_processor;
     if (processor && processor->m_request_on_head_complete) {
+        uint8_t tag_local = 0;
+        if (!request->m_is_processing) {
+            tag_local = 1;
+            request->m_is_processing = 1;
+        }
+
         processor->m_request_on_head_complete(processor->m_ctx, request);
+
+        if (tag_local) {
+            request->m_is_processing = 0;
+            if (request->m_is_free) {
+                net_http_svr_request_free(request);
+            }
+        }
     }
 }
 
 void net_http_svr_request_on_complete(net_http_svr_request_t request) {
+    net_http_svr_protocol_t service = request->m_service;
+
     net_endpoint_t base_endpoint = request->m_base_endpoint;
+    if (base_endpoint == NULL) return;
+
     net_http_svr_endpoint_t connection = net_endpoint_protocol_data(base_endpoint);
-    net_http_svr_protocol_t service = net_http_svr_endpoint_service(base_endpoint);
 
     if (net_endpoint_protocol_debug(base_endpoint) >= 2) {
         CPE_INFO(
@@ -544,7 +614,21 @@ void net_http_svr_request_on_complete(net_http_svr_request_t request) {
     if (request->m_state != net_http_svr_request_state_complete) {
         net_http_svr_processor_t processor = request->m_processor;
         if (processor && processor->m_request_on_complete) {
+            uint8_t tag_local = 0;
+            if (!request->m_is_processing) {
+                tag_local = 1;
+                request->m_is_processing = 1;
+            }
+
             processor->m_request_on_complete(processor->m_ctx, request);
+
+            if (tag_local) {
+                request->m_is_processing = 0;
+                if (request->m_is_free) {
+                    net_http_svr_request_free(request);
+                    return;
+                }
+            }
         }
     }
 

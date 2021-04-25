@@ -59,7 +59,7 @@ net_http_svr_response_t net_http_svr_response_get(net_http_svr_request_t request
 
 void net_http_svr_response_free(net_http_svr_response_t response) {
     net_http_svr_request_t request = response->m_request;
-    net_http_svr_protocol_t service = net_http_svr_endpoint_service(request->m_base_endpoint);
+    net_http_svr_protocol_t service = request->m_service;
     
     response->m_request = (net_http_svr_request_t)service;
     TAILQ_INSERT_TAIL(&service->m_free_responses, response, m_next);
@@ -74,10 +74,11 @@ void net_http_svr_response_real_free(net_http_svr_response_t response) {
 
 int net_http_svr_response_append_code(net_http_svr_response_t response, int http_code, const char * http_code_msg) {
     net_http_svr_request_t request = response->m_request;
-    net_endpoint_t base_endpoint = request->m_base_endpoint;
-    net_http_svr_endpoint_t connection = net_endpoint_protocol_data(base_endpoint);
-    net_http_svr_protocol_t service = net_http_svr_endpoint_service(base_endpoint);
+    net_http_svr_protocol_t service = request->m_service;
 
+    net_endpoint_t base_endpoint = request->m_base_endpoint;
+    if (base_endpoint == NULL) return -1;
+    
     if (request->m_state == net_http_svr_request_state_complete) return -1;
     
     net_http_svr_endpoint_timeout_reset(base_endpoint);
@@ -119,10 +120,11 @@ int net_http_svr_response_append_code(net_http_svr_response_t response, int http
 
 int net_http_svr_response_append_head(net_http_svr_response_t response, const char * name, const char * value) {
     net_http_svr_request_t request = response->m_request;
-    net_endpoint_t base_endpoint = request->m_base_endpoint;
-    net_http_svr_endpoint_t connection = net_endpoint_protocol_data(base_endpoint);
-    net_http_svr_protocol_t service = net_http_svr_endpoint_service(base_endpoint);
+    net_http_svr_protocol_t service = request->m_service;
 
+    net_endpoint_t base_endpoint = request->m_base_endpoint;
+    if (base_endpoint == NULL) return -1;
+    
     if (request->m_state == net_http_svr_request_state_complete) return -1;
     
     net_http_svr_endpoint_timeout_reset(base_endpoint);
@@ -162,9 +164,10 @@ int net_http_svr_response_append_head(net_http_svr_response_t response, const ch
 
 int net_http_svr_response_append_head_line(net_http_svr_response_t response, const char * head_line) {
     net_http_svr_request_t request = response->m_request;
+    net_http_svr_protocol_t service = request->m_service;
+
     net_endpoint_t base_endpoint = request->m_base_endpoint;
-    net_http_svr_endpoint_t connection = net_endpoint_protocol_data(base_endpoint);
-    net_http_svr_protocol_t service = net_http_svr_endpoint_service(base_endpoint);
+    if (base_endpoint == NULL) return -1;
 
     if (request->m_state == net_http_svr_request_state_complete) return -1;
     
@@ -201,9 +204,10 @@ int net_http_svr_response_append_head_line(net_http_svr_response_t response, con
 
 int net_http_svr_response_append_head_minetype_by_postfix(net_http_svr_response_t response, const char * postfix, uint8_t * is_added) {
     net_http_svr_request_t request = response->m_request;
+    net_http_svr_protocol_t service = request->m_service;
+
     net_endpoint_t base_endpoint = request->m_base_endpoint;
-    net_http_svr_endpoint_t connection = net_endpoint_protocol_data(base_endpoint);
-    net_http_svr_protocol_t service = net_http_svr_endpoint_service(base_endpoint);
+    if (base_endpoint == NULL) return -1;
     
     if (postfix == NULL) {
         if (is_added) *is_added = 0;
@@ -222,10 +226,11 @@ int net_http_svr_response_append_head_minetype_by_postfix(net_http_svr_response_
 
 int net_http_svr_response_append_body_identity_begin(net_http_svr_response_t response, uint32_t size) {
     net_http_svr_request_t request = response->m_request;
+    net_http_svr_protocol_t service = request->m_service;
+    
     net_endpoint_t base_endpoint = request->m_base_endpoint;
-    net_http_svr_endpoint_t connection = net_endpoint_protocol_data(base_endpoint);
-    net_http_svr_protocol_t service = net_http_svr_endpoint_service(base_endpoint);
-
+    if (base_endpoint == NULL) return -1;
+    
     if (request->m_state == net_http_svr_request_state_complete) return -1;
     
     net_http_svr_endpoint_timeout_reset(base_endpoint);
@@ -254,10 +259,11 @@ int net_http_svr_response_append_body_identity_begin(net_http_svr_response_t res
 
 int net_http_svr_response_append_body_identity_data(net_http_svr_response_t response, void const * data, uint32_t data_size) {
     net_http_svr_request_t request = response->m_request;
-    net_endpoint_t base_endpoint = request->m_base_endpoint;
-    net_http_svr_endpoint_t connection = net_endpoint_protocol_data(base_endpoint);
-    net_http_svr_protocol_t service = net_http_svr_endpoint_service(base_endpoint);
+    net_http_svr_protocol_t service = request->m_service;
 
+    net_endpoint_t base_endpoint = request->m_base_endpoint;
+    if (base_endpoint == NULL) return -1;
+    
     if (request->m_state == net_http_svr_request_state_complete) return -1;
     
     net_http_svr_endpoint_timeout_reset(base_endpoint);
@@ -314,10 +320,11 @@ int net_http_svr_response_append_body_identity_data(net_http_svr_response_t resp
 
 int net_http_svr_response_append_body_identity_from_stream(net_http_svr_response_t response, read_stream_t rs) {
     net_http_svr_request_t request = response->m_request;
-    net_endpoint_t base_endpoint = request->m_base_endpoint;
-    net_http_svr_endpoint_t connection = net_endpoint_protocol_data(base_endpoint);
-    net_http_svr_protocol_t service = net_http_svr_endpoint_service(base_endpoint);
+    net_http_svr_protocol_t service = request->m_service;
 
+    net_endpoint_t base_endpoint = request->m_base_endpoint;
+    if (base_endpoint == NULL) return -1;
+    
     if (request->m_state == net_http_svr_request_state_complete) return -1;
 
     net_http_svr_endpoint_timeout_reset(base_endpoint);
@@ -400,10 +407,11 @@ int net_http_svr_response_append_body_identity_from_stream(net_http_svr_response
 
 int net_http_svr_response_append_body_chunked_begin(net_http_svr_response_t response) {
     net_http_svr_request_t request = response->m_request;
-    net_endpoint_t base_endpoint = request->m_base_endpoint;
-    net_http_svr_endpoint_t connection = net_endpoint_protocol_data(base_endpoint);
-    net_http_svr_protocol_t service = net_http_svr_endpoint_service(base_endpoint);
+    net_http_svr_protocol_t service = request->m_service;
 
+    net_endpoint_t base_endpoint = request->m_base_endpoint;
+    if (base_endpoint == NULL) return -1;
+    
     if (request->m_state == net_http_svr_request_state_complete) return -1;
 
     net_http_svr_endpoint_timeout_reset(base_endpoint);
@@ -429,10 +437,11 @@ int net_http_svr_response_append_body_chunked_begin(net_http_svr_response_t resp
 
 int net_http_svr_response_append_body_chunked_block(net_http_svr_response_t response, void const * data, uint32_t data_size) {
     net_http_svr_request_t request = response->m_request;
-    net_endpoint_t base_endpoint = request->m_base_endpoint;
-    net_http_svr_endpoint_t connection = net_endpoint_protocol_data(base_endpoint);
-    net_http_svr_protocol_t service = net_http_svr_endpoint_service(base_endpoint);
+    net_http_svr_protocol_t service = request->m_service;
 
+    net_endpoint_t base_endpoint = request->m_base_endpoint;
+    if (base_endpoint == NULL) return -1;
+    
     if (request->m_state == net_http_svr_request_state_complete) return -1;
     
     net_http_svr_endpoint_timeout_reset(base_endpoint);
@@ -485,10 +494,11 @@ int net_http_svr_response_append_body_chunked_block(net_http_svr_response_t resp
 
 int net_http_svr_response_append_complete(net_http_svr_response_t response) {
     net_http_svr_request_t request = response->m_request;
+    net_http_svr_protocol_t service = request->m_service;
+    
     net_endpoint_t base_endpoint = request->m_base_endpoint;
-    net_http_svr_endpoint_t connection = net_endpoint_protocol_data(base_endpoint);
-    net_http_svr_protocol_t service = net_http_svr_endpoint_service(base_endpoint);
-
+    if (base_endpoint == NULL) return -1;
+    
     if (request->m_state == net_http_svr_request_state_complete) return -1;
     
     net_http_svr_endpoint_timeout_reset(base_endpoint);
@@ -576,9 +586,10 @@ const char * net_http_svr_response_state_str(net_http_svr_response_state_t state
 
 static int net_http_svr_response_append_head_last(net_http_svr_response_t response) {
     net_http_svr_request_t request = response->m_request;
+    net_http_svr_protocol_t service = request->m_service;
+
     net_endpoint_t base_endpoint = request->m_base_endpoint;
-    net_http_svr_endpoint_t connection = net_endpoint_protocol_data(base_endpoint);
-    net_http_svr_protocol_t service = net_http_svr_endpoint_service(base_endpoint);
+    if (base_endpoint == NULL) return -1;
     
     if (request->m_version_major == 1 && request->m_version_minor == 1) {
         if (!response->m_head_connection_setted) {
@@ -613,9 +624,10 @@ static int net_http_svr_response_append_head_last(net_http_svr_response_t respon
 
 static int net_http_svr_response_append(net_http_svr_response_t response, void const * data, uint32_t data_size) {
     net_http_svr_request_t request = response->m_request;
+    net_http_svr_protocol_t service = request->m_service;
+
     net_endpoint_t base_endpoint = request->m_base_endpoint;
-    net_http_svr_endpoint_t connection = net_endpoint_protocol_data(base_endpoint);
-    net_http_svr_protocol_t service = net_http_svr_endpoint_service(base_endpoint);
+    if (base_endpoint == NULL) return -1;
     
     if (net_endpoint_buf_append(base_endpoint, net_ep_buf_write, data, data_size) != 0) {
         if (net_endpoint_state(base_endpoint) != net_endpoint_state_deleting) {

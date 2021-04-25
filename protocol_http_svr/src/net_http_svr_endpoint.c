@@ -48,7 +48,13 @@ void net_http_svr_endpoint_fini(net_endpoint_t base_endpoint) {
     net_http_svr_endpoint_t connection = net_endpoint_protocol_data(base_endpoint);
 
     while(!TAILQ_EMPTY(&connection->m_requests)) {
-        net_http_svr_request_free(TAILQ_FIRST(&connection->m_requests));
+        net_http_svr_request_t request = TAILQ_FIRST(&connection->m_requests);
+        if (request->m_is_processing) {
+            net_http_svr_request_clear_endpoint(request);
+        }
+        else {
+            net_http_svr_request_free(request);
+        }
     }
 
     if (connection->m_timer_timeout) {

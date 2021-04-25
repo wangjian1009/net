@@ -7,11 +7,14 @@ typedef void (*net_http_svr_header_cb)(net_http_svr_request_t, const char* at, s
 typedef void (*net_http_svr_element_cb)(net_http_svr_request_t, const char* at, size_t length);
 
 struct net_http_svr_request {
+    net_http_svr_protocol_t m_service;
     net_endpoint_t m_base_endpoint;
     TAILQ_ENTRY(net_http_svr_request) m_next_for_connection;
     net_http_svr_processor_t m_processor;
     TAILQ_ENTRY(net_http_svr_request) m_next_for_processor;
     uint32_t m_request_id;
+    uint8_t m_is_processing;
+    uint8_t m_is_free;
     struct cpe_hash_entry m_hh_for_protocol;
     void * m_processor_request;
     net_http_svr_request_method_t m_method;
@@ -46,6 +49,7 @@ void net_http_svr_request_on_body(net_http_svr_request_t request, const char* at
 void net_http_svr_request_on_head_complete(net_http_svr_request_t request);
 void net_http_svr_request_on_complete(net_http_svr_request_t request);
 
+void net_http_svr_request_clear_endpoint(net_http_svr_request_t request);
 void net_http_svr_request_set_processor(net_http_svr_request_t request, net_http_svr_mount_point_t mp);
 void net_http_svr_request_set_state(net_http_svr_request_t request, net_http_svr_request_state_t state);
 
