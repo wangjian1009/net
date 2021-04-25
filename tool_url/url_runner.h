@@ -8,6 +8,8 @@
 #include "net_system.h"
 #include "net_dns_system.h"
 
+struct ev_loop;
+struct ev_signal;
 typedef struct url_runner * url_runner_t;
 typedef enum url_runner_mode url_runner_mode_t;
 
@@ -25,9 +27,10 @@ struct url_runner {
     FILE * m_output;
     
     /*net*/
-    struct event_base * m_event_base;
+    struct ev_loop * m_event_base;
     uint8_t m_sig_event_count;
-    struct event * m_sig_events[8];
+    uint8_t m_sig_event_capacity;
+    struct ev_signal * m_sig_events;
 
     net_schedule_t m_net_schedule;
     net_dns_manage_t m_dns_manage;

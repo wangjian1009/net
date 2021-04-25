@@ -9,7 +9,7 @@ struct net_driver_sock_testenv {
     test_error_monitor_t m_tem;
     error_monitor_t m_em;
     net_schedule_t m_schedule;
-    struct event_base * m_event_base;
+    struct ev_loop * m_event_base;
     net_sock_driver_t m_driver;
 };
 

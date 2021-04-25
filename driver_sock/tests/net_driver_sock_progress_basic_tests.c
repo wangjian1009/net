@@ -1,4 +1,4 @@
-#include <event2/event.h>
+#include "ev.h"
 #include "cmocka_all.h"
 #include "net_progress.h"
 #include "net_driver_sock_testenv.h"
@@ -29,7 +29,7 @@ static void driver_sock_progress_basic_test(void **state) {
 
     assert_true(net_progress_start(progress) == 0);
 
-    assert_int_equal(1, event_base_dispatch(env->m_event_base));
+    ev_run(env->m_event_base, 0);
 
     assert_string_equal(
         net_progress_state_str(net_progress_state_complete),

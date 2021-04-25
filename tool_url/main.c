@@ -2,7 +2,6 @@
 #include "cpe/pal/pal_string.h"
 #include "cpe/pal/pal_signal.h"
 #include "argtable2.h"
-#include "event2/event.h"
 #include "cpe/utils/service.h"
 #include "url_runner.h"
 

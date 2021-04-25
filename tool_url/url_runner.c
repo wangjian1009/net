@@ -2,10 +2,9 @@
 #include "cpe/pal/pal_strings.h"
 #include "cpe/pal/pal_stdio.h"
 #include "cpe/utils_sock/getdnssvraddrs.h"
-#include "event2/event.h"
 #include "net_driver.h"
 #include "net_address.h"
-#include "net_libevent_driver.h"
+#include "net_ev_driver.h"
 #include "net_schedule.h"
 #include "net_dns_manage.h"
 #include "net_dns_udns_source.h"
@@ -33,8 +32,18 @@ url_runner_create(mem_allocrator_t alloc) {
     
     runner->m_em = &runner->m_em_buf;
     runner->m_sig_event_count = 0;
+    runner->m_sig_event_capacity = 0;
+    runner->m_sig_events = NULL;
 
     runner->m_mode = url_runner_mode_init;
+
+    runner->m_sig_event_capacity = 8;
+    runner->m_sig_events = mem_alloc(runner->m_alloc, sizeof(struct ev_signal) * runner->m_sig_event_capacity);
+    if (runner->m_sig_events == NULL) {
+        url_runner_free(runner);
+        return NULL;
+    }
+    
     return runner;
 }
 
@@ -57,16 +66,19 @@ void url_runner_free(url_runner_t runner) {
         runner->m_net_schedule = NULL;
     }
 
-    uint8_t i;
-    for(i = 0; i < runner->m_sig_event_count; ++i) {
-        assert(runner->m_sig_events[i]);
-        evsignal_del(runner->m_sig_events[i]);
-        runner->m_sig_events[i] = NULL;
+    if (runner->m_sig_events) {
+        uint8_t i;
+        for (i = 0; i < runner->m_sig_event_count; ++i) {
+            //struct event * sigbreak_event = evsignal_new(runner->m_event_base, sig, sfox_runner_stop_signal_cb, runner);
+            ev_signal_stop(runner->m_event_base, &runner->m_sig_events[i]);
+        }
+        mem_free(runner->m_alloc, runner->m_sig_events);
+        runner->m_sig_event_capacity = 0;
     }
     runner->m_sig_event_count = 0;
 
     if (runner->m_event_base) {
-        event_base_free(runner->m_event_base);
+        ev_loop_destroy(runner->m_event_base);
         runner->m_event_base = NULL;
     }
 
@@ -78,33 +90,35 @@ void url_runner_free(url_runner_t runner) {
     mem_free(runner->m_alloc, runner);
 }
 
-void url_runner_loop_run(url_runner_t entry_runner) {
-    event_base_loop(entry_runner->m_event_base, 0);
+void url_runner_loop_run(url_runner_t runner) {
+    ev_run(runner->m_event_base, 0);
 }
 
-void url_runner_loop_break(url_runner_t entry_runner) {
-    event_base_loopbreak(entry_runner->m_event_base);
+void url_runner_loop_break(url_runner_t runner) {
+    ev_break(runner->m_event_base, 0);
 }
 
-void url_runner_stop_signal_cb(evutil_socket_t signo, short events, void* arg) {
-    url_runner_t entry_runner = arg;
-    event_base_loopbreak(entry_runner->m_event_base);
+void sfox_runner_stop_signal_cb(EV_P_ ev_signal *watcher, int revents) {
+    url_runner_t runner = watcher->data;
+    ev_break(runner->m_event_base, 0);
 }
 
-int url_runner_init_stop_sig(url_runner_t entry_runner, int sig) {
-    assert(entry_runner->m_sig_event_count < CPE_ARRAY_SIZE(entry_runner->m_sig_events));
+int url_runner_init_stop_sig(url_runner_t runner, int sig) {
+    assert(runner->m_sig_event_count < runner->m_sig_event_capacity);
 
-    struct event * sigbreak_event = evsignal_new(entry_runner->m_event_base, sig, url_runner_stop_signal_cb, entry_runner);
-    evsignal_add(sigbreak_event, NULL);
-
-    entry_runner->m_sig_events[entry_runner->m_sig_event_count] = sigbreak_event;
-    entry_runner->m_sig_event_count++;
+    ev_signal_init(
+        &runner->m_sig_events[runner->m_sig_event_count],
+        sfox_runner_stop_signal_cb,
+        sig);
+    runner->m_sig_events[runner->m_sig_event_count].data = runner;
+    
+    runner->m_sig_event_count++;
     return 0;
 }
 
 int url_runner_init_net(url_runner_t runner) {
     assert(runner->m_event_base == NULL);
-    runner->m_event_base = event_base_new();
+    runner->m_event_base = ev_loop_new(0);
     if (runner->m_event_base == NULL) {
         CPE_ERROR(runner->m_em, "entry: create event loop fail!");
         return -1;
@@ -114,7 +128,7 @@ int url_runner_init_net(url_runner_t runner) {
     runner->m_net_schedule = net_schedule_create(runner->m_alloc, runner->m_em, NULL);
     if (runner->m_net_schedule == NULL) {
         CPE_ERROR(runner->m_em, "entry: create schedule fail!");
-        event_base_free(runner->m_event_base);
+        ev_loop_destroy(runner->m_event_base);
         runner->m_event_base = NULL;
         return -1;
     }
@@ -124,25 +138,25 @@ int url_runner_init_net(url_runner_t runner) {
         CPE_ERROR(runner->m_em, "entry: create driver fail!");
         net_schedule_free(runner->m_net_schedule);
         runner->m_net_schedule = NULL;
-        event_base_free(runner->m_event_base);
+        ev_loop_destroy(runner->m_event_base);
         runner->m_event_base = NULL;
         return -1;
     }
 
-    net_libevent_driver_t libevent_driver = net_libevent_driver_create(runner->m_net_schedule, runner->m_event_base);
-    if (libevent_driver == NULL) {
+    net_ev_driver_t ev_driver = net_ev_driver_create(runner->m_net_schedule, runner->m_event_base);
+    if (ev_driver == NULL) {
         CPE_ERROR(runner->m_em, "entry: create driver fail!");
         net_dns_manage_free(runner->m_dns_manage);
         runner->m_dns_manage = NULL;
         net_schedule_free(runner->m_net_schedule);
         runner->m_net_schedule = NULL;
-        event_base_free(runner->m_event_base);
+        ev_loop_destroy(runner->m_event_base);
         runner->m_event_base = NULL;
         return -1;
     }
 
     assert(runner->m_net_driver == NULL);
-    runner->m_net_driver = net_libevent_driver_base_driver(libevent_driver);
+    runner->m_net_driver = net_ev_driver_base_driver(ev_driver);
     //net_driver_set_debug(schedule->m_net_driver, 2);
     //net_schedule_set_direct_driver(entry_runner->m_net_schedule, entry_runner->m_net_driver);
 
