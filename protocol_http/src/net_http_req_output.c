@@ -3,10 +3,13 @@
 #include "cpe/pal/pal_strings.h"
 #include "cpe/pal/pal_stdlib.h"
 #include "cpe/pal/pal_stdio.h"
+#include "cpe/utils/stream_mem.h"
+#include "cpe/utils/url.h"
 #include "net_endpoint.h"
 #include "net_address.h"
 #include "net_http_req_i.h"
 
+static const char * net_http_req_method_str(net_http_req_method_t method);
 static int net_http_req_complete_head(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_req_t req);
 
 net_http_req_state_t net_http_req_state(net_http_req_t req) {
@@ -160,33 +163,27 @@ int net_http_req_write_commit(net_http_req_t http_req) {
 int net_http_req_do_send_first_line(
     net_http_protocol_t http_protocol, net_http_req_t http_req, net_http_req_method_t method, const char * url)
 {
-    const char * str_method = NULL;
-    switch(method) {
-    case net_http_req_method_get:
-        str_method = "GET";
-        break;
-    case net_http_req_method_post:
-        str_method = "POST";
-        break;
-    case net_http_req_method_put:
-        str_method = "PUT";
-        break;
-    case net_http_req_method_delete:
-        str_method = "DELETE";
-        break;
-    case net_http_req_method_patch:
-        str_method = "PATCH";
-        break;
-    case net_http_req_method_head:
-        str_method = "HEAD";
-        break;
-    }
-    
     char buf[512];
-    int n = snprintf(buf, sizeof(buf), "%s %s HTTP/1.1\r\n", str_method, url);
+    int n = snprintf(buf, sizeof(buf), "%s %s HTTP/1.1\r\n", net_http_req_method_str(method), url);
     if (net_http_endpoint_write(http_protocol, http_req->m_http_ep, http_req, buf, (uint32_t)n) != 0) return -1;
 
     http_req->m_head_size += n;
+    return 0;
+}
+
+int net_http_req_do_send_first_line_from_url(
+    net_http_protocol_t http_protocol, net_http_req_t http_req, net_http_req_method_t method, cpe_url_t url)
+{
+    char buf[512];
+
+    struct write_stream_mem ws = CPE_WRITE_STREAM_MEM_INITIALIZER(buf, sizeof(buf));
+    stream_printf((write_stream_t)&ws, "%s ", net_http_req_method_str(method));
+    cpe_url_print((write_stream_t)&ws, url, cpe_url_print_path_query);
+    stream_printf((write_stream_t)&ws, " HTTP/1.1\r\n");
+
+    if (net_http_endpoint_write(http_protocol, http_req->m_http_ep, http_req, buf, ws.m_pos) != 0) return -1;
+
+    http_req->m_head_size += ws.m_pos;
     return 0;
 }
 
@@ -215,6 +212,23 @@ static int net_http_req_complete_head(net_http_protocol_t http_protocol, net_htt
     http_req->m_req_state = net_http_req_state_prepare_body;
     
     return 0;
+}
+
+static const char * net_http_req_method_str(net_http_req_method_t method) {
+    switch(method) {
+    case net_http_req_method_get:
+        return "GET";
+    case net_http_req_method_post:
+        return "POST";
+    case net_http_req_method_put:
+        return "PUT";
+    case net_http_req_method_delete:
+        return "DELETE";
+    case net_http_req_method_patch:
+        return "PATCH";
+    case net_http_req_method_head:
+        return "HEAD";
+    }
 }
 
 const char * net_http_req_state_str(net_http_req_state_t req_state) {

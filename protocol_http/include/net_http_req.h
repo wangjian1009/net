@@ -1,5 +1,6 @@
 #ifndef NET_HTTP_REQ_H_INCLEDED
 #define NET_HTTP_REQ_H_INCLEDED
+#include "cpe/utils/utils_types.h"
 #include "net_http_types.h"
 
 NET_BEGIN_DECL
@@ -10,6 +11,7 @@ struct net_http_req_it {
 };
 
 net_http_req_t net_http_req_create(net_http_endpoint_t http_ep, net_http_req_method_t method, const char * url);
+net_http_req_t net_http_req_create_from_url(net_http_endpoint_t http_ep, net_http_req_method_t method, cpe_url_t rul);
 void net_http_req_free(net_http_req_t req);
 
 uint16_t net_http_req_id(net_http_req_t req);

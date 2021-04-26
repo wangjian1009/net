@@ -1,5 +1,6 @@
 #ifndef NET_SSL_ENDPOINT_I_H_INCLEDED
 #define NET_SSL_ENDPOINT_I_H_INCLEDED
+#include "mbedtls/timing.h"
 #include "net_ssl_endpoint.h"
 #include "net_ssl_protocol_i.h"
 
@@ -10,6 +11,7 @@ struct net_ssl_endpoint {
     net_ssl_endpoint_state_t m_state;
     mbedtls_ssl_config * m_ssl_config;
 	mbedtls_ssl_context * m_ssl;
+    mbedtls_timing_delay_context m_timer;
 };
 
 int net_ssl_endpoint_init(net_endpoint_t base_endpoint);

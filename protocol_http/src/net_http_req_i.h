@@ -45,6 +45,9 @@ struct net_http_req {
 int net_http_req_do_send_first_line(
     net_http_protocol_t http_protocol, net_http_req_t http_req, net_http_req_method_t method, const char * url);
 
+int net_http_req_do_send_first_line_from_url(
+    net_http_protocol_t http_protocol, net_http_req_t http_req, net_http_req_method_t method, cpe_url_t url);
+
 void net_http_req_free_force(net_http_req_t req);
 void net_http_req_real_free(net_http_req_t req);
 

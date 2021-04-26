@@ -586,6 +586,9 @@ static int net_ssl_endpoint_ssl_init(net_ssl_endpoint_t endpoint) {
     mbedtls_ssl_set_bio(
         endpoint->m_ssl, endpoint,
         net_ssl_endpoint_bio_write, net_ssl_endpoint_bio_read, NULL);
+
+    mbedtls_ssl_set_timer_cb(
+        endpoint->m_ssl, &endpoint->m_timer, mbedtls_timing_set_delay, mbedtls_timing_get_delay);
     
     return 0;
 
