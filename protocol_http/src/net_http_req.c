@@ -83,9 +83,11 @@ net_http_req_create_i(net_http_endpoint_t http_ep, net_http_req_method_t method)
 
 net_http_req_t
 net_http_req_create(net_http_endpoint_t http_ep, net_http_req_method_t method, const char * url) {
-    net_http_req_t req = net_http_req_create_i(http_ep, method);
     net_http_protocol_t http_protocol = net_http_endpoint_protocol(http_ep);
-    
+
+    net_http_req_t req = net_http_req_create_i(http_ep, method);
+    if (req == NULL) return NULL;
+
     if (net_http_req_do_send_first_line(http_protocol, req, method, url) != 0) {
         CPE_ERROR(http_protocol->m_em, "http: req: create: write req first line fail!");
         net_http_req_free_force(req);
@@ -97,8 +99,10 @@ net_http_req_create(net_http_endpoint_t http_ep, net_http_req_method_t method, c
 
 net_http_req_t
 net_http_req_create_from_url(net_http_endpoint_t http_ep, net_http_req_method_t method, cpe_url_t url) {
-    net_http_req_t req = net_http_req_create_i(http_ep, method);
     net_http_protocol_t http_protocol = net_http_endpoint_protocol(http_ep);
+
+    net_http_req_t req = net_http_req_create_i(http_ep, method);
+    if (req == NULL) return NULL;
     
     if (net_http_req_do_send_first_line_from_url(http_protocol, req, method, url) != 0) {
         CPE_ERROR(http_protocol->m_em, "http: req: create: write req first line fail!");
