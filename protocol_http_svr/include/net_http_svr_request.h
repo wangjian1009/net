@@ -42,6 +42,7 @@ net_http_svr_request_find(
     net_http_svr_protocol_t service, uint32_t id);
 
 uint32_t net_http_svr_request_id(net_http_svr_request_t request);
+net_http_svr_protocol_t net_http_svr_request_protocol(net_http_svr_request_t request);
 net_http_svr_request_method_t net_http_svr_request_method(net_http_svr_request_t request);
 net_http_svr_request_transfer_encoding_t net_http_svr_request_transfer_encoding(net_http_svr_request_t request);
 uint8_t net_http_svr_request_expect_continue(net_http_svr_request_t request);

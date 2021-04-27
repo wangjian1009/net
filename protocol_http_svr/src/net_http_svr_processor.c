@@ -61,7 +61,11 @@ void net_http_svr_processor_free(net_http_svr_processor_t processor) {
     net_http_svr_protocol_t service = processor->m_service;
 
     while(!TAILQ_EMPTY(&processor->m_requests)) {
-        net_http_svr_request_free(TAILQ_FIRST(&processor->m_requests));
+        net_http_svr_request_t request = TAILQ_FIRST(&processor->m_requests);
+#if CPE_UNIT_TEST
+        request->m_is_processing = 0;
+#endif        
+        net_http_svr_request_free(request);
     }
 
     while(!TAILQ_EMPTY(&processor->m_mount_points)) {

@@ -49,6 +49,11 @@ net_protocol_t net_http_svr_protocol_to_protocol(net_http_svr_protocol_t service
     return net_protocol_from_data(service);
 }
 
+net_http_svr_protocol_t net_http_svr_protocol_cast(net_protocol_t base_protocol) {
+    return net_protocol_init_fun(base_protocol) == net_http_svr_protocol_init
+        ? net_protocol_data(base_protocol) : NULL;
+}
+
 net_http_svr_mount_point_t net_http_svr_protocol_root(net_http_svr_protocol_t service) {
     return service->m_root;
 }

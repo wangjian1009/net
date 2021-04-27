@@ -7,6 +7,7 @@ net_http_svr_protocol_t net_http_svr_protocol_create(net_schedule_t schedule, co
 void net_http_svr_protocol_free(net_http_svr_protocol_t service);
 
 net_protocol_t net_http_svr_protocol_to_protocol(net_http_svr_protocol_t service);
+net_http_svr_protocol_t net_http_svr_protocol_cast(net_protocol_t protocol);
 
 net_http_svr_mount_point_t net_http_svr_protocol_root(net_http_svr_protocol_t service);
 

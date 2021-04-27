@@ -118,6 +118,10 @@ uint32_t net_http_svr_request_id(net_http_svr_request_t request) {
     return request->m_request_id;
 }
 
+net_http_svr_protocol_t net_http_svr_request_protocol(net_http_svr_request_t request) {
+    return request->m_service;
+}
+
 net_http_svr_request_t
 net_http_svr_request_find(net_http_svr_protocol_t service, uint32_t id) {
     struct net_http_svr_request key;
