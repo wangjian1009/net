@@ -46,7 +46,7 @@ net_http_svr_request_mock_expect_response_close(
             &driver->m_setup_buffer, sizeof(struct net_http_svr_mock_request_policy));
 
     policy->m_type = net_http_svr_mock_request_type_response;
-    policy->m_response.m_keep_alive = 1;
+    policy->m_response.m_keep_alive = 0;
     policy->m_response.m_code = code;
     policy->m_response.m_code_msg = mem_buffer_strdup(&driver->m_setup_buffer, code_msg);
     policy->m_response.m_body = response ? mem_buffer_strdup(&driver->m_setup_buffer, response) : NULL;
