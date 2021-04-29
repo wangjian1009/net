@@ -23,8 +23,12 @@ net_endpoint_create(net_driver_t driver, net_protocol_t protocol, net_mem_group_
     net_schedule_t schedule = driver->m_schedule;
     net_endpoint_t endpoint;
     uint16_t capacity = sizeof(struct net_endpoint) + schedule->m_endpoint_driver_capacity + schedule->m_endpoint_protocol_capacity;
-        
+
+    assert(protocol);
+    assert(driver);
+
     endpoint = TAILQ_FIRST(&driver->m_free_endpoints);
+
     if (endpoint) {
         TAILQ_REMOVE(&driver->m_free_endpoints, endpoint, m_next_for_driver);
     }

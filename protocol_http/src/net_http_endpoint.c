@@ -387,6 +387,8 @@ static void net_http_endpoint_reset_data(net_http_protocol_t http_protocol, net_
             req->m_res_on_complete(req->m_res_ctx, req, result, NULL, 0);
         }
 
-        net_http_req_free_force(req);
+        if (req == TAILQ_FIRST(&http_ep->m_reqs)) {
+            if (req) net_http_req_free_force(req);
+        }
     }
 }
