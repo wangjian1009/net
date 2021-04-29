@@ -5,6 +5,7 @@
 NET_BEGIN_DECL
 
 net_http_svr_protocol_t net_http_svr_endpoint_service(net_endpoint_t base_endpoint);
+net_http_svr_endpoint_t net_http_svr_endpoint_cast(net_endpoint_t base_endpoint);
 
 NET_END_DECL
 

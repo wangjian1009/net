@@ -101,6 +101,13 @@ net_http_svr_protocol_t net_http_svr_endpoint_service(net_endpoint_t base_endpoi
     return net_protocol_data(net_endpoint_protocol(base_endpoint));
 }
 
+net_http_svr_endpoint_t net_http_svr_endpoint_cast(net_endpoint_t base_endpoint) {
+    net_protocol_t protocol = net_endpoint_protocol(base_endpoint);
+    return net_protocol_endpoint_init_fun(protocol) == net_http_svr_endpoint_init
+        ? net_endpoint_data(base_endpoint)
+        : NULL;
+}
+
 static net_http_svr_request_t net_http_svr_endpoint_new_request(void *data) {
     net_endpoint_t base_endpoint = data;
     return net_http_svr_request_create(base_endpoint);

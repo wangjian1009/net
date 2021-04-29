@@ -126,7 +126,14 @@ net_http_svr_request_t
 net_http_svr_request_find(net_http_svr_protocol_t service, uint32_t id) {
     struct net_http_svr_request key;
     key.m_request_id = id;
-    return cpe_hash_table_find(&service->m_requests, &key);
+
+    net_http_svr_request_t req = cpe_hash_table_find(&service->m_requests, &key);
+    if (req && req->m_is_free) req = NULL;
+    return req;
+}
+
+net_http_svr_endpoint_t net_http_svr_request_endpoint(net_http_svr_request_t request) {
+    return request->m_base_endpoint ? net_http_svr_endpoint_cast(request->m_base_endpoint) : NULL;
 }
 
 net_http_svr_request_method_t net_http_svr_request_method(net_http_svr_request_t request) {
