@@ -4,3 +4,4 @@
 *.xcworkspace
 *.gradle
 .externalNativeBuild
+log.txt
