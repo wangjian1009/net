@@ -6,6 +6,7 @@
 #include "cpe/utils/error.h"
 #include "net_system.h"
 #include "net_dns_system.h"
+#include "net_ndt7_tester.h"
 
 struct ev_loop;
 struct ev_signal;
@@ -28,6 +29,9 @@ struct ndt7_runner {
     net_schedule_t m_net_schedule;
     net_dns_manage_t m_dns_manage;
     net_driver_t m_net_driver;
+
+    net_ndt7_manage_t m_ndt_manager;
+    net_ndt7_tester_t m_ndt_tester;
 };
 
 ndt7_runner_t ndt7_runner_create(mem_allocrator_t alloc);
@@ -40,5 +44,8 @@ int ndt7_runner_init_dns(ndt7_runner_t runner);
 void ndt7_runner_loop_run(ndt7_runner_t runner);
 void ndt7_runner_loop_break(ndt7_runner_t runner);
 int ndt7_runner_init_stop_sig(ndt7_runner_t runner, int sig);
-    
+
+/*测试 */
+int ndt7_runner_start(ndt7_runner_t runner, net_ndt7_test_type_t test_type);
+
 #endif

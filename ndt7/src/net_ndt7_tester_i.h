@@ -13,6 +13,9 @@ struct net_ndt7_tester {
     net_ndt7_test_type_t m_type;
     net_ndt7_tester_state_t m_state;
 
+    /**/
+    net_http_req_t m_query_name_req;
+    
     /*callback*/
     void * m_ctx;
     net_ndt7_tester_on_complete_fun_t m_on_complete;

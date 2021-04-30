@@ -8,6 +8,7 @@
 #include "net_schedule.h"
 #include "net_dns_manage.h"
 #include "net_dns_udns_source.h"
+#include "net_ndt7_manage.h"
 #include "ndt7_runner.h"
 
 ndt7_runner_t
@@ -34,6 +35,8 @@ ndt7_runner_create(mem_allocrator_t alloc) {
     runner->m_sig_event_count = 0;
     runner->m_sig_event_capacity = 0;
     runner->m_sig_events = NULL;
+    runner->m_ndt_manager = NULL;
+    runner->m_ndt_tester = NULL;
 
     runner->m_sig_event_capacity = 8;
     runner->m_sig_events = mem_alloc(runner->m_alloc, sizeof(struct ev_signal) * runner->m_sig_event_capacity);
@@ -41,12 +44,29 @@ ndt7_runner_create(mem_allocrator_t alloc) {
         ndt7_runner_free(runner);
         return NULL;
     }
-    
+
+    runner->m_ndt_manager = net_ndt7_manage_create(runner->m_alloc, runner->m_em, runner->m_net_schedule);
+    if (runner->m_ndt_manager == NULL) {
+        ndt7_runner_free(runner);
+        return NULL;
+    }
+
     return runner;
 }
 
 
 void ndt7_runner_free(ndt7_runner_t runner) {
+    if (runner->m_ndt_tester) {
+        net_ndt7_tester_clear_cb(runner->m_ndt_tester);
+        net_ndt7_tester_free(runner->m_ndt_tester);
+        runner->m_ndt_tester = NULL;
+    }
+
+    if (runner->m_ndt_manager) {
+        net_ndt7_manage_free(runner->m_ndt_manager);
+        runner->m_ndt_manager = NULL;
+    }
+
     if (runner->m_dns_manage) {
         net_dns_manage_free(runner->m_dns_manage);
         runner->m_dns_manage = NULL;
