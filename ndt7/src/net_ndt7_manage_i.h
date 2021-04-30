@@ -5,6 +5,7 @@
 #include "cpe/utils/error.h"
 #include "cpe/utils/buffer.h"
 #include "net_http_types.h"
+#include "net_ssl_types.h"
 #include "net_ndt7_manage.h"
 
 NET_BEGIN_DECL
@@ -16,6 +17,9 @@ struct net_ndt7_manage {
     error_monitor_t m_em;
     uint8_t m_debug;
     net_schedule_t m_schedule;
+    net_driver_t m_base_driver;
+    net_driver_t m_ssl_driver;
+    net_http_protocol_t m_http_protocol;
     uint32_t m_idx_max;
     net_ndt7_tester_list_t m_testers;
 };

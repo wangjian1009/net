@@ -77,15 +77,7 @@ int main(int argc, char * argv[]) {
 
         ndt7_runner_init_stop_sig(runner, SIGTERM);
 
-        /* if (ndt7_runner_start( */
-        /*         runner, */
-        /*         request->count ? request->sval[0] : "get", */
-        /*         ndt7->sval[0], */
-        /*         header->sval, header->count, */
-        /*         data->count ? data->sval[0] : NULL) != 0) */
-        /* { */
-        /*     return -1; */
-        /* } */
+        if (ndt7_runner_start(runner, net_ndt7_test_download_and_upload) != 0) goto COMPLETE;
 
         ndt7_runner_loop_run(runner);
 

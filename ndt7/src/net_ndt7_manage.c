@@ -2,16 +2,19 @@
 #include "cpe/pal/pal_strings.h"
 #include "cpe/utils/string_utils.h"
 #include "net_schedule.h"
+#include "net_driver.h"
+#include "net_ssl_stream_driver.h"
+#include "net_http_protocol.h"
 #include "net_address.h"
 #include "net_ndt7_manage_i.h"
 #include "net_ndt7_tester_i.h"
 
 net_ndt7_manage_t net_ndt7_manage_create(
-    mem_allocrator_t alloc, error_monitor_t em, net_schedule_t schedule)
+    mem_allocrator_t alloc, error_monitor_t em, net_schedule_t schedule, net_driver_t driver)
 {
     net_ndt7_manage_t manage = mem_alloc(alloc, sizeof(struct net_ndt7_manage));
     if (manage == NULL) {
-        CPE_ERROR(em, "ndt-cli: manage alloc fail");
+        CPE_ERROR(em, "ndt7: manage alloc fail");
         return NULL;
     }
     
@@ -21,8 +24,25 @@ net_ndt7_manage_t net_ndt7_manage_create(
     manage->m_em = em;
     manage->m_debug = 0;
     manage->m_schedule = schedule;
+    manage->m_base_driver = driver;
+    manage->m_ssl_driver = NULL;
+    manage->m_http_protocol = NULL;
     manage->m_idx_max = 0;
 
+    net_ssl_stream_driver_t ssl_driver =
+        net_ssl_stream_driver_create(manage->m_schedule, "ndt7", driver, alloc, em);
+    if (ssl_driver == NULL) {
+        CPE_ERROR(em, "ndt7: create ssl driver fail");
+        return NULL;
+    }
+    manage->m_ssl_driver = net_driver_from_data(ssl_driver);
+    
+    manage->m_http_protocol = net_http_protocol_create(schedule, "ndt7");
+    if (manage->m_http_protocol == NULL) {
+        CPE_ERROR(em, "ndt7: create http protocol fail");
+        return NULL;
+    }
+    
     TAILQ_INIT(&manage->m_testers);
     
     return manage;
@@ -33,6 +53,16 @@ void net_ndt7_manage_free(net_ndt7_manage_t manage) {
         net_ndt7_tester_free(TAILQ_FIRST(&manage->m_testers));
     }
 
+    if (manage->m_ssl_driver) {
+        net_driver_free(manage->m_ssl_driver);
+        manage->m_ssl_driver = NULL;
+    }
+
+    if (manage->m_http_protocol) {
+        net_http_protocol_free(manage->m_http_protocol);
+        manage->m_http_protocol = NULL;
+    }
+    
     mem_free(manage->m_alloc, manage);
 }
 

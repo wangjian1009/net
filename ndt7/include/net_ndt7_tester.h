@@ -12,7 +12,9 @@ enum net_ndt7_test_type {
 
 enum net_ndt7_tester_state {
     net_ndt7_tester_state_init,
-    net_ndt7_tester_state_query_names,
+    net_ndt7_tester_state_query_target,
+    net_ndt7_tester_state_download,
+    net_ndt7_tester_state_upload,
     net_ndt7_tester_state_done,
 };
 

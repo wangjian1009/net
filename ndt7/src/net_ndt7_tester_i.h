@@ -12,9 +12,15 @@ struct net_ndt7_tester {
     
     net_ndt7_test_type_t m_type;
     net_ndt7_tester_state_t m_state;
-
+    cpe_url_t m_target;
+    
     /**/
-    net_http_req_t m_query_name_req;
+    union {
+        struct {
+            net_http_endpoint_t m_endpoint;
+            net_http_req_t m_req;
+        } m_query_target;
+    } m_state_data;
     
     /*callback*/
     void * m_ctx;
@@ -22,9 +28,11 @@ struct net_ndt7_tester {
     void (*m_ctx_free)(void *);
 };
 
-void net_ndt7_tester_set_state(net_ndt7_tester_t tester, net_ndt7_tester_state_t state);
+int net_ndt7_tester_query_target_start(net_ndt7_tester_t tester);
+int net_ndt7_tester_download_start(net_ndt7_tester_t tester);
+int net_ndt7_tester_upload_start(net_ndt7_tester_t tester);
 
-int net_ndt7_tester_start_query_names(net_ndt7_tester_t tester);
+int net_ndt7_tester_check_start_next_step(net_ndt7_tester_t tester);
 
 NET_END_DECL
 

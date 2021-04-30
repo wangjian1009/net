@@ -15,6 +15,11 @@ int ndt7_runner_start(ndt7_runner_t runner, net_ndt7_test_type_t test_type) {
         runner,
         ndt7_runner_tester_on_complete,
         NULL);
+
+    if (net_ndt7_tester_start(runner->m_ndt_tester) != 0) {
+        CPE_ERROR(runner->m_em, "ndt: start: create tester fail!");
+        return -1;
+    }
     
     return 0;
 }

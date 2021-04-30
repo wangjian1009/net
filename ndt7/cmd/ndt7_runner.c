@@ -45,7 +45,8 @@ ndt7_runner_create(mem_allocrator_t alloc) {
         return NULL;
     }
 
-    runner->m_ndt_manager = net_ndt7_manage_create(runner->m_alloc, runner->m_em, runner->m_net_schedule);
+    runner->m_ndt_manager =
+        net_ndt7_manage_create(runner->m_alloc, runner->m_em, runner->m_net_schedule, runner->m_net_driver);
     if (runner->m_ndt_manager == NULL) {
         ndt7_runner_free(runner);
         return NULL;

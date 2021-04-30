@@ -6,7 +6,8 @@
 NET_BEGIN_DECL
 
 net_ndt7_manage_t net_ndt7_manage_create(
-    mem_allocrator_t alloc, error_monitor_t em, net_schedule_t schedule);
+    mem_allocrator_t alloc, error_monitor_t em,
+    net_schedule_t schedule, net_driver_t driver);
 
 void net_ndt7_manage_free(net_ndt7_manage_t ndt_manage);
 

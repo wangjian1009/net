@@ -5,7 +5,8 @@
 
 NET_BEGIN_DECL
 
-net_trans_manage_t net_trans_manage_create(
+net_trans_manage_t
+net_trans_manage_create(
     mem_allocrator_t alloc, error_monitor_t em, net_schedule_t schedule, net_driver_t driver,
     const char * name);
 

@@ -20,7 +20,6 @@ struct net_trans_manage {
     net_schedule_t m_schedule;
     net_driver_t m_driver;
     char m_name[32];
-    uint8_t m_cfg_protect_vpn;
     void * m_watcher_ctx;
     net_endpoint_data_watch_fun_t m_watcher_fun;
     
