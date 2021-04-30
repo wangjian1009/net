@@ -4,6 +4,7 @@
 #include "cpe/utils/memory.h"
 #include "cpe/utils/error.h"
 #include "cpe/utils/buffer.h"
+#include "net_http_types.h"
 #include "net_ndt7_manage.h"
 
 NET_BEGIN_DECL
@@ -15,11 +16,11 @@ struct net_ndt7_manage {
     error_monitor_t m_em;
     uint8_t m_debug;
     net_schedule_t m_schedule;
+    uint32_t m_idx_max;
     net_ndt7_tester_list_t m_testers;
 };
 
 mem_buffer_t net_ndt7_manage_tmp_buffer(net_ndt7_manage_t manage);
-int net_ndt7_manage_active_delay_process(net_ndt7_manage_t manage);
 
 NET_END_DECL
 

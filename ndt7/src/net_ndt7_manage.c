@@ -21,6 +21,7 @@ net_ndt7_manage_t net_ndt7_manage_create(
     manage->m_em = em;
     manage->m_debug = 0;
     manage->m_schedule = schedule;
+    manage->m_idx_max = 0;
 
     TAILQ_INIT(&manage->m_testers);
     
