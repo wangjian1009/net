@@ -3,7 +3,7 @@
 #include "cpe/pal/pal_signal.h"
 #include "argtable2.h"
 #include "cpe/utils/service.h"
-#include "ndt_runner.h"
+#include "ndt7_runner.h"
 
 int main(int argc, char * argv[]) {
     struct arg_end * use_end = arg_end(50);
@@ -38,7 +38,7 @@ int main(int argc, char * argv[]) {
     use_nerrors = arg_parse(argc, argv, use_argtable);
     common_nerrors = arg_parse(argc, argv, common_argtable);
 
-    ndt_runner_t runner = ndt_runner_create(NULL);
+    ndt7_runner_t runner = ndt7_runner_create(NULL);
     if (runner == NULL) return -1;
 
     error_monitor_t em = runner->m_em;
@@ -59,8 +59,8 @@ int main(int argc, char * argv[]) {
         }
 #endif
 
-        if (ndt_runner_init_net(runner) != 0) goto COMPLETE;
-        if (ndt_runner_init_dns(runner) != 0) goto COMPLETE;
+        if (ndt7_runner_init_net(runner) != 0) goto COMPLETE;
+        if (ndt7_runner_init_dns(runner) != 0) goto COMPLETE;
 
         // Setup signal handler
 #if defined SIGPIPE
@@ -68,31 +68,31 @@ int main(int argc, char * argv[]) {
 #endif
 
 #if defined SIGBREAK
-        ndt_runner_init_stop_sig(runner, SIGBREAK);
+        ndt7_runner_init_stop_sig(runner, SIGBREAK);
 #endif
 
 #if defined SIGINT
-        ndt_runner_init_stop_sig(runner, SIGINT);
+        ndt7_runner_init_stop_sig(runner, SIGINT);
 #endif
 
-        ndt_runner_init_stop_sig(runner, SIGTERM);
+        ndt7_runner_init_stop_sig(runner, SIGTERM);
 
-        /* if (ndt_runner_start( */
+        /* if (ndt7_runner_start( */
         /*         runner, */
         /*         request->count ? request->sval[0] : "get", */
-        /*         ndt->sval[0], */
+        /*         ndt7->sval[0], */
         /*         header->sval, header->count, */
         /*         data->count ? data->sval[0] : NULL) != 0) */
         /* { */
         /*     return -1; */
         /* } */
 
-        ndt_runner_loop_run(runner);
+        ndt7_runner_loop_run(runner);
 
         rv = 0;
     COMPLETE:
         if (runner) {
-            ndt_runner_free(runner);
+            ndt7_runner_free(runner);
             runner = NULL;
         }
 

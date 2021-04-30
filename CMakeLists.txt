@@ -44,11 +44,11 @@ include(${CMAKE_CURRENT_LIST_DIR}/buildtools/cmake/net-prometheus-http.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/buildtools/cmake/net-prometheus-process.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/buildtools/cmake/net-prometheus.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/buildtools/cmake/net-ping.cmake)
-include(${CMAKE_CURRENT_LIST_DIR}/buildtools/cmake/net-ndt.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/buildtools/cmake/net-ndt7.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/buildtools/cmake/net-trans.cmake)
 
 include(${CMAKE_CURRENT_LIST_DIR}/buildtools/cmake/tool-url.cmake)
-include(${CMAKE_CURRENT_LIST_DIR}/buildtools/cmake/tool-ndt.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/buildtools/cmake/tool-ndt7.cmake)
 
 enable_testing()
 include(${CMAKE_CURRENT_LIST_DIR}/../cpe/buildtools/cmake/depends-cmocka.cmake)

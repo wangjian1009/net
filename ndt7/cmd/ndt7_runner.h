@@ -1,5 +1,5 @@
-#ifndef URL_RUNNER_H_INCLEDED
-#define URL_RUNNER_H_INCLEDED
+#ifndef NET_NDT7_RUNNER_H_INCLEDED
+#define NET_NDT7_RUNNER_H_INCLEDED
 #include "cpe/pal/pal_queue.h"
 #include "cpe/utils/memory.h"
 #include "cpe/utils/buffer.h"
@@ -9,9 +9,9 @@
 
 struct ev_loop;
 struct ev_signal;
-typedef struct ndt_runner * ndt_runner_t;
+typedef struct ndt7_runner * ndt7_runner_t;
 
-struct ndt_runner {
+struct ndt7_runner {
     mem_allocrator_t m_alloc;
     FILE * m_log_file;
     struct error_monitor m_em_buf;
@@ -30,15 +30,15 @@ struct ndt_runner {
     net_driver_t m_net_driver;
 };
 
-ndt_runner_t ndt_runner_create(mem_allocrator_t alloc);
-void ndt_runner_free(ndt_runner_t runner);
+ndt7_runner_t ndt7_runner_create(mem_allocrator_t alloc);
+void ndt7_runner_free(ndt7_runner_t runner);
 
 /*主要操作 */
-int ndt_runner_init_net(ndt_runner_t runner);
-int ndt_runner_init_dns(ndt_runner_t runner);
+int ndt7_runner_init_net(ndt7_runner_t runner);
+int ndt7_runner_init_dns(ndt7_runner_t runner);
 
-void ndt_runner_loop_run(ndt_runner_t runner);
-void ndt_runner_loop_break(ndt_runner_t runner);
-int ndt_runner_init_stop_sig(ndt_runner_t runner, int sig);
+void ndt7_runner_loop_run(ndt7_runner_t runner);
+void ndt7_runner_loop_break(ndt7_runner_t runner);
+int ndt7_runner_init_stop_sig(ndt7_runner_t runner, int sig);
     
 #endif

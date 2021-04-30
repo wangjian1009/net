@@ -50,19 +50,17 @@ tests: $(CTEST_OUTPUT)/Makefile
 	cd $(CTEST_OUTPUT) && make && $(if $V,CTEST_OUTPUT_ON_FAILURE=1) ctest net-http2
 
 # }}}
-# {{{ tool-ndt
-tool_ndt_output:=$(TOOL_BIN_PATH)/tool_ndt
+# {{{ tool-ndt7
+tool_ndt7_output:=$(TOOL_BIN_PATH)/tool_ndt7
 
-$(tool_ndt_output): tool_ndt
-
-.PHONY: tool_ndt
-tool_ndt: $(TOOL_BUILD_PATH)/Makefile
-	$(CMAKE_MAKE) -C $(TOOL_BUILD_PATH) tool_ndt
+.PHONY: tool_ndt7
+tool_ndt7: $(TOOL_BUILD_PATH)/Makefile
+	$(CMAKE_MAKE) -C $(TOOL_BUILD_PATH) tool_ndt7
 
 TOOL_NDT_ARGS+=
 
-run-ndt: $(tool_ndt_output)
-	$(tool_ndt_output) $(TOOL_NDT_ARGS)
+run-ndt7: tool_ndt7
+	$(tool_ndt7_output) $(TOOL_NDT_ARGS)
 
 # }}} 
 # {{{ tool-url
