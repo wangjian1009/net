@@ -23,7 +23,7 @@ net_ndt7_tester_create(net_ndt7_manage_t manager, net_ndt7_test_type_t test_type
     tester->m_state = net_ndt7_tester_state_init;
     tester->m_target = NULL;
 
-    bzero(&tester->m_state, sizeof(tester->m_state));
+    bzero(&tester->m_state_data, sizeof(tester->m_state_data));
 
     tester->m_ctx = NULL;
     tester->m_on_complete = NULL;
@@ -160,11 +160,11 @@ static void net_ndt7_tester_clear_state_data(net_ndt7_tester_t tester) {
         }
 
         if (tester->m_state_data.m_query_target.m_endpoint) {
-            /* net_endpoint_set_data_watcher( */
-            /*     net_http_endpoint_base_endpoint(tester->m_state_data.m_query_target.m_endpoint), */
-            /*     NULL, NULL, NULL); */
-            /* net_http_endpoint_free(conn->m_endpoint); */
-            /* conn->m_endpoint = NULL; */
+            net_endpoint_set_data_watcher(
+                net_http_endpoint_base_endpoint(tester->m_state_data.m_query_target.m_endpoint),
+                NULL, NULL, NULL);
+            net_http_endpoint_free(tester->m_state_data.m_query_target.m_endpoint);
+            tester->m_state_data.m_query_target.m_endpoint = NULL;
         }
         break;
     case net_ndt7_tester_state_download:

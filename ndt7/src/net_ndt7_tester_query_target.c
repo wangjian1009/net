@@ -33,11 +33,20 @@ int net_ndt7_tester_query_target_start(net_ndt7_tester_t tester) {
         net_ndt7_tester_query_target_on_endpoint_fini);
 
     net_address_t address =
-        net_address_create_auto(manager->m_schedule, "locate.measurementlab.net");
+        net_address_create_auto(manager->m_schedule, "locate.measurementlab.net:443");
     if (address == NULL) {
         CPE_ERROR(manager->m_em, "ndt7: %d: query target: create address fail", tester->m_id);
+        return -1;
     }
 
+    if (net_endpoint_set_remote_address(base_endpoint, address) != 0) {
+        CPE_ERROR(manager->m_em, "ndt7: %d: query target: set remote address fail", tester->m_id);
+        net_address_free(address);
+        return -1;
+    }
+    net_address_free(address);
+
+    
     //"https://locate.measurementlab.net/v2/nearest/ndt/ndt7?client_name=ndt7-android&client_version=${BuildConfig.NDT7_ANDROID_VERSION_NAME}" */
         /* val locateServerUrl = "https://locate.measurementlab.net/v2/nearest/ndt/ndt7?client_name=ndt7-android&client_version=${BuildConfig.NDT7_ANDROID_VERSION_NAME}" */
         /* val request = Request.Builder() */

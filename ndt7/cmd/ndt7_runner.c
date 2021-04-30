@@ -21,13 +21,13 @@ ndt7_runner_create(mem_allocrator_t alloc) {
     bzero(runner, sizeof(*runner));
 
     runner->m_alloc = alloc;
-    runner->m_log_file = fopen("log.txt", "wb");
-    if (runner->m_log_file) {
-        cpe_error_monitor_init(&runner->m_em_buf, cpe_error_log_to_file, runner->m_log_file);
-    }
-    else {
+    /* runner->m_log_file = fopen("log.txt", "wb"); */
+    /* if (runner->m_log_file) { */
+    /*     cpe_error_monitor_init(&runner->m_em_buf, cpe_error_log_to_file, runner->m_log_file); */
+    /* } */
+    /* else { */
         cpe_error_monitor_init(&runner->m_em_buf, cpe_error_log_to_consol, NULL);
-    }
+    /* } */
 
     runner->m_output = stdout;
     
@@ -41,13 +41,6 @@ ndt7_runner_create(mem_allocrator_t alloc) {
     runner->m_sig_event_capacity = 8;
     runner->m_sig_events = mem_alloc(runner->m_alloc, sizeof(struct ev_signal) * runner->m_sig_event_capacity);
     if (runner->m_sig_events == NULL) {
-        ndt7_runner_free(runner);
-        return NULL;
-    }
-
-    runner->m_ndt_manager =
-        net_ndt7_manage_create(runner->m_alloc, runner->m_em, runner->m_net_schedule, runner->m_net_driver);
-    if (runner->m_ndt_manager == NULL) {
         ndt7_runner_free(runner);
         return NULL;
     }
@@ -226,6 +219,14 @@ int ndt7_runner_init_dns(ndt7_runner_t runner) {
         net_dns_udns_source_free(udns);
         return -1;
     }
+
+    return 0;
+}
+
+int ndt7_runner_init_ndt(ndt7_runner_t runner) {
+    runner->m_ndt_manager =
+        net_ndt7_manage_create(runner->m_alloc, runner->m_em, runner->m_net_schedule, runner->m_net_driver);
+    if (runner->m_ndt_manager == NULL) return -1;
 
     return 0;
 }

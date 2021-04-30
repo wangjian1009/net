@@ -40,6 +40,7 @@ void ndt7_runner_free(ndt7_runner_t runner);
 /*主要操作 */
 int ndt7_runner_init_net(ndt7_runner_t runner);
 int ndt7_runner_init_dns(ndt7_runner_t runner);
+int ndt7_runner_init_ndt(ndt7_runner_t runner);
 
 void ndt7_runner_loop_run(ndt7_runner_t runner);
 void ndt7_runner_loop_break(ndt7_runner_t runner);

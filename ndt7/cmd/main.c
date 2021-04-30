@@ -61,6 +61,7 @@ int main(int argc, char * argv[]) {
 
         if (ndt7_runner_init_net(runner) != 0) goto COMPLETE;
         if (ndt7_runner_init_dns(runner) != 0) goto COMPLETE;
+        if (ndt7_runner_init_ndt(runner) != 0) goto COMPLETE;
 
         // Setup signal handler
 #if defined SIGPIPE
