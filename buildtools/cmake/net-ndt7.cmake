@@ -7,7 +7,7 @@ add_library(net_ndt7 STATIC ${net_ndt7_source})
 set_property(TARGET net_ndt7 PROPERTY INCLUDE_DIRECTORIES
   ${cpe_pal_base}/include
   ${cpe_utils_base}/include
-  ${net_core_bas}/include
+  ${net_core_base}/include
   ${net_ndt7_base}/include
   )
 

@@ -4,6 +4,7 @@
 #include "net_schedule.h"
 #include "net_address.h"
 #include "net_ndt7_manage_i.h"
+#include "net_ndt7_tester_i.h"
 
 net_ndt7_manage_t net_ndt7_manage_create(
     mem_allocrator_t alloc, error_monitor_t em, net_schedule_t schedule)
@@ -21,10 +22,16 @@ net_ndt7_manage_t net_ndt7_manage_create(
     manage->m_debug = 0;
     manage->m_schedule = schedule;
 
+    TAILQ_INIT(&manage->m_testers);
+    
     return manage;
 }
 
 void net_ndt7_manage_free(net_ndt7_manage_t manage) {
+    while(!TAILQ_EMPTY(&manage->m_testers)) {
+        net_ndt7_tester_free(TAILQ_FIRST(&manage->m_testers));
+    }
+
     mem_free(manage->m_alloc, manage);
 }
 

@@ -25,7 +25,7 @@ set(tool_ndt7_includes
     )
 
 set(tool_ndt7_link_libraries
-  cpe_utils net_dns net_dns_udns net_driver_ssl net_driver_ev net_protocol_http argtable2)
+  net_ndt7 cpe_utils net_dns net_dns_udns net_driver_ssl net_driver_ev net_protocol_http argtable2)
 
 add_executable(tool_ndt7 ${tool_ndt7_source})
 set_property(TARGET tool_ndt7 PROPERTY INCLUDE_DIRECTORIES ${tool_ndt7_includes})
