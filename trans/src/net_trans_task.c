@@ -98,7 +98,6 @@ net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const c
     task->m_connect_to = NULL;
     task->m_formpost = NULL;
  	task->m_formpost_last = NULL;
-    task->m_cfg_protect_vpn = mgr->m_cfg_protect_vpn;
     task->m_cfg_explicit_dns = 0;
 #if TARGET_OS_IPHONE
     task->m_cfg_explicit_dns = 1;
@@ -768,11 +767,6 @@ int net_trans_task_append_form_ds(
     return 0;
 }
 
-int net_trans_task_set_protect_vpn(net_trans_task_t task, uint8_t protect_vpn) {
-    task->m_cfg_protect_vpn = protect_vpn;
-    return 0;
-}
-
 int net_trans_task_start(net_trans_task_t task) {
     net_trans_manage_t mgr = task->m_mgr;
 
@@ -828,10 +822,10 @@ int net_trans_task_start(net_trans_task_t task) {
         curl_easy_setopt(task->m_handler, CURLOPT_HTTPPOST, task->m_formpost);
     }
     
-    if (task->m_cfg_protect_vpn) {
-        curl_easy_setopt(task->m_handler, CURLOPT_SOCKOPTFUNCTION, net_trans_task_sock_config_cb);
-        curl_easy_setopt(task->m_handler, CURLOPT_SOCKOPTDATA, task);
-    }
+    /* if (task->m_cfg_protect_vpn) { */
+    /*     curl_easy_setopt(task->m_handler, CURLOPT_SOCKOPTFUNCTION, net_trans_task_sock_config_cb); */
+    /*     curl_easy_setopt(task->m_handler, CURLOPT_SOCKOPTDATA, task); */
+    /* } */
 
     if (net_address_type(task->m_target_address) == net_address_domain) {
         if (task->m_cfg_explicit_dns) {
@@ -1361,12 +1355,12 @@ static int net_trans_task_sock_config_cb(void * p, curl_socket_t curlfd, curlsoc
     net_trans_task_t task = (net_trans_task_t)p;
     //net_trans_manage_t mgr = task->m_mgr;
 
-    if (purpose == CURLSOCKTYPE_IPCXN && task->m_cfg_protect_vpn) {
+    /* if (purpose == CURLSOCKTYPE_IPCXN && task->m_cfg_protect_vpn) { */
         /* if (sock_protect_vpn(curlfd, mgr->m_em) != 0) { */
         /*     CPE_INFO(mgr->m_em, "trans: %s-%d: protect vpn fail!", mgr->m_name, task->m_id); */
         /*     return -1; */
         /* } */
-    }
+    /* } */
 
     return 0;
 }

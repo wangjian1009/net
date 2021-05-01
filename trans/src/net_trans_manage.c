@@ -32,7 +32,6 @@ net_trans_manage_t net_trans_manage_create(
     manage->m_watcher_ctx = NULL;
     manage->m_watcher_fun = NULL;
     cpe_str_dup(manage->m_name, sizeof(manage->m_name), name);
-    manage->m_cfg_protect_vpn = 0;
 
 	manage->m_multi_handle = curl_multi_init();
     manage->m_timer_event = net_timer_create(driver, net_trans_do_timeout, manage);
@@ -104,10 +103,6 @@ void net_trans_manage_set_debug(net_trans_manage_t manage, uint8_t debug) {
 
 const char * net_trans_manage_name(net_trans_manage_t manage) {
     return manage->m_name;
-}
-
-void net_trans_manage_set_protect_vpn(net_trans_manage_t manage, uint8_t protect_vpn) {
-    manage->m_cfg_protect_vpn = protect_vpn;
 }
 
 int net_trans_manage_set_pipelining_stream(net_trans_manage_t manage) {

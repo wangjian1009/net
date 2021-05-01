@@ -24,7 +24,6 @@ int net_trans_task_append_header_line(net_trans_task_t task, const char * head_o
 int net_trans_task_set_body(net_trans_task_t task, void const * data, uint32_t data_size);
 int net_trans_task_set_user_agent(net_trans_task_t task, const char * user_agent);
 int net_trans_task_set_net_interface(net_trans_task_t task, const char * net_interface);
-int net_trans_task_set_protect_vpn(net_trans_task_t task, uint8_t protect_vpn);
 int net_trans_task_set_follow_location(net_trans_task_t task, uint8_t enable);
 int net_trans_task_set_proxy_http_1_1(net_trans_task_t task, net_address_t address);
 int net_trans_task_set_http_protocol(net_trans_task_t task, net_trans_http_version_t http_version);

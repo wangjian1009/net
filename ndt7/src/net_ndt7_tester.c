@@ -1,6 +1,7 @@
 #include <assert.h>
 #include "cpe/pal/pal_strings.h"
 #include "cpe/utils/url.h"
+#include "cpe/utils/string_utils.h"
 #include "net_endpoint.h"
 #include "net_http_req.h"
 #include "net_http_endpoint.h"
@@ -24,6 +25,11 @@ net_ndt7_tester_create(net_ndt7_manage_t manager, net_ndt7_test_type_t test_type
     tester->m_target = NULL;
 
     bzero(&tester->m_state_data, sizeof(tester->m_state_data));
+
+    tester->m_error.m_state = net_ndt7_tester_state_init;
+    tester->m_error.m_source = net_ndt7_tester_error_source_none;
+    tester->m_error.m_code = 0;
+    tester->m_error.m_msg = NULL;
 
     tester->m_ctx = NULL;
     tester->m_on_complete = NULL;
@@ -49,6 +55,11 @@ void net_ndt7_tester_free(net_ndt7_tester_t tester) {
     if (tester->m_target) {
         cpe_url_free(tester->m_target);
         tester->m_target = NULL;
+    }
+
+    if (tester->m_error.m_msg) {
+        mem_free(manager->m_alloc, tester->m_error.m_msg);
+        tester->m_error.m_msg = NULL;
     }
 
     TAILQ_REMOVE(&manager->m_testers, tester, m_next);
@@ -176,6 +187,23 @@ static void net_ndt7_tester_clear_state_data(net_ndt7_tester_t tester) {
     }
 }
 
+void net_ndt7_tester_set_error(
+    net_ndt7_tester_t tester,
+    net_ndt7_tester_error_source_t source, int32_t code, const char * msg)
+{
+    net_ndt7_manage_t manager = tester->m_manager;
+
+    if (tester->m_error.m_msg) {
+        mem_free(manager->m_alloc, tester->m_error.m_msg);
+        tester->m_error.m_msg = NULL;
+    }
+
+    tester->m_error.m_state = tester->m_state;
+    tester->m_error.m_source = source;
+    tester->m_error.m_code = code;
+    tester->m_error.m_msg = msg ? cpe_str_mem_dup(manager->m_alloc, msg) : NULL;
+}
+
 static void net_ndt7_tester_set_state(net_ndt7_tester_t tester, net_ndt7_tester_state_t state) {
     net_ndt7_manage_t manager = tester->m_manager;
 
@@ -213,5 +241,23 @@ const char * net_ndt7_tester_state_str(net_ndt7_tester_state_t state) {
         return "upload";
     case net_ndt7_tester_state_done:
         return "done";
+    }
+}
+
+const char * net_ndt7_tester_error_source_str(net_ndt7_tester_error_source_t source) {
+    switch(source) {
+    case net_ndt7_tester_error_source_none:
+        return "none";
+    case net_ndt7_tester_error_source_network:
+        return "network";
+    case net_ndt7_tester_error_source_ndt7:
+        return "ndt7";
+    }
+}
+
+const char * net_ndt7_tester_error_code_str(net_ndt7_tester_error_code_t err) {
+    switch(err) {
+    case net_ndt7_tester_error_internal:
+        return "internal";
     }
 }

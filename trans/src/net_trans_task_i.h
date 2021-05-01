@@ -14,7 +14,6 @@ struct net_trans_task {
     CURL * m_handler;
     net_watcher_t m_watcher;
     uint8_t m_debug;
-    uint8_t m_cfg_protect_vpn;
     uint8_t m_cfg_explicit_dns;
     uint32_t m_id;
     net_trans_task_ds_list_t m_dses;

@@ -14,13 +14,21 @@ struct net_ndt7_tester {
     net_ndt7_tester_state_t m_state;
     cpe_url_t m_target;
     
-    /**/
+    /*状态数据 */
     union {
         struct {
             net_http_endpoint_t m_endpoint;
             net_http_req_t m_req;
         } m_query_target;
     } m_state_data;
+
+    /*错误数据 */
+    struct {
+        net_ndt7_tester_state_t m_state;
+        net_ndt7_tester_error_source_t m_source;
+        int32_t m_code;
+        char * m_msg;
+    } m_error;
     
     /*callback*/
     void * m_ctx;
@@ -31,6 +39,9 @@ struct net_ndt7_tester {
 int net_ndt7_tester_query_target_start(net_ndt7_tester_t tester);
 int net_ndt7_tester_download_start(net_ndt7_tester_t tester);
 int net_ndt7_tester_upload_start(net_ndt7_tester_t tester);
+
+void net_ndt7_tester_set_error(
+    net_ndt7_tester_t tester, net_ndt7_tester_error_source_t source, int32_t code, const char * msg);
 
 int net_ndt7_tester_check_start_next_step(net_ndt7_tester_t tester);
 

@@ -16,7 +16,6 @@ uint8_t net_trans_manage_debug(net_trans_manage_t manage);
 void net_trans_manage_set_debug(net_trans_manage_t manage, uint8_t debug);
 
 const char * net_trans_manage_name(net_trans_manage_t manage);
-void net_trans_manage_set_protect_vpn(net_trans_manage_t manage, uint8_t protect_vpn);
 int net_trans_manage_set_pipelining_stream(net_trans_manage_t manage);
 
 /*data-watch*/

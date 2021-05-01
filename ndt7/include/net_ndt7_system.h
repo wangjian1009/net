@@ -6,6 +6,8 @@ NET_BEGIN_DECL
 
 typedef enum net_ndt7_test_type net_ndt7_test_type_t;
 typedef enum net_ndt7_tester_state net_ndt7_tester_state_t;
+typedef enum net_ndt7_tester_error_source net_ndt7_tester_error_source_t;
+typedef enum net_ndt7_tester_error_code net_ndt7_tester_error_code_t;
 typedef struct net_ndt7_manage * net_ndt7_manage_t;
 typedef struct net_ndt7_tester * net_ndt7_tester_t;
 

@@ -27,6 +27,7 @@ net_ndt7_test_type_t net_ndt7_tester_type(net_ndt7_tester_t tester);
 
 net_ndt7_tester_state_t net_ndt7_tester_state(net_ndt7_tester_t tester);
 
+/*回调 */
 typedef void (*net_ndt7_tester_on_complete_fun_t)(void * ctx, net_ndt7_tester_t tester);
 
 void net_ndt7_tester_set_cb(
@@ -35,12 +36,31 @@ void net_ndt7_tester_set_cb(
     net_ndt7_tester_on_complete_fun_t on_complete,
     void (*ctx_free)(void *));
     
-void net_ndt7_tester_clear_cb(net_ndt7_tester_t tester);
+void net_ndt7_tester_clear_cb(net_ndt7_tester_t tester); 
 
 int net_ndt7_tester_start(net_ndt7_tester_t tester);
 
+/*错误信息 */
+enum net_ndt7_tester_error_source {
+    net_ndt7_tester_error_source_none,
+    net_ndt7_tester_error_source_network,
+    net_ndt7_tester_error_source_ndt7
+};
+
+enum net_ndt7_tester_error_code {
+    net_ndt7_tester_error_internal = -1,
+};
+
+net_ndt7_tester_state_t net_ndt7_tester_error_state(net_ndt7_tester_t tester);
+net_ndt7_tester_error_source_t net_ndt7_tester_error_source(net_ndt7_tester_t tester);
+int32_t net_ndt7_tester_error_code(net_ndt7_tester_t tester);
+const char * net_ndt7_tester_error_msg(net_ndt7_tester_t tester);
+
+/*辅助函数 */
 const char * net_ndt7_test_type_str(net_ndt7_test_type_t state);
 const char * net_ndt7_tester_state_str(net_ndt7_tester_state_t state);
+const char * net_ndt7_tester_error_source_str(net_ndt7_tester_error_source_t source);
+const char * net_ndt7_tester_error_code_str(net_ndt7_tester_error_code_t err);
 
 NET_END_DECL
 
