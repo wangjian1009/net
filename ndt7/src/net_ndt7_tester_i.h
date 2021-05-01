@@ -30,8 +30,7 @@ struct net_ndt7_tester {
     /*错误数据 */
     struct {
         net_ndt7_tester_state_t m_state;
-        net_ndt7_tester_error_source_t m_source;
-        int32_t m_code;
+        net_ndt7_tester_error_t m_error;
         char * m_msg;
     } m_error;
     
@@ -46,7 +45,7 @@ int net_ndt7_tester_download_start(net_ndt7_tester_t tester);
 int net_ndt7_tester_upload_start(net_ndt7_tester_t tester);
 
 void net_ndt7_tester_set_error(
-    net_ndt7_tester_t tester, net_ndt7_tester_error_source_t source, int32_t code, const char * msg);
+    net_ndt7_tester_t tester, net_ndt7_tester_error_t err, const char * msg);
 void net_ndt7_tester_set_error_internal(net_ndt7_tester_t tester, const char * msg);
 
 int net_ndt7_tester_check_start_next_step(net_ndt7_tester_t tester);

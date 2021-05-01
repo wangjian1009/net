@@ -32,8 +32,7 @@ net_ndt7_tester_create(net_ndt7_manage_t manager, net_ndt7_test_type_t test_type
     bzero(&tester->m_state_data, sizeof(tester->m_state_data));
 
     tester->m_error.m_state = net_ndt7_tester_state_init;
-    tester->m_error.m_source = net_ndt7_tester_error_source_none;
-    tester->m_error.m_code = 0;
+    tester->m_error.m_error = net_ndt7_tester_error_none;
     tester->m_error.m_msg = NULL;
 
     tester->m_ctx = NULL;
@@ -123,7 +122,7 @@ int net_ndt7_tester_start(net_ndt7_tester_t tester) {
     if (tester->m_target == NULL) {
         net_ndt7_tester_set_state(tester, net_ndt7_tester_state_query_target);
         if (net_ndt7_tester_query_target_start(tester) != 0) {
-            if (tester->m_error.m_source == net_ndt7_tester_error_source_none) {
+            if (tester->m_error.m_error == net_ndt7_tester_error_none) {
                 net_ndt7_tester_set_error_internal(tester, "start query target fail");
             }
             return -1;
@@ -134,7 +133,24 @@ int net_ndt7_tester_start(net_ndt7_tester_t tester) {
     return net_ndt7_tester_check_start_next_step(tester);
 }
 
+net_ndt7_tester_state_t net_ndt7_tester_error_state(net_ndt7_tester_t tester) {
+    return tester->m_error.m_state;
+}
+
+net_ndt7_tester_error_t net_ndt7_tester_error(net_ndt7_tester_t tester) {
+    return tester->m_error.m_error;
+}
+
+const char * net_ndt7_tester_error_msg(net_ndt7_tester_t tester) {
+    return tester->m_error.m_msg;
+}
+
 int net_ndt7_tester_check_start_next_step(net_ndt7_tester_t tester) {
+    if (tester->m_error.m_error != net_ndt7_tester_error_none) {
+        net_ndt7_tester_set_state(tester, net_ndt7_tester_state_done);
+        return 0;
+    }
+    
     assert(tester->m_target != NULL);
 
     switch(tester->m_state) {
@@ -145,7 +161,7 @@ int net_ndt7_tester_check_start_next_step(net_ndt7_tester_t tester) {
         case net_ndt7_test_download_and_upload:
             net_ndt7_tester_set_state(tester, net_ndt7_tester_state_download);
             if (net_ndt7_tester_download_start(tester) != 0) {
-                if (tester->m_error.m_source == net_ndt7_tester_error_source_none) {
+                if (tester->m_error.m_error == net_ndt7_tester_error_none) {
                     net_ndt7_tester_set_error_internal(tester, "start download fail");
                 }
                 net_ndt7_tester_set_state(tester, net_ndt7_tester_state_done);
@@ -155,7 +171,7 @@ int net_ndt7_tester_check_start_next_step(net_ndt7_tester_t tester) {
         case net_ndt7_test_upload:
             net_ndt7_tester_set_state(tester, net_ndt7_tester_state_upload);
             if (net_ndt7_tester_upload_start(tester) != 0) {
-                if (tester->m_error.m_source == net_ndt7_tester_error_source_none) {
+                if (tester->m_error.m_error == net_ndt7_tester_error_none) {
                     net_ndt7_tester_set_error_internal(tester, "start upload fail");
                 }
                 return -1;
@@ -173,7 +189,7 @@ int net_ndt7_tester_check_start_next_step(net_ndt7_tester_t tester) {
         case net_ndt7_test_download_and_upload:
             net_ndt7_tester_set_state(tester, net_ndt7_tester_state_upload);
             if (net_ndt7_tester_upload_start(tester) != 0) {
-                if (tester->m_error.m_source == net_ndt7_tester_error_source_none) {
+                if (tester->m_error.m_error == net_ndt7_tester_error_none) {
                     net_ndt7_tester_set_error_internal(tester, "start upload fail");
                 }
                 net_ndt7_tester_set_state(tester, net_ndt7_tester_state_done);
@@ -224,10 +240,7 @@ static void net_ndt7_tester_clear_state_data(net_ndt7_tester_t tester) {
     }
 }
 
-void net_ndt7_tester_set_error(
-    net_ndt7_tester_t tester,
-    net_ndt7_tester_error_source_t source, int32_t code, const char * msg)
-{
+void net_ndt7_tester_set_error(net_ndt7_tester_t tester, net_ndt7_tester_error_t err, const char * msg) {
     net_ndt7_manage_t manager = tester->m_manager;
 
     if (tester->m_error.m_msg) {
@@ -236,13 +249,12 @@ void net_ndt7_tester_set_error(
     }
 
     tester->m_error.m_state = tester->m_state;
-    tester->m_error.m_source = source;
-    tester->m_error.m_code = code;
+    tester->m_error.m_error = err;
     tester->m_error.m_msg = msg ? cpe_str_mem_dup(manager->m_alloc, msg) : NULL;
 }
 
 void net_ndt7_tester_set_error_internal(net_ndt7_tester_t tester, const char * msg) {
-    net_ndt7_tester_set_error(tester, net_ndt7_tester_error_source_ndt7, net_ndt7_tester_error_internal, msg);
+    net_ndt7_tester_set_error(tester, net_ndt7_tester_error_internal, msg);
 }
 
 static void net_ndt7_tester_set_state(net_ndt7_tester_t tester, net_ndt7_tester_state_t state) {
@@ -317,19 +329,16 @@ const char * net_ndt7_tester_state_str(net_ndt7_tester_state_t state) {
     }
 }
 
-const char * net_ndt7_tester_error_source_str(net_ndt7_tester_error_source_t source) {
-    switch(source) {
-    case net_ndt7_tester_error_source_none:
-        return "none";
-    case net_ndt7_tester_error_source_network:
-        return "network";
-    case net_ndt7_tester_error_source_ndt7:
-        return "ndt7";
-    }
-}
-
-const char * net_ndt7_tester_error_code_str(net_ndt7_tester_error_code_t err) {
+const char * net_ndt7_tester_error_str(net_ndt7_tester_error_t err) {
     switch(err) {
+    case net_ndt7_tester_error_none:
+        return "none";
+    case net_ndt7_tester_error_timeout:
+        return "timeout";
+    case net_ndt7_tester_error_cancel:
+        return "cancel";
+    case net_ndt7_tester_error_network:
+        return "network";
     case net_ndt7_tester_error_internal:
         return "internal";
     }

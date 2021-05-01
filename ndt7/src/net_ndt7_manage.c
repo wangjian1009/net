@@ -48,7 +48,7 @@ net_ndt7_manage_t net_ndt7_manage_create(
         return NULL;
     }
     manage->m_ssl_driver = net_driver_from_data(ssl_driver);
-    
+
     manage->m_http_protocol = net_http_protocol_create(schedule, "ndt7");
     if (manage->m_http_protocol == NULL) {
         CPE_ERROR(em, "ndt7: create http protocol fail");
@@ -59,6 +59,7 @@ net_ndt7_manage_t net_ndt7_manage_create(
     }
     
     TAILQ_INIT(&manage->m_testers);
+    TAILQ_INIT(&manage->m_to_notify_testers);
     
     return manage;
 }
@@ -67,6 +68,7 @@ void net_ndt7_manage_free(net_ndt7_manage_t manage) {
     while(!TAILQ_EMPTY(&manage->m_testers)) {
         net_ndt7_tester_free(TAILQ_FIRST(&manage->m_testers));
     }
+    assert(TAILQ_EMPTY(&manage->m_to_notify_testers));
 
     if (manage->m_delay_process) {
         net_timer_free(manage->m_delay_process);

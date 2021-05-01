@@ -48,7 +48,7 @@ int net_ndt7_tester_query_target_start(net_ndt7_tester_t tester) {
     }
     net_address_free(address);
 
-    if (net_endpoint_connect(base_endpoint) == 0) {
+    if (net_endpoint_connect(base_endpoint) != 0) {
         CPE_ERROR(manager->m_em, "ndt7: %d: query target: start connect fail", tester->m_id);
         return -1;
     }
@@ -65,8 +65,10 @@ int net_ndt7_tester_query_target_start(net_ndt7_tester_t tester) {
 	}
 
     if (net_http_req_set_reader(
-            tester->m_state_data.m_query_target.m_req, tester, NULL, NULL, NULL,
+            tester->m_state_data.m_query_target.m_req,
+            tester, NULL, NULL, NULL,
             net_ndt7_tester_query_tearget_on_req_complete) != 0
+        || net_http_req_write_head_host(tester->m_state_data.m_query_target.m_req) != 0
         || net_http_req_write_head_pair(tester->m_state_data.m_query_target.m_req, "Content-Type", "application/json") != 0
         || net_http_req_write_head_host(tester->m_state_data.m_query_target.m_req)
         || net_http_req_write_commit(tester->m_state_data.m_query_target.m_req) != 0)
@@ -79,10 +81,43 @@ int net_ndt7_tester_query_target_start(net_ndt7_tester_t tester) {
 }
 
 static void net_ndt7_tester_query_target_on_endpoint_fini(void * ctx, net_endpoint_t endpoint) {
+    net_ndt7_tester_t tester = ctx;
+    net_ndt7_manage_t manager = tester->m_manager;
+
+    assert(tester->m_state == net_ndt7_tester_state_query_target);
+    assert(tester->m_state_data.m_query_target.m_endpoint);
+    assert(net_http_endpoint_base_endpoint(tester->m_state_data.m_query_target.m_endpoint) == endpoint);
+
+    tester->m_state_data.m_query_target.m_endpoint = NULL;
 }
 
 static void net_ndt7_tester_query_tearget_on_req_complete(
     void * ctx, net_http_req_t http_req, net_http_res_result_t result, void * body, uint32_t body_size)
 {
-}
+    net_ndt7_tester_t tester = ctx;
+    net_ndt7_manage_t manager = tester->m_manager;
 
+    switch(result) {
+    case net_http_res_complete:
+        break;
+    case net_http_res_timeout:
+        net_ndt7_tester_set_error(tester, net_ndt7_tester_error_timeout, "QueryTargetTimeout");
+        net_ndt7_tester_check_start_next_step(tester);
+        return;
+    case net_http_res_canceled:
+        net_ndt7_tester_set_error(tester, net_ndt7_tester_error_cancel, "QueryTargetCancel");
+        net_ndt7_tester_check_start_next_step(tester);
+        break;
+    case net_http_res_conn_error:
+        net_ndt7_tester_set_error(tester, net_ndt7_tester_error_network, "QueryTargetNetwork");
+        net_ndt7_tester_check_start_next_step(tester);
+        break;
+    case net_http_res_conn_disconnected:
+        net_ndt7_tester_set_error(tester, net_ndt7_tester_error_network, "QueryTargetDisconnected");
+        net_ndt7_tester_check_start_next_step(tester);
+        break;
+    }
+
+    CPE_ERROR(manager->m_em, "xxxx:");
+    return;
+}
