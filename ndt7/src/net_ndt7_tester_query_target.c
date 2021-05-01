@@ -48,6 +48,11 @@ int net_ndt7_tester_query_target_start(net_ndt7_tester_t tester) {
     }
     net_address_free(address);
 
+    if (net_endpoint_connect(base_endpoint) == 0) {
+        CPE_ERROR(manager->m_em, "ndt7: %d: query target: start connect fail", tester->m_id);
+        return -1;
+    }
+    
     //"https://locate.measurementlab.net/v2/nearest/ndt/ndt7?client_name=ndt7-android&client_version=${BuildConfig.NDT7_ANDROID_VERSION_NAME}" */
     tester->m_state_data.m_query_target.m_req =
         net_http_req_create(

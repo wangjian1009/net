@@ -2,6 +2,7 @@
 #include "cpe/pal/pal_strings.h"
 #include "cpe/utils/url.h"
 #include "cpe/utils/string_utils.h"
+#include "net_timer.h"
 #include "net_endpoint.h"
 #include "net_http_req.h"
 #include "net_http_endpoint.h"
@@ -22,7 +23,11 @@ net_ndt7_tester_create(net_ndt7_manage_t manager, net_ndt7_test_type_t test_type
     tester->m_id = ++manager->m_idx_max;
     tester->m_type = test_type;
     tester->m_state = net_ndt7_tester_state_init;
+    tester->m_is_processing = 0;
+    tester->m_is_free = 0;
     tester->m_target = NULL;
+
+    tester->m_is_to_notify = 0;
 
     bzero(&tester->m_state_data, sizeof(tester->m_state_data));
 
@@ -43,6 +48,11 @@ net_ndt7_tester_create(net_ndt7_manage_t manager, net_ndt7_test_type_t test_type
 void net_ndt7_tester_free(net_ndt7_tester_t tester) {
     net_ndt7_manage_t manager = tester->m_manager;
 
+    if (tester->m_is_processing) {
+        tester->m_is_free = 1;
+        return;
+    }
+    
     net_ndt7_tester_clear_state_data(tester);
     
     if (tester->m_ctx_free) {
@@ -62,6 +72,11 @@ void net_ndt7_tester_free(net_ndt7_tester_t tester) {
         tester->m_error.m_msg = NULL;
     }
 
+    if (tester->m_is_to_notify) {
+        tester->m_is_to_notify = 1;
+        TAILQ_REMOVE(&manager->m_to_notify_testers, tester, m_next);
+    }
+    
     TAILQ_REMOVE(&manager->m_testers, tester, m_next);
     mem_free(manager->m_alloc, tester);
 }
@@ -107,7 +122,12 @@ int net_ndt7_tester_start(net_ndt7_tester_t tester) {
 
     if (tester->m_target == NULL) {
         net_ndt7_tester_set_state(tester, net_ndt7_tester_state_query_target);
-        if (net_ndt7_tester_query_target_start(tester) != 0) return -1;
+        if (net_ndt7_tester_query_target_start(tester) != 0) {
+            if (tester->m_error.m_source == net_ndt7_tester_error_source_none) {
+                net_ndt7_tester_set_error_internal(tester, "start query target fail");
+            }
+            return -1;
+        }
         return 0;
     }
 
@@ -124,11 +144,22 @@ int net_ndt7_tester_check_start_next_step(net_ndt7_tester_t tester) {
         case net_ndt7_test_download:
         case net_ndt7_test_download_and_upload:
             net_ndt7_tester_set_state(tester, net_ndt7_tester_state_download);
-            if (net_ndt7_tester_download_start(tester) != 0) return -1;
+            if (net_ndt7_tester_download_start(tester) != 0) {
+                if (tester->m_error.m_source == net_ndt7_tester_error_source_none) {
+                    net_ndt7_tester_set_error_internal(tester, "start download fail");
+                }
+                net_ndt7_tester_set_state(tester, net_ndt7_tester_state_done);
+                return -1;
+            }
             return 0;
         case net_ndt7_test_upload:
             net_ndt7_tester_set_state(tester, net_ndt7_tester_state_upload);
-            if (net_ndt7_tester_upload_start(tester) != 0) return -1;
+            if (net_ndt7_tester_upload_start(tester) != 0) {
+                if (tester->m_error.m_source == net_ndt7_tester_error_source_none) {
+                    net_ndt7_tester_set_error_internal(tester, "start upload fail");
+                }
+                return -1;
+            }
             return 0;
         }
     case net_ndt7_tester_state_download:
@@ -137,18 +168,24 @@ int net_ndt7_tester_check_start_next_step(net_ndt7_tester_t tester) {
             assert(0);
             return 0;
         case net_ndt7_test_download:
-            net_ndt7_tester_set_state(tester, net_ndt7_tester_state_download);
+            net_ndt7_tester_set_state(tester, net_ndt7_tester_state_done);
             return 0;
         case net_ndt7_test_download_and_upload:
             net_ndt7_tester_set_state(tester, net_ndt7_tester_state_upload);
-            if (net_ndt7_tester_upload_start(tester) != 0) return -1;
+            if (net_ndt7_tester_upload_start(tester) != 0) {
+                if (tester->m_error.m_source == net_ndt7_tester_error_source_none) {
+                    net_ndt7_tester_set_error_internal(tester, "start upload fail");
+                }
+                net_ndt7_tester_set_state(tester, net_ndt7_tester_state_done);
+                return -1;
+            }
             return 0;
         }
     case net_ndt7_tester_state_upload:
         switch(tester->m_type) {
         case net_ndt7_test_upload:
         case net_ndt7_test_download_and_upload:
-            net_ndt7_tester_set_state(tester, net_ndt7_tester_state_download);
+            net_ndt7_tester_set_state(tester, net_ndt7_tester_state_done);
             return 0;
         case net_ndt7_test_download:
             assert(0);
@@ -204,6 +241,10 @@ void net_ndt7_tester_set_error(
     tester->m_error.m_msg = msg ? cpe_str_mem_dup(manager->m_alloc, msg) : NULL;
 }
 
+void net_ndt7_tester_set_error_internal(net_ndt7_tester_t tester, const char * msg) {
+    net_ndt7_tester_set_error(tester, net_ndt7_tester_error_source_ndt7, net_ndt7_tester_error_internal, msg);
+}
+
 static void net_ndt7_tester_set_state(net_ndt7_tester_t tester, net_ndt7_tester_state_t state) {
     net_ndt7_manage_t manager = tester->m_manager;
 
@@ -216,6 +257,38 @@ static void net_ndt7_tester_set_state(net_ndt7_tester_t tester, net_ndt7_tester_
         tester->m_id, net_ndt7_tester_state_str(tester->m_state), net_ndt7_tester_state_str(state));
 
     tester->m_state = state;
+
+    if (tester->m_state == net_ndt7_tester_state_done) {
+        assert(tester->m_is_to_notify == 0);
+
+        if (TAILQ_EMPTY(&manager->m_to_notify_testers)) {
+            net_timer_active(manager->m_delay_process, 0);
+        }
+
+        tester->m_is_to_notify = 1;
+        TAILQ_INSERT_TAIL(&manager->m_to_notify_testers, tester, m_next_for_notify);
+    }
+}
+
+void net_ndt7_tester_notify_complete(net_ndt7_tester_t tester) {
+    assert(tester->m_state == net_ndt7_tester_state_done);
+    
+    if (tester->m_on_complete) {
+        uint8_t tag_local = 0;
+        if (!tester->m_is_processing) {
+            tester->m_is_processing = 1;
+            tag_local = 1;
+        }
+
+        tester->m_on_complete(tester->m_ctx, tester);
+
+        if (tag_local) {
+            tester->m_is_processing = 0;
+            if (tester->m_is_free) {
+                net_ndt7_tester_free(tester);
+            }
+        }
+    }
 }
 
 const char * net_ndt7_test_type_str(net_ndt7_test_type_t state) {

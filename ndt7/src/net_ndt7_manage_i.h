@@ -22,6 +22,8 @@ struct net_ndt7_manage {
     net_http_protocol_t m_http_protocol;
     uint32_t m_idx_max;
     net_ndt7_tester_list_t m_testers;
+    net_ndt7_tester_list_t m_to_notify_testers;
+    net_timer_t m_delay_process;
 };
 
 mem_buffer_t net_ndt7_manage_tmp_buffer(net_ndt7_manage_t manage);
