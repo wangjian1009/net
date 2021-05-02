@@ -130,11 +130,11 @@ net_http_svr_mock_svr_find(net_http_svr_testenv_t env, const char * url) {
     return NULL;
 }
 
-void net_http_svr_testenv_create_external_svr(net_http_svr_testenv_t env, const char * name, const char * url) {
+void net_http_svr_testenv_create_mock_svr(net_http_svr_testenv_t env, const char * name, const char * url) {
     assert_true(net_http_svr_mock_svr_create(env, name, url) != NULL);
 }
 
-void net_http_svr_mock_svr_expect_response(
+void net_http_svr_testenv_expect_response(
     net_http_svr_testenv_t env, const char * i_url, const char * i_path,
     int code, const char * code_msg, const char * response,
     uint32_t delay_ms)
@@ -152,7 +152,7 @@ void net_http_svr_mock_svr_expect_response(
         net_http_svr_request_mock_expect_response(env->m_driver, code, code_msg, response, delay_ms));
 }
 
-void net_http_svr_mock_svr_expect_response_close(
+void net_http_svr_testenv_expect_response_close(
     net_http_svr_testenv_t env, const char * i_url, const char * i_path,
     int code, const char * code_msg, const char * response,
     uint32_t delay_ms)

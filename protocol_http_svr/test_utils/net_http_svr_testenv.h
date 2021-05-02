@@ -25,6 +25,7 @@ net_http_svr_testenv_create(
 
 void net_http_svr_testenv_free(net_http_svr_testenv_t env);
 
+/*创建客户端请求 */
 net_http_req_t
 net_http_svr_testenv_create_req(
     net_http_svr_testenv_t env, const char * svr_url, net_http_req_method_t method, const char * url);
@@ -34,5 +35,20 @@ net_http_svr_testenv_req_commit(net_http_svr_testenv_t env, net_http_req_t req);
 
 net_endpoint_t
 net_http_svr_testenv_req_svr_endpoint(net_http_svr_testenv_t env, net_http_req_t req);
+
+/*设置服务端数据 */
+void net_http_svr_testenv_create_mock_svr(
+    net_http_svr_testenv_t env, const char * name, const char * url);
+
+void net_http_svr_testenv_expect_response(
+    net_http_svr_testenv_t env, const char * url, const char * path,
+    int code, const char * code_msg, const char * response,
+    uint32_t delay_ms);
+
+void net_http_svr_testenv_expect_response_close(
+    net_http_svr_testenv_t env, const char * url, const char * path,
+    int code, const char * code_msg, const char * response,
+    uint32_t delay_ms);
+
 
 #endif
