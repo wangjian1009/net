@@ -5,6 +5,7 @@
 #include "net_driver.h"
 #include "net_address.h"
 #include "net_timer.h"
+#include "net_ssl_protocol.h"
 #include "net_ssl_stream_driver.h"
 #include "net_http_protocol.h"
 #include "net_ndt7_manage_i.h"
@@ -49,6 +50,10 @@ net_ndt7_manage_t net_ndt7_manage_create(
     }
     manage->m_ssl_driver = net_driver_from_data(ssl_driver);
 
+    /* net_ssl_protocol_t ssl_protocol = */
+    /*     net_ssl_stream_driver_underline_protocol(ssl_driver); */
+    /* net_ssl_protocol_set_ciphersuites_all(ssl_protocol); */
+    
     manage->m_http_protocol = net_http_protocol_create(schedule, "ndt7");
     if (manage->m_http_protocol == NULL) {
         CPE_ERROR(em, "ndt7: create http protocol fail");
@@ -57,7 +62,7 @@ net_ndt7_manage_t net_ndt7_manage_create(
         mem_free(alloc, manage);
         return NULL;
     }
-    
+
     TAILQ_INIT(&manage->m_testers);
     TAILQ_INIT(&manage->m_to_notify_testers);
     

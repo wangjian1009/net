@@ -1,6 +1,9 @@
+#include <assert.h>
 #include "mbedtls/debug.h"
 #include "cpe/pal/pal_string.h"
 #include "cpe/pal/pal_stdio.h"
+#include "cpe/utils/stream_buffer.h"
+#include "cpe/utils/string_utils.h"
 #include "net_protocol.h"
 #include "net_schedule.h"
 #include "net_ssl_protocol_i.h"
@@ -13,8 +16,14 @@ int net_ssl_protocol_init(net_protocol_t base_protocol) {
     protocol->m_em = NULL;
     protocol->m_entropy = NULL;
     protocol->m_ctr_drbg = NULL;
+
+    protocol->m_ciphersuites = NULL;
+    protocol->m_ciphersuite_capacity = 0;
+    protocol->m_ciphersuite_count = 0;
+
     protocol->m_svr.m_pkey = NULL;
     protocol->m_svr.m_cert = NULL;
+
     return 0;
 }
 
@@ -32,6 +41,13 @@ void net_ssl_protocol_fini(net_protocol_t base_protocol) {
         mem_free(protocol->m_alloc, protocol->m_svr.m_pkey);
         protocol->m_svr.m_pkey = NULL;
     }
+
+    if (protocol->m_ciphersuites) {
+        mem_free(protocol->m_alloc, protocol->m_ciphersuites);
+        protocol->m_ciphersuites = NULL;
+        protocol->m_ciphersuite_capacity = 0;
+    }
+    protocol->m_ciphersuite_count = 0;
 
     if (protocol->m_ctr_drbg) {
         mbedtls_ctr_drbg_free(protocol->m_ctr_drbg);
@@ -143,6 +159,99 @@ net_ssl_protocol_cast(net_protocol_t base_protocol) {
     return net_protocol_init_fun(base_protocol) == net_ssl_protocol_init
         ? net_protocol_data(base_protocol)
         : NULL;
+}
+
+struct net_ssl_protocol_set_ciphersuites_ctx {
+    net_ssl_protocol_t m_protocol;
+    int m_rv;
+};
+
+void net_ssl_protocol_set_ciphersuites_one(void * i_ctx, const char * value) {
+    struct net_ssl_protocol_set_ciphersuites_ctx * ctx = i_ctx;
+    if (net_ssl_protocol_add_ciphersuite(ctx->m_protocol, value) != 0) ctx->m_rv = -1;
+}
+
+int net_ssl_protocol_set_ciphersuites(net_ssl_protocol_t protocol, const char * ciphersuites) {
+    struct net_ssl_protocol_set_ciphersuites_ctx ctx = { protocol, 0 };
+    cpe_str_list_for_each(ciphersuites, ',', net_ssl_protocol_set_ciphersuites_one, &ctx);
+    return ctx.m_rv;
+}
+
+int net_ssl_protocol_add_ciphersuite_id(net_ssl_protocol_t protocol, int ciphersuite_id) {
+    net_protocol_t base_protocol = net_protocol_from_data(protocol);
+
+    if (protocol->m_ciphersuite_count + 1 + 1 >= protocol->m_ciphersuite_capacity) {
+        uint32_t new_capacity = protocol->m_ciphersuite_capacity < 16 ? 16 : protocol->m_ciphersuite_capacity * 2;
+        int * new_ciphersuites = mem_alloc(protocol->m_alloc, sizeof(int) * new_capacity);
+        if (new_ciphersuites == NULL) {
+            CPE_ERROR(
+                protocol->m_em, "ssl: %s: add ciphersuites: alloc fail!",
+                net_protocol_name(base_protocol));
+            return -1;
+        }
+
+        if (protocol->m_ciphersuites) {
+            memcpy(new_ciphersuites, protocol->m_ciphersuites, sizeof(int) * protocol->m_ciphersuite_count);
+            assert(protocol->m_ciphersuite_count + 1 < protocol->m_ciphersuite_capacity);
+            new_ciphersuites[protocol->m_ciphersuite_count] = 0;
+            mem_free(protocol->m_alloc, protocol->m_ciphersuites);
+        }
+
+        protocol->m_ciphersuites = new_ciphersuites;
+        protocol->m_ciphersuite_capacity = new_capacity; 
+    }
+
+    protocol->m_ciphersuites[protocol->m_ciphersuite_count] = ciphersuite_id;
+    protocol->m_ciphersuite_count++;
+    assert(protocol->m_ciphersuite_count < protocol->m_ciphersuite_capacity);
+    protocol->m_ciphersuites[protocol->m_ciphersuite_count] = 0;
+
+    return 0;
+}
+
+int net_ssl_protocol_add_ciphersuite(net_ssl_protocol_t protocol, const char * ciphersuite) {
+    net_protocol_t base_protocol = net_protocol_from_data(protocol);
+
+    int ciphersuite_id = mbedtls_ssl_get_ciphersuite_id(ciphersuite);
+    if (ciphersuite_id == 0) {
+        CPE_ERROR(
+            protocol->m_em, "ssl: %s: add ciphersuites: ciphersuite %s unknown!",
+            net_protocol_name(base_protocol), ciphersuite);
+        return -1;
+    }
+
+    return net_ssl_protocol_add_ciphersuite_id(protocol, ciphersuite_id);
+}
+
+int net_ssl_protocol_set_ciphersuites_all(net_ssl_protocol_t protocol) {
+    int rv = 0;
+
+    const int * list = mbedtls_ssl_list_ciphersuites();
+    for (; *list; list++) {
+        if (net_ssl_protocol_add_ciphersuite_id(protocol, *list) != 0) rv = -1;
+    }
+
+    return rv;
+}
+
+void net_ssl_protocol_print_supported_ciphersuites(write_stream_t ws, net_ssl_protocol_t protocol) {
+    const int * list = mbedtls_ssl_list_ciphersuites();
+    int index = 0;
+    for (; *list; list++) {
+        if (index++ > 0) stream_printf(ws, ",");
+        stream_printf(ws, "%s", mbedtls_ssl_get_ciphersuite_name(*list));
+    }
+}
+
+const char * net_ssl_protocol_dump_supported_ciphersuites(mem_buffer_t buffer, net_ssl_protocol_t protocol) {
+    struct write_stream_buffer stream = CPE_WRITE_STREAM_BUFFER_INITIALIZER(buffer);
+
+    mem_buffer_clear_data(buffer);
+
+    net_ssl_protocol_print_supported_ciphersuites((write_stream_t)&stream, protocol);
+    stream_putc((write_stream_t)&stream, 0);
+    
+    return mem_buffer_make_continuous(buffer, 0);
 }
 
 int net_ssl_protocol_svr_use_pkey_from_string(net_ssl_protocol_t protocol, const char * key) {

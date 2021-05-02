@@ -103,6 +103,11 @@ static void net_ssl_stream_driver_fini(net_driver_t base_driver) {
     net_ssl_stream_driver_t driver = net_driver_data(base_driver);
 }
 
+net_ssl_protocol_t
+net_ssl_stream_driver_underline_protocol(net_ssl_stream_driver_t driver) {
+    return net_ssl_protocol_cast(driver->m_underline_protocol);
+}
+
 int net_ssl_stream_driver_svr_confirm_pkey(net_ssl_stream_driver_t driver) {
     net_ssl_protocol_t protocol = net_ssl_protocol_cast(driver->m_underline_protocol);
     return net_ssl_protocol_svr_confirm_pkey(protocol);

@@ -13,4 +13,4 @@ set_property(TARGET net_ndt7 PROPERTY INCLUDE_DIRECTORIES
   ${net_ndt7_base}/include
   )
 
-target_link_libraries(net_ndt7 INTERFACE net_core)
+target_link_libraries(net_ndt7 INTERFACE net_core net_driver_ssl net_protocol_http)

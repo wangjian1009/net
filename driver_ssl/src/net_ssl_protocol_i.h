@@ -14,6 +14,9 @@ struct net_ssl_protocol {
     error_monitor_t m_em;
     mbedtls_entropy_context * m_entropy;
     mbedtls_ctr_drbg_context * m_ctr_drbg;
+    uint16_t m_ciphersuite_capacity;
+    uint16_t m_ciphersuite_count;
+    int * m_ciphersuites;
     struct {
         mbedtls_pk_context * m_pkey;
         mbedtls_x509_crt * m_cert;

@@ -5,6 +5,7 @@
 #include "cpe/utils/error.h"
 #include "net_protocol.h"
 #include "net_endpoint.h"
+#include "net_address.h"
 #include "net_ssl_endpoint_i.h"
 #include "net_ssl_stream_endpoint_i.h"
 #include "net_ssl_utils.h"
@@ -21,6 +22,9 @@ static int net_ssl_endpoint_ssl_verify(void *ctx, mbedtls_x509_crt *crt, int dep
 static int net_ssl_endpoint_do_handshake(
     net_endpoint_t base_endpoint, net_ssl_endpoint_t endpoint);
 
+static int net_ssl_endpoint_prepare_client_hello(
+    net_endpoint_t base_endpoint, net_ssl_endpoint_t endpoint);
+
 static void net_ssl_endpoint_dump_error(net_endpoint_t base_endpoint, int val);
 
 static int net_ssl_endpoint_update_error(net_endpoint_t base_endpoint, int r);
@@ -35,7 +39,8 @@ int net_ssl_endpoint_init(net_endpoint_t base_endpoint) {
     endpoint->m_state = net_ssl_endpoint_state_init;
     endpoint->m_ssl_config = NULL;
     endpoint->m_ssl = NULL;
-    
+
+    net_endpoint_set_protocol_debug(base_endpoint, 2);
     return 0;
 }
 
@@ -167,6 +172,7 @@ int net_ssl_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoint_
             if (net_endpoint_set_state(base_stream, net_endpoint_state_connecting) != 0) return -1;
         }
         if (endpoint->m_runing_mode == net_ssl_endpoint_runing_mode_cli) {
+            if (net_ssl_endpoint_prepare_client_hello(base_endpoint, endpoint) != 0) return -1;
             if (net_ssl_endpoint_do_handshake(base_endpoint, endpoint) != 0) return -1;
         }
         break;
@@ -318,6 +324,27 @@ int net_ssl_endpoint_do_handshake(net_endpoint_t base_endpoint, net_ssl_endpoint
     return 0;
 }
 
+static int net_ssl_endpoint_prepare_client_hello(
+    net_endpoint_t base_endpoint, net_ssl_endpoint_t endpoint)
+{
+    net_ssl_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
+    int rv;
+
+    net_address_t address = net_endpoint_remote_address(base_endpoint);
+    if (address && net_address_type(address) == net_address_domain) {
+        if ((rv = mbedtls_ssl_set_hostname(endpoint->m_ssl, net_address_domain_url(address))) != 0) {
+            char error_buf[1024];
+            CPE_ERROR(
+                protocol->m_em, "ssl: %s: ssl client hello: mbedtls_ssl_set_hostname, -0x%04X(%s)",
+                net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+                -rv, net_ssl_strerror(error_buf, sizeof(error_buf), rv));
+            return -1;
+        }
+    }
+    
+    return 0;
+}
+
 /* void net_ssl_endpoint_trace_cb( */
 /*     int write_p, int version, int content_type, const void *buf, size_t len, SSL *ssl, void *arg) */
 /* { */
@@ -344,18 +371,6 @@ void net_ssl_endpoint_dump_error(net_endpoint_t base_endpoint, int val) {
         protocol->m_em, "ssl: %s: SSL: Error was %s!",
         net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_endpoint),
         net_ssl_strerror(error_buf, sizeof(error_buf), val));
-
-/*     int err; */
-/* 	while ((err = ERR_get_error())) { */
-/* 		const char *msg = (const char*)ERR_reason_error_string(err); */
-/* 		const char *lib = (const char*)ERR_lib_error_string(err); */
-/* 		const char *func = (const char*)ERR_func_error_string(err); */
-
-/*         CPE_ERROR( */
-/*             protocol->m_em, "ssl: %s: SSL:     %s in %s %s", */
-/*             net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_endpoint), */
-/*             msg, lib, func); */
-/* 	} */
 }
 
 static int net_ssl_endpoint_update_error(net_endpoint_t base_endpoint, int ssl_error) {
@@ -505,7 +520,13 @@ static void net_ssl_endpoint_ssl_debug(void *ctx, int level, const char *file, i
                 basename = p + 1;
         }
 
-        CPE_INFO(protocol->m_em, "%s:%d: |%d| %s\r", basename, line, level, str);
+        const char * bk = strrchr(str, '\n');
+        if (bk) {
+            CPE_INFO(protocol->m_em, "%s:%d: |%d| %.*s", basename, line, level, (int)(bk - str), str);
+        }
+        else {
+            CPE_INFO(protocol->m_em, "%s:%d: |%d| %s", basename, line, level, str);
+        }
     }
 }
 
@@ -543,7 +564,10 @@ static int net_ssl_endpoint_ssl_init(net_ssl_endpoint_t endpoint) {
     }
     mbedtls_ssl_conf_rng(endpoint->m_ssl_config, mbedtls_ctr_drbg_random, protocol->m_ctr_drbg);
     mbedtls_ssl_conf_dbg(endpoint->m_ssl_config, net_ssl_endpoint_ssl_debug, endpoint);
-
+    if (protocol->m_ciphersuites) {
+        mbedtls_ssl_conf_ciphersuites(endpoint->m_ssl_config, protocol->m_ciphersuites);
+    }
+    
     if (endpoint->m_runing_mode == net_ssl_endpoint_runing_mode_cli) {
         mbedtls_ssl_conf_authmode(endpoint->m_ssl_config, MBEDTLS_SSL_VERIFY_NONE);
         /* mbedtls_ssl_conf_verify(endpoint->m_ssl_config, net_ssl_endpoint_ssl_verify, endpoint); */
