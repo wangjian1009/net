@@ -7,12 +7,12 @@
 #include "net_http_req.h"
 #include "net_http_endpoint.h"
 #include "net_http_svr_protocol.h"
-#include "net_http_svr_testenv.h"
+#include "test_http_svr_testenv.h"
 #include "net_http_svr_mock_svr.h"
 
-net_http_svr_testenv_t
-net_http_svr_testenv_create(net_schedule_t schedule, test_net_driver_t driver, error_monitor_t em) {
-    net_http_svr_testenv_t env = mem_alloc(test_allocrator(), sizeof(struct net_http_svr_testenv));
+test_http_svr_testenv_t
+test_http_svr_testenv_create(net_schedule_t schedule, test_net_driver_t driver, error_monitor_t em) {
+    test_http_svr_testenv_t env = mem_alloc(test_allocrator(), sizeof(struct test_http_svr_testenv));
     env->m_em = em;
     env->m_schedule = schedule;
     env->m_driver = driver;
@@ -23,7 +23,7 @@ net_http_svr_testenv_create(net_schedule_t schedule, test_net_driver_t driver, e
     return env;
 }
 
-void net_http_svr_testenv_free(net_http_svr_testenv_t env) {
+void test_http_svr_testenv_free(test_http_svr_testenv_t env) {
     while(!TAILQ_EMPTY(&env->m_svrs)) {
         net_http_svr_mock_svr_free(TAILQ_FIRST(&env->m_svrs));
     }
@@ -33,8 +33,8 @@ void net_http_svr_testenv_free(net_http_svr_testenv_t env) {
 }
 
 net_http_req_t
-net_http_svr_testenv_create_req(
-    net_http_svr_testenv_t env, const char * svr_url, net_http_req_method_t method, const char * url)
+test_http_svr_testenv_create_req(
+    test_http_svr_testenv_t env, const char * svr_url, net_http_req_method_t method, const char * url)
 {
     net_http_svr_mock_svr_t mock_svr = net_http_svr_mock_svr_find(env, svr_url);
     assert_true(mock_svr);
@@ -70,12 +70,12 @@ net_http_svr_testenv_create_req(
 }
 
 net_http_test_response_t
-net_http_svr_testenv_req_commit(net_http_svr_testenv_t env, net_http_req_t req) {
+test_http_svr_testenv_req_commit(test_http_svr_testenv_t env, net_http_req_t req) {
     return net_http_test_protocol_req_commit(env->m_cli_protocol, req);
 }
 
 net_endpoint_t
-net_http_svr_testenv_req_svr_endpoint(net_http_svr_testenv_t env, net_http_req_t req) {
+test_http_svr_testenv_req_svr_endpoint(test_http_svr_testenv_t env, net_http_req_t req) {
     net_http_endpoint_t http_ep = net_http_req_endpoint(req);
     return test_net_endpoint_linked_other(env->m_driver, net_http_endpoint_base_endpoint(http_ep));
 }

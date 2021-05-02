@@ -35,7 +35,7 @@ static void test_get(void **state) {
     net_http_req_t req = prometheus_http_testenv_create_req(env, net_http_req_method_get, "metric");
 
     net_http_test_response_t response = 
-        net_http_svr_testenv_req_commit(env->m_http_svr_env, req);
+        test_http_svr_testenv_req_commit(env->m_http_svr_env, req);
 
     test_net_driver_run(env->m_net_driver, 0);
 
@@ -54,7 +54,7 @@ static void test_method_error(void **state) {
     net_http_req_t req = prometheus_http_testenv_create_req(env, net_http_req_method_post, "metric");
 
     net_http_test_response_t response = 
-        net_http_svr_testenv_req_commit(env->m_http_svr_env, req);
+        test_http_svr_testenv_req_commit(env->m_http_svr_env, req);
 
     test_net_driver_run(env->m_net_driver, 0);
 
@@ -69,7 +69,7 @@ static void test_path_error(void **state) {
     net_http_req_t req = prometheus_http_testenv_create_req(env, net_http_req_method_get, "metric/aa");
 
     net_http_test_response_t response = 
-        net_http_svr_testenv_req_commit(env->m_http_svr_env, req);
+        test_http_svr_testenv_req_commit(env->m_http_svr_env, req);
 
     test_net_driver_run(env->m_net_driver, 0);
 
@@ -93,14 +93,14 @@ static void test_response_write_error(void **state) {
     net_http_req_t req = prometheus_http_testenv_create_req(env, net_http_req_method_get, "metric");
     assert_true(req != NULL);
 
-    net_endpoint_t svr_ep = net_http_svr_testenv_req_svr_endpoint(env->m_http_svr_env, req);
+    net_endpoint_t svr_ep = test_http_svr_testenv_req_svr_endpoint(env->m_http_svr_env, req);
     assert_true(svr_ep != NULL);
     test_net_endpoint_expect_write_error(
         svr_ep,
         net_endpoint_error_source_network, net_endpoint_network_errno_internal, "write error", 0);
     
     net_http_test_response_t response = 
-        net_http_svr_testenv_req_commit(env->m_http_svr_env, req);
+        test_http_svr_testenv_req_commit(env->m_http_svr_env, req);
 
     test_net_driver_run(env->m_net_driver, 0);
 }

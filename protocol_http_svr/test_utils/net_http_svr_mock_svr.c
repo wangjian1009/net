@@ -18,7 +18,7 @@
 static void net_http_svr_mock_svr_request_process(void * ctx, net_http_svr_request_t request);
 
 net_http_svr_mock_svr_t
-net_http_svr_mock_svr_create(net_http_svr_testenv_t env, const char * name, const char * str_url) {
+net_http_svr_mock_svr_create(test_http_svr_testenv_t env, const char * name, const char * str_url) {
     net_http_svr_mock_svr_t svr = mem_alloc(test_allocrator(), sizeof(struct net_http_svr_mock_svr));
     assert_true(svr);
 
@@ -92,7 +92,7 @@ net_http_svr_mock_svr_create(net_http_svr_testenv_t env, const char * name, cons
 }
 
 void net_http_svr_mock_svr_free(net_http_svr_mock_svr_t svr) {
-    net_http_svr_testenv_t env = svr->m_env;
+    test_http_svr_testenv_t env = svr->m_env;
 
     if (svr->m_acceptor) {
         net_acceptor_free(svr->m_acceptor);
@@ -118,7 +118,7 @@ void net_http_svr_mock_svr_free(net_http_svr_mock_svr_t svr) {
 }
 
 net_http_svr_mock_svr_t
-net_http_svr_mock_svr_find(net_http_svr_testenv_t env, const char * url) {
+net_http_svr_mock_svr_find(test_http_svr_testenv_t env, const char * url) {
     net_http_svr_mock_svr_t svr;
 
     TAILQ_FOREACH(svr, &env->m_svrs, m_next) {
@@ -130,12 +130,12 @@ net_http_svr_mock_svr_find(net_http_svr_testenv_t env, const char * url) {
     return NULL;
 }
 
-void net_http_svr_testenv_create_mock_svr(net_http_svr_testenv_t env, const char * name, const char * url) {
+void test_http_svr_testenv_create_mock_svr(test_http_svr_testenv_t env, const char * name, const char * url) {
     assert_true(net_http_svr_mock_svr_create(env, name, url) != NULL);
 }
 
-void net_http_svr_testenv_expect_response(
-    net_http_svr_testenv_t env, const char * i_url, const char * i_path,
+void test_http_svr_testenv_expect_response(
+    test_http_svr_testenv_t env, const char * i_url, const char * i_path,
     int code, const char * code_msg, const char * response,
     uint32_t delay_ms)
 {
@@ -152,8 +152,8 @@ void net_http_svr_testenv_expect_response(
         net_http_svr_request_mock_expect_response(env->m_driver, code, code_msg, response, delay_ms));
 }
 
-void net_http_svr_testenv_expect_response_close(
-    net_http_svr_testenv_t env, const char * i_url, const char * i_path,
+void test_http_svr_testenv_expect_response_close(
+    test_http_svr_testenv_t env, const char * i_url, const char * i_path,
     int code, const char * code_msg, const char * response,
     uint32_t delay_ms)
 {

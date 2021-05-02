@@ -1,10 +1,10 @@
 #ifndef TESTS_NET_HTTP_SVR_MOCK_SVR_H_INCLEDED
 #define TESTS_NET_HTTP_SVR_MOCK_SVR_H_INCLEDED
 #include "cpe/utils/url.h"
-#include "net_http_svr_testenv.h"
+#include "test_http_svr_testenv.h"
 
 struct net_http_svr_mock_svr {
-    net_http_svr_testenv_t m_env;
+    test_http_svr_testenv_t m_env;
     TAILQ_ENTRY(net_http_svr_mock_svr) m_next;
     char * m_url;
     net_http_svr_protocol_t m_http_protocol;
@@ -14,11 +14,11 @@ struct net_http_svr_mock_svr {
 };
 
 net_http_svr_mock_svr_t
-net_http_svr_mock_svr_create(net_http_svr_testenv_t env, const char * name, const char * url);
+net_http_svr_mock_svr_create(test_http_svr_testenv_t env, const char * name, const char * url);
 
 void net_http_svr_mock_svr_free(net_http_svr_mock_svr_t svr);
 
 net_http_svr_mock_svr_t
-net_http_svr_mock_svr_find(net_http_svr_testenv_t env, const char * url);
+net_http_svr_mock_svr_find(test_http_svr_testenv_t env, const char * url);
 
 #endif
