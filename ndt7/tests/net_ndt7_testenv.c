@@ -1,7 +1,6 @@
 #include "cmocka_all.h"
 #include "net_schedule.h"
 #include "net_endpoint.h"
-#include "net_dns_manage.h"
 #include "net_ndt7_testenv.h"
 #include "net_ndt7_manage.h"
 
@@ -12,7 +11,7 @@ net_ndt7_testenv_create() {
     env->m_em = test_error_monitor_em(env->m_tem);
     env->m_schedule = net_schedule_create(test_allocrator(), env->m_em, NULL);
     env->m_tdriver = test_net_driver_create(env->m_schedule, env->m_em);
-    env->m_dns_manage = net_dns_manage_create(test_allocrator(), env->m_em, env->m_schedule);
+    env->m_tdns = test_net_dns_create(env->m_tdriver);
 
     env->m_ndt_manager =
         net_ndt7_manage_create(

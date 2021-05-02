@@ -19,9 +19,9 @@ static void ndt7_tester_basic(void **state) {
     net_ndt7_tester_t tester =
         net_ndt7_tester_create(env->m_ndt_manager, net_ndt7_test_download_and_upload);
 
-    assert_true(net_ndt7_tester_start(tester) == 0);
-
+    test_net_dns_expect_query_once(env->m_tdns, "locate.measurementlab.net", "1.1.1.1", 0);
     
+    assert_true(net_ndt7_tester_start(tester) == 0);
 }
 
 CPE_BEGIN_TEST_SUIT(net_nd7_tester_basic_tests)

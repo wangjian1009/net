@@ -4,7 +4,7 @@
 #include "test_error.h"
 #include "test_net_endpoint.h"
 #include "test_net_driver.h"
-#include "net_dns_system.h"
+#include "test_net_dns.h"
 #include "net_ndt7_system.h"
 
 typedef struct net_ndt7_testenv * net_ndt7_testenv_t;
@@ -14,7 +14,7 @@ struct net_ndt7_testenv {
     error_monitor_t m_em;
     net_schedule_t m_schedule;
     test_net_driver_t m_tdriver;
-    net_dns_manage_t m_dns_manage;
+    test_net_dns_t m_tdns;
     net_ndt7_manage_t m_ndt_manager;
 };
 
