@@ -8,6 +8,8 @@
 #include "net_http_svr_system.h"
 
 typedef struct net_http_svr_testenv * net_http_svr_testenv_t;
+typedef struct net_http_svr_mock_svr * net_http_svr_mock_svr_t;
+typedef TAILQ_HEAD(net_http_svr_mock_svr_list, net_http_svr_mock_svr) net_http_svr_mock_svr_list_t;
 
 struct net_http_svr_testenv {
     error_monitor_t m_em;
@@ -16,6 +18,7 @@ struct net_http_svr_testenv {
     net_http_test_protocol_t m_cli_protocol;
     net_http_svr_protocol_t m_protocol;
     net_acceptor_t m_acceptor;
+    net_http_svr_mock_svr_list_t m_svrs;
 };
 
 net_http_svr_testenv_t

@@ -9,6 +9,7 @@ enum test_net_dns_query_lifecycle {
 
 struct test_net_dns_query {
     enum test_net_dns_query_lifecycle m_lifecycle;
+    net_address_t m_hostname;
 };
 
 int test_net_dns_query_init(

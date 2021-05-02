@@ -14,12 +14,11 @@ struct test_net_dns {
 };
 
 test_net_dns_t test_net_dns_create(test_net_driver_t tdriver);
-void test_net_dns_free(test_net_dns_t resolver);
+void test_net_dns_free(test_net_dns_t dns);
 
-void test_net_dns_expect_query_cache(
-    test_net_dns_t dns, const char * hostname, int64_t delay_ms);
+net_schedule_t test_net_dns_schedule(test_net_dns_t dns);
 
-void test_net_dns_expect_query_once(
+void test_net_dns_expect_query_response(
     test_net_dns_t dns, const char * hostname, const char * responses, int64_t delay_ms);
 
 #endif

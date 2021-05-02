@@ -8,6 +8,7 @@
 #include "net_http_endpoint.h"
 #include "net_http_svr_protocol.h"
 #include "net_http_svr_testenv.h"
+#include "net_http_svr_mock_svr.h"
 
 net_http_svr_testenv_t
 net_http_svr_testenv_create(net_schedule_t schedule, test_net_driver_t driver, error_monitor_t em) {
@@ -18,10 +19,17 @@ net_http_svr_testenv_create(net_schedule_t schedule, test_net_driver_t driver, e
     env->m_cli_protocol = net_http_test_protocol_create(schedule, em, "svr-test");
     env->m_protocol = net_http_svr_protocol_create(schedule, "http-svr-test");
     env->m_acceptor = NULL;
+
+    TAILQ_INIT(&env->m_svrs);
+    
     return env;
 }
 
 void net_http_svr_testenv_free(net_http_svr_testenv_t env) {
+    while(!TAILQ_EMPTY(&env->m_svrs)) {
+        net_http_svr_mock_svr_free(TAILQ_FIRST(&env->m_svrs));
+    }
+
     if (env->m_acceptor) {
         net_acceptor_free(env->m_acceptor);
         env->m_acceptor = NULL;

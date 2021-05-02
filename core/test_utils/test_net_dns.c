@@ -30,10 +30,14 @@ void test_net_dns_free(test_net_dns_t dns) {
         test_net_dns_record_free(TAILQ_FIRST(&dns->m_records));
     }
 
-    net_schedule_t schedule = net_driver_schedule(net_driver_from_data(dns->m_tdriver));
+    net_schedule_t schedule = test_net_dns_schedule(dns);
     net_schedule_set_dns_resolver(schedule, NULL, NULL, NULL, 0, NULL, NULL);
 
     mem_free(test_allocrator(), dns);
+}
+
+net_schedule_t test_net_dns_schedule(test_net_dns_t dns) {
+    return net_driver_schedule(net_driver_from_data(dns->m_tdriver));
 }
 
 int test_net_dns_local_query(void * ctx, net_address_t hostname, net_address_it_t resolved_it, uint8_t recursive) {
