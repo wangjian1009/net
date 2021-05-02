@@ -32,9 +32,7 @@ static void test_get(void **state) {
 
     prometheus_counter_add(counter, 1234.0, NULL);
     
-    net_http_req_t req =
-        net_http_svr_testenv_create_req(
-            env->m_http_svr_env, net_http_req_method_get, "metric");
+    net_http_req_t req = prometheus_http_testenv_create_req(env, net_http_req_method_get, "metric");
 
     net_http_test_response_t response = 
         net_http_svr_testenv_req_commit(env->m_http_svr_env, req);
@@ -53,9 +51,7 @@ static void test_get(void **state) {
 static void test_method_error(void **state) {
     prometheus_http_testenv_t env = *state;
 
-    net_http_req_t req =
-        net_http_svr_testenv_create_req(
-            env->m_http_svr_env, net_http_req_method_post, "metric");
+    net_http_req_t req = prometheus_http_testenv_create_req(env, net_http_req_method_post, "metric");
 
     net_http_test_response_t response = 
         net_http_svr_testenv_req_commit(env->m_http_svr_env, req);
@@ -70,9 +66,7 @@ static void test_method_error(void **state) {
 static void test_path_error(void **state) {
     prometheus_http_testenv_t env = *state;
 
-    net_http_req_t req =
-        net_http_svr_testenv_create_req(
-            env->m_http_svr_env, net_http_req_method_get, "metric/aa");
+    net_http_req_t req = prometheus_http_testenv_create_req(env, net_http_req_method_get, "metric/aa");
 
     net_http_test_response_t response = 
         net_http_svr_testenv_req_commit(env->m_http_svr_env, req);
@@ -96,9 +90,7 @@ static void test_response_write_error(void **state) {
 
     prometheus_counter_add(counter, 1234.0, NULL);
     
-    net_http_req_t req =
-        net_http_svr_testenv_create_req(
-            env->m_http_svr_env, net_http_req_method_get, "metric");
+    net_http_req_t req = prometheus_http_testenv_create_req(env, net_http_req_method_get, "metric");
     assert_true(req != NULL);
 
     net_endpoint_t svr_ep = net_http_svr_testenv_req_svr_endpoint(env->m_http_svr_env, req);

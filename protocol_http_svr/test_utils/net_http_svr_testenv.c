@@ -17,8 +17,6 @@ net_http_svr_testenv_create(net_schedule_t schedule, test_net_driver_t driver, e
     env->m_schedule = schedule;
     env->m_driver = driver;
     env->m_cli_protocol = net_http_test_protocol_create(schedule, em, "svr-test");
-    env->m_protocol = net_http_svr_protocol_create(schedule, "http-svr-test");
-    env->m_acceptor = NULL;
 
     TAILQ_INIT(&env->m_svrs);
     
@@ -30,34 +28,18 @@ void net_http_svr_testenv_free(net_http_svr_testenv_t env) {
         net_http_svr_mock_svr_free(TAILQ_FIRST(&env->m_svrs));
     }
 
-    if (env->m_acceptor) {
-        net_acceptor_free(env->m_acceptor);
-        env->m_acceptor = NULL;
-    }
-
     net_http_test_protocol_free(env->m_cli_protocol);
-    net_http_svr_protocol_free(env->m_protocol);
     mem_free(test_allocrator(), env);
 }
 
-void net_http_svr_testenv_listen(net_http_svr_testenv_t env, const char * str_address) {
-    net_address_t address = net_address_create_auto(env->m_schedule, str_address);
-    assert_true(address != NULL);
-
-    assert_true(env->m_acceptor == NULL);
-    env->m_acceptor = net_acceptor_create(
-        net_driver_from_data(env->m_driver),
-        net_http_svr_protocol_to_protocol(env->m_protocol),
-        address, 0,
-        NULL, NULL);
-    assert_true(env->m_acceptor);
-}
-
 net_http_req_t
-net_http_svr_testenv_create_req(net_http_svr_testenv_t env, net_http_req_method_t method, const char * url) {
-    assert_true(env->m_acceptor);
+net_http_svr_testenv_create_req(
+    net_http_svr_testenv_t env, const char * svr_url, net_http_req_method_t method, const char * url)
+{
+    net_http_svr_mock_svr_t mock_svr = net_http_svr_mock_svr_find(env, svr_url);
+    assert_true(mock_svr);
 
-    net_address_t target_addr = net_acceptor_address(env->m_acceptor);
+    net_address_t target_addr = net_acceptor_address(mock_svr->m_acceptor);
     
     struct mem_buffer buffer;
     mem_buffer_init(&buffer, test_allocrator());
@@ -73,7 +55,7 @@ net_http_svr_testenv_create_req(net_http_svr_testenv_t env, net_http_req_method_
     net_driver_t driver = net_driver_from_data(env->m_driver);
     
     if (net_http_test_protocol_find_usable_ep(
-            env->m_cli_protocol, net_acceptor_address(env->m_acceptor), driver) == NULL)
+            env->m_cli_protocol, net_acceptor_address(mock_svr->m_acceptor), driver) == NULL)
     {
         char buf[256];
         test_net_next_endpoint_expect_connect_to_acceptor(env->m_driver, net_address_to_string(buf, sizeof(buf), target_addr), 0, 0);

@@ -21,4 +21,8 @@ struct prometheus_http_testenv {
 prometheus_http_testenv_t prometheus_http_testenv_create();
 void prometheus_http_testenv_free(prometheus_http_testenv_t env);
 
+net_http_req_t
+prometheus_http_testenv_create_req(
+    prometheus_http_testenv_t env, net_http_req_method_t method, const char * url);
+
 #endif
