@@ -12,14 +12,14 @@
 #include "net_ssl_stream_driver.h"
 #include "net_http_svr_request.h"
 #include "net_http_svr_response.h"
-#include "net_http_svr_mock_request.h"
-#include "net_http_svr_mock_svr.h"
+#include "test_http_svr_mock_request.h"
+#include "test_http_svr_mock_svr.h"
 
-static void net_http_svr_mock_svr_request_process(void * ctx, net_http_svr_request_t request);
+static void test_http_svr_mock_svr_request_process(void * ctx, net_http_svr_request_t request);
 
-net_http_svr_mock_svr_t
-net_http_svr_mock_svr_create(test_http_svr_testenv_t env, const char * name, const char * str_url) {
-    net_http_svr_mock_svr_t svr = mem_alloc(test_allocrator(), sizeof(struct net_http_svr_mock_svr));
+test_http_svr_mock_svr_t
+test_http_svr_mock_svr_create(test_http_svr_testenv_t env, const char * name, const char * str_url) {
+    test_http_svr_mock_svr_t svr = mem_alloc(test_allocrator(), sizeof(struct test_http_svr_mock_svr));
     assert_true(svr);
 
     svr->m_env = env;
@@ -42,7 +42,7 @@ net_http_svr_mock_svr_create(test_http_svr_testenv_t env, const char * name, con
             NULL,
             /*request*/
             0, NULL, NULL, NULL,
-            net_http_svr_mock_svr_request_process);
+            test_http_svr_mock_svr_request_process);
 
     net_http_svr_mount_point_t mount_point =
         net_http_svr_mount_point_mount(
@@ -91,7 +91,7 @@ net_http_svr_mock_svr_create(test_http_svr_testenv_t env, const char * name, con
     return svr;
 }
 
-void net_http_svr_mock_svr_free(net_http_svr_mock_svr_t svr) {
+void test_http_svr_mock_svr_free(test_http_svr_mock_svr_t svr) {
     test_http_svr_testenv_t env = svr->m_env;
 
     if (svr->m_acceptor) {
@@ -117,9 +117,9 @@ void net_http_svr_mock_svr_free(net_http_svr_mock_svr_t svr) {
     mem_free(test_allocrator(), svr);
 }
 
-net_http_svr_mock_svr_t
-net_http_svr_mock_svr_find(test_http_svr_testenv_t env, const char * url) {
-    net_http_svr_mock_svr_t svr;
+test_http_svr_mock_svr_t
+test_http_svr_mock_svr_find(test_http_svr_testenv_t env, const char * url) {
+    test_http_svr_mock_svr_t svr;
 
     TAILQ_FOREACH(svr, &env->m_svrs, m_next) {
         if (strcmp(svr->m_url, url) == 0) {
@@ -131,7 +131,7 @@ net_http_svr_mock_svr_find(test_http_svr_testenv_t env, const char * url) {
 }
 
 void test_http_svr_testenv_create_mock_svr(test_http_svr_testenv_t env, const char * name, const char * url) {
-    assert_true(net_http_svr_mock_svr_create(env, name, url) != NULL);
+    assert_true(test_http_svr_mock_svr_create(env, name, url) != NULL);
 }
 
 void test_http_svr_testenv_expect_response(
@@ -139,17 +139,17 @@ void test_http_svr_testenv_expect_response(
     int code, const char * code_msg, const char * response,
     uint32_t delay_ms)
 {
-    net_http_svr_mock_svr_t svr = net_http_svr_mock_svr_find(env, i_url);
+    test_http_svr_mock_svr_t svr = test_http_svr_mock_svr_find(env, i_url);
     if (svr == NULL) fail_msg("mock svr %s not exist", i_url);
 
     const char * url = mem_buffer_strdup(&env->m_driver->m_setup_buffer, i_url);
     const char * path = mem_buffer_strdup(&env->m_driver->m_setup_buffer, i_path);
     
-    expect_string(net_http_svr_mock_svr_request_process, url, url);
-    expect_string(net_http_svr_mock_svr_request_process, path, path);
+    expect_string(test_http_svr_mock_svr_request_process, url, url);
+    expect_string(test_http_svr_mock_svr_request_process, path, path);
     will_return(
-        net_http_svr_mock_svr_request_process, 
-        net_http_svr_request_mock_expect_response(env->m_driver, code, code_msg, response, delay_ms));
+        test_http_svr_mock_svr_request_process, 
+        test_http_svr_request_mock_expect_response(env->m_driver, code, code_msg, response, delay_ms));
 }
 
 void test_http_svr_testenv_expect_response_close(
@@ -157,27 +157,27 @@ void test_http_svr_testenv_expect_response_close(
     int code, const char * code_msg, const char * response,
     uint32_t delay_ms)
 {
-    net_http_svr_mock_svr_t svr = net_http_svr_mock_svr_find(env, i_url);
+    test_http_svr_mock_svr_t svr = test_http_svr_mock_svr_find(env, i_url);
     assert_true(svr);
 
     const char * url = mem_buffer_strdup(&env->m_driver->m_setup_buffer, i_url);
     const char * path = mem_buffer_strdup(&env->m_driver->m_setup_buffer, i_path);
     
-    expect_string(net_http_svr_mock_svr_request_process, url, url);
-    expect_string(net_http_svr_mock_svr_request_process, path, path);
+    expect_string(test_http_svr_mock_svr_request_process, url, url);
+    expect_string(test_http_svr_mock_svr_request_process, path, path);
     will_return(
-        net_http_svr_mock_svr_request_process, 
-        net_http_svr_request_mock_expect_response_close(env->m_driver, code, code_msg, response, delay_ms));
+        test_http_svr_mock_svr_request_process, 
+        test_http_svr_request_mock_expect_response_close(env->m_driver, code, code_msg, response, delay_ms));
 }
 
-void net_http_svr_mock_svr_request_process(void * ctx, net_http_svr_request_t request) {
-    net_http_svr_mock_svr_t external_svr = ctx;
+void test_http_svr_mock_svr_request_process(void * ctx, net_http_svr_request_t request) {
+    test_http_svr_mock_svr_t external_svr = ctx;
     const char * url = external_svr->m_url;
     const char * path = net_http_svr_request_full_path(request);
     
     check_expected(url);
     check_expected(path);
-    net_http_svr_mock_request_policy_t policy = mock_type(net_http_svr_mock_request_policy_t);
+    test_http_svr_mock_request_policy_t policy = mock_type(test_http_svr_mock_request_policy_t);
 
-    net_http_svr_request_mock_apply(external_svr->m_env->m_driver, request, policy);
+    test_http_svr_request_mock_apply(external_svr->m_env->m_driver, request, policy);
 }

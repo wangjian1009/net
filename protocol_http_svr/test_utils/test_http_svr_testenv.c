@@ -8,7 +8,7 @@
 #include "net_http_endpoint.h"
 #include "net_http_svr_protocol.h"
 #include "test_http_svr_testenv.h"
-#include "net_http_svr_mock_svr.h"
+#include "test_http_svr_mock_svr.h"
 
 test_http_svr_testenv_t
 test_http_svr_testenv_create(net_schedule_t schedule, test_net_driver_t driver, error_monitor_t em) {
@@ -25,7 +25,7 @@ test_http_svr_testenv_create(net_schedule_t schedule, test_net_driver_t driver, 
 
 void test_http_svr_testenv_free(test_http_svr_testenv_t env) {
     while(!TAILQ_EMPTY(&env->m_svrs)) {
-        net_http_svr_mock_svr_free(TAILQ_FIRST(&env->m_svrs));
+        test_http_svr_mock_svr_free(TAILQ_FIRST(&env->m_svrs));
     }
 
     net_http_test_protocol_free(env->m_cli_protocol);
@@ -36,7 +36,7 @@ net_http_req_t
 test_http_svr_testenv_create_req(
     test_http_svr_testenv_t env, const char * svr_url, net_http_req_method_t method, const char * url)
 {
-    net_http_svr_mock_svr_t mock_svr = net_http_svr_mock_svr_find(env, svr_url);
+    test_http_svr_mock_svr_t mock_svr = test_http_svr_mock_svr_find(env, svr_url);
     assert_true(mock_svr);
 
     net_address_t target_addr = net_acceptor_address(mock_svr->m_acceptor);

@@ -8,15 +8,15 @@
 #include "net_http_svr_system.h"
 
 typedef struct test_http_svr_testenv * test_http_svr_testenv_t;
-typedef struct net_http_svr_mock_svr * net_http_svr_mock_svr_t;
-typedef TAILQ_HEAD(net_http_svr_mock_svr_list, net_http_svr_mock_svr) net_http_svr_mock_svr_list_t;
+typedef struct test_http_svr_mock_svr * test_http_svr_mock_svr_t;
+typedef TAILQ_HEAD(test_http_svr_mock_svr_list, test_http_svr_mock_svr) test_http_svr_mock_svr_list_t;
 
 struct test_http_svr_testenv {
     error_monitor_t m_em;
     net_schedule_t m_schedule;
     test_net_driver_t m_driver;
     net_http_test_protocol_t m_cli_protocol;
-    net_http_svr_mock_svr_list_t m_svrs;
+    test_http_svr_mock_svr_list_t m_svrs;
 };
 
 test_http_svr_testenv_t
