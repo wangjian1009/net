@@ -11,6 +11,7 @@
 NET_BEGIN_DECL
 
 typedef TAILQ_HEAD(net_ndt7_tester_list, net_ndt7_tester) net_ndt7_tester_list_t;
+typedef TAILQ_HEAD(net_ndt7_tester_target_list, net_ndt7_tester_target) net_ndt7_tester_target_list_t;
 
 struct net_ndt7_manage {
     mem_allocrator_t m_alloc;

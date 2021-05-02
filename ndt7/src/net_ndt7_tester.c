@@ -7,6 +7,7 @@
 #include "net_http_req.h"
 #include "net_http_endpoint.h"
 #include "net_ndt7_tester_i.h"
+#include "net_ndt7_tester_target_i.h"
 
 static void net_ndt7_tester_clear_state_data(net_ndt7_tester_t tester);
 static void net_ndt7_tester_set_state(net_ndt7_tester_t tester, net_ndt7_tester_state_t state);
@@ -39,6 +40,8 @@ net_ndt7_tester_create(net_ndt7_manage_t manager, net_ndt7_test_type_t test_type
     tester->m_on_complete = NULL;
     tester->m_ctx_free = NULL;
 
+    TAILQ_INIT(&tester->m_targets);
+
     TAILQ_INSERT_TAIL(&manager->m_testers, tester, m_next);
     
     return tester;
@@ -50,6 +53,10 @@ void net_ndt7_tester_free(net_ndt7_tester_t tester) {
     if (tester->m_is_processing) {
         tester->m_is_free = 1;
         return;
+    }
+
+    while(!TAILQ_EMPTY(&tester->m_targets)) {
+        net_ndt7_tester_target_free(TAILQ_FIRST(&tester->m_targets));
     }
     
     net_ndt7_tester_clear_state_data(tester);

@@ -12,6 +12,7 @@ net_ndt7_testenv_create() {
     env->m_schedule = net_schedule_create(test_allocrator(), env->m_em, NULL);
     env->m_tdriver = test_net_driver_create(env->m_schedule, env->m_em);
     env->m_tdns = test_net_dns_create(env->m_tdriver);
+    env->m_external_svr = test_http_svr_testenv_create(env->m_schedule, env->m_tdriver, env->m_em);
 
     env->m_ndt_manager =
         net_ndt7_manage_create(
@@ -22,6 +23,7 @@ net_ndt7_testenv_create() {
 }
 
 void net_ndt7_testenv_free(net_ndt7_testenv_t env) {
+    test_http_svr_testenv_free(env->m_external_svr);
     net_ndt7_manage_free(env->m_ndt_manager);
     net_schedule_free(env->m_schedule);
     test_error_monitor_free(env->m_tem);

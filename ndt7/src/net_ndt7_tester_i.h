@@ -20,6 +20,8 @@ struct net_ndt7_tester {
     TAILQ_ENTRY(net_ndt7_tester) m_next_for_notify;
     
     /*状态数据 */
+    net_ndt7_tester_target_list_t m_targets;
+
     union {
         struct {
             net_http_endpoint_t m_endpoint;
