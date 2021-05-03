@@ -11,6 +11,12 @@ enum net_ndt7_test_type {
     net_ndt7_test_download_and_upload,
 };
 
+enum net_ndt7_test_protocol {
+    net_ndt7_test_protocol_auto,
+    net_ndt7_test_protocol_ws,
+    net_ndt7_test_protocol_wss,
+};
+
 enum net_ndt7_tester_state {
     net_ndt7_tester_state_init,
     net_ndt7_tester_state_query_target,
@@ -20,13 +26,19 @@ enum net_ndt7_tester_state {
 };
 
 net_ndt7_tester_t
-net_ndt7_tester_create(net_ndt7_manage_t manager, net_ndt7_test_type_t test_type);
+net_ndt7_tester_create(net_ndt7_manage_t manager);
 
 void net_ndt7_tester_free(net_ndt7_tester_t tester);
 
 net_ndt7_test_type_t net_ndt7_tester_type(net_ndt7_tester_t tester);
+int net_ndt7_tester_set_type(net_ndt7_tester_t tester, net_ndt7_test_type_t test_type);
+
+net_ndt7_test_protocol_t net_ndt7_tester_protocol(net_ndt7_tester_t tester);
+int net_ndt7_tester_set_protocol(net_ndt7_tester_t tester, net_ndt7_test_protocol_t protocol);
 
 net_ndt7_tester_state_t net_ndt7_tester_state(net_ndt7_tester_t tester);
+
+void net_ndt7_tester_targets(net_ndt7_tester_t tester, net_ndt7_tester_target_it_t it);
 
 /*回调 */
 typedef void (*net_ndt7_tester_on_complete_fun_t)(void * ctx, net_ndt7_tester_t tester);

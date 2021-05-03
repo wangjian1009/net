@@ -95,34 +95,44 @@ static void net_ndt7_tester_query_target_on_endpoint_fini(void * ctx, net_endpoi
 
 static int net_ndt7_tester_query_tearget_build_target(net_ndt7_tester_t tester, yajl_val config) {
     net_ndt7_manage_t manager = tester->m_manager;
-
-    const char * machine = yajl_get_string(yajl_tree_get_2(config, "machine", yajl_t_string));
-    const char * city = yajl_get_string(yajl_tree_get_2(config, "location/city", yajl_t_string));
-    const char * country = yajl_get_string(yajl_tree_get_2(config, "location/country", yajl_t_string));
-
-    net_ndt7_tester_target_t target = net_ndt7_tester_target_create(tester, machine, country, city);
+    const char * str_val;
+    
+    net_ndt7_tester_target_t target = net_ndt7_tester_target_create(tester);
     if (target == NULL) {
         CPE_ERROR(manager->m_em, "ndt7: %d: query target: response: create target error", tester->m_id);
         return -1;
     }
 
-    yajl_val urls = yajl_tree_get_2(config, "urls", yajl_t_object);
-    const char * url;
-
-    if ((url = yajl_get_string(yajl_tree_get_2(urls, "ws:///ndt/v7/download", yajl_t_string)))) {
-        if (net_ndt7_tester_target_set_url(target, net_ndt7_target_url_ws_download, url) != 0) return -1;
+    if ((str_val = yajl_get_string(yajl_tree_get_2(config, "machine", yajl_t_string)))) {
+        net_ndt7_tester_target_set_machine(target, str_val);
     }
 
-    if ((url = yajl_get_string(yajl_tree_get_2(urls, "ws:///ndt/v7/upload", yajl_t_string)))) {
-        if (net_ndt7_tester_target_set_url(target, net_ndt7_target_url_ws_uploded, url) != 0) return -1;
+    if ((str_val = yajl_get_string(yajl_tree_get_2(config, "location/city", yajl_t_string)))) {
+        net_ndt7_tester_target_set_city(target, str_val);
+    }
+    
+    if ((str_val = yajl_get_string(yajl_tree_get_2(config, "location/country", yajl_t_string)))) {
+        net_ndt7_tester_target_set_country(target, str_val);
     }
 
-    if ((url = yajl_get_string(yajl_tree_get_2(urls, "wss:///ndt/v7/download", yajl_t_string)))) {
-        if (net_ndt7_tester_target_set_url(target, net_ndt7_target_url_wss_download, url) != 0) return -1;
+    const char * path1[] = { "urls", "ws:///ndt/v7/download", NULL };
+    if ((str_val = yajl_get_string(yajl_tree_get(config, path1, yajl_t_string)))) {
+        if (net_ndt7_tester_target_set_url(target, net_ndt7_target_url_ws_download, str_val) != 0) return -1;
     }
 
-    if ((url = yajl_get_string(yajl_tree_get_2(urls, "wss:///ndt/v7/upload", yajl_t_string)))) {
-        if (net_ndt7_tester_target_set_url(target, net_ndt7_target_url_wss_uploded, url) != 0) return -1;
+    const char * path2[] = { "urls", "ws:///ndt/v7/upload", NULL };
+    if ((str_val = yajl_get_string(yajl_tree_get(config, path2, yajl_t_string)))) {
+        if (net_ndt7_tester_target_set_url(target, net_ndt7_target_url_ws_uploded, str_val) != 0) return -1;
+    }
+
+    const char * path3[] = { "urls", "wss:///ndt/v7/download", NULL };
+    if ((str_val = yajl_get_string(yajl_tree_get(config, path3, yajl_t_string)))) {
+        if (net_ndt7_tester_target_set_url(target, net_ndt7_target_url_wss_download, str_val) != 0) return -1;
+    }
+
+    const char * path4[] = { "urls", "wss:///ndt/v7/upload", NULL };
+    if ((str_val = yajl_get_string(yajl_tree_get(config, path4, yajl_t_string)))) {
+        if (net_ndt7_tester_target_set_url(target, net_ndt7_target_url_wss_uploded, str_val) != 0) return -1;
     }
     
     return 0;

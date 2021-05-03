@@ -1,3 +1,4 @@
+#include "net_schedule.h"
 #include "net_ndt7_testenv.h"
 #include "net_ndt7_tester.h"
 #include "net_ndt7_tests.h"
@@ -20,8 +21,7 @@ static int teardown(void **state) {
 static void ndt7_tester_basic(void **state) {
     net_ndt7_testenv_t env = *state;
 
-    net_ndt7_tester_t tester =
-        net_ndt7_tester_create(env->m_ndt_manager, net_ndt7_test_download_and_upload);
+    net_ndt7_tester_t tester = net_ndt7_tester_create(env->m_ndt_manager);
 
     test_net_dns_expect_query_response(env->m_tdns, "locate.measurementlab.net", "1.1.1.1", 0);
     test_net_endpoint_id_expect_connect_to_acceptor(
@@ -41,10 +41,10 @@ static void ndt7_tester_basic(void **state) {
         "        \"country\": \"TW\"\n"
         "      },\n"
         "      \"urls\": {\n"
-        "        \"ws:///ndt/v7/download\": \"ws://ndt-mlab2-tpe01.mlab-oti.measurement-lab.org/ndt/v7/download?access_token=eyJhbGciOiJFZERTQSIsImtpZCI6ImxvY2F0ZV8yMDIwMDQwOSJ9.eyJhdWQiOlsibWxhYjItdHBlMDEubWxhYi1vdGkubWVhc3VyZW1lbnQtbGFiLm9yZyJdLCJleHAiOjE2MTk4Mzg1NjAsImlzcyI6ImxvY2F0ZSIsInN1YiI6Im5kdCJ9.YdGP7aidlSyWmQy_F9G0xyQXU6xn1PRoguGlTNrgWjaYCeoUG_uJn3xqJxvcZv8P_K8al0QZ0_Tkq34wC7geBg\",\n"
-        "        \"ws:///ndt/v7/upload\": \"ws://ndt-mlab2-tpe01.mlab-oti.measurement-lab.org/ndt/v7/upload?access_token=eyJhbGciOiJFZERTQSIsImtpZCI6ImxvY2F0ZV8yMDIwMDQwOSJ9.eyJhdWQiOlsibWxhYjItdHBlMDEubWxhYi1vdGkubWVhc3VyZW1lbnQtbGFiLm9yZyJdLCJleHAiOjE2MTk4Mzg1NjAsImlzcyI6ImxvY2F0ZSIsInN1YiI6Im5kdCJ9.YdGP7aidlSyWmQy_F9G0xyQXU6xn1PRoguGlTNrgWjaYCeoUG_uJn3xqJxvcZv8P_K8al0QZ0_Tkq34wC7geBg\",\n"
-        "        \"wss:///ndt/v7/download\": \"wss://ndt-mlab2-tpe01.mlab-oti.measurement-lab.org/ndt/v7/download?access_token=eyJhbGciOiJFZERTQSIsImtpZCI6ImxvY2F0ZV8yMDIwMDQwOSJ9.eyJhdWQiOlsibWxhYjItdHBlMDEubWxhYi1vdGkubWVhc3VyZW1lbnQtbGFiLm9yZyJdLCJleHAiOjE2MTk4Mzg1NjAsImlzcyI6ImxvY2F0ZSIsInN1YiI6Im5kdCJ9.YdGP7aidlSyWmQy_F9G0xyQXU6xn1PRoguGlTNrgWjaYCeoUG_uJn3xqJxvcZv8P_K8al0QZ0_Tkq34wC7geBg\",\n"
-        "        \"wss:///ndt/v7/upload\": \"wss://ndt-mlab2-tpe01.mlab-oti.measurement-lab.org/ndt/v7/upload?access_token=eyJhbGciOiJFZERTQSIsImtpZCI6ImxvY2F0ZV8yMDIwMDQwOSJ9.eyJhdWQiOlsibWxhYjItdHBlMDEubWxhYi1vdGkubWVhc3VyZW1lbnQtbGFiLm9yZyJdLCJleHAiOjE2MTk4Mzg1NjAsImlzcyI6ImxvY2F0ZSIsInN1YiI6Im5kdCJ9.YdGP7aidlSyWmQy_F9G0xyQXU6xn1PRoguGlTNrgWjaYCeoUG_uJn3xqJxvcZv8P_K8al0QZ0_Tkq34wC7geBg\"\n"
+        "        \"ws:///ndt/v7/download\": \"ws://host1\",\n"
+        "        \"ws:///ndt/v7/upload\": \"ws://host2\",\n"
+        "        \"wss:///ndt/v7/download\": \"wss://host3\",\n"
+        "        \"wss:///ndt/v7/upload\": \"wss://hot4\"\n"
         "      }\n"
         "    },\n"
         "    {\n"
@@ -54,10 +54,10 @@ static void ndt7_tester_basic(void **state) {
         "        \"country\": \"HK\"\n"
         "      },\n"
         "      \"urls\": {\n"
-        "        \"ws:///ndt/v7/download\": \"ws://ndt-mlab2-hkg01.mlab-oti.measurement-lab.org/ndt/v7/download?access_token=eyJhbGciOiJFZERTQSIsImtpZCI6ImxvY2F0ZV8yMDIwMDQwOSJ9.eyJhdWQiOlsibWxhYjItaGtnMDEubWxhYi1vdGkubWVhc3VyZW1lbnQtbGFiLm9yZyJdLCJleHAiOjE2MTk4Mzg1NjAsImlzcyI6ImxvY2F0ZSIsInN1YiI6Im5kdCJ9.PtVerWtulK_878Noeaasn1meWzj9qxi_6-vwugedLzr4AIjAQigXMrIq7XyMeZgQY8hxPoBOyxZMNgkEor9SBw\",\n"
-        "        \"ws:///ndt/v7/upload\": \"ws://ndt-mlab2-hkg01.mlab-oti.measurement-lab.org/ndt/v7/upload?access_token=eyJhbGciOiJFZERTQSIsImtpZCI6ImxvY2F0ZV8yMDIwMDQwOSJ9.eyJhdWQiOlsibWxhYjItaGtnMDEubWxhYi1vdGkubWVhc3VyZW1lbnQtbGFiLm9yZyJdLCJleHAiOjE2MTk4Mzg1NjAsImlzcyI6ImxvY2F0ZSIsInN1YiI6Im5kdCJ9.PtVerWtulK_878Noeaasn1meWzj9qxi_6-vwugedLzr4AIjAQigXMrIq7XyMeZgQY8hxPoBOyxZMNgkEor9SBw\",\n"
-        "        \"wss:///ndt/v7/download\": \"wss://ndt-mlab2-hkg01.mlab-oti.measurement-lab.org/ndt/v7/download?access_token=eyJhbGciOiJFZERTQSIsImtpZCI6ImxvY2F0ZV8yMDIwMDQwOSJ9.eyJhdWQiOlsibWxhYjItaGtnMDEubWxhYi1vdGkubWVhc3VyZW1lbnQtbGFiLm9yZyJdLCJleHAiOjE2MTk4Mzg1NjAsImlzcyI6ImxvY2F0ZSIsInN1YiI6Im5kdCJ9.PtVerWtulK_878Noeaasn1meWzj9qxi_6-vwugedLzr4AIjAQigXMrIq7XyMeZgQY8hxPoBOyxZMNgkEor9SBw\",\n"
-        "        \"wss:///ndt/v7/upload\": \"wss://ndt-mlab2-hkg01.mlab-oti.measurement-lab.org/ndt/v7/upload?access_token=eyJhbGciOiJFZERTQSIsImtpZCI6ImxvY2F0ZV8yMDIwMDQwOSJ9.eyJhdWQiOlsibWxhYjItaGtnMDEubWxhYi1vdGkubWVhc3VyZW1lbnQtbGFiLm9yZyJdLCJleHAiOjE2MTk4Mzg1NjAsImlzcyI6ImxvY2F0ZSIsInN1YiI6Im5kdCJ9.PtVerWtulK_878Noeaasn1meWzj9qxi_6-vwugedLzr4AIjAQigXMrIq7XyMeZgQY8hxPoBOyxZMNgkEor9SBw\"\n"
+        "        \"ws:///ndt/v7/download\": \"ws://host5\",\n"
+        "        \"ws:///ndt/v7/upload\": \"ws://host6\",\n"
+        "        \"wss:///ndt/v7/download\": \"wss://host7\",\n"
+        "        \"wss:///ndt/v7/upload\": \"wss://host7\"\n"
         "      }\n"
         "    }\n"
         "  ]\n"
@@ -68,6 +68,11 @@ static void ndt7_tester_basic(void **state) {
 
     test_net_driver_run(env->m_tdriver, 0);
 
+    assert_string_equal(
+        "bbb",
+        net_ndt7_testenv_dump_tester(
+            net_schedule_tmp_buffer(env->m_schedule), tester));
+        
     assert_string_equal(
         net_ndt7_tester_state_str(net_ndt7_tester_state_done),
         net_ndt7_tester_state_str(net_ndt7_tester_state(tester)));

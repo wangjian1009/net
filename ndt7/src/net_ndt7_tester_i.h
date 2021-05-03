@@ -11,15 +11,16 @@ struct net_ndt7_tester {
     TAILQ_ENTRY(net_ndt7_tester) m_next;
     
     net_ndt7_test_type_t m_type;
+    net_ndt7_test_protocol_t m_protocol;
     net_ndt7_tester_state_t m_state;
     uint8_t m_is_processing;
     uint8_t m_is_free;
-    cpe_url_t m_target;
 
     uint8_t m_is_to_notify;
     TAILQ_ENTRY(net_ndt7_tester) m_next_for_notify;
     
     /*状态数据 */
+    net_ndt7_tester_target_t m_target;
     net_ndt7_tester_target_list_t m_targets;
 
     union {
@@ -45,8 +46,6 @@ struct net_ndt7_tester {
 int net_ndt7_tester_query_target_start(net_ndt7_tester_t tester);
 int net_ndt7_tester_download_start(net_ndt7_tester_t tester);
 int net_ndt7_tester_upload_start(net_ndt7_tester_t tester);
-
-void net_ndt7_tester_print(write_stream_t ws, net_ndt7_tester_t tester);
 
 void net_ndt7_tester_set_error(
     net_ndt7_tester_t tester, net_ndt7_tester_error_t err, const char * msg);

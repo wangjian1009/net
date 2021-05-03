@@ -14,6 +14,7 @@ set_property(TARGET tests_net_ndt7 PROPERTY INCLUDE_DIRECTORIES
   ${net_core_base}/include
   ${net_core_base}/test_utils  
   ${net_ndt7_base}/include
+  ${net_ndt7_base}/src
   )
 
 set(tests_net_ndt7_libraries net_ndt7 test_utils_net_core test_utils_net_protocol_http_svr)

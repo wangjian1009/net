@@ -23,4 +23,8 @@ struct net_ndt7_testenv {
 net_ndt7_testenv_t net_ndt7_testenv_create();
 void net_ndt7_testenv_free(net_ndt7_testenv_t env);
 
+void net_ndt7_testenv_print_tester_target(write_stream_t ws, net_ndt7_tester_target_t target);
+void net_ndt7_testenv_print_tester(write_stream_t ws, net_ndt7_tester_t tester);
+const char * net_ndt7_testenv_dump_tester(mem_buffer_t buffer, net_ndt7_tester_t tester);
+
 #endif

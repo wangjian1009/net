@@ -13,7 +13,7 @@ static void net_ndt7_tester_clear_state_data(net_ndt7_tester_t tester);
 static void net_ndt7_tester_set_state(net_ndt7_tester_t tester, net_ndt7_tester_state_t state);
 
 net_ndt7_tester_t
-net_ndt7_tester_create(net_ndt7_manage_t manager, net_ndt7_test_type_t test_type) {
+net_ndt7_tester_create(net_ndt7_manage_t manager) {
     net_ndt7_tester_t tester = mem_alloc(manager->m_alloc, sizeof(struct net_ndt7_tester));
     if (tester == NULL) {
         CPE_ERROR(manager->m_em, "ndt7: tester: alloc fail");
@@ -22,11 +22,10 @@ net_ndt7_tester_create(net_ndt7_manage_t manager, net_ndt7_test_type_t test_type
 
     tester->m_manager = manager;
     tester->m_id = ++manager->m_idx_max;
-    tester->m_type = test_type;
+    tester->m_type = net_ndt7_test_download_and_upload;
     tester->m_state = net_ndt7_tester_state_init;
     tester->m_is_processing = 0;
     tester->m_is_free = 0;
-    tester->m_target = NULL;
 
     tester->m_is_to_notify = 0;
 
@@ -40,6 +39,7 @@ net_ndt7_tester_create(net_ndt7_manage_t manager, net_ndt7_test_type_t test_type
     tester->m_on_complete = NULL;
     tester->m_ctx_free = NULL;
 
+    tester->m_target = NULL;
     TAILQ_INIT(&tester->m_targets);
 
     TAILQ_INSERT_TAIL(&manager->m_testers, tester, m_next);
@@ -68,11 +68,6 @@ void net_ndt7_tester_free(net_ndt7_tester_t tester) {
     }
     tester->m_on_complete = NULL;
 
-    if (tester->m_target) {
-        cpe_url_free(tester->m_target);
-        tester->m_target = NULL;
-    }
-
     if (tester->m_error.m_msg) {
         mem_free(manager->m_alloc, tester->m_error.m_msg);
         tester->m_error.m_msg = NULL;
@@ -89,6 +84,38 @@ void net_ndt7_tester_free(net_ndt7_tester_t tester) {
 
 net_ndt7_test_type_t net_ndt7_tester_type(net_ndt7_tester_t tester) {
     return tester->m_type;
+}
+
+int net_ndt7_tester_set_type(net_ndt7_tester_t tester, net_ndt7_test_type_t test_type) {
+    net_ndt7_manage_t manager = tester->m_manager;
+
+    if (tester->m_state != net_ndt7_tester_state_init) {
+        CPE_ERROR(
+            manager->m_em, "ndt7: %d: can`t set test type in state %s",
+            tester->m_id, net_ndt7_tester_state_str(tester->m_state));
+        return -1;
+    }
+
+    tester->m_type = test_type;
+    return 0;
+}
+
+net_ndt7_test_protocol_t net_ndt7_tester_protocol(net_ndt7_tester_t tester) {
+    return tester->m_protocol;
+}
+
+int net_ndt7_tester_set_protocol(net_ndt7_tester_t tester, net_ndt7_test_protocol_t protocol) {
+    net_ndt7_manage_t manager = tester->m_manager;
+
+    if (tester->m_state != net_ndt7_tester_state_init) {
+        CPE_ERROR(
+            manager->m_em, "ndt7: %d: can`t set test protocol in state %s",
+            tester->m_id, net_ndt7_tester_state_str(tester->m_state));
+        return -1;
+    }
+
+    tester->m_protocol = protocol;
+    return 0;
 }
 
 net_ndt7_tester_state_t net_ndt7_tester_state(net_ndt7_tester_t tester) {
@@ -126,7 +153,7 @@ int net_ndt7_tester_start(net_ndt7_tester_t tester) {
         return -1;
     }
 
-    if (tester->m_target == NULL) {
+    if (TAILQ_EMPTY(&tester->m_targets)) {
         net_ndt7_tester_set_state(tester, net_ndt7_tester_state_query_target);
         if (net_ndt7_tester_query_target_start(tester) != 0) {
             if (tester->m_error.m_error == net_ndt7_tester_error_none) {
@@ -158,8 +185,13 @@ int net_ndt7_tester_check_start_next_step(net_ndt7_tester_t tester) {
         return 0;
     }
     
-    assert(tester->m_target != NULL);
-
+    assert(!TAILQ_EMPTY(&tester->m_targets));
+    if (tester->m_target == NULL) {
+        TAILQ_FOREACH(tester->m_target, &tester->m_targets, m_next) {
+            
+        }
+    }
+    
     switch(tester->m_state) {
     case net_ndt7_tester_state_init:
     case net_ndt7_tester_state_query_target:
@@ -317,14 +349,6 @@ const char * net_ndt7_test_type_str(net_ndt7_test_type_t state) {
         return "download";
     case net_ndt7_test_download_and_upload:
         return "download-and-upload";
-    }
-}
-
-void net_ndt7_tester_print(write_stream_t ws, net_ndt7_tester_t tester) {
-    net_ndt7_tester_target_t target;
-
-    TAILQ_FOREACH(target, &tester->m_targets, m_next) {
-        net_ndt7_tester_target_print(ws, target);
     }
 }
 
