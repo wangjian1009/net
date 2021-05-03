@@ -97,11 +97,6 @@ static int net_ndt7_tester_query_tearget_build_target(net_ndt7_tester_t tester, 
     net_ndt7_manage_t manager = tester->m_manager;
 
     const char * machine = yajl_get_string(yajl_tree_get_2(config, "machine", yajl_t_string));
-    if (machine == NULL) {
-        CPE_ERROR(manager->m_em, "ndt7: %d: query target: response: mochine not configured", tester->m_id);
-        return -1;
-    }
-    
     const char * city = yajl_get_string(yajl_tree_get_2(config, "location/city", yajl_t_string));
     const char * country = yajl_get_string(yajl_tree_get_2(config, "location/country", yajl_t_string));
 
@@ -214,5 +209,6 @@ static void net_ndt7_tester_query_tearget_on_req_complete(
     }
 
     yajl_tree_free(content);
+
     net_ndt7_tester_check_start_next_step(tester);
 }

@@ -18,11 +18,14 @@ net_ndt7_tester_target_create(
 
     target->m_tester = tester;
 
-    target->m_machine = cpe_str_mem_dup(manager->m_alloc, machine);
-    if (target->m_machine == NULL) {
-        CPE_ERROR(manager->m_em, "ndt7: %d: target: dup machine %s fail", tester->m_id, machine);
-        mem_free(manager->m_alloc, target);
-        return NULL;
+    target->m_machine = NULL;
+    if (machine) {
+        target->m_machine = cpe_str_mem_dup(manager->m_alloc, machine);
+        if (target->m_machine == NULL) {
+            CPE_ERROR(manager->m_em, "ndt7: %d: target: dup machine %s fail", tester->m_id, machine);
+            mem_free(manager->m_alloc, target);
+            return NULL;
+        }
     }
 
     target->m_country = NULL;
@@ -30,7 +33,7 @@ net_ndt7_tester_target_create(
         target->m_country = cpe_str_mem_dup(manager->m_alloc, country);
         if (target->m_country == NULL) {
             CPE_ERROR(manager->m_em, "ndt7: %d: target: dup country %s fail", tester->m_id, country);
-            mem_free(manager->m_alloc, target->m_machine);
+            if (target->m_machine) mem_free(manager->m_alloc, target->m_machine);
             mem_free(manager->m_alloc, target);
             return NULL;
         }
@@ -42,7 +45,7 @@ net_ndt7_tester_target_create(
         if (target->m_city == NULL) {
             CPE_ERROR(manager->m_em, "ndt7: %d: target: dup city %s fail", tester->m_id, city);
             if (target->m_country) mem_free(manager->m_alloc, target->m_country);
-            mem_free(manager->m_alloc, target->m_machine);
+            if (target->m_machine) mem_free(manager->m_alloc, target->m_machine);
             mem_free(manager->m_alloc, target);
             return NULL;
         }
@@ -114,8 +117,23 @@ int net_ndt7_tester_target_set_url(
 
 
 void net_ndt7_tester_target_print(write_stream_t ws, net_ndt7_tester_target_t target) {
-    stream_printf(ws, "%s@%s.%s", target->m_machine, target->m_country, target->m_city);
+    uint8_t count = 0;
 
+    if (target->m_machine) {
+        if (count++ > 0) stream_printf(ws, ", ");
+        stream_printf(ws, "machine=%s", target->m_machine);
+    }
+
+    if (target->m_country) {
+        if (count++ > 0) stream_printf(ws, ", ");
+        stream_printf(ws, "country=%s", target->m_country);
+    }
+
+    if (target->m_city) {
+        if (count++ > 0) stream_printf(ws, ", ");
+        stream_printf(ws, "city=%s", target->m_city);
+    }
+    
     uint8_t i;
     for(i = 0; i < CPE_ARRAY_SIZE(target->m_urls); i++) {
         stream_printf(ws, "\n");
