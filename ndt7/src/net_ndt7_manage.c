@@ -7,6 +7,7 @@
 #include "net_timer.h"
 #include "net_ssl_protocol.h"
 #include "net_ssl_stream_driver.h"
+#include "net_ws_protocol.h"
 #include "net_http_protocol.h"
 #include "net_ndt7_manage_i.h"
 #include "net_ndt7_tester_i.h"
@@ -53,10 +54,20 @@ net_ndt7_manage_t net_ndt7_manage_create(
     /* net_ssl_protocol_t ssl_protocol = */
     /*     net_ssl_stream_driver_underline_protocol(ssl_driver); */
     /* net_ssl_protocol_set_ciphersuites_all(ssl_protocol); */
+
+    manage->m_ws_protocol = net_ws_protocol_create(schedule, "ndt7", alloc, em);
+    if (manage->m_ws_protocol == NULL) {
+        CPE_ERROR(em, "ndt7: create ws protocol fail");
+        net_driver_free(manage->m_ssl_driver);
+        net_timer_free(manage->m_delay_process);
+        mem_free(alloc, manage);
+        return NULL;
+    }
     
     manage->m_http_protocol = net_http_protocol_create(schedule, "ndt7");
     if (manage->m_http_protocol == NULL) {
         CPE_ERROR(em, "ndt7: create http protocol fail");
+        net_ws_protocol_free(manage->m_ws_protocol);
         net_driver_free(manage->m_ssl_driver);
         net_timer_free(manage->m_delay_process);
         mem_free(alloc, manage);
@@ -80,6 +91,11 @@ void net_ndt7_manage_free(net_ndt7_manage_t manage) {
         manage->m_delay_process = NULL;
     }
 
+    if (manage->m_ws_protocol) {
+        net_ws_protocol_free(manage->m_ws_protocol);
+        manage->m_ws_protocol = NULL;
+    }
+    
     if (manage->m_ssl_driver) {
         net_driver_free(manage->m_ssl_driver);
         manage->m_ssl_driver = NULL;

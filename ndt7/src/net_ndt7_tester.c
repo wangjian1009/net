@@ -4,6 +4,7 @@
 #include "cpe/utils/string_utils.h"
 #include "net_timer.h"
 #include "net_endpoint.h"
+#include "net_ws_endpoint.h"
 #include "net_http_req.h"
 #include "net_http_endpoint.h"
 #include "net_ndt7_tester_i.h"
@@ -40,6 +41,8 @@ net_ndt7_tester_create(net_ndt7_manage_t manager) {
     tester->m_ctx_free = NULL;
 
     tester->m_target = NULL;
+    tester->m_upload_url = NULL;
+    tester->m_download_url = NULL;
     TAILQ_INIT(&tester->m_targets);
 
     TAILQ_INSERT_TAIL(&manager->m_testers, tester, m_next);
@@ -58,7 +61,10 @@ void net_ndt7_tester_free(net_ndt7_tester_t tester) {
     while(!TAILQ_EMPTY(&tester->m_targets)) {
         net_ndt7_tester_target_free(TAILQ_FIRST(&tester->m_targets));
     }
-    
+    assert(tester->m_target == NULL);
+    assert(tester->m_upload_url == NULL);
+    assert(tester->m_download_url == NULL);
+
     net_ndt7_tester_clear_state_data(tester);
     
     if (tester->m_ctx_free) {
@@ -179,6 +185,10 @@ const char * net_ndt7_tester_error_msg(net_ndt7_tester_t tester) {
     return tester->m_error.m_msg;
 }
 
+net_ndt7_tester_target_t net_ndt7_tester_select_target(net_ndt7_tester_t tester) {
+    return NULL;
+}
+
 int net_ndt7_tester_check_start_next_step(net_ndt7_tester_t tester) {
     if (tester->m_error.m_error != net_ndt7_tester_error_none) {
         net_ndt7_tester_set_state(tester, net_ndt7_tester_state_done);
@@ -188,7 +198,35 @@ int net_ndt7_tester_check_start_next_step(net_ndt7_tester_t tester) {
     assert(!TAILQ_EMPTY(&tester->m_targets));
     if (tester->m_target == NULL) {
         TAILQ_FOREACH(tester->m_target, &tester->m_targets, m_next) {
-            
+            uint8_t found = 0;
+
+            switch(tester->m_type) {
+            case net_ndt7_test_download:
+                tester->m_download_url = net_ndt7_tester_target_select_download_url(tester->m_target, tester->m_protocol);
+                if (tester->m_download_url) found = 1;
+                break;
+            case net_ndt7_test_download_and_upload:
+                tester->m_download_url = net_ndt7_tester_target_select_download_url(tester->m_target, tester->m_protocol);
+                if (tester->m_download_url) {
+                    tester->m_upload_url = net_ndt7_tester_target_select_upload_url(tester->m_target, tester->m_protocol);
+                    if (tester->m_upload_url) found = 1;
+                }
+                break;
+            case net_ndt7_test_upload:
+                tester->m_upload_url = net_ndt7_tester_target_select_upload_url(tester->m_target, tester->m_protocol);
+                if (tester->m_upload_url) found = 1;
+                break;
+            }
+
+            if (found) break;
+        }
+
+        if (tester->m_target == NULL) {
+            if (tester->m_error.m_error == net_ndt7_tester_error_none) {
+                net_ndt7_tester_set_error_internal(tester, "SelectTargetFail");
+            }
+            net_ndt7_tester_set_state(tester, net_ndt7_tester_state_done);
+            return -1;
         }
     }
     
@@ -270,6 +308,12 @@ static void net_ndt7_tester_clear_state_data(net_ndt7_tester_t tester) {
         }
         break;
     case net_ndt7_tester_state_download:
+        if (tester->m_state_data.m_download.m_endpoint) {
+            net_endpoint_t base_endpoint = net_ws_endpoint_base_endpoint(tester->m_state_data.m_download.m_endpoint);
+            net_endpoint_set_data_watcher(base_endpoint, NULL, NULL, NULL);
+            net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+            tester->m_state_data.m_download.m_endpoint = NULL;
+        }
         break;
     case net_ndt7_tester_state_upload:
         break;

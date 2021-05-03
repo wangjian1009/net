@@ -40,7 +40,7 @@ int net_ssl_endpoint_init(net_endpoint_t base_endpoint) {
     endpoint->m_ssl_config = NULL;
     endpoint->m_ssl = NULL;
 
-    net_endpoint_set_protocol_debug(base_endpoint, 2);
+    //net_endpoint_set_protocol_debug(base_endpoint, 2);
     return 0;
 }
 

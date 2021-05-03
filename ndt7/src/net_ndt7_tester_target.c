@@ -180,13 +180,69 @@ int net_ndt7_tester_target_set_url(
     return 0;
 }
 
+cpe_url_t net_ndt7_tester_target_select_upload_url(
+    net_ndt7_tester_target_t target, net_ndt7_test_protocol_t protocol)
+{
+    switch(protocol) {
+    case net_ndt7_test_protocol_auto:
+        if (target->m_urls[net_ndt7_target_url_wss_upload]) {
+            return target->m_urls[net_ndt7_target_url_wss_upload];
+        }
+
+        if (target->m_urls[net_ndt7_target_url_ws_upload]) {
+            return target->m_urls[net_ndt7_target_url_ws_upload];
+        }
+        break;
+    case net_ndt7_test_protocol_ws:
+        if (target->m_urls[net_ndt7_target_url_ws_upload]) {
+            return target->m_urls[net_ndt7_target_url_ws_upload];
+        }
+        break;
+    case net_ndt7_test_protocol_wss:
+        if (target->m_urls[net_ndt7_target_url_wss_upload]) {
+            return target->m_urls[net_ndt7_target_url_wss_upload];
+        }
+        break;
+    }
+
+    return NULL;
+}
+
+cpe_url_t net_ndt7_tester_target_select_download_url(
+    net_ndt7_tester_target_t target, net_ndt7_test_protocol_t protocol)
+{
+    switch(protocol) {
+    case net_ndt7_test_protocol_auto:
+        if (target->m_urls[net_ndt7_target_url_wss_download]) {
+            return target->m_urls[net_ndt7_target_url_wss_download];
+        }
+
+        if (target->m_urls[net_ndt7_target_url_ws_download]) {
+            return target->m_urls[net_ndt7_target_url_ws_download];
+        }
+        break;
+    case net_ndt7_test_protocol_ws:
+        if (target->m_urls[net_ndt7_target_url_ws_download]) {
+            return target->m_urls[net_ndt7_target_url_ws_download];
+        }
+        break;
+    case net_ndt7_test_protocol_wss:
+        if (target->m_urls[net_ndt7_target_url_wss_download]) {
+            return target->m_urls[net_ndt7_target_url_wss_download];
+        }
+        break;
+    }
+
+    return NULL;
+}
+
 const char * net_ndt7_target_url_category_str(net_ndt7_target_url_category_t category) {
     switch(category) {
-    case net_ndt7_target_url_ws_uploded:
+    case net_ndt7_target_url_ws_upload:
         return "ws-upload";
     case net_ndt7_target_url_ws_download:
         return "ws-download";
-    case net_ndt7_target_url_wss_uploded:
+    case net_ndt7_target_url_wss_upload:
         return "wss-upload";
     case net_ndt7_target_url_wss_download:
         return "wss-download";

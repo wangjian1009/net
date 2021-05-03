@@ -11,9 +11,9 @@ struct net_ndt7_tester_target_it {
 };
 
 enum net_ndt7_target_url_category {
-    net_ndt7_target_url_ws_uploded,
+    net_ndt7_target_url_ws_upload,
     net_ndt7_target_url_ws_download,
-    net_ndt7_target_url_wss_uploded,
+    net_ndt7_target_url_wss_upload,
     net_ndt7_target_url_wss_download,
 };
 #define net_ndt7_target_url_category_count (4)
@@ -36,8 +36,13 @@ cpe_url_t net_ndt7_tester_target_url(net_ndt7_tester_target_t target, net_ndt7_t
 int net_ndt7_tester_target_set_url(
     net_ndt7_tester_target_t target, net_ndt7_target_url_category_t category, const char * url);
 
-const char * net_ndt7_target_url_category_str(net_ndt7_target_url_category_t category);
+cpe_url_t net_ndt7_tester_target_select_upload_url(
+    net_ndt7_tester_target_t target, net_ndt7_test_protocol_t protocol);
 
+cpe_url_t net_ndt7_tester_target_select_download_url(
+    net_ndt7_tester_target_t target, net_ndt7_test_protocol_t protocol);
+
+const char * net_ndt7_target_url_category_str(net_ndt7_target_url_category_t category);
 
 #define net_ndt7_tester_target_it_next(__it) ((__it)->next(__it))
 

@@ -122,7 +122,7 @@ static int net_ndt7_tester_query_tearget_build_target(net_ndt7_tester_t tester, 
 
     const char * path2[] = { "urls", "ws:///ndt/v7/upload", NULL };
     if ((str_val = yajl_get_string(yajl_tree_get(config, path2, yajl_t_string)))) {
-        if (net_ndt7_tester_target_set_url(target, net_ndt7_target_url_ws_uploded, str_val) != 0) return -1;
+        if (net_ndt7_tester_target_set_url(target, net_ndt7_target_url_ws_upload, str_val) != 0) return -1;
     }
 
     const char * path3[] = { "urls", "wss:///ndt/v7/download", NULL };
@@ -132,7 +132,7 @@ static int net_ndt7_tester_query_tearget_build_target(net_ndt7_tester_t tester, 
 
     const char * path4[] = { "urls", "wss:///ndt/v7/upload", NULL };
     if ((str_val = yajl_get_string(yajl_tree_get(config, path4, yajl_t_string)))) {
-        if (net_ndt7_tester_target_set_url(target, net_ndt7_target_url_wss_uploded, str_val) != 0) return -1;
+        if (net_ndt7_tester_target_set_url(target, net_ndt7_target_url_wss_upload, str_val) != 0) return -1;
     }
     
     return 0;
@@ -165,7 +165,7 @@ static void net_ndt7_tester_query_tearget_on_req_complete(
         return;
     }
 
-    if (net_http_req_res_code(http_req) / 100 != 0) {
+    if (net_http_req_res_code(http_req) / 100 != 2) {
         char error_msg[128];
         snprintf(error_msg, sizeof(error_msg), "%d(%s)", net_http_req_res_code(http_req), net_http_req_res_message(http_req));
         net_ndt7_tester_set_error(tester, net_ndt7_tester_error_network, error_msg);
@@ -206,7 +206,7 @@ static void net_ndt7_tester_query_tearget_on_req_complete(
         net_ndt7_tester_check_start_next_step(tester);
         return;
     }
-    
+
     uint32_t i;
     for(i = 0; i < results_val->u.array.len; ++i) {
         if (net_ndt7_tester_query_tearget_build_target(tester, results_val->u.array.values[i]) != 0) {
