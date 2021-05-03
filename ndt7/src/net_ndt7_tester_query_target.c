@@ -5,11 +5,11 @@
 #include "net_http_endpoint.h"
 #include "net_http_req.h"
 #include "net_ndt7_tester_i.h"
+#include "net_ndt7_tester_target_i.h"
 
 static void net_ndt7_tester_query_target_on_endpoint_fini(void * ctx, net_endpoint_t endpoint);
 static void net_ndt7_tester_query_tearget_on_req_complete(
     void * ctx, net_http_req_t http_req, net_http_res_result_t result, void * body, uint32_t body_size);
-static void net_ndt7_tester_query_tearget_build_targets(net_ndt7_tester_t tester, yajl_val results);
 
 int net_ndt7_tester_query_target_start(net_ndt7_tester_t tester) {
     net_ndt7_manage_t manager = tester->m_manager;
@@ -60,7 +60,7 @@ int net_ndt7_tester_query_target_start(net_ndt7_tester_t tester) {
         net_http_req_create(
             tester->m_state_data.m_query_target.m_endpoint,
             net_http_req_method_get,
-            "/v2/nearest/ndt/ndt7?client_name=ndt7-android&client_version=${BuildConfig.NDT7_ANDROID_VERSION_NAME}");
+            "/v2/nearest/ndt/ndt7");
 	if (tester->m_state_data.m_query_target.m_req == NULL) {
 		CPE_ERROR(manager->m_em, "ndt7: %d: query target: create http req fail", tester->m_id);
         return -1;
@@ -91,6 +91,46 @@ static void net_ndt7_tester_query_target_on_endpoint_fini(void * ctx, net_endpoi
     assert(net_http_endpoint_base_endpoint(tester->m_state_data.m_query_target.m_endpoint) == endpoint);
 
     tester->m_state_data.m_query_target.m_endpoint = NULL;
+}
+
+static int net_ndt7_tester_query_tearget_build_target(net_ndt7_tester_t tester, yajl_val config) {
+    net_ndt7_manage_t manager = tester->m_manager;
+
+    const char * machine = yajl_get_string(yajl_tree_get_2(config, "machine", yajl_t_string));
+    if (machine == NULL) {
+        CPE_ERROR(manager->m_em, "ndt7: %d: query target: response: mochine not configured", tester->m_id);
+        return -1;
+    }
+    
+    const char * city = yajl_get_string(yajl_tree_get_2(config, "location/city", yajl_t_string));
+    const char * country = yajl_get_string(yajl_tree_get_2(config, "location/country", yajl_t_string));
+
+    net_ndt7_tester_target_t target = net_ndt7_tester_target_create(tester, machine, country, city);
+    if (target == NULL) {
+        CPE_ERROR(manager->m_em, "ndt7: %d: query target: response: create target error", tester->m_id);
+        return -1;
+    }
+
+    yajl_val urls = yajl_tree_get_2(config, "urls", yajl_t_object);
+    const char * url;
+
+    if ((url = yajl_get_string(yajl_tree_get_2(urls, "ws:///ndt/v7/download", yajl_t_string)))) {
+        if (net_ndt7_tester_target_set_url(target, net_ndt7_target_url_ws_download, url) != 0) return -1;
+    }
+
+    if ((url = yajl_get_string(yajl_tree_get_2(urls, "ws:///ndt/v7/upload", yajl_t_string)))) {
+        if (net_ndt7_tester_target_set_url(target, net_ndt7_target_url_ws_uploded, url) != 0) return -1;
+    }
+
+    if ((url = yajl_get_string(yajl_tree_get_2(urls, "wss:///ndt/v7/download", yajl_t_string)))) {
+        if (net_ndt7_tester_target_set_url(target, net_ndt7_target_url_wss_download, url) != 0) return -1;
+    }
+
+    if ((url = yajl_get_string(yajl_tree_get_2(urls, "wss:///ndt/v7/upload", yajl_t_string)))) {
+        if (net_ndt7_tester_target_set_url(target, net_ndt7_target_url_wss_uploded, url) != 0) return -1;
+    }
+    
+    return 0;
 }
 
 static void net_ndt7_tester_query_tearget_on_req_complete(
@@ -154,15 +194,25 @@ static void net_ndt7_tester_query_tearget_on_req_complete(
         return;
     }
 
-    net_ndt7_tester_query_tearget_build_targets(tester, results_val);
+    if (results_val->u.array.len == 0) {
+        CPE_ERROR(manager->m_em, "ndt7: %d: query target: response results empty", tester->m_id);
+        net_ndt7_tester_set_error(tester, net_ndt7_tester_error_network, "ResultsEmpty");
+        yajl_tree_free(content);
+        net_ndt7_tester_check_start_next_step(tester);
+        return;
+    }
     
-    yajl_tree_free(content);
-    net_ndt7_tester_check_start_next_step(tester);
-}
-
-static void net_ndt7_tester_query_tearget_build_targets(net_ndt7_tester_t tester, yajl_val results_val) {
     uint32_t i;
     for(i = 0; i < results_val->u.array.len; ++i) {
-        //yajl_val result = results_val->u.array.array
+        if (net_ndt7_tester_query_tearget_build_target(tester, results_val->u.array.values[i]) != 0) {
+            CPE_ERROR(manager->m_em, "ndt7: %d: query target: response results empty", tester->m_id);
+            net_ndt7_tester_set_error(tester, net_ndt7_tester_error_network, "ResultFormatError");
+            yajl_tree_free(content);
+            net_ndt7_tester_check_start_next_step(tester);
+            return;
+        }
     }
+
+    yajl_tree_free(content);
+    net_ndt7_tester_check_start_next_step(tester);
 }

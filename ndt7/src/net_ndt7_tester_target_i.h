@@ -21,6 +21,9 @@ net_ndt7_tester_target_create(
 
 void net_ndt7_tester_target_free(net_ndt7_tester_target_t target);
 
+int net_ndt7_tester_target_set_url(
+    net_ndt7_tester_target_t target, net_ndt7_target_url_category_t category, const char * url);
+
 void net_ndt7_tester_target_print(write_stream_t ws, net_ndt7_tester_target_t target);
 
 NET_END_DECL
