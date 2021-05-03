@@ -1,5 +1,6 @@
 #ifndef NET_NDT7_TESTER_H_INCLEDED
 #define NET_NDT7_TESTER_H_INCLEDED
+#include "cpe/utils/utils_types.h"
 #include "net_ndt7_system.h"
 
 NET_BEGIN_DECL

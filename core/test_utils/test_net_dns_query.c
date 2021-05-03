@@ -97,21 +97,16 @@ int test_net_dns_query_init(
     struct test_net_dns_query_mock_setup * setup = mock_type(struct test_net_dns_query_mock_setup *);
     query->m_lifecycle = setup->m_lifecycle;
     query->m_hostname = net_address_copy(schedule, i_hostname);
-    
-    if (setup->m_delay_ms == 0) {
-        test_net_dns_query_apply_action(tdns, base_query, &setup->m_action);
-    }
-    else {
-        test_net_tl_op_t op = test_net_tl_op_create(
-            tdns->m_tdriver, setup->m_delay_ms,
-            sizeof(struct test_net_dns_query_op),
-            test_net_dns_query_op_cb, base_query, NULL);
-        assert_true(op != NULL);
 
-        struct test_net_dns_query_op * query_op = test_net_tl_op_data(op);
-        query_op->m_dns= tdns;
-        query_op->m_action = setup->m_action;
-    }
+    test_net_tl_op_t op = test_net_tl_op_create(
+        tdns->m_tdriver, setup->m_delay_ms,
+        sizeof(struct test_net_dns_query_op),
+        test_net_dns_query_op_cb, base_query, NULL);
+    assert_true(op != NULL);
+
+    struct test_net_dns_query_op * query_op = test_net_tl_op_data(op);
+    query_op->m_dns = tdns;
+    query_op->m_action = setup->m_action;
 
     return 0;
 }

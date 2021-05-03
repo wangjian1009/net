@@ -231,10 +231,9 @@ static void net_ndt7_tester_clear_state_data(net_ndt7_tester_t tester) {
         }
 
         if (tester->m_state_data.m_query_target.m_endpoint) {
-            net_endpoint_set_data_watcher(
-                net_http_endpoint_base_endpoint(tester->m_state_data.m_query_target.m_endpoint),
-                NULL, NULL, NULL);
-            net_http_endpoint_free(tester->m_state_data.m_query_target.m_endpoint);
+            net_endpoint_t base_endpoint = net_http_endpoint_base_endpoint(tester->m_state_data.m_query_target.m_endpoint);
+            net_endpoint_set_data_watcher(base_endpoint, NULL, NULL, NULL);
+            net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
             tester->m_state_data.m_query_target.m_endpoint = NULL;
         }
         break;
@@ -318,6 +317,14 @@ const char * net_ndt7_test_type_str(net_ndt7_test_type_t state) {
         return "download";
     case net_ndt7_test_download_and_upload:
         return "download-and-upload";
+    }
+}
+
+void net_ndt7_tester_print(write_stream_t ws, net_ndt7_tester_t tester) {
+    net_ndt7_tester_target_t target;
+
+    TAILQ_FOREACH(target, &tester->m_targets, m_next) {
+        net_ndt7_tester_target_print(ws, target);
     }
 }
 

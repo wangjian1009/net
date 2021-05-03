@@ -1,4 +1,6 @@
 #include "cpe/utils/url.h"
+#include "cpe/utils/string_utils.h"
+#include "cpe/utils/stream.h"
 #include "net_ndt7_tester_target_i.h"
 
 net_ndt7_tester_target_t
@@ -15,6 +17,30 @@ net_ndt7_tester_target_create(
     }
 
     target->m_tester = tester;
+
+    target->m_machine = cpe_str_mem_dup(manager->m_alloc, machine);
+    if (target->m_machine == NULL) {
+        CPE_ERROR(manager->m_em, "ndt7: %d: target: dup machine %s fail", tester->m_id, machine);
+        mem_free(manager->m_alloc, target);
+        return NULL;
+    }
+
+    target->m_country = cpe_str_mem_dup(manager->m_alloc, country);
+    if (target->m_country == NULL) {
+        CPE_ERROR(manager->m_em, "ndt7: %d: target: dup country %s fail", tester->m_id, country);
+        mem_free(manager->m_alloc, target->m_machine);
+        mem_free(manager->m_alloc, target);
+        return NULL;
+    }
+
+    target->m_city = cpe_str_mem_dup(manager->m_alloc, city);
+    if (target->m_city == NULL) {
+        CPE_ERROR(manager->m_em, "ndt7: %d: target: dup city %s fail", tester->m_id, city);
+        mem_free(manager->m_alloc, target->m_country);
+        mem_free(manager->m_alloc, target->m_machine);
+        mem_free(manager->m_alloc, target);
+        return NULL;
+    }
     
     uint8_t i;
     for(i = 0; i < CPE_ARRAY_SIZE(target->m_urls); i++) {
@@ -58,3 +84,32 @@ void net_ndt7_tester_target_free(net_ndt7_tester_target_t target) {
     mem_free(manager->m_alloc, target);
 }
 
+void net_ndt7_tester_target_print(write_stream_t ws, net_ndt7_tester_target_t target) {
+    stream_printf(ws, "%s@%s.%s", target->m_machine, target->m_country, target->m_city);
+
+    uint8_t i;
+    for(i = 0; i < CPE_ARRAY_SIZE(target->m_urls); i++) {
+        stream_printf(ws, "\n");
+        stream_putc_count(ws, ' ', 4);
+        stream_printf(ws, "%s: ", net_ndt7_target_url_category_str(i));
+        if (target->m_urls[i]) {
+            cpe_url_print(ws, target->m_urls[i], cpe_url_print_full);
+        }
+        else {
+            stream_printf(ws, "N/A");
+        }
+    }
+}
+
+const char * net_ndt7_target_url_category_str(net_ndt7_target_url_category_t category) {
+    switch(category) {
+    case net_ndt7_target_url_ws_uploded:
+        return "ws-upload";
+    case net_ndt7_target_url_ws_download:
+        return "ws-download";
+    case net_ndt7_target_url_wss_uploded:
+        return "wss-upload";
+    case net_ndt7_target_url_wss_download:
+        return "wss-download";
+    }
+}

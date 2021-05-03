@@ -1,4 +1,5 @@
 #include <assert.h>
+#include "yajl/yajl_tree.h"
 #include "net_endpoint.h"
 #include "net_address.h"
 #include "net_http_endpoint.h"
@@ -8,6 +9,7 @@
 static void net_ndt7_tester_query_target_on_endpoint_fini(void * ctx, net_endpoint_t endpoint);
 static void net_ndt7_tester_query_tearget_on_req_complete(
     void * ctx, net_http_req_t http_req, net_http_res_result_t result, void * body, uint32_t body_size);
+static void net_ndt7_tester_query_tearget_build_targets(net_ndt7_tester_t tester, yajl_val results);
 
 int net_ndt7_tester_query_target_start(net_ndt7_tester_t tester) {
     net_ndt7_manage_t manager = tester->m_manager;
@@ -25,7 +27,7 @@ int net_ndt7_tester_query_target_start(net_ndt7_tester_t tester) {
     net_http_endpoint_set_auto_free(tester->m_state_data.m_query_target.m_endpoint, 1);
 
     net_endpoint_t base_endpoint = net_http_endpoint_base_endpoint(tester->m_state_data.m_query_target.m_endpoint);
-    net_endpoint_set_protocol_debug(base_endpoint, 2);
+    /* net_endpoint_set_protocol_debug(base_endpoint, 2); */
     /* net_endpoint_set_driver_debug(base_endpoint, 2); */
 
     net_endpoint_set_data_watcher(
@@ -107,17 +109,60 @@ static void net_ndt7_tester_query_tearget_on_req_complete(
     case net_http_res_canceled:
         net_ndt7_tester_set_error(tester, net_ndt7_tester_error_cancel, "QueryTargetCancel");
         net_ndt7_tester_check_start_next_step(tester);
-        break;
+        return;
     case net_http_res_conn_error:
         net_ndt7_tester_set_error(tester, net_ndt7_tester_error_network, "QueryTargetNetwork");
         net_ndt7_tester_check_start_next_step(tester);
-        break;
+        return;
     case net_http_res_conn_disconnected:
         net_ndt7_tester_set_error(tester, net_ndt7_tester_error_network, "QueryTargetDisconnected");
         net_ndt7_tester_check_start_next_step(tester);
-        break;
+        return;
     }
 
-    CPE_ERROR(manager->m_em, "xxxx:");
-    return;
+    if (net_http_req_res_code(http_req) / 100 != 0) {
+        char error_msg[128];
+        snprintf(error_msg, sizeof(error_msg), "%d(%s)", net_http_req_res_code(http_req), net_http_req_res_message(http_req));
+        net_ndt7_tester_set_error(tester, net_ndt7_tester_error_network, error_msg);
+        net_ndt7_tester_check_start_next_step(tester);
+        return;
+    }
+
+    if (body == NULL) {
+        net_ndt7_tester_set_error(tester, net_ndt7_tester_error_network, "NoBodyData");
+        net_ndt7_tester_check_start_next_step(tester);
+        return;
+    }
+    
+    char error_buf[256];
+    yajl_val content = yajl_tree_parse_len(body, body_size, error_buf, sizeof(error_buf));
+    if (content == NULL) {
+        CPE_ERROR(
+            manager->m_em, "ndt7: %d: query target: parse response fail, error=%s\n%.*s!",
+            tester->m_id, error_buf, (int)body_size, (const char *)body);
+        net_ndt7_tester_set_error(tester, net_ndt7_tester_error_network, "BodyParseError");
+        net_ndt7_tester_check_start_next_step(tester);
+        return;
+    }
+
+    yajl_val results_val = yajl_tree_get_2(content, "results", yajl_t_array);
+    if (results_val == NULL) {
+        CPE_ERROR(manager->m_em, "ndt7: %d: query target: response no results", tester->m_id);
+        net_ndt7_tester_set_error(tester, net_ndt7_tester_error_network, "BodyParseError");
+        yajl_tree_free(content);
+        net_ndt7_tester_check_start_next_step(tester);
+        return;
+    }
+
+    net_ndt7_tester_query_tearget_build_targets(tester, results_val);
+    
+    yajl_tree_free(content);
+    net_ndt7_tester_check_start_next_step(tester);
+}
+
+static void net_ndt7_tester_query_tearget_build_targets(net_ndt7_tester_t tester, yajl_val results_val) {
+    uint32_t i;
+    for(i = 0; i < results_val->u.array.len; ++i) {
+        //yajl_val result = results_val->u.array.array
+    }
 }

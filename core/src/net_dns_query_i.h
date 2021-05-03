@@ -12,6 +12,7 @@ struct net_dns_query {
         struct cpe_hash_entry m_hh;
     };
     uint32_t m_query_id;
+    uint8_t m_processing;
     net_dns_query_callback_fun_t m_callback;
     net_dns_query_ctx_free_fun_t m_ctx_free;
     void * m_ctx;

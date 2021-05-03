@@ -18,6 +18,8 @@ const char * net_ndt7_tester_target_city(net_ndt7_tester_target_t target);
 const char * net_ndt7_tester_target_country(net_ndt7_tester_target_t target);
 cpe_url_t net_ndt7_tester_target_url(net_ndt7_tester_target_t target, net_ndt7_target_url_category_t category);
 
+const char * net_ndt7_target_url_category_str(net_ndt7_target_url_category_t category);
+
 NET_END_DECL
 
 #endif

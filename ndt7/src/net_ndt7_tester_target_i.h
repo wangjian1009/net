@@ -21,6 +21,8 @@ net_ndt7_tester_target_create(
 
 void net_ndt7_tester_target_free(net_ndt7_tester_target_t target);
 
+void net_ndt7_tester_target_print(write_stream_t ws, net_ndt7_tester_target_t target);
+
 NET_END_DECL
 
 #endif

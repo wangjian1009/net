@@ -1,3 +1,4 @@
+#include <assert.h>
 #include "net_address.h"
 #include "net_dns_query_i.h"
 
@@ -36,7 +37,8 @@ net_dns_query_t net_dns_query_create(
     query->m_callback = callback;
     query->m_ctx_free = ctx_free;
     query->m_ctx = ctx;
-
+    query->m_processing = 0;
+    
     cpe_hash_entry_init(&query->m_hh);
     if (cpe_hash_table_insert_unique(&schedule->m_dns_querys, query) != 0) {
         CPE_ERROR(
@@ -46,6 +48,7 @@ net_dns_query_t net_dns_query_create(
         return NULL;
     }
 
+    query->m_processing = 1;
     if (schedule->m_dns_query_init_fun(schedule->m_dns_resolver_ctx, query, hostname, query_type, policy) != 0) {
         CPE_ERROR(
             schedule->m_em, "dns-query: %s: init fail!",
@@ -54,7 +57,8 @@ net_dns_query_t net_dns_query_create(
         TAILQ_INSERT_TAIL(&schedule->m_free_dns_querys, query, m_next);
         return NULL;
     }
-
+    query->m_processing = 0;
+    
     return query;
 }
 
@@ -110,6 +114,7 @@ void net_dns_query_real_free(net_dns_query_t query) {
 }
 
 void net_dns_query_notify_result_and_free(net_dns_query_t query, net_address_t main_address, net_address_it_t all_address) {
+    assert(!query->m_processing);
     query->m_callback(query->m_ctx, main_address, all_address);
     net_dns_query_free(query);
 }

@@ -46,6 +46,8 @@ int net_ndt7_tester_query_target_start(net_ndt7_tester_t tester);
 int net_ndt7_tester_download_start(net_ndt7_tester_t tester);
 int net_ndt7_tester_upload_start(net_ndt7_tester_t tester);
 
+void net_ndt7_tester_print(write_stream_t ws, net_ndt7_tester_t tester);
+
 void net_ndt7_tester_set_error(
     net_ndt7_tester_t tester, net_ndt7_tester_error_t err, const char * msg);
 void net_ndt7_tester_set_error_internal(net_ndt7_tester_t tester, const char * msg);
