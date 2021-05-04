@@ -7,6 +7,7 @@
 #include "net_endpoint.h"
 #include "net_mem_group.h"
 #include "net_protocol.h"
+#include "net_timer.h"
 #include "net_address.h"
 #include "net_driver.h"
 #include "net_watcher.h"
@@ -30,14 +31,17 @@ static void net_sock_endpoint_connect_log_connect_success(
     net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint);
 
 static void net_sock_endpoint_close_sock(net_sock_driver_t driver, net_sock_endpoint_t endpoint, net_endpoint_t base_endpoint);
-static void net_soc_endpoint_update_error_by_errno(net_endpoint_t base_endpoint, int err);
+static void net_sock_endpoint_update_error_by_errno(net_endpoint_t base_endpoint, int err);
 
+static void net_sock_endpoint_connect_timeout(net_timer_t timer, void * ctx);
+    
 int net_sock_endpoint_init(net_endpoint_t base_endpoint) {
     net_sock_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     
     endpoint->m_fd = -1;
     endpoint->m_read_closed = 0;
     endpoint->m_write_closed = 0;
+    endpoint->m_connect_timeout = NULL;
     endpoint->m_watcher = NULL;
     endpoint->m_local_address_auto = NULL;
     
@@ -303,7 +307,7 @@ CONNECT_AGAIN:
                 goto CONNECT_AGAIN;
             }
             else {
-                net_soc_endpoint_update_error_by_errno(base_endpoint, cpe_sock_errno());
+                net_sock_endpoint_update_error_by_errno(base_endpoint, cpe_sock_errno());
                 if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) return -1;
                 return -1;
             }
@@ -535,7 +539,7 @@ static void net_sock_endpoint_on_read(net_sock_driver_t driver, net_sock_endpoin
                 cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
 
             if (!net_endpoint_have_error(base_endpoint)) {
-                net_soc_endpoint_update_error_by_errno(base_endpoint, cpe_sock_errno());
+                net_sock_endpoint_update_error_by_errno(base_endpoint, cpe_sock_errno());
             }
 
             if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
@@ -618,7 +622,7 @@ static void net_sock_endpoint_on_write(net_sock_driver_t driver, net_sock_endpoi
                 err, cpe_sock_errstr(err));
 
             if (!net_endpoint_have_error(base_endpoint)) {
-                net_soc_endpoint_update_error_by_errno(base_endpoint, cpe_sock_errno());
+                net_sock_endpoint_update_error_by_errno(base_endpoint, cpe_sock_errno());
             }
 
             if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
@@ -687,6 +691,11 @@ static void net_sock_endpoint_connect_cb(void * ctx, int fd, uint8_t do_read, ui
 
     assert(fd == endpoint->m_fd);
 
+    if (endpoint->m_connect_timeout) {
+        net_timer_free(endpoint->m_connect_timeout);
+        endpoint->m_connect_timeout = NULL;
+    }
+    
     int err = 0;
     socklen_t err_len = sizeof(err);
     if (cpe_getsockopt(endpoint->m_fd, SOL_SOCKET, SO_ERROR, (void*)&err, &err_len) == -1) {
@@ -695,6 +704,7 @@ static void net_sock_endpoint_connect_cb(void * ctx, int fd, uint8_t do_read, ui
             net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
             cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
 
+        net_sock_endpoint_close_sock(driver, endpoint, base_endpoint);
         net_endpoint_set_error(
             base_endpoint, net_endpoint_error_source_network,
             net_endpoint_network_errno_internal,
@@ -703,8 +713,6 @@ static void net_sock_endpoint_connect_cb(void * ctx, int fd, uint8_t do_read, ui
             net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
             return;
         }
-
-        net_sock_endpoint_close_sock(driver, endpoint, base_endpoint);
         return;
     }
 
@@ -735,7 +743,7 @@ static void net_sock_endpoint_connect_cb(void * ctx, int fd, uint8_t do_read, ui
                 }
             }
             else {
-                net_soc_endpoint_update_error_by_errno(base_endpoint, err);
+                net_sock_endpoint_update_error_by_errno(base_endpoint, err);
 
                 if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
                     net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
@@ -811,6 +819,7 @@ static int net_sock_endpoint_start_connect(
     struct sockaddr_storage remote_addr_sock;
     socklen_t remote_addr_sock_len = sizeof(remote_addr_sock);
     net_address_to_sockaddr(remote_addr, (struct sockaddr *)&remote_addr_sock, &remote_addr_sock_len);
+    net_driver_t base_driver = net_endpoint_driver(base_endpoint);
 
     int domain;
     int protocol;
@@ -941,6 +950,16 @@ static int net_sock_endpoint_start_connect(
         return -1;
     }
 
+    assert(endpoint->m_connect_timeout == NULL);
+    endpoint->m_connect_timeout = net_timer_create(base_driver, net_sock_endpoint_connect_timeout, base_endpoint);
+    if (endpoint->m_connect_timeout == NULL) {
+        CPE_ERROR(
+            driver->m_em, "sock: %s: fd=%d: create connect timeout fail",
+            net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
+        net_sock_endpoint_close_sock(driver, endpoint, base_endpoint);
+    }
+    net_timer_active(endpoint->m_connect_timeout, 3000);
+
     int rv = cpe_connect(endpoint->m_fd, (struct sockaddr *)&remote_addr_sock, remote_addr_sock_len);
     
     return rv;
@@ -1030,7 +1049,7 @@ static void net_sock_endpoint_update_watcher(net_sock_driver_t driver, net_sock_
     net_watcher_update(endpoint->m_watcher, need_read, need_write);
 }
 
-static void net_soc_endpoint_update_error_by_errno(net_endpoint_t base_endpoint, int err) {
+static void net_sock_endpoint_update_error_by_errno(net_endpoint_t base_endpoint, int err) {
     switch (cpe_sock_errno()) {
     case ENETRESET: /* Network dropped connection on reset */
     case ECONNABORTED: /* Software caused connection abort */
@@ -1054,5 +1073,35 @@ static void net_soc_endpoint_update_error_by_errno(net_endpoint_t base_endpoint,
             base_endpoint, net_endpoint_error_source_network,
             net_endpoint_network_errno_internal, cpe_sock_errstr(err));
         break;
+    }
+}
+
+static void net_sock_endpoint_connect_timeout(net_timer_t timer, void * ctx) {
+    net_endpoint_t base_endpoint = ctx;
+    net_sock_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+    net_sock_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
+
+    assert(endpoint->m_connect_timeout == timer);
+    net_timer_free(endpoint->m_connect_timeout);
+    endpoint->m_connect_timeout = NULL;
+
+    net_sock_endpoint_close_sock(driver, endpoint, base_endpoint);
+
+    if (net_endpoint_shift_address(base_endpoint)) {
+        if (net_sock_endpoint_connect(base_endpoint) != 0) {
+            if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
+                net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+                return;
+            }
+        }
+    } else {
+        net_endpoint_set_error(
+            base_endpoint, net_endpoint_error_source_network,
+            net_endpoint_network_errno_internal, "Timeout");
+
+        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
+            net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+            return;
+        }
     }
 }
