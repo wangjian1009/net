@@ -192,6 +192,9 @@ net_trans_task_create(net_trans_manage_t mgr, net_trans_method_t method, const c
     case net_trans_method_patch:
         if (curl_easy_setopt(task->m_handler, CURLOPT_CUSTOMREQUEST, "PATCH") != (int)CURLE_OK) goto CREATED_ERROR;
         break;
+    case net_trans_method_head:
+        if (curl_easy_setopt(task->m_handler, CURLOPT_CUSTOMREQUEST, "HEAD") != (int)CURLE_OK) goto CREATED_ERROR;
+        break;
     }
 
     if (strcasecmp(protocol, "https") == 0) {
@@ -985,6 +988,8 @@ const char * net_trans_method_str(net_trans_method_t method) {
         return "delete";
     case net_trans_method_patch:
         return "patch";
+    case net_trans_method_head:
+        return "head";
     }
 }
 

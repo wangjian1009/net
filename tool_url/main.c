@@ -10,12 +10,14 @@ int main(int argc, char * argv[]) {
     struct arg_str * url = arg_str1(NULL, "url", NULL, "url");
     struct arg_str * header = arg_strn(NULL, "header", NULL, 0, 100, "header");
     struct arg_str * data = arg_str0(NULL, "data", NULL, "data");
+    struct arg_str * mode = arg_str0(NULL, "mode", NULL, "internal|libcurl");    
     struct arg_end * use_end = arg_end(50);
     void * use_argtable[] = {
         request,
         url,
         header,
         data,
+        mode,
         use_end
     };
     int use_nerrors;
@@ -69,7 +71,22 @@ int main(int argc, char * argv[]) {
 
         if (url_runner_init_net(runner) != 0) goto COMPLETE;
         if (url_runner_init_dns(runner) != 0) goto COMPLETE;
-        if (url_runner_set_mode(runner, url_runner_mode_internal) != 0) goto COMPLETE;
+
+        if (mode->count) {
+            if (strcmp(mode->sval[0], "libcurl") == 0) {
+                if (url_runner_set_mode(runner, url_runner_mode_libcurl) != 0) goto COMPLETE;
+            }
+            else if (strcmp(mode->sval[0], "internal") == 0) {
+                if (url_runner_set_mode(runner, url_runner_mode_internal) != 0) goto COMPLETE;
+            }
+            else {
+                CPE_ERROR(em, "not support mode %s", mode->sval[0]);
+                goto COMPLETE;
+            }
+        }
+        else {
+            if (url_runner_set_mode(runner, url_runner_mode_internal) != 0) goto COMPLETE;
+        }
 
         // Setup signal handler
 #if defined SIGPIPE

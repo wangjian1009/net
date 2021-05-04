@@ -4,6 +4,7 @@
 #include "cpe/utils/memory.h"
 #include "cpe/utils/buffer.h"
 #include "cpe/utils/error.h"
+#include "net_trans_system.h"
 #include "net_http_types.h"
 #include "net_system.h"
 #include "net_dns_system.h"
@@ -16,6 +17,7 @@ typedef enum url_runner_mode url_runner_mode_t;
 enum url_runner_mode {
     url_runner_mode_init,
     url_runner_mode_internal,
+    url_runner_mode_libcurl,
 };
 
 struct url_runner {
@@ -44,6 +46,10 @@ struct url_runner {
             net_http_req_t m_http_req;
             net_driver_t m_ssl_driver;
         } m_internal;
+        struct {
+            net_trans_manage_t m_trans_mgr;
+            net_trans_task_t m_trans_task;
+        } m_libcurl;
     };
 };
 
@@ -72,5 +78,13 @@ int url_runner_internal_start(
     url_runner_t runner,
     const char * method, const char * url,
     const char * header[], uint16_t header_count, const char * body);
-    
+
+/*libcurl实现 */
+int url_runner_libcurl_init(url_runner_t runner);
+void url_runner_libcurl_fini(url_runner_t runner);
+int url_runner_libcurl_start(
+    url_runner_t runner,
+    const char * method, const char * url,
+    const char * header[], uint16_t header_count, const char * body);
+
 #endif

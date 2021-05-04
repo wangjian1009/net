@@ -35,8 +35,9 @@ typedef enum net_trans_method {
     net_trans_method_put,
     net_trans_method_delete,
     net_trans_method_patch,
+    net_trans_method_head,
 } net_trans_method_t;
-#define net_trans_method_count (net_trans_method_patch + 1)
+#define net_trans_method_count (net_trans_method_head + 1)
 
 typedef enum net_trans_http_version {
     net_trans_http_version_none, /* setting this means we don't care, and that we'd

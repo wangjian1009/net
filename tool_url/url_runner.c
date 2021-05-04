@@ -20,13 +20,13 @@ url_runner_create(mem_allocrator_t alloc) {
     bzero(runner, sizeof(*runner));
 
     runner->m_alloc = alloc;
-    runner->m_log_file = fopen("log.txt", "wb");
-    if (runner->m_log_file) {
-        cpe_error_monitor_init(&runner->m_em_buf, cpe_error_log_to_file, runner->m_log_file);
-    }
-    else {
+    /* runner->m_log_file = fopen("log.txt", "wb"); */
+    /* if (runner->m_log_file) { */
+    /*     cpe_error_monitor_init(&runner->m_em_buf, cpe_error_log_to_file, runner->m_log_file); */
+    /* } */
+    /* else { */
         cpe_error_monitor_init(&runner->m_em_buf, cpe_error_log_to_consol, NULL);
-    }
+    /* } */
 
     runner->m_output = stdout;
     
@@ -157,7 +157,7 @@ int url_runner_init_net(url_runner_t runner) {
 
     assert(runner->m_net_driver == NULL);
     runner->m_net_driver = net_ev_driver_base_driver(ev_driver);
-    //net_driver_set_debug(schedule->m_net_driver, 2);
+    net_driver_set_debug(runner->m_net_driver, 2);
     //net_schedule_set_direct_driver(entry_runner->m_net_schedule, entry_runner->m_net_driver);
 
     return 0;
@@ -222,6 +222,9 @@ int url_runner_set_mode(url_runner_t runner, url_runner_mode_t mode) {
     case url_runner_mode_internal:
         url_runner_internal_fini(runner);
         break;
+    case url_runner_mode_libcurl:
+        url_runner_libcurl_fini(runner);
+        break;
     }
 
     runner->m_mode = mode;
@@ -231,6 +234,12 @@ int url_runner_set_mode(url_runner_t runner, url_runner_mode_t mode) {
         break;
     case url_runner_mode_internal:
         if (url_runner_internal_init(runner) != 0) {
+            runner->m_mode = url_runner_mode_init;
+            return -1;
+        }
+        break;
+    case url_runner_mode_libcurl:
+        if (url_runner_libcurl_init(runner) != 0) {
             runner->m_mode = url_runner_mode_init;
             return -1;
         }
@@ -251,5 +260,7 @@ int url_runner_start(
         return -1;
     case url_runner_mode_internal:
         return url_runner_internal_start(runner, method, url, header, header_count, body);
+    case url_runner_mode_libcurl:
+        return url_runner_libcurl_start(runner, method, url, header, header_count, body);
     }
 }

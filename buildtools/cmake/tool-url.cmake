@@ -18,6 +18,7 @@ set(tool_url_includes
     ${cpe_utils_base}/include
     ${cpe_utils_sock_base}/include
     ${net_core_base}/include
+    ${net_trans_base}/include
     ${net_dns_base}/include
     ${net_dns_udns_base}/include
     ${net_driver_ev_base}/include
@@ -26,7 +27,7 @@ set(tool_url_includes
     )
 
 set(tool_url_link_libraries
-  cpe_utils net_trans net_dns net_dns_udns net_driver_ssl net_driver_ev net_protocol_http argtable2)
+  cpe_utils net_trans net_dns net_dns_udns net_driver_ssl net_driver_ev net_protocol_http net_trans argtable2)
 
 add_executable(tool_url ${tool_url_source})
 set_property(TARGET tool_url PROPERTY INCLUDE_DIRECTORIES ${tool_url_includes})
