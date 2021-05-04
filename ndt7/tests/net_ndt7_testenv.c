@@ -75,6 +75,7 @@ void net_ndt7_testenv_print_tester(write_stream_t ws, net_ndt7_tester_t tester) 
     net_ndt7_tester_target_t target;
     while((target = net_ndt7_tester_target_it_next(&target_it))) {
         net_ndt7_testenv_print_tester_target(ws, target);
+        stream_printf(ws, "\n");
     }
 }
 

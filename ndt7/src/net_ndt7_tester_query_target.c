@@ -27,8 +27,8 @@ int net_ndt7_tester_query_target_start(net_ndt7_tester_t tester) {
     net_http_endpoint_set_auto_free(tester->m_state_data.m_query_target.m_endpoint, 1);
 
     net_endpoint_t base_endpoint = net_http_endpoint_base_endpoint(tester->m_state_data.m_query_target.m_endpoint);
-    /* net_endpoint_set_protocol_debug(base_endpoint, 2); */
-    /* net_endpoint_set_driver_debug(base_endpoint, 2); */
+    net_endpoint_set_protocol_debug(base_endpoint, 2);
+    net_endpoint_set_driver_debug(base_endpoint, 2);
 
     net_endpoint_set_data_watcher(
         base_endpoint,
@@ -134,7 +134,10 @@ static int net_ndt7_tester_query_tearget_build_target(net_ndt7_tester_t tester, 
     if ((str_val = yajl_get_string(yajl_tree_get(config, path4, yajl_t_string)))) {
         if (net_ndt7_tester_target_set_url(target, net_ndt7_target_url_wss_upload, str_val) != 0) return -1;
     }
-    
+
+    CPE_INFO(
+        manager->m_em, "ndt7: %d: query target: found target %s(%s.%s)",
+        tester->m_id, target->m_machine, target->m_country, target->m_city);
     return 0;
 }
 

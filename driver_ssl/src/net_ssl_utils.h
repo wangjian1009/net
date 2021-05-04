@@ -12,6 +12,7 @@ enum x509_crt_version {
 mbedtls_pk_context * net_ssl_pkey_generate_rsa(net_ssl_protocol_t protocol);
 
 const char * net_ssl_strerror(char * buf, uint32_t buf_capacity, int code);
+const char * net_ssl_state_str(mbedtls_ssl_states states);
 
 const char * net_ssl_cert_generate_selfsign(
     net_ssl_protocol_t protocol, char * buf, uint32_t buf_len,
@@ -19,7 +20,7 @@ const char * net_ssl_cert_generate_selfsign(
     int64_t serial,
     const char * issuer_name, mbedtls_pk_context * issuer_pk);
 
-const char * net_ssl_dump_cert_info(mem_buffer_t buffer, mbedtls_x509_crt * cert);
+const char * net_ssl_dump_cert_info(mem_buffer_t buffer, const mbedtls_x509_crt * cert);
 
 void net_ssl_dump_tls_info(
     error_monitor_t em, mem_buffer_t buffer, const char * prefix, uint8_t with_data,

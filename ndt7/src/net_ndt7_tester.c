@@ -24,6 +24,7 @@ net_ndt7_tester_create(net_ndt7_manage_t manager) {
     tester->m_manager = manager;
     tester->m_id = ++manager->m_idx_max;
     tester->m_type = net_ndt7_test_download_and_upload;
+    tester->m_protocol = net_ndt7_test_protocol_auto;
     tester->m_state = net_ndt7_tester_state_init;
     tester->m_is_processing = 0;
     tester->m_is_free = 0;
@@ -185,11 +186,9 @@ const char * net_ndt7_tester_error_msg(net_ndt7_tester_t tester) {
     return tester->m_error.m_msg;
 }
 
-net_ndt7_tester_target_t net_ndt7_tester_select_target(net_ndt7_tester_t tester) {
-    return NULL;
-}
-
 int net_ndt7_tester_check_start_next_step(net_ndt7_tester_t tester) {
+    net_ndt7_manage_t manager = tester->m_manager;
+
     if (tester->m_error.m_error != net_ndt7_tester_error_none) {
         net_ndt7_tester_set_state(tester, net_ndt7_tester_state_done);
         return 0;
@@ -206,8 +205,10 @@ int net_ndt7_tester_check_start_next_step(net_ndt7_tester_t tester) {
                 if (tester->m_download_url) found = 1;
                 break;
             case net_ndt7_test_download_and_upload:
+                CPE_ERROR(manager->m_em, "xxxx 1");
                 tester->m_download_url = net_ndt7_tester_target_select_download_url(tester->m_target, tester->m_protocol);
                 if (tester->m_download_url) {
+                    CPE_ERROR(manager->m_em, "xxxx 2");
                     tester->m_upload_url = net_ndt7_tester_target_select_upload_url(tester->m_target, tester->m_protocol);
                     if (tester->m_upload_url) found = 1;
                 }
@@ -222,6 +223,10 @@ int net_ndt7_tester_check_start_next_step(net_ndt7_tester_t tester) {
         }
 
         if (tester->m_target == NULL) {
+            CPE_ERROR(
+                manager->m_em, "ndt7: %d: select target fail, target-count=%d",
+                tester->m_id, net_ndt7_tester_target_count(tester));
+            
             if (tester->m_error.m_error == net_ndt7_tester_error_none) {
                 net_ndt7_tester_set_error_internal(tester, "SelectTargetFail");
             }

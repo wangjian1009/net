@@ -130,7 +130,7 @@ PROCESS_ERROR:
     return NULL;
 }
 
-const char * net_ssl_dump_cert_info(mem_buffer_t buffer, mbedtls_x509_crt * cert) {
+const char * net_ssl_dump_cert_info(mem_buffer_t buffer, const mbedtls_x509_crt * cert) {
     struct write_stream_buffer stream = CPE_WRITE_STREAM_BUFFER_INITIALIZER(buffer);
 
     mem_buffer_clear_data(buffer);
@@ -154,13 +154,50 @@ const char * net_ssl_strerror(char * buf, uint32_t buf_capacity, int code) {
     return buf;
 }
 
-/* const char * net_ssl_dump_data(mem_buffer_t buffer, void const * buf, size_t size) { */
-/*     mem_buffer_clear_data(buffer); */
-/*     struct write_stream_buffer ws = CPE_WRITE_STREAM_BUFFER_INITIALIZER(buffer); */
-/*     stream_dump_data((write_stream_t)&ws, buf, size, 1); */
-/*     stream_putc((write_stream_t)&ws, 0); */
-/*     return (const char *)mem_buffer_make_continuous(buffer, 0); */
-/* } */
+const char * net_ssl_state_str(mbedtls_ssl_states states) {
+    switch(states) {
+    case MBEDTLS_SSL_HELLO_REQUEST:
+        return "HELLO-REQUEST";
+    case MBEDTLS_SSL_CLIENT_HELLO:
+        return "CLIENT-HELLO";
+    case MBEDTLS_SSL_SERVER_HELLO:
+        return "SERVER-HELLO";
+    case MBEDTLS_SSL_SERVER_CERTIFICATE:
+        return "SERVER-CERTIFICATE";
+    case MBEDTLS_SSL_SERVER_KEY_EXCHANGE:
+        return "SERVER-KEY-EXCHANGE";
+    case MBEDTLS_SSL_CERTIFICATE_REQUEST:
+        return "CERTIFICATE-REQUEST";
+    case MBEDTLS_SSL_SERVER_HELLO_DONE:
+        return "SERVER-HELLO-DONE";
+    case MBEDTLS_SSL_CLIENT_CERTIFICATE:
+        return "CLIENT-CERTIFICATE";
+    case MBEDTLS_SSL_CLIENT_KEY_EXCHANGE:
+        return "CLIENT-KEY-EXCHANGE";
+    case MBEDTLS_SSL_CERTIFICATE_VERIFY:
+        return "CERTIFICATE-VERIFY";
+    case MBEDTLS_SSL_CLIENT_CHANGE_CIPHER_SPEC:
+        return "CLIENT-CHANGE-CIPHER-SPEC";
+    case MBEDTLS_SSL_CLIENT_FINISHED:
+        return "CLIENT-FINISHED";
+    case MBEDTLS_SSL_SERVER_CHANGE_CIPHER_SPEC:
+        return "SERVER-CHANGE-CIPHER-SPEC";
+    case MBEDTLS_SSL_SERVER_FINISHED:
+        return "SERVER-FINISHED";
+    case MBEDTLS_SSL_FLUSH_BUFFERS:
+        return "FLUSH-BUFFERS";
+    case MBEDTLS_SSL_HANDSHAKE_WRAPUP:
+        return "HANDSHAKE-WRAPUP";
+    case MBEDTLS_SSL_HANDSHAKE_OVER:
+        return "HANDSHAKE-OVER";
+    case MBEDTLS_SSL_SERVER_NEW_SESSION_TICKET:
+        return "SERVER-NEW-SESSION-TICKET";
+    case MBEDTLS_SSL_SERVER_HELLO_VERIFY_REQUEST_SENT:
+        return "SERVER-HELLO-VERIFY-REQUEST-SENT";
+    }
+
+    return "UNKNOWN";
+}
 
 /* static const char * net_ssl_tls_rt_type(int type) { */
 /*   switch(type) { */

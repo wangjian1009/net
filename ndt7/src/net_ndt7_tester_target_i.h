@@ -14,6 +14,8 @@ struct net_ndt7_tester_target {
     cpe_url_t m_urls[net_ndt7_target_url_category_count];
 };
 
+uint16_t net_ndt7_tester_target_count(net_ndt7_tester_t m_tester);
+
 NET_END_DECL
 
 #endif

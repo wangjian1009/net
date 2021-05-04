@@ -3,6 +3,7 @@
 #include "cpe/pal/pal_stdio.h"
 #include "cpe/pal/pal_string.h"
 #include "cpe/utils/error.h"
+#include "cpe/utils/string_utils.h"
 #include "net_protocol.h"
 #include "net_endpoint.h"
 #include "net_address.h"
@@ -20,6 +21,9 @@ static int net_ssl_endpoint_ssl_init(net_ssl_endpoint_t endpoint);
 static int net_ssl_endpoint_ssl_verify(void *ctx, mbedtls_x509_crt *crt, int depth, uint32_t *flags);
 
 static int net_ssl_endpoint_do_handshake(
+    net_endpoint_t base_endpoint, net_ssl_endpoint_t endpoint);
+
+static int net_ssl_endpoint_on_handshake_success(
     net_endpoint_t base_endpoint, net_ssl_endpoint_t endpoint);
 
 static int net_ssl_endpoint_prepare_client_hello(
@@ -83,16 +87,14 @@ int net_ssl_endpoint_input(net_endpoint_t base_endpoint) {
         if (net_ssl_endpoint_do_handshake(base_endpoint, endpoint) != 0) return -1;
 
         if (endpoint->m_state == net_ssl_endpoint_state_handshake) return 0;
-        if (net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_read)) return 0;
     }
 
 READ_AGAIN:    
     if (!net_endpoint_is_readable(base_endpoint)) return -1;
 
     uint32_t input_data_size = net_endpoint_buf_size(base_endpoint, net_ep_buf_read);
-    if (input_data_size == 0) return 0;
-
     input_data_size += endpoint->m_ssl->in_left;
+
     void * data = net_endpoint_buf_alloc_at_least(base_endpoint, &input_data_size);
     if (data == NULL) {
         CPE_ERROR(
@@ -307,6 +309,8 @@ int net_ssl_endpoint_do_handshake(net_endpoint_t base_endpoint, net_ssl_endpoint
     }
     
     if (r == 0) {
+        if (net_ssl_endpoint_on_handshake_success(base_endpoint, endpoint) != 0) return -1;
+        
         net_ssl_endpoint_set_state(endpoint, net_ssl_endpoint_state_streaming);
         if (net_endpoint_is_writeable(base_endpoint)
             && !net_endpoint_buf_is_empty(base_endpoint, net_ssl_endpoint_ep_write_cache))
@@ -319,6 +323,31 @@ int net_ssl_endpoint_do_handshake(net_endpoint_t base_endpoint, net_ssl_endpoint
             if (net_endpoint_set_state(
                     net_endpoint_from_data(endpoint->m_stream),
                     net_endpoint_state_established) != 0) return -1;
+        }
+    }
+
+    return 0;
+}
+
+int net_ssl_endpoint_on_handshake_success(net_endpoint_t base_endpoint, net_ssl_endpoint_t endpoint) {
+    net_ssl_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
+    
+    if (net_endpoint_protocol_debug(endpoint->m_base_endpoint)) {
+        CPE_INFO(
+            protocol->m_em, "ssl: %s: handshake complete, cipher is %s",
+            net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_endpoint),
+            mbedtls_ssl_get_ciphersuite(endpoint->m_ssl));
+    }
+
+    const mbedtls_x509_crt * peercert = mbedtls_ssl_get_peer_cert(endpoint->m_ssl);
+    if (peercert) {
+        if (net_endpoint_protocol_debug(endpoint->m_base_endpoint)) {
+            char ep_name[256];
+            cpe_str_dup(ep_name, sizeof(ep_name), net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_endpoint));
+
+            CPE_INFO(
+                protocol->m_em, "ssl: %s: handshake complete, Dumping cert info:\n%s",
+                ep_name, net_ssl_dump_cert_info(net_ssl_protocol_tmp_buffer(protocol), peercert));
         }
     }
 
@@ -569,6 +598,14 @@ static int net_ssl_endpoint_ssl_init(net_ssl_endpoint_t endpoint) {
     if (protocol->m_ciphersuites) {
         mbedtls_ssl_conf_ciphersuites(endpoint->m_ssl_config, protocol->m_ciphersuites);
     }
+
+#if defined(MBEDTLS_SSL_RENEGOTIATION)
+    mbedtls_ssl_conf_renegotiation(endpoint->m_ssl_config, MBEDTLS_SSL_RENEGOTIATION_ENABLED);
+#endif
+
+#if defined(MBEDTLS_SSL_SESSION_TICKETS)
+    mbedtls_ssl_conf_session_tickets(endpoint->m_ssl_config, MBEDTLS_SSL_SESSION_TICKETS_DISABLED);
+#endif
     
     if (endpoint->m_runing_mode == net_ssl_endpoint_runing_mode_cli) {
         mbedtls_ssl_conf_authmode(endpoint->m_ssl_config, MBEDTLS_SSL_VERIFY_NONE);

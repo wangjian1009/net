@@ -60,6 +60,17 @@ void net_ndt7_tester_target_free(net_ndt7_tester_target_t target) {
     mem_free(manager->m_alloc, target);
 }
 
+uint16_t net_ndt7_tester_target_count(net_ndt7_tester_t tester) {
+    uint16_t count = 0;
+
+    net_ndt7_tester_target_t target;
+    TAILQ_FOREACH(target, &tester->m_targets, m_next) {
+        count++;
+    }
+
+    return count;
+}
+
 net_ndt7_tester_target_t net_ndt7_tester_next_target(net_ndt7_tester_target_it_t it) {
     net_ndt7_tester_target_t * pr = (void*)it->data;
 

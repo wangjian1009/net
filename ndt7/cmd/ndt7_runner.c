@@ -167,7 +167,7 @@ int ndt7_runner_init_net(ndt7_runner_t runner) {
 
     assert(runner->m_net_driver == NULL);
     runner->m_net_driver = net_ev_driver_base_driver(ev_driver);
-    //net_driver_set_debug(schedule->m_net_driver, 2);
+    net_driver_set_debug(runner->m_net_driver, 2);
     //net_schedule_set_direct_driver(entry_runner->m_net_schedule, entry_runner->m_net_driver);
 
     return 0;
