@@ -92,6 +92,7 @@ READ_AGAIN:
     uint32_t input_data_size = net_endpoint_buf_size(base_endpoint, net_ep_buf_read);
     if (input_data_size == 0) return 0;
 
+    input_data_size += endpoint->m_ssl->in_left;
     void * data = net_endpoint_buf_alloc_at_least(base_endpoint, &input_data_size);
     if (data == NULL) {
         CPE_ERROR(
@@ -548,7 +549,7 @@ static int net_ssl_endpoint_ssl_init(net_ssl_endpoint_t endpoint) {
         goto INIT_FAILED;
     }
     mbedtls_ssl_config_init(endpoint->m_ssl_config);
-
+    
     if ((rv = mbedtls_ssl_config_defaults(
              endpoint->m_ssl_config,
              endpoint->m_runing_mode == net_ssl_endpoint_runing_mode_cli ? MBEDTLS_SSL_IS_CLIENT : MBEDTLS_SSL_IS_SERVER,
@@ -564,6 +565,7 @@ static int net_ssl_endpoint_ssl_init(net_ssl_endpoint_t endpoint) {
     }
     mbedtls_ssl_conf_rng(endpoint->m_ssl_config, mbedtls_ctr_drbg_random, protocol->m_ctr_drbg);
     mbedtls_ssl_conf_dbg(endpoint->m_ssl_config, net_ssl_endpoint_ssl_debug, endpoint);
+    mbedtls_ssl_conf_max_version(endpoint->m_ssl_config, MBEDTLS_SSL_MAJOR_VERSION_3, MBEDTLS_SSL_MINOR_VERSION_4);
     if (protocol->m_ciphersuites) {
         mbedtls_ssl_conf_ciphersuites(endpoint->m_ssl_config, protocol->m_ciphersuites);
     }

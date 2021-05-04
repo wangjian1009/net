@@ -68,12 +68,13 @@ TOOL_URL_OUTPUT_PATH:=$(TOOL_BIN_PATH)
 tool_url_output:=$(TOOL_URL_OUTPUT_PATH)/tool_url
 
 .PHONY: tool_url
-tool_url: $(tool_url_output)
-
-$(tool_url_output): $(TOOL_BUILD_PATH)/Makefile
+tool_url: $(TOOL_BUILD_PATH)/Makefile
 	$(CMAKE_MAKE) -C $(TOOL_BUILD_PATH) tool_url
 
+$(tool_url_output): tool_url
+
 TOOL_URL_ARGS+=--request POST
+#TOOL_URL_ARGS+=--mode libcurl
 TOOL_URL_ARGS+=--url 'https://52.74.32.119/signal/v2/devices'
 TOOL_URL_ARGS+=--header 'Content-Type: application/json'
 TOOL_URL_ARGS+=--data '{    "fromUser": "688064",    "fromDeviceId": "ef4169592a8bc05b",    "fromAddress": "0xb6034c685219f457590ebe3798eff801dd88c395",    "fromSeq": 1619091169480,    "_opIdx": 1,    "selection": "AutoMode",    "token": "eyJ1c2VySWQiOjY4ODA2NCwidmlwRXhwaXJlVGltZSI6MCwidXNlclR5cGUiOiJub3JtYWwiLCJfY2hlY2tzdW0iOiJrUUlpcGJwSmhPeWlDam9FY1NMN0ZZOG9pY3czbU50YlRGUFB2emtHVEI2NXBpZVJ6MDhURUZ2UC93TFhBa3ZXUy9POGpKTGJ0NGhoK2UyakR5SGJCK2MxakV2N3hVYWcyTUpGM2xZZWJraGI3OFZBL3MwYmNpN3FPZHN3amlwV0R4OXlLVHdVRXUrSCtaa3lZZXY0OHd4dEhaMk5FSzAzbkNzcXZmZXNQWWM9In0=",    "networkType": "unknown",    "networkMedia": "cellular",    "platform": "Android",    "channel": "googleplay",    "appPkg": "cc.coolline.client",    "appVersion": "1.0.107",    "appName": "CoolVPN",    "imsi": "62120",    "protocols": {        "ss+": {            "crypto-method": [                "aes-256-cfb",                "chacha20",                "chacha20-ietf",                "chacha20-ietf-poly1305",                "xchacha20-ietf-poly1305"            ]        },        "ss": {            "crypto-method": [                "aes-256-cfb",                "chacha20",                "chacha20-ietf",                "chacha20-ietf-poly1305",                "xchacha20-ietf-poly1305"            ]        }    },    "transProtocols": [        "ws",        "wss",        "ssl",        "h2",        "h2s",        "xkcp"    ],    "ignoreDevices": [],    "suggestExclude": []}'
