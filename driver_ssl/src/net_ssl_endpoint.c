@@ -381,8 +381,9 @@ static int net_ssl_endpoint_update_error(net_endpoint_t base_endpoint, int ssl_e
     case MBEDTLS_ERR_SSL_WANT_READ:
         if (net_endpoint_protocol_debug(base_endpoint) >= 2) {
             CPE_INFO(
-                protocol->m_em, "ssl: %s: want read",
-                net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_endpoint));
+                protocol->m_em, "ssl: %s: want read, input-size=%d",
+                net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_endpoint),
+                net_endpoint_buf_size(base_endpoint, net_ep_buf_read));
         }
         return 0;
     case MBEDTLS_ERR_SSL_WANT_WRITE:
@@ -513,20 +514,19 @@ static void net_ssl_endpoint_ssl_debug(void *ctx, int level, const char *file, i
         net_protocol_t base_protocol = net_endpoint_protocol(endpoint->m_base_endpoint);
         net_ssl_protocol_t protocol = net_protocol_data(base_protocol);
 
-        const char *p, *basename;
-        /* Extract basename from file */
-        for (p = basename = file; *p != '\0'; p++) {
-            if (*p == '/' || *p == '\\')
-                basename = p + 1;
-        }
-
+        protocol->m_em->m_curent_location.m_file = file;
+        protocol->m_em->m_curent_location.m_line = line;
+        
         const char * bk = strrchr(str, '\n');
         if (bk) {
-            CPE_INFO(protocol->m_em, "%s:%d: |%d| %.*s", basename, line, level, (int)(bk - str), str);
+            CPE_INFO(protocol->m_em, "|%d| %.*s", level, (int)(bk - str), str);
         }
         else {
-            CPE_INFO(protocol->m_em, "%s:%d: |%d| %s", basename, line, level, str);
+            CPE_INFO(protocol->m_em, "|%d| %s", level, str);
         }
+
+        protocol->m_em->m_curent_location.m_file = NULL;
+        protocol->m_em->m_curent_location.m_line = 0;
     }
 }
 
