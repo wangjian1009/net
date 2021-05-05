@@ -70,10 +70,16 @@ int net_ndt7_tester_download_start(net_ndt7_tester_t tester) {
     }
     net_address_free(remote_address);
 
+    if (net_endpoint_connect(base_endpoint) != 0) {
+        CPE_ERROR(manager->m_em, "ndt7: %d: download: start: connect start fail", tester->m_id);
+        goto START_FAIL;
+    }
+    
     return 0;
 
 START_FAIL:
     if (tester->m_state_data.m_download.m_endpoint) {
+        net_endpoint_set_data_watcher(base_endpoint, NULL, NULL, NULL);
         net_ws_endpoint_free(tester->m_state_data.m_download.m_endpoint);
         tester->m_state_data.m_download.m_endpoint = NULL;
     }

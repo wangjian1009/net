@@ -64,6 +64,11 @@ static void ndt7_tester_basic(void **state) {
         "}\n",
         0);
 
+    /*下载连接设置 */
+    test_net_dns_expect_query_response(env->m_tdns, "host3", "1.1.2.1", 0);
+    test_net_endpoint_id_expect_connect_to_acceptor(
+        env->m_tdriver, 0, "host3(1.1.2.1:443)", 0, 0);
+    
     assert_true(net_ndt7_tester_start(tester) == 0);
 
     test_net_driver_run(env->m_tdriver, 0);
