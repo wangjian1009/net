@@ -93,10 +93,10 @@ net_address_t net_address_create_from_url(net_schedule_t schedule, cpe_url_t url
     if (address == NULL) return NULL;
 
     if (cpe_url_port(url) == 0) {
-        if (strcmp(cpe_url_protocol(url), "http") == 0) {
+        if (strcmp(cpe_url_protocol(url), "http") == 0 || strcmp(cpe_url_protocol(url), "ws") == 0) {
             net_address_set_port(address, 80);
         }
-        else if (strcmp(cpe_url_protocol(url), "https") == 0) {
+        else if (strcmp(cpe_url_protocol(url), "https") == 0 || strcmp(cpe_url_protocol(url), "wss") == 0) {
             net_address_set_port(address, 443);
         }
     }
