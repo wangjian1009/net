@@ -10,34 +10,6 @@
 int net_ssl_stream_endpoint_create_underline(net_endpoint_t base_endpoint);
 void net_ssl_stream_endpoint_update_readable(net_endpoint_t base_endpoint);
 
-void net_ssl_endpoint_free(net_ssl_endpoint_t endpoint) {
-    net_endpoint_free(endpoint->m_base_endpoint);
-}
-
-net_ssl_endpoint_t
-net_ssl_endpoint_cast(net_endpoint_t base_endpoint) {
-    net_protocol_t protocol = net_endpoint_protocol(base_endpoint);
-    return net_protocol_endpoint_init_fun(protocol) == net_ssl_endpoint_init
-        ? net_endpoint_protocol_data(base_endpoint)
-        : NULL;
-}
-
-net_ssl_stream_endpoint_t net_ssl_endpoint_stream(net_ssl_endpoint_t endpoint) {
-    return endpoint->m_stream;
-}
-
-net_ssl_endpoint_runing_mode_t net_ssl_endpoint_runing_mode(net_ssl_endpoint_t endpoint) {
-    return endpoint->m_runing_mode;
-}
-
-net_ssl_endpoint_state_t net_ssl_endpoint_state(net_ssl_endpoint_t endpoint) {
-    return endpoint->m_state;
-}
-
-net_endpoint_t net_ssl_endpoint_base_endpoint(net_ssl_endpoint_t endpoint) {
-    return endpoint->m_base_endpoint;
-}
-
 int net_ssl_stream_endpoint_init(net_endpoint_t base_endpoint) {
     net_ssl_stream_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     endpoint->m_base_endpoint = base_endpoint;
@@ -118,7 +90,7 @@ int net_ssl_stream_endpoint_update(net_endpoint_t base_endpoint) {
         return 0;
     case net_endpoint_state_disable:
         if (base_underline && net_endpoint_is_active(base_underline)) {
-            if (net_endpoint_set_state(base_underline, net_endpoint_state_disable) != 0) {
+            if (net_ssl_endpoint_close(endpoint->m_underline) != 0) {
                 net_endpoint_set_state(base_underline, net_endpoint_state_deleting);
             }
         }

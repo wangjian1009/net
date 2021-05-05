@@ -91,6 +91,8 @@ static void net_ndt7_tester_query_target_on_endpoint_fini(void * ctx, net_endpoi
     assert(net_http_endpoint_base_endpoint(tester->m_state_data.m_query_target.m_endpoint) == endpoint);
 
     tester->m_state_data.m_query_target.m_endpoint = NULL;
+
+    net_ndt7_tester_check_start_next_step(tester);
 }
 
 static int net_ndt7_tester_query_tearget_build_target(net_ndt7_tester_t tester, yajl_val config) {
@@ -147,39 +149,39 @@ static void net_ndt7_tester_query_tearget_on_req_complete(
     net_ndt7_tester_t tester = ctx;
     net_ndt7_manage_t manager = tester->m_manager;
 
+    assert(tester->m_state == net_ndt7_tester_state_query_target);
+    assert(tester->m_state_data.m_query_target.m_endpoint);
+    assert(tester->m_state_data.m_query_target.m_req == http_req);
+    tester->m_state_data.m_query_target.m_req = NULL;
+    
     switch(result) {
     case net_http_res_complete:
         break;
     case net_http_res_timeout:
         net_ndt7_tester_set_error(tester, net_ndt7_tester_error_timeout, "QueryTargetTimeout");
-        net_ndt7_tester_check_start_next_step(tester);
-        return;
+        goto GOTO_NEXT_STEP;
     case net_http_res_canceled:
         net_ndt7_tester_set_error(tester, net_ndt7_tester_error_cancel, "QueryTargetCancel");
-        net_ndt7_tester_check_start_next_step(tester);
-        return;
+        goto GOTO_NEXT_STEP;
     case net_http_res_conn_error:
         net_ndt7_tester_set_error(tester, net_ndt7_tester_error_network, "QueryTargetNetwork");
-        net_ndt7_tester_check_start_next_step(tester);
-        return;
+        goto GOTO_NEXT_STEP;
     case net_http_res_conn_disconnected:
         net_ndt7_tester_set_error(tester, net_ndt7_tester_error_network, "QueryTargetDisconnected");
-        net_ndt7_tester_check_start_next_step(tester);
-        return;
+        goto GOTO_NEXT_STEP;
     }
 
+    /*请求正常 */
     if (net_http_req_res_code(http_req) / 100 != 2) {
         char error_msg[128];
         snprintf(error_msg, sizeof(error_msg), "%d(%s)", net_http_req_res_code(http_req), net_http_req_res_message(http_req));
         net_ndt7_tester_set_error(tester, net_ndt7_tester_error_network, error_msg);
-        net_ndt7_tester_check_start_next_step(tester);
-        return;
+        goto GOTO_NEXT_STEP;
     }
 
     if (body == NULL) {
         net_ndt7_tester_set_error(tester, net_ndt7_tester_error_network, "NoBodyData");
-        net_ndt7_tester_check_start_next_step(tester);
-        return;
+        goto GOTO_NEXT_STEP;
     }
     
     char error_buf[256];
@@ -189,8 +191,7 @@ static void net_ndt7_tester_query_tearget_on_req_complete(
             manager->m_em, "ndt7: %d: query target: parse response fail, error=%s\n%.*s!",
             tester->m_id, error_buf, (int)body_size, (const char *)body);
         net_ndt7_tester_set_error(tester, net_ndt7_tester_error_network, "BodyParseError");
-        net_ndt7_tester_check_start_next_step(tester);
-        return;
+        goto GOTO_NEXT_STEP;
     }
 
     yajl_val results_val = yajl_tree_get_2(content, "results", yajl_t_array);
@@ -198,16 +199,14 @@ static void net_ndt7_tester_query_tearget_on_req_complete(
         CPE_ERROR(manager->m_em, "ndt7: %d: query target: response no results", tester->m_id);
         net_ndt7_tester_set_error(tester, net_ndt7_tester_error_network, "BodyParseError");
         yajl_tree_free(content);
-        net_ndt7_tester_check_start_next_step(tester);
-        return;
+        goto GOTO_NEXT_STEP;
     }
 
     if (results_val->u.array.len == 0) {
         CPE_ERROR(manager->m_em, "ndt7: %d: query target: response results empty", tester->m_id);
         net_ndt7_tester_set_error(tester, net_ndt7_tester_error_network, "ResultsEmpty");
         yajl_tree_free(content);
-        net_ndt7_tester_check_start_next_step(tester);
-        return;
+        goto GOTO_NEXT_STEP;
     }
 
     uint32_t i;
@@ -216,12 +215,17 @@ static void net_ndt7_tester_query_tearget_on_req_complete(
             CPE_ERROR(manager->m_em, "ndt7: %d: query target: response results empty", tester->m_id);
             net_ndt7_tester_set_error(tester, net_ndt7_tester_error_network, "ResultFormatError");
             yajl_tree_free(content);
-            net_ndt7_tester_check_start_next_step(tester);
-            return;
+            goto GOTO_NEXT_STEP;
         }
     }
 
     yajl_tree_free(content);
 
-    net_ndt7_tester_check_start_next_step(tester);
+GOTO_NEXT_STEP:
+    net_http_req_free(http_req);
+
+    net_endpoint_t base_endpoint = net_http_endpoint_base_endpoint(tester->m_state_data.m_query_target.m_endpoint);
+    if (net_endpoint_set_state(base_endpoint, net_endpoint_state_disable) != 0) {
+        net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+    }
 }

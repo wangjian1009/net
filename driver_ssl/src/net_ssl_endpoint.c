@@ -33,6 +33,71 @@ static void net_ssl_endpoint_dump_error(net_endpoint_t base_endpoint, int val);
 
 static int net_ssl_endpoint_update_error(net_endpoint_t base_endpoint, int r);
 
+void net_ssl_endpoint_free(net_ssl_endpoint_t endpoint) {
+    net_endpoint_free(endpoint->m_base_endpoint);
+}
+
+net_ssl_endpoint_t
+net_ssl_endpoint_cast(net_endpoint_t base_endpoint) {
+    net_protocol_t protocol = net_endpoint_protocol(base_endpoint);
+    return net_protocol_endpoint_init_fun(protocol) == net_ssl_endpoint_init
+        ? net_endpoint_protocol_data(base_endpoint)
+        : NULL;
+}
+
+net_ssl_stream_endpoint_t net_ssl_endpoint_stream(net_ssl_endpoint_t endpoint) {
+    return endpoint->m_stream;
+}
+
+net_ssl_endpoint_runing_mode_t net_ssl_endpoint_runing_mode(net_ssl_endpoint_t endpoint) {
+    return endpoint->m_runing_mode;
+}
+
+net_ssl_endpoint_state_t net_ssl_endpoint_state(net_ssl_endpoint_t endpoint) {
+    return endpoint->m_state;
+}
+
+net_endpoint_t net_ssl_endpoint_base_endpoint(net_ssl_endpoint_t endpoint) {
+    return endpoint->m_base_endpoint;
+}
+
+int net_ssl_endpoint_close(net_ssl_endpoint_t endpoint) {
+    net_endpoint_t base_endpoint = endpoint->m_base_endpoint;
+    net_ssl_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
+
+    switch(net_endpoint_state(base_endpoint)) {
+    case net_endpoint_state_resolving:
+    case net_endpoint_state_connecting:
+    case net_endpoint_state_read_closed:
+    case net_endpoint_state_write_closed:
+        return net_endpoint_set_state(base_endpoint, net_endpoint_state_disable);
+    case net_endpoint_state_established:
+        break;
+    case net_endpoint_state_disable:
+    case net_endpoint_state_error:
+    case net_endpoint_state_deleting:
+        return 0;
+    }
+    
+    int ret = mbedtls_ssl_close_notify(endpoint->m_ssl);
+    if (ret < 0) {
+        char error_buf[1024];
+        CPE_ERROR(
+            protocol->m_em, "ssl: %s: ssl close: mbedtls_ssl_close_notify() returned -0x%04X(%s)",
+            net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            -ret, net_ssl_strerror(error_buf, sizeof(error_buf), ret));
+        return net_endpoint_set_state(endpoint->m_base_endpoint, net_endpoint_state_disable);
+    }
+
+    if (net_endpoint_driver_debug(endpoint->m_base_endpoint) >= 2) {
+        CPE_INFO(
+            protocol->m_em, "ssl: %s: close notify",
+            net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_endpoint));
+    }
+
+    return 0;
+}
+
 int net_ssl_endpoint_init(net_endpoint_t base_endpoint) {
     net_ssl_endpoint_t endpoint = net_endpoint_protocol_data(base_endpoint);
     net_ssl_protocol_t protocol = net_protocol_data(net_endpoint_protocol(base_endpoint));
@@ -423,6 +488,13 @@ static int net_ssl_endpoint_update_error(net_endpoint_t base_endpoint, int ssl_e
                 net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_endpoint));
         }
         return 0;
+    case MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY:
+        if (net_endpoint_protocol_debug(base_endpoint) >= 2) {
+            CPE_INFO(
+                protocol->m_em, "ssl: %s: peer close notify received",
+                net_endpoint_dump(net_ssl_protocol_tmp_buffer(protocol), base_endpoint));
+        }
+        return net_endpoint_set_state(base_endpoint, net_endpoint_state_disable);
     default:
         net_ssl_endpoint_dump_error(base_endpoint, ssl_error);
         char error_buf[1024];
@@ -594,10 +666,7 @@ static int net_ssl_endpoint_ssl_init(net_ssl_endpoint_t endpoint) {
     }
     mbedtls_ssl_conf_rng(endpoint->m_ssl_config, mbedtls_ctr_drbg_random, protocol->m_ctr_drbg);
     mbedtls_ssl_conf_dbg(endpoint->m_ssl_config, net_ssl_endpoint_ssl_debug, endpoint);
-    mbedtls_ssl_conf_max_version(endpoint->m_ssl_config, MBEDTLS_SSL_MAJOR_VERSION_3, MBEDTLS_SSL_MINOR_VERSION_4);
-    if (protocol->m_ciphersuites) {
-        mbedtls_ssl_conf_ciphersuites(endpoint->m_ssl_config, protocol->m_ciphersuites);
-    }
+    //mbedtls_ssl_conf_max_version(endpoint->m_ssl_config, MBEDTLS_SSL_MAJOR_VERSION_3, MBEDTLS_SSL_MINOR_VERSION_4);
 
 #if defined(MBEDTLS_SSL_RENEGOTIATION)
     mbedtls_ssl_conf_renegotiation(endpoint->m_ssl_config, MBEDTLS_SSL_RENEGOTIATION_ENABLED);
@@ -609,11 +678,15 @@ static int net_ssl_endpoint_ssl_init(net_ssl_endpoint_t endpoint) {
     
     if (endpoint->m_runing_mode == net_ssl_endpoint_runing_mode_cli) {
         mbedtls_ssl_conf_authmode(endpoint->m_ssl_config, MBEDTLS_SSL_VERIFY_NONE);
-        /* mbedtls_ssl_conf_verify(endpoint->m_ssl_config, net_ssl_endpoint_ssl_verify, endpoint); */
+
+        if (protocol->m_ciphersuites) {
+            mbedtls_ssl_conf_ciphersuites(endpoint->m_ssl_config, protocol->m_ciphersuites);
+        }
     }
 
     if (endpoint->m_runing_mode == net_ssl_endpoint_runing_mode_svr) {
         mbedtls_ssl_conf_own_cert(endpoint->m_ssl_config, protocol->m_svr.m_cert, protocol->m_svr.m_pkey);
+        mbedtls_ssl_conf_ciphersuites(endpoint->m_ssl_config, mbedtls_ssl_list_ciphersuites());
     }
 
     endpoint->m_ssl = mem_alloc(protocol->m_alloc, sizeof(mbedtls_ssl_context));
@@ -633,18 +706,6 @@ static int net_ssl_endpoint_ssl_init(net_ssl_endpoint_t endpoint) {
             -rv, net_ssl_strerror(error_buf, sizeof(error_buf), rv));
         goto INIT_FAILED;
     }
-
-    if (endpoint->m_runing_mode == net_ssl_endpoint_runing_mode_svr) {
-        /* if ((rv = mbedtls_ssl_set_hostname(endpoint->m_ssl, server_name)) != 0) { */
-        //char error_buf[1024];
-        /*     mbedtls_printf("mbedtls_ssl_set_hostname() rvurned -0x%04X(%s)\n", */
-        /*         -rv, net_ssl_strerror(error_buf, sizeof(error_buf), rv)); */
-        /*     goto SSL_SETUP_FAIL; */
-        /* } */
-    }
-    
-    /* /\* SSL_set_msg_callback(endpoint->m_ssl, net_ssl_endpoint_trace_cb); *\/ */
-    /* /\* SSL_set_msg_callback_arg(endpoint->m_ssl, endpoint); *\/ */
 
     mbedtls_ssl_set_bio(
         endpoint->m_ssl, endpoint,

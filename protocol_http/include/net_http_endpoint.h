@@ -17,7 +17,7 @@ net_schedule_t net_http_endpoint_schedule(net_http_endpoint_t http_ep);
 net_endpoint_t net_http_endpoint_base_endpoint(net_http_endpoint_t http_ep);
 
 uint8_t net_http_endpoint_auto_free(net_http_endpoint_t http_ep);
-void net_http_endpoint_set_auto_free(net_http_endpoint_t http_ep, uint8_t auto_close);
+int net_http_endpoint_set_auto_free(net_http_endpoint_t http_ep, uint8_t auto_close);
 
 net_http_connection_type_t net_http_endpoint_connection_type(net_http_endpoint_t http_ep);
 

@@ -23,6 +23,8 @@ net_ssl_endpoint_runing_mode_t net_ssl_endpoint_runing_mode(net_ssl_endpoint_t e
 int net_ssl_endpoint_set_runing_mode(net_ssl_endpoint_t endpoint, net_ssl_endpoint_runing_mode_t runing_mode);
 net_endpoint_t net_ssl_endpoint_base_endpoint(net_ssl_endpoint_t endpoint);
 
+int net_ssl_endpoint_close(net_ssl_endpoint_t endpoint);
+
 const char * net_ssl_endpoint_state_str(net_ssl_endpoint_state_t state);
 const char * net_ssl_endpoint_runing_mode_str(net_ssl_endpoint_runing_mode_t runing_mode);
 

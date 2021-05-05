@@ -74,7 +74,7 @@ tool_url: $(TOOL_BUILD_PATH)/Makefile
 $(tool_url_output): tool_url
 
 TOOL_URL_ARGS+=--request GET
-TOOL_URL_ARGS+=--mode libcurl
+#TOOL_URL_ARGS+=--mode libcurl
 #TOOL_URL_ARGS+=--url 'https://52.74.32.119/signal/v2/devices'
 TOOL_URL_ARGS+=--url 'https://locate.measurementlab.net/v2/nearest/ndt/ndt7'
 #TOOL_URL_ARGS+=--header 'Content-Type: application/json'
