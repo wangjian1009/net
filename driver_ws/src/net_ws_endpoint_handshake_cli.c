@@ -87,14 +87,16 @@ int net_ws_endpoint_input_handshake_cli_header_line(
         net_ws_endpoint_handshake_cli_field_set(net_ws_endpoint_handshake_cli_field_upgrade);
     }
     else if (strcasecmp(name, "Connection") == 0) {
-        if (strcasecmp(value, "Upgrade") != 0) {
+        if (strcasecmp(value, "Upgrade") == 0) {
+            net_ws_endpoint_handshake_cli_field_set(net_ws_endpoint_handshake_cli_field_connection);
+        }
+        else {
             CPE_ERROR(
                 protocol->m_em, "ws: %s: handshake: connection value %s not support!",
                 net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), base_endpoint),
                 value);
             return -1;
         }
-        net_ws_endpoint_handshake_cli_field_set(net_ws_endpoint_handshake_cli_field_connection);
     }
     else if (strcasecmp(name, "Sec-WebSocket-Accept") == 0) {
         //TODO: 验证accept正确性
