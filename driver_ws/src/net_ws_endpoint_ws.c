@@ -288,11 +288,11 @@ static void net_ws_endpoint_on_msg_recv(
                 net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint));
         }
         break;
-    case WSLAY_PING:
-        CPE_ERROR(
-            protocol->m_em, "ws: %s: ping: not support!",
-            net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint));
+    case WSLAY_PING: {
+        struct wslay_event_msg ws_msg = { WSLAY_PONG,  NULL, 0 };
+        net_ws_endpoint_send_event(protocol, endpoint, &ws_msg);
         break;
+    }
     case WSLAY_PONG:
         //ws_ep->m_pingpong_count = 0;
 

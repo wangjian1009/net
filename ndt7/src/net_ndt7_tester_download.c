@@ -54,7 +54,7 @@ int net_ndt7_tester_download_start(net_ndt7_tester_t tester) {
     }
     tester->m_download.m_endpoint = net_ws_endpoint_cast(base_endpoint);
     assert(tester->m_download.m_endpoint);
-    net_endpoint_set_protocol_debug(base_endpoint, 2);
+    //net_endpoint_set_protocol_debug(base_endpoint, 2);
 
     net_endpoint_set_data_watcher(
         base_endpoint,
@@ -74,7 +74,6 @@ int net_ndt7_tester_download_start(net_ndt7_tester_t tester) {
         net_ndt7_tester_download_on_close,
         NULL);
 
-    CPE_ERROR(manager->m_em, "ndt7: %d: xxxxxxx 1111", tester->m_id);
     if (net_ws_endpoint_connect(tester->m_download.m_endpoint, tester->m_download_url) != 0) {
         CPE_ERROR(manager->m_em, "ndt7: %d: download: start: connect start fail", tester->m_id);
         goto START_FAIL;
