@@ -114,13 +114,11 @@ int net_ws_endpoint_init(net_endpoint_t base_endpoint) {
     endpoint->m_base_endpoint = base_endpoint;
     endpoint->m_stream = NULL;
 
-    endpoint->m_on_msg_text_ctx = NULL;
+    endpoint->m_ctx = NULL;
     endpoint->m_on_msg_text_fun = NULL;
-    endpoint->m_on_msg_text_ctx_free = NULL;
-
-    endpoint->m_on_msg_bin_ctx = NULL;
     endpoint->m_on_msg_bin_fun = NULL;
-    endpoint->m_on_msg_bin_ctx_free = NULL;
+    endpoint->m_on_close_fun = NULL;
+    endpoint->m_ctx_free = NULL;
     
     endpoint->m_state = net_ws_endpoint_state_init;
     bzero(&endpoint->m_state_data, sizeof(endpoint->m_state_data));
@@ -151,19 +149,13 @@ void net_ws_endpoint_fini(net_endpoint_t base_endpoint) {
         }
     }
     
-    if (endpoint->m_on_msg_text_ctx_free) {
-        endpoint->m_on_msg_text_ctx_free(endpoint->m_on_msg_text_ctx);
-        endpoint->m_on_msg_text_ctx_free = NULL;
+    if (endpoint->m_ctx_free) {
+        endpoint->m_ctx_free(endpoint->m_ctx);
+        endpoint->m_ctx_free = NULL;
     }
-    endpoint->m_on_msg_text_ctx = NULL;
     endpoint->m_on_msg_text_fun = NULL;
-
-    if (endpoint->m_on_msg_bin_ctx_free) {
-        endpoint->m_on_msg_bin_ctx_free(endpoint->m_on_msg_bin_ctx);
-        endpoint->m_on_msg_bin_ctx_free = NULL;
-    }
-    endpoint->m_on_msg_bin_ctx = NULL;
     endpoint->m_on_msg_bin_fun = NULL;
+    endpoint->m_on_close_fun = NULL;
     
     if (endpoint->m_ws_ctx) {
         net_ws_endpoint_free_ws_ctx(endpoint);
@@ -303,32 +295,24 @@ int net_ws_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoint_s
     return 0;
 }
 
-void net_ws_endpoint_set_msg_receiver_text(
+void net_ws_endpoint_set_callback(
     net_ws_endpoint_t endpoint,
-    void * ctx, net_ws_endpoint_on_msg_text_fun_t fun, void (*ctx_free)(void*))
+    void * ctx,
+    net_ws_endpoint_on_msg_text_fun_t on_text_fun,
+    net_ws_endpoint_on_msg_bin_fun_t on_bin_fun,
+    net_ws_endpoint_on_close_fun_t on_close_fun,
+    void (*ctx_free)(void*))
 {
-    if (endpoint->m_on_msg_text_ctx_free) {
-        endpoint->m_on_msg_text_ctx_free(endpoint->m_on_msg_text_ctx);
-        endpoint->m_on_msg_text_ctx_free = NULL;
+    if (endpoint->m_ctx_free) {
+        endpoint->m_ctx_free(endpoint->m_ctx);
+        endpoint->m_ctx_free = NULL;
     }
 
-    endpoint->m_on_msg_text_ctx = ctx;
-    endpoint->m_on_msg_text_fun = fun;
-    endpoint->m_on_msg_text_ctx_free = ctx_free;
-}
-
-void net_ws_endpoint_set_msg_receiver_bin(
-    net_ws_endpoint_t endpoint,
-    void * ctx, net_ws_endpoint_on_msg_bin_fun_t fun, void (*ctx_free)(void*))
-{
-    if (endpoint->m_on_msg_bin_ctx_free) {
-        endpoint->m_on_msg_bin_ctx_free(endpoint->m_on_msg_bin_ctx);
-        endpoint->m_on_msg_bin_ctx_free = NULL;
-    }
-
-    endpoint->m_on_msg_bin_ctx = ctx;
-    endpoint->m_on_msg_bin_fun = fun;
-    endpoint->m_on_msg_bin_ctx_free = ctx_free;
+    endpoint->m_ctx = ctx;
+    endpoint->m_on_msg_text_fun = on_text_fun;
+    endpoint->m_on_msg_bin_fun = on_bin_fun;
+    endpoint->m_on_close_fun = on_close_fun;
+    endpoint->m_ctx_free = ctx_free;
 }
 
 int net_ws_endpoint_set_runing_mode(net_ws_endpoint_t endpoint, net_ws_endpoint_runing_mode_t runing_mode) {

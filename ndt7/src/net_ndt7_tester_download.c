@@ -13,6 +13,7 @@
 
 static void net_ndt7_tester_download_on_msg_text(void * ctx, net_ws_endpoint_t endpoin, const char * msg);
 static void net_ndt7_tester_download_on_msg_bin(void * ctx, net_ws_endpoint_t endpoin, const void * msg, uint32_t msg_len);
+static void net_ndt7_tester_download_on_close(void * ctx, net_ws_endpoint_t endpoin);
 static void net_ndt7_tester_download_on_endpoint_fini(void * ctx, net_endpoint_t endpoint);
 static void net_ndt7_tester_download_try_notify_update(net_ndt7_tester_t tester);
 
@@ -60,12 +61,14 @@ int net_ndt7_tester_download_start(net_ndt7_tester_t tester) {
     tester->m_download.m_endpoint = net_ws_endpoint_cast(base_endpoint);
     assert(tester->m_download.m_endpoint);
 
-    net_ws_endpoint_set_msg_receiver_text(
-        tester->m_download.m_endpoint, tester, net_ndt7_tester_download_on_msg_text, NULL);
+    net_ws_endpoint_set_callback(
+        tester->m_download.m_endpoint,
+        tester,
+        net_ndt7_tester_download_on_msg_text,
+        net_ndt7_tester_download_on_msg_bin,
+        net_ndt7_tester_download_on_close,
+        NULL);
 
-    net_ws_endpoint_set_msg_receiver_bin(
-        tester->m_download.m_endpoint, tester, net_ndt7_tester_download_on_msg_bin, NULL);
-    
     net_address_t remote_address = net_address_create_from_url(manager->m_schedule, tester->m_download_url);
     if (remote_address == NULL) {
         CPE_ERROR(manager->m_em, "ndt7: %d: download: start: create protocol fail", tester->m_id);
@@ -112,6 +115,7 @@ static void net_ndt7_tester_download_on_msg_text(void * ctx, net_ws_endpoint_t e
         return;
     }
 
+    CPE_ERROR(manager->m_em, "xxxxx: %s", msg);
     struct net_ndt7_measurement measurement;
     net_ndt7_measurement_from_json(&measurement, content, manager->m_em);
     yajl_tree_free(content);
@@ -121,8 +125,15 @@ static void net_ndt7_tester_download_on_msg_text(void * ctx, net_ws_endpoint_t e
 
 static void net_ndt7_tester_download_on_msg_bin(void * ctx, net_ws_endpoint_t endpoin, const void * msg, uint32_t msg_len) {
     net_ndt7_tester_t tester = ctx;
+    net_ndt7_manage_t manager = tester->m_manager;
+
+    CPE_ERROR(manager->m_em, "xxxxx: bin %d", msg_len);
+    
     tester->m_download.m_num_bytes += msg_len;
     net_ndt7_tester_download_try_notify_update(tester);
+}
+
+static void net_ndt7_tester_download_on_close(void * ctx, net_ws_endpoint_t endpoin) {
 }
 
 static void net_ndt7_tester_download_on_endpoint_fini(void * ctx, net_endpoint_t endpoint) {

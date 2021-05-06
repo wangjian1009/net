@@ -18,6 +18,7 @@ enum net_ws_endpoint_state {
 
 typedef void (*net_ws_endpoint_on_msg_text_fun_t)(void * ctx, net_ws_endpoint_t endpoin, const char * msg);
 typedef void (*net_ws_endpoint_on_msg_bin_fun_t)(void * ctx, net_ws_endpoint_t endpoin, const void * msg, uint32_t msg_len);
+typedef void (*net_ws_endpoint_on_close_fun_t)(void * ctx, net_ws_endpoint_t endpoin);
 
 net_ws_endpoint_t net_ws_endpoint_cast(net_endpoint_t endpoint);
 net_endpoint_t net_ws_endpoint_stream(net_endpoint_t endpoint);
@@ -38,9 +39,13 @@ int net_ws_endpoint_set_host(net_ws_endpoint_t endpoint, net_address_t host);
 int net_ws_endpoint_send_msg_text(net_ws_endpoint_t endpoin, const char * msg);
 int net_ws_endpoint_send_msg_bin(net_ws_endpoint_t endpoint, const void * msg, uint32_t msg_len);
 
-void net_ws_endpoint_set_msg_receiver_text(
+void net_ws_endpoint_set_callback(
     net_ws_endpoint_t endpoint,
-    void * ctx, net_ws_endpoint_on_msg_text_fun_t fun, void (*ctx_free)(void*));
+    void * ctx,
+    net_ws_endpoint_on_msg_text_fun_t on_text_fun,
+    net_ws_endpoint_on_msg_bin_fun_t on_bin_fun,
+    net_ws_endpoint_on_close_fun_t on_close_fun,
+    void (*ctx_free)(void*));
 
 void net_ws_endpoint_set_msg_receiver_bin(
     net_ws_endpoint_t endpoint,

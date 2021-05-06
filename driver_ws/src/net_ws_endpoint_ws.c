@@ -242,7 +242,7 @@ static void net_ws_endpoint_on_msg_recv(
             buf[arg->msg_length] = 0;
 
             endpoint->m_on_msg_text_fun(
-                endpoint->m_on_msg_text_ctx, endpoint,
+                endpoint->m_ctx, endpoint,
                 mem_buffer_make_continuous(&protocol->m_data_buffer, 0));
         }
         break;
@@ -271,7 +271,7 @@ static void net_ws_endpoint_on_msg_recv(
         }
         else if (endpoint->m_on_msg_bin_fun) {
             endpoint->m_on_msg_bin_fun(
-                endpoint->m_on_msg_bin_ctx, endpoint, arg->msg, (uint32_t)arg->msg_length);
+                endpoint->m_ctx, endpoint, arg->msg, (uint32_t)arg->msg_length);
         }
         break;
     case WSLAY_CONNECTION_CLOSE:
