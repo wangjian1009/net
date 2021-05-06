@@ -90,6 +90,11 @@ int net_ws_endpoint_input_handshake_cli_header_line(
         if (strcasecmp(value, "Upgrade") == 0) {
             net_ws_endpoint_handshake_cli_field_set(net_ws_endpoint_handshake_cli_field_connection);
         }
+        else if (strcasecmp(value, "close") == 0) {
+            CPE_INFO(
+                protocol->m_em, "ws: %s: handshake: connection close!",
+                net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), base_endpoint));
+        }
         else {
             CPE_ERROR(
                 protocol->m_em, "ws: %s: handshake: connection value %s not support!",
