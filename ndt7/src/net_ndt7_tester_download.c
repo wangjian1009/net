@@ -1,4 +1,5 @@
 #include <assert.h>
+#include "yajl/yajl_tree.h"
 #include "cpe/pal/pal_string.h"
 #include "cpe/utils/url.h"
 #include "net_schedule.h"
@@ -8,6 +9,7 @@
 #include "net_ws_endpoint.h"
 #include "net_ndt7_tester_i.h"
 #include "net_ndt7_model_i.h"
+#include "net_ndt7_json_i.h"
 
 static void net_ndt7_tester_download_on_msg_text(void * ctx, net_ws_endpoint_t endpoin, const char * msg);
 static void net_ndt7_tester_download_on_msg_bin(void * ctx, net_ws_endpoint_t endpoin, const void * msg, uint32_t msg_len);
@@ -96,9 +98,25 @@ START_FAIL:
 
 static void net_ndt7_tester_download_on_msg_text(void * ctx, net_ws_endpoint_t endpoin, const char * msg) {
     net_ndt7_tester_t tester = ctx;
+    net_ndt7_manage_t manager = tester->m_manager;
 
     tester->m_download.m_num_bytes += strlen(msg);
     net_ndt7_tester_download_try_notify_update(tester);
+
+    char error_buf[256];
+    yajl_val content = yajl_tree_parse(msg, error_buf, sizeof(error_buf));
+    if (content == NULL) {
+        CPE_ERROR(
+            manager->m_em, "ndt7: %d: on msg: parse msg fail, error=%s\n%s!",
+            tester->m_id, error_buf, msg);
+        return;
+    }
+
+    struct net_ndt7_measurement measurement;
+    net_ndt7_measurement_from_json(&measurement, content, manager->m_em);
+    yajl_tree_free(content);
+
+    net_ndt7_tester_notify_measurement_progress(tester, &measurement);
 }
 
 static void net_ndt7_tester_download_on_msg_bin(void * ctx, net_ws_endpoint_t endpoin, const void * msg, uint32_t msg_len) {

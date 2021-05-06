@@ -10,6 +10,7 @@ void net_ndt7_response_init(
 {
     response->m_app_info.m_elapsed_time_ms = cur_ms - begin;
     response->m_app_info.m_num_bytes = num_bytes;
+    response->m_origin = net_ndt7_response_origin_client;
     response->m_test_type = tester_type;
 }
 
@@ -22,6 +23,20 @@ const char * net_ndt7_response_dump(mem_buffer_t buffer, net_ndt7_response_t res
     yajl_gen_config(gen, yajl_gen_beautify, 0);
     yajl_gen_config(gen, yajl_gen_print_callback, cpe_yajl_gen_print_to_stream, (write_stream_t)&stream);
     net_ndt7_response_to_json(gen, response);    
+    stream_putc((write_stream_t)&stream, 0);
+    
+    return mem_buffer_make_continuous(buffer, 0);
+}
+
+const char * net_ndt7_measurement_dump(mem_buffer_t buffer, net_ndt7_measurement_t measurement) {
+    struct write_stream_buffer stream = CPE_WRITE_STREAM_BUFFER_INITIALIZER(buffer);
+
+    mem_buffer_clear_data(buffer);
+
+    yajl_gen gen = yajl_gen_alloc(NULL);
+    yajl_gen_config(gen, yajl_gen_beautify, 0);
+    yajl_gen_config(gen, yajl_gen_print_callback, cpe_yajl_gen_print_to_stream, (write_stream_t)&stream);
+    net_ndt7_measurement_to_json(gen, measurement);    
     stream_putc((write_stream_t)&stream, 0);
     
     return mem_buffer_make_continuous(buffer, 0);

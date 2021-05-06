@@ -23,6 +23,7 @@ enum net_ndt7_response_origin {
 
 struct net_ndt7_response {
     struct net_ndt7_app_info m_app_info;
+    net_ndt7_response_origin_t m_origin;
     net_ndt7_test_type_t m_test_type;
 };
 
