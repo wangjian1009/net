@@ -38,6 +38,11 @@ int net_ws_endpoint_set_path(net_ws_endpoint_t endpoint, const char * path);
 net_address_t net_ws_endpoint_host(net_ws_endpoint_t endpoint);
 int net_ws_endpoint_set_host(net_ws_endpoint_t endpoint, net_address_t host);
 
+int net_ws_endpoint_header_add(net_ws_endpoint_t endpoint, const char * name, const char * value);
+uint16_t net_ws_endpoint_header_count(net_ws_endpoint_t endpoint);
+const char * net_ws_endpoint_header_name_at(net_ws_endpoint_t endpoint, uint16_t pos);
+const char * net_ws_endpoint_header_value_at(net_ws_endpoint_t endpoint, uint16_t pos);
+
 int net_ws_endpoint_send_msg_text(net_ws_endpoint_t endpoin, const char * msg);
 int net_ws_endpoint_send_msg_bin(net_ws_endpoint_t endpoint, const void * msg, uint32_t msg_len);
 

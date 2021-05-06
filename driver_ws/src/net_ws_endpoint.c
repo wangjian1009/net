@@ -1,4 +1,5 @@
 #include <assert.h>
+#include "cpe/pal/pal_string.h"
 #include "cpe/pal/pal_strings.h"
 #include "cpe/utils/error.h"
 #include "cpe/utils/hex_utils.h"
@@ -129,6 +130,67 @@ int net_ws_endpoint_set_path(net_ws_endpoint_t endpoint, const char * path) {
     return 0;
 }
 
+int net_ws_endpoint_header_add(net_ws_endpoint_t endpoint, const char * name, const char * value) {
+    net_ws_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
+    
+    if (endpoint->m_header_count >= endpoint->m_header_capacity) {
+        uint16_t new_capacity = endpoint->m_header_capacity < 8 ? 8 : endpoint->m_header_capacity * 2;
+        struct net_ws_endpoint_header * new_headers =
+            mem_alloc(protocol->m_alloc, sizeof(struct net_ws_endpoint_header) * new_capacity);
+        if (new_headers == NULL) {
+            CPE_ERROR(
+                protocol->m_em, "ws: %s: add header: alloc headers fail, capacity=%d",
+                net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint), new_capacity);
+            return -1;
+        }
+
+        if (endpoint->m_headers) {
+            memcpy(new_headers, endpoint->m_headers, sizeof(struct net_ws_endpoint_header) * endpoint->m_header_count);
+            mem_free(protocol->m_alloc, endpoint->m_headers);
+        }
+
+        endpoint->m_headers = new_headers;
+        endpoint->m_header_capacity = new_capacity;
+    }
+
+    char * new_name = cpe_str_mem_dup(protocol->m_alloc, name);
+    if (new_name == NULL) {
+        CPE_ERROR(
+            protocol->m_em, "ws: %s: add header: dup name fail, name=%s",
+            net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint), name);
+        return -1;
+    }
+
+    char * new_value = cpe_str_mem_dup(protocol->m_alloc, value);
+    if (new_value == NULL) {
+        CPE_ERROR(
+            protocol->m_em, "ws: %s: add header: dup value fail, value=%s",
+            net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint), value);
+        mem_free(protocol->m_alloc, new_name);
+        return -1;
+    }
+
+    endpoint->m_headers[endpoint->m_header_count].m_name = new_name;
+    endpoint->m_headers[endpoint->m_header_count].m_value = new_value;
+    endpoint->m_header_count++;
+
+    return 0;
+}
+
+uint16_t net_ws_endpoint_header_count(net_ws_endpoint_t endpoint) {
+    return endpoint->m_header_count;
+}
+
+const char * net_ws_endpoint_header_name_at(net_ws_endpoint_t endpoint, uint16_t pos) {
+    assert(pos < endpoint->m_header_count);
+    return endpoint->m_headers[pos].m_name;
+}
+
+const char * net_ws_endpoint_header_value_at(net_ws_endpoint_t endpoint, uint16_t pos) {
+    assert(pos < endpoint->m_header_count);
+    return endpoint->m_headers[pos].m_value;
+}
+
 net_address_t net_ws_endpoint_host(net_ws_endpoint_t endpoint) {
     return endpoint->m_host;
 }
@@ -181,6 +243,9 @@ int net_ws_endpoint_init(net_endpoint_t base_endpoint) {
 
     endpoint->m_path = NULL;
     endpoint->m_host = NULL;
+    endpoint->m_header_count = 0;
+    endpoint->m_header_capacity = 0;
+    endpoint->m_headers = NULL;
     
     return 0;
 }
@@ -216,6 +281,19 @@ void net_ws_endpoint_fini(net_endpoint_t base_endpoint) {
     if (endpoint->m_path) {
         mem_free(protocol->m_alloc, endpoint->m_path);
         endpoint->m_path = NULL;
+    }
+
+    if (endpoint->m_headers) {
+        uint8_t i;
+        for (i = 0; i < endpoint->m_header_count; ++i) {
+            mem_free(protocol->m_alloc, endpoint->m_headers[i].m_name);
+            mem_free(protocol->m_alloc, endpoint->m_headers[i].m_value);
+        }
+        endpoint->m_header_count = 0;
+
+        mem_free(protocol->m_alloc, endpoint->m_headers);
+        endpoint->m_headers = NULL;
+        endpoint->m_header_capacity = 0;
     }
 }
 

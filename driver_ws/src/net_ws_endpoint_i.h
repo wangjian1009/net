@@ -27,6 +27,11 @@ typedef enum net_ws_endpoint_handshake_svr_field {
     net_ws_endpoint_handshake_svr_field_key,
 } net_ws_endpoint_handshake_svr_field_t;
 
+typedef struct net_ws_endpoint_header {
+    char * m_name;
+    char * m_value;
+} net_ws_endpoint_header_t;
+
 struct net_ws_endpoint {
     net_endpoint_t m_base_endpoint;
     net_ws_stream_endpoint_t m_stream;
@@ -64,6 +69,9 @@ struct net_ws_endpoint {
 
     net_address_t m_host;
     char * m_path;
+    uint16_t m_header_count;
+    uint16_t m_header_capacity;
+    struct net_ws_endpoint_header * m_headers;
 };
 
 /**/

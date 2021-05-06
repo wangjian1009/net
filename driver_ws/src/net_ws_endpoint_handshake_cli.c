@@ -240,6 +240,11 @@ int net_ws_endpoint_send_handshake(net_endpoint_t base_endpoint, net_ws_endpoint
     stream_printf((write_stream_t)&ws, "Upgrade: websocket\r\n");
     stream_printf((write_stream_t)&ws, "Connection: Upgrade\r\n");
 
+    uint16_t i;
+    for(i = 0; i < endpoint->m_header_count; ++i) {
+        stream_printf((write_stream_t)&ws, "%s: %s\r\n", endpoint->m_headers[i].m_name, endpoint->m_headers[i].m_value);
+    }
+    
     stream_printf((write_stream_t)&ws, "Sec-WebSocket-Key: ");
     cpe_rand_ctx_fill(
         cpe_rand_ctx_dft(),
