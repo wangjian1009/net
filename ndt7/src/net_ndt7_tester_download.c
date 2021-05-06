@@ -7,6 +7,7 @@
 #include "net_address.h"
 #include "net_ws_endpoint.h"
 #include "net_ndt7_tester_i.h"
+#include "net_ndt7_model_i.h"
 
 static void net_ndt7_tester_download_on_msg_text(void * ctx, net_ws_endpoint_t endpoin, const char * msg);
 static void net_ndt7_tester_download_on_msg_bin(void * ctx, net_ws_endpoint_t endpoin, const void * msg, uint32_t msg_len);
@@ -121,10 +122,13 @@ static void net_ndt7_tester_download_try_notify_update(net_ndt7_tester_t tester)
     net_ndt7_manage_t manager = tester->m_manager;
     int64_t cur_time_ms = net_schedule_cur_time_ms(manager->m_schedule);
 
-        /* if we haven't sent an update in 250ms, lets send one */
-        /* if (cur_time_ms - tester->m_download.m_pre_notify_ms > MEASUREMENT_INTERVAL) { */
-        /*     cbRegistry.speedtestProgressCbk(generateResponse(startTime, numBytes, NDTTest.TestType.DOWNLOAD)) */
-        /*     previous = now */
-        /* } */
+    /* if we haven't sent an update in 250ms, lets send one */
+    if (cur_time_ms - tester->m_download.m_pre_notify_ms > MEASUREMENT_INTERVAL_MS) {
+        struct net_ndt7_response response;
+        net_ndt7_response_init(
+            &response, tester->m_download.m_start_time_ms, cur_time_ms, tester->m_download.m_num_bytes,
+            net_ndt7_test_download);
+        net_ndt7_tester_notify_speed_progress(tester, &response);
+        tester->m_download.m_pre_notify_ms = cur_time_ms;
+    }
 }
-

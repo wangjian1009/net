@@ -11,6 +11,13 @@
 
 NET_BEGIN_DECL
 
+#define MEASUREMENT_INTERVAL_MS (250)
+#define MAX_RUN_TIME_MS (10 * 1000)
+#define MAX_MESSAGE_SIZE (16777216) // (1<<24) = 16MB
+#define MIN_MESSAGE_SIZE (8192) // (1<<13)
+#define TEST_MAX_WAIT_TIME_MS (20 * 1000) // seconds
+#define MAX_QUEUE_SIZE (16777216) // 16MB
+
 typedef TAILQ_HEAD(net_ndt7_tester_list, net_ndt7_tester) net_ndt7_tester_list_t;
 typedef TAILQ_HEAD(net_ndt7_tester_target_list, net_ndt7_tester_target) net_ndt7_tester_target_list_t;
 

@@ -391,6 +391,26 @@ void net_ndt7_tester_notify_complete(net_ndt7_tester_t tester) {
     }
 }
 
+void net_ndt7_tester_notify_speed_progress(net_ndt7_tester_t tester, net_ndt7_response_t response) {
+    if (tester->m_on_speed_progress) {
+        tester->m_on_speed_progress(tester->m_ctx, tester, response);
+    }
+}
+
+void net_ndt7_tester_notify_measurement_progress(net_ndt7_tester_t tester, net_ndt7_measurement_t measurement) {
+    if (tester->m_on_measurement_progress) {
+        tester->m_on_measurement_progress(tester->m_ctx, tester, measurement);
+    }
+}
+
+void net_ndt7_tester_notify_test_complete(
+    net_ndt7_tester_t tester, net_ndt7_response_t response, net_ndt7_test_type_t test_type)
+{
+    if (tester->m_on_test_complete) {
+        tester->m_on_test_complete(tester->m_ctx, tester, response, test_type);
+    }
+}
+
 const char * net_ndt7_test_type_str(net_ndt7_test_type_t state) {
     switch(state) {
     case net_ndt7_test_upload:

@@ -1,5 +1,6 @@
 #ifndef NET_NDT7_MODEL_H_INCLEDED
 #define NET_NDT7_MODEL_H_INCLEDED
+#include "cpe/utils/string_utils.h"
 #include "net_ndt7_system.h"
 
 NET_BEGIN_DECL
@@ -24,6 +25,8 @@ struct net_ndt7_response {
     struct net_ndt7_app_info m_app_info;
     net_ndt7_test_type_t m_test_type;
 };
+
+const char * net_ndt7_response_dump(mem_buffer_t buffer, net_ndt7_response_t response);
 
 /**/
 struct net_ndt7_connection_info {
@@ -99,6 +102,8 @@ struct net_ndt7_measurement {
     struct net_ndt7_bbr_info m_bbr_info;
     struct net_ndt7_tcp_info m_tcp_info;
 };
+
+const char * net_ndt7_measurement_dump(mem_buffer_t buffer, net_ndt7_measurement_t measurement);
 
 NET_END_DECL
 

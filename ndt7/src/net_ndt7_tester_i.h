@@ -65,6 +65,10 @@ void net_ndt7_tester_set_error_internal(net_ndt7_tester_t tester, const char * m
 int net_ndt7_tester_check_start_next_step(net_ndt7_tester_t tester);
 void net_ndt7_tester_notify_complete(net_ndt7_tester_t tester);
 
+void net_ndt7_tester_notify_speed_progress(net_ndt7_tester_t tester, net_ndt7_response_t response);
+void net_ndt7_tester_notify_measurement_progress(net_ndt7_tester_t tester, net_ndt7_measurement_t measurement);
+void net_ndt7_tester_notify_test_complete(net_ndt7_tester_t tester, net_ndt7_response_t response, net_ndt7_test_type_t test_type);
+
 NET_END_DECL
 
 #endif
