@@ -101,6 +101,10 @@ int net_ws_endpoint_connect(net_ws_endpoint_t endpoint, cpe_url_t url) {
     return net_endpoint_connect(endpoint->m_base_endpoint);
 }
 
+int net_ws_endpoint_close(net_ws_endpoint_t endpoint, uint16_t status_code, const char * msg) {
+    return 0;
+}
+
 const char * net_ws_endpoint_path(net_ws_endpoint_t endpoint) {
     return endpoint->m_path;
 }

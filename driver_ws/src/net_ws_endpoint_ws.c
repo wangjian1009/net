@@ -275,6 +275,13 @@ static void net_ws_endpoint_on_msg_recv(
         }
         break;
     case WSLAY_CONNECTION_CLOSE:
+        /* if (net_endpoint_protocol_debug(endpoint->m_base_endpoint) >= 2) { */
+            CPE_INFO(
+                protocol->m_em, "ws: %s: close <<< %.*s",
+                net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+                (int)arg->msg_length, (const char *)arg->msg);
+        /* } */
+        
         if (endpoint->m_stream) {
             net_endpoint_t base_stream = net_endpoint_from_data(endpoint->m_stream);
             if (net_endpoint_is_active(base_stream)) {
@@ -282,7 +289,27 @@ static void net_ws_endpoint_on_msg_recv(
                     net_endpoint_set_state(base_stream, net_endpoint_state_deleting);
                 }
             }
-        } else {
+        } else if (endpoint->m_on_close_fun) {
+            mem_buffer_clear_data(&protocol->m_data_buffer);
+            char * buf = mem_buffer_alloc(&protocol->m_data_buffer, arg->msg_length + 1);
+            if (buf == NULL) {
+                CPE_ERROR(
+                    protocol->m_em, "ws: %s: close: alloc buf fail, msg-length=%d!",
+                    net_endpoint_dump(
+                        net_ws_protocol_tmp_buffer(protocol),
+                        endpoint->m_base_endpoint),
+                    (int)arg->msg_length);
+                break;
+            }
+            memcpy(buf, arg->msg, arg->msg_length);
+            buf[arg->msg_length] = 0;
+
+            endpoint->m_on_close_fun(
+                endpoint->m_ctx, endpoint,
+                arg->status_code,
+                mem_buffer_make_continuous(&protocol->m_data_buffer, 0));
+        }
+        else {
             CPE_ERROR(
                 protocol->m_em, "ws: %s: close: not support!",
                 net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint));

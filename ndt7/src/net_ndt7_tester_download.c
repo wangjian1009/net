@@ -13,7 +13,7 @@
 
 static void net_ndt7_tester_download_on_msg_text(void * ctx, net_ws_endpoint_t endpoin, const char * msg);
 static void net_ndt7_tester_download_on_msg_bin(void * ctx, net_ws_endpoint_t endpoin, const void * msg, uint32_t msg_len);
-static void net_ndt7_tester_download_on_close(void * ctx, net_ws_endpoint_t endpoin);
+static void net_ndt7_tester_download_on_close(void * ctx, net_ws_endpoint_t endpoin, uint16_t status_code, const char * msg);
 static void net_ndt7_tester_download_on_endpoint_fini(void * ctx, net_endpoint_t endpoint);
 static void net_ndt7_tester_download_try_notify_update(net_ndt7_tester_t tester);
 
@@ -122,7 +122,17 @@ static void net_ndt7_tester_download_on_msg_bin(void * ctx, net_ws_endpoint_t en
     net_ndt7_tester_download_try_notify_update(tester);
 }
 
-static void net_ndt7_tester_download_on_close(void * ctx, net_ws_endpoint_t endpoin) {
+static void net_ndt7_tester_download_on_close(void * ctx, net_ws_endpoint_t endpoint, uint16_t status_code, const char * msg) {
+    net_ndt7_tester_t tester = ctx;
+    net_ndt7_manage_t manager = tester->m_manager;
+
+    if (status_code == 1000) {
+    }
+    else {
+    }
+
+    net_ws_endpoint_close(endpoint, 1000, NULL);
+    //webSocket.close(1000, null)
 }
 
 static void net_ndt7_tester_download_on_endpoint_fini(void * ctx, net_endpoint_t endpoint) {
