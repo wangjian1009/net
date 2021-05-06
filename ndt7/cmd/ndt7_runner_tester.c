@@ -1,6 +1,18 @@
+#include "net_ndt7_tester.h"
 #include "ndt7_runner.h"
 
-void ndt7_runner_tester_on_complete(void * ctx, net_ndt7_tester_t tester) {
+void ndt7_runner_tester_on_speed_progress(void * ctx, net_ndt7_tester_t tester, net_ndt7_response_t response) {
+}
+
+void ndt7_runner_tester_on_measurement_progress(void * ctx, net_ndt7_tester_t tester, net_ndt7_measurement_t response) {
+}
+
+void ndt7_runner_tester_on_test_complete(
+    void * ctx, net_ndt7_tester_t tester, net_ndt7_response_t response, net_ndt7_test_type_t test_type)
+{
+}
+
+void ndt7_runner_tester_on_all_complete(void * ctx, net_ndt7_tester_t tester) {
     ndt7_runner_t runner = ctx;
 
     net_ndt7_tester_error_t err = net_ndt7_tester_error(tester);
@@ -28,7 +40,10 @@ int ndt7_runner_start(ndt7_runner_t runner, net_ndt7_test_type_t test_type) {
     net_ndt7_tester_set_cb(
         runner->m_ndt_tester,
         runner,
-        ndt7_runner_tester_on_complete,
+        ndt7_runner_tester_on_speed_progress,
+        ndt7_runner_tester_on_measurement_progress,
+        ndt7_runner_tester_on_test_complete,
+        ndt7_runner_tester_on_all_complete,
         NULL);
 
     if (net_ndt7_tester_start(runner->m_ndt_tester) != 0) {

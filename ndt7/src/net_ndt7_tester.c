@@ -43,7 +43,10 @@ net_ndt7_tester_create(net_ndt7_manage_t manager) {
     tester->m_error.m_msg = NULL;
 
     tester->m_ctx = NULL;
-    tester->m_on_complete = NULL;
+    tester->m_on_speed_progress = NULL;
+    tester->m_on_measurement_progress = NULL;
+    tester->m_on_test_complete = NULL;
+    tester->m_on_all_complete = NULL;
     tester->m_ctx_free = NULL;
 
     tester->m_target = NULL;
@@ -95,7 +98,10 @@ void net_ndt7_tester_free(net_ndt7_tester_t tester) {
         tester->m_ctx_free = NULL;
         tester->m_ctx = NULL;
     }
-    tester->m_on_complete = NULL;
+    tester->m_on_speed_progress = NULL;
+    tester->m_on_measurement_progress = NULL;
+    tester->m_on_test_complete = NULL;
+    tester->m_on_all_complete = NULL;
 
     if (tester->m_error.m_msg) {
         mem_free(manager->m_alloc, tester->m_error.m_msg);
@@ -154,7 +160,10 @@ net_ndt7_tester_state_t net_ndt7_tester_state(net_ndt7_tester_t tester) {
 void net_ndt7_tester_set_cb(
     net_ndt7_tester_t tester,
     void * ctx,
-    net_ndt7_tester_on_complete_fun_t on_complete,
+    net_ndt7_tester_on_speed_progress_fun_t on_speed_progress,
+    net_ndt7_tester_on_measurement_progress_fun_t on_measurement_progress,
+    net_ndt7_tester_on_test_complete_fun_t on_test_complete,
+    net_ndt7_tester_on_all_complete_fun_t on_all_complete,
     void (*ctx_free)(void *))
 {
     if (tester->m_ctx_free) {
@@ -163,13 +172,19 @@ void net_ndt7_tester_set_cb(
 
     tester->m_ctx = ctx;
     tester->m_ctx_free = ctx_free;
-    tester->m_on_complete = on_complete;
+    tester->m_on_speed_progress = on_speed_progress;
+    tester->m_on_measurement_progress = on_measurement_progress;
+    tester->m_on_test_complete = on_test_complete;
+    tester->m_on_all_complete = on_all_complete;
 }
     
 void net_ndt7_tester_clear_cb(net_ndt7_tester_t tester) {
     tester->m_ctx = NULL;
     tester->m_ctx_free = NULL;
-    tester->m_on_complete = NULL;
+    tester->m_on_speed_progress = NULL;
+    tester->m_on_measurement_progress = NULL;
+    tester->m_on_test_complete = NULL;
+    tester->m_on_all_complete = NULL;
 }
 
 int net_ndt7_tester_start(net_ndt7_tester_t tester) {
@@ -358,14 +373,14 @@ static void net_ndt7_tester_set_state(net_ndt7_tester_t tester, net_ndt7_tester_
 void net_ndt7_tester_notify_complete(net_ndt7_tester_t tester) {
     assert(tester->m_state == net_ndt7_tester_state_done);
     
-    if (tester->m_on_complete) {
+    if (tester->m_on_all_complete) {
         uint8_t tag_local = 0;
         if (!tester->m_is_processing) {
             tester->m_is_processing = 1;
             tag_local = 1;
         }
 
-        tester->m_on_complete(tester->m_ctx, tester);
+        tester->m_on_all_complete(tester->m_ctx, tester);
 
         if (tag_local) {
             tester->m_is_processing = 0;

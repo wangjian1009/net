@@ -9,6 +9,7 @@
 #include "net_dns_manage.h"
 #include "net_dns_udns_source.h"
 #include "net_ndt7_manage.h"
+#include "net_ndt7_tester.h"
 #include "ndt7_runner.h"
 
 ndt7_runner_t

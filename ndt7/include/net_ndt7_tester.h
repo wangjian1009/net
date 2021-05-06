@@ -5,12 +5,6 @@
 
 NET_BEGIN_DECL
 
-enum net_ndt7_test_type {
-    net_ndt7_test_upload,
-    net_ndt7_test_download,
-    net_ndt7_test_download_and_upload,
-};
-
 enum net_ndt7_test_protocol {
     net_ndt7_test_protocol_auto,
     net_ndt7_test_protocol_ws,
@@ -41,12 +35,20 @@ net_ndt7_tester_state_t net_ndt7_tester_state(net_ndt7_tester_t tester);
 void net_ndt7_tester_targets(net_ndt7_tester_t tester, net_ndt7_tester_target_it_t it);
 
 /*回调 */
-typedef void (*net_ndt7_tester_on_complete_fun_t)(void * ctx, net_ndt7_tester_t tester);
+typedef void (*net_ndt7_tester_on_speed_progress_fun_t)(void * ctx, net_ndt7_tester_t tester, net_ndt7_response_t response);
+typedef void (*net_ndt7_tester_on_measurement_progress_fun_t)(void * ctx, net_ndt7_tester_t tester, net_ndt7_measurement_t response);
+typedef void (*net_ndt7_tester_on_test_complete_fun_t)(
+    void * ctx, net_ndt7_tester_t tester, net_ndt7_response_t response, net_ndt7_test_type_t test_type);
+
+typedef void (*net_ndt7_tester_on_all_complete_fun_t)(void * ctx, net_ndt7_tester_t tester);
 
 void net_ndt7_tester_set_cb(
     net_ndt7_tester_t tester,
     void * ctx,
-    net_ndt7_tester_on_complete_fun_t on_complete,
+    net_ndt7_tester_on_speed_progress_fun_t on_speed_progress,
+    net_ndt7_tester_on_measurement_progress_fun_t on_measurement_progress,
+    net_ndt7_tester_on_test_complete_fun_t on_test_complete,
+    net_ndt7_tester_on_all_complete_fun_t on_all_complete,
     void (*ctx_free)(void *));
     
 void net_ndt7_tester_clear_cb(net_ndt7_tester_t tester); 

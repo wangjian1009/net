@@ -1,5 +1,6 @@
 #ifndef NET_NDT7_TESTER_I_H_INCLEDED
 #define NET_NDT7_TESTER_I_H_INCLEDED
+#include "net_ndt7_model.h"
 #include "net_ndt7_tester.h"
 #include "net_ndt7_manage_i.h"
 
@@ -46,7 +47,10 @@ struct net_ndt7_tester {
     
     /*callback*/
     void * m_ctx;
-    net_ndt7_tester_on_complete_fun_t m_on_complete;
+    net_ndt7_tester_on_speed_progress_fun_t m_on_speed_progress;
+    net_ndt7_tester_on_measurement_progress_fun_t m_on_measurement_progress;
+    net_ndt7_tester_on_test_complete_fun_t m_on_test_complete;
+    net_ndt7_tester_on_all_complete_fun_t m_on_all_complete;
     void (*m_ctx_free)(void *);
 };
 

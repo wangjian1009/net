@@ -6,7 +6,7 @@
 #include "cpe/utils/error.h"
 #include "net_system.h"
 #include "net_dns_system.h"
-#include "net_ndt7_tester.h"
+#include "net_ndt7_model.h"
 
 struct ev_loop;
 struct ev_signal;
