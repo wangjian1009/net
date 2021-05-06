@@ -205,10 +205,8 @@ int net_ndt7_tester_check_start_next_step(net_ndt7_tester_t tester) {
                 if (tester->m_download_url) found = 1;
                 break;
             case net_ndt7_test_download_and_upload:
-                CPE_ERROR(manager->m_em, "xxxx 1");
                 tester->m_download_url = net_ndt7_tester_target_select_download_url(tester->m_target, tester->m_protocol);
                 if (tester->m_download_url) {
-                    CPE_ERROR(manager->m_em, "xxxx 2");
                     tester->m_upload_url = net_ndt7_tester_target_select_upload_url(tester->m_target, tester->m_protocol);
                     if (tester->m_upload_url) found = 1;
                 }

@@ -3,6 +3,7 @@
 #include "net_address.h"
 #include "net_endpoint.h"
 #include "net_protocol.h"
+#include "net_schedule.h"
 #include "test_net_acceptor.h"
 #include "test_net_endpoint.h"
 #include "test_net_endpoint_link.h"
@@ -51,6 +52,7 @@ net_acceptor_t
 test_net_driver_find_acceptor_by_addr(test_net_driver_t driver, net_address_t address) {
     test_net_acceptor_t acceptor;
 
+    net_schedule_t schedule = net_driver_schedule(net_driver_from_data(driver));
     TAILQ_FOREACH(acceptor, &driver->m_acceptors, m_next) {
         net_acceptor_t base_acceptor = net_acceptor_from_data(acceptor);
         if (net_address_cmp_opt(net_acceptor_address(base_acceptor), address) == 0) return base_acceptor;

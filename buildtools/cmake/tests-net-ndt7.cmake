@@ -11,13 +11,15 @@ set_property(TARGET tests_net_ndt7 PROPERTY INCLUDE_DIRECTORIES
   ${net_protocol_http_base}/test_utils
   ${net_protocol_http_svr_base}/include
   ${net_protocol_http_svr_base}/test_utils
+  ${net_driver_ws_base}/include
+  ${net_driver_ws_base}/test_utils
   ${net_core_base}/include
   ${net_core_base}/test_utils  
   ${net_ndt7_base}/include
   ${net_ndt7_base}/src
   )
 
-set(tests_net_ndt7_libraries net_ndt7 test_utils_net_core test_utils_net_protocol_http_svr)
+set(tests_net_ndt7_libraries net_ndt7 test_utils_net_core test_utils_net_protocol_http_svr test_utils_net_driver_ws)
 
 set_property(TARGET tests_net_ndt7 PROPERTY LINK_LIBRARIES ${tests_net_ndt7_libraries})
 

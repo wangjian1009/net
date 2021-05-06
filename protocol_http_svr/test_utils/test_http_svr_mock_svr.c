@@ -6,6 +6,7 @@
 #include "net_address.h"
 #include "net_acceptor.h"
 #include "net_protocol.h"
+#include "net_schedule.h"
 #include "net_http_svr_protocol.h"
 #include "net_http_svr_processor.h"
 #include "net_http_svr_mount_point.h"

@@ -7,6 +7,7 @@
 #include "net_acceptor.h"
 #include "net_protocol.h"
 #include "net_driver.h"
+#include "net_schedule.h"
 #include "net_ws_protocol.h"
 #include "net_ssl_stream_driver.h"
 #include "test_ws_svr_mock_svr.h"
@@ -20,11 +21,8 @@ test_ws_svr_mock_svr_create(test_ws_svr_testenv_t env, const char * name, const 
     svr->m_url = cpe_str_mem_dup(test_allocrator(), str_url);
     assert_true(svr->m_url);
 
-    char full_name[128];
-    snprintf(full_name, sizeof(full_name), "ext-%s", name);
-    
     /*协议 */
-    svr->m_ws_protocol = net_ws_protocol_create(env->m_schedule, full_name, test_allocrator(), env->m_em);
+    svr->m_ws_protocol = net_ws_protocol_create(env->m_schedule, name, test_allocrator(), env->m_em);
     assert_true(svr->m_ws_protocol != NULL);
     net_protocol_set_debug(net_protocol_from_data(svr->m_ws_protocol), 2);
 
@@ -39,7 +37,7 @@ test_ws_svr_mock_svr_create(test_ws_svr_testenv_t env, const char * name, const 
     else if (strcasecmp(cpe_url_protocol(url), "wss") == 0) {
         net_ssl_stream_driver_t ssl_driver =
             net_ssl_stream_driver_create(
-                env->m_schedule, full_name,
+                env->m_schedule, name,
                 net_driver_from_data(env->m_driver),
                 test_allocrator(),
                 env->m_em);

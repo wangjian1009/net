@@ -8,8 +8,8 @@ static int setup(void **state) {
     *state = env;
 
     test_http_svr_testenv_create_mock_svr(
-        env->m_external_svr, "measurementlab", "https://locate.measurementlab.net");
-    
+        env->m_http_svr, "measurementlab", "https://locate.measurementlab.net");
+
     return 0;
 }
 
@@ -28,7 +28,7 @@ static void ndt7_tester_basic(void **state) {
         env->m_tdriver, 0, "locate.measurementlab.net:443(1.1.1.1:443)", 0, 0);
 
     test_http_svr_testenv_expect_response(
-        env->m_external_svr,
+        env->m_http_svr,
         "https://locate.measurementlab.net",
         "/v2/nearest/ndt/ndt7",
         200, "OK",
@@ -65,9 +65,10 @@ static void ndt7_tester_basic(void **state) {
         0);
 
     /*下载连接设置 */
+    test_ws_svr_testenv_create_mock_svr(env->m_ws_svr, "host3", "wss://host3:443");
     test_net_dns_expect_query_response(env->m_tdns, "host3", "1.1.2.1", 0);
     test_net_endpoint_id_expect_connect_to_acceptor(
-        env->m_tdriver, 0, "host3(1.1.2.1:443)", 0, 0);
+        env->m_tdriver, 0, "host3:443(1.1.2.1:443)", 0, 0);
     
     assert_true(net_ndt7_tester_start(tester) == 0);
 
