@@ -34,7 +34,7 @@ net_ndt7_tester_create(net_ndt7_manage_t manager) {
     tester->m_query_target.m_req = NULL;
 
     tester->m_download.m_start_time_ms = 0;
-    tester->m_download.m_previous_ms = 0;
+    tester->m_download.m_pre_notify_ms = 0;
     tester->m_download.m_num_bytes = 0.0;
     tester->m_download.m_endpoint = NULL;
 

@@ -98,8 +98,12 @@ static void net_ndt7_tester_download_on_msg_text(void * ctx, net_ws_endpoint_t e
 
     tester->m_download.m_num_bytes += strlen(msg);
     net_ndt7_tester_download_try_notify_update(tester);
-    
-    ////tryToUpdateClient()
+}
+
+static void net_ndt7_tester_download_on_msg_bin(void * ctx, net_ws_endpoint_t endpoin, const void * msg, uint32_t msg_len) {
+    net_ndt7_tester_t tester = ctx;
+    tester->m_download.m_num_bytes += msg_len;
+    net_ndt7_tester_download_try_notify_update(tester);
 }
 
 static void net_ndt7_tester_download_on_endpoint_fini(void * ctx, net_endpoint_t endpoint) {
