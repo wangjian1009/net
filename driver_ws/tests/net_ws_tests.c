@@ -2,18 +2,17 @@
 #include "net_ws_tests.h"
 
 int main(void) {
-    int rv = 0;
-
-    /*basic*/
-    if (net_ws_svr_basic_tests() != 0) rv = -1;
-    if (net_ws_pair_basic_tests() != 0) rv = -1;
+    CPE_BEGIN_RUN_TESTS()
+        /*basic*/
+        CPE_ADD_TEST_SUIT(net_ws_svr_basic_tests),
+        CPE_ADD_TEST_SUIT(net_ws_pair_basic_tests),
     
-    /*stream*/
-    if (net_ws_stream_cli_basic_tests() != 0) rv = -1;
-    /* if (net_ws_stream_svr_basic_tests() != 0) rv = -1; */
-    /* if (net_ws_stream_pair_basic_tests() != 0) rv = -1; */
+        /*stream*/
+        CPE_ADD_TEST_SUIT(net_ws_stream_cli_basic_tests),
+        /* CPE_ADD_TEST_SUIT(net_ws_stream_svr_basic_tests), */
+        /* CPE_ADD_TEST_SUIT(net_ws_stream_pair_basic_tests), */
 
-    return rv;
+    CPE_END_RUN_TESTS();
 }
 
 

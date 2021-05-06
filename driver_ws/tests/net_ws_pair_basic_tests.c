@@ -103,11 +103,8 @@ static void net_ws_pair_text_msg_delete_ep(void **state) {
     assert_true(net_endpoint_find(env->m_schedule, svr_ep_id) == NULL);
 }
 
-int net_ws_pair_basic_tests() {
-	const struct CMUnitTest ws_basic_tests[] = {
-		cmocka_unit_test_setup_teardown(net_ws_pair_basic, setup, teardown),
-		cmocka_unit_test_setup_teardown(net_ws_pair_text_msg_disable_ep, setup, teardown),
-		cmocka_unit_test_setup_teardown(net_ws_pair_text_msg_delete_ep, setup, teardown),
-	};
-	return cmocka_run_group_tests(ws_basic_tests, NULL, NULL);
-}
+CPE_BEGIN_TEST_SUIT(net_ws_pair_basic_tests)
+    cmocka_unit_test_setup_teardown(net_ws_pair_basic, setup, teardown),
+    cmocka_unit_test_setup_teardown(net_ws_pair_text_msg_disable_ep, setup, teardown),
+    cmocka_unit_test_setup_teardown(net_ws_pair_text_msg_delete_ep, setup, teardown),
+CPE_END_TEST_SUIT(net_ws_pair_basic_tests)

@@ -72,9 +72,6 @@ static void net_ws_svr_basic(void **state) {
         "\r\n");
 }
 
-int net_ws_svr_basic_tests() {
-	const struct CMUnitTest tests[] = {
-		cmocka_unit_test_setup_teardown(net_ws_svr_basic, setup, teardown),
-	};
-	return cmocka_run_group_tests(tests, NULL, NULL);
-}
+CPE_BEGIN_TEST_SUIT(net_ws_svr_basic_tests)
+    cmocka_unit_test_setup_teardown(net_ws_svr_basic, setup, teardown),
+CPE_END_TEST_SUIT(net_ws_svr_basic_tests)

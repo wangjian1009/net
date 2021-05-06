@@ -143,12 +143,9 @@ static void net_ws_stream_pair_input_connecting(void **state) {
     test_net_endpoint_assert_buf_memory(svr_ep, net_ep_buf_read, "abcd", 4);
 }
 
-int net_ws_stream_pair_basic_tests() {
-	const struct CMUnitTest ws_basic_tests[] = {
-		cmocka_unit_test_setup_teardown(net_ws_stream_pair_basic, setup, teardown),
-		cmocka_unit_test_setup_teardown(net_ws_stream_pair_delay, setup, teardown),
-		cmocka_unit_test_setup_teardown(net_ws_stream_pair_input_handshake, setup, teardown),
-		cmocka_unit_test_setup_teardown(net_ws_stream_pair_input_connecting, setup, teardown),
-	};
-	return cmocka_run_group_tests(ws_basic_tests, NULL, NULL);
-}
+CPE_BEGIN_TEST_SUIT(net_ws_stream_pair_basic_tests)
+    cmocka_unit_test_setup_teardown(net_ws_stream_pair_basic, setup, teardown),
+    cmocka_unit_test_setup_teardown(net_ws_stream_pair_delay, setup, teardown),
+    cmocka_unit_test_setup_teardown(net_ws_stream_pair_input_handshake, setup, teardown),
+    cmocka_unit_test_setup_teardown(net_ws_stream_pair_input_connecting, setup, teardown),
+CPE_END_TEST_SUIT(net_ws_stream_pair_basic_tests)

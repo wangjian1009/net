@@ -147,13 +147,10 @@ static void net_ws_connect_error_delay(void **state) {
         "error1");
 }
 
-int net_ws_stream_cli_basic_tests() {
-	const struct CMUnitTest ws_basic_tests[] = {
-		cmocka_unit_test_setup_teardown(net_ws_stream_pair_expect_read, setup, teardown),
-		cmocka_unit_test_setup_teardown(net_ws_stream_pair_connect_success, setup, teardown),
-		cmocka_unit_test_setup_teardown(net_ws_stream_pair_connect_success_delay, setup, teardown),
-		cmocka_unit_test_setup_teardown(net_ws_connect_error, setup, teardown),
-		cmocka_unit_test_setup_teardown(net_ws_connect_error_delay, setup, teardown),
-	};
-	return cmocka_run_group_tests(ws_basic_tests, NULL, NULL);
-}
+CPE_BEGIN_TEST_SUIT(net_ws_stream_cli_basic_tests)
+    cmocka_unit_test_setup_teardown(net_ws_stream_pair_expect_read, setup, teardown),
+    cmocka_unit_test_setup_teardown(net_ws_stream_pair_connect_success, setup, teardown),
+    cmocka_unit_test_setup_teardown(net_ws_stream_pair_connect_success_delay, setup, teardown),
+    cmocka_unit_test_setup_teardown(net_ws_connect_error, setup, teardown),
+    cmocka_unit_test_setup_teardown(net_ws_connect_error_delay, setup, teardown),
+CPE_END_TEST_SUIT(net_ws_stream_cli_basic_tests)

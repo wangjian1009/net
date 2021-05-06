@@ -140,7 +140,6 @@ static void net_ndt7_tester_download_try_notify_update(net_ndt7_tester_t tester)
     net_ndt7_manage_t manager = tester->m_manager;
     int64_t cur_time_ms = net_schedule_cur_time_ms(manager->m_schedule);
 
-    /* if we haven't sent an update in 250ms, lets send one */
     if (cur_time_ms - tester->m_download.m_pre_notify_ms > tester->m_measurement_interval_ms) {
         struct net_ndt7_response response;
         net_ndt7_response_init(
