@@ -27,7 +27,7 @@ int net_ndt7_tester_query_target_start(net_ndt7_tester_t tester) {
     net_http_endpoint_set_auto_free(tester->m_query_target.m_endpoint, 1);
 
     net_endpoint_t base_endpoint = net_http_endpoint_base_endpoint(tester->m_query_target.m_endpoint);
-    net_endpoint_set_protocol_debug(base_endpoint, 2);
+    //net_endpoint_set_protocol_debug(base_endpoint, 2);
     //net_endpoint_set_driver_debug(base_endpoint, 2);
 
     net_endpoint_set_data_watcher(

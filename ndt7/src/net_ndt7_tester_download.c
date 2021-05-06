@@ -60,6 +60,7 @@ int net_ndt7_tester_download_start(net_ndt7_tester_t tester) {
 
     tester->m_download.m_endpoint = net_ws_endpoint_cast(base_endpoint);
     assert(tester->m_download.m_endpoint);
+    net_endpoint_set_protocol_debug(base_endpoint, 2);
 
     net_ws_endpoint_set_callback(
         tester->m_download.m_endpoint,
@@ -69,20 +70,7 @@ int net_ndt7_tester_download_start(net_ndt7_tester_t tester) {
         net_ndt7_tester_download_on_close,
         NULL);
 
-    net_address_t remote_address = net_address_create_from_url(manager->m_schedule, tester->m_download_url);
-    if (remote_address == NULL) {
-        CPE_ERROR(manager->m_em, "ndt7: %d: download: start: create protocol fail", tester->m_id);
-        goto START_FAIL;
-    }
-
-    if (net_endpoint_set_remote_address(base_endpoint, remote_address) != 0) {
-        CPE_ERROR(manager->m_em, "ndt7: %d: download: start: set remote address fail", tester->m_id);
-        net_address_free(remote_address);
-        goto START_FAIL;
-    }
-    net_address_free(remote_address);
-
-    if (net_endpoint_connect(base_endpoint) != 0) {
+    if (net_ws_endpoint_connect(tester->m_download.m_endpoint, tester->m_download_url) != 0) {
         CPE_ERROR(manager->m_em, "ndt7: %d: download: start: connect start fail", tester->m_id);
         goto START_FAIL;
     }

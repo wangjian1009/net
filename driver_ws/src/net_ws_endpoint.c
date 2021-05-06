@@ -6,6 +6,7 @@
 #include "cpe/utils/random.h"
 #include "cpe/utils/stream_mem.h"
 #include "cpe/utils/string_utils.h"
+#include "cpe/utils/url.h"
 #include "net_protocol.h"
 #include "net_endpoint.h"
 #include "net_address.h"
@@ -46,6 +47,56 @@ net_ws_endpoint_state_t net_ws_endpoint_state(net_ws_endpoint_t endpoint) {
 
 net_endpoint_t net_ws_endpoint_base_endpoint(net_ws_endpoint_t endpoint) {
     return endpoint->m_base_endpoint;
+}
+
+int net_ws_endpoint_connect(net_ws_endpoint_t endpoint, cpe_url_t url) {
+    net_schedule_t schedule = net_endpoint_schedule(endpoint->m_base_endpoint);
+    net_ws_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
+    
+    net_address_t remote_address = net_address_create_from_url(schedule, url);
+    if (remote_address == NULL) {
+        char buf[256];
+        cpe_str_dup(buf, sizeof(buf), net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint));
+        CPE_ERROR(
+            protocol->m_em, "ws: %s: connect: %s: create address fail",
+            buf, cpe_url_dump(net_ws_protocol_tmp_buffer(protocol), url, cpe_url_print_full));
+        return -1;
+    }
+
+    if (net_endpoint_set_remote_address(endpoint->m_base_endpoint, remote_address) != 0) {
+        char buf[256];
+        cpe_str_dup(buf, sizeof(buf), net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint));
+        CPE_ERROR(
+            protocol->m_em, "ws: %s: connect: %s: set remote address fail",
+            buf, cpe_url_dump(net_ws_protocol_tmp_buffer(protocol), url, cpe_url_print_full));
+        net_address_free(remote_address);
+        return -1;
+    }
+    net_address_free(remote_address);
+
+    struct mem_buffer buffer;
+    mem_buffer_init(&buffer, protocol->m_alloc);
+    if (net_ws_endpoint_set_path(endpoint, cpe_url_dump(&buffer, url, cpe_url_print_path_query)) != 0) {
+        char buf[256];
+        cpe_str_dup(buf, sizeof(buf), net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint));
+        CPE_ERROR(
+            protocol->m_em, "ws: %s: connect: %s: set path fail",
+            buf, cpe_url_dump(net_ws_protocol_tmp_buffer(protocol), url, cpe_url_print_full));
+        mem_buffer_clear(&buffer);
+        return -1;
+    }
+    mem_buffer_clear(&buffer);
+    
+    if (net_ws_endpoint_set_runing_mode(endpoint, net_ws_endpoint_runing_mode_cli) != 0) {
+        char buf[256];
+        cpe_str_dup(buf, sizeof(buf), net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint));
+        CPE_ERROR(
+            protocol->m_em, "ws: %s: connect: %s: set runing mode fail",
+            buf, cpe_url_dump(net_ws_protocol_tmp_buffer(protocol), url, cpe_url_print_full));
+        return -1;
+    }
+    
+    return net_endpoint_connect(endpoint->m_base_endpoint);
 }
 
 const char * net_ws_endpoint_path(net_ws_endpoint_t endpoint) {
