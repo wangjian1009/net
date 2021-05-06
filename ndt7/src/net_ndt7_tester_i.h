@@ -31,6 +31,9 @@ struct net_ndt7_tester {
     } m_query_target;
     
     struct {
+        int64_t m_start_time_ms;
+        int64_t m_pre_notify_ms;
+        double m_num_bytes;
         net_ws_endpoint_t m_endpoint;
     } m_download;
 

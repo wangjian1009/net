@@ -1,14 +1,17 @@
 #include <assert.h>
 #include "cpe/pal/pal_string.h"
 #include "cpe/utils/url.h"
+#include "net_schedule.h"
 #include "net_endpoint.h"
 #include "net_protocol.h"
 #include "net_address.h"
 #include "net_ws_endpoint.h"
 #include "net_ndt7_tester_i.h"
 
-static void net_ndt7_tester_on_msg_text(void * ctx, net_ws_endpoint_t endpoin, const char * msg);
+static void net_ndt7_tester_download_on_msg_text(void * ctx, net_ws_endpoint_t endpoin, const char * msg);
+static void net_ndt7_tester_download_on_msg_bin(void * ctx, net_ws_endpoint_t endpoin, const void * msg, uint32_t msg_len);
 static void net_ndt7_tester_download_on_endpoint_fini(void * ctx, net_endpoint_t endpoint);
+static void net_ndt7_tester_download_try_notify_update(net_ndt7_tester_t tester);
 
 int net_ndt7_tester_download_start(net_ndt7_tester_t tester) {
     net_ndt7_manage_t manager = tester->m_manager;
@@ -55,8 +58,11 @@ int net_ndt7_tester_download_start(net_ndt7_tester_t tester) {
     assert(tester->m_download.m_endpoint);
 
     net_ws_endpoint_set_msg_receiver_text(
-        tester->m_download.m_endpoint, tester, net_ndt7_tester_on_msg_text, NULL);
+        tester->m_download.m_endpoint, tester, net_ndt7_tester_download_on_msg_text, NULL);
 
+    net_ws_endpoint_set_msg_receiver_bin(
+        tester->m_download.m_endpoint, tester, net_ndt7_tester_download_on_msg_bin, NULL);
+    
     net_address_t remote_address = net_address_create_from_url(manager->m_schedule, tester->m_download_url);
     if (remote_address == NULL) {
         CPE_ERROR(manager->m_em, "ndt7: %d: download: start: create protocol fail", tester->m_id);
@@ -87,8 +93,13 @@ START_FAIL:
     return -1;
 }
 
-static void net_ndt7_tester_on_msg_text(void * ctx, net_ws_endpoint_t endpoin, const char * msg) {
+static void net_ndt7_tester_download_on_msg_text(void * ctx, net_ws_endpoint_t endpoin, const char * msg) {
     net_ndt7_tester_t tester = ctx;
+
+    tester->m_download.m_num_bytes += strlen(msg);
+    net_ndt7_tester_download_try_notify_update(tester);
+    
+    ////tryToUpdateClient()
 }
 
 static void net_ndt7_tester_download_on_endpoint_fini(void * ctx, net_endpoint_t endpoint) {
@@ -101,3 +112,15 @@ static void net_ndt7_tester_download_on_endpoint_fini(void * ctx, net_endpoint_t
 
     tester->m_download.m_endpoint = NULL;
 }
+
+static void net_ndt7_tester_download_try_notify_update(net_ndt7_tester_t tester) {
+    net_ndt7_manage_t manager = tester->m_manager;
+    int64_t cur_time_ms = net_schedule_cur_time_ms(manager->m_schedule);
+
+        /* if we haven't sent an update in 250ms, lets send one */
+        /* if (cur_time_ms - tester->m_download.m_pre_notify_ms > MEASUREMENT_INTERVAL) { */
+        /*     cbRegistry.speedtestProgressCbk(generateResponse(startTime, numBytes, NDTTest.TestType.DOWNLOAD)) */
+        /*     previous = now */
+        /* } */
+}
+
