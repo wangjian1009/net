@@ -76,7 +76,8 @@ int net_ws_endpoint_connect(net_ws_endpoint_t endpoint, cpe_url_t url) {
 
     struct mem_buffer buffer;
     mem_buffer_init(&buffer, protocol->m_alloc);
-    if (net_ws_endpoint_set_path(endpoint, cpe_url_dump(&buffer, url, cpe_url_print_path_query)) != 0) {
+    const char * path = cpe_url_dump(&buffer, url, cpe_url_print_path_query);
+    if (net_ws_endpoint_set_path(endpoint, path[0] ? path : "/") != 0) {
         char buf[256];
         cpe_str_dup(buf, sizeof(buf), net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint));
         CPE_ERROR(

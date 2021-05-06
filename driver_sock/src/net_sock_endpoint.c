@@ -52,6 +52,11 @@ void net_sock_endpoint_fini(net_endpoint_t base_endpoint) {
     net_sock_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     net_sock_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
 
+    if (endpoint->m_connect_timeout) {
+        net_timer_free(endpoint->m_connect_timeout);
+        endpoint->m_connect_timeout = NULL;
+    }
+
     net_sock_endpoint_close_sock(driver, endpoint, base_endpoint);
 
     assert(endpoint->m_fd == -1);

@@ -8,9 +8,12 @@
 #include "net_protocol.h"
 #include "net_driver.h"
 #include "net_schedule.h"
+#include "net_ws_endpoint.h"
 #include "net_ws_protocol.h"
 #include "net_ssl_stream_driver.h"
 #include "test_ws_svr_mock_svr.h"
+
+static int test_ws_svr_mock_svr_on_new_endpoint(void * ctx, net_endpoint_t endpoint);
 
 test_ws_svr_mock_svr_t
 test_ws_svr_mock_svr_create(test_ws_svr_testenv_t env, const char * name, const char * str_url) {
@@ -55,7 +58,8 @@ test_ws_svr_mock_svr_create(test_ws_svr_testenv_t env, const char * name, const 
 
     svr->m_acceptor =
         net_acceptor_create(
-            driver, net_protocol_from_data(svr->m_ws_protocol), address, 0, NULL, NULL);
+            driver, net_protocol_from_data(svr->m_ws_protocol), address, 0,
+            test_ws_svr_mock_svr_on_new_endpoint, svr);
     assert_true(svr->m_acceptor);
     net_address_free(address);
 
@@ -106,4 +110,12 @@ test_ws_svr_mock_svr_find(test_ws_svr_testenv_t env, const char * url) {
 
 void test_ws_svr_testenv_create_mock_svr(test_ws_svr_testenv_t env, const char * name, const char * url) {
     assert_true(test_ws_svr_mock_svr_create(env, name, url) != NULL);
+}
+
+static int test_ws_svr_mock_svr_on_new_endpoint(void * ctx, net_endpoint_t base_endpoint) {
+    test_ws_svr_mock_svr_t svr = ctx;
+    
+    net_ws_endpoint_t endpoint = net_ws_endpoint_cast(base_endpoint);
+    net_ws_endpoint_set_runing_mode(endpoint, net_ws_endpoint_runing_mode_svr);
+    return 0;
 }
