@@ -10,12 +10,13 @@ struct net_ndt7_tester {
     net_ndt7_manage_t m_manager;
     uint32_t m_id;
     TAILQ_ENTRY(net_ndt7_tester) m_next;
-    
+
     net_ndt7_test_type_t m_type;
     net_ndt7_test_protocol_t m_protocol;
     net_ndt7_tester_state_t m_state;
     uint8_t m_is_processing;
     uint8_t m_is_free;
+    int64_t m_measurement_interval_ms;
 
     uint8_t m_is_to_notify;
     TAILQ_ENTRY(net_ndt7_tester) m_next_for_notify;

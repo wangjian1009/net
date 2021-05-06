@@ -1,7 +1,10 @@
 #include "net_ndt7_tester.h"
+#include "net_ndt7_model.h"
 #include "ndt7_runner.h"
 
 void ndt7_runner_tester_on_speed_progress(void * ctx, net_ndt7_tester_t tester, net_ndt7_response_t response) {
+    ndt7_runner_t runner = ctx;
+    printf("progress: %s\n", net_ndt7_response_dump(&runner->m_data_buffer, response));
 }
 
 void ndt7_runner_tester_on_measurement_progress(void * ctx, net_ndt7_tester_t tester, net_ndt7_measurement_t response) {
@@ -10,6 +13,8 @@ void ndt7_runner_tester_on_measurement_progress(void * ctx, net_ndt7_tester_t te
 void ndt7_runner_tester_on_test_complete(
     void * ctx, net_ndt7_tester_t tester, net_ndt7_response_t response, net_ndt7_test_type_t test_type)
 {
+    ndt7_runner_t runner = ctx;
+    printf("complete: %s\n", net_ndt7_response_dump(&runner->m_data_buffer, response));
 }
 
 void ndt7_runner_tester_on_all_complete(void * ctx, net_ndt7_tester_t tester) {

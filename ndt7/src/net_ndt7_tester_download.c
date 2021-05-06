@@ -107,7 +107,6 @@ static void net_ndt7_tester_download_on_msg_text(void * ctx, net_ws_endpoint_t e
         return;
     }
 
-    CPE_ERROR(manager->m_em, "xxxxx: %s", msg);
     struct net_ndt7_measurement measurement;
     net_ndt7_measurement_from_json(&measurement, content, manager->m_em);
     yajl_tree_free(content);
@@ -119,8 +118,6 @@ static void net_ndt7_tester_download_on_msg_bin(void * ctx, net_ws_endpoint_t en
     net_ndt7_tester_t tester = ctx;
     net_ndt7_manage_t manager = tester->m_manager;
 
-    CPE_ERROR(manager->m_em, "xxxxx: bin %d", msg_len);
-    
     tester->m_download.m_num_bytes += msg_len;
     net_ndt7_tester_download_try_notify_update(tester);
 }
@@ -144,7 +141,7 @@ static void net_ndt7_tester_download_try_notify_update(net_ndt7_tester_t tester)
     int64_t cur_time_ms = net_schedule_cur_time_ms(manager->m_schedule);
 
     /* if we haven't sent an update in 250ms, lets send one */
-    if (cur_time_ms - tester->m_download.m_pre_notify_ms > MEASUREMENT_INTERVAL_MS) {
+    if (cur_time_ms - tester->m_download.m_pre_notify_ms > tester->m_measurement_interval_ms) {
         struct net_ndt7_response response;
         net_ndt7_response_init(
             &response, tester->m_download.m_start_time_ms, cur_time_ms, tester->m_download.m_num_bytes,

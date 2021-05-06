@@ -32,6 +32,8 @@ struct ndt7_runner {
 
     net_ndt7_manage_t m_ndt_manager;
     net_ndt7_tester_t m_ndt_tester;
+
+    struct mem_buffer m_data_buffer;
 };
 
 ndt7_runner_t ndt7_runner_create(mem_allocrator_t alloc);

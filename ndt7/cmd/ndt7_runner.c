@@ -46,6 +46,8 @@ ndt7_runner_create(mem_allocrator_t alloc) {
         return NULL;
     }
 
+    mem_buffer_init(&runner->m_data_buffer, runner->m_alloc);
+    
     return runner;
 }
 
@@ -98,6 +100,8 @@ void ndt7_runner_free(ndt7_runner_t runner) {
         runner->m_log_file = NULL;
     }
 
+    mem_buffer_clear(&runner->m_data_buffer);
+    
     mem_free(runner->m_alloc, runner);
 }
 

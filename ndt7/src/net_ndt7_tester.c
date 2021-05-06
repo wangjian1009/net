@@ -27,6 +27,7 @@ net_ndt7_tester_create(net_ndt7_manage_t manager) {
     tester->m_state = net_ndt7_tester_state_init;
     tester->m_is_processing = 0;
     tester->m_is_free = 0;
+    tester->m_measurement_interval_ms = 250;
 
     tester->m_is_to_notify = 0;
 
