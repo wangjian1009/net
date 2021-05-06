@@ -10,7 +10,6 @@
 #include "net_ndt7_tester_i.h"
 #include "net_ndt7_tester_target_i.h"
 
-static void net_ndt7_tester_clear_state_data(net_ndt7_tester_t tester);
 static void net_ndt7_tester_set_state(net_ndt7_tester_t tester, net_ndt7_tester_state_t state);
 
 net_ndt7_tester_t
@@ -31,7 +30,10 @@ net_ndt7_tester_create(net_ndt7_manage_t manager) {
 
     tester->m_is_to_notify = 0;
 
-    bzero(&tester->m_state_data, sizeof(tester->m_state_data));
+    tester->m_query_target.m_endpoint = NULL;
+    tester->m_query_target.m_req = NULL;
+
+    tester->m_download.m_endpoint = NULL;
 
     tester->m_error.m_state = net_ndt7_tester_state_init;
     tester->m_error.m_error = net_ndt7_tester_error_none;
@@ -66,8 +68,25 @@ void net_ndt7_tester_free(net_ndt7_tester_t tester) {
     assert(tester->m_upload_url == NULL);
     assert(tester->m_download_url == NULL);
 
-    net_ndt7_tester_clear_state_data(tester);
-    
+    if (tester->m_query_target.m_req) {
+        net_http_req_clear_reader(tester->m_query_target.m_req);
+        tester->m_query_target.m_req = NULL;
+    }
+
+    if (tester->m_query_target.m_endpoint) {
+        net_endpoint_t base_endpoint = net_http_endpoint_base_endpoint(tester->m_query_target.m_endpoint);
+        net_endpoint_set_data_watcher(base_endpoint, NULL, NULL, NULL);
+        net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+        tester->m_query_target.m_endpoint = NULL;
+    }
+
+    if (tester->m_download.m_endpoint) {
+        net_endpoint_t base_endpoint = net_ws_endpoint_base_endpoint(tester->m_download.m_endpoint);
+        net_endpoint_set_data_watcher(base_endpoint, NULL, NULL, NULL);
+        net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+        tester->m_download.m_endpoint = NULL;
+    }
+
     if (tester->m_ctx_free) {
         tester->m_ctx_free(tester->m_ctx);
         tester->m_ctx_free = NULL;
@@ -293,38 +312,6 @@ int net_ndt7_tester_check_start_next_step(net_ndt7_tester_t tester) {
     }
 }
 
-static void net_ndt7_tester_clear_state_data(net_ndt7_tester_t tester) {
-    switch(tester->m_state) {
-    case net_ndt7_tester_state_init:
-        break;
-    case net_ndt7_tester_state_query_target:
-        if (tester->m_state_data.m_query_target.m_req) {
-            net_http_req_clear_reader(tester->m_state_data.m_query_target.m_req);
-            tester->m_state_data.m_query_target.m_req = NULL;
-        }
-
-        if (tester->m_state_data.m_query_target.m_endpoint) {
-            net_endpoint_t base_endpoint = net_http_endpoint_base_endpoint(tester->m_state_data.m_query_target.m_endpoint);
-            net_endpoint_set_data_watcher(base_endpoint, NULL, NULL, NULL);
-            net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
-            tester->m_state_data.m_query_target.m_endpoint = NULL;
-        }
-        break;
-    case net_ndt7_tester_state_download:
-        if (tester->m_state_data.m_download.m_endpoint) {
-            net_endpoint_t base_endpoint = net_ws_endpoint_base_endpoint(tester->m_state_data.m_download.m_endpoint);
-            net_endpoint_set_data_watcher(base_endpoint, NULL, NULL, NULL);
-            net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
-            tester->m_state_data.m_download.m_endpoint = NULL;
-        }
-        break;
-    case net_ndt7_tester_state_upload:
-        break;
-    case net_ndt7_tester_state_done:
-        break;
-    }
-}
-
 void net_ndt7_tester_set_error(net_ndt7_tester_t tester, net_ndt7_tester_error_t err, const char * msg) {
     net_ndt7_manage_t manager = tester->m_manager;
 
@@ -346,8 +333,6 @@ static void net_ndt7_tester_set_state(net_ndt7_tester_t tester, net_ndt7_tester_
     net_ndt7_manage_t manager = tester->m_manager;
 
     if (tester->m_state == state) return;
-
-    net_ndt7_tester_clear_state_data(tester);
 
     CPE_INFO(
         manager->m_em, "ndt: %d: state %s ==> %s",

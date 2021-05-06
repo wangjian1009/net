@@ -51,11 +51,11 @@ int net_ndt7_tester_download_start(net_ndt7_tester_t tester) {
         NULL,
         net_ndt7_tester_download_on_endpoint_fini);
 
-    tester->m_state_data.m_download.m_endpoint = net_ws_endpoint_cast(base_endpoint);
-    assert(tester->m_state_data.m_download.m_endpoint);
+    tester->m_download.m_endpoint = net_ws_endpoint_cast(base_endpoint);
+    assert(tester->m_download.m_endpoint);
 
     net_ws_endpoint_set_msg_receiver_text(
-        tester->m_state_data.m_download.m_endpoint, tester, net_ndt7_tester_on_msg_text, NULL);
+        tester->m_download.m_endpoint, tester, net_ndt7_tester_on_msg_text, NULL);
 
     net_address_t remote_address = net_address_create_from_url(manager->m_schedule, tester->m_download_url);
     if (remote_address == NULL) {
@@ -78,10 +78,10 @@ int net_ndt7_tester_download_start(net_ndt7_tester_t tester) {
     return 0;
 
 START_FAIL:
-    if (tester->m_state_data.m_download.m_endpoint) {
+    if (tester->m_download.m_endpoint) {
         net_endpoint_set_data_watcher(base_endpoint, NULL, NULL, NULL);
-        net_ws_endpoint_free(tester->m_state_data.m_download.m_endpoint);
-        tester->m_state_data.m_download.m_endpoint = NULL;
+        net_ws_endpoint_free(tester->m_download.m_endpoint);
+        tester->m_download.m_endpoint = NULL;
     }
     
     return -1;
@@ -96,8 +96,8 @@ static void net_ndt7_tester_download_on_endpoint_fini(void * ctx, net_endpoint_t
     net_ndt7_manage_t manager = tester->m_manager;
 
     assert(tester->m_state == net_ndt7_tester_state_query_target);
-    assert(tester->m_state_data.m_query_target.m_endpoint);
-    assert(net_ws_endpoint_base_endpoint(tester->m_state_data.m_download.m_endpoint) == endpoint);
+    assert(tester->m_query_target.m_endpoint);
+    assert(net_ws_endpoint_base_endpoint(tester->m_download.m_endpoint) == endpoint);
 
-    tester->m_state_data.m_download.m_endpoint = NULL;
+    tester->m_download.m_endpoint = NULL;
 }

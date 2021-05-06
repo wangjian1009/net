@@ -25,15 +25,14 @@ struct net_ndt7_tester {
     cpe_url_t m_download_url;
     net_ndt7_tester_target_list_t m_targets;
 
-    union {
-        struct {
-            net_http_endpoint_t m_endpoint;
-            net_http_req_t m_req;
-        } m_query_target;
-        struct {
-            net_ws_endpoint_t m_endpoint;
-        } m_download;
-    } m_state_data;
+    struct {
+        net_http_endpoint_t m_endpoint;
+        net_http_req_t m_req;
+    } m_query_target;
+    
+    struct {
+        net_ws_endpoint_t m_endpoint;
+    } m_download;
 
     /*错误数据 */
     struct {
