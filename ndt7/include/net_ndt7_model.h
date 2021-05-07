@@ -48,7 +48,7 @@ struct net_ndt7_tcp_info {
     int64_t m_state;
     int64_t m_ca_state;
     int64_t m_retransmits;
-    int64_t probes;
+    int64_t m_probes;
     int64_t m_backoff;
     int64_t m_options;
     int64_t m_w_scale;
@@ -64,38 +64,42 @@ struct net_ndt7_tcp_info {
     int64_t m_fackets;
     int64_t m_last_data_sent;
     int64_t m_last_ack_sent;
+    int64_t m_last_data_recv;
+    int64_t m_last_ack_recv;
     int64_t m_pmtu;
-    /* @SerializedName("RcvSsThresh") val rcvSsThresh: Long?, */
-    /* @SerializedName("RTT") val rtt: Long?, */
-    /* @SerializedName("RTTVar") val rttVar: Long?, */
-    /* @SerializedName("SndSsThresh") val sndSsThresth: Long?, */
-    /* @SerializedName("SndCwnd") val sndCwnd: Long?, */
-    /* @SerializedName("AdvMSS") val advMss: Long?, */
-    /* @SerializedName("Reordering") val reordering: Long?, */
-    /* @SerializedName("RcvRTT") val rcvRtt: Long?, */
-    /* @SerializedName("RcvSpace") val rcvSpace: Long?, */
-    /* @SerializedName("TotalRetrans") val totalRetrans: Long?, */
-    /* @SerializedName("PacingRate") val pacingRate: Long?, */
-    /* @SerializedName("MaxPacingRate") val maxPacingRate: Long?, */
-    /* @SerializedName("BytesAcked") val bytesAcked: Long?, */
-    /* @SerializedName("BytesReceived") val bytesReceived: Long?, */
-    /* @SerializedName("SegsOut") val segsOut: Long?, */
-    /* @SerializedName("SegsIn") val segsIn: Long?, */
-    /* @SerializedName("NotsentBytes") val notSentBytes: Long?, */
-    /* @SerializedName("MinRTT") val minRtt: Long?, */
-    /* @SerializedName("DataSegsIn") val dataSegsIn: Long?, */
-    /* @SerializedName("DataSegsOut") val dataSegsOut: Long?, */
-    /* @SerializedName("DeliveryRate") val deliveryRate: Long?, */
-    /* @SerializedName("BusyTime") val busyTime: Long?, */
-    /* @SerializedName("RWndLimited") val rWndLimited: Long?, */
-    /* @SerializedName("SndBufLimited") val sndBufLimited: Long?, */
-    /* @SerializedName("Delivered") val delivered: Long?, */
-    /* @SerializedName("DeliveredCE") val deliveredCE: Long?, */
-    /* @SerializedName("BytesSent") val bytesSent: Long?, */
-    /* @SerializedName("BytesRetrans") val bytesRetrans: Long?, */
-    /* @SerializedName("DSackDups") val dSackDups: Long?, */
-    /* @SerializedName("ReordSeen") val reordSeen: Long?, */
-    /* @SerializedName("ElapsedTime") val elapsedTime: Long? */
+    int64_t m_recv_ss_thresh;
+    int64_t m_rtt;
+    int64_t m_rtt_var;
+    int64_t m_snd_ss_thresh;
+    int64_t m_snd_cwnd;
+    int64_t m_adv_mss;
+    int64_t m_reordering;
+    int64_t m_rcv_rtt;
+    int64_t m_rcv_space;
+    int64_t m_total_retrans;
+    int64_t m_pacing_rate;
+    int64_t m_max_pacing_rate;
+    int64_t m_bytes_acked;
+    int64_t m_bytes_received;
+    int64_t m_segs_out;
+    int64_t m_segs_in;
+    int64_t m_notsent_bytes;
+    int64_t m_min_rtt;
+    int64_t m_data_segs_in;
+    int64_t m_data_segs_out;
+    int64_t m_delivery_rate;
+    int64_t m_busy_time;
+    int64_t m_r_wnd_limited;
+    int64_t m_snd_buf_limited;
+    int64_t m_delivered;
+    int64_t m_delivered_ce;
+    int64_t m_bytes_sent;
+    int64_t m_bytes_retrans;
+    int64_t m_d_sack_dups;
+    int64_t m_reord_seen;
+    int64_t m_rcv_ooo_pack;
+    int64_t m_snd_wnd;
+    int64_t m_elapsed_time;
 };
 
 struct net_ndt7_measurement {

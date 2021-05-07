@@ -1,5 +1,6 @@
 #include "cmocka_all.h"
 #include "cpe/pal/pal_string.h"
+#include "cpe/pal/pal_strings.h"
 #include "cpe/utils/stream_buffer.h"
 #include "cpe/utils/url.h"
 #include "net_schedule.h"
@@ -33,6 +34,9 @@ net_ndt7_testenv_create() {
     assert_true(env->m_ndt_manager);
 
     env->m_ndt_tester = NULL;
+    bzero(&env->m_last_response, sizeof(env->m_last_response));
+    bzero(&env->m_last_measurement, sizeof(env->m_last_measurement));
+
     env->m_log_count = 0;
     env->m_log_capacity = 0;
     env->m_logs = NULL;
@@ -167,9 +171,13 @@ void net_ndt7_testenv_download_close(net_ndt7_testenv_t env, uint16_t status_cod
 }
 
 void net_ndt7_testenv_on_speed_progress(void * ctx, net_ndt7_tester_t tester, net_ndt7_response_t response) {
+    net_ndt7_testenv_t env = ctx;
+    env->m_last_response = *response;
 }
 
-void net_ndt7_testenv_on_measurement_progress(void * ctx, net_ndt7_tester_t tester, net_ndt7_measurement_t response) {
+void net_ndt7_testenv_on_measurement_progress(void * ctx, net_ndt7_tester_t tester, net_ndt7_measurement_t measurement) {
+    net_ndt7_testenv_t env = ctx;
+    env->m_last_measurement = *measurement;
 }
 
 void net_ndt7_testenv_on_test_complete(

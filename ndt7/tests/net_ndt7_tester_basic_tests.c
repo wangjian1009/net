@@ -72,7 +72,8 @@ static void ndt7_tester_basic(void **state) {
     test_net_dns_expect_query_response(env->m_tdns, "host3", "1.1.2.1", 0);
     test_net_endpoint_id_expect_connect_to_acceptor(
         env->m_tdriver, 0, "host3:443(1.1.2.1:443)", 0, 0);
-    
+
+    /*测试查询节点 */
     assert_true(net_ndt7_tester_start(tester) == 0);
 
     test_net_driver_run(env->m_tdriver, 0);
@@ -92,13 +93,36 @@ static void ndt7_tester_basic(void **state) {
         net_ndt7_testenv_dump_tester(
             net_schedule_tmp_buffer(env->m_schedule), tester));
 
+    /*测试下载过程 */
     assert_string_equal(
         net_ndt7_tester_state_str(net_ndt7_tester_state_download),
         net_ndt7_tester_state_str(net_ndt7_tester_state(tester)));
 
     net_ndt7_testenv_download_send_bin(env, 5, 250);
     test_net_driver_run(env->m_tdriver, 250);
+    assert_string_equal(
+        "{\"AppInfo\":{\"ElapsedTime\":250,\"NumBytes\":5},\"Origin\":\"Client\",\"Test\":\"download\"}",
+        net_ndt7_response_dump(net_schedule_tmp_buffer(env->m_schedule), &env->m_last_response));
 
+    net_ndt7_testenv_download_send_text(
+        env,
+        "{\"ConnectionInfo\":{\"Client\":\"69.172.67.64:58982\",\"Server\":\"183.178.65.24:443\",\"UUID\":\"ndt-tcnnn_1619905339_0000000000040335\"}"
+        ",\"BBRInfo\":{\"BW\":108295,\"MinRTT\":45825,\"PacingGain\":739,\"CwndGain\":739,\"ElapsedTime\":590111}"
+        ",\"TCPInfo\":{\"State\":1,\"CAState\":0,\"Retransmits\":0,\"Probes\":0,\"Backoff\":0,\"Options\":7,\"WScale\":118,\"AppLimited\":0,\"RTO\":588000,\"ATO\":40000,\"SndMSS\":1388,\"RcvMSS\":564,\"Unacked\":18,\"Sacked\":0,\"Lost\":0,\"Retrans\":0,\"Fackets\":0,\"LastDataSent\":44,\"LastAckSent\":0,\"LastDataRecv\":592,\"LastAckRecv\":44,\"PMTU\":1500,\"RcvSsThresh\":64076,\"RTT\":227081,\"RTTVar\":83149,\"SndSsThresh\":2147483647,\"SndCwnd\":19,\"AdvMSS\":1448,\"Reordering\":3,\"RcvRTT\":0,\"RcvSpace\":14600,\"TotalRetrans\":0,\"PacingRate\":557746,\"MaxPacingRate\":-1,\"BytesAcked\":43900,\"BytesReceived\":1093,\"SegsOut\":57,\"SegsIn\":34,\"NotsentBytes\":105488,\"MinRTT\":45825,\"DataSegsIn\":4,\"DataSegsOut\":53,\"DeliveryRate\":80680,\"BusyTime\":808000,\"RWndLimited\":0,\"SndBufLimited\":0,\"Delivered\":36,\"DeliveredCE\":0,\"BytesSent\":68884,\"BytesRetrans\":0,\"DSackDups\":0,\"ReordSeen\":0,\"RcvOooPack\":0,\"SndWnd\":129664,\"ElapsedTime\":590111}"
+        "}",
+        0);
+    test_net_driver_run(env->m_tdriver, 0);
+
+    assert_string_equal(
+        "{\"ConnectionInfo\":{\"Client\":\"69.172.67.64:58982\",\"Server\":\"183.178.65.24:443\",\"UUID\":\"ndt-tcnnn_1619905339_0000000000040335\"}"
+        ",\"BBRInfo\":{\"BW\":108295,\"MinRTT\":45825,\"PacingGain\":739,\"CwndGain\":739,\"ElapsedTime\":590111}"
+        ",\"TCPInfo\":{\"State\":1,\"CAState\":0,\"Retransmits\":0,\"Probes\":0,\"Backoff\":0,\"Options\":7,\"WScale\":118,\"AppLimited\":0,\"RTO\":588000,\"ATO\":40000,\"SndMSS\":1388,\"RcvMSS\":564,\"Unacked\":18,\"Sacked\":0,\"Lost\":0,\"Retrans\":0,\"Fackets\":0,\"LastDataSent\":44,\"LastAckSent\":0,\"LastDataRecv\":592,\"LastAckRecv\":44,\"PMTU\":1500,\"RcvSsThresh\":64076,\"RTT\":227081,\"RTTVar\":83149,\"SndSsThresh\":2147483647,\"SndCwnd\":19,\"AdvMSS\":1448,\"Reordering\":3,\"RcvRTT\":0,\"RcvSpace\":14600,\"TotalRetrans\":0,\"PacingRate\":557746,\"MaxPacingRate\":-1,\"BytesAcked\":43900,\"BytesReceived\":1093,\"SegsOut\":57,\"SegsIn\":34,\"NotsentBytes\":105488,\"MinRTT\":45825,\"DataSegsIn\":4,\"DataSegsOut\":53,\"DeliveryRate\":80680,\"BusyTime\":808000,\"RWndLimited\":0,\"SndBufLimited\":0,\"Delivered\":36,\"DeliveredCE\":0,\"BytesSent\":68884,\"BytesRetrans\":0,\"DSackDups\":0,\"ReordSeen\":0,\"RcvOooPack\":0,\"SndWnd\":129664,\"ElapsedTime\":590111}"
+        "}",
+        net_ndt7_measurement_dump(net_schedule_tmp_buffer(env->m_schedule), &env->m_last_measurement));
+
+    /*测试上载过程 */
+
+    /**/
     assert_string_equal(
         net_ndt7_tester_state_str(net_ndt7_tester_state_done),
         net_ndt7_tester_state_str(net_ndt7_tester_state(tester)));
