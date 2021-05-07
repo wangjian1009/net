@@ -6,6 +6,8 @@
 #include "net_acceptor.h"
 #include "test_net_endpoint.h"
 #include "test_net_tl_op.h"
+#include "net_ssl_stream_endpoint.h"
+#include "net_ssl_endpoint.h"
 #include "net_ws_endpoint.h"
 #include "net_ws_protocol.h"
 #include "test_ws_svr_testenv.h"
@@ -33,8 +35,28 @@ void test_ws_svr_testenv_free(test_ws_svr_testenv_t env) {
 
 net_ws_endpoint_t
 test_ws_svr_testenv_svr_endpoint(test_ws_svr_testenv_t env, net_ws_endpoint_t cli_endpoint) {
-    net_endpoint_t other_base = test_net_endpoint_linked_other(env->m_driver, net_ws_endpoint_base_endpoint(cli_endpoint));
-    return net_ws_endpoint_cast(other_base);
+    net_endpoint_t cli_base_endpoint = net_ws_endpoint_base_endpoint(cli_endpoint);
+
+    net_ssl_stream_endpoint_t cli_ssl_stream_endpoit = net_ssl_stream_endpoint_cast(cli_base_endpoint);
+    if (cli_ssl_stream_endpoit == NULL) {
+        net_endpoint_t other_base = test_net_endpoint_linked_other(env->m_driver, cli_base_endpoint);
+        return other_base ? net_ws_endpoint_cast(other_base) : NULL;
+    }
+
+    net_ssl_endpoint_t cli_ssl_endpoint = net_ssl_stream_endpoint_underline(cli_ssl_stream_endpoit);
+    assert_true(cli_ssl_endpoint != NULL);
+
+    net_endpoint_t svr_ssl_base_endpoint =
+        test_net_endpoint_linked_other(env->m_driver, net_ssl_endpoint_base_endpoint(cli_ssl_endpoint));
+    if (svr_ssl_base_endpoint == NULL) return NULL;
+
+    net_ssl_endpoint_t svr_ssl_endpoint = net_ssl_endpoint_cast(svr_ssl_base_endpoint);
+    assert_true(svr_ssl_endpoint);
+
+    net_ssl_stream_endpoint_t svr_ssl_stream_endpoit = net_ssl_endpoint_stream(svr_ssl_endpoint);
+    if (svr_ssl_stream_endpoit == NULL) return NULL;
+
+    return net_ws_endpoint_cast(net_ssl_stream_endpoint_base_endpoint(svr_ssl_stream_endpoit));
 }
 
 enum test_ws_svr_testenv_send_msg_op_type {
@@ -60,7 +82,7 @@ struct test_ws_svr_testenv_op_data {
 };
 
 static void test_ws_svr_testenv_op_cb(void * ctx, test_net_tl_op_t op) {
-    struct test_ws_svr_testenv_op_data * op_data = ctx;
+    struct test_ws_svr_testenv_op_data * op_data = test_net_tl_op_data(op);
 
     assert_true(op_data->m_ep_id != 0);
 
