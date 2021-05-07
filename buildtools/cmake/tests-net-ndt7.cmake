@@ -4,6 +4,7 @@ add_executable(tests_net_ndt7 ${tests_net_ndt7_source})
 
 set_property(TARGET tests_net_ndt7 PROPERTY INCLUDE_DIRECTORIES
   ${cmocka_base}/include
+  ${yajl_base}/include
   ${cpe_pal_base}/include
   ${cpe_utils_base}/include
   ${cpe_utils_base}/test_utils

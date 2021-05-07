@@ -1,12 +1,20 @@
 #include "cmocka_all.h"
+#include "cpe/pal/pal_string.h"
 #include "cpe/utils/stream_buffer.h"
 #include "cpe/utils/url.h"
 #include "net_schedule.h"
 #include "net_endpoint.h"
 #include "net_ndt7_testenv.h"
 #include "net_ndt7_manage.h"
-#include "net_ndt7_tester.h"
+#include "net_ndt7_tester_i.h"
 #include "net_ndt7_tester_target.h"
+
+void net_ndt7_testenv_on_speed_progress(void * ctx, net_ndt7_tester_t tester, net_ndt7_response_t response);
+void net_ndt7_testenv_on_measurement_progress(void * ctx, net_ndt7_tester_t tester, net_ndt7_measurement_t response);
+void net_ndt7_testenv_on_test_complete(
+    void * ctx, net_ndt7_tester_t tester, net_ndt7_response_t response, net_ndt7_test_type_t test_type);
+void net_ndt7_testenv_on_all_complete(void * ctx, net_ndt7_tester_t tester);
+static void net_ndt7_testenv_log_append(net_ndt7_testenv_t env, net_ndt7_testenv_log_type_t type, yajl_val args);
 
 net_ndt7_testenv_t
 net_ndt7_testenv_create() {
@@ -24,10 +32,26 @@ net_ndt7_testenv_create() {
             test_allocrator(), env->m_em, env->m_schedule, net_driver_from_data(env->m_tdriver));
     assert_true(env->m_ndt_manager);
 
+    env->m_ndt_tester = NULL;
+    env->m_log_count = 0;
+    env->m_log_capacity = 0;
+    env->m_logs = NULL;
+    
     return env;
 }
 
 void net_ndt7_testenv_free(net_ndt7_testenv_t env) {
+    if (env->m_logs) {
+        uint16_t i;
+        for(i = 0; i < env->m_log_count; i++) {
+            yajl_tree_free(env->m_logs[i].m_msg);
+        }
+        mem_free(test_allocrator(), env->m_logs);
+        env->m_logs = NULL;
+        env->m_log_count = 0;
+        env->m_log_capacity = 0;
+    }
+    
     test_ws_svr_testenv_free(env->m_ws_svr);
     test_http_svr_testenv_free(env->m_http_svr);
     net_ndt7_manage_free(env->m_ndt_manager);
@@ -91,3 +115,67 @@ const char * net_ndt7_testenv_dump_tester(mem_buffer_t buffer, net_ndt7_tester_t
     return mem_buffer_make_continuous(buffer, 0);
 }
 
+void net_ndt7_testenv_create_tester(net_ndt7_testenv_t env) {
+    assert_true(env->m_ndt_tester == NULL);
+
+    env->m_ndt_tester = net_ndt7_tester_create(env->m_ndt_manager);
+    assert_true(env->m_ndt_tester);
+
+    net_ndt7_tester_set_cb(
+        env->m_ndt_tester,
+        env,
+        net_ndt7_testenv_on_speed_progress,
+        net_ndt7_testenv_on_measurement_progress,
+        net_ndt7_testenv_on_test_complete,
+        net_ndt7_testenv_on_all_complete,
+        NULL);
+}
+
+void net_ndt7_testenv_download_send_bin(net_ndt7_testenv_t env, uint32_t size, uint32_t delay_ms) {
+    assert_true(env->m_ndt_tester);
+    assert_true(env->m_ndt_tester->m_download.m_endpoint);
+
+    net_ws_endpoint_t svr_endpoint =
+        test_ws_svr_testenv_svr_endpoint(env->m_ws_svr, env->m_ndt_tester->m_download.m_endpoint);
+    assert_true(svr_endpoint);
+
+    //net_endpoint_t base_endpoint = net_ws_endpoint_base_endpoint(env->m_ndt_tester->m_download.m_endpoint);
+}
+
+void net_ndt7_testenv_download_send_text(net_ndt7_testenv_t env, const char * msg, uint32_t delay_ms) {
+    assert_true(env->m_ndt_tester);
+    assert_true(env->m_ndt_tester->m_download.m_endpoint);
+}
+
+void net_ndt7_testenv_on_speed_progress(void * ctx, net_ndt7_tester_t tester, net_ndt7_response_t response) {
+}
+
+void net_ndt7_testenv_on_measurement_progress(void * ctx, net_ndt7_tester_t tester, net_ndt7_measurement_t response) {
+}
+
+void net_ndt7_testenv_on_test_complete(
+    void * ctx, net_ndt7_tester_t tester, net_ndt7_response_t response, net_ndt7_test_type_t test_type) {
+}
+
+void net_ndt7_testenv_on_all_complete(void * ctx, net_ndt7_tester_t tester) {
+}
+
+static void net_ndt7_testenv_log_append(net_ndt7_testenv_t env, net_ndt7_testenv_log_type_t type, yajl_val args) {
+    if (env->m_log_count >= env->m_log_capacity) {
+        uint16_t new_capacity = env->m_log_capacity < 16 ? 16 : env->m_log_capacity * 2;
+        net_ndt7_testenv_log_t new_records =
+                mem_alloc(test_allocrator(), sizeof(struct net_ndt7_testenv_log) * new_capacity);
+
+        if (env->m_logs) {
+            memcpy(new_records, env->m_logs, sizeof(struct net_ndt7_testenv_log) * env->m_log_count);
+            mem_free(test_allocrator(), env->m_logs);
+        }
+
+        env->m_log_capacity = new_capacity;
+        env->m_logs = new_records;
+    }
+
+    env->m_logs[env->m_log_count].m_type = type;
+    env->m_logs[env->m_log_count].m_msg = args;
+    env->m_log_count++;
+}

@@ -23,19 +23,20 @@ test_ws_svr_testenv_create(
 
 void test_ws_svr_testenv_free(test_ws_svr_testenv_t env);
 
+net_ws_endpoint_t
+test_ws_svr_testenv_svr_endpoint(test_ws_svr_testenv_t env, net_ws_endpoint_t cli_endpoint);
+
 /*设置服务端数据 */
 void test_ws_svr_testenv_create_mock_svr(
     test_ws_svr_testenv_t env, const char * name, const char * url);
 
-void test_ws_svr_testenv_expect_response(
-    test_ws_svr_testenv_t env, const char * url, const char * path,
-    int code, const char * code_msg, const char * response,
-    uint32_t delay_ms);
+void test_ws_svr_testenv_send_bin_msg(
+    test_ws_svr_testenv_t env, net_ws_endpoint_t endpoint, void const * msg, uint32_t msg_len, int64_t delay_ms);
 
-void test_ws_svr_testenv_expect_response_close(
-    test_ws_svr_testenv_t env, const char * url, const char * path,
-    int code, const char * code_msg, const char * response,
-    uint32_t delay_ms);
+void test_ws_svr_testenv_send_text_msg(
+    test_ws_svr_testenv_t env, net_ws_endpoint_t endpoint, const char * msg, int64_t delay_ms);
 
+void test_ws_svr_testenv_close(
+    test_ws_svr_testenv_t env, net_ws_endpoint_t endpoint, uint16_t status_code, const char * msg, int64_t delay_ms);
 
 #endif
