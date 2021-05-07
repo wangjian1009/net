@@ -102,6 +102,9 @@ int net_ws_endpoint_connect(net_ws_endpoint_t endpoint, cpe_url_t url) {
 }
 
 int net_ws_endpoint_close(net_ws_endpoint_t endpoint, uint16_t status_code, const char * msg) {
+    /* net_ws_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint)); */
+    /* struct wslay_event_msg ws_msg = { WSLAY_CONNECTION_CLOSE,  (const uint8_t *)msg, msg ? strlen(msg) : 0,  }; */
+    /* return net_ws_endpoint_send_event(protocol, endpoint, &ws_msg); */
     return 0;
 }
 

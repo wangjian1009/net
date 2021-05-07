@@ -277,13 +277,37 @@ CONNECT_AGAIN:
                 net_sock_endpoint_update_local_address(endpoint);
             }
 
+            assert(endpoint->m_connect_timeout == NULL);
+            endpoint->m_connect_timeout = net_timer_create(base_driver, net_sock_endpoint_connect_timeout, base_endpoint);
+            if (endpoint->m_connect_timeout == NULL) {
+                CPE_ERROR(
+                    driver->m_em, "sock: %s: fd=%d: create connect timeout fail",
+                    net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
+
+                if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
+                    if (net_endpoint_driver_debug(base_endpoint) >= 2) {
+                        CPE_INFO(
+                            driver->m_em, "sock: %s: fd=%d: free for create connect timer fail!",
+                            net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
+                    }
+                    net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+                    return 0;
+                }
+
+                return -1;
+            }
+            net_timer_active(endpoint->m_connect_timeout, 3000);
+
             assert(endpoint->m_watcher == NULL);
             endpoint->m_watcher = net_watcher_create(base_driver, _to_watcher_fd(endpoint->m_fd), endpoint, net_sock_endpoint_connect_cb);
             if (endpoint->m_watcher == NULL) {
                 CPE_ERROR(
                     driver->m_em, "sock: %s: fd=%d: create watcher fail",
                     net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
-                
+
+                net_timer_free(endpoint->m_connect_timeout);
+                endpoint->m_connect_timeout = NULL;
+
                 if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
                     if (net_endpoint_driver_debug(base_endpoint) >= 2) {
                         CPE_INFO(
@@ -955,18 +979,7 @@ static int net_sock_endpoint_start_connect(
         return -1;
     }
 
-    assert(endpoint->m_connect_timeout == NULL);
-    endpoint->m_connect_timeout = net_timer_create(base_driver, net_sock_endpoint_connect_timeout, base_endpoint);
-    if (endpoint->m_connect_timeout == NULL) {
-        CPE_ERROR(
-            driver->m_em, "sock: %s: fd=%d: create connect timeout fail",
-            net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd);
-        net_sock_endpoint_close_sock(driver, endpoint, base_endpoint);
-    }
-    net_timer_active(endpoint->m_connect_timeout, 3000);
-
     int rv = cpe_connect(endpoint->m_fd, (struct sockaddr *)&remote_addr_sock, remote_addr_sock_len);
-    
     return rv;
 }
 

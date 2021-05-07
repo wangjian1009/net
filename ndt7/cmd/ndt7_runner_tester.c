@@ -7,7 +7,9 @@ void ndt7_runner_tester_on_speed_progress(void * ctx, net_ndt7_tester_t tester, 
     printf("progress: %s\n", net_ndt7_response_dump(&runner->m_data_buffer, response));
 }
 
-void ndt7_runner_tester_on_measurement_progress(void * ctx, net_ndt7_tester_t tester, net_ndt7_measurement_t response) {
+void ndt7_runner_tester_on_measurement_progress(void * ctx, net_ndt7_tester_t tester, net_ndt7_measurement_t measurement) {
+    ndt7_runner_t runner = ctx;
+    printf("progress: %s\n", net_ndt7_measurement_dump(&runner->m_data_buffer, measurement));
 }
 
 void ndt7_runner_tester_on_test_complete(
