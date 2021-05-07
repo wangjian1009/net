@@ -158,6 +158,14 @@ net_ndt7_tester_state_t net_ndt7_tester_state(net_ndt7_tester_t tester) {
     return tester->m_state;
 }
 
+int64_t net_ndt7_tester_measurement_interval_ms(net_ndt7_tester_t tester) {
+    return tester->m_measurement_interval_ms;
+}
+
+void net_ndt7_tester_set_measurement_interval_ms(net_ndt7_tester_t tester, int64_t measurement_interval_ms) {
+    tester->m_measurement_interval_ms = measurement_interval_ms;
+}
+
 void net_ndt7_tester_set_cb(
     net_ndt7_tester_t tester,
     void * ctx,

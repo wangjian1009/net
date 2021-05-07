@@ -48,8 +48,9 @@ void net_ndt7_testenv_free(net_ndt7_testenv_t env);
 
 void net_ndt7_testenv_create_tester(net_ndt7_testenv_t env);
 
-void net_ndt7_testenv_download_send_bin(net_ndt7_testenv_t env, uint32_t size, uint32_t delay_ms);
-void net_ndt7_testenv_download_send_text(net_ndt7_testenv_t env, const char * msg, uint32_t delay_ms);
+void net_ndt7_testenv_download_send_bin(net_ndt7_testenv_t env, uint32_t size, int64_t delay_ms);
+void net_ndt7_testenv_download_send_text(net_ndt7_testenv_t env, const char * msg, int64_t delay_ms);
+void net_ndt7_testenv_download_close(net_ndt7_testenv_t env, uint16_t status_code, const char * msg, int64_t delay_ms);
 
 void net_ndt7_testenv_print_tester_target(write_stream_t ws, net_ndt7_tester_target_t target);
 void net_ndt7_testenv_print_tester(write_stream_t ws, net_ndt7_tester_t tester);

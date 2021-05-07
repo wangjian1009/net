@@ -32,6 +32,9 @@ int net_ndt7_tester_set_protocol(net_ndt7_tester_t tester, net_ndt7_test_protoco
 
 net_ndt7_tester_state_t net_ndt7_tester_state(net_ndt7_tester_t tester);
 
+int64_t net_ndt7_tester_measurement_interval_ms(net_ndt7_tester_t tester);
+void net_ndt7_tester_set_measurement_interval_ms(net_ndt7_tester_t tester, int64_t measurement_interval_ms);
+
 void net_ndt7_tester_targets(net_ndt7_tester_t tester, net_ndt7_tester_target_it_t it);
 
 /*回调 */

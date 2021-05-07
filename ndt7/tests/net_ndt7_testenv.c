@@ -131,7 +131,7 @@ void net_ndt7_testenv_create_tester(net_ndt7_testenv_t env) {
         NULL);
 }
 
-void net_ndt7_testenv_download_send_bin(net_ndt7_testenv_t env, uint32_t size, uint32_t delay_ms) {
+void net_ndt7_testenv_download_send_bin(net_ndt7_testenv_t env, uint32_t size, int64_t delay_ms) {
     assert_true(env->m_ndt_tester);
     assert_true(env->m_ndt_tester->m_download.m_endpoint);
 
@@ -139,12 +139,31 @@ void net_ndt7_testenv_download_send_bin(net_ndt7_testenv_t env, uint32_t size, u
         test_ws_svr_testenv_svr_endpoint(env->m_ws_svr, env->m_ndt_tester->m_download.m_endpoint);
     assert_true(svr_endpoint);
 
-    //net_endpoint_t base_endpoint = net_ws_endpoint_base_endpoint(env->m_ndt_tester->m_download.m_endpoint);
+    void * msg = mem_alloc(test_allocrator(), size);
+    test_ws_svr_testenv_send_bin_msg(env->m_ws_svr, svr_endpoint, msg, size, delay_ms);
+    mem_free(test_allocrator(), msg);
 }
 
-void net_ndt7_testenv_download_send_text(net_ndt7_testenv_t env, const char * msg, uint32_t delay_ms) {
+void net_ndt7_testenv_download_send_text(net_ndt7_testenv_t env, const char * msg, int64_t delay_ms) {
     assert_true(env->m_ndt_tester);
     assert_true(env->m_ndt_tester->m_download.m_endpoint);
+
+    net_ws_endpoint_t svr_endpoint =
+        test_ws_svr_testenv_svr_endpoint(env->m_ws_svr, env->m_ndt_tester->m_download.m_endpoint);
+    assert_true(svr_endpoint);
+
+    test_ws_svr_testenv_send_text_msg(env->m_ws_svr, svr_endpoint, msg, delay_ms);
+}
+
+void net_ndt7_testenv_download_close(net_ndt7_testenv_t env, uint16_t status_code, const char * msg, int64_t delay_ms) {
+    assert_true(env->m_ndt_tester);
+    assert_true(env->m_ndt_tester->m_download.m_endpoint);
+
+    net_ws_endpoint_t svr_endpoint =
+        test_ws_svr_testenv_svr_endpoint(env->m_ws_svr, env->m_ndt_tester->m_download.m_endpoint);
+    assert_true(svr_endpoint);
+
+    test_ws_svr_testenv_close(env->m_ws_svr, svr_endpoint, status_code, msg, delay_ms);
 }
 
 void net_ndt7_testenv_on_speed_progress(void * ctx, net_ndt7_tester_t tester, net_ndt7_response_t response) {

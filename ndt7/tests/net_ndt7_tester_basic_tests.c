@@ -22,8 +22,10 @@ static void ndt7_tester_basic(void **state) {
     net_ndt7_testenv_t env = *state;
 
     net_ndt7_testenv_create_tester(env);
-    net_ndt7_tester_t tester = env->m_ndt_tester;
 
+    net_ndt7_tester_t tester = env->m_ndt_tester;
+    net_ndt7_tester_set_measurement_interval_ms(tester, 250);
+    
     test_net_dns_expect_query_response(env->m_tdns, "locate.measurementlab.net", "1.1.1.1", 0);
     test_net_endpoint_id_expect_connect_to_acceptor(
         env->m_tdriver, 0, "locate.measurementlab.net:443(1.1.1.1:443)", 0, 0);
@@ -89,7 +91,14 @@ static void ndt7_tester_basic(void **state) {
         ,
         net_ndt7_testenv_dump_tester(
             net_schedule_tmp_buffer(env->m_schedule), tester));
-        
+
+    assert_string_equal(
+        net_ndt7_tester_state_str(net_ndt7_tester_state_download),
+        net_ndt7_tester_state_str(net_ndt7_tester_state(tester)));
+
+    net_ndt7_testenv_download_send_bin(env, 5, 250);
+    test_net_driver_run(env->m_tdriver, 250);
+
     assert_string_equal(
         net_ndt7_tester_state_str(net_ndt7_tester_state_done),
         net_ndt7_tester_state_str(net_ndt7_tester_state(tester)));

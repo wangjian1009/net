@@ -78,7 +78,10 @@ int net_ndt7_tester_download_start(net_ndt7_tester_t tester) {
         CPE_ERROR(manager->m_em, "ndt7: %d: download: start: connect start fail", tester->m_id);
         goto START_FAIL;
     }
-    
+
+    tester->m_download.m_start_time_ms = net_schedule_cur_time_ms(manager->m_schedule);
+    tester->m_download.m_pre_notify_ms = tester->m_download.m_start_time_ms;
+
     return 0;
 
 START_FAIL:
