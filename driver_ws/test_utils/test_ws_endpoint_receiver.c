@@ -1,16 +1,10 @@
 #include "cmocka_all.h"
 #include "net_endpoint.h"
+#include "test_net_tl_op.h"
 #include "test_ws_endpoint_receiver.h"
 
-typedef enum test_net_ws_endpoint_op {
-    test_net_ws_endpoint_op_noop,
-    test_net_ws_endpoint_op_disable,
-    test_net_ws_endpoint_op_error,
-    test_net_ws_endpoint_op_delete,
-} test_net_ws_endpoint_op_t;
-
-void test_net_ws_endpoint_apply_op(net_ws_endpoint_t endpoint, test_net_ws_endpoint_op_t op) {
-    switch(op) {
+void test_net_ws_endpoint_apply_action(net_ws_endpoint_t endpoint, struct test_net_ws_endpoint_action * action) {
+    switch(action->m_type) {
     case test_net_ws_endpoint_op_noop:
         break;
     case test_net_ws_endpoint_op_disable:
@@ -29,60 +23,123 @@ void test_net_ws_endpoint_apply_op(net_ws_endpoint_t endpoint, test_net_ws_endpo
     }
 }
 
-/*text*/
+struct test_net_ws_endpoint_op_data {
+    uint32_t m_ep_id;
+    struct test_net_ws_endpoint_action m_action;
+};
+
+static void test_net_ws_endpoint_op_cb(void * ctx, test_net_tl_op_t op) {
+    struct test_net_ws_endpoint_op_data * op_data = test_net_tl_op_data(op);
+
+    assert_true(op_data->m_ep_id != 0);
+
+    net_schedule_t schedule = net_driver_schedule(net_driver_from_data(op->m_driver));
+    net_endpoint_t base_endpoint = net_endpoint_find(schedule, op_data->m_ep_id);
+    if (base_endpoint == NULL) return;
+
+    net_ws_endpoint_t endpoint = net_ws_endpoint_cast(base_endpoint);
+    
+    test_net_ws_endpoint_apply_action(endpoint, &op_data->m_action);
+}
+
+struct test_net_ws_endpoint_setup {
+    test_net_driver_t m_tdriver;
+    struct test_net_ws_endpoint_action m_action;
+    int64_t m_delay_ms;
+};
+
+void test_net_ws_endpoint_apply_setup(net_ws_endpoint_t endpoint, struct test_net_ws_endpoint_setup * setup) {
+    if (setup->m_delay_ms == 0) {
+        test_net_ws_endpoint_apply_action(endpoint, &setup->m_action);
+    }
+    else {
+        test_net_tl_op_t op = test_net_tl_op_create(
+            setup->m_tdriver, setup->m_delay_ms,
+            sizeof(struct test_net_ws_endpoint_op_data),
+            test_net_ws_endpoint_op_cb,
+            NULL, NULL);
+
+        struct test_net_ws_endpoint_op_data * op_data = test_net_tl_op_data(op);
+
+        op_data->m_ep_id = net_endpoint_id(net_ws_endpoint_base_endpoint(endpoint));
+        op_data->m_action = setup->m_action;
+    }
+}
+
+/*回调函数 */
 void test_net_ws_endpoint_on_msg_text(void * ctx, net_ws_endpoint_t endpoint, const char * msg) {
     uint32_t id = net_endpoint_id(net_ws_endpoint_base_endpoint(endpoint));
     check_expected(id);
     check_expected(msg);
 
-    test_net_ws_endpoint_op_t op = mock_type(test_net_ws_endpoint_op_t);
-    test_net_ws_endpoint_apply_op(endpoint, op);
+    struct test_net_ws_endpoint_setup * setup = mock_type(struct test_net_ws_endpoint_setup *);
+    test_net_ws_endpoint_apply_setup(endpoint, setup);
 }
 
-void test_net_ws_endpoint_expect_text_msg(net_ws_endpoint_t endpoint, const char * msg) {
-    expect_value(test_net_ws_endpoint_on_msg_text, id, net_endpoint_id(net_ws_endpoint_base_endpoint(endpoint)));
-    if (msg) {
-        expect_string(test_net_ws_endpoint_on_msg_text, msg, msg);
-    }
-    else {
-        expect_any(test_net_ws_endpoint_on_msg_text, msg);
-    }
-    will_return(test_net_ws_endpoint_on_msg_text, test_net_ws_endpoint_op_noop);
-}
-
-void test_net_ws_endpoint_expect_text_msg_disable_ep(net_ws_endpoint_t endpoint, const char * msg) {
-    expect_value(test_net_ws_endpoint_on_msg_text, id, net_endpoint_id(net_ws_endpoint_base_endpoint(endpoint)));
-    if (msg) {
-        expect_string(test_net_ws_endpoint_on_msg_text, msg, msg);
-    }
-    else {
-        expect_any(test_net_ws_endpoint_on_msg_text, msg);
-    }
-    will_return(test_net_ws_endpoint_on_msg_text, test_net_ws_endpoint_op_disable);
-}
-
-void test_net_ws_endpoint_expect_text_msg_delete_ep(net_ws_endpoint_t endpoint, const char * msg) {
-    expect_value(test_net_ws_endpoint_on_msg_text, id, net_endpoint_id(net_ws_endpoint_base_endpoint(endpoint)));
-    if (msg) {
-        expect_string(test_net_ws_endpoint_on_msg_text, msg, msg);
-    }
-    else {
-        expect_any(test_net_ws_endpoint_on_msg_text, msg);
-    }
-    will_return(test_net_ws_endpoint_on_msg_text, test_net_ws_endpoint_op_delete);
-}
-
-/*bin*/
 void test_net_ws_endpoint_on_msg_bin(void * ctx, net_ws_endpoint_t endpoint, const void * msg, uint32_t msg_len) {
     uint32_t id = net_endpoint_id(net_ws_endpoint_base_endpoint(endpoint));
     check_expected(id);
     check_expected(msg);
 
-    test_net_ws_endpoint_op_t op = mock_type(test_net_ws_endpoint_op_t);
-    test_net_ws_endpoint_apply_op(endpoint, op);
+    struct test_net_ws_endpoint_setup * setup = mock_type(struct test_net_ws_endpoint_setup *);
+    test_net_ws_endpoint_apply_setup(endpoint, setup);
 }
 
-void test_net_ws_endpoint_expect_bin_msg(net_ws_endpoint_t endpoint, const void * msg, uint32_t msg_len) {
+void test_net_ws_endpoint_on_close(void * ctx, net_ws_endpoint_t endpoint, uint16_t status_code, const char * msg) {
+    uint32_t id = net_endpoint_id(net_ws_endpoint_base_endpoint(endpoint));
+    check_expected(id);
+    check_expected(status_code);    
+    check_expected(msg);
+
+    struct test_net_ws_endpoint_setup * setup = mock_type(struct test_net_ws_endpoint_setup *);
+    test_net_ws_endpoint_apply_setup(endpoint, setup);
+}
+
+void test_net_ws_endpoint_install_receivers(net_ws_endpoint_t endpoint) {
+    net_ws_endpoint_set_callback(
+        endpoint,
+        NULL,
+        test_net_ws_endpoint_on_msg_text,
+        test_net_ws_endpoint_on_msg_bin,
+        test_net_ws_endpoint_on_close,
+        NULL);
+}
+
+/*设置函数 */
+struct test_net_ws_endpoint_setup *
+test_net_ws_endpoint_expect_create_setup(
+    test_net_driver_t tdriver, test_net_ws_endpoint_action_t action, int64_t delay_ms)
+{
+    struct test_net_ws_endpoint_setup * setup =
+        mem_buffer_alloc(&tdriver->m_setup_buffer, sizeof(struct test_net_ws_endpoint_setup));
+
+    setup->m_tdriver = tdriver;
+    setup->m_action = *action;
+    setup->m_delay_ms = delay_ms;
+    
+    return setup;
+}
+
+void test_net_ws_endpoint_expect_text_msg(
+    test_net_driver_t tdriver, net_ws_endpoint_t endpoint, const char * msg,
+    test_net_ws_endpoint_action_t action, int64_t delay_ms)
+{
+    expect_value(test_net_ws_endpoint_on_msg_text, id, net_endpoint_id(net_ws_endpoint_base_endpoint(endpoint)));
+    if (msg) {
+        expect_string(test_net_ws_endpoint_on_msg_text, msg, msg);
+    }
+    else {
+        expect_any(test_net_ws_endpoint_on_msg_text, msg);
+    }
+
+    struct test_net_ws_endpoint_setup * setup = test_net_ws_endpoint_expect_create_setup(tdriver, action, delay_ms);
+    will_return(test_net_ws_endpoint_on_msg_text, setup);
+}
+
+void test_net_ws_endpoint_expect_bin_msg(
+    test_net_driver_t tdriver, net_ws_endpoint_t endpoint, const void * msg, uint32_t msg_len,
+    test_net_ws_endpoint_action_t action, int64_t delay_ms)
+{
     expect_value(test_net_ws_endpoint_on_msg_bin, id, net_endpoint_id(net_ws_endpoint_base_endpoint(endpoint)));
     if (msg) {
         expect_memory(test_net_ws_endpoint_on_msg_bin, msg, msg, msg_len);
@@ -90,16 +147,26 @@ void test_net_ws_endpoint_expect_bin_msg(net_ws_endpoint_t endpoint, const void 
     else {
         expect_any(test_net_ws_endpoint_on_msg_bin, msg);
     }
-    will_return(test_net_ws_endpoint_on_msg_bin, test_net_ws_endpoint_op_noop);
+
+    struct test_net_ws_endpoint_setup * setup = test_net_ws_endpoint_expect_create_setup(tdriver, action, delay_ms);
+    will_return(test_net_ws_endpoint_on_msg_bin, setup);
 }
 
-/*both*/
-void test_net_ws_endpoint_install_receivers(net_ws_endpoint_t endpoint) {
-    net_ws_endpoint_set_callback(
-        endpoint,
-        NULL,
-        test_net_ws_endpoint_on_msg_text,
-        test_net_ws_endpoint_on_msg_bin,
-        NULL,
-        NULL);
+void test_net_ws_endpoint_expect_close(
+    test_net_driver_t tdriver, net_ws_endpoint_t endpoint, uint16_t status_code, const char * msg,
+    test_net_ws_endpoint_action_t action, int64_t delay_ms)
+{
+    expect_value(test_net_ws_endpoint_on_close, id, net_endpoint_id(net_ws_endpoint_base_endpoint(endpoint)));
+
+    expect_value(test_net_ws_endpoint_on_close, status_code, status_code);
+        
+    if (msg) {
+        expect_string(test_net_ws_endpoint_on_close, msg, msg);
+    }
+    else {
+        expect_any(test_net_ws_endpoint_on_close, msg);
+    }
+
+    struct test_net_ws_endpoint_setup * setup = test_net_ws_endpoint_expect_create_setup(tdriver, action, delay_ms);
+    will_return(test_net_ws_endpoint_on_msg_text, setup);
 }

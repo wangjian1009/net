@@ -40,21 +40,23 @@ static void net_ws_pair_basic(void **state) {
     test_net_ws_endpoint_install_receivers(cli_ep);
     test_net_ws_endpoint_install_receivers(svr_ep);
     
+    struct test_net_ws_endpoint_action action_noop = { test_net_ws_endpoint_op_noop };
+    
     /*client -> server*/
-    test_net_ws_endpoint_expect_text_msg(svr_ep, "abcd");
+    test_net_ws_endpoint_expect_text_msg(env->m_tdriver, svr_ep, "abcd", &action_noop, 0);
     assert_true(net_ws_endpoint_send_msg_text(cli_ep, "abcd") == 0);
     test_net_driver_run(env->m_tdriver, 0);
 
-    test_net_ws_endpoint_expect_bin_msg(svr_ep, "efgh", 4);
+    test_net_ws_endpoint_expect_bin_msg(env->m_tdriver, svr_ep, "efgh", 4, &action_noop, 0);
     assert_true(net_ws_endpoint_send_msg_bin(cli_ep, "efgh", 4) == 0);
     test_net_driver_run(env->m_tdriver, 0);
 
     /*server -> client*/
-    test_net_ws_endpoint_expect_text_msg(cli_ep, "hijk");
+    test_net_ws_endpoint_expect_text_msg(env->m_tdriver, cli_ep, "hijk", &action_noop, 0);
     assert_true(net_ws_endpoint_send_msg_text(svr_ep, "hijk") == 0);
     test_net_driver_run(env->m_tdriver, 0);
 
-    test_net_ws_endpoint_expect_bin_msg(cli_ep, "lmno", 4);
+    test_net_ws_endpoint_expect_bin_msg(env->m_tdriver, cli_ep, "lmno", 4, &action_noop, 0);
     assert_true(net_ws_endpoint_send_msg_bin(svr_ep, "lmno", 4) == 0);
     test_net_driver_run(env->m_tdriver, 0);
 }
@@ -70,7 +72,8 @@ static void net_ws_pair_text_msg_disable_ep(void **state) {
     test_net_ws_endpoint_install_receivers(svr_ep);
     
     /*client -> server*/
-    test_net_ws_endpoint_expect_text_msg_disable_ep(svr_ep, "abcd");
+    struct test_net_ws_endpoint_action action1 = { test_net_ws_endpoint_op_disable };
+    test_net_ws_endpoint_expect_text_msg(env->m_tdriver, svr_ep, "abcd", &action1, 0);
     assert_true(net_ws_endpoint_send_msg_text(cli_ep, "abcd") == 0);
     test_net_driver_run(env->m_tdriver, 0);
 
@@ -96,7 +99,8 @@ static void net_ws_pair_text_msg_delete_ep(void **state) {
     test_net_ws_endpoint_install_receivers(svr_ep);
     
     /*client -> server*/
-    test_net_ws_endpoint_expect_text_msg_delete_ep(svr_ep, "abcd");
+    struct test_net_ws_endpoint_action action1 = { test_net_ws_endpoint_op_delete };
+    test_net_ws_endpoint_expect_text_msg(env->m_tdriver, svr_ep, "abcd", &action1, 0);
     assert_true(net_ws_endpoint_send_msg_text(cli_ep, "abcd") == 0);
     test_net_driver_run(env->m_tdriver, 0);
 
