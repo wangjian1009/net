@@ -33,6 +33,7 @@ net_driver_create(
     uint16_t endpoint_capacity,
     net_endpoint_init_fun_t endpoint_init,
     net_endpoint_fini_fun_t endpoint_fini,
+    net_endpoint_calc_size_fun_t endpoint_calc_size,
     net_endpoint_connect_fun_t endpoint_connect,
     net_endpoint_update_fun_t endpoint_update,
     net_endpoint_set_no_delay_fun_t endpoint_set_no_delay,
@@ -92,6 +93,7 @@ net_driver_create(
     driver->m_endpoint_capacity = endpoint_capacity;
     driver->m_endpoint_init = endpoint_init;
     driver->m_endpoint_fini = endpoint_fini;
+    driver->m_endpoint_calc_size = endpoint_calc_size;
     driver->m_endpoint_connect = endpoint_connect;
     driver->m_endpoint_update = endpoint_update;
     driver->m_endpoint_set_no_delay = endpoint_set_no_delay;

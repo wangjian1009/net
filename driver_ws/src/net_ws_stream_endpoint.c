@@ -35,6 +35,18 @@ void net_ws_stream_endpoint_fini(net_endpoint_t base_endpoint) {
     }
 }
 
+void net_ws_stream_endpoint_calc_size(net_endpoint_t base_endpoint, net_endpoint_size_info_t size_info) {
+    net_ws_stream_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+
+    if (endpoint->m_underline && endpoint->m_underline->m_base_endpoint) {
+        net_endpoint_calc_size(endpoint->m_underline->m_base_endpoint, size_info);
+    }
+    else {
+        size_info->m_read = 0;
+        size_info->m_write = 0;
+    }
+}
+
 int net_ws_stream_endpoint_connect(net_endpoint_t base_endpoint) {
     net_schedule_t schedule = net_endpoint_schedule(base_endpoint);
     net_ws_stream_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));

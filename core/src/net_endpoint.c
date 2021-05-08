@@ -596,6 +596,13 @@ void net_endpoint_calc_size(net_endpoint_t endpoint, net_endpoint_size_info_t si
         size_info->m_read = net_endpoint_buf_size(endpoint, net_ep_buf_read);
         size_info->m_write = net_endpoint_buf_size(endpoint, net_ep_buf_write);
     }
+
+    if (endpoint->m_driver->m_endpoint_calc_size) {
+        struct net_endpoint_size_info driver_size;
+        endpoint->m_driver->m_endpoint_calc_size(endpoint, &driver_size);
+        size_info->m_read += driver_size.m_read;
+        size_info->m_write += driver_size.m_write;
+    }
 }
 
 uint8_t net_endpoint_expect_read(net_endpoint_t endpoint) {

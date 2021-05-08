@@ -51,6 +51,7 @@ net_ws_stream_driver_create(
             sizeof(struct net_ws_stream_endpoint),
             net_ws_stream_endpoint_init,
             net_ws_stream_endpoint_fini,
+            net_ws_stream_endpoint_calc_size,
             net_ws_stream_endpoint_connect,
             net_ws_stream_endpoint_update,
             net_ws_stream_endpoint_set_no_delay,

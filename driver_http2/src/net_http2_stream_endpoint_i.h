@@ -12,6 +12,7 @@ struct net_http2_stream_endpoint {
 
 int net_http2_stream_endpoint_init(net_endpoint_t base_endpoint);
 void net_http2_stream_endpoint_fini(net_endpoint_t base_endpoint);
+void net_http2_stream_endpoint_calc_size(net_endpoint_t base_endpoint, net_endpoint_size_info_t size_info);
 int net_http2_stream_endpoint_connect(net_endpoint_t base_endpoint);
 int net_http2_stream_endpoint_update(net_endpoint_t base_endpoint);
 int net_http2_stream_endpoint_set_no_delay(net_endpoint_t base_endpoint, uint8_t no_delay);

@@ -59,6 +59,7 @@ net_sock_driver_create(
         sizeof(struct net_sock_endpoint),
         net_sock_endpoint_init,
         net_sock_endpoint_fini,
+        net_sock_endpoint_calc_size,
         net_sock_endpoint_connect,
         net_sock_endpoint_update,
         net_sock_endpoint_set_no_delay,

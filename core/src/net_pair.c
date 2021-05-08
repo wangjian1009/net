@@ -438,6 +438,7 @@ net_driver_t net_pair_driver_create(net_schedule_t schedule) {
         sizeof(struct net_pair_endpoint),
         net_pair_endpoint_init,
         net_pair_endpoint_fini,
+        NULL,
         net_pair_endpoint_connect,
         net_pair_endpoint_update,
         net_pair_endpoint_set_no_delay,

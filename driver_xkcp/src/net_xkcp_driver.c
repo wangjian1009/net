@@ -44,6 +44,7 @@ net_xkcp_driver_create(
             sizeof(struct net_xkcp_endpoint),
             net_xkcp_endpoint_init,
             net_xkcp_endpoint_fini,
+            net_xkcp_endpoint_calc_size,
             net_xkcp_endpoint_connect,
             net_xkcp_endpoint_update,
             net_xkcp_endpoint_set_no_delay,

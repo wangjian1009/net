@@ -68,6 +68,43 @@ void net_sock_endpoint_fini(net_endpoint_t base_endpoint) {
     }
 }
 
+void net_sock_endpoint_calc_size(net_endpoint_t base_endpoint, net_endpoint_size_info_t size_info) {
+    net_sock_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+    net_sock_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
+    
+    if (endpoint->m_fd != -1) {
+        int buf = 0;
+        socklen_t len = sizeof(buf);
+        if (cpe_getsockopt(endpoint->m_fd, SOL_SOCKET, SO_NREAD, (void*)&buf, &len) == -1) {
+            CPE_ERROR(
+                driver->m_em, "sock: %s: fd=%d: calc size: get NREAD error fail, errno=%d (%s)!",
+                net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
+                cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+            size_info->m_read = 0;
+        }
+        else {
+            size_info->m_read = buf;
+        }
+
+        buf = 0;
+        len = sizeof(buf);
+        if (cpe_getsockopt(endpoint->m_fd, SOL_SOCKET, SO_NWRITE, (void*)&buf, &len) == -1) {
+            CPE_ERROR(
+                driver->m_em, "sock: %s: fd=%d: calc size: get NWRITE error fail, errno=%d (%s)!",
+                net_endpoint_dump(net_sock_driver_tmp_buffer(driver), base_endpoint), endpoint->m_fd,
+                cpe_sock_errno(), cpe_sock_errstr(cpe_sock_errno()));
+            size_info->m_write = 0;
+        }
+        else {
+            size_info->m_write = buf;
+        }
+    }
+    else {
+        size_info->m_read = 0;
+        size_info->m_write = 0;
+    }
+}
+
 int net_sock_endpoint_update(net_endpoint_t base_endpoint) {
     net_sock_endpoint_t endpoint = net_endpoint_data(base_endpoint);
     net_sock_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));

@@ -41,6 +41,11 @@ void net_http2_stream_endpoint_fini(net_endpoint_t base_stream) {
     }
 }
 
+void net_http2_stream_endpoint_calc_size(net_endpoint_t base_endpoint, net_endpoint_size_info_t size_info) {
+    size_info->m_read = 0;
+    size_info->m_write = 0;
+}
+
 net_http2_req_t
 net_http2_stream_endpoint_req(net_http2_stream_endpoint_t endpoint) {
     return endpoint->m_req;

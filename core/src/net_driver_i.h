@@ -34,6 +34,7 @@ struct net_driver {
     uint16_t m_endpoint_capacity;
     net_endpoint_init_fun_t m_endpoint_init;
     net_endpoint_fini_fun_t m_endpoint_fini;
+    net_endpoint_calc_size_fun_t m_endpoint_calc_size;
     net_endpoint_connect_fun_t m_endpoint_connect;
     net_endpoint_update_fun_t m_endpoint_update;
     net_endpoint_set_no_delay_fun_t m_endpoint_set_no_delay;

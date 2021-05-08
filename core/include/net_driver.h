@@ -19,6 +19,7 @@ typedef void (*net_acceptor_fini_fun_t)(net_acceptor_t acceptor);
 
 typedef int (*net_endpoint_init_fun_t)(net_endpoint_t endpoint);
 typedef void (*net_endpoint_fini_fun_t)(net_endpoint_t endpoint);
+typedef void (*net_endpoint_calc_size_fun_t)(net_endpoint_t endpoint, net_endpoint_size_info_t size_info);
 typedef int (*net_endpoint_update_fun_t)(net_endpoint_t endpoint);
 typedef int (*net_endpoint_connect_fun_t)(net_endpoint_t endpoint);
 typedef int (*net_endpoint_set_no_delay_fun_t)(net_endpoint_t endpoint, uint8_t no_delay);
@@ -59,6 +60,7 @@ net_driver_create(
     uint16_t endpoint_capacity,
     net_endpoint_init_fun_t endpoint_init,
     net_endpoint_fini_fun_t endpoint_fini,
+    net_endpoint_calc_size_fun_t endpoint_calc_size,
     net_endpoint_connect_fun_t endpoint_connect,
     net_endpoint_update_fun_t endpoint_update,
     net_endpoint_set_no_delay_fun_t endpoint_set_no_delay,

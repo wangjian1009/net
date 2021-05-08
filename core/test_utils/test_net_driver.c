@@ -39,6 +39,7 @@ test_net_driver_create(net_schedule_t schedule, error_monitor_t em) {
         sizeof(struct test_net_endpoint),
         test_net_endpoint_init,
         test_net_endpoint_fini,
+        NULL,
         test_net_endpoint_connect,
         test_net_endpoint_update,
         test_net_endpoint_set_no_delay,
