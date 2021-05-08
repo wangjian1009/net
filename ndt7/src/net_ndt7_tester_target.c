@@ -32,6 +32,12 @@ void net_ndt7_tester_target_free(net_ndt7_tester_target_t target) {
     net_ndt7_tester_t tester = target->m_tester;
     net_ndt7_manage_t manager = tester->m_manager;
 
+    if (tester->m_target == target) {
+        tester->m_target = NULL;
+        tester->m_download_url = NULL;
+        tester->m_upload_url = NULL;
+    }
+    
     if (target->m_machine) {
         mem_free(manager->m_alloc, target->m_machine);
         target->m_machine = NULL;
