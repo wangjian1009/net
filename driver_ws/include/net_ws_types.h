@@ -7,6 +7,7 @@ NET_BEGIN_DECL
 
 typedef enum net_ws_endpoint_runing_mode net_ws_endpoint_runing_mode_t;
 typedef enum net_ws_endpoint_state net_ws_endpoint_state_t;
+typedef enum net_ws_status_code net_ws_status_code_t;
 
 typedef struct net_ws_protocol * net_ws_protocol_t;
 typedef struct net_ws_endpoint * net_ws_endpoint_t;

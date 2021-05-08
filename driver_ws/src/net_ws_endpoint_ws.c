@@ -3,6 +3,7 @@
 #include "cpe/pal/pal_string.h"
 #include "cpe/utils/error.h"
 #include "cpe/utils/hex_utils.h"
+#include "cpe/utils/string_utils.h"
 #include "cpe/utils/random.h"
 #include "net_protocol.h"
 #include "net_driver.h"
@@ -374,8 +375,29 @@ static int net_ws_endpoint_update_state_by_status(
     if (status_code == WSLAY_CODE_NORMAL_CLOSURE) {
         return net_endpoint_set_state(base_endpoint, net_endpoint_state_disable);
     } else {
-        net_endpoint_set_error(
-            base_endpoint, net_endpoint_error_source_websocket, status_code, NULL);
+        if (msg_len == 0) {
+            net_endpoint_set_error(
+                base_endpoint, net_endpoint_error_source_websocket, status_code,
+                net_ws_status_code_str(status_code));
+        }
+        else {
+            if (cpe_str_validate_utf8((const char *)msg, msg_len)) {
+                char buf[512];
+                snprintf(buf, sizeof(buf), "%s(%.*s)", net_ws_status_code_str(status_code), msg_len, (const char *)msg);
+                buf[sizeof(buf) - 1] = 0;
+                
+                net_endpoint_set_error(
+                    base_endpoint, net_endpoint_error_source_websocket, status_code, buf);
+            }
+            else {
+                char buf[64];
+                snprintf(buf, sizeof(buf), "%s(%d msg)", net_ws_status_code_str(status_code), msg_len);
+
+                net_endpoint_set_error(
+                    base_endpoint, net_endpoint_error_source_websocket, status_code, buf);
+            }
+        }
+        
         return net_endpoint_set_state(base_endpoint, net_endpoint_state_error);
     }
 }

@@ -551,6 +551,35 @@ const char * net_ws_endpoint_state_str(net_ws_endpoint_state_t state) {
     }
 }
 
+const char * net_ws_status_code_str(net_ws_status_code_t code) {
+    switch(code) {
+    case net_ws_status_code_normal_closure:
+        return "normal-closure";
+    case net_ws_status_code_going_away:
+        return "going-away";
+    case net_ws_status_code_protocol_error:
+        return "protocol-error";
+    case net_ws_status_code_unsupported_data:
+        return "unsupported-data";
+    case net_ws_status_code_no_status_rcvd:
+        return "no-status-rcvd";
+    case net_ws_status_code_abnormal_closure:
+        return "abnormal-closure";
+    case net_ws_status_code_invalid_frame_payload_data:
+        return "invalid-frame-payload-data";
+    case net_ws_status_code_policy_violation:
+        return "policy-violation";
+    case net_ws_status_code_message_too_big:
+        return "message-too-big";
+    case net_ws_status_code_mandatory_ext:
+        return "mandatory-ext";
+    case net_ws_status_code_internal_server_error:
+        return "internal-server-error";
+    case net_ws_status_code_tls_handshake:
+        return "tls-handshake";
+    }
+}
+
 const char * net_ws_endpoint_runing_mode_str(net_ws_endpoint_runing_mode_t runing_mode) {
     switch(runing_mode) {
     case net_ws_endpoint_runing_mode_init:

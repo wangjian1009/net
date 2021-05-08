@@ -137,9 +137,6 @@ static void net_ndt7_tester_download_on_close(
     }
     else {
     }
-
-    net_ws_endpoint_close(endpoint, 1000, NULL, 0);
-    //webSocket.close(1000, null)
 }
 
 static void net_ndt7_tester_download_on_endpoint_fini(void * ctx, net_endpoint_t endpoint) {
