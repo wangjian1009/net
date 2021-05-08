@@ -54,7 +54,9 @@ struct net_ndt7_tester {
         int64_t m_start_time_ms;
         int64_t m_pre_notify_ms;
         double m_total_bytes_sent;
+        uint8_t m_completed;
         net_ws_endpoint_t m_endpoint;
+        net_timer_t m_stop_timer;
     } m_upload;
     
     /*错误数据 */
