@@ -44,6 +44,7 @@ net_ws_protocol_create(
             net_ws_endpoint_fini,
             net_ws_endpoint_input,
             net_ws_endpoint_on_state_change,
+            net_ws_endpoint_calc_size,
             NULL);
 
     net_ws_protocol_t protocol = net_protocol_data(base_protocol);

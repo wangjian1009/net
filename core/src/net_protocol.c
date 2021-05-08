@@ -18,6 +18,7 @@ net_protocol_create(
     net_protocol_endpoint_fini_fun_t endpoint_fini,
     net_protocol_endpoint_input_fun_t endpoint_input,
     net_protocol_endpoint_on_state_change_fun_t endpoint_on_state_chagne,
+    net_protocol_endpoint_calc_size_fun_t endpoint_calc_size,
     net_protocol_endpoint_dump_fun_t endpoint_dump)
 {
     net_protocol_t protocol;
@@ -46,6 +47,7 @@ net_protocol_create(
     protocol->m_endpoint_fini = endpoint_fini;
     protocol->m_endpoint_input = endpoint_input;
     protocol->m_endpoint_on_state_chagne = endpoint_on_state_chagne;
+    protocol->m_endpoint_calc_size = endpoint_calc_size;
     protocol->m_endpoint_dump = endpoint_dump;
 
     if (protocol->m_protocol_init && protocol->m_protocol_init(protocol) != 0) {

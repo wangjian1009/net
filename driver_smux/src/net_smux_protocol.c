@@ -70,6 +70,7 @@ net_smux_protocol_create(
             net_smux_endpoint_fini,
             net_smux_endpoint_input,
             net_smux_endpoint_on_state_change,
+            NULL,
             NULL);
 
     net_smux_protocol_t protocol = net_protocol_data(base_protocol);

@@ -24,6 +24,7 @@ static void net_ndt7_tester_upload_on_endpoint_evt(
     void * ctx, net_endpoint_t endpoint, net_endpoint_monitor_evt_t evt);
 
 static double net_ndt7_tester_upload_total_bytes(net_ndt7_tester_t tester);
+static void net_ndt7_tester_upload_perform_dynamic_tuning(net_ndt7_tester_t tester);
 
 int net_ndt7_tester_upload_start(net_ndt7_tester_t tester) {
     net_ndt7_manage_t manager = tester->m_manager;
@@ -258,4 +259,17 @@ static void net_ndt7_tester_upload_try_notify_update(net_ndt7_tester_t tester) {
 
 static double net_ndt7_tester_upload_total_bytes(net_ndt7_tester_t tester) {
     return tester->m_upload.m_total_bytes_sent;
+}
+
+/* this is gonna let higher speed clients saturate their pipes better */
+/* it will gradually increase the size of data if the websocket queue isn't filling up */
+static void net_ndt7_tester_upload_perform_dynamic_tuning(net_ndt7_tester_t tester) {
+    //fun performDynamicTuning(data: ByteString, queueSize: Long, bytesEnqueued: Double): ByteString {
+    //val totalBytesTransmitted = bytesEnqueued - queueSize
+
+        /* return if (data.size * 2 < NDT7Constants.MAX_MESSAGE_SIZE && data.size < totalBytesTransmitted / 16) { */
+        /*     ByteString.of(*ByteArray(data.size * 2)) // double the size of data */
+        /* } else { */
+        /*     data */
+        /* } */
 }

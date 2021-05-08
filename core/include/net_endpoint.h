@@ -10,6 +10,11 @@ struct net_endpoint_it {
     char data[64];
 };
 
+struct net_endpoint_size_info {
+    uint64_t m_read;
+    uint64_t m_write;
+};
+
 net_endpoint_t net_endpoint_create(net_driver_t driver, net_protocol_t protocol, net_mem_group_t mem_group);
 void net_endpoint_free(net_endpoint_t endpoint);
 
@@ -26,6 +31,8 @@ net_endpoint_t net_endpoint_find(net_schedule_t schedule, uint32_t id);
 
 net_address_t net_endpoint_address(net_endpoint_t endpoint);
 int net_endpoint_set_address(net_endpoint_t endpoint, net_address_t address);
+
+void net_endpoint_calc_size(net_endpoint_t endpoint, net_endpoint_size_info_t size_info);
 
 uint8_t net_endpoint_expect_read(net_endpoint_t endpoint);
 void net_endpoint_set_expect_read(net_endpoint_t endpoint, uint8_t expect_read);

@@ -19,5 +19,6 @@ net_protocol_noop_create(net_schedule_t schedule) {
         NULL,
         net_protocol_noop_endpoint_input,
         NULL,
+        NULL,
         NULL);
 }

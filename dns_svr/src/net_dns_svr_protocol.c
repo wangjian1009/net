@@ -20,6 +20,7 @@ net_protocol_t net_dns_svr_protocol_create(net_dns_svr_t dns_svr) {
             net_dns_svr_endpoint_fini,
             net_dns_svr_endpoint_input,
             NULL,
+            NULL,
             NULL);
     if (protocol == NULL) {
         return NULL;

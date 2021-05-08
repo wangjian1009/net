@@ -6,6 +6,7 @@ add_library(net_driver_ws STATIC ${net_driver_ws_source})
 
 set_property(TARGET net_driver_ws PROPERTY INCLUDE_DIRECTORIES
   ${wslay_base}/include
+  ${wslay_base}/src
   ${cpe_pal_base}/include
   ${cpe_utils_base}/include
   ${net_core_base}/include

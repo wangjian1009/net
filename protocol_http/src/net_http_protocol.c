@@ -26,6 +26,7 @@ net_http_protocol_create(net_schedule_t schedule, const char * name_postfix) {
             net_http_endpoint_fini,
             net_http_endpoint_input,
             net_http_endpoint_on_state_change,
+            net_http_endpoint_calc_size,
             NULL);
     if (protocol == NULL) {
         return NULL;

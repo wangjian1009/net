@@ -48,6 +48,7 @@ net_ndt7_tester_create(net_ndt7_manage_t manager) {
 
     tester->m_upload.m_start_time_ms = 0;
     tester->m_upload.m_pre_notify_ms = 0;
+    tester->m_upload.m_package_size = 0;
     tester->m_upload.m_total_bytes_sent = 0;
     tester->m_upload.m_completed = 0;
     tester->m_upload.m_endpoint = NULL;

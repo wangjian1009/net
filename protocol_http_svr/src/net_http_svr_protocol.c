@@ -29,6 +29,7 @@ net_http_svr_protocol_create(net_schedule_t schedule, const char * protocol_name
             net_http_svr_endpoint_fini,
             net_http_svr_endpoint_input,
             NULL,
+            NULL,
             NULL);
     if (protocol == NULL) {
         CPE_ERROR(net_schedule_em(schedule), "http_svr: %s: create protocol fail!", protocol_name);

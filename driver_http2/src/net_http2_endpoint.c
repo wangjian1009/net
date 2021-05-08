@@ -181,6 +181,11 @@ int net_http2_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoin
     return 0;
 }
 
+void net_http2_endpoint_calc_size(net_endpoint_t base_endpoint, net_endpoint_size_info_t size_info) {
+    size_info->m_read = net_endpoint_buf_size(base_endpoint, net_ep_buf_read);
+    size_info->m_write = net_endpoint_buf_size(base_endpoint, net_ep_buf_write);
+}
+
 net_http2_endpoint_runing_mode_t net_http2_endpoint_runing_mode(net_http2_endpoint_t endpoint) {
     return endpoint->m_runing_mode;
 }

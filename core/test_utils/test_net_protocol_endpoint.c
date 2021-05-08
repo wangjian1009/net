@@ -57,6 +57,7 @@ net_protocol_t test_net_protocol_create(net_schedule_t schedule, const char * na
         test_net_protocol_endpoint_fini,
         test_net_protocol_endpoint_input,
         test_net_protocol_endpoint_on_state_change,
+        NULL,
         NULL);
 }
 

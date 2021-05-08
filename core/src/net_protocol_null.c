@@ -19,5 +19,6 @@ net_protocol_null_create(net_schedule_t schedule) {
         NULL,
         net_protocol_null_endpoint_input,
         NULL,
+        NULL,
         NULL);
 }

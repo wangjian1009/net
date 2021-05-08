@@ -588,6 +588,16 @@ net_endpoint_t net_endpoint_from_data(void * data) {
     return ((net_endpoint_t)data) - 1;
 }
 
+void net_endpoint_calc_size(net_endpoint_t endpoint, net_endpoint_size_info_t size_info) {
+    if (endpoint->m_protocol->m_endpoint_calc_size) {
+        endpoint->m_protocol->m_endpoint_calc_size(endpoint, size_info);
+    }
+    else {
+        size_info->m_read = net_endpoint_buf_size(endpoint, net_ep_buf_read);
+        size_info->m_write = net_endpoint_buf_size(endpoint, net_ep_buf_write);
+    }
+}
+
 uint8_t net_endpoint_expect_read(net_endpoint_t endpoint) {
     return endpoint->m_expect_read;
 }

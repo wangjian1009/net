@@ -32,6 +32,7 @@ int net_http2_endpoint_init(net_endpoint_t base_endpoint);
 void net_http2_endpoint_fini(net_endpoint_t base_endpoint);
 int net_http2_endpoint_input(net_endpoint_t base_endpoint);
 int net_http2_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoint_state_t from_state);
+void net_http2_endpoint_calc_size(net_endpoint_t base_endpoint, net_endpoint_size_info_t size_info);
 
 /**/
 int net_http2_endpoint_set_state(net_http2_endpoint_t endpoint, net_http2_endpoint_state_t state);

@@ -89,6 +89,7 @@ net_ssl_protocol_create(
             net_ssl_endpoint_fini,
             net_ssl_endpoint_input,
             net_ssl_endpoint_on_state_change,
+            net_ssl_endpoint_calc_size,
             NULL);
 
     int rv;

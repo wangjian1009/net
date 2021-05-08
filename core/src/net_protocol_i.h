@@ -21,6 +21,7 @@ struct net_protocol {
     net_protocol_endpoint_fini_fun_t m_endpoint_fini;
     net_protocol_endpoint_input_fun_t m_endpoint_input;
     net_protocol_endpoint_on_state_change_fun_t m_endpoint_on_state_chagne;
+    net_protocol_endpoint_calc_size_fun_t m_endpoint_calc_size;
     net_protocol_endpoint_dump_fun_t m_endpoint_dump;
 
     net_endpoint_list_t m_endpoints;

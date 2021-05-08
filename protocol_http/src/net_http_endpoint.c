@@ -204,6 +204,15 @@ int net_http_endpoint_on_state_change(net_endpoint_t endpoint, net_endpoint_stat
     return 0;
 }
 
+void net_http_endpoint_calc_size(net_endpoint_t endpoint, net_endpoint_size_info_t size) {
+    size->m_read = net_endpoint_buf_size(endpoint, net_ep_buf_read)
+        + net_endpoint_buf_size(endpoint, net_ep_buf_http_in)
+        + net_endpoint_buf_size(endpoint, net_ep_buf_http_body);
+
+    size->m_write = net_endpoint_buf_size(endpoint, net_ep_buf_write)
+        + net_endpoint_buf_size(endpoint, net_ep_buf_http_out);
+}
+
 uint16_t net_http_endpoint_runing_req_count(net_http_endpoint_t http_ep) {
     uint16_t count = 0;
     

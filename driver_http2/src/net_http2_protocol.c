@@ -104,6 +104,7 @@ net_http2_protocol_create(
             net_http2_endpoint_fini,
             net_http2_endpoint_input,
             net_http2_endpoint_on_state_change,
+            net_http2_endpoint_calc_size,
             NULL);
 
     net_http2_protocol_t protocol = net_protocol_data(base_protocol);

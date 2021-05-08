@@ -1,4 +1,6 @@
 #include <assert.h>
+#include <wslay/wslay.h>
+#include "wslay_event.h"
 #include "cpe/pal/pal_string.h"
 #include "cpe/pal/pal_strings.h"
 #include "cpe/utils/error.h"
@@ -423,6 +425,18 @@ int net_ws_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoint_s
     }
     
     return 0;
+}
+
+void net_ws_endpoint_calc_size(net_endpoint_t base_endpoint, net_endpoint_size_info_t size_info) {
+    net_ws_endpoint_t endpoint = net_endpoint_protocol_data(base_endpoint);
+    
+    size_info->m_read = net_endpoint_buf_size(base_endpoint, net_ep_buf_read);
+    size_info->m_write = net_endpoint_buf_size(base_endpoint, net_ep_buf_write);
+
+    if (endpoint->m_ws_ctx) {
+        size_info->m_write += endpoint->m_ws_ctx->queued_msg_length;
+        size_info->m_read += endpoint->m_ws_ctx->ipayloadlen;
+    }
 }
 
 void net_ws_endpoint_set_callback(

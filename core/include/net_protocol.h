@@ -13,6 +13,7 @@ typedef void (*net_protocol_endpoint_fini_fun_t)(net_endpoint_t endpoint);
 typedef int (*net_protocol_endpoint_on_state_change_fun_t)(net_endpoint_t endpoint, net_endpoint_state_t from_state);
 typedef int (*net_protocol_endpoint_input_fun_t)(net_endpoint_t endpoint);
 typedef void (*net_protocol_endpoint_dump_fun_t)(write_stream_t ws, net_endpoint_t endpoint);
+typedef void (*net_protocol_endpoint_calc_size_fun_t)(net_endpoint_t endpoint, net_endpoint_size_info_t size_info);
 
 net_protocol_t
 net_protocol_create(
@@ -28,6 +29,7 @@ net_protocol_create(
     net_protocol_endpoint_fini_fun_t endpoint_fini,
     net_protocol_endpoint_input_fun_t endpoint_input,
     net_protocol_endpoint_on_state_change_fun_t endpoint_on_state_chagne,
+    net_protocol_endpoint_calc_size_fun_t endpoint_calc_size,
     net_protocol_endpoint_dump_fun_t endpoint_dump);
 
 void net_protocol_free(net_protocol_t protocol);

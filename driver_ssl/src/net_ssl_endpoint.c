@@ -275,6 +275,18 @@ int net_ssl_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoint_
     return 0;
 }
 
+void net_ssl_endpoint_calc_size(net_endpoint_t base_endpoint, net_endpoint_size_info_t size_info) {
+    net_ssl_endpoint_t endpoint = net_endpoint_protocol_data(base_endpoint);
+    
+    size_info->m_read = net_endpoint_buf_size(base_endpoint, net_ep_buf_read);
+    size_info->m_write = net_endpoint_buf_size(base_endpoint, net_ep_buf_write);
+
+    if (endpoint->m_ssl) {
+        size_info->m_read += endpoint->m_ssl->in_left;
+        size_info->m_write += endpoint->m_ssl->out_left;
+    }
+}
+
 int net_ssl_endpoint_write(
     net_endpoint_t base_endpoint, net_endpoint_t from_ep, net_endpoint_buf_type_t from_buf)
 {
