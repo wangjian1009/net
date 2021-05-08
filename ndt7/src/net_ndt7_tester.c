@@ -41,6 +41,11 @@ net_ndt7_tester_create(net_ndt7_manage_t manager) {
     tester->m_download.m_completed = 0;
     tester->m_download.m_endpoint = NULL;
 
+    tester->m_upload.m_start_time_ms = 0;
+    tester->m_upload.m_pre_notify_ms = 0;
+    tester->m_upload.m_num_bytes = 0.0;
+    tester->m_upload.m_endpoint = NULL;
+    
     tester->m_error.m_state = net_ndt7_tester_state_init;
     tester->m_error.m_error = net_ndt7_tester_error_none;
     tester->m_error.m_msg = NULL;
@@ -95,6 +100,13 @@ void net_ndt7_tester_free(net_ndt7_tester_t tester) {
         net_endpoint_set_data_watcher(base_endpoint, NULL, NULL, NULL);
         net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
         tester->m_download.m_endpoint = NULL;
+    }
+
+    if (tester->m_upload.m_endpoint) {
+        net_endpoint_t base_endpoint = net_ws_endpoint_base_endpoint(tester->m_upload.m_endpoint);
+        net_endpoint_set_data_watcher(base_endpoint, NULL, NULL, NULL);
+        net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+        tester->m_upload.m_endpoint = NULL;
     }
 
     if (tester->m_ctx_free) {

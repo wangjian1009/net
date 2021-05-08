@@ -85,7 +85,7 @@ int net_ndt7_tester_download_start(net_ndt7_tester_t tester) {
         tester,
         net_ndt7_tester_download_on_msg_text,
         net_ndt7_tester_download_on_msg_bin,
-        NULL,
+        net_ndt7_tester_download_on_close,
         NULL);
 
     if (net_ws_endpoint_connect(tester->m_download.m_endpoint, tester->m_download_url) != 0) {
@@ -193,13 +193,21 @@ static void net_ndt7_tester_download_on_endpoint_evt(
                     &response, tester->m_download.m_start_time_ms, cur_time_ms, tester->m_download.m_num_bytes,
                     net_ndt7_test_download);
 
-                net_ndt7_tester_notify_test_complete(
-                    tester,
-                    net_endpoint_error_source(endpoint),
-                    net_endpoint_error_no(endpoint),
-                    net_endpoint_error_msg(endpoint),
-                    &response, net_ndt7_test_download);
-
+                if (net_endpoint_state(endpoint) == net_endpoint_state_disable) {
+                    net_ndt7_tester_notify_test_complete(
+                        tester,
+                        net_endpoint_error_source_network,
+                        net_endpoint_network_errno_internal,
+                        "Disabled",
+                        &response, net_ndt7_test_download);
+                } else {
+                    net_ndt7_tester_notify_test_complete(
+                        tester,
+                        net_endpoint_error_source(endpoint),
+                        net_endpoint_error_no(endpoint),
+                        net_endpoint_error_msg(endpoint),
+                        &response, net_ndt7_test_download);
+                }
                 tester->m_download.m_completed = 1;
             }
             break;
