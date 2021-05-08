@@ -375,15 +375,19 @@ static int net_ws_endpoint_update_state_by_status(
     if (status_code == WSLAY_CODE_NORMAL_CLOSURE) {
         return net_endpoint_set_state(base_endpoint, net_endpoint_state_disable);
     } else {
+        char code_buf[16];
         if (msg_len == 0) {
             net_endpoint_set_error(
                 base_endpoint, net_endpoint_error_source_websocket, status_code,
-                net_ws_status_code_str(status_code));
+                net_ws_status_code_str(code_buf, sizeof(code_buf), status_code));
         }
         else {
             if (cpe_str_validate_utf8((const char *)msg, msg_len)) {
                 char buf[512];
-                snprintf(buf, sizeof(buf), "%s(%.*s)", net_ws_status_code_str(status_code), msg_len, (const char *)msg);
+                snprintf(
+                    buf, sizeof(buf), "%s(%.*s)",
+                    net_ws_status_code_str(code_buf, sizeof(code_buf), status_code),
+                    msg_len, (const char *)msg);
                 buf[sizeof(buf) - 1] = 0;
                 
                 net_endpoint_set_error(
@@ -391,7 +395,9 @@ static int net_ws_endpoint_update_state_by_status(
             }
             else {
                 char buf[64];
-                snprintf(buf, sizeof(buf), "%s(%d msg)", net_ws_status_code_str(status_code), msg_len);
+                snprintf(
+                    buf, sizeof(buf), "%s(%d msg)",
+                    net_ws_status_code_str(code_buf, sizeof(code_buf), status_code), msg_len);
 
                 net_endpoint_set_error(
                     base_endpoint, net_endpoint_error_source_websocket, status_code, buf);

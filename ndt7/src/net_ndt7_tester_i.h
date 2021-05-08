@@ -36,6 +36,7 @@ struct net_ndt7_tester {
         int64_t m_start_time_ms;
         int64_t m_pre_notify_ms;
         double m_num_bytes;
+        uint8_t m_completed;
         net_ws_endpoint_t m_endpoint;
     } m_download;
 
@@ -68,7 +69,11 @@ void net_ndt7_tester_notify_complete(net_ndt7_tester_t tester);
 
 void net_ndt7_tester_notify_speed_progress(net_ndt7_tester_t tester, net_ndt7_response_t response);
 void net_ndt7_tester_notify_measurement_progress(net_ndt7_tester_t tester, net_ndt7_measurement_t measurement);
-void net_ndt7_tester_notify_test_complete(net_ndt7_tester_t tester, net_ndt7_response_t response, net_ndt7_test_type_t test_type);
+
+void net_ndt7_tester_notify_test_complete(
+    net_ndt7_tester_t tester,
+    net_endpoint_error_source_t error_source, int error_code, const char * error_msg,
+    net_ndt7_response_t response, net_ndt7_test_type_t test_type);
 
 NET_END_DECL
 

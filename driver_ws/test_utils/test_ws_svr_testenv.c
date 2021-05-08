@@ -101,7 +101,11 @@ static void test_ws_svr_testenv_op_cb(void * ctx, test_net_tl_op_t op) {
         net_ws_endpoint_send_msg_text(endpoint, op_data->m_text_msg);
         break;
     case test_ws_svr_testenv_send_msg_op_close:
-        net_ws_endpoint_close(endpoint, op_data->m_close.m_status_code, op_data->m_close.m_msg, strlen(op_data->m_close.m_msg));
+        net_ws_endpoint_close(
+            endpoint,
+            op_data->m_close.m_status_code,
+            op_data->m_close.m_msg,
+            op_data->m_close.m_msg ? strlen(op_data->m_close.m_msg) : 0);
         break;
     }
 }

@@ -4,6 +4,7 @@
 #include "cpe/utils/string_utils.h"
 #include "net_timer.h"
 #include "net_endpoint.h"
+#include "net_endpoint_monitor.h"
 #include "net_ws_endpoint.h"
 #include "net_http_req.h"
 #include "net_http_endpoint.h"
@@ -37,6 +38,7 @@ net_ndt7_tester_create(net_ndt7_manage_t manager) {
     tester->m_download.m_start_time_ms = 0;
     tester->m_download.m_pre_notify_ms = 0;
     tester->m_download.m_num_bytes = 0.0;
+    tester->m_download.m_completed = 0;
     tester->m_download.m_endpoint = NULL;
 
     tester->m_error.m_state = net_ndt7_tester_state_init;
@@ -83,6 +85,7 @@ void net_ndt7_tester_free(net_ndt7_tester_t tester) {
     if (tester->m_query_target.m_endpoint) {
         net_endpoint_t base_endpoint = net_http_endpoint_base_endpoint(tester->m_query_target.m_endpoint);
         net_endpoint_set_data_watcher(base_endpoint, NULL, NULL, NULL);
+        net_endpoint_monitor_free_by_ctx(base_endpoint, tester);
         net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
         tester->m_query_target.m_endpoint = NULL;
     }
@@ -413,10 +416,12 @@ void net_ndt7_tester_notify_measurement_progress(net_ndt7_tester_t tester, net_n
 }
 
 void net_ndt7_tester_notify_test_complete(
-    net_ndt7_tester_t tester, net_ndt7_response_t response, net_ndt7_test_type_t test_type)
+    net_ndt7_tester_t tester,
+    net_endpoint_error_source_t error_source, int error_code, const char * error_msg,
+    net_ndt7_response_t response, net_ndt7_test_type_t test_type)
 {
     if (tester->m_on_test_complete) {
-        tester->m_on_test_complete(tester->m_ctx, tester, response, test_type);
+        tester->m_on_test_complete(tester->m_ctx, tester, error_source, error_code, error_msg, response, test_type);
     }
 }
 

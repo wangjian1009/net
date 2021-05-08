@@ -38,10 +38,16 @@ void net_ndt7_tester_set_measurement_interval_ms(net_ndt7_tester_t tester, int64
 void net_ndt7_tester_targets(net_ndt7_tester_t tester, net_ndt7_tester_target_it_t it);
 
 /*回调 */
-typedef void (*net_ndt7_tester_on_speed_progress_fun_t)(void * ctx, net_ndt7_tester_t tester, net_ndt7_response_t response);
-typedef void (*net_ndt7_tester_on_measurement_progress_fun_t)(void * ctx, net_ndt7_tester_t tester, net_ndt7_measurement_t response);
+typedef void (*net_ndt7_tester_on_speed_progress_fun_t)(
+    void * ctx, net_ndt7_tester_t tester, net_ndt7_response_t response);
+
+typedef void (*net_ndt7_tester_on_measurement_progress_fun_t)(
+    void * ctx, net_ndt7_tester_t tester, net_ndt7_measurement_t response);
+
 typedef void (*net_ndt7_tester_on_test_complete_fun_t)(
-    void * ctx, net_ndt7_tester_t tester, net_ndt7_response_t response, net_ndt7_test_type_t test_type);
+    void * ctx, net_ndt7_tester_t tester,
+    net_endpoint_error_source_t error_source, int error_code, const char * error_msg,
+    net_ndt7_response_t response, net_ndt7_test_type_t test_type);
 
 typedef void (*net_ndt7_tester_on_all_complete_fun_t)(void * ctx, net_ndt7_tester_t tester);
 

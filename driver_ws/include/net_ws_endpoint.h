@@ -61,7 +61,7 @@ void net_ws_endpoint_set_msg_receiver_bin(
     void * ctx, net_ws_endpoint_on_msg_bin_fun_t fun, void (*ctx_free)(void*));
 
 const char * net_ws_endpoint_state_str(net_ws_endpoint_state_t state);
-const char * net_ws_status_code_str(net_ws_status_code_t code);
+const char * net_ws_status_code_str(char * code_buf, size_t code_buf_len, net_ws_status_code_t code);
 const char * net_ws_endpoint_runing_mode_str(net_ws_endpoint_runing_mode_t runing_mode);
 
 NET_END_DECL

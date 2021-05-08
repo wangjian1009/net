@@ -13,7 +13,9 @@ void ndt7_runner_tester_on_measurement_progress(void * ctx, net_ndt7_tester_t te
 }
 
 void ndt7_runner_tester_on_test_complete(
-    void * ctx, net_ndt7_tester_t tester, net_ndt7_response_t response, net_ndt7_test_type_t test_type)
+    void * ctx, net_ndt7_tester_t tester,
+    net_endpoint_error_source_t error_source, int error_code, const char * error_msg,
+    net_ndt7_response_t response, net_ndt7_test_type_t test_type)
 {
     ndt7_runner_t runner = ctx;
     printf("complete: %s\n", net_ndt7_response_dump(&runner->m_data_buffer, response));

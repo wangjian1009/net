@@ -551,7 +551,7 @@ const char * net_ws_endpoint_state_str(net_ws_endpoint_state_t state) {
     }
 }
 
-const char * net_ws_status_code_str(net_ws_status_code_t code) {
+const char * net_ws_status_code_str(char * code_buf, size_t code_buf_len, net_ws_status_code_t code) {
     switch(code) {
     case net_ws_status_code_normal_closure:
         return "normal-closure";
@@ -578,6 +578,9 @@ const char * net_ws_status_code_str(net_ws_status_code_t code) {
     case net_ws_status_code_tls_handshake:
         return "tls-handshake";
     }
+
+    snprintf(code_buf, code_buf_len, "%d", code);
+    return code_buf;
 }
 
 const char * net_ws_endpoint_runing_mode_str(net_ws_endpoint_runing_mode_t runing_mode) {

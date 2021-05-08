@@ -120,7 +120,7 @@ static void ndt7_tester_basic(void **state) {
         "}",
         net_ndt7_measurement_dump(net_schedule_tmp_buffer(env->m_schedule), &env->m_last_measurement));
 
-    net_ndt7_testenv_download_close(env, 200, NULL, 0);
+    net_ndt7_testenv_download_close(env, net_ws_status_code_normal_closure, NULL, 0);
     test_net_driver_run(env->m_tdriver, 0);
 
     assert_string_equal(
