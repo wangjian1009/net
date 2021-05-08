@@ -194,5 +194,5 @@ void test_net_ws_endpoint_expect_close(
     }
 
     struct test_net_ws_endpoint_setup * setup = test_net_ws_endpoint_expect_create_setup(tdriver, action, delay_ms);
-    will_return(test_net_ws_endpoint_on_msg_text, setup);
+    will_return(test_net_ws_endpoint_on_close, setup);
 }
