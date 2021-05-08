@@ -150,12 +150,12 @@ static void net_ndt7_tester_upload_try_notify_update(net_ndt7_tester_t tester) {
     net_ndt7_manage_t manager = tester->m_manager;
     int64_t cur_time_ms = net_schedule_cur_time_ms(manager->m_schedule);
 
-    if (cur_time_ms - tester->m_upload.m_pre_notify_ms >= tester->m_measurement_interval_ms) {
-        struct net_ndt7_response response;
-        net_ndt7_response_init(
-            &response, tester->m_upload.m_start_time_ms, cur_time_ms, tester->m_upload.m_num_bytes,
-            net_ndt7_test_upload);
-        net_ndt7_tester_notify_speed_progress(tester, &response);
-        tester->m_upload.m_pre_notify_ms = cur_time_ms;
+    if (cur_time_ms - tester->m_upload.m_pre_notify_ms >= tester->m_cfg.m_measurement_interval_ms) {
+        /* struct net_ndt7_response response; */
+        /* net_ndt7_response_init( */
+        /*     &response, tester->m_upload.m_start_time_ms, cur_time_ms, tester->m_upload.m_num_bytes, */
+        /*     net_ndt7_test_upload); */
+        /* net_ndt7_tester_notify_speed_progress(tester, &response); */
+        /* tester->m_upload.m_pre_notify_ms = cur_time_ms; */
     }
 }

@@ -16,7 +16,17 @@ struct net_ndt7_tester {
     net_ndt7_tester_state_t m_state;
     uint8_t m_is_processing;
     uint8_t m_is_free;
-    int64_t m_measurement_interval_ms;
+
+    struct {
+        int64_t m_measurement_interval_ms;
+
+        struct {
+            int64_t m_duration_ms;
+            uint32_t m_max_message_size;
+            uint32_t m_min_message_size;
+            uint32_t m_max_queue_size;
+        } m_upload;
+    } m_cfg;
 
     uint8_t m_is_to_notify;
     TAILQ_ENTRY(net_ndt7_tester) m_next_for_notify;
@@ -43,7 +53,7 @@ struct net_ndt7_tester {
     struct {
         int64_t m_start_time_ms;
         int64_t m_pre_notify_ms;
-        double m_num_bytes;
+        double m_total_bytes_sent;
         net_ws_endpoint_t m_endpoint;
     } m_upload;
     
