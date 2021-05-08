@@ -62,6 +62,7 @@ int net_ndt7_tester_download_start(net_ndt7_tester_t tester) {
     tester->m_download.m_endpoint = net_ws_endpoint_cast(base_endpoint);
     assert(tester->m_download.m_endpoint);
     //net_endpoint_set_protocol_debug(base_endpoint, 2);
+    net_endpoint_set_auto_free(base_endpoint, 1);
 
     if (net_endpoint_monitor_create(base_endpoint, tester, NULL, net_ndt7_tester_download_on_endpoint_evt) == NULL) {
         CPE_ERROR(manager->m_em, "ndt7: %d: download: art: create state monitor fail!", tester->m_id);
@@ -165,8 +166,8 @@ static void net_ndt7_tester_download_on_endpoint_fini(void * ctx, net_endpoint_t
     net_ndt7_tester_t tester = ctx;
     net_ndt7_manage_t manager = tester->m_manager;
 
-    assert(tester->m_state == net_ndt7_tester_state_query_target);
-    assert(tester->m_query_target.m_endpoint);
+    assert(tester->m_state == net_ndt7_tester_state_download);
+    assert(tester->m_download.m_endpoint);
     assert(net_ws_endpoint_base_endpoint(tester->m_download.m_endpoint) == endpoint);
 
     tester->m_download.m_endpoint = NULL;

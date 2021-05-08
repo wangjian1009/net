@@ -17,7 +17,6 @@
 #include "net_http_req_i.h"
 
 static void net_http_endpoint_reset_data(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_res_result_t result);
-static void net_http_endpoint_auto_free_cb(net_timer_t timer, void * ctx);
 
 net_http_endpoint_t
 net_http_endpoint_create(net_driver_t driver, net_http_protocol_t http_protocol) {
@@ -57,37 +56,6 @@ net_http_protocol_t net_http_endpoint_protocol(net_http_endpoint_t http_ep) {
     return net_protocol_data(net_endpoint_protocol(http_ep->m_endpoint));
 }
 
-uint8_t net_http_endpoint_auto_free(net_http_endpoint_t http_ep) {
-    return http_ep->m_auto_free_timer ? 1 : 0;
-}
-
-int net_http_endpoint_set_auto_free(net_http_endpoint_t http_ep, uint8_t auto_free) {
-    net_http_protocol_t http_protocol = net_protocol_data(net_endpoint_protocol(http_ep->m_endpoint));
-    
-    auto_free = auto_free ? 1 : 0;
-    if (net_http_endpoint_auto_free(http_ep) == auto_free) return 0;
-
-    if (http_ep->m_auto_free_timer) {
-        net_timer_free(http_ep->m_auto_free_timer);
-        http_ep->m_auto_free_timer = NULL;
-    }
-
-    if (auto_free) {
-        http_ep->m_auto_free_timer =
-            net_timer_auto_create(
-                net_endpoint_schedule(http_ep->m_endpoint), net_http_endpoint_auto_free_cb, http_ep->m_endpoint);
-        if (http_ep->m_auto_free_timer == NULL) {
-            CPE_ERROR(
-                http_protocol->m_em,
-                "http: %s: create auto free timer fail!",
-                net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint));
-            return -1;
-        }
-    }
-
-    return 0;
-}
-
 net_http_connection_type_t net_http_endpoint_connection_type(net_http_endpoint_t http_ep) {
     return http_ep->m_connection_type;
 }
@@ -97,7 +65,6 @@ int net_http_endpoint_init(net_endpoint_t endpoint) {
     net_http_protocol_t http_protocol = net_protocol_data(net_endpoint_protocol(endpoint));
     net_schedule_t schedule = net_endpoint_schedule(endpoint);
 
-    http_ep->m_auto_free_timer = NULL;
     http_ep->m_endpoint = endpoint;
     http_ep->m_connection_type = net_http_connection_type_keep_alive;
     http_ep->m_req_count = 0;
@@ -111,11 +78,6 @@ void net_http_endpoint_fini(net_endpoint_t endpoint) {
     net_http_protocol_t http_protocol = net_protocol_data(net_endpoint_protocol(endpoint));
     net_http_endpoint_reset_data(http_protocol, http_ep, net_http_res_canceled);
     http_ep->m_endpoint = NULL;
-
-    if (http_ep->m_auto_free_timer) {
-        net_timer_free(http_ep->m_auto_free_timer);
-        http_ep->m_auto_free_timer = NULL;
-    }
 }
 
 int net_http_endpoint_input(net_endpoint_t endpoint) {
@@ -223,11 +185,9 @@ int net_http_endpoint_on_state_change(net_endpoint_t endpoint, net_endpoint_stat
         break;
     case net_endpoint_state_disable:
         net_http_endpoint_reset_data(http_protocol, http_ep, net_http_res_conn_disconnected);
-        if (http_ep->m_auto_free_timer) net_timer_active(http_ep->m_auto_free_timer, 0);
         break;
     case net_endpoint_state_error:
         net_http_endpoint_reset_data(http_protocol, http_ep, net_http_res_conn_error);
-        if (http_ep->m_auto_free_timer) net_timer_active(http_ep->m_auto_free_timer, 0);
         break;
     case net_endpoint_state_resolving:
         break;
@@ -420,9 +380,4 @@ static void net_http_endpoint_reset_data(net_http_protocol_t http_protocol, net_
             if (req) net_http_req_free_force(req);
         }
     }
-}
-
-static void net_http_endpoint_auto_free_cb(net_timer_t timer, void * ctx) {
-    net_endpoint_t base_endpoint = ctx;
-    net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
 }

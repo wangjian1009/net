@@ -13,6 +13,7 @@ struct net_endpoint {
     net_protocol_t m_protocol;
     TAILQ_ENTRY(net_endpoint) m_next_for_protocol;
     net_mem_group_t m_mem_group;
+    net_timer_t m_auto_free_timer;
     net_endpoint_prepare_connect_fun_t m_prepare_connect;
     void * m_prepare_connect_ctx;
     uint32_t m_id;

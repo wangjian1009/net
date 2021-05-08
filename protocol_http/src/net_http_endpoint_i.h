@@ -18,7 +18,6 @@ typedef enum net_http_res_state {
 
 struct net_http_endpoint {
     net_endpoint_t m_endpoint;
-    net_timer_t m_auto_free_timer;
     net_http_connection_type_t m_connection_type;
     
     /*runtime*/

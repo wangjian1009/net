@@ -3,6 +3,7 @@
 #include "cpe/pal/pal_strings.h"
 #include "cpe/utils/stream_buffer.h"
 #include "cpe/utils/string_utils.h"
+#include "net_timer.h"
 #include "net_endpoint_i.h"
 #include "net_mem_block_i.h"
 #include "net_endpoint_monitor_i.h"
@@ -17,6 +18,7 @@
 static void net_endpoint_dns_query_callback(void * ctx, net_address_t main_address, net_address_it_t it);
 static int net_endpoint_notify_state_changed(net_endpoint_t endpoint, net_endpoint_state_t old_state);
 static void net_endpoint_clear_data_watcher(net_endpoint_t endpoint);
+static void net_endpoint_auto_free_cb(net_timer_t timer, void * ctx);
 
 net_endpoint_t
 net_endpoint_create(net_driver_t driver, net_protocol_t protocol, net_mem_group_t mem_group) {
@@ -47,6 +49,7 @@ net_endpoint_create(net_driver_t driver, net_protocol_t protocol, net_mem_group_
     endpoint->m_remote_address = NULL;
     endpoint->m_protocol = protocol;
     endpoint->m_mem_group = mem_group ? mem_group : schedule->m_dft_mem_group;
+    endpoint->m_auto_free_timer = NULL;
     endpoint->m_prepare_connect = NULL;
     endpoint->m_prepare_connect_ctx = NULL;
     endpoint->m_close_after_send = 0;
@@ -109,6 +112,11 @@ net_endpoint_create(net_driver_t driver, net_protocol_t protocol, net_mem_group_
 void net_endpoint_free(net_endpoint_t endpoint) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
 
+    if (endpoint->m_auto_free_timer) {
+        net_timer_free(endpoint->m_auto_free_timer);
+        endpoint->m_auto_free_timer = NULL;
+    }
+    
     uint8_t need_fini = endpoint->m_state == net_endpoint_state_deleting ? 0 : 1;
     if (endpoint->m_state == net_endpoint_state_deleting) {
         TAILQ_REMOVE(&endpoint->m_driver->m_deleting_endpoints, endpoint, m_next_for_driver);
@@ -247,6 +255,36 @@ net_endpoint_t net_endpoint_find(net_schedule_t schedule, uint32_t id) {
     struct net_endpoint key;
     key.m_id = id;
     return cpe_hash_table_find(&schedule->m_endpoints, &key);
+}
+
+uint8_t net_endpoint_auto_free(net_endpoint_t endpoint) {
+    return endpoint->m_auto_free_timer ? 1 : 0;
+}
+
+int net_endpoint_set_auto_free(net_endpoint_t endpoint, uint8_t auto_free) {
+    net_schedule_t schedule = endpoint->m_driver->m_schedule;
+    
+    auto_free = auto_free ? 1 : 0;
+    if (net_endpoint_auto_free(endpoint) == auto_free) return 0;
+
+    if (endpoint->m_auto_free_timer) {
+        net_timer_free(endpoint->m_auto_free_timer);
+        endpoint->m_auto_free_timer = NULL;
+    }
+
+    if (auto_free) {
+        endpoint->m_auto_free_timer =
+            net_timer_auto_create(schedule, net_endpoint_auto_free_cb, endpoint);
+        if (endpoint->m_auto_free_timer == NULL) {
+            CPE_ERROR(
+                schedule->m_em,
+                "core: %s: create auto free timer fail!",
+                net_endpoint_dump(net_schedule_tmp_buffer(schedule), endpoint));
+            return -1;
+        }
+    }
+
+    return 0;
 }
 
 uint8_t net_endpoint_close_after_send(net_endpoint_t endpoint) {
@@ -448,13 +486,18 @@ int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) 
             || state == net_endpoint_state_read_closed
             || state == net_endpoint_state_write_closed
             || state == net_endpoint_state_error
-            || state == net_endpoint_state_error
             || state == net_endpoint_state_established))
     {
         if (endpoint->m_driver->m_endpoint_update(endpoint) != 0) return -1;
         if (endpoint->m_state == net_endpoint_state_deleting) return -1;
     }
 
+    if (endpoint->m_state == net_endpoint_state_error
+        || endpoint->m_state == net_endpoint_state_disable)
+    {
+        if (endpoint->m_auto_free_timer) net_timer_active(endpoint->m_auto_free_timer, 0);
+    }
+    
     return 0;
 }
 
@@ -1051,4 +1094,9 @@ int net_endpoint_get_mss(net_endpoint_t endpoint, uint32_t * mss) {
         }
         return -1;
     }
+}
+
+static void net_endpoint_auto_free_cb(net_timer_t timer, void * ctx) {
+    net_endpoint_t endpoint = ctx;
+    net_endpoint_set_state(endpoint, net_endpoint_state_deleting);
 }

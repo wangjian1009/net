@@ -65,6 +65,9 @@ void net_endpoint_update_debug_info(net_endpoint_t endpoint);
 int net_endpoint_set_no_delay(net_endpoint_t endpoint, uint8_t is_enable);
 int net_endpoint_get_mss(net_endpoint_t endpoint, uint32_t * mss);
 
+uint8_t net_endpoint_auto_free(net_endpoint_t http_ep);
+int net_endpoint_set_auto_free(net_endpoint_t http_ep, uint8_t auto_close);
+
 /*error info*/
 void net_endpoint_set_error(net_endpoint_t endpoint, net_endpoint_error_source_t error_source, uint32_t error_no, const char * msg);
 net_endpoint_error_source_t net_endpoint_error_source(net_endpoint_t endpoint);
