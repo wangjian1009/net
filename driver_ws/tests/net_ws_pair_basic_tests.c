@@ -59,6 +59,28 @@ static void net_ws_pair_basic(void **state) {
     test_net_ws_endpoint_expect_bin_msg(env->m_tdriver, cli_ep, "lmno", 4, &action_noop, 0);
     assert_true(net_ws_endpoint_send_msg_bin(svr_ep, "lmno", 4) == 0);
     test_net_driver_run(env->m_tdriver, 0);
+
+    /*close (from cli)*/
+    struct test_net_ws_endpoint_action action_close = {
+        .m_type = test_net_ws_endpoint_op_close,
+        .m_close = { 100, "close2", }
+    };
+    test_net_ws_endpoint_expect_close(env->m_tdriver, svr_ep, 1000, "close1", 6, &action_close, 0);
+    //test_net_ws_endpoint_expect_close(env->m_tdriver, svr_ep, 100, "close2", &action_noop, 0);
+
+    assert_true(net_ws_endpoint_close(cli_ep, 1000, "close1", 6) == 0);
+    test_net_driver_run(env->m_tdriver, 0);
+
+    CPE_ERROR(env->m_em, "xxxx aaaa bbbb");
+    
+    /*验证最终状态 */
+    /* assert_string_equal( */
+    /*     net_endpoint_state_str(net_endpoint_state_disable), */
+    /*     net_endpoint_state_str(net_endpoint_state(net_ws_endpoint_base_endpoint(svr_ep)))); */
+
+    /* assert_string_equal( */
+    /*     net_endpoint_state_str(net_endpoint_state_disable), */
+    /*     net_endpoint_state_str(net_endpoint_state(net_ws_endpoint_base_endpoint(cli_ep)))); */
 }
 
 static void net_ws_pair_text_msg_disable_ep(void **state) {

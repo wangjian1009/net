@@ -19,7 +19,7 @@ enum net_ws_endpoint_state {
 typedef void (*net_ws_endpoint_on_msg_text_fun_t)(void * ctx, net_ws_endpoint_t endpoin, const char * msg);
 typedef void (*net_ws_endpoint_on_msg_bin_fun_t)(void * ctx, net_ws_endpoint_t endpoin, const void * msg, uint32_t msg_len);
 typedef void (*net_ws_endpoint_on_close_fun_t)(
-    void * ctx, net_ws_endpoint_t endpoin, uint16_t status_code, const char * msg);
+    void * ctx, net_ws_endpoint_t endpoin, uint16_t status_code, const void * msg, uint32_t msg_len);
 
 net_ws_endpoint_t net_ws_endpoint_cast(net_endpoint_t endpoint);
 net_endpoint_t net_ws_endpoint_stream(net_endpoint_t endpoint);
@@ -32,7 +32,7 @@ int net_ws_endpoint_set_runing_mode(net_ws_endpoint_t endpoint, net_ws_endpoint_
 net_endpoint_t net_ws_endpoint_base_endpoint(net_ws_endpoint_t endpoint);
 
 int net_ws_endpoint_connect(net_ws_endpoint_t endpoint, cpe_url_t url);
-int net_ws_endpoint_close(net_ws_endpoint_t endpoint, uint16_t status_code, const char * msg);
+int net_ws_endpoint_close(net_ws_endpoint_t endpoint, uint16_t status_code, const void * msg, uint32_t msg_len);
 
 const char * net_ws_endpoint_path(net_ws_endpoint_t endpoint);
 int net_ws_endpoint_set_path(net_ws_endpoint_t endpoint, const char * path);

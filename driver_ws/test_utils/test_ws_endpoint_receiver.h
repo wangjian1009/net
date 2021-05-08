@@ -11,10 +11,17 @@ enum test_net_ws_endpoint_action_type {
     test_net_ws_endpoint_op_disable,
     test_net_ws_endpoint_op_error,
     test_net_ws_endpoint_op_delete,
+    test_net_ws_endpoint_op_close,
 };
 
 struct test_net_ws_endpoint_action {
     test_net_ws_endpoint_action_type_t m_type;
+    union {
+        struct {
+            uint16_t m_status_code;
+            const char * m_msg;
+        } m_close;
+    };
 };
 
 /*安装测试桩 */
@@ -30,7 +37,7 @@ void test_net_ws_endpoint_expect_bin_msg(
     test_net_ws_endpoint_action_t action, int64_t delay_ms);
 
 void test_net_ws_endpoint_expect_close(
-    test_net_driver_t tdriver, net_ws_endpoint_t endpoint, uint16_t status_code, const char * msg,
+    test_net_driver_t tdriver, net_ws_endpoint_t endpoint, uint16_t status_code, const void * msg, uint32_t msg_len,
     test_net_ws_endpoint_action_t action, int64_t delay_ms);
 
 #endif
