@@ -193,29 +193,20 @@ static void net_ndt7_tester_download_on_endpoint_evt(
                     &response, tester->m_download.m_start_time_ms, cur_time_ms, tester->m_download.m_num_bytes,
                     net_ndt7_test_download);
 
-                if (net_endpoint_state(endpoint) == net_endpoint_state_disable) {
-                    net_ndt7_tester_notify_test_complete(
-                        tester,
-                        net_endpoint_error_source_network,
-                        net_endpoint_network_errno_internal,
-                        "Disabled",
-                        &response, net_ndt7_test_download);
-                } else {
-                    net_ndt7_tester_notify_test_complete(
-                        tester,
-                        net_endpoint_error_source(endpoint),
-                        net_endpoint_error_no(endpoint),
-                        net_endpoint_error_msg(endpoint),
-                        &response, net_ndt7_test_download);
-                }
+                net_ndt7_tester_notify_test_complete(
+                    tester,
+                    net_endpoint_error_source(endpoint),
+                    net_endpoint_error_no(endpoint),
+                    net_endpoint_error_msg(endpoint),
+                    &response, net_ndt7_test_download);
+
+                tester->m_download.m_completed = 1;
             }
             break;
         default:
             break;
         }
     }
-
-    tester->m_download.m_completed = 1;
 }
 
 static void net_ndt7_tester_download_try_notify_update(net_ndt7_tester_t tester) {
