@@ -14,7 +14,7 @@ enum net_ndt7_test_type {
 /*sppeedtest*/
 struct net_ndt7_app_info {
     int64_t m_elapsed_time_ms;
-    double m_num_bytes;
+    uint64_t m_num_bytes;
 };
 
 enum net_ndt7_response_origin {

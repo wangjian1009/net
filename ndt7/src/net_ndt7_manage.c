@@ -34,6 +34,8 @@ net_ndt7_manage_t net_ndt7_manage_create(
     manage->m_http_protocol = NULL;
     manage->m_idx_max = 0;
 
+    net_ndt7_config_init_default(&manage->m_cfg);
+    
     manage->m_delay_process = net_timer_auto_create(schedule, net_ndt7_manage_delay_process, manage);
     if (manage->m_delay_process == NULL) {
         CPE_ERROR(em, "ndt7: create ssl driver fail");
@@ -115,6 +117,18 @@ uint8_t net_ndt7_manage_debug(net_ndt7_manage_t manage) {
 
 void net_ndt7_manage_set_debug(net_ndt7_manage_t manage, uint8_t debug) {
     manage->m_debug = debug;
+}
+
+net_ndt7_config_t net_ndt7_manager_config(net_ndt7_manage_t manage) {
+    return &manage->m_cfg;
+}
+
+void net_ndt7_manager_set_config(net_ndt7_manage_t manage, net_ndt7_config_t config) {
+    manage->m_cfg = *config;
+}
+
+mem_buffer_t net_ndt7_manage_tmp_buffer(net_ndt7_manage_t manage) {
+    return net_schedule_tmp_buffer(manage->m_schedule);
 }
 
 static void net_ndt7_manage_delay_process(net_timer_t timer, void * ctx) {

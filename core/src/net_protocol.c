@@ -24,8 +24,16 @@ net_protocol_create(
     net_protocol_t protocol;
 
     if (schedule->m_endpoint_max_id != 0) {
-        CPE_ERROR(schedule->m_em, "protocol: already have endpoint created!");
-        return NULL;
+        net_protocol_t same_protocol = NULL;
+        if (protocol_init) {
+            TAILQ_FOREACH(same_protocol, &schedule->m_protocols, m_next_for_schedule) {
+                if (same_protocol->m_protocol_init == protocol_init) break;
+            }
+        }
+        if (same_protocol == NULL) {
+            CPE_ERROR(schedule->m_em, "protocol: already have endpoint created!");
+            return NULL;
+        }
     }
     
     protocol = mem_alloc(schedule->m_alloc, sizeof(struct net_protocol) + protocol_capacity);

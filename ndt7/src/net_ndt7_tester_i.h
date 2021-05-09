@@ -1,6 +1,7 @@
 #ifndef NET_NDT7_TESTER_I_H_INCLEDED
 #define NET_NDT7_TESTER_I_H_INCLEDED
 #include "net_ndt7_model.h"
+#include "net_ndt7_config.h"
 #include "net_ndt7_tester.h"
 #include "net_ndt7_manage_i.h"
 
@@ -17,16 +18,7 @@ struct net_ndt7_tester {
     uint8_t m_is_processing;
     uint8_t m_is_free;
 
-    struct {
-        int64_t m_measurement_interval_ms;
-
-        struct {
-            int64_t m_duration_ms;
-            uint32_t m_max_message_size;
-            uint32_t m_min_message_size;
-            uint32_t m_max_queue_size;
-        } m_upload;
-    } m_cfg;
+    struct net_ndt7_config m_cfg;
 
     uint8_t m_is_to_notify;
     TAILQ_ENTRY(net_ndt7_tester) m_next_for_notify;
@@ -45,7 +37,7 @@ struct net_ndt7_tester {
     struct {
         int64_t m_start_time_ms;
         int64_t m_pre_notify_ms;
-        double m_num_bytes;
+        uint64_t m_num_bytes;
         uint8_t m_completed;
         net_ws_endpoint_t m_endpoint;
     } m_download;
@@ -53,11 +45,11 @@ struct net_ndt7_tester {
     struct {
         int64_t m_start_time_ms;
         int64_t m_pre_notify_ms;
-        double m_total_bytes_sent;
+        uint64_t m_total_bytes_queued;
         uint32_t m_package_size;
         uint8_t m_completed;
         net_ws_endpoint_t m_endpoint;
-        net_timer_t m_stop_timer;
+        net_timer_t m_process_timer;
     } m_upload;
     
     /*错误数据 */

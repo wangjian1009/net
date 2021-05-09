@@ -17,14 +17,14 @@ static void net_ndt7_tester_upload_on_msg_text(void * ctx, net_ws_endpoint_t end
 static void net_ndt7_tester_upload_on_close(
     void * ctx, net_ws_endpoint_t endpoin, uint16_t status_code, const void * msg, uint32_t msg_len);
 
-static void net_ndt7_tester_upload_on_stop(net_timer_t timer, void * ctx);
+static void net_ndt7_tester_upload_on_process(net_timer_t timer, void * ctx);
 
 static void net_ndt7_tester_upload_on_endpoint_fini(void * ctx, net_endpoint_t endpoint);
 static void net_ndt7_tester_upload_on_endpoint_evt(
     void * ctx, net_endpoint_t endpoint, net_endpoint_monitor_evt_t evt);
 
 static double net_ndt7_tester_upload_total_bytes(net_ndt7_tester_t tester);
-static void net_ndt7_tester_upload_perform_dynamic_tuning(net_ndt7_tester_t tester);
+static double net_ndt7_tester_upload_total_bytes_transmitted(net_ndt7_tester_t tester, double queue_size);
 
 int net_ndt7_tester_upload_start(net_ndt7_tester_t tester) {
     net_ndt7_manage_t manager = tester->m_manager;
@@ -37,11 +37,11 @@ int net_ndt7_tester_upload_start(net_ndt7_tester_t tester) {
         return -1;
     }
 
-    assert(tester->m_upload.m_stop_timer == NULL);
-    if (tester->m_upload.m_stop_timer) {
-        tester->m_upload.m_stop_timer =
-            net_timer_auto_create(manager->m_schedule, net_ndt7_tester_upload_on_stop, tester);
-        if (tester->m_upload.m_stop_timer == NULL) {
+    assert(tester->m_upload.m_process_timer == NULL);
+    if (tester->m_upload.m_process_timer == NULL) {
+        tester->m_upload.m_process_timer =
+            net_timer_auto_create(manager->m_schedule, net_ndt7_tester_upload_on_process, tester);
+        if (tester->m_upload.m_process_timer == NULL) {
             CPE_ERROR(manager->m_em, "ndt7: %d: upload: start: create stop timer fail", tester->m_id);
             net_ndt7_tester_set_error_internal(tester, "CreateStopTimerError");
             return -1;
@@ -108,13 +108,13 @@ int net_ndt7_tester_upload_start(net_ndt7_tester_t tester) {
 
     tester->m_upload.m_start_time_ms = net_schedule_cur_time_ms(manager->m_schedule);
     tester->m_upload.m_pre_notify_ms = tester->m_upload.m_start_time_ms;
-    net_timer_active(tester->m_upload.m_stop_timer, tester->m_cfg.m_upload.m_duration_ms);
+    net_timer_active(tester->m_upload.m_process_timer, 0);
     return 0;
 
 START_FAIL:
-    if(tester->m_upload.m_stop_timer) {
-        net_timer_free(tester->m_upload.m_stop_timer);
-        tester->m_upload.m_stop_timer = NULL;
+    if(tester->m_upload.m_process_timer) {
+        net_timer_free(tester->m_upload.m_process_timer);
+        tester->m_upload.m_process_timer = NULL;
     }
 
     if (tester->m_upload.m_endpoint) {
@@ -170,17 +170,86 @@ static void net_ndt7_tester_upload_on_close(
     }
 }
 
-static void net_ndt7_tester_upload_on_stop(net_timer_t timer, void * ctx) {
+// this is gonna let higher speed clients saturate their pipes better
+// it will gradually increase the size of data if the websocket queue isn't filling up
+static void net_ndt7_tester_upload_perform_dynamic_tuning(net_ndt7_tester_t tester, uint32_t queue_size) {
+    uint64_t total_bytes_transmitted = tester->m_upload.m_total_bytes_queued - queue_size;
+
+    if (tester->m_upload.m_package_size * 2 < tester->m_cfg.m_upload.m_max_message_size
+        && tester->m_upload.m_package_size < total_bytes_transmitted / 16)
+    {
+        tester->m_upload.m_package_size *= 2;
+    }
+}
+
+static void net_ndt7_tester_upload_send(net_ndt7_tester_t tester, uint32_t queue_size) {
+    net_ndt7_manage_t manager = tester->m_manager;
+
+    if (queue_size + tester->m_upload.m_package_size < tester->m_cfg.m_upload.m_max_queue_size) {
+        void * buf = mem_buffer_alloc(net_ndt7_manage_tmp_buffer(manager), tester->m_upload.m_package_size);
+        if (buf == NULL) {
+            CPE_ERROR(
+                manager->m_em, "ndt7: %d: upload: send: alloc buffer error, size=%d",
+                tester->m_id, tester->m_upload.m_package_size);
+            return;
+        }
+
+        if (net_ws_endpoint_send_msg_bin(tester->m_upload.m_endpoint, buf, tester->m_upload.m_package_size) != 0) {
+            CPE_ERROR(
+                manager->m_em, "ndt7: %d: upload: send: send error, size=%d",
+                tester->m_id, tester->m_upload.m_package_size);
+            return;
+        }
+        
+        tester->m_upload.m_total_bytes_queued += tester->m_upload.m_package_size;
+    }
+}
+
+static void net_ndt7_tester_upload_on_process(net_timer_t timer, void * ctx) {
     net_ndt7_tester_t tester = ctx;
     net_ndt7_manage_t manager = tester->m_manager;
 
     assert(tester->m_state == net_ndt7_tester_state_upload);
     assert(tester->m_upload.m_endpoint);
 
-    if (net_ws_endpoint_close(tester->m_upload.m_endpoint, net_ws_status_code_normal_closure, NULL, 0) != 0) {
-        net_endpoint_set_state(
-            net_ws_endpoint_base_endpoint(tester->m_upload.m_endpoint), net_endpoint_state_deleting);
+    int64_t complete_time_ms = tester->m_upload.m_start_time_ms + tester->m_cfg.m_measurement_interval_ms;
+    int64_t cur_time_ms = net_schedule_cur_time_ms(manager->m_schedule);
+    if (cur_time_ms >= complete_time_ms) {
+        if (net_ws_endpoint_close(tester->m_upload.m_endpoint, net_ws_status_code_normal_closure, NULL, 0) != 0) {
+            net_endpoint_set_state(
+                net_ws_endpoint_base_endpoint(tester->m_upload.m_endpoint), net_endpoint_state_deleting);
+        }
+        return;
     }
+
+    struct net_endpoint_size_info size_info = { 0 };
+    if (tester->m_upload.m_endpoint) {
+        net_endpoint_calc_size(net_ws_endpoint_base_endpoint(tester->m_upload.m_endpoint), &size_info);
+    }
+
+    /*更新发送包大小 */
+    net_ndt7_tester_upload_perform_dynamic_tuning(tester, size_info.m_write);
+
+    /*发送数据 */
+    net_ndt7_tester_upload_send(tester, size_info.m_write);
+
+    /*指定间隔发送进度 */
+    if (cur_time_ms - tester->m_upload.m_pre_notify_ms >= tester->m_cfg.m_measurement_interval_ms) {
+        struct net_ndt7_response response;
+        net_ndt7_response_init(
+            &response, tester->m_upload.m_start_time_ms, cur_time_ms, net_ndt7_tester_upload_total_bytes(tester),
+            net_ndt7_test_upload);
+        net_ndt7_tester_notify_speed_progress(tester, &response);
+        tester->m_upload.m_pre_notify_ms = cur_time_ms;
+    }
+
+    /*计算下一次触发时间 */
+    int64_t delay_ms = complete_time_ms - cur_time_ms;
+    if (delay_ms > 10) {
+        delay_ms = 10;
+    }
+
+    net_timer_active(tester->m_upload.m_process_timer, delay_ms);
 }
 
 static void net_ndt7_tester_upload_on_endpoint_fini(void * ctx, net_endpoint_t endpoint) {
@@ -206,9 +275,9 @@ static void net_ndt7_tester_upload_on_endpoint_evt(
         switch(net_endpoint_state(endpoint)) {
         case net_endpoint_state_disable:
         case net_endpoint_state_error:
-            if (tester->m_upload.m_stop_timer) {
-                net_timer_free(tester->m_upload.m_stop_timer);
-                tester->m_upload.m_stop_timer = NULL;
+            if (tester->m_upload.m_process_timer) {
+                net_timer_free(tester->m_upload.m_process_timer);
+                tester->m_upload.m_process_timer = NULL;
             }
             
             if (!tester->m_upload.m_completed) {
@@ -243,33 +312,23 @@ static void net_ndt7_tester_upload_on_endpoint_evt(
     }
 }
 
-static void net_ndt7_tester_upload_try_notify_update(net_ndt7_tester_t tester) {
-    net_ndt7_manage_t manager = tester->m_manager;
-    int64_t cur_time_ms = net_schedule_cur_time_ms(manager->m_schedule);
-
-    if (cur_time_ms - tester->m_upload.m_pre_notify_ms >= tester->m_cfg.m_measurement_interval_ms) {
-        struct net_ndt7_response response;
-        net_ndt7_response_init(
-            &response, tester->m_upload.m_start_time_ms, cur_time_ms, net_ndt7_tester_upload_total_bytes(tester),
-            net_ndt7_test_upload);
-        net_ndt7_tester_notify_speed_progress(tester, &response);
-        tester->m_upload.m_pre_notify_ms = cur_time_ms;
-    }
-}
-
 static double net_ndt7_tester_upload_total_bytes(net_ndt7_tester_t tester) {
-    return tester->m_upload.m_total_bytes_sent;
+    struct net_endpoint_size_info size_info = { 0 };
+    if (tester->m_upload.m_endpoint) {
+        net_endpoint_calc_size(net_ws_endpoint_base_endpoint(tester->m_upload.m_endpoint), &size_info);
+    }
+    
+    return net_ndt7_tester_upload_total_bytes_transmitted(tester, size_info.m_write);
 }
 
-/* this is gonna let higher speed clients saturate their pipes better */
-/* it will gradually increase the size of data if the websocket queue isn't filling up */
-static void net_ndt7_tester_upload_perform_dynamic_tuning(net_ndt7_tester_t tester) {
-    //fun performDynamicTuning(data: ByteString, queueSize: Long, bytesEnqueued: Double): ByteString {
-    //val totalBytesTransmitted = bytesEnqueued - queueSize
+static double net_ndt7_tester_upload_total_bytes_transmitted(net_ndt7_tester_t tester, double queue_size) {
+    return tester->m_upload.m_total_bytes_queued > queue_size
+        ? tester->m_upload.m_total_bytes_queued - queue_size
+        : 0;
+}
 
         /* return if (data.size * 2 < NDT7Constants.MAX_MESSAGE_SIZE && data.size < totalBytesTransmitted / 16) { */
         /*     ByteString.of(*ByteArray(data.size * 2)) // double the size of data */
         /* } else { */
         /*     data */
         /* } */
-}

@@ -14,6 +14,9 @@ void net_ndt7_manage_free(net_ndt7_manage_t ndt_manage);
 uint8_t net_ndt7_manage_debug(net_ndt7_manage_t manage);
 void net_ndt7_manage_set_debug(net_ndt7_manage_t manage, uint8_t debug);
 
+net_ndt7_config_t net_ndt7_manager_config(net_ndt7_manage_t manage);
+void net_ndt7_manager_set_config(net_ndt7_manage_t manage, net_ndt7_config_t config);
+
 NET_END_DECL
 
 #endif

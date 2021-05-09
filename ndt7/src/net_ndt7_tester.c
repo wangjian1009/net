@@ -29,12 +29,7 @@ net_ndt7_tester_create(net_ndt7_manage_t manager) {
     tester->m_is_processing = 0;
     tester->m_is_free = 0;
 
-    tester->m_cfg.m_measurement_interval_ms = 250;
-    tester->m_cfg.m_upload.m_duration_ms = 10 * 1000;
-    tester->m_cfg.m_upload.m_max_message_size = 16777216; /* (1<<24) = 16MB */
-    tester->m_cfg.m_upload.m_min_message_size = 8192;     /* (1<<13) */
-    tester->m_cfg.m_upload.m_max_queue_size = 16777216;   /* 16MB */
-        
+    tester->m_cfg = manager->m_cfg;
     tester->m_is_to_notify = 0;
 
     tester->m_query_target.m_endpoint = NULL;
@@ -49,10 +44,10 @@ net_ndt7_tester_create(net_ndt7_manage_t manager) {
     tester->m_upload.m_start_time_ms = 0;
     tester->m_upload.m_pre_notify_ms = 0;
     tester->m_upload.m_package_size = 0;
-    tester->m_upload.m_total_bytes_sent = 0;
+    tester->m_upload.m_total_bytes_queued = 0;
     tester->m_upload.m_completed = 0;
     tester->m_upload.m_endpoint = NULL;
-    tester->m_upload.m_stop_timer = NULL;
+    tester->m_upload.m_process_timer = NULL;
     
     tester->m_error.m_state = net_ndt7_tester_state_init;
     tester->m_error.m_error = net_ndt7_tester_error_none;
@@ -117,9 +112,9 @@ void net_ndt7_tester_free(net_ndt7_tester_t tester) {
         tester->m_upload.m_endpoint = NULL;
     }
 
-    if (tester->m_upload.m_stop_timer) {
-        net_timer_free(tester->m_upload.m_stop_timer);
-        tester->m_upload.m_stop_timer = NULL;
+    if (tester->m_upload.m_process_timer) {
+        net_timer_free(tester->m_upload.m_process_timer);
+        tester->m_upload.m_process_timer = NULL;
     }
 
     if (tester->m_ctx_free) {
@@ -186,12 +181,12 @@ net_ndt7_tester_state_t net_ndt7_tester_state(net_ndt7_tester_t tester) {
     return tester->m_state;
 }
 
-int64_t net_ndt7_tester_measurement_interval_ms(net_ndt7_tester_t tester) {
-    return tester->m_cfg.m_measurement_interval_ms;
+net_ndt7_config_t net_ndt7_tester_config(net_ndt7_tester_t tester) {
+    return &tester->m_cfg;
 }
 
-void net_ndt7_tester_set_measurement_interval_ms(net_ndt7_tester_t tester, int64_t measurement_interval_ms) {
-    tester->m_cfg.m_measurement_interval_ms = measurement_interval_ms;
+void net_ndt7_tester_set_config(net_ndt7_tester_t tester, net_ndt7_config_t config) {
+    tester->m_cfg = *config;
 }
 
 void net_ndt7_tester_set_cb(

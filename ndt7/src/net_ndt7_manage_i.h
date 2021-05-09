@@ -7,15 +7,10 @@
 #include "net_http_types.h"
 #include "net_ssl_types.h"
 #include "net_ws_types.h"
+#include "net_ndt7_config.h"
 #include "net_ndt7_manage.h"
 
 NET_BEGIN_DECL
-
-#define MAX_RUN_TIME_MS (10 * 1000)
-#define MAX_MESSAGE_SIZE (16777216) // (1<<24) = 16MB
-#define MIN_MESSAGE_SIZE (8192) // (1<<13)
-#define TEST_MAX_WAIT_TIME_MS (20 * 1000) // seconds
-#define MAX_QUEUE_SIZE (16777216) // 16MB
 
 typedef TAILQ_HEAD(net_ndt7_tester_list, net_ndt7_tester) net_ndt7_tester_list_t;
 typedef TAILQ_HEAD(net_ndt7_tester_target_list, net_ndt7_tester_target) net_ndt7_tester_target_list_t;
@@ -29,6 +24,7 @@ struct net_ndt7_manage {
     net_driver_t m_ssl_driver;
     net_ws_protocol_t m_ws_protocol;
     net_http_protocol_t m_http_protocol;
+    struct net_ndt7_config m_cfg;
     uint32_t m_idx_max;
     net_ndt7_tester_list_t m_testers;
     net_ndt7_tester_list_t m_to_notify_testers;

@@ -1,5 +1,6 @@
 #include "net_schedule.h"
 #include "net_ndt7_testenv.h"
+#include "net_ndt7_config.h"
 #include "net_ndt7_tester.h"
 #include "net_ndt7_tests.h"
 
@@ -24,7 +25,12 @@ static void ndt7_tester_basic(void **state) {
     net_ndt7_testenv_create_tester(env);
 
     net_ndt7_tester_t tester = env->m_ndt_tester;
-    net_ndt7_tester_set_measurement_interval_ms(tester, 250);
+
+    struct net_ndt7_config cfg = *net_ndt7_tester_config(tester);
+    cfg.m_measurement_interval_ms = 250;
+    net_ndt7_tester_set_config(tester, &cfg);
+
+    test_ws_svr_testenv_create_mock_svr(env->m_ws_svr, "host4", "wss://host4:443");
     
     test_net_dns_expect_query_response(env->m_tdns, "locate.measurementlab.net", "1.1.1.1", 0);
     test_net_endpoint_id_expect_connect_to_acceptor(
@@ -121,6 +127,12 @@ static void ndt7_tester_basic(void **state) {
         net_ndt7_measurement_dump(net_schedule_tmp_buffer(env->m_schedule), &env->m_last_measurement));
 
     net_ndt7_testenv_download_close(env, net_ws_status_code_normal_closure, NULL, 0);
+
+    /*设置上传数据 */
+    test_net_dns_expect_query_response(env->m_tdns, "host4", "1.1.3.1", 0);
+    test_net_endpoint_id_expect_connect_to_acceptor(
+        env->m_tdriver, 0, "host4:443(1.1.3.1:443)", 0, 0);
+    
     test_net_driver_run(env->m_tdriver, 0);
 
     assert_string_equal(
