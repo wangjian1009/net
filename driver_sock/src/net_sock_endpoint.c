@@ -73,6 +73,7 @@ void net_sock_endpoint_calc_size(net_endpoint_t base_endpoint, net_endpoint_size
     net_sock_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
     
     if (endpoint->m_fd != -1) {
+#if defined SO_NREAD
         int buf = 0;
         socklen_t len = sizeof(buf);
         if (cpe_getsockopt(endpoint->m_fd, SOL_SOCKET, SO_NREAD, (void*)&buf, &len) == -1) {
@@ -85,7 +86,11 @@ void net_sock_endpoint_calc_size(net_endpoint_t base_endpoint, net_endpoint_size
         else {
             size_info->m_read = buf;
         }
-
+#else
+        size_info->m_read = 0;
+#endif
+        
+#if defined SO_NWRITE
         buf = 0;
         len = sizeof(buf);
         if (cpe_getsockopt(endpoint->m_fd, SOL_SOCKET, SO_NWRITE, (void*)&buf, &len) == -1) {
@@ -98,6 +103,10 @@ void net_sock_endpoint_calc_size(net_endpoint_t base_endpoint, net_endpoint_size
         else {
             size_info->m_write = buf;
         }
+#else
+        size_info->m_write = 0;
+#endif
+        
     }
     else {
         size_info->m_read = 0;
