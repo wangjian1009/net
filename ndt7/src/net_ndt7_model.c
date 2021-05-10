@@ -24,7 +24,8 @@ const char * net_ndt7_response_dump(mem_buffer_t buffer, net_ndt7_response_t res
     yajl_gen_config(gen, yajl_gen_print_callback, cpe_yajl_gen_print_to_stream, (write_stream_t)&stream);
     net_ndt7_response_to_json(gen, response);    
     stream_putc((write_stream_t)&stream, 0);
-    
+    yajl_gen_free(gen);
+
     return mem_buffer_make_continuous(buffer, 0);
 }
 
@@ -38,6 +39,7 @@ const char * net_ndt7_measurement_dump(mem_buffer_t buffer, net_ndt7_measurement
     yajl_gen_config(gen, yajl_gen_print_callback, cpe_yajl_gen_print_to_stream, (write_stream_t)&stream);
     net_ndt7_measurement_to_json(gen, measurement);    
     stream_putc((write_stream_t)&stream, 0);
+    yajl_gen_free(gen);
     
     return mem_buffer_make_continuous(buffer, 0);
 }
