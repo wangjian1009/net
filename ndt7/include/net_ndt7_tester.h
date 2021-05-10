@@ -5,12 +5,6 @@
 
 NET_BEGIN_DECL
 
-enum net_ndt7_test_protocol {
-    net_ndt7_test_protocol_auto,
-    net_ndt7_test_protocol_ws,
-    net_ndt7_test_protocol_wss,
-};
-
 enum net_ndt7_tester_state {
     net_ndt7_tester_state_init,
     net_ndt7_tester_state_query_target,
@@ -78,7 +72,6 @@ net_ndt7_tester_error_t net_ndt7_tester_error(net_ndt7_tester_t tester);
 const char * net_ndt7_tester_error_msg(net_ndt7_tester_t tester);
 
 /*辅助函数 */
-const char * net_ndt7_test_type_str(net_ndt7_test_type_t state);
 const char * net_ndt7_tester_state_str(net_ndt7_tester_state_t state);
 const char * net_ndt7_tester_error_str(net_ndt7_tester_error_t err);
 

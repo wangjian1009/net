@@ -456,6 +456,17 @@ const char * net_ndt7_test_type_str(net_ndt7_test_type_t state) {
     }
 }
 
+const char * net_ndt7_test_protocol_str(net_ndt7_test_protocol_t protocol) {
+    switch(protocol) {
+    case net_ndt7_test_protocol_auto:
+        return "auto";
+    case net_ndt7_test_protocol_ws:
+        return "ws";
+    case net_ndt7_test_protocol_wss:
+        return "wss";
+    }
+}
+
 const char * net_ndt7_tester_state_str(net_ndt7_tester_state_t state) {
     switch (state) {
     case net_ndt7_tester_state_init:

@@ -11,6 +11,12 @@ enum net_ndt7_test_type {
     net_ndt7_test_download_and_upload,
 };
 
+enum net_ndt7_test_protocol {
+    net_ndt7_test_protocol_auto,
+    net_ndt7_test_protocol_ws,
+    net_ndt7_test_protocol_wss,
+};
+
 /*sppeedtest*/
 struct net_ndt7_app_info {
     int64_t m_elapsed_time_ms;
@@ -109,6 +115,9 @@ struct net_ndt7_measurement {
 };
 
 const char * net_ndt7_measurement_dump(mem_buffer_t buffer, net_ndt7_measurement_t measurement);
+
+const char * net_ndt7_test_type_str(net_ndt7_test_type_t state);
+const char * net_ndt7_test_protocol_str(net_ndt7_test_protocol_t protocol);
 
 NET_END_DECL
 
