@@ -112,10 +112,53 @@ void test_ws_svr_testenv_create_mock_svr(test_ws_svr_testenv_t env, const char *
     assert_true(test_ws_svr_mock_svr_create(env, name, url) != NULL);
 }
 
+/*回调函数 */
+struct test_ws_svr_mock_svr_ctx {
+    test_ws_svr_mock_svr_t m_svr;
+};
+
+void test_ws_svr_mock_svr_on_connected_cb(void * i_ctx, net_ws_endpoint_t endpoin) {
+    struct test_ws_svr_mock_svr_ctx * ctx = i_ctx;
+}
+
+void test_ws_svr_mock_svr_on_msg_text_cb(void * i_ctx, net_ws_endpoint_t endpoint, const char * msg) {
+    struct test_ws_svr_mock_svr_ctx * ctx = i_ctx;
+}
+
+void test_ws_svr_mock_svr_on_msg_bin_cb(void * i_ctx, net_ws_endpoint_t endpoint, const void * msg, uint32_t msg_len) {
+    struct test_ws_svr_mock_svr_ctx * ctx = i_ctx;
+}
+
+void test_ws_svr_mock_svr_on_close_cb(
+    void * i_ctx, net_ws_endpoint_t endpoint, uint16_t status_code, const void * msg, uint32_t msg_len)
+{
+    struct test_ws_svr_mock_svr_ctx * ctx = i_ctx;
+}
+
 static int test_ws_svr_mock_svr_on_new_endpoint(void * ctx, net_endpoint_t base_endpoint) {
     test_ws_svr_mock_svr_t svr = ctx;
     
     net_ws_endpoint_t endpoint = net_ws_endpoint_cast(base_endpoint);
     net_ws_endpoint_set_runing_mode(endpoint, net_ws_endpoint_runing_mode_svr);
+
+    struct test_ws_svr_mock_svr_ctx * ep_ctx =
+        mem_buffer_alloc(&svr->m_env->m_driver->m_setup_buffer, sizeof(struct test_ws_svr_mock_svr_ctx));
+    ep_ctx->m_svr = svr;
+
+    net_ws_endpoint_set_callback(
+        endpoint,
+        ep_ctx,
+        test_ws_svr_mock_svr_on_connected_cb,
+        test_ws_svr_mock_svr_on_msg_text_cb,
+        test_ws_svr_mock_svr_on_msg_bin_cb,
+        test_ws_svr_mock_svr_on_close_cb,
+        NULL);
+    
     return 0;
+}
+
+void test_ws_svr_mock_svr_on_connected(
+    test_ws_svr_mock_svr_t svr, test_net_ws_endpoint_action_t action, int64_t delay_ms)
+{
+    
 }

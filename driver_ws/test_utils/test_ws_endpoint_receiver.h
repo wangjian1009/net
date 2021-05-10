@@ -1,28 +1,6 @@
 #ifndef TEST_UTILS_WS_ENDPOINT_RECEIVER_H_INCLEDED
 #define TEST_UTILS_WS_ENDPOINT_RECEIVER_H_INCLEDED
-#include "test_net_driver.h"
-#include "net_ws_endpoint.h"
-
-typedef enum test_net_ws_endpoint_action_type test_net_ws_endpoint_action_type_t;
-typedef struct test_net_ws_endpoint_action * test_net_ws_endpoint_action_t;
-
-enum test_net_ws_endpoint_action_type {
-    test_net_ws_endpoint_op_noop,
-    test_net_ws_endpoint_op_disable,
-    test_net_ws_endpoint_op_error,
-    test_net_ws_endpoint_op_delete,
-    test_net_ws_endpoint_op_close,
-};
-
-struct test_net_ws_endpoint_action {
-    test_net_ws_endpoint_action_type_t m_type;
-    union {
-        struct {
-            uint16_t m_status_code;
-            const char * m_msg;
-        } m_close;
-    };
-};
+#include "test_ws_endpoint_action.h"
 
 /*安装测试桩 */
 void test_net_ws_endpoint_install_receivers(net_ws_endpoint_t endpoint);
