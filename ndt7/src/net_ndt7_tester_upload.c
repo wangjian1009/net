@@ -13,10 +13,12 @@
 #include "net_ndt7_model_i.h"
 #include "net_ndt7_json_i.h"
 
+static void net_ndt7_tester_upload_on_connected(void * ctx, net_ws_endpoint_t endpoin);
 static void net_ndt7_tester_upload_on_msg_text(void * ctx, net_ws_endpoint_t endpoin, const char * msg);
 static void net_ndt7_tester_upload_on_close(
     void * ctx, net_ws_endpoint_t endpoin, uint16_t status_code, const void * msg, uint32_t msg_len);
 
+static void net_ndt7_tester_upload_tick(net_ndt7_tester_t tester);
 static void net_ndt7_tester_upload_on_process(net_timer_t timer, void * ctx);
 
 static void net_ndt7_tester_upload_on_endpoint_fini(void * ctx, net_endpoint_t endpoint);
@@ -96,6 +98,7 @@ int net_ndt7_tester_upload_start(net_ndt7_tester_t tester) {
     net_ws_endpoint_set_callback(
         tester->m_upload.m_endpoint,
         tester,
+        net_ndt7_tester_upload_on_connected,
         net_ndt7_tester_upload_on_msg_text,
         NULL,
         NULL,
@@ -108,6 +111,7 @@ int net_ndt7_tester_upload_start(net_ndt7_tester_t tester) {
 
     tester->m_upload.m_start_time_ms = net_schedule_cur_time_ms(manager->m_schedule);
     tester->m_upload.m_pre_notify_ms = tester->m_upload.m_start_time_ms;
+    tester->m_upload.m_package_size = tester->m_cfg.m_upload.m_min_message_size;
     net_timer_active(tester->m_upload.m_process_timer, 0);
     return 0;
 
@@ -125,6 +129,11 @@ START_FAIL:
     }
     
     return -1;
+}
+
+static void net_ndt7_tester_upload_on_connected(void * ctx, net_ws_endpoint_t endpoin) {
+    net_ndt7_tester_t tester = ctx;
+    net_ndt7_tester_upload_tick(tester);    
 }
 
 static void net_ndt7_tester_upload_on_msg_text(void * ctx, net_ws_endpoint_t endpoin, const char * msg) {
@@ -205,14 +214,13 @@ static void net_ndt7_tester_upload_send(net_ndt7_tester_t tester, uint32_t queue
     }
 }
 
-static void net_ndt7_tester_upload_on_process(net_timer_t timer, void * ctx) {
-    net_ndt7_tester_t tester = ctx;
+static void net_ndt7_tester_upload_tick(net_ndt7_tester_t tester) {
     net_ndt7_manage_t manager = tester->m_manager;
 
     assert(tester->m_state == net_ndt7_tester_state_upload);
     assert(tester->m_upload.m_endpoint);
 
-    int64_t complete_time_ms = tester->m_upload.m_start_time_ms + tester->m_cfg.m_measurement_interval_ms;
+    int64_t complete_time_ms = tester->m_upload.m_start_time_ms + tester->m_cfg.m_upload.m_duration_ms;
     int64_t cur_time_ms = net_schedule_cur_time_ms(manager->m_schedule);
     if (cur_time_ms >= complete_time_ms) {
         if (net_ws_endpoint_close(tester->m_upload.m_endpoint, net_ws_status_code_normal_closure, NULL, 0) != 0) {
@@ -222,16 +230,22 @@ static void net_ndt7_tester_upload_on_process(net_timer_t timer, void * ctx) {
         return;
     }
 
-    struct net_endpoint_size_info size_info = { 0 };
-    if (tester->m_upload.m_endpoint) {
-        net_endpoint_calc_size(net_ws_endpoint_base_endpoint(tester->m_upload.m_endpoint), &size_info);
+    assert(tester->m_upload.m_endpoint);
+
+    if (net_ws_endpoint_state(tester->m_upload.m_endpoint) == net_ws_endpoint_state_streaming) {
+        net_endpoint_t base_endpoint = net_ws_endpoint_base_endpoint(tester->m_upload.m_endpoint);
+
+        //endpoint->m_state != net_ws_endpoint_state_streaming
+        //if (net_endpoint_state(base_endpoint) == net_endpoint_state_established
+        struct net_endpoint_size_info size_info = { 0 };
+        net_endpoint_calc_size(base_endpoint, &size_info);
+
+        /*更新发送包大小 */
+        net_ndt7_tester_upload_perform_dynamic_tuning(tester, size_info.m_write);
+
+        /*发送数据 */
+        net_ndt7_tester_upload_send(tester, size_info.m_write);
     }
-
-    /*更新发送包大小 */
-    net_ndt7_tester_upload_perform_dynamic_tuning(tester, size_info.m_write);
-
-    /*发送数据 */
-    net_ndt7_tester_upload_send(tester, size_info.m_write);
 
     /*指定间隔发送进度 */
     if (cur_time_ms - tester->m_upload.m_pre_notify_ms >= tester->m_cfg.m_measurement_interval_ms) {
@@ -250,6 +264,10 @@ static void net_ndt7_tester_upload_on_process(net_timer_t timer, void * ctx) {
     }
 
     net_timer_active(tester->m_upload.m_process_timer, delay_ms);
+}
+
+static void net_ndt7_tester_upload_on_process(net_timer_t timer, void * ctx) {
+    net_ndt7_tester_upload_tick(ctx);
 }
 
 static void net_ndt7_tester_upload_on_endpoint_fini(void * ctx, net_endpoint_t endpoint) {

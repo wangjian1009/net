@@ -105,6 +105,7 @@ void test_net_ws_endpoint_install_receivers(net_ws_endpoint_t endpoint) {
     net_ws_endpoint_set_callback(
         endpoint,
         NULL,
+        NULL,
         test_net_ws_endpoint_on_msg_text,
         test_net_ws_endpoint_on_msg_bin,
         test_net_ws_endpoint_on_close,

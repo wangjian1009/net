@@ -37,6 +37,7 @@ struct net_ws_endpoint {
     net_ws_stream_endpoint_t m_stream;
 
     void * m_ctx;
+    net_ws_endpoint_on_connected_fun_t m_on_connected;
     net_ws_endpoint_on_msg_text_fun_t m_on_msg_text_fun;
     net_ws_endpoint_on_msg_bin_fun_t m_on_msg_bin_fun;
     net_ws_endpoint_on_close_fun_t m_on_close_fun;

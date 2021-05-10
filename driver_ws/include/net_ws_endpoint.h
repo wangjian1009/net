@@ -16,6 +16,7 @@ enum net_ws_endpoint_state {
     net_ws_endpoint_state_streaming,
 };
 
+typedef void (*net_ws_endpoint_on_connected_fun_t)(void * ctx, net_ws_endpoint_t endpoin);
 typedef void (*net_ws_endpoint_on_msg_text_fun_t)(void * ctx, net_ws_endpoint_t endpoin, const char * msg);
 typedef void (*net_ws_endpoint_on_msg_bin_fun_t)(void * ctx, net_ws_endpoint_t endpoin, const void * msg, uint32_t msg_len);
 typedef void (*net_ws_endpoint_on_close_fun_t)(
@@ -51,6 +52,7 @@ int net_ws_endpoint_send_msg_bin(net_ws_endpoint_t endpoint, const void * msg, u
 void net_ws_endpoint_set_callback(
     net_ws_endpoint_t endpoint,
     void * ctx,
+    net_ws_endpoint_on_connected_fun_t on_connected,
     net_ws_endpoint_on_msg_text_fun_t on_text_fun,
     net_ws_endpoint_on_msg_bin_fun_t on_bin_fun,
     net_ws_endpoint_on_close_fun_t on_close_fun,

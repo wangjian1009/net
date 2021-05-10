@@ -442,6 +442,7 @@ void net_ws_endpoint_calc_size(net_endpoint_t base_endpoint, net_endpoint_size_i
 void net_ws_endpoint_set_callback(
     net_ws_endpoint_t endpoint,
     void * ctx,
+    net_ws_endpoint_on_connected_fun_t on_connected,
     net_ws_endpoint_on_msg_text_fun_t on_text_fun,
     net_ws_endpoint_on_msg_bin_fun_t on_bin_fun,
     net_ws_endpoint_on_close_fun_t on_close_fun,
@@ -453,6 +454,7 @@ void net_ws_endpoint_set_callback(
     }
 
     endpoint->m_ctx = ctx;
+    endpoint->m_on_connected = on_connected;
     endpoint->m_on_msg_text_fun = on_text_fun;
     endpoint->m_on_msg_bin_fun = on_bin_fun;
     endpoint->m_on_close_fun = on_close_fun;
@@ -536,9 +538,14 @@ int net_ws_endpoint_set_state(net_ws_endpoint_t endpoint, net_ws_endpoint_state_
             net_endpoint_t base_stream= endpoint->m_stream->m_base_endpoint;
             if (net_endpoint_set_state(base_stream, net_endpoint_state_established) != 0) {
                 net_endpoint_set_state(base_stream, net_endpoint_state_deleting);
+                return -1;
             }
         }
 
+        if (endpoint->m_on_connected) {
+            endpoint->m_on_connected(endpoint->m_ctx, endpoint);
+        }
+        
         break;
     }
 

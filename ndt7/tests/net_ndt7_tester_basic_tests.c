@@ -28,6 +28,7 @@ static void ndt7_tester_basic(void **state) {
 
     struct net_ndt7_config cfg = *net_ndt7_tester_config(tester);
     cfg.m_measurement_interval_ms = 250;
+    cfg.m_upload.m_duration_ms = 250;
     net_ndt7_tester_set_config(tester, &cfg);
 
     test_ws_svr_testenv_create_mock_svr(env->m_ws_svr, "host4", "wss://host4:443");
@@ -142,6 +143,7 @@ static void ndt7_tester_basic(void **state) {
     /*测试上载过程 */
 
     /**/
+    test_net_driver_run(env->m_tdriver, 250);
     assert_string_equal(
         net_ndt7_tester_state_str(net_ndt7_tester_state_done),
         net_ndt7_tester_state_str(net_ndt7_tester_state(tester)));

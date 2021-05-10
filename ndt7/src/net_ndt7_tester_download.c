@@ -83,6 +83,7 @@ int net_ndt7_tester_download_start(net_ndt7_tester_t tester) {
     net_ws_endpoint_set_callback(
         tester->m_download.m_endpoint,
         tester,
+        NULL,
         net_ndt7_tester_download_on_msg_text,
         net_ndt7_tester_download_on_msg_bin,
         net_ndt7_tester_download_on_close,
