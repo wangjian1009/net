@@ -2,6 +2,7 @@
 #include "cpe/pal/pal_strings.h"
 #include "cpe/utils/url.h"
 #include "cpe/utils/string_utils.h"
+#include "cpe/utils/stream_buffer.h"
 #include "net_timer.h"
 #include "net_endpoint.h"
 #include "net_endpoint_monitor.h"
@@ -217,6 +218,89 @@ void net_ndt7_tester_clear_cb(net_ndt7_tester_t tester) {
     tester->m_on_measurement_progress = NULL;
     tester->m_on_test_complete = NULL;
     tester->m_on_all_complete = NULL;
+}
+
+int net_ndt7_tester_set_target(net_ndt7_tester_t tester, cpe_url_t url) {
+    net_ndt7_manage_t manager = tester->m_manager;
+
+    if (tester->m_state != net_ndt7_tester_state_init) {
+        CPE_ERROR(
+            manager->m_em, "ndt7: %d: set target: can`t set in state %s",
+            tester->m_id, net_ndt7_tester_state_str(tester->m_state));
+        return -1;
+    }
+
+    if (tester->m_target != NULL) {
+        CPE_ERROR(manager->m_em, "ndt7: %d: set target: already have target", tester->m_id);
+        return -1;
+    }
+
+    net_ndt7_target_url_category_t upload_category;
+    net_ndt7_target_url_category_t download_category;
+    if (cpe_str_cmp_opt(cpe_url_protocol(url), "ws") == 0) {
+        upload_category = net_ndt7_target_url_ws_upload;
+        download_category = net_ndt7_target_url_ws_download;
+    }
+    else if (cpe_str_cmp_opt(cpe_url_protocol(url), "wss") != 0) {
+        upload_category = net_ndt7_target_url_wss_upload;
+        download_category = net_ndt7_target_url_wss_download;
+    }
+    else {
+        CPE_ERROR(
+            manager->m_em, "ndt7: %d: set target: protocol %s not support",
+            tester->m_id, cpe_url_protocol(url));
+        return -1;
+    }
+    
+    net_ndt7_tester_target_t target = net_ndt7_tester_target_create(tester);
+    if (target == NULL) {
+        CPE_ERROR(manager->m_em, "ndt7: %d: set target: create target fail", tester->m_id);
+        return -1;
+    }
+
+    if (cpe_url_host(url)) {
+        net_ndt7_tester_target_set_machine(target, cpe_url_host(url));
+    }
+
+    mem_buffer_t buffer = net_ndt7_manage_tmp_buffer(manager);
+    struct write_stream_buffer stream = CPE_WRITE_STREAM_BUFFER_INITIALIZER(buffer);
+    
+    mem_buffer_clear_data(buffer);
+    cpe_url_print((write_stream_t)&stream, url, cpe_url_print_full);
+    stream_printf((write_stream_t)&stream, "/ndt/v7/upload");
+    stream_putc((write_stream_t)&stream, 0);
+
+    const char * upload_url = mem_buffer_make_continuous(buffer, 0);
+    if (net_ndt7_tester_target_set_url(target, upload_category, upload_url) != 0) {
+        CPE_ERROR(
+            manager->m_em, "ndt7: %d: set target: set upload url %s target fail",
+            tester->m_id, upload_url);
+        net_ndt7_tester_target_free(target);
+        return -1;
+    }
+
+    mem_buffer_clear_data(buffer);
+    cpe_url_print((write_stream_t)&stream, url, cpe_url_print_full);
+    stream_printf((write_stream_t)&stream, "/ndt/v7/download");
+    stream_putc((write_stream_t)&stream, 0);
+
+    const char * download_url = mem_buffer_make_continuous(buffer, 0);
+    if (net_ndt7_tester_target_set_url(target, download_category, download_url) != 0) {
+        CPE_ERROR(
+            manager->m_em, "ndt7: %d: set target: set download url %s target fail",
+            tester->m_id, download_url);
+        net_ndt7_tester_target_free(target);
+        return -1;
+    }
+    
+    tester->m_target = target;
+    tester->m_upload_url = net_ndt7_tester_target_url(target, upload_category);
+    assert(tester->m_upload_url);
+    
+    tester->m_download_url = net_ndt7_tester_target_url(target, download_category);
+    assert(tester->m_download_url);
+    
+    return 0;
 }
 
 int net_ndt7_tester_start(net_ndt7_tester_t tester) {

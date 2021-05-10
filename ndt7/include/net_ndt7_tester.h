@@ -29,6 +29,8 @@ net_ndt7_tester_state_t net_ndt7_tester_state(net_ndt7_tester_t tester);
 net_ndt7_config_t net_ndt7_tester_config(net_ndt7_tester_t tester);
 void net_ndt7_tester_set_config(net_ndt7_tester_t tester, net_ndt7_config_t config);
 
+int net_ndt7_tester_set_target(net_ndt7_tester_t tester, cpe_url_t url);
+
 void net_ndt7_tester_targets(net_ndt7_tester_t tester, net_ndt7_tester_target_it_t it);
 
 /*回调 */
