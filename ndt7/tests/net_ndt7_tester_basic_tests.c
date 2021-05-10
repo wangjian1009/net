@@ -27,7 +27,7 @@ static void ndt7_tester_basic(void **state) {
     net_ndt7_tester_t tester = env->m_ndt_tester;
 
     struct net_ndt7_config cfg = *net_ndt7_tester_config(tester);
-    cfg.m_measurement_interval_ms = 250;
+    cfg.m_progress_interval_ms = 250;
     cfg.m_upload.m_duration_ms = 250;
     net_ndt7_tester_set_config(tester, &cfg);
 

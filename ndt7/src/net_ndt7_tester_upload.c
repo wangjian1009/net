@@ -248,7 +248,9 @@ static void net_ndt7_tester_upload_tick(net_ndt7_tester_t tester) {
     }
 
     /*指定间隔发送进度 */
-    if (cur_time_ms - tester->m_upload.m_pre_notify_ms >= tester->m_cfg.m_measurement_interval_ms) {
+    if (tester->m_cfg.m_progress_interval_ms > 0
+        && cur_time_ms - tester->m_upload.m_pre_notify_ms >= tester->m_cfg.m_progress_interval_ms)
+    {
         struct net_ndt7_response response;
         net_ndt7_response_init(
             &response, tester->m_upload.m_start_time_ms, cur_time_ms, net_ndt7_tester_upload_total_bytes(tester),

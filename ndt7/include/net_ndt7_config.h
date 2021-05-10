@@ -3,7 +3,7 @@
 #include "net_ndt7_system.h"
 
 struct net_ndt7_config {
-    int64_t m_measurement_interval_ms;
+    int64_t m_progress_interval_ms;
 
     struct {
         int64_t m_duration_ms;
