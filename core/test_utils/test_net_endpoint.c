@@ -33,7 +33,7 @@ void test_net_endpoint_fini(net_endpoint_t base_endpoint) {
         assert(endpoint->m_link == NULL);
     }
 
-    test_net_endpoint_write_policy_clear(endpoint);
+    endpoint->m_write_policy.m_type = test_net_endpoint_write_mock;
     TAILQ_REMOVE(&driver->m_endpoints, endpoint, m_next);
 }
 

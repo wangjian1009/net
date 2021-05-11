@@ -4,31 +4,16 @@
 
 typedef enum test_net_endpoint_write_policy_type {
     test_net_endpoint_write_mock,
-    test_net_endpoint_write_noop,
-    test_net_endpoint_write_keep,
-    test_net_endpoint_write_remove,
-    test_net_endpoint_write_link,
-    test_net_endpoint_write_error,
+    test_net_endpoint_write_action,
 } test_net_endpoint_write_policy_type_t;
 
 struct test_net_endpoint_write_policy {
     test_net_endpoint_write_policy_type_t m_type;
     union {
         struct {
-            net_endpoint_buf_type_t m_buf_type;
-        } m_keep;
-        struct {
-            int64_t m_write_delay_ms;
-            net_endpoint_error_source_t m_error_source;
-            int m_error_no;
-            const char * m_error_msg;
-        } m_link;
-        struct {
-            net_endpoint_error_source_t m_error_source;
-            int m_error_no;
-            char * m_error_msg;
-            int64_t m_error_delay_ms;
-        } m_error;
+            struct test_net_endpoint_action m_action;
+            int64_t m_delay_ms;
+        } m_action;
     };
 };
 
@@ -47,8 +32,6 @@ int test_net_endpoint_update(net_endpoint_t base_endpoint);
 int test_net_endpoint_set_no_delay(net_endpoint_t endpoint, uint8_t is_enable);
 int test_net_endpoint_get_mss(net_endpoint_t endpoint, uint32_t *mss);
 void test_net_endpoint_write(net_endpoint_t base_endpoint);
-
-void test_net_endpoint_write_policy_clear(test_net_endpoint_t base_endpoint);
 
 net_endpoint_t test_net_endpoint_linked_other(test_net_driver_t driver, net_endpoint_t base_endpoint);
 

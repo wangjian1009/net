@@ -7,9 +7,6 @@ test_net_endpoint_link_t
 test_net_endpoint_link_create(test_net_endpoint_t a, test_net_endpoint_t z, int64_t write_delay_ms) {
     test_net_endpoint_link_t link = mem_alloc(test_allocrator(), sizeof(struct test_net_endpoint_link));
 
-    test_net_endpoint_write_policy_clear(a);
-    test_net_endpoint_write_policy_clear(z);
-
     if (a->m_link) {
         test_net_endpoint_link_free(a->m_link);
         assert(a->m_link == NULL);
@@ -23,20 +20,18 @@ test_net_endpoint_link_create(test_net_endpoint_t a, test_net_endpoint_t z, int6
     a->m_link = link;
     link->m_a = a;
 
-    a->m_write_policy.m_type = test_net_endpoint_write_link;
-    a->m_write_policy.m_link.m_error_source = net_endpoint_error_source_none;
-    a->m_write_policy.m_link.m_error_no = 0;
-    a->m_write_policy.m_link.m_error_msg = NULL;
-    a->m_write_policy.m_link.m_write_delay_ms = write_delay_ms;
+    a->m_write_policy.m_type = test_net_endpoint_write_action;
+    a->m_write_policy.m_action.m_action.m_type = test_net_endpoint_action_buf_link;
+    a->m_write_policy.m_action.m_action.m_buf_link.m_delay_ms = 0;
+    a->m_write_policy.m_action.m_delay_ms = write_delay_ms;
 
     z->m_link = link;
     link->m_z = z;
     
-    z->m_write_policy.m_type = test_net_endpoint_write_link;
-    z->m_write_policy.m_link.m_error_source = net_endpoint_error_source_none;
-    z->m_write_policy.m_link.m_error_no = 0;
-    z->m_write_policy.m_link.m_error_msg = NULL;
-    z->m_write_policy.m_link.m_write_delay_ms = write_delay_ms;
+    z->m_write_policy.m_type = test_net_endpoint_write_action;
+    z->m_write_policy.m_action.m_action.m_type = test_net_endpoint_action_buf_link;
+    z->m_write_policy.m_action.m_action.m_buf_link.m_delay_ms = 0;
+    z->m_write_policy.m_action.m_delay_ms = write_delay_ms;
     
     return link;
 }

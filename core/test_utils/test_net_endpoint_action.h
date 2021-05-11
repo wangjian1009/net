@@ -11,6 +11,7 @@ enum test_net_endpoint_action_type {
     test_net_endpoint_action_buf_copy,
     test_net_endpoint_action_buf_erase,
     test_net_endpoint_action_buf_link,
+    test_net_endpoint_action_buf_write,
     test_net_endpoint_action_error,
     test_net_endpoint_action_disable,
     test_net_endpoint_action_delete,
@@ -27,8 +28,20 @@ struct test_net_endpoint_action {
             int m_error_no;
             char * m_error_msg;
         } m_error;
+        struct {
+            int64_t m_delay_ms;
+        } m_buf_link;
+        struct {
+            void * m_data;
+            uint32_t m_size;
+        } m_buf_write;
     };
 };
+
+void test_net_endpoint_apply_action_delay(
+    test_net_driver_t tdriver, net_endpoint_t endpoint,
+    test_net_endpoint_action_t action,
+    int64_t delay_ms);
 
 void test_net_endpoint_apply_action(
     test_net_driver_t tdriver, net_endpoint_t endpoint,
