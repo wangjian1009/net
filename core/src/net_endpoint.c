@@ -832,7 +832,7 @@ const char * net_endpoint_network_errno_str(net_endpoint_network_errno_t error) 
 const char * net_endpoint_error_source_str(net_endpoint_error_source_t source) {
     switch(source) {
     case net_endpoint_error_source_none:
-        return "network";
+        return "none";
     case net_endpoint_error_source_network:
         return "network";
     case net_endpoint_error_source_http:

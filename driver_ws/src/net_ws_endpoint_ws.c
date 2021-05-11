@@ -425,7 +425,9 @@ static int net_ws_endpoint_dispatch_close(
         }
     }
 
+    CPE_ERROR(protocol->m_em, "xxx %p: dispatch 111", endpoint);
     if (endpoint->m_on_close_fun) {
+        CPE_ERROR(protocol->m_em, "xxx %p: dispatch 222", endpoint);
         endpoint->m_on_close_fun(endpoint->m_ctx, endpoint, status_code, msg, msg_len);
     }
 

@@ -101,7 +101,7 @@ int net_ndt7_tester_upload_start(net_ndt7_tester_t tester) {
         net_ndt7_tester_upload_on_connected,
         net_ndt7_tester_upload_on_msg_text,
         NULL,
-        NULL,
+        net_ndt7_tester_upload_on_close,
         NULL);
 
     if (net_ws_endpoint_connect(tester->m_upload.m_endpoint, tester->m_upload_url) != 0) {

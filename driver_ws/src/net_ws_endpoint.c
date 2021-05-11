@@ -453,6 +453,14 @@ void net_ws_endpoint_set_callback(
         endpoint->m_ctx_free = NULL;
     }
 
+
+    net_ws_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
+    CPE_ERROR(protocol->m_em, "xxx %p: set close %p", endpoint, on_close_fun);
+
+    if (on_close_fun == NULL) {
+        assert(endpoint->m_on_close_fun == NULL);
+    }
+
     endpoint->m_ctx = ctx;
     endpoint->m_on_connected = on_connected;
     endpoint->m_on_msg_text_fun = on_text_fun;

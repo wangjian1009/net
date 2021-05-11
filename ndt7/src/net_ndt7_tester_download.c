@@ -79,7 +79,7 @@ int net_ndt7_tester_download_start(net_ndt7_tester_t tester) {
     net_ws_endpoint_header_add(
         tester->m_download.m_endpoint,
         "Sec-WebSocket-Protocol", "net.measurementlab.ndt.v7");
-    
+
     net_ws_endpoint_set_callback(
         tester->m_download.m_endpoint,
         tester,
