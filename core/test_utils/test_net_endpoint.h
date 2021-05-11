@@ -105,8 +105,7 @@ void test_net_endpoint_expect_write_error(
     net_endpoint_t base_endpoint,
     net_endpoint_error_source_t error_source, int err_no, const char * error_msg, int64_t delay_ms);
 
-void test_net_endpoint_expect_write_delete(
-    net_endpoint_t base_endpoint, int64_t delay_ms);
+void test_net_endpoint_expect_write_delete(net_endpoint_t base_endpoint, int64_t delay_ms);
 
 /*utils.read*/
 int test_net_driver_read_from_other(

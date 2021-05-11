@@ -49,7 +49,7 @@ static void test_net_ws_endpoint_op_cb(void * ctx, test_net_tl_op_t op) {
 
     net_schedule_t schedule = net_driver_schedule(net_driver_from_data(op->m_driver));
     net_endpoint_t base_endpoint = net_endpoint_find(schedule, op_data->m_ep_id);
-    if (base_endpoint == NULL) return;
+    if (base_endpoint == NULL || net_endpoint_state(base_endpoint) == net_endpoint_state_deleting) return;
 
     net_ws_endpoint_t endpoint = net_ws_endpoint_cast(base_endpoint);
     

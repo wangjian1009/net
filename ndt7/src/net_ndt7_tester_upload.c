@@ -76,7 +76,8 @@ int net_ndt7_tester_upload_start(net_ndt7_tester_t tester) {
     }
     tester->m_upload.m_endpoint = net_ws_endpoint_cast(base_endpoint);
     assert(tester->m_upload.m_endpoint);
-    //net_endpoint_set_protocol_debug(base_endpoint, 2);
+    /* net_endpoint_set_protocol_debug(base_endpoint, 2); */
+    /* net_endpoint_set_driver_debug(base_endpoint, 2); */
     net_endpoint_set_auto_free(base_endpoint, 1);
 
     if (net_endpoint_monitor_create(base_endpoint, tester, NULL, net_ndt7_tester_upload_on_endpoint_evt) == NULL) {
@@ -176,6 +177,11 @@ static void net_ndt7_tester_upload_on_close(
             &response, net_ndt7_test_upload);
 
         tester->m_upload.m_completed = 1;
+    }
+
+    if (tester->m_upload.m_process_timer) {
+        net_timer_free(tester->m_upload.m_process_timer);
+        tester->m_upload.m_process_timer = NULL;
     }
 }
 
@@ -282,6 +288,11 @@ static void net_ndt7_tester_upload_on_endpoint_fini(void * ctx, net_endpoint_t e
 
     tester->m_upload.m_endpoint = NULL;
 
+    if (tester->m_upload.m_process_timer) {
+        net_timer_free(tester->m_upload.m_process_timer);
+        tester->m_upload.m_process_timer = NULL;
+    }
+    
     net_ndt7_tester_check_start_next_step(tester);
 }
 

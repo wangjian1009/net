@@ -43,7 +43,17 @@ int net_ws_endpoint_close(net_ws_endpoint_t endpoint, uint16_t status_code, cons
             net_endpoint_state_str(net_endpoint_state(endpoint->m_base_endpoint)));
         return -1;
     }
+
+    if (endpoint->m_state != net_ws_endpoint_state_streaming) {
+        CPE_ERROR(
+            protocol->m_em,
+            "ws: %s: can`t close in state %s",
+            net_endpoint_dump(net_ws_protocol_tmp_buffer(protocol), endpoint->m_base_endpoint),
+            net_ws_endpoint_state_str(endpoint->m_state));
+        return -1;
+    }
     
+    assert(endpoint->m_ws_ctx);
     int rv = wslay_event_queue_close(endpoint->m_ws_ctx, status_code, msg, msg_len);
     if (rv != 0) {
         CPE_ERROR(
@@ -425,9 +435,7 @@ static int net_ws_endpoint_dispatch_close(
         }
     }
 
-    CPE_ERROR(protocol->m_em, "xxx %p: dispatch 111", endpoint);
     if (endpoint->m_on_close_fun) {
-        CPE_ERROR(protocol->m_em, "xxx %p: dispatch 222", endpoint);
         endpoint->m_on_close_fun(endpoint->m_ctx, endpoint, status_code, msg, msg_len);
     }
 

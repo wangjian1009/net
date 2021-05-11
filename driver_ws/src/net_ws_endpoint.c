@@ -391,6 +391,7 @@ int net_ws_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoint_s
             if (net_endpoint_set_state(base_stream, net_endpoint_state_connecting) != 0) return -1;
         }
         if (endpoint->m_runing_mode == net_ws_endpoint_runing_mode_cli) {
+            if (net_ws_endpoint_set_state(endpoint, net_ws_endpoint_state_handshake) != 0) return -1;            
             if (net_ws_endpoint_send_handshake(base_endpoint, endpoint) != 0) return -1;
         }
         break;
@@ -455,7 +456,6 @@ void net_ws_endpoint_set_callback(
 
 
     net_ws_protocol_t protocol = net_protocol_data(net_endpoint_protocol(endpoint->m_base_endpoint));
-    CPE_ERROR(protocol->m_em, "xxx %p: set close %p", endpoint, on_close_fun);
 
     if (on_close_fun == NULL) {
         assert(endpoint->m_on_close_fun == NULL);

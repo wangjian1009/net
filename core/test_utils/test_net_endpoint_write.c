@@ -56,8 +56,6 @@ PROCESSED:
     if (net_endpoint_buf_is_empty(base_endpoint, net_ep_buf_write)) {
         net_endpoint_set_is_writing(base_endpoint, 0);
         return;
-    } else {
-        goto PROCESS_AGAIN;
     }
 }
 
@@ -157,4 +155,26 @@ void test_net_endpoint_expect_write_error(
     endpoint->m_write_policy.m_type = test_net_endpoint_write_mock;
     test_net_driver_do_expect_write_error(
         driver, net_endpoint_id(base_endpoint), error_source, err_no, error_msg, delay_ms);
+}
+
+/*delete*/
+static void test_net_driver_do_expect_write_delete(test_net_driver_t driver, uint32_t id, int64_t delay_ms) {
+    struct test_net_endpoint_write_setup * setup =
+        mem_buffer_alloc(&driver->m_setup_buffer, sizeof(struct test_net_endpoint_write_setup));
+    setup->m_write_policy.m_type = test_net_endpoint_write_action;
+    setup->m_write_policy.m_action.m_action.m_type = test_net_endpoint_action_delete;
+    setup->m_write_policy.m_action.m_delay_ms = delay_ms;
+    setup->m_expect_buf = NULL;
+    setup->m_expect_size = 0;
+    
+    expect_value(test_net_endpoint_write, id, id);
+    will_return(test_net_endpoint_write, setup);
+}
+
+void test_net_endpoint_expect_write_delete(net_endpoint_t base_endpoint, int64_t delay_ms) {
+    test_net_driver_t driver = test_net_driver_cast(net_endpoint_driver(base_endpoint));
+    test_net_endpoint_t endpoint = test_net_endpoint_cast(base_endpoint);
+
+    endpoint->m_write_policy.m_type = test_net_endpoint_write_mock;
+    test_net_driver_do_expect_write_delete(driver, net_endpoint_id(base_endpoint), delay_ms);
 }
