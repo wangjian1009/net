@@ -39,6 +39,9 @@ struct net_ndt7_testenv {
     net_ndt7_tester_t m_ndt_tester;
     struct net_ndt7_response m_last_response;
     struct net_ndt7_measurement m_last_measurement;
+    net_endpoint_error_source_t m_complete_error_source;
+    int m_complete_error_code;
+    char * m_complete_error_msg;
 
     uint16_t m_log_count;
     uint16_t m_log_capacity;

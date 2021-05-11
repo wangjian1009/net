@@ -137,6 +137,10 @@ static void ndt7_tester_basic(void **state) {
     test_net_driver_run(env->m_tdriver, 0);
 
     assert_string_equal(
+        net_endpoint_error_source_str(net_endpoint_error_source_none),
+        net_endpoint_error_source_str(env->m_complete_error_source));
+    
+    assert_string_equal(
         net_ndt7_tester_state_str(net_ndt7_tester_state_upload),
         net_ndt7_tester_state_str(net_ndt7_tester_state(tester)));
     
@@ -147,6 +151,10 @@ static void ndt7_tester_basic(void **state) {
     assert_string_equal(
         net_ndt7_tester_state_str(net_ndt7_tester_state_done),
         net_ndt7_tester_state_str(net_ndt7_tester_state(tester)));
+
+    assert_string_equal(
+        net_endpoint_error_source_str(net_endpoint_error_source_none),
+        net_endpoint_error_source_str(env->m_complete_error_source));
 }
 
 CPE_BEGIN_TEST_SUIT(net_nd7_tester_basic_tests)

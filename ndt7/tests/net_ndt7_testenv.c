@@ -40,6 +40,9 @@ net_ndt7_testenv_create() {
     env->m_ndt_tester = NULL;
     bzero(&env->m_last_response, sizeof(env->m_last_response));
     bzero(&env->m_last_measurement, sizeof(env->m_last_measurement));
+    env->m_complete_error_source = net_endpoint_error_source_none;
+    env->m_complete_error_code = 0;
+    env->m_complete_error_msg = NULL;
 
     env->m_log_count = 0;
     env->m_log_capacity = 0;
@@ -189,6 +192,13 @@ void net_ndt7_testenv_on_test_complete(
     net_endpoint_error_source_t error_source, int error_code, const char * error_msg,
     net_ndt7_response_t response, net_ndt7_test_type_t test_type)
 {
+    net_ndt7_testenv_t env = ctx;
+
+    env->m_last_response = *response;
+    
+    env->m_complete_error_source = error_source;
+    env->m_complete_error_code = error_code;
+    env->m_complete_error_msg = error_msg ? mem_buffer_strdup(&env->m_tdriver->m_setup_buffer, error_msg) : NULL;
 }
 
 void net_ndt7_testenv_on_all_complete(void * ctx, net_ndt7_tester_t tester) {
