@@ -22,7 +22,17 @@ void test_net_ws_endpoint_apply_action_i(net_ws_endpoint_t endpoint, struct test
         net_endpoint_set_state(net_ws_endpoint_base_endpoint(endpoint), net_endpoint_state_deleting);
         break;
     case test_net_ws_endpoint_op_close:
-        net_ws_endpoint_close(endpoint, action->m_close.m_status_code, action->m_close.m_msg, strlen(action->m_close.m_msg));
+        net_ws_endpoint_close(
+            endpoint,
+            action->m_close.m_status_code,
+            action->m_close.m_msg,
+            action->m_close.m_msg ? strlen(action->m_close.m_msg) : 0);
+        break;
+    case test_net_ws_endpoint_op_bin_msg:
+        net_ws_endpoint_send_msg_bin(endpoint, action->m_bin_msg.m_msg, action->m_bin_msg.m_msg_size);
+        break;
+    case test_net_ws_endpoint_op_text_msg:
+        net_ws_endpoint_send_msg_text(endpoint, action->m_text_msg.m_msg);
         break;
     }
 }
@@ -62,5 +72,35 @@ void test_net_ws_endpoint_apply_action(
 
         op_data->m_ep_id = net_endpoint_id(net_ws_endpoint_base_endpoint(endpoint));
         op_data->m_action = *action;
+    }
+}
+
+void test_net_ws_endpoint_action_copy(
+    test_net_driver_t tdriver, test_net_ws_endpoint_action_t to, test_net_ws_endpoint_action_t from)
+{
+    *to = *from;
+
+    switch(to->m_type) {
+    case test_net_ws_endpoint_op_noop:
+    case test_net_ws_endpoint_op_disable:
+    case test_net_ws_endpoint_op_error:
+    case test_net_ws_endpoint_op_delete:
+        break;
+    case test_net_ws_endpoint_op_close:
+        if (from->m_close.m_msg) {
+            to->m_close.m_msg = mem_buffer_strdup(&tdriver->m_setup_buffer, from->m_close.m_msg);
+        }
+        break;
+    case test_net_ws_endpoint_op_bin_msg:
+        if (from->m_bin_msg.m_msg) {
+            to->m_bin_msg.m_msg = mem_buffer_alloc(&tdriver->m_setup_buffer, from->m_bin_msg.m_msg_size);
+            memcpy((void*)to->m_bin_msg.m_msg, from->m_bin_msg.m_msg, from->m_bin_msg.m_msg_size);
+        }
+        break;
+    case test_net_ws_endpoint_op_text_msg:
+        if (from->m_text_msg.m_msg) {
+            to->m_text_msg.m_msg = mem_buffer_strdup(&tdriver->m_setup_buffer, from->m_text_msg.m_msg);
+        }
+        break;
     }
 }

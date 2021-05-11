@@ -12,6 +12,7 @@
 #include "net_ws_protocol.h"
 #include "net_ssl_stream_driver.h"
 #include "test_ws_svr_mock_svr.h"
+#include "test_ws_svr_mock_svr_action.h"
 
 static int test_ws_svr_mock_svr_on_new_endpoint(void * ctx, net_endpoint_t endpoint);
 
@@ -65,6 +66,8 @@ test_ws_svr_mock_svr_create(test_ws_svr_testenv_t env, const char * name, const 
 
     cpe_url_free(url);
 
+    TAILQ_INIT(&svr->m_actions);
+    
     TAILQ_INSERT_TAIL(&env->m_svrs, svr, m_next);
     
     return svr;
@@ -72,6 +75,10 @@ test_ws_svr_mock_svr_create(test_ws_svr_testenv_t env, const char * name, const 
 
 void test_ws_svr_mock_svr_free(test_ws_svr_mock_svr_t svr) {
     test_ws_svr_testenv_t env = svr->m_env;
+
+    while(!TAILQ_EMPTY(&svr->m_actions)) {
+        test_ws_svr_mock_svr_action_free(TAILQ_FIRST(&svr->m_actions));
+    }
 
     if (svr->m_acceptor) {
         net_acceptor_free(svr->m_acceptor);
@@ -117,22 +124,26 @@ struct test_ws_svr_mock_svr_ctx {
     test_ws_svr_mock_svr_t m_svr;
 };
 
-void test_ws_svr_mock_svr_on_connected_cb(void * i_ctx, net_ws_endpoint_t endpoin) {
+void test_ws_svr_mock_svr_on_connected_cb(void * i_ctx, net_ws_endpoint_t endpoint) {
     struct test_ws_svr_mock_svr_ctx * ctx = i_ctx;
+    test_ws_svr_mock_svr_apply_acctions(ctx->m_svr, endpoint, test_ws_svr_mock_svr_action_connected);
 }
 
 void test_ws_svr_mock_svr_on_msg_text_cb(void * i_ctx, net_ws_endpoint_t endpoint, const char * msg) {
     struct test_ws_svr_mock_svr_ctx * ctx = i_ctx;
+    test_ws_svr_mock_svr_apply_acctions(ctx->m_svr, endpoint, test_ws_svr_mock_svr_action_text_msg);
 }
 
 void test_ws_svr_mock_svr_on_msg_bin_cb(void * i_ctx, net_ws_endpoint_t endpoint, const void * msg, uint32_t msg_len) {
     struct test_ws_svr_mock_svr_ctx * ctx = i_ctx;
+    test_ws_svr_mock_svr_apply_acctions(ctx->m_svr, endpoint, test_ws_svr_mock_svr_action_bin_msg);
 }
 
 void test_ws_svr_mock_svr_on_close_cb(
     void * i_ctx, net_ws_endpoint_t endpoint, uint16_t status_code, const void * msg, uint32_t msg_len)
 {
     struct test_ws_svr_mock_svr_ctx * ctx = i_ctx;
+    test_ws_svr_mock_svr_apply_acctions(ctx->m_svr, endpoint, test_ws_svr_mock_svr_action_close);
 }
 
 static int test_ws_svr_mock_svr_on_new_endpoint(void * ctx, net_endpoint_t base_endpoint) {
@@ -160,5 +171,5 @@ static int test_ws_svr_mock_svr_on_new_endpoint(void * ctx, net_endpoint_t base_
 void test_ws_svr_mock_svr_on_connected(
     test_ws_svr_mock_svr_t svr, test_net_ws_endpoint_action_t action, int64_t delay_ms)
 {
-    
+    test_ws_svr_mock_svr_action_create(svr, 1, test_ws_svr_mock_svr_action_connected, action, delay_ms);
 }

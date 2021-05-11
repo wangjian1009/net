@@ -65,22 +65,8 @@ test_net_ws_endpoint_expect_create_setup(
         mem_buffer_alloc(&tdriver->m_setup_buffer, sizeof(struct test_net_ws_endpoint_setup));
 
     setup->m_tdriver = tdriver;
-    setup->m_action = *action;
+    test_net_ws_endpoint_action_copy(tdriver, &setup->m_action, action);
     setup->m_delay_ms = delay_ms;
-    
-    switch(setup->m_action.m_type) {
-    case test_net_ws_endpoint_op_noop:
-    case test_net_ws_endpoint_op_disable:
-    case test_net_ws_endpoint_op_error:
-    case test_net_ws_endpoint_op_delete:
-        break;
-    case test_net_ws_endpoint_op_close:
-        setup->m_action.m_close.m_msg =
-            setup->m_action.m_close.m_msg
-            ? mem_buffer_strdup(&tdriver->m_setup_buffer, setup->m_action.m_close.m_msg)
-            : NULL;
-        break;
-    }
 
     return setup;
 }
