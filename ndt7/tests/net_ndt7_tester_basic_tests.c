@@ -100,6 +100,14 @@ static void ndt7_tester_basic(void **state) {
         net_ndt7_testenv_dump_tester(
             net_schedule_tmp_buffer(env->m_schedule), tester));
 
+    assert_string_equal(
+        "mlab2-tpe01.mlab-oti.measurement-lab.org",
+        net_ndt7_tester_effect_machine(tester));
+
+    assert_string_equal(
+        net_ndt7_test_protocol_str(net_ndt7_test_protocol_wss),
+        net_ndt7_test_protocol_str(net_ndt7_tester_effect_protocol(tester)));
+    
     /*测试下载过程 */
     assert_string_equal(
         net_ndt7_tester_state_str(net_ndt7_tester_state_download),

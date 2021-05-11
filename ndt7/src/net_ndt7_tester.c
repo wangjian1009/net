@@ -62,6 +62,7 @@ net_ndt7_tester_create(net_ndt7_manage_t manager) {
     tester->m_ctx_free = NULL;
 
     tester->m_target = NULL;
+    tester->m_effect_protocol = net_ndt7_test_protocol_auto;
     tester->m_upload_url = NULL;
     tester->m_download_url = NULL;
     TAILQ_INIT(&tester->m_targets);
@@ -220,6 +221,22 @@ void net_ndt7_tester_clear_cb(net_ndt7_tester_t tester) {
     tester->m_on_all_complete = NULL;
 }
 
+const char * net_ndt7_tester_effect_machine(net_ndt7_tester_t tester) {
+    return tester->m_target ? tester->m_target->m_machine : NULL;
+}
+
+const char * net_ndt7_tester_effect_country(net_ndt7_tester_t tester) {
+    return tester->m_target ? tester->m_target->m_country : NULL;
+}
+
+const char * net_ndt7_tester_effect_city(net_ndt7_tester_t tester) {
+    return tester->m_target ? tester->m_target->m_city : NULL;
+}
+
+net_ndt7_test_protocol_t net_ndt7_tester_effect_protocol(net_ndt7_tester_t tester) {
+    return tester->m_effect_protocol;
+}
+
 int net_ndt7_tester_set_target(net_ndt7_tester_t tester, cpe_url_t url) {
     net_ndt7_manage_t manager = tester->m_manager;
 
@@ -235,13 +252,16 @@ int net_ndt7_tester_set_target(net_ndt7_tester_t tester, cpe_url_t url) {
         return -1;
     }
 
+    net_ndt7_test_protocol_t effect_protocol;
     net_ndt7_target_url_category_t upload_category;
     net_ndt7_target_url_category_t download_category;
     if (cpe_str_cmp_opt(cpe_url_protocol(url), "ws") == 0) {
+        effect_protocol = net_ndt7_test_protocol_ws;
         upload_category = net_ndt7_target_url_ws_upload;
         download_category = net_ndt7_target_url_ws_download;
     }
     else if (cpe_str_cmp_opt(cpe_url_protocol(url), "wss") != 0) {
+        effect_protocol = net_ndt7_test_protocol_wss;
         upload_category = net_ndt7_target_url_wss_upload;
         download_category = net_ndt7_target_url_wss_download;
     }
@@ -294,6 +314,7 @@ int net_ndt7_tester_set_target(net_ndt7_tester_t tester, cpe_url_t url) {
     }
     
     tester->m_target = target;
+    tester->m_effect_protocol = effect_protocol;
     tester->m_upload_url = net_ndt7_tester_target_url(target, upload_category);
     assert(tester->m_upload_url);
     
@@ -370,7 +391,20 @@ int net_ndt7_tester_check_start_next_step(net_ndt7_tester_t tester) {
                 break;
             }
 
-            if (found) break;
+            if (found) {
+                if (tester->m_upload_url) {
+                    tester->m_effect_protocol = 
+                        tester->m_upload_url == tester->m_target->m_urls[net_ndt7_target_url_wss_upload]
+                        ? net_ndt7_test_protocol_wss : net_ndt7_test_protocol_ws;
+                }
+                else if (tester->m_download_url) {
+                    tester->m_effect_protocol = 
+                        tester->m_download_url == tester->m_target->m_urls[net_ndt7_target_url_wss_download]
+                        ? net_ndt7_test_protocol_wss : net_ndt7_test_protocol_ws;
+                }
+                
+                break;
+            }
         }
 
         if (tester->m_target == NULL) {
@@ -385,6 +419,8 @@ int net_ndt7_tester_check_start_next_step(net_ndt7_tester_t tester) {
             return -1;
         }
     }
+
+    assert(tester->m_effect_protocol != net_ndt7_test_protocol_auto);
     
     switch(tester->m_state) {
     case net_ndt7_tester_state_init:

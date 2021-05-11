@@ -1,7 +1,6 @@
 #ifndef TEST_UTILS_NET_ENDPOINT_H_INCLEDED
 #define TEST_UTILS_NET_ENDPOINT_H_INCLEDED
-#include "net_endpoint.h"
-#include "test_net_driver.h"
+#include "test_net_endpoint_action.h"
 
 typedef enum test_net_endpoint_write_policy_type {
     test_net_endpoint_write_mock,

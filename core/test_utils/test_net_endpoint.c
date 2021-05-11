@@ -169,29 +169,17 @@ void test_net_endpoint_error_op_cb(void * ctx, test_net_tl_op_t op) {
     }
 }
 
-
 void test_net_endpoint_error(
     test_net_driver_t driver, net_endpoint_t base_endpoint,
     net_endpoint_error_source_t error_source, int error_no, const char * error_msg,
     int64_t delay_ms)
 {
-    if (delay_ms == 0) {
-        net_endpoint_set_error(base_endpoint, error_source, error_no, error_msg);
-        if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
-            net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
+    struct test_net_endpoint_action action = {
+        test_net_endpoint_action_error,
+        .m_error = {
+            error_source, error_no, error_msg ? mem_buffer_strdup(&driver->m_setup_buffer, error_msg) : NULL,
         }
-    }
-    else {
-        test_net_tl_op_t op = test_net_tl_op_create(
-            driver, delay_ms,
-            sizeof(struct test_net_endpoint_error_op),
-            test_net_endpoint_error_op_cb, NULL, NULL);
-        assert_true(op != NULL);
+    };
 
-        struct test_net_endpoint_error_op * error_op = test_net_tl_op_data(op);
-        error_op->m_ep_id = net_endpoint_id(base_endpoint);
-        error_op->m_error_source = error_source;
-        error_op->m_error_no = error_no;
-        error_op->m_error_msg = error_msg ? mem_buffer_strdup(&driver->m_setup_buffer, error_msg) : NULL;
-    }
+    test_net_endpoint_apply_action(driver, base_endpoint, &action, delay_ms);
 }

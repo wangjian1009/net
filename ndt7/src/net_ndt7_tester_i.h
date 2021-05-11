@@ -25,6 +25,7 @@ struct net_ndt7_tester {
     
     /*状态数据 */
     net_ndt7_tester_target_t m_target;
+    net_ndt7_test_protocol_t m_effect_protocol;
     cpe_url_t m_upload_url;
     cpe_url_t m_download_url;
     net_ndt7_tester_target_list_t m_targets;
