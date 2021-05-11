@@ -18,7 +18,6 @@ struct test_net_endpoint_write_policy {
             net_endpoint_buf_type_t m_buf_type;
         } m_keep;
         struct {
-            test_net_endpoint_link_t m_link;
             int64_t m_write_delay_ms;
             net_endpoint_error_source_t m_error_source;
             int m_error_no;
@@ -38,6 +37,7 @@ struct test_net_endpoint {
     struct test_net_endpoint_write_policy m_write_policy;
     uint8_t m_set_no_delay_mock;
     uint8_t m_get_mss_mock;
+    test_net_endpoint_link_t m_link;
 };
 
 int test_net_endpoint_init(net_endpoint_t base_endpoint);
@@ -121,6 +121,9 @@ void test_net_next_endpoint_expect_write_error(
 void test_net_endpoint_expect_write_error(
     net_endpoint_t base_endpoint,
     net_endpoint_error_source_t error_source, int err_no, const char * error_msg, int64_t delay_ms);
+
+void test_net_endpoint_expect_write_delete(
+    net_endpoint_t base_endpoint, int64_t delay_ms);
 
 /*utils.read*/
 int test_net_driver_read_from_other(

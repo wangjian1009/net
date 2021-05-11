@@ -19,13 +19,20 @@ int test_net_endpoint_init(net_endpoint_t base_endpoint) {
     endpoint->m_write_policy.m_type = test_net_endpoint_write_mock;
     endpoint->m_set_no_delay_mock = 0;
     endpoint->m_get_mss_mock = 0;
-
+    endpoint->m_link = NULL;
+    
     return 0;
 }
 
 void test_net_endpoint_fini(net_endpoint_t base_endpoint) {
     test_net_driver_t driver = net_driver_data(net_endpoint_driver(base_endpoint));
     test_net_endpoint_t endpoint = net_endpoint_data(base_endpoint);
+
+    if (endpoint->m_link) {
+        test_net_endpoint_link_free(endpoint->m_link);
+        assert(endpoint->m_link == NULL);
+    }
+
     test_net_endpoint_write_policy_clear(endpoint);
     TAILQ_REMOVE(&driver->m_endpoints, endpoint, m_next);
 }
@@ -138,10 +145,10 @@ test_net_endpoint_linked_other(test_net_driver_t driver, net_endpoint_t base_end
     assert_true(net_endpoint_driver(base_endpoint) == net_driver_from_data(driver));
 
     test_net_endpoint_t endpoint = net_endpoint_data(base_endpoint);
-    assert(endpoint->m_write_policy.m_type == test_net_endpoint_write_link);
-    assert_true(endpoint->m_write_policy.m_type == test_net_endpoint_write_link);
 
-    test_net_endpoint_t other_ep = test_net_endpoint_link_other(endpoint->m_write_policy.m_link.m_link, endpoint);
+    assert_true(endpoint->m_link);
+
+    test_net_endpoint_t other_ep = test_net_endpoint_link_other(endpoint->m_link, endpoint);
     assert_true(other_ep != NULL);
 
     return net_endpoint_from_data(other_ep);

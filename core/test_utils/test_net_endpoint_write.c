@@ -22,8 +22,6 @@ void test_net_endpoint_write_policy_clear(test_net_endpoint_t endpoint) {
     case test_net_endpoint_write_error:
         break;
     case test_net_endpoint_write_link:
-        test_net_endpoint_link_free(endpoint->m_write_policy.m_link.m_link);
-        assert(endpoint->m_write_policy.m_link.m_link == NULL);
         break;
     }
 
@@ -125,7 +123,8 @@ PROCESS_AGAIN:
         break;
     case test_net_endpoint_write_link:
         if (endpoint->m_write_policy.m_link.m_error_source == net_endpoint_error_source_none) {
-            test_net_endpoint_t other = test_net_endpoint_link_other(endpoint->m_write_policy.m_link.m_link, endpoint);
+            assert_true(endpoint->m_link);
+            test_net_endpoint_t other = test_net_endpoint_link_other(endpoint->m_link, endpoint);
             net_endpoint_t base_other_endpoint = net_endpoint_from_data(other);
             test_net_endpoint_write_delay(
                 driver, base_endpoint, base_other_endpoint,

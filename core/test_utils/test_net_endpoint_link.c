@@ -10,37 +10,49 @@ test_net_endpoint_link_create(test_net_endpoint_t a, test_net_endpoint_t z, int6
     test_net_endpoint_write_policy_clear(a);
     test_net_endpoint_write_policy_clear(z);
 
+    if (a->m_link) {
+        test_net_endpoint_link_free(a->m_link);
+        assert(a->m_link == NULL);
+    }
+
+    if (z->m_link) {
+        test_net_endpoint_link_free(z->m_link);
+        assert(z->m_link == NULL);
+    }
+    
+    a->m_link = link;
+    link->m_a = a;
+
     a->m_write_policy.m_type = test_net_endpoint_write_link;
-    a->m_write_policy.m_link.m_link = link;
     a->m_write_policy.m_link.m_error_source = net_endpoint_error_source_none;
     a->m_write_policy.m_link.m_error_no = 0;
     a->m_write_policy.m_link.m_error_msg = NULL;
     a->m_write_policy.m_link.m_write_delay_ms = write_delay_ms;
-    link->m_a = a;
 
+    z->m_link = link;
+    link->m_z = z;
+    
     z->m_write_policy.m_type = test_net_endpoint_write_link;
-    z->m_write_policy.m_link.m_link = link;
     z->m_write_policy.m_link.m_error_source = net_endpoint_error_source_none;
     z->m_write_policy.m_link.m_error_no = 0;
     z->m_write_policy.m_link.m_error_msg = NULL;
     z->m_write_policy.m_link.m_write_delay_ms = write_delay_ms;
-    link->m_z = z;
     
     return link;
 }
 
 void test_net_endpoint_link_free(test_net_endpoint_link_t link) {
-    assert(link->m_a->m_write_policy.m_type == test_net_endpoint_write_link);
-    assert(link->m_a->m_write_policy.m_link.m_link == link);
-    assert(link->m_z->m_write_policy.m_type == test_net_endpoint_write_link);
-    assert(link->m_z->m_write_policy.m_link.m_link == link);
+    assert(link->m_a->m_link == link);
+    assert(link->m_z->m_link == link);
 
     bzero(&link->m_a->m_write_policy, sizeof(link->m_a->m_write_policy));
     link->m_a->m_write_policy.m_type = test_net_endpoint_write_mock;
+    link->m_a->m_link = NULL;
     link->m_a = NULL;
 
     bzero(&link->m_z->m_write_policy, sizeof(link->m_z->m_write_policy));
     link->m_z->m_write_policy.m_type = test_net_endpoint_write_mock;
+    link->m_z->m_link = NULL;
     link->m_z = NULL;
 
     mem_free(test_allocrator(), link);
