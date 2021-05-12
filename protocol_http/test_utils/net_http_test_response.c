@@ -34,7 +34,7 @@ int net_http_test_response_on_res_header(void * ctx, net_http_req_t req, const c
     return 0;
 }
 
-int net_http_test_response_on_res_body(void * ctx, net_http_req_t req, void * data, size_t data_size) {
+int net_http_test_response_on_res_body(void * ctx, net_http_req_t req, void * data, uint32_t data_size) {
     net_http_test_response_t response = ctx;
     mem_buffer_append(&response->m_body, data, data_size);
     return 0;

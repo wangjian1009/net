@@ -14,7 +14,7 @@
 static void url_runner_internal_on_endpoint_fini(void * ctx, net_endpoint_t endpoint);
 static int url_runner_internal_on_res_begin(void * ctx, net_http_req_t req, uint16_t code, const char * msg);
 static int url_runner_internal_on_res_head(void * ctx, net_http_req_t req, const char * name, const char * value);
-static int url_runner_internal_on_res_body(void * ctx, net_http_req_t req, void * data, size_t data_size);
+static int url_runner_internal_on_res_body(void * ctx, net_http_req_t req, void * data, uint32_t data_size);
 
 static void url_runner_internal_on_req_complete(
     void * ctx, net_http_req_t req, net_http_res_result_t result, void * body, uint32_t body_size);
@@ -229,7 +229,7 @@ static int url_runner_internal_on_res_head(void * ctx, net_http_req_t req, const
     return 0;
 }
     
-static int url_runner_internal_on_res_body(void * ctx, net_http_req_t req, void * data, size_t data_size) {
+static int url_runner_internal_on_res_body(void * ctx, net_http_req_t req, void * data, uint32_t data_size) {
     url_runner_t runner = ctx;
     fprintf(runner->m_output, "%.*s\n", (int)data_size, (const char *)data);
     return 0;
