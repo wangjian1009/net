@@ -16,6 +16,14 @@ net_http_req_state_t net_http_req_state(net_http_req_t req) {
     return req->m_req_state;
 }
 
+uint32_t net_http_req_head_size(net_http_req_t req) {
+    return req->m_head_size;
+}
+
+uint32_t net_http_req_body_size(net_http_req_t req) {
+    return req->m_body_size;
+}
+
 int net_http_req_write_head_host(net_http_req_t http_req) {
     net_http_protocol_t http_protocol = net_http_endpoint_protocol(http_req->m_http_ep);
 

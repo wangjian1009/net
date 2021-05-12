@@ -16,6 +16,7 @@ void net_http_req_free(net_http_req_t req);
 
 uint16_t net_http_req_id(net_http_req_t req);
 net_http_endpoint_t net_http_req_endpoint(net_http_req_t req);
+uint32_t net_http_req_upload_size(net_http_req_t req);
 
 net_http_req_t net_http_req_find(net_http_endpoint_t http_ep, uint16_t req_id);
 
@@ -61,7 +62,7 @@ uint8_t net_http_req_res_completed(net_http_req_t req);
 uint16_t net_http_req_res_code(net_http_req_t req);
 const char * net_http_req_res_message(net_http_req_t req);
 uint32_t net_http_req_res_length(net_http_req_t req);
-
+uint32_t net_http_req_res_download_size(net_http_req_t req);
 
 const char * net_http_transfer_encoding_str(net_http_transfer_encoding_t transfer_encoding);
 const char * net_http_res_result_str(net_http_res_result_t res_result);

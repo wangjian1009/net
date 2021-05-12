@@ -70,6 +70,7 @@ int net_http_endpoint_do_process(net_http_protocol_t http_protocol, net_http_end
         if (net_http_req_process_response_head_first_line(
                 http_protocol, http_ep, endpoint, http_ep->m_current_res.m_req, buf) != 0) return -1;
 
+        http_ep->m_current_res.m_req->m_res_download_size += buf_size;
         net_endpoint_buf_consume(endpoint, net_ep_buf_http_in, buf_size);
         http_ep->m_current_res.m_state = net_http_res_state_reading_head_follow;
     }
@@ -119,6 +120,7 @@ int net_http_endpoint_do_process(net_http_protocol_t http_protocol, net_http_end
             }
         }
 
+        http_ep->m_current_res.m_req->m_res_download_size += buf_size;
         net_endpoint_buf_consume(endpoint, net_ep_buf_http_in, buf_size);
 
         if (is_head_last) {
@@ -309,6 +311,8 @@ static int net_http_endpoint_input_body_consume_body_part(
         return 0;
     }
     
+    req->m_res_download_size += buf_sz;
+    
     if (req->m_res_on_complete == NULL) {
         net_endpoint_buf_consume(endpoint, net_ep_buf_http_in, buf_sz);
         return 0;
@@ -324,6 +328,7 @@ static int net_http_endpoint_input_body_consume_body_part(
             return -1;
         }
 
+        
         if (req->m_res_on_body(req->m_res_ctx, req, buf, buf_sz) != 0) {
             CPE_ERROR(
                 http_protocol->m_em, "http: %s: req %d: <== process body fail, size=%d",
@@ -444,6 +449,9 @@ static int net_http_endpoint_input_body_encoding_trunked(
                     http_ep->m_current_res.m_res_trunked.m_length);
             }
 
+            if (http_ep->m_current_res.m_req) {
+                http_ep->m_current_res.m_req->m_res_download_size += size;
+            }
             net_endpoint_buf_consume(endpoint, net_ep_buf_http_in, size);
 
             http_ep->m_current_res.m_res_trunked.m_state =
@@ -486,6 +494,9 @@ static int net_http_endpoint_input_body_encoding_trunked(
                 return -1;
             }
 
+            if (http_ep->m_current_res.m_req) {
+                http_ep->m_current_res.m_req->m_res_download_size += 2;
+            }
             net_endpoint_buf_consume(endpoint, net_ep_buf_http_in, 2);
             
             http_ep->m_current_res.m_res_trunked.m_state = net_http_trunked_length;
@@ -512,6 +523,9 @@ static int net_http_endpoint_input_body_encoding_trunked(
                     http_ep->m_current_res.m_res_trunked.m_count);
             }
 
+            if (http_ep->m_current_res.m_req) {
+                http_ep->m_current_res.m_req->m_res_download_size += 2;
+            }
             net_endpoint_buf_consume(endpoint, net_ep_buf_http_in, 2);
 
             if (net_http_req_input_body_set_complete(http_protocol, http_ep, endpoint, net_http_res_complete) != 0) {

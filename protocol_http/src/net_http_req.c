@@ -74,6 +74,7 @@ net_http_req_create_i(net_http_endpoint_t http_ep, net_http_req_method_t method)
     req->m_res_on_complete = NULL;
     req->m_res_code = 0;
     req->m_res_message[0] = 0;
+    req->m_res_download_size = 0;
 
     http_ep->m_req_count++;
     TAILQ_INSERT_TAIL(&http_ep->m_reqs, req, m_next);
@@ -208,6 +209,10 @@ net_http_endpoint_t net_http_req_endpoint(net_http_req_t req) {
     return req->m_http_ep;
 }
 
+uint32_t net_http_req_upload_size(net_http_req_t req) {
+    return req->m_head_size + req->m_body_size;
+}
+
 int net_http_req_set_reader(
     net_http_req_t req,
     void * ctx,
@@ -253,6 +258,10 @@ uint16_t net_http_req_res_code(net_http_req_t req) {
 
 const char * net_http_req_res_message(net_http_req_t req) {
     return req->m_res_message;
+}
+
+uint32_t net_http_req_res_download_size(net_http_req_t req) {
+    return req->m_res_download_size;
 }
 
 uint32_t net_http_req_res_length(net_http_req_t req) {
