@@ -1,5 +1,6 @@
 #include <assert.h>
 #include "cpe/utils/stream_buffer.h"
+#include "net_schedule.h"
 #include "net_endpoint.h"
 #include "net_timer.h"
 #include "net_http_req_i.h"
@@ -56,6 +57,7 @@ net_http_req_create_i(net_http_endpoint_t http_ep, net_http_req_method_t method)
     req->m_id = ++http_protocol->m_max_req_id;
     req->m_is_free = 0;
     req->m_on_complete_processed = 0;
+    req->m_timeout_timer = NULL;
 
     req->m_req_method = method;
     req->m_req_state = net_http_req_state_prepare_head;
@@ -121,11 +123,16 @@ void net_http_req_free_force(net_http_req_t req) {
     assert(http_ep->m_current_res.m_req != req);
 
     net_http_req_clear_reader(req);
+
+    if (req->m_timeout_timer) {
+        net_timer_free(req->m_timeout_timer);
+        req->m_timeout_timer = NULL;
+    }
     
     assert(http_ep->m_req_count > 0);
     http_ep->m_req_count--;
     TAILQ_REMOVE(&http_ep->m_reqs, req, m_next);
-    
+
     req->m_http_ep = (net_http_endpoint_t)http_protocol;
     TAILQ_INSERT_TAIL(&http_protocol->m_free_reqs, req, m_next);
 }
@@ -248,6 +255,33 @@ void net_http_req_clear_reader(net_http_req_t req) {
     req->m_res_on_complete = NULL;
 }
 
+int net_http_req_set_timeout_ms(net_http_req_t req, int64_t timeout_ms) {
+    net_http_protocol_t http_protocol = net_http_endpoint_protocol(req->m_http_ep);
+    net_schedule_t schedule = net_endpoint_schedule(net_http_endpoint_base_endpoint(req->m_http_ep));
+    
+    if (timeout_ms > 0) {
+        if (req->m_timeout_timer == NULL) {
+            req->m_timeout_timer = net_timer_auto_create(schedule, net_http_req_on_timeout, req);
+            if (req->m_timeout_timer == NULL) {
+                CPE_ERROR(
+                    http_protocol->m_em, "http: %s: req: set timeout: create timer fail",
+                    net_endpoint_dump(
+                        net_http_protocol_tmp_buffer(http_protocol), req->m_http_ep->m_endpoint));
+                return -1;
+            }
+        }
+        net_timer_active(req->m_timeout_timer, timeout_ms);
+    }
+    else {
+        if (req->m_timeout_timer) {
+            net_timer_free(req->m_timeout_timer);
+            req->m_timeout_timer = NULL;
+        }
+    }
+
+    return 0;
+}
+
 uint8_t net_http_req_res_completed(net_http_req_t req) {
     return req->m_res_completed;
 }
@@ -328,13 +362,14 @@ const char * net_http_res_result_str(net_http_res_result_t res_result) {
 
 static void net_http_req_on_timeout(net_timer_t timer, void * ctx) {
     net_http_req_t req = ctx;
-
-    if (!req->m_on_complete_processed
-        && req->m_res_on_complete)
-    {
+    net_endpoint_t base_endpoint = net_http_endpoint_base_endpoint(req->m_http_ep);
+    
+    if (!req->m_on_complete_processed && req->m_res_on_complete) {
         req->m_on_complete_processed = 1;
         req->m_res_on_complete(req->m_res_ctx, req, net_http_res_timeout, NULL, 0);
     }
 
-    net_http_req_free(req);
+    if (net_endpoint_is_active(base_endpoint)) {
+        net_http_req_free(req);
+    }
 }

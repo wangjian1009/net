@@ -27,7 +27,7 @@ void net_http_req_cancel_and_free_by_id(net_http_endpoint_t http_ep, uint16_t re
 net_http_req_state_t net_http_req_state(net_http_req_t req);
 int net_http_req_write_head_host(net_http_req_t http_req);
 int net_http_req_write_head_pair(net_http_req_t http_req, const char * attr_name, const char * attr_value);
-int net_http_req_write_body_full(net_http_req_t http_req, void const * data, size_t data_sz);
+int net_http_req_write_body_full(net_http_req_t http_req, void const * data, uint32_t data_sz);
 int net_http_req_write_commit(net_http_req_t http_req);
 
 const char * net_http_req_state_str(net_http_req_state_t req_state);
@@ -57,6 +57,8 @@ int net_http_req_set_reader(
     net_http_req_on_res_complete_fun_t on_complete);
 
 void net_http_req_clear_reader(net_http_req_t req);
+
+int net_http_req_set_timeout_ms(net_http_req_t req, int64_t timeout_ms);
 
 uint8_t net_http_req_res_completed(net_http_req_t req);
 uint16_t net_http_req_res_code(net_http_req_t req);

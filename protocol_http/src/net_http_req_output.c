@@ -74,7 +74,7 @@ int net_http_req_write_head_pair(net_http_req_t http_req, const char * attr_name
     return net_http_endpoint_write_head_pair(http_req->m_http_ep, http_req, attr_name, attr_value);
 }
 
-int net_http_req_write_body_full(net_http_req_t http_req, void const * data, size_t data_sz) {
+int net_http_req_write_body_full(net_http_req_t http_req, void const * data, uint32_t data_sz) {
     net_http_endpoint_t http_ep = http_req->m_http_ep;
     net_http_protocol_t http_protocol = net_http_endpoint_protocol(http_ep);
 

@@ -20,6 +20,7 @@ struct net_http_req {
     uint16_t m_id;
     uint8_t m_is_free;
     uint8_t m_on_complete_processed;
+    net_timer_t m_timeout_timer;
 
     /*req*/
     net_http_req_method_t m_req_method;
