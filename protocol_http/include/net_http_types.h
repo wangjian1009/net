@@ -20,6 +20,13 @@ typedef enum net_http_transfer_encoding {
     net_http_transfer_chunked,
 } net_http_transfer_encoding_t;
 
+typedef enum net_http_content_encoding {
+    net_http_content_identity,
+    net_http_content_gzip,
+    net_http_content_deflate,
+    net_http_content_br,
+} net_http_content_encoding_t;
+
 typedef enum net_http_req_state {
     net_http_req_state_prepare_head,
     net_http_req_state_prepare_body,

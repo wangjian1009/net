@@ -118,6 +118,7 @@ int net_http_endpoint_input(net_endpoint_t endpoint) {
                 bzero(&http_ep->m_current_res, sizeof(http_ep->m_current_res));
                 http_ep->m_current_res.m_state = net_http_res_state_reading_head_first;
                 http_ep->m_current_res.m_trans_encoding = net_http_transfer_identity;
+                http_ep->m_current_res.m_content_encoding = net_http_content_identity;
                 http_ep->m_current_res.m_connection_type = net_http_connection_type_keep_alive;
 
                 if (close_connection) {
