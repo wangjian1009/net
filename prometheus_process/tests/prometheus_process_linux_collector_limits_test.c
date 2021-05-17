@@ -71,10 +71,7 @@ static void test_virtual_memory_max_bytes(void **state) {
         prometheus_process_testenv_collect(env));
 }
 
-int prometheus_process_linux_collector_limits_tests() {
-	const struct CMUnitTest tests[] = {
-        cmocka_unit_test_setup_teardown(test_max_fds, setup, teardown),
-        cmocka_unit_test_setup_teardown(test_virtual_memory_max_bytes, setup, teardown),
-	};
-	return cmocka_run_group_tests(tests, NULL, NULL);
-}
+CPE_BEGIN_TEST_SUIT(prometheus_process_linux_collector_limits_tests)
+    cmocka_unit_test_setup_teardown(test_max_fds, setup, teardown),
+    cmocka_unit_test_setup_teardown(test_virtual_memory_max_bytes, setup, teardown),
+CPE_END_TEST_SUIT(prometheus_process_linux_collector_limits_tests)

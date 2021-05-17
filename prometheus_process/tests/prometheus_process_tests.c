@@ -2,13 +2,11 @@
 #include "prometheus_process_tests.h"
 
 int main(void) {
-    int rv = 0;
-
-    if (prometheus_process_linux_limits_basic_tests() != 0) rv = -1;
-    if (prometheus_process_linux_collector_limits_tests() != 0) rv = -1;
-    if (prometheus_process_linux_collector_stat_tests() != 0) rv = -1;
-    if (prometheus_process_linux_collector_basic_tests() != 0) rv = -1;
-
-    return rv;
+    CPE_BEGIN_RUN_TESTS()
+        CPE_ADD_TEST_SUIT(prometheus_process_linux_limits_basic_tests),
+        CPE_ADD_TEST_SUIT(prometheus_process_linux_collector_limits_tests),
+        CPE_ADD_TEST_SUIT(prometheus_process_linux_collector_stat_tests),
+        CPE_ADD_TEST_SUIT(prometheus_process_linux_collector_basic_tests),
+    CPE_END_RUN_TESTS();
 }
 

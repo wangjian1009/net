@@ -147,12 +147,9 @@ static void test_start_time_seconds(void **state) {
         prometheus_process_testenv_collect(env));
 }
 
-int prometheus_process_linux_collector_stat_tests() {
-	const struct CMUnitTest tests[] = {
-        cmocka_unit_test_setup_teardown(test_cpu_seconds_total, setup, teardown),
-        cmocka_unit_test_setup_teardown(test_virtual_memory_bytes, setup, teardown),
-        cmocka_unit_test_setup_teardown(test_resident_memory_bytes, setup, teardown),
-        cmocka_unit_test_setup_teardown(test_start_time_seconds, setup, teardown),
-	};
-	return cmocka_run_group_tests(tests, NULL, NULL);
-}
+CPE_BEGIN_TEST_SUIT(prometheus_process_linux_collector_stat_tests)
+    cmocka_unit_test_setup_teardown(test_cpu_seconds_total, setup, teardown),
+    cmocka_unit_test_setup_teardown(test_virtual_memory_bytes, setup, teardown),
+    cmocka_unit_test_setup_teardown(test_resident_memory_bytes, setup, teardown),
+    cmocka_unit_test_setup_teardown(test_start_time_seconds, setup, teardown),
+CPE_END_TEST_SUIT(prometheus_process_linux_collector_stat_tests)

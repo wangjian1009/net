@@ -196,16 +196,13 @@ static void rdp_letter(void ** state) {
     prometheus_process_linux_limits_row_fini(env->m_env->m_provider, &row);
 }
 
-int prometheus_process_linux_limits_basic_tests() {
-	const struct CMUnitTest tests[] = {
-        cmocka_unit_test_setup_teardown(rdp_next_token, setup, teardown),
-        cmocka_unit_test_setup_teardown(rdp_match, setup, teardown),
-        cmocka_unit_test_setup_teardown(rdp_hard_limit, setup, teardown),
-        cmocka_unit_test_setup_teardown(rdp_word, setup, teardown),
-        cmocka_unit_test_setup_teardown(rdp_word_and_space, setup, teardown),
-        cmocka_unit_test_setup_teardown(rdp_limit, setup, teardown),
-        cmocka_unit_test_setup_teardown(rdp_letter, setup, teardown),
-        cmocka_unit_test_setup_teardown(file_parsing, setup, teardown),
-	};
-	return cmocka_run_group_tests(tests, NULL, NULL);
-}
+CPE_BEGIN_TEST_SUIT(prometheus_process_linux_limits_basic_tests)
+    cmocka_unit_test_setup_teardown(rdp_next_token, setup, teardown),
+    cmocka_unit_test_setup_teardown(rdp_match, setup, teardown),
+    cmocka_unit_test_setup_teardown(rdp_hard_limit, setup, teardown),
+    cmocka_unit_test_setup_teardown(rdp_word, setup, teardown),
+    cmocka_unit_test_setup_teardown(rdp_word_and_space, setup, teardown),
+    cmocka_unit_test_setup_teardown(rdp_limit, setup, teardown),
+    cmocka_unit_test_setup_teardown(rdp_letter, setup, teardown),
+    cmocka_unit_test_setup_teardown(file_parsing, setup, teardown),
+CPE_END_TEST_SUIT(prometheus_process_linux_limits_basic_tests)

@@ -1,10 +1,11 @@
 #ifndef TESTS_PROMETHEUS_PROCESS_TESTS_H_INCLEDED
 #define TESTS_PROMETHEUS_PROCESS_TESTS_H_INCLEDED
+#include "cmocka_all.h"
 #include "prometheus_process_types.h"
 
-int prometheus_process_linux_limits_basic_tests();
-int prometheus_process_linux_collector_limits_tests();
-int prometheus_process_linux_collector_stat_tests();
-int prometheus_process_linux_collector_basic_tests();
+CPE_DECLARE_TEST_SUIT(prometheus_process_linux_limits_basic_tests);
+CPE_DECLARE_TEST_SUIT(prometheus_process_linux_collector_limits_tests);
+CPE_DECLARE_TEST_SUIT(prometheus_process_linux_collector_stat_tests);
+CPE_DECLARE_TEST_SUIT(prometheus_process_linux_collector_basic_tests);
 
 #endif

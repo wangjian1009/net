@@ -1,4 +1,3 @@
-#include "cmocka_all.h"
 #include "test_net_endpoint.h"
 #include "net_http_test_response.h"
 #include "net_http_endpoint.h"
@@ -105,12 +104,9 @@ static void test_response_write_error(void **state) {
     test_net_driver_run(env->m_net_driver, 0);
 }
 
-int prometheus_http_basic_tests() {
-	const struct CMUnitTest tests[] = {
-        cmocka_unit_test_setup_teardown(test_get, setup, teardown),
-        cmocka_unit_test_setup_teardown(test_method_error, setup, teardown),
-        cmocka_unit_test_setup_teardown(test_path_error, setup, teardown),
-        cmocka_unit_test_setup_teardown(test_response_write_error, setup, teardown),
-	};
-	return cmocka_run_group_tests(tests, NULL, NULL);
-}
+CPE_BEGIN_TEST_SUIT(prometheus_http_basic_tests)
+    cmocka_unit_test_setup_teardown(test_get, setup, teardown),
+    cmocka_unit_test_setup_teardown(test_method_error, setup, teardown),
+    cmocka_unit_test_setup_teardown(test_path_error, setup, teardown),
+    cmocka_unit_test_setup_teardown(test_response_write_error, setup, teardown),
+CPE_END_TEST_SUIT(prometheus_http_basic_tests)

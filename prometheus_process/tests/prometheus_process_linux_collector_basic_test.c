@@ -34,9 +34,6 @@ static void test_open_fds(void **state) {
         prometheus_process_testenv_collect(env));
 }
 
-int prometheus_process_linux_collector_basic_tests() {
-	const struct CMUnitTest tests[] = {
-        cmocka_unit_test_setup_teardown(test_open_fds, setup, teardown),
-	};
-	return cmocka_run_group_tests(tests, NULL, NULL);
-}
+CPE_BEGIN_TEST_SUIT(prometheus_process_linux_collector_basic_tests)
+    cmocka_unit_test_setup_teardown(test_open_fds, setup, teardown),
+CPE_END_TEST_SUIT(prometheus_process_linux_collector_basic_tests)
