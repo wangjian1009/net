@@ -295,7 +295,6 @@ static int net_http_req_input_body_set_complete(
         req->m_res_on_complete(req->m_res_ctx, req, result);
     }
 
-    net_endpoint_buf_clear(endpoint, net_ep_buf_http_body);
     return 0;
 }
 
@@ -335,18 +334,9 @@ static int net_http_endpoint_input_body_consume_body_part(
                 req->m_id, buf_sz);
             return -1;
         }
+    }
 
-        net_endpoint_buf_consume(endpoint, net_ep_buf_http_in, buf_sz);
-    }
-    else {
-        if (net_endpoint_buf_append_from_self(endpoint, net_ep_buf_http_body, net_ep_buf_http_in, buf_sz) != 0) {
-            CPE_ERROR(
-                http_protocol->m_em, "http: %s: req %d: <== move body to tmp buf fail, size=%d",
-                net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
-                req->m_id, buf_sz);
-            return -1;
-        }
-    }
+    net_endpoint_buf_consume(endpoint, net_ep_buf_http_in, buf_sz);
 
     return 0;
 }
