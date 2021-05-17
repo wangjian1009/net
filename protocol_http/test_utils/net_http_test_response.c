@@ -133,7 +133,7 @@ void net_http_test_response_print(write_stream_t ws, net_http_test_response_t re
 
     if (mem_buffer_size(&response->m_body) > 0) {
         const char * content_type = net_http_test_response_find_head_value(response, "Content-Type");
-        if (content_type && strstr(content_type, "text") == 0) {
+        if (content_type && strstr(content_type, "text") != NULL) {
             stream_write(ws, mem_buffer_make_continuous(&response->m_body, 0), mem_buffer_size(&response->m_body));
         }
         else {

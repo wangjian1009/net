@@ -18,7 +18,7 @@ static int teardown(void **state) {
     return 0;
 }
 
-static void http_input_basic(void **state) {
+static void http_input_identity(void **state) {
     net_http_testenv_t env = *state;
     net_http_testenv_create_ep(env);
 
@@ -47,6 +47,47 @@ static void http_input_basic(void **state) {
     assert_true(net_http_req_find(env->m_http_endpoint, response->m_req_id) == NULL);
 }
 
+static void http_input_chunked(void **state) {
+    net_http_testenv_t env = *state;
+    net_http_testenv_create_ep(env);
+
+    net_http_req_t req = net_http_req_create(env->m_http_endpoint, net_http_req_method_get, "/a");
+    assert_true(req);
+
+    net_http_test_response_t response = net_http_test_protocol_req_commit(env->m_http_protocol, req);
+    assert_true(response != NULL);
+
+    assert_true(
+        net_http_testenv_send_response(
+            env,
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Type: text/plain\r\n"
+            "Transfer-Encoding: chunked\r\n"
+            "\r\n"
+            "7\r\n"
+            "Mozilla\r\n"
+            "9\r\n"
+            "Developer\r\n"
+            "7\r\n"
+            "Network\r\n"
+            "0\r\n"
+            "\r\n"
+            ) == 0
+        );
+
+    assert_string_equal(
+        "200 OK\n"
+        "Content-Type=text/plain\n"
+        "Transfer-Encoding=chunked\n"
+        "body.size=23\n"
+        "MozillaDeveloperNetwork"
+        ,
+        net_http_test_response_dump(&env->m_tmp_buffer, response));
+
+    assert_true(net_http_req_find(env->m_http_endpoint, response->m_req_id) == NULL);
+}
+
 CPE_BEGIN_TEST_SUIT(net_http_input_basic_tests)
-    cmocka_unit_test_setup_teardown(http_input_basic, setup, teardown),
+    cmocka_unit_test_setup_teardown(http_input_identity, setup, teardown),
+    cmocka_unit_test_setup_teardown(http_input_chunked, setup, teardown),
 CPE_END_TEST_SUIT(net_http_input_basic_tests)
