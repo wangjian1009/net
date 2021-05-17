@@ -9,9 +9,9 @@
 static int net_http_endpoint_input_body_consume_body_part(
     net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_endpoint_t endpoint, uint16_t buf_sz);
 
-static int net_http_endpoint_input_body_encoding_none(
+static int net_http_endpoint_input_body_identity(
     net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_endpoint_t endpoint);
-static int net_http_endpoint_input_body_encoding_trunked(
+static int net_http_endpoint_input_body_trunked(
     net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_endpoint_t endpoint);
 
 static int net_http_req_input_body_set_complete(
@@ -150,10 +150,10 @@ int net_http_endpoint_do_process(net_http_protocol_t http_protocol, net_http_end
     if (http_ep->m_current_res.m_state == net_http_res_state_reading_body) {
         switch(http_ep->m_current_res.m_trans_encoding) {
         case net_http_transfer_identity:
-            if (net_http_endpoint_input_body_encoding_none(http_protocol, http_ep, endpoint) != 0) return -1;
+            if (net_http_endpoint_input_body_identity(http_protocol, http_ep, endpoint) != 0) return -1;
             break;
         case net_http_transfer_chunked:
-            if (net_http_endpoint_input_body_encoding_trunked(http_protocol, http_ep, endpoint) != 0) return -1;
+            if (net_http_endpoint_input_body_trunked(http_protocol, http_ep, endpoint) != 0) return -1;
             break;
         }
     }
@@ -251,6 +251,16 @@ static int net_http_req_process_response_head_follow_line(
         } else {
             CPE_ERROR(
                 http_protocol->m_em, "http: %s: Transfer-Encoding %s unknown",
+                net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint), value);
+        }
+    } else if (strcasecmp(name, "Content-Encoding") == 0) {
+        if (strcasecmp(value, "identity") == 0) {
+            http_ep->m_current_res.m_content_encoding = net_http_content_identity;
+        } else if (strcasecmp(value, "gzip") == 0) {
+            http_ep->m_current_res.m_content_encoding = net_http_content_gzip;
+        } else {
+            CPE_ERROR(
+                http_protocol->m_em, "http: %s: Content-Encoding %s unknown",
                 net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint), value);
         }
     }
@@ -352,7 +362,7 @@ static int net_http_endpoint_input_body_consume_body_part(
     return 0;
 }
 
-static int net_http_endpoint_input_body_encoding_none(
+static int net_http_endpoint_input_body_identity(
     net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_endpoint_t endpoint)
 {
     if (http_ep->m_connection_type != net_http_connection_type_close && http_ep->m_current_res.m_res_content.m_length == 0) {
@@ -363,7 +373,7 @@ static int net_http_endpoint_input_body_encoding_none(
     while(http_ep->m_current_res.m_state != net_http_res_state_completed) {
         uint32_t buf_sz = net_endpoint_buf_size(endpoint, net_ep_buf_http_in);
         if (buf_sz == 0) break;
-        
+
         if (http_ep->m_current_res.m_res_content.m_length == 0) {
             if (net_endpoint_protocol_debug(endpoint) >= 2) {
                 CPE_INFO(
@@ -397,7 +407,7 @@ static int net_http_endpoint_input_body_encoding_none(
     return 0;
 }
 
-static int net_http_endpoint_input_body_encoding_trunked(
+static int net_http_endpoint_input_body_trunked(
     net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_endpoint_t endpoint)
 {
     uint32_t buf_sz;

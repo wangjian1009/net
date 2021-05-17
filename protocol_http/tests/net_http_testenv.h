@@ -31,5 +31,6 @@ const char * net_http_testenv_ep_recv_write(net_http_testenv_t env);
 int net_http_testenv_ep_send_response(net_http_testenv_t env, const char * response);
 
 int net_http_testenv_send_response(net_http_testenv_t env, const char * data);
+int net_http_testenv_send_response_hex(net_http_testenv_t env, const char * hex_data);
 
 #endif

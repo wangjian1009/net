@@ -1,5 +1,6 @@
 #include "cpe/pal/pal_string.h"
 #include "cmocka_all.h"
+#include "cpe/utils/hex_utils.h"
 #include "net_address.h"
 #include "net_schedule.h"
 #include "net_http_testenv.h"
@@ -98,4 +99,24 @@ int net_http_testenv_send_response(net_http_testenv_t env, const char * data) {
         net_http_endpoint_base_endpoint(env->m_http_endpoint),
         net_ep_buf_read,
         data, strlen(data));
+}
+
+int net_http_testenv_send_response_hex(net_http_testenv_t env, const char * hex_data) {
+    assert_true(env->m_http_endpoint);
+
+    uint32_t hex_len = strlen(hex_data);
+    assert_true((hex_len % 2) == 0);
+
+    uint32_t bin_len = hex_len / 2;
+    uint8_t * bin_data = mem_alloc(test_allocrator(), bin_len);
+
+    assert_true(cpe_hex_2_bin(bin_data, hex_data, bin_len, env->m_em) == 0);
+
+    int rv = net_endpoint_buf_append(
+        net_http_endpoint_base_endpoint(env->m_http_endpoint),
+        net_ep_buf_read, bin_data, bin_len);
+
+    mem_free(test_allocrator(), bin_data);
+
+    return rv;
 }

@@ -87,7 +87,45 @@ static void http_input_chunked(void **state) {
     assert_true(net_http_req_find(env->m_http_endpoint, response->m_req_id) == NULL);
 }
 
+static void http_input_gzip_identity(void **state) {
+    net_http_testenv_t env = *state;
+    net_http_testenv_create_ep(env);
+
+    net_http_req_t req = net_http_req_create(env->m_http_endpoint, net_http_req_method_get, "/a");
+    assert_true(req);
+
+    net_http_test_response_t response = net_http_test_protocol_req_commit(env->m_http_protocol, req);
+    assert_true(response != NULL);
+
+    const char * gzip_hex_date = 
+        "1f8b08088269a2600003612e74787400"
+        "4b4c4a4e494d4bcfc8cccacec9cde302"
+        "0008f2496c0f000000";
+
+    assert_true(
+        net_http_testenv_send_response(
+            env,
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Encoding: gzip\r\n"
+            "Content-Length: 41\r\n"
+            "\r\n"
+            ) == 0
+        );
+
+    assert_true(net_http_testenv_send_response_hex(env, gzip_hex_date) == 0);
+    
+    assert_string_equal(
+        "200 OK\n"
+        "Content-Encoding=gzip\n"
+        "body.size=14\n"
+        "abcdefghijklmn",
+        net_http_test_response_dump(&env->m_tmp_buffer, response));
+
+    assert_true(net_http_req_find(env->m_http_endpoint, response->m_req_id) == NULL);
+}
+
 CPE_BEGIN_TEST_SUIT(net_http_input_basic_tests)
     cmocka_unit_test_setup_teardown(http_input_identity, setup, teardown),
     cmocka_unit_test_setup_teardown(http_input_chunked, setup, teardown),
+    cmocka_unit_test_setup_teardown(http_input_gzip_identity, setup, teardown),
 CPE_END_TEST_SUIT(net_http_input_basic_tests)
