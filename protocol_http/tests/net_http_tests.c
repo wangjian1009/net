@@ -1,17 +1,16 @@
-#include "cmocka_all.h"
 #include "net_http_tests.h"
 
 int main(void) {
-    int rv = 0;
+    CPE_BEGIN_RUN_TESTS()
 
-    if (net_http_output_basic_tests() != 0) rv = -1;
-    if (net_http_output_method_get_tests() != 0) rv = -1;
-    if (net_http_output_method_head_tests() != 0) rv = -1;
+        CPE_ADD_TEST_SUIT(net_http_output_basic_tests),
+        CPE_ADD_TEST_SUIT(net_http_output_method_get_tests),
+        CPE_ADD_TEST_SUIT(net_http_output_method_head_tests),
 
-    if (net_http_input_basic_tests() != 0) rv = -1;
+        CPE_ADD_TEST_SUIT(net_http_input_basic_tests),
 
-    if (net_https_basic_tests() != 0) rv = -1;
+        CPE_ADD_TEST_SUIT(net_https_basic_tests),
     
-    return rv;
+    CPE_END_RUN_TESTS();
 }
 

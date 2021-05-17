@@ -124,13 +124,10 @@ static void http_req_write_error(void **state) {
         net_http_res_result_str(response->m_result));
 }
 
-int net_http_output_basic_tests() {
-	const struct CMUnitTest tests[] = {
-		cmocka_unit_test_setup_teardown(http_req_create_prev_not_complete, setup, teardown),
-		cmocka_unit_test_setup_teardown(http_req_free_before_head, setup, teardown),
-		cmocka_unit_test_setup_teardown(http_req_free_part_send_complete, setup, teardown),
-		cmocka_unit_test_setup_teardown(http_req_free_part_send_not_complete, setup, teardown),
-		cmocka_unit_test_setup_teardown(http_req_write_error, setup, teardown),
-	};
-	return cmocka_run_group_tests(tests, NULL, NULL);
-}
+CPE_BEGIN_TEST_SUIT(net_http_output_basic_tests)
+    cmocka_unit_test_setup_teardown(http_req_create_prev_not_complete, setup, teardown),
+    cmocka_unit_test_setup_teardown(http_req_free_before_head, setup, teardown),
+    cmocka_unit_test_setup_teardown(http_req_free_part_send_complete, setup, teardown),
+    cmocka_unit_test_setup_teardown(http_req_free_part_send_not_complete, setup, teardown),
+    cmocka_unit_test_setup_teardown(http_req_write_error, setup, teardown),
+CPE_END_TEST_SUIT(net_http_output_basic_tests)

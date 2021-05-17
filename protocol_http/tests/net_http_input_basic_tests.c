@@ -47,9 +47,6 @@ static void http_input_basic(void **state) {
     assert_true(net_http_req_find(env->m_http_endpoint, response->m_req_id) == NULL);
 }
 
-int net_http_input_basic_tests() {
-	const struct CMUnitTest tests[] = {
-		cmocka_unit_test_setup_teardown(http_input_basic, setup, teardown),
-	};
-	return cmocka_run_group_tests(tests, NULL, NULL);
-}
+CPE_BEGIN_TEST_SUIT(net_http_input_basic_tests)
+    cmocka_unit_test_setup_teardown(http_input_basic, setup, teardown),
+CPE_END_TEST_SUIT(net_http_input_basic_tests)

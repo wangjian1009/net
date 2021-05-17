@@ -27,7 +27,16 @@ void net_http_req_cancel_and_free_by_id(net_http_endpoint_t http_ep, uint16_t re
 net_http_req_state_t net_http_req_state(net_http_req_t req);
 int net_http_req_write_head_host(net_http_req_t http_req);
 int net_http_req_write_head_pair(net_http_req_t http_req, const char * attr_name, const char * attr_value);
+
 int net_http_req_write_body_full(net_http_req_t http_req, void const * data, uint32_t data_sz);
+
+typedef void (net_http_req_write_chunked_pull_fun_t)(void * ctx, net_http_req_t http_req);
+
+int net_http_req_write_body_chunked(
+    net_http_req_t http_req,
+    void * write_ctx,
+    net_http_req_write_chunked_pull_fun_t write_pull);
+
 int net_http_req_write_commit(net_http_req_t http_req);
 
 const char * net_http_req_state_str(net_http_req_state_t req_state);

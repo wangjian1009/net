@@ -140,11 +140,8 @@ static void https_input_part_write_close(void **state) {
         net_endpoint_state_str(net_endpoint_state(net_http_endpoint_base_endpoint(env->m_https_endpoint))));
 }
 
-int net_https_basic_tests() {
-	const struct CMUnitTest tests[] = {
-		cmocka_unit_test_setup_teardown(https_input_basic, setup, teardown),
-		cmocka_unit_test_setup_teardown(https_input_part_read_close, setup, teardown),
-		cmocka_unit_test_setup_teardown(https_input_part_write_close, setup, teardown),
-	};
-	return cmocka_run_group_tests(tests, NULL, NULL);
-}
+CPE_BEGIN_TEST_SUIT(net_https_basic_tests)
+    cmocka_unit_test_setup_teardown(https_input_basic, setup, teardown),
+    cmocka_unit_test_setup_teardown(https_input_part_read_close, setup, teardown),
+    cmocka_unit_test_setup_teardown(https_input_part_write_close, setup, teardown),
+CPE_END_TEST_SUIT(net_https_basic_tests)

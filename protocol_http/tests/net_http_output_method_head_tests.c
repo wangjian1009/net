@@ -78,10 +78,7 @@ static void http_method_head_response_with_content_lenth(void **state) {
         == 0);
 }
 
-int net_http_output_method_head_tests() {
-	const struct CMUnitTest tests[] = {
-		cmocka_unit_test_setup_teardown(http_method_head_response_with_content_lenth, setup, teardown),
-		cmocka_unit_test_setup_teardown(http_method_head_response_no_content_lenth, setup, teardown),
-	};
-	return cmocka_run_group_tests(tests, NULL, NULL);
-}
+CPE_BEGIN_TEST_SUIT(net_http_output_method_head_tests)
+    cmocka_unit_test_setup_teardown(http_method_head_response_with_content_lenth, setup, teardown),
+    cmocka_unit_test_setup_teardown(http_method_head_response_no_content_lenth, setup, teardown),
+CPE_END_TEST_SUIT(net_http_output_method_head_tests)

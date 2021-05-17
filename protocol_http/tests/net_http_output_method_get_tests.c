@@ -36,9 +36,6 @@ static void http_get_req_no_body(void **state) {
         );
 }
 
-int net_http_output_method_get_tests() {
-	const struct CMUnitTest tests[] = {
-		cmocka_unit_test_setup_teardown(http_get_req_no_body, setup, teardown),
-	};
-	return cmocka_run_group_tests(tests, NULL, NULL);
-}
+CPE_BEGIN_TEST_SUIT(net_http_output_method_get_tests)
+    cmocka_unit_test_setup_teardown(http_get_req_no_body, setup, teardown),
+CPE_END_TEST_SUIT(net_http_output_method_get_tests)
