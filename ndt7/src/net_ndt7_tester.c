@@ -3,6 +3,7 @@
 #include "cpe/utils/url.h"
 #include "cpe/utils/string_utils.h"
 #include "cpe/utils/stream_buffer.h"
+#include "yajl_stream_parser.h"
 #include "net_timer.h"
 #include "net_endpoint.h"
 #include "net_endpoint_monitor.h"
@@ -35,6 +36,7 @@ net_ndt7_tester_create(net_ndt7_manage_t manager) {
 
     tester->m_query_target.m_endpoint = NULL;
     tester->m_query_target.m_req = NULL;
+    tester->m_query_target.m_rsp_parser = NULL;
 
     tester->m_download.m_start_time_ms = 0;
     tester->m_download.m_pre_notify_ms = 0;
@@ -90,6 +92,11 @@ void net_ndt7_tester_free(net_ndt7_tester_t tester) {
     if (tester->m_query_target.m_req) {
         net_http_req_clear_reader(tester->m_query_target.m_req);
         tester->m_query_target.m_req = NULL;
+    }
+
+    if (tester->m_query_target.m_rsp_parser) {
+        cpe_yajl_stream_parser_free(tester->m_query_target.m_rsp_parser);
+        tester->m_query_target.m_rsp_parser = NULL;
     }
 
     if (tester->m_query_target.m_endpoint) {

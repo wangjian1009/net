@@ -53,9 +53,7 @@ typedef enum net_http_res_result {
 typedef int (*net_http_req_on_res_begin_fun_t)(void * ctx, net_http_req_t req, uint16_t code, const char * msg);
 typedef int (*net_http_req_on_res_head_fun_t)(void * ctx, net_http_req_t req, const char * name, const char * value);
 typedef int (*net_http_req_on_res_body_fun_t)(void * ctx, net_http_req_t req, void * data, uint32_t data_size);
-typedef void (*net_http_req_on_res_complete_fun_t)(
-    void * ctx, net_http_req_t req, net_http_res_result_t result,
-    void * body, uint32_t body_size);
+typedef void (*net_http_req_on_res_complete_fun_t)(void * ctx, net_http_req_t req, net_http_res_result_t result);
 
 int net_http_req_set_reader(
     net_http_req_t req,

@@ -311,7 +311,7 @@ uint32_t net_http_req_res_length(net_http_req_t req) {
 void net_http_req_cancel_and_free(net_http_req_t req) {
     if (!req->m_on_complete_processed && req->m_res_on_complete) {
         req->m_on_complete_processed = 1;
-        req->m_res_on_complete(req->m_res_ctx, req, net_http_res_canceled, NULL, 0);
+        req->m_res_on_complete(req->m_res_ctx, req, net_http_res_canceled);
     }
     net_http_req_free(req);
 }
@@ -366,7 +366,7 @@ static void net_http_req_on_timeout(net_timer_t timer, void * ctx) {
     
     if (!req->m_on_complete_processed && req->m_res_on_complete) {
         req->m_on_complete_processed = 1;
-        req->m_res_on_complete(req->m_res_ctx, req, net_http_res_timeout, NULL, 0);
+        req->m_res_on_complete(req->m_res_ctx, req, net_http_res_timeout);
     }
 
     if (net_endpoint_is_active(base_endpoint)) {

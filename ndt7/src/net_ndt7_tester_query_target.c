@@ -1,5 +1,6 @@
 #include <assert.h>
 #include "yajl/yajl_tree.h"
+#include "yajl_stream_parser.h"
 #include "net_endpoint.h"
 #include "net_address.h"
 #include "net_http_endpoint.h"
@@ -8,8 +9,8 @@
 #include "net_ndt7_tester_target_i.h"
 
 static void net_ndt7_tester_query_target_on_endpoint_fini(void * ctx, net_endpoint_t endpoint);
-static void net_ndt7_tester_query_tearget_on_req_complete(
-    void * ctx, net_http_req_t http_req, net_http_res_result_t result, void * body, uint32_t body_size);
+static void net_ndt7_tester_query_tearget_on_req_complete(void * ctx, net_http_req_t http_req, net_http_res_result_t result);
+static int net_ndt7_tester_query_tearget_on_req_body(void * ctx, net_http_req_t req, void * data, uint32_t data_size);
 
 int net_ndt7_tester_query_target_start(net_ndt7_tester_t tester) {
     net_ndt7_manage_t manager = tester->m_manager;
@@ -68,7 +69,8 @@ int net_ndt7_tester_query_target_start(net_ndt7_tester_t tester) {
 
     if (net_http_req_set_reader(
             tester->m_query_target.m_req,
-            tester, NULL, NULL, NULL,
+            tester, NULL, NULL,
+            net_ndt7_tester_query_tearget_on_req_body,
             net_ndt7_tester_query_tearget_on_req_complete) != 0
         || net_http_req_write_head_host(tester->m_query_target.m_req) != 0
         || net_http_req_write_head_pair(tester->m_query_target.m_req, "Content-Type", "application/json") != 0
@@ -143,9 +145,36 @@ static int net_ndt7_tester_query_tearget_build_target(net_ndt7_tester_t tester, 
     return 0;
 }
 
-static void net_ndt7_tester_query_tearget_on_req_complete(
-    void * ctx, net_http_req_t http_req, net_http_res_result_t result, void * body, uint32_t body_size)
-{
+int net_ndt7_tester_query_tearget_on_req_body(void * ctx, net_http_req_t req, void * data, uint32_t data_size) {
+    net_ndt7_tester_t tester = ctx;
+    net_ndt7_manage_t manager = tester->m_manager;
+    
+    assert(tester->m_query_target.m_req == req);
+        
+    if (net_http_req_res_code(req) / 100 != 2) return 0;
+    if (data_size == 0) return 0;
+
+    if (tester->m_query_target.m_rsp_parser == NULL) {
+        tester->m_query_target.m_rsp_parser = cpe_yajl_stream_parser_create(manager->m_alloc, manager->m_em);
+        if (tester->m_query_target.m_rsp_parser == NULL) {
+            CPE_ERROR(manager->m_em, "ndt7: %d: query target: create parser fail", tester->m_id);
+            return 0;
+        }
+    }
+
+    if (!cpe_yajl_stream_parser_is_ok(tester->m_query_target.m_rsp_parser)) return 0;
+    
+    if (cpe_yajl_stream_parser_append(tester->m_query_target.m_rsp_parser, data, data_size) != 0) {
+        CPE_ERROR(
+            manager->m_em, "ndt7: %d: query target: supply data fail, error=%s",
+            tester->m_id, cpe_yajl_stream_parser_error_msg(tester->m_query_target.m_rsp_parser));
+        return 0;
+    }
+
+    return 0;
+}
+
+static void net_ndt7_tester_query_tearget_on_req_complete(void * ctx, net_http_req_t http_req, net_http_res_result_t result) {
     net_ndt7_tester_t tester = ctx;
     net_ndt7_manage_t manager = tester->m_manager;
 
@@ -179,21 +208,28 @@ static void net_ndt7_tester_query_tearget_on_req_complete(
         goto GOTO_NEXT_STEP;
     }
 
-    if (body == NULL) {
+    if (tester->m_query_target.m_rsp_parser == NULL) {
         net_ndt7_tester_set_error(tester, net_ndt7_tester_error_network, "NoBodyData");
         goto GOTO_NEXT_STEP;
     }
-    
-    char error_buf[256];
-    yajl_val content = yajl_tree_parse_len(body, body_size, error_buf, sizeof(error_buf));
-    if (content == NULL) {
+
+    if (cpe_yajl_stream_parser_is_ok(tester->m_query_target.m_rsp_parser)) {
+        cpe_yajl_stream_parser_complete(tester->m_query_target.m_rsp_parser);
+    }
+
+    if (!cpe_yajl_stream_parser_is_ok(tester->m_query_target.m_rsp_parser)) {
         CPE_ERROR(
-            manager->m_em, "ndt7: %d: query target: parse response fail, error=%s\n%.*s!",
-            tester->m_id, error_buf, (int)body_size, (const char *)body);
+            manager->m_em, "ndt7: %d: query target: parse response fail, error=%s",
+            tester->m_id, cpe_yajl_stream_parser_error_msg(tester->m_query_target.m_rsp_parser));
         net_ndt7_tester_set_error(tester, net_ndt7_tester_error_network, "BodyParseError");
         goto GOTO_NEXT_STEP;
     }
 
+    yajl_val content = cpe_yajl_stream_parser_result_retrieve(tester->m_query_target.m_rsp_parser);
+
+    cpe_yajl_stream_parser_free(tester->m_query_target.m_rsp_parser);
+    tester->m_query_target.m_rsp_parser = NULL;
+    
     yajl_val results_val = yajl_tree_get_2(content, "results", yajl_t_array);
     if (results_val == NULL) {
         CPE_ERROR(manager->m_em, "ndt7: %d: query target: response no results", tester->m_id);
@@ -224,6 +260,11 @@ static void net_ndt7_tester_query_tearget_on_req_complete(
 GOTO_NEXT_STEP:
     net_http_req_free(http_req);
 
+    if (tester->m_query_target.m_rsp_parser) {
+        cpe_yajl_stream_parser_free(tester->m_query_target.m_rsp_parser);
+        tester->m_query_target.m_rsp_parser = NULL;
+    }
+    
     net_endpoint_t base_endpoint = net_http_endpoint_base_endpoint(tester->m_query_target.m_endpoint);
     if (net_endpoint_set_state(base_endpoint, net_endpoint_state_disable) != 0) {
         net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);

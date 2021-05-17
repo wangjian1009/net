@@ -1,5 +1,6 @@
 #ifndef NET_NDT7_TESTER_I_H_INCLEDED
 #define NET_NDT7_TESTER_I_H_INCLEDED
+#include "yajl_utils_types.h"
 #include "net_ndt7_model.h"
 #include "net_ndt7_config.h"
 #include "net_ndt7_tester.h"
@@ -33,6 +34,7 @@ struct net_ndt7_tester {
     struct {
         net_http_endpoint_t m_endpoint;
         net_http_req_t m_req;
+        cpe_yajl_stream_parser_t m_rsp_parser;
     } m_query_target;
     
     struct {

@@ -292,18 +292,7 @@ static int net_http_req_input_body_set_complete(
     
     if (!req->m_on_complete_processed && req->m_res_on_complete) {
         req->m_on_complete_processed = 1;
-
-        void * body = NULL;
-        uint32_t body_len = 0;
-        
-        if (req->m_res_on_body == NULL) {
-            body_len = net_endpoint_buf_size(endpoint, net_ep_buf_http_body);
-            if (body_len > 0) {
-                net_endpoint_buf_peak_with_size(endpoint, net_ep_buf_http_body, body_len, &body);
-            }
-        }
-
-        req->m_res_on_complete(req->m_res_ctx, req, result, body, body_len);
+        req->m_res_on_complete(req->m_res_ctx, req, result);
     }
 
     net_endpoint_buf_clear(endpoint, net_ep_buf_http_body);

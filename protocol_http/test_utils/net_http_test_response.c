@@ -40,9 +40,7 @@ int net_http_test_response_on_res_body(void * ctx, net_http_req_t req, void * da
     return 0;
 }
 
-void net_http_test_response_on_res_complete(
-    void * ctx, net_http_req_t req, net_http_res_result_t result, void * body, uint32_t body_len)
-{
+void net_http_test_response_on_res_complete(void * ctx, net_http_req_t req, net_http_res_result_t result) {
     net_http_test_response_t response = ctx;
 
     response->m_result = result;

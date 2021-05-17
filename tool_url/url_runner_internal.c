@@ -15,9 +15,7 @@ static void url_runner_internal_on_endpoint_fini(void * ctx, net_endpoint_t endp
 static int url_runner_internal_on_res_begin(void * ctx, net_http_req_t req, uint16_t code, const char * msg);
 static int url_runner_internal_on_res_head(void * ctx, net_http_req_t req, const char * name, const char * value);
 static int url_runner_internal_on_res_body(void * ctx, net_http_req_t req, void * data, uint32_t data_size);
-
-static void url_runner_internal_on_req_complete(
-    void * ctx, net_http_req_t req, net_http_res_result_t result, void * body, uint32_t body_size);
+static void url_runner_internal_on_req_complete(void * ctx, net_http_req_t req, net_http_res_result_t result);
 
 int url_runner_internal_init(url_runner_t runner) {
     runner->m_internal.m_http_protocol = net_http_protocol_create(runner->m_net_schedule, "tool");
@@ -235,9 +233,7 @@ static int url_runner_internal_on_res_body(void * ctx, net_http_req_t req, void 
     return 0;
 }
 
-static void url_runner_internal_on_req_complete(
-    void * ctx, net_http_req_t req, net_http_res_result_t result, void * body, uint32_t body_size)
-{
+static void url_runner_internal_on_req_complete(void * ctx, net_http_req_t req, net_http_res_result_t result) {
     url_runner_t runner = ctx;
     assert(runner->m_mode == url_runner_mode_internal);
 
