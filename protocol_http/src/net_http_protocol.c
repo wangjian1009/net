@@ -51,8 +51,6 @@ static int net_http_protocol_init(net_protocol_t protocol) {
     
     TAILQ_INIT(&http_protocol->m_free_reqs);
 
-    mem_buffer_init(&http_protocol->m_data_buffer, http_protocol->m_alloc);
-
     return 0;
 }
 
@@ -62,8 +60,6 @@ static void net_http_protocol_fini(net_protocol_t protocol) {
     while(!TAILQ_EMPTY(&http_protocol->m_free_reqs)) {
         net_http_req_real_free(TAILQ_FIRST(&http_protocol->m_free_reqs));
     }
-
-    mem_buffer_clear(&http_protocol->m_data_buffer);
 }
 
 void * net_http_protocol_data(net_http_protocol_t http_protocol) {

@@ -329,11 +329,14 @@ static int net_http_endpoint_input_body_consume_body_part(
             }
             break;
         case net_http_content_gzip: {
-            assert(http_ep->m_current_res.m_gzip.m_stream);
-            http_ep->m_current_res.m_gzip.m_stream->avail_in = block_size;
-            http_ep->m_current_res.m_gzip.m_stream->next_in = block_buf;
-            /* http_ep->m_current_res.m_gzip.m_stream->avail_out = (uInt)outputSize; */
-            /* http_ep->m_current_res.m_gzip.m_stream->next_out = (Bytef *)output; */
+            /* uint32_t output_capacity = compressBound(block_size); */
+            /* void * output_buf = net_endpoint_buf_alloc_at_least(endpoint, &output_capacity); */
+            /* assert(http_ep->m_current_res.m_gzip.m_stream); */
+            /* http_ep->m_current_res.m_gzip.m_stream->avail_in = block_size; */
+            /* http_ep->m_current_res.m_gzip.m_stream->next_in = block_buf; */
+            /* http_ep->m_current_res.m_gzip.m_stream->avail_out = output_capacity; */
+            /* http_ep->m_current_res.m_gzip.m_stream->next_out = output_buf; */
+            //net_ep_buf_http_uncompress
             break;
         }
         case net_http_content_deflate:

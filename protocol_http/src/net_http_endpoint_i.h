@@ -6,6 +6,7 @@
 
 #define net_ep_buf_http_in net_ep_buf_user1
 #define net_ep_buf_http_out net_ep_buf_user2
+#define net_ep_buf_http_uncompress net_ep_buf_user3
 
 NET_BEGIN_DECL
 
