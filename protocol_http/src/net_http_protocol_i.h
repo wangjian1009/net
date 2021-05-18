@@ -22,6 +22,7 @@ struct net_http_protocol {
     /*runtime*/
     uint16_t m_max_req_id;
     net_http_req_list_t m_free_reqs;
+    struct mem_buffer m_data_buffer;
 };
 
 mem_buffer_t net_http_protocol_tmp_buffer(net_http_protocol_t protocol);

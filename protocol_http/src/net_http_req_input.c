@@ -328,11 +328,25 @@ static int net_http_endpoint_input_body_consume_body_part(
                 return -1;
             }
             break;
-        case net_http_content_gzip:
+        case net_http_content_gzip: {
+            assert(http_ep->m_current_res.m_gzip.m_stream);
+            http_ep->m_current_res.m_gzip.m_stream->avail_in = block_size;
+            http_ep->m_current_res.m_gzip.m_stream->next_in = block_buf;
+            /* http_ep->m_current_res.m_gzip.m_stream->avail_out = (uInt)outputSize; */
+            /* http_ep->m_current_res.m_gzip.m_stream->next_out = (Bytef *)output; */
             break;
+        }
         case net_http_content_deflate:
+            CPE_ERROR(
+                http_protocol->m_em, "http: %s: req %d: <== not support content deflate, size=%d",
+                net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
+                req->m_id, buf_sz);
             break;
         case net_http_content_br:
+            CPE_ERROR(
+                http_protocol->m_em, "http: %s: req %d: <== not support content br, size=%d",
+                net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
+                req->m_id, buf_sz);
             break;
         }
 
