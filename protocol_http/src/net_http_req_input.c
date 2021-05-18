@@ -379,8 +379,7 @@ static int net_http_endpoint_input_body_consume_body_part_gzip(
     while (!done) {
         done = 1;
 
-        uint32_t output_buf_sz = 2048;
-        //uint32_t output_buf_sz = net_mem_group_suggest_size(net_endpoint_mem_group(endpoint));
+        uint32_t output_buf_sz = net_endpoint_suggest_block_size(endpoint);
         void * output_buf = net_endpoint_buf_alloc_at_least(endpoint, &output_buf_sz);
         if (output_buf == NULL) {
             CPE_ERROR(
@@ -393,14 +392,10 @@ static int net_http_endpoint_input_body_consume_body_part_gzip(
         z->avail_out = output_buf_sz;
         z->next_out = output_buf;
 
-        CPE_ERROR(http_protocol->m_em, "xxx: gzip:      capacity=%d", output_buf_sz);
-        
         int status = inflate(z, Z_BLOCK);
-        CPE_ERROR(http_protocol->m_em, "xxx: gzip:      z->avail_out=%d", z->avail_out);
         if (z->avail_out != output_buf_sz) {
             if (status == Z_OK || status == Z_STREAM_END) {
                 uint32_t decompressed_size = output_buf_sz - z->avail_out;
-                CPE_ERROR(http_protocol->m_em, "xxx: gzip:      decompressed_size=%d", decompressed_size);
                 if (net_endpoint_buf_supply(endpoint, net_ep_buf_http_uncompress, decompressed_size) != 0) {
                     CPE_ERROR(
                         http_protocol->m_em, "http: %s: req %d: <== commit uncompress buf fail, size=%d",
@@ -456,7 +451,6 @@ static int net_http_endpoint_input_body_consume_body_part_gzip(
         }
     }
 
-    CPE_ERROR(http_protocol->m_em, "xxx: gzip:      z->avail_in=%d", z->avail_in);
     if (z->avail_in < *block_size) {
         *block_size = *block_size - z->avail_in;
     }

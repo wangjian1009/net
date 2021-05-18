@@ -32,6 +32,7 @@ net_endpoint_t net_endpoint_find(net_schedule_t schedule, uint32_t id);
 net_address_t net_endpoint_address(net_endpoint_t endpoint);
 int net_endpoint_set_address(net_endpoint_t endpoint, net_address_t address);
 
+uint32_t net_endpoint_suggest_block_size(net_endpoint_t endpoint);
 void net_endpoint_calc_size(net_endpoint_t endpoint, net_endpoint_size_info_t size_info);
 
 uint8_t net_endpoint_expect_read(net_endpoint_t endpoint);

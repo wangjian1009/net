@@ -588,6 +588,10 @@ net_endpoint_t net_endpoint_from_data(void * data) {
     return ((net_endpoint_t)data) - 1;
 }
 
+uint32_t net_endpoint_suggest_block_size(net_endpoint_t endpoint) {
+    return 4096;
+}
+
 void net_endpoint_calc_size(net_endpoint_t endpoint, net_endpoint_size_info_t size_info) {
     if (endpoint->m_protocol->m_endpoint_calc_size) {
         endpoint->m_protocol->m_endpoint_calc_size(endpoint, size_info);

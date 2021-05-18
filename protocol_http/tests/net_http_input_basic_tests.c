@@ -119,6 +119,7 @@ static void http_input_gzip_identity(void **state) {
         "200 OK\n"
         "Content-Type=text/plain\n"
         "Content-Encoding=gzip\n"
+        "Content-Length=41\n"
         "body.size=15\n"
         "abcdefghijklmn\n",
         net_http_test_response_dump(&env->m_tmp_buffer, response));
