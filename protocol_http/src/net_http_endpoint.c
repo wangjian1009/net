@@ -396,25 +396,28 @@ int net_http_endpoint_set_res_content_encoding(
     case net_http_content_identity:
         break;
     case net_http_content_gzip:
+        assert(http_ep->m_current_res.m_gzip.m_stream == NULL);
         http_ep->m_current_res.m_gzip.m_stream = mem_alloc(http_protocol->m_alloc, sizeof(z_stream));
         if (http_ep->m_current_res.m_gzip.m_stream == NULL) {
+            CPE_ERROR(
+                http_protocol->m_em,
+                "http: %s: zlib: z_stream alloc fail",
+                net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint));
+            return -1;
         }
+
         http_ep->m_current_res.m_gzip.m_stream->zalloc = Z_NULL;
         http_ep->m_current_res.m_gzip.m_stream->zfree = Z_NULL;
-        http_ep->m_current_res.m_gzip.m_stream->opaque = Z_NULL;
-        http_ep->m_current_res.m_gzip.m_stream->avail_in = 0;
-        http_ep->m_current_res.m_gzip.m_stream->next_in = NULL;
-        http_ep->m_current_res.m_gzip.m_stream->avail_out = 0;
-        http_ep->m_current_res.m_gzip.m_stream->next_out = NULL;
-        
-        /* http_ep->m_current_res.m_gzip.m_stream->avail_in = (uInt)inputSize; */
-        /* http_ep->m_current_res.m_gzip.m_stream->next_in = (Bytef *)input; */
-        /* http_ep->m_current_res.m_gzip.m_stream->avail_out = (uInt)outputSize; */
-        /* http_ep->m_current_res.m_gzip.m_stream->next_out = (Bytef *)output; */
 
-        // hard to believe they don't have a macro for gzip encoding, "Add 16" is the best thing zlib can do:
-        // "Add 16 to windowBits to write a simple gzip header and trailer around the compressed data instead of a zlib wrapper"
-        deflateInit2(http_ep->m_current_res.m_gzip.m_stream, Z_DEFAULT_COMPRESSION, Z_DEFLATED, 15 | 16, 8, Z_DEFAULT_STRATEGY);
+        if(inflateInit2(http_ep->m_current_res.m_gzip.m_stream, MAX_WBITS + 32) != Z_OK) {
+            CPE_ERROR(
+                http_protocol->m_em,
+                "http: %s: zlib: context init fail",
+                net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), http_ep->m_endpoint));
+            mem_free(http_protocol->m_alloc, http_ep->m_current_res.m_gzip.m_stream);
+            http_ep->m_current_res.m_gzip.m_stream = NULL;
+            return -1;
+        }
         break;
     case net_http_content_deflate:
         break;

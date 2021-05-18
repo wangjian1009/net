@@ -106,6 +106,7 @@ static void http_input_gzip_identity(void **state) {
         net_http_testenv_send_response(
             env,
             "HTTP/1.1 200 OK\r\n"
+            "Content-Type:text/plain\r\n"
             "Content-Encoding: gzip\r\n"
             "Content-Length: 41\r\n"
             "\r\n"
@@ -116,9 +117,10 @@ static void http_input_gzip_identity(void **state) {
     
     assert_string_equal(
         "200 OK\n"
+        "Content-Type=text/plain\n"
         "Content-Encoding=gzip\n"
-        "body.size=14\n"
-        "abcdefghijklmn",
+        "body.size=15\n"
+        "abcdefghijklmn\n",
         net_http_test_response_dump(&env->m_tmp_buffer, response));
 
     assert_true(net_http_req_find(env->m_http_endpoint, response->m_req_id) == NULL);

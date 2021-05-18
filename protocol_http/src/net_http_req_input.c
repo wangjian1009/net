@@ -4,10 +4,14 @@
 #include "cpe/pal/pal_stdlib.h"
 #include "cpe/utils/string_utils.h"
 #include "net_endpoint.h"
+#include "net_mem_group.h"
 #include "net_http_req_i.h"
 
 static int net_http_endpoint_input_body_consume_body_part(
     net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_endpoint_t endpoint, uint16_t buf_sz);
+static int net_http_endpoint_input_body_consume_body_part_gzip(
+    net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_endpoint_t endpoint,
+    net_http_req_t req, void * block_data, uint32_t * block_size);
 
 static int net_http_endpoint_input_body_identity(
     net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_endpoint_t endpoint);
@@ -256,7 +260,7 @@ static int net_http_req_process_response_head_follow_line(
     } else if (strcasecmp(name, "Content-Encoding") == 0) {
         if (strcasecmp(value, "identity") == 0) {
             net_http_endpoint_set_res_content_encoding(http_protocol, http_ep, net_http_content_identity);
-        } else if (strcasecmp(value, "gzip") == 0) {
+        } else if (strcasecmp(value, "gzip") == 0 || strcasecmp(value, "x-gzip") == 0) {
             net_http_endpoint_set_res_content_encoding(http_protocol, http_ep, net_http_content_gzip);
         } else {
             CPE_ERROR(
@@ -328,17 +332,10 @@ static int net_http_endpoint_input_body_consume_body_part(
                 return -1;
             }
             break;
-        case net_http_content_gzip: {
-            /* uint32_t output_capacity = compressBound(block_size); */
-            /* void * output_buf = net_endpoint_buf_alloc_at_least(endpoint, &output_capacity); */
-            /* assert(http_ep->m_current_res.m_gzip.m_stream); */
-            /* http_ep->m_current_res.m_gzip.m_stream->avail_in = block_size; */
-            /* http_ep->m_current_res.m_gzip.m_stream->next_in = block_buf; */
-            /* http_ep->m_current_res.m_gzip.m_stream->avail_out = output_capacity; */
-            /* http_ep->m_current_res.m_gzip.m_stream->next_out = output_buf; */
-            //net_ep_buf_http_uncompress
+        case net_http_content_gzip:
+            if (net_http_endpoint_input_body_consume_body_part_gzip(
+                    http_protocol, http_ep, endpoint, req, block_buf, &block_size) != 0) return -1;
             break;
-        }
         case net_http_content_deflate:
             CPE_ERROR(
                 http_protocol->m_em, "http: %s: req %d: <== not support content deflate, size=%d",
@@ -364,6 +361,106 @@ static int net_http_endpoint_input_body_consume_body_part(
         net_endpoint_buf_consume(endpoint, net_ep_buf_http_in, buf_sz);
     }
 
+    return 0;
+}
+
+static int net_http_endpoint_input_body_consume_body_part_gzip(
+    net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_endpoint_t endpoint,
+    net_http_req_t req, void * block_data, uint32_t * block_size)
+{
+    z_stream * z = http_ep->m_current_res.m_gzip.m_stream;
+    assert(z);
+    z->next_in = block_data;
+    z->avail_in = *block_size;
+    uint8_t done = 0;
+
+    assert(strcmp(zlibVersion(), "1.2.0.4") >= 0);
+    
+    while (!done) {
+        done = 1;
+
+        uint32_t output_buf_sz = 2048;
+        //uint32_t output_buf_sz = net_mem_group_suggest_size(net_endpoint_mem_group(endpoint));
+        void * output_buf = net_endpoint_buf_alloc_at_least(endpoint, &output_buf_sz);
+        if (output_buf == NULL) {
+            CPE_ERROR(
+                http_protocol->m_em, "http: %s: req %d: <== alloc uncompress buf fail, capacity=%d",
+                net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
+                req->m_id, output_buf_sz);
+            return -1;
+        }
+
+        z->avail_out = output_buf_sz;
+        z->next_out = output_buf;
+
+        CPE_ERROR(http_protocol->m_em, "xxx: gzip:      capacity=%d", output_buf_sz);
+        
+        int status = inflate(z, Z_BLOCK);
+        CPE_ERROR(http_protocol->m_em, "xxx: gzip:      z->avail_out=%d", z->avail_out);
+        if (z->avail_out != output_buf_sz) {
+            if (status == Z_OK || status == Z_STREAM_END) {
+                uint32_t decompressed_size = output_buf_sz - z->avail_out;
+                CPE_ERROR(http_protocol->m_em, "xxx: gzip:      decompressed_size=%d", decompressed_size);
+                if (net_endpoint_buf_supply(endpoint, net_ep_buf_http_uncompress, decompressed_size) != 0) {
+                    CPE_ERROR(
+                        http_protocol->m_em, "http: %s: req %d: <== commit uncompress buf fail, size=%d",
+                        net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
+                        req->m_id, decompressed_size);
+                    return -1;
+                }
+
+                if (req->m_res_on_body(req->m_res_ctx, req, output_buf, decompressed_size) != 0) {
+                    CPE_ERROR(
+                        http_protocol->m_em, "http: %s: req %d: <== process body fail, size=%d(origin=%d)",
+                        net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
+                        req->m_id, decompressed_size, *block_size);
+                    return -1;
+                }
+
+                output_buf = NULL;
+                net_endpoint_buf_consume(endpoint, net_ep_buf_http_uncompress, decompressed_size);
+            }
+        }
+
+        if (output_buf) {
+            net_endpoint_buf_release(endpoint);
+            output_buf = NULL;
+        }
+
+        switch (status) {
+        case Z_OK:
+            /* Always loop: there may be unflushed latched data in zlib state. */
+            done = 0;
+            break;
+        case Z_BUF_ERROR:
+            CPE_ERROR(
+                http_protocol->m_em, "http: %s: req %d: <== decompressed not enough buf",
+                net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
+                req->m_id);
+            break;
+        case Z_STREAM_END:
+            //result = process_trailer(conn, zp);
+            break;
+        case Z_DATA_ERROR:
+            CPE_ERROR(
+                http_protocol->m_em, "http: %s: req %d: <== decompressed data error",
+                net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
+                req->m_id);
+            return -1;
+        default:
+            CPE_ERROR(
+                http_protocol->m_em, "http: %s: req %d: <== decompressed unknown error %d",
+                net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
+                req->m_id, status);
+            return -1;
+        }
+    }
+
+    CPE_ERROR(http_protocol->m_em, "xxx: gzip:      z->avail_in=%d", z->avail_in);
+    if (z->avail_in < *block_size) {
+        *block_size = *block_size - z->avail_in;
+    }
+    
     return 0;
 }
 
