@@ -128,10 +128,22 @@ int net_http_req_write_body_full(net_http_req_t http_req, void const * data, uin
         return -1;
     }
 
+    uint32_t block_size = net_endpoint_suggest_block_size(http_ep->m_endpoint);
+
     switch(http_req->m_req_transfer_encoding) {
     case net_http_transfer_identity:
-        if (net_http_endpoint_write(http_protocol, http_ep, http_req, data, (uint32_t)data_sz) != 0) return -1;
-        http_req->m_body_supply_size = data_sz;
+        while(data_sz > 0) {
+            uint32_t once_size = data_sz;
+            if (once_size > block_size) {
+                once_size = block_size;
+            }
+            
+            if (net_http_endpoint_write(http_protocol, http_ep, http_req, data, once_size) != 0) return -1;
+
+            data = (uint8_t const *)data + once_size;
+            data_sz -= once_size;
+            http_req->m_body_supply_size += once_size;
+        }
         break;
     case net_http_transfer_chunked:
         assert(0);
