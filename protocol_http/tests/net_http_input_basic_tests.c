@@ -20,7 +20,7 @@ static int teardown(void **state) {
 
 static void http_input_identity(void **state) {
     net_http_testenv_t env = *state;
-    net_http_testenv_create_ep(env);
+    net_http_testenv_create_ep_established(env);
 
     net_http_req_t req = net_http_req_create(env->m_http_endpoint, net_http_req_method_get, "/a");
     assert_true(req);
@@ -49,7 +49,7 @@ static void http_input_identity(void **state) {
 
 static void http_input_chunked(void **state) {
     net_http_testenv_t env = *state;
-    net_http_testenv_create_ep(env);
+    net_http_testenv_create_ep_established(env);
 
     net_http_req_t req = net_http_req_create(env->m_http_endpoint, net_http_req_method_get, "/a");
     assert_true(req);
@@ -89,7 +89,7 @@ static void http_input_chunked(void **state) {
 
 static void http_input_gzip_identity(void **state) {
     net_http_testenv_t env = *state;
-    net_http_testenv_create_ep(env);
+    net_http_testenv_create_ep_established(env);
 
     net_http_req_t req = net_http_req_create(env->m_http_endpoint, net_http_req_method_get, "/a");
     assert_true(req);

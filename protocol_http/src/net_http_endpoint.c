@@ -402,6 +402,11 @@ int net_http_endpoint_set_res_content_encoding(
         http_ep->m_current_res.m_gzip.m_stream->zalloc = Z_NULL;
         http_ep->m_current_res.m_gzip.m_stream->zfree = Z_NULL;
         http_ep->m_current_res.m_gzip.m_stream->opaque = Z_NULL;
+        http_ep->m_current_res.m_gzip.m_stream->avail_in = 0;
+        http_ep->m_current_res.m_gzip.m_stream->next_in = NULL;
+        http_ep->m_current_res.m_gzip.m_stream->avail_out = 0;
+        http_ep->m_current_res.m_gzip.m_stream->next_out = NULL;
+        
         /* http_ep->m_current_res.m_gzip.m_stream->avail_in = (uInt)inputSize; */
         /* http_ep->m_current_res.m_gzip.m_stream->next_in = (Bytef *)input; */
         /* http_ep->m_current_res.m_gzip.m_stream->avail_out = (uInt)outputSize; */

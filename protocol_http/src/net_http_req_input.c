@@ -308,35 +308,44 @@ static int net_http_endpoint_input_body_consume_body_part(
         net_endpoint_buf_consume(endpoint, net_ep_buf_http_in, buf_sz);
         return 0;
     }
-    
-    req->m_res_download_size += buf_sz;
-    
-    if (req->m_res_on_complete == NULL) {
+
+    while (req->m_res_on_body /*需要读取 */
+        && buf_sz > 0 /*还有等待读取的数据 */) {
+        uint32_t block_size = 0;
+        void * block_buf = net_endpoint_buf_peak(endpoint, net_ep_buf_http_in, &block_size);
+        assert(block_buf > 0); /*由输入方确保有足够的数据 */
+
+        if (block_size > buf_sz) block_size = buf_sz;
+        req->m_res_download_size += block_size;
+
+        switch (http_ep->m_current_res.m_content_encoding) {
+        case net_http_content_identity:
+            if (req->m_res_on_body(req->m_res_ctx, req, block_buf, block_size) != 0) {
+                CPE_ERROR(
+                    http_protocol->m_em, "http: %s: req %d: <== process body fail, size=%d",
+                    net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
+                    req->m_id, buf_sz);
+                return -1;
+            }
+            break;
+        case net_http_content_gzip:
+            break;
+        case net_http_content_deflate:
+            break;
+        case net_http_content_br:
+            break;
+        }
+
+        if (!net_endpoint_is_active(endpoint)) return -1;
+
+        net_endpoint_buf_consume(endpoint, net_ep_buf_http_in, block_size);
+        buf_sz -= block_size;
+    }
+
+    if (buf_sz) {
+        req->m_res_download_size += buf_sz;
         net_endpoint_buf_consume(endpoint, net_ep_buf_http_in, buf_sz);
-        return 0;
     }
-
-    if (req->m_res_on_body) {
-        void * buf = NULL;
-        if (net_endpoint_buf_peak_with_size(endpoint, net_ep_buf_http_in, buf_sz, &buf) != 0) {
-            CPE_ERROR(
-                http_protocol->m_em, "http: %s: req %d: <== peak body data fail, size=%d",
-                net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
-                req->m_id, buf_sz);
-            return -1;
-        }
-
-        
-        if (req->m_res_on_body(req->m_res_ctx, req, buf, buf_sz) != 0) {
-            CPE_ERROR(
-                http_protocol->m_em, "http: %s: req %d: <== process body fail, size=%d",
-                net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
-                req->m_id, buf_sz);
-            return -1;
-        }
-    }
-
-    net_endpoint_buf_consume(endpoint, net_ep_buf_http_in, buf_sz);
 
     return 0;
 }
