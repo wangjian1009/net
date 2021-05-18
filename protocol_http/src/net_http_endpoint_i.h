@@ -1,5 +1,6 @@
 #ifndef NET_HTTP_ENDPOINT_I_H_INCLEDED
 #define NET_HTTP_ENDPOINT_I_H_INCLEDED
+#include <zlib.h>
 #include "net_http_endpoint.h"
 #include "net_http_protocol_i.h"
 
@@ -30,6 +31,9 @@ struct net_http_endpoint {
         net_http_res_state_t m_state;
         net_http_transfer_encoding_t m_trans_encoding;
         net_http_content_encoding_t m_content_encoding;
+        union {
+            z_stream * m_stream;
+        } m_gzip;
         net_http_connection_type_t m_connection_type;
         struct {
             uint32_t m_length;
@@ -57,6 +61,9 @@ int net_http_endpoint_write_head_pair(
 
 int net_http_endpoint_do_process(
     net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_endpoint_t endpoint);
+
+int net_http_endpoint_set_res_content_encoding(
+    net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_content_encoding_t content_encoding);
 
 const char * net_http_res_state_str(net_http_res_state_t res_state);
 

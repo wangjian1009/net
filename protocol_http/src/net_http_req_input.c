@@ -255,9 +255,9 @@ static int net_http_req_process_response_head_follow_line(
         }
     } else if (strcasecmp(name, "Content-Encoding") == 0) {
         if (strcasecmp(value, "identity") == 0) {
-            http_ep->m_current_res.m_content_encoding = net_http_content_identity;
+            net_http_endpoint_set_res_content_encoding(http_protocol, http_ep, net_http_content_identity);
         } else if (strcasecmp(value, "gzip") == 0) {
-            http_ep->m_current_res.m_content_encoding = net_http_content_gzip;
+            net_http_endpoint_set_res_content_encoding(http_protocol, http_ep, net_http_content_gzip);
         } else {
             CPE_ERROR(
                 http_protocol->m_em, "http: %s: Content-Encoding %s unknown",

@@ -11,3 +11,5 @@ set_property(TARGET net_protocol_http PROPERTY INCLUDE_DIRECTORIES
   ${CMAKE_CURRENT_LIST_DIR}/../../core/include
   ${net_protocol_http_base}/include
   )
+
+target_link_libraries(net_protocol_http INTERFACE z)

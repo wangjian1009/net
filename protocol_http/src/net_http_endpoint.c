@@ -16,6 +16,7 @@
 #include "net_http_protocol_i.h"
 #include "net_http_req_i.h"
 
+static void net_http_endpoint_reset_current_res(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep);
 static void net_http_endpoint_reset_data(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_res_result_t result);
 
 net_http_endpoint_t
@@ -68,6 +69,7 @@ int net_http_endpoint_init(net_endpoint_t endpoint) {
     http_ep->m_endpoint = endpoint;
     http_ep->m_connection_type = net_http_connection_type_keep_alive;
     http_ep->m_req_count = 0;
+    bzero(&http_ep->m_current_res, sizeof(http_ep->m_current_res));
     TAILQ_INIT(&http_ep->m_reqs);
     
     return 0;
@@ -115,11 +117,8 @@ int net_http_endpoint_input(net_endpoint_t endpoint) {
                 net_http_req_free_force(to_free);
 
                 uint8_t close_connection = http_ep->m_current_res.m_connection_type == net_http_connection_type_close;
-                bzero(&http_ep->m_current_res, sizeof(http_ep->m_current_res));
-                http_ep->m_current_res.m_state = net_http_res_state_reading_head_first;
-                http_ep->m_current_res.m_trans_encoding = net_http_transfer_identity;
-                http_ep->m_current_res.m_content_encoding = net_http_content_identity;
-                http_ep->m_current_res.m_connection_type = net_http_connection_type_keep_alive;
+
+                net_http_endpoint_reset_current_res(http_protocol, http_ep);                
 
                 if (close_connection) {
                     if (net_endpoint_set_state(endpoint, net_endpoint_state_disable) != 0) {
@@ -372,11 +371,72 @@ int net_http_endpoint_flush(net_http_endpoint_t http_ep) {
     return 0;
 }
 
+int net_http_endpoint_set_res_content_encoding(
+    net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_content_encoding_t content_encoding)
+{
+    switch (http_ep->m_current_res.m_content_encoding) {
+    case net_http_content_identity:
+        break;
+    case net_http_content_gzip:
+        if (http_ep->m_current_res.m_gzip.m_stream) {
+            deflateEnd(http_ep->m_current_res.m_gzip.m_stream);
+            mem_free(http_protocol->m_alloc, http_ep->m_current_res.m_gzip.m_stream);
+            http_ep->m_current_res.m_gzip.m_stream = NULL;
+        }
+        break;
+    case net_http_content_deflate:
+        break;
+    case net_http_content_br:
+        break;
+    }
+
+    http_ep->m_current_res.m_content_encoding = content_encoding;
+
+    switch (http_ep->m_current_res.m_content_encoding) {
+    case net_http_content_identity:
+        break;
+    case net_http_content_gzip:
+        http_ep->m_current_res.m_gzip.m_stream = mem_alloc(http_protocol->m_alloc, sizeof(z_stream));
+        if (http_ep->m_current_res.m_gzip.m_stream == NULL) {
+        }
+        http_ep->m_current_res.m_gzip.m_stream->zalloc = Z_NULL;
+        http_ep->m_current_res.m_gzip.m_stream->zfree = Z_NULL;
+        http_ep->m_current_res.m_gzip.m_stream->opaque = Z_NULL;
+        /* http_ep->m_current_res.m_gzip.m_stream->avail_in = (uInt)inputSize; */
+        /* http_ep->m_current_res.m_gzip.m_stream->next_in = (Bytef *)input; */
+        /* http_ep->m_current_res.m_gzip.m_stream->avail_out = (uInt)outputSize; */
+        /* http_ep->m_current_res.m_gzip.m_stream->next_out = (Bytef *)output; */
+
+        // hard to believe they don't have a macro for gzip encoding, "Add 16" is the best thing zlib can do:
+        // "Add 16 to windowBits to write a simple gzip header and trailer around the compressed data instead of a zlib wrapper"
+        deflateInit2(http_ep->m_current_res.m_gzip.m_stream, Z_DEFAULT_COMPRESSION, Z_DEFLATED, 15 | 16, 8, Z_DEFAULT_STRATEGY);
+        break;
+    case net_http_content_deflate:
+        break;
+    case net_http_content_br:
+        break;
+    }
+    
+    return 0;
+}
+
+static void net_http_endpoint_reset_current_res(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep) {
+    net_http_endpoint_set_res_content_encoding(http_protocol, http_ep, net_http_content_identity);
+    
+    bzero(&http_ep->m_current_res, sizeof(http_ep->m_current_res));
+    http_ep->m_current_res.m_state = net_http_res_state_reading_head_first;
+    http_ep->m_current_res.m_trans_encoding = net_http_transfer_identity;
+    http_ep->m_current_res.m_content_encoding = net_http_content_identity;
+    http_ep->m_current_res.m_connection_type = net_http_connection_type_keep_alive;
+
+    bzero(&http_ep->m_current_res, sizeof(http_ep->m_current_res));
+}
+
 static void net_http_endpoint_reset_data(net_http_protocol_t http_protocol, net_http_endpoint_t http_ep, net_http_res_result_t result) {
     http_ep->m_connection_type = net_http_connection_type_keep_alive;
 
-    bzero(&http_ep->m_current_res, sizeof(http_ep->m_current_res));
-    
+    net_http_endpoint_reset_current_res(http_protocol, http_ep);
+
     while(!TAILQ_EMPTY(&http_ep->m_reqs)) {
         net_http_req_t req = TAILQ_FIRST(&http_ep->m_reqs);
 
