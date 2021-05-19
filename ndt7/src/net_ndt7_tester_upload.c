@@ -1,5 +1,6 @@
 #include <assert.h>
 #include "yajl/yajl_tree.h"
+#include "cpe/pal/pal_stdio.h"
 #include "cpe/pal/pal_string.h"
 #include "cpe/utils/url.h"
 #include "net_schedule.h"

@@ -43,7 +43,7 @@ prometheus_process_collector_create_i(
     return base_collector;
 }
 
-void prometheus_process_collector_nooop_collect(base_collector) {
+void prometheus_process_collector_nooop_collect(prometheus_collector_t base_collector) {
 }
 
 prometheus_collector_t

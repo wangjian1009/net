@@ -1,5 +1,6 @@
 #include <assert.h>
 #include "yajl/yajl_tree.h"
+#include "cpe/pal/pal_stdio.h"
 #include "yajl_stream_parser.h"
 #include "net_endpoint.h"
 #include "net_address.h"

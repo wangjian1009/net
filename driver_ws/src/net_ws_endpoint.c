@@ -3,6 +3,7 @@
 #include "wslay_event.h"
 #include "cpe/pal/pal_string.h"
 #include "cpe/pal/pal_strings.h"
+#include "cpe/pal/pal_stdio.h"
 #include "cpe/utils/error.h"
 #include "cpe/utils/hex_utils.h"
 #include "cpe/utils/base64.h"
