@@ -121,6 +121,7 @@ typedef enum net_endpoint_network_errno {
     net_endpoint_network_errno_net_down,
     net_endpoint_network_errno_host_unreachable,
     net_endpoint_network_errno_user_closed,
+    net_endpoint_network_errno_connect_timeout,
     net_endpoint_network_errno_internal,
 } net_endpoint_network_errno_t;
 

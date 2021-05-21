@@ -1160,8 +1160,9 @@ static void net_sock_endpoint_connect_timeout(net_timer_t timer, void * ctx) {
         }
     } else {
         net_endpoint_set_error(
-            base_endpoint, net_endpoint_error_source_network,
-            net_endpoint_network_errno_internal, "Timeout");
+            base_endpoint,
+            net_endpoint_error_source_network,
+            net_endpoint_network_errno_connect_timeout, "ConnectTimeout");
 
         if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
             net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);

@@ -828,6 +828,8 @@ const char * net_endpoint_network_errno_str(net_endpoint_network_errno_t error) 
         return "host-unreachable";
     case net_endpoint_network_errno_user_closed:
         return "user-closed";
+    case net_endpoint_network_errno_connect_timeout:
+        return "connect-timeout";
     case net_endpoint_network_errno_internal:
         return "internal";
     }
