@@ -428,10 +428,10 @@ static int net_http_endpoint_input_body_consume_body_part_gzip(
             done = 0;
             break;
         case Z_BUF_ERROR:
-            CPE_ERROR(
-                http_protocol->m_em, "http: %s: req %d: <== decompressed not enough buf",
-                net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint),
-                req->m_id);
+            /* CPE_ERROR( */
+            /*     http_protocol->m_em, "http: %s: req %d: <== decompressed not enough buf", */
+            /*     net_endpoint_dump(net_http_protocol_tmp_buffer(http_protocol), endpoint), */
+            /*     req->m_id); */
             break;
         case Z_STREAM_END:
             //result = process_trailer(conn, zp);
