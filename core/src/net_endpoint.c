@@ -157,6 +157,9 @@ void net_endpoint_free(net_endpoint_t endpoint) {
 
     while(!TAILQ_EMPTY(&endpoint->m_monitors)) {
         net_endpoint_monitor_t monitor = TAILQ_FIRST(&endpoint->m_monitors);
+#if CPE_UNIT_TEST
+        monitor->m_is_processing = 0;
+#endif        
         assert(!monitor->m_is_processing);
         assert(!monitor->m_is_free);
         net_endpoint_monitor_free(monitor);
