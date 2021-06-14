@@ -11,3 +11,5 @@ set_property(TARGET net_driver_dq PROPERTY INCLUDE_DIRECTORIES
   ${CMAKE_CURRENT_LIST_DIR}/../../driver_sock/include
   ${net_driver_dq_base}/include
   )
+
+target_link_libraries(net_driver_dq INTERFACE net_driver_sock)
