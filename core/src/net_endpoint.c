@@ -407,6 +407,10 @@ int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) 
         return 0;
     }
 
+    assert(
+        state != net_endpoint_state_error
+        || endpoint->m_error_source != net_endpoint_error_source_none);
+
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
     
     if (endpoint->m_protocol_debug || endpoint->m_driver_debug || schedule->m_debug >= 2) {
