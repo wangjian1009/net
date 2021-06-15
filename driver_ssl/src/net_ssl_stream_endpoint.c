@@ -144,6 +144,12 @@ int net_ssl_stream_endpoint_update(net_endpoint_t base_endpoint) {
             && net_endpoint_is_active(base_underline)
             && net_endpoint_error_source(base_underline) == net_endpoint_error_source_none)
         {
+            net_endpoint_set_error(
+                base_underline,
+                net_endpoint_error_source(base_endpoint),
+                net_endpoint_error_no(base_endpoint),
+                net_endpoint_error_msg(base_endpoint));
+
             if (net_endpoint_set_state(base_underline, net_endpoint_state_error) != 0) {
                 net_endpoint_set_state(base_underline, net_endpoint_state_deleting);
             }
