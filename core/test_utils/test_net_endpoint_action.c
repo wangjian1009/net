@@ -59,6 +59,8 @@ void test_net_endpoint_apply_action_i(test_net_driver_t tdriver, net_endpoint_t 
         }
         break;
     case test_net_endpoint_action_error:
+        net_endpoint_set_error(
+            base_endpoint, action->m_error.m_error_source, action->m_error.m_error_no, action->m_error.m_error_msg);
         if (net_endpoint_set_state(base_endpoint, net_endpoint_state_error) != 0) {
             net_endpoint_set_state(base_endpoint, net_endpoint_state_deleting);
         }
