@@ -4,6 +4,8 @@ file(GLOB net_driver_sock_source ${net_driver_sock_base}/src/*.c)
 
 add_library(net_driver_sock STATIC ${net_driver_sock_source})
 
+target_link_libraries(net_driver_sock INTERFACE net_core cpe_utils_sock)
+
 set_property(TARGET net_driver_sock PROPERTY INCLUDE_DIRECTORIES
   ${CMAKE_CURRENT_LIST_DIR}/../../../cpe/pal/include
   ${CMAKE_CURRENT_LIST_DIR}/../../../cpe/utils/include
