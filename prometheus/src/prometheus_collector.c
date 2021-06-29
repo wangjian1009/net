@@ -65,6 +65,11 @@ void prometheus_collector_free(prometheus_collector_t collector) {
     mem_free(manager->m_alloc, collector);
 }
 
+prometheus_manager_t
+prometheus_collector_manager(prometheus_collector_t collector) {
+    return collector->m_manager;
+}
+
 int prometheus_collector_add_metric(prometheus_collector_t collector, prometheus_metric_t metric) {
     prometheus_collector_metric_t collector_metric
         = prometheus_collector_metric_create(metric, collector);

@@ -18,6 +18,8 @@ prometheus_collector_create(
 
 void prometheus_collector_free(prometheus_collector_t collector);
 
+prometheus_manager_t prometheus_collector_manager(prometheus_collector_t collector);
+
 int prometheus_collector_add_metric(prometheus_collector_t collector, prometheus_metric_t metric);
 
 prometheus_collector_t prometheus_collector_default(prometheus_manager_t manager);

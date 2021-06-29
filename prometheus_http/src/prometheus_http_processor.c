@@ -42,7 +42,7 @@ prometheus_http_processor_create(
     net_http_svr_mount_point_t mount_point =
         net_http_svr_mount_point_mount(
             net_http_svr_protocol_root(processor->m_http_svr),
-            "metric", NULL, processor->m_http_processor);
+            "metrics", NULL, processor->m_http_processor);
 
     mem_buffer_init(&processor->m_collect_buffer, alloc);
     return processor;
