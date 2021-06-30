@@ -18,4 +18,4 @@ set(tests_net_prometheus_process_libraries net_prometheus_process test_utils_cpe
 
 set_property(TARGET tests_net_prometheus_process PROPERTY LINK_LIBRARIES ${tests_net_prometheus_process_libraries})
 
-add_test(NAME prometheus_process COMMAND tests_net_prometheus_process)
+add_test(NAME prometheus_process COMMAND tests_net_prometheus_process cpe_vfs)
