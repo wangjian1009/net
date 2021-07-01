@@ -1,5 +1,6 @@
 #include "cmocka_all.h"
 #include "cpe/pal/pal_string.h"
+#include "cpe/pal/pal_STDIO.h"
 #include "net_schedule.h"
 #include "test_net_progress.h"
 #include "test_net_tl_op.h"

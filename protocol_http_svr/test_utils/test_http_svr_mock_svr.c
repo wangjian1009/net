@@ -2,6 +2,7 @@
 #include "test_memory.h"
 #include "test_net_tl_op.h"
 #include "cpe/pal/pal_string.h"
+#include "cpe/pal/pal_stdio.h"
 #include "cpe/utils/string_utils.h"
 #include "net_address.h"
 #include "net_acceptor.h"
