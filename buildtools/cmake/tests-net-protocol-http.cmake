@@ -11,7 +11,7 @@ if(DEFINED net_protocol_http_base)
     set(test_net_protocol_http_source ${test_net_protocol_http_source} ${test_net_protocol_http_source_https})
     
     set(tests_net_protocol_http_compile_definitions
-      ${tests_net_protocol_http_compile_definitions} -DTESTS_NET_PROTOCOL_HTTP_SSL=1)
+      ${tests_net_protocol_http_compile_definitions} TESTS_NET_PROTOCOL_HTTP_SSL=1)
 
     set(tests_net_protocol_http_libraries ${tests_net_protocol_http_libraries} net_driver_ssl)
   endif()

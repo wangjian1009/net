@@ -24,7 +24,11 @@ set(wslay_compile_definitions
   HAVE_NETINET_IN_H
   )
 endif ()
-  
+
+if (WIN32)
+  set(wslay_link_libraries ${wslay_link_libraries} Ws2_32)
+endif()
+
 add_library(wslay STATIC ${wslay_source})
 set_property(TARGET wslay PROPERTY COMPILE_OPTIONS ${wslay_compile_options})
 set_property(TARGET wslay PROPERTY COMPILE_DEFINITIONS ${wslay_compile_definitions})
@@ -33,3 +37,5 @@ set_property(TARGET wslay PROPERTY INCLUDE_DIRECTORIES
   ${wslay_base}/include
   ${wslay_base}/src/${OS_NAME}
   )
+
+target_link_libraries(wslay INTERFACE ${wslay_link_libraries})
