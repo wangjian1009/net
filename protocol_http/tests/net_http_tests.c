@@ -9,8 +9,9 @@ int main(void) {
 
         CPE_ADD_TEST_SUIT(net_http_input_basic_tests),
 
+#if TESTS_NET_PROTOCOL_HTTP_SSL
         CPE_ADD_TEST_SUIT(net_https_basic_tests),
-    
+#endif    
     CPE_END_RUN_TESTS();
 }
 

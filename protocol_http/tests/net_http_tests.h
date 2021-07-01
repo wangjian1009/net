@@ -9,6 +9,8 @@ CPE_DECLARE_TEST_SUIT(net_http_output_method_head_tests);
 
 CPE_DECLARE_TEST_SUIT(net_http_input_basic_tests);
 
+#if TESTS_NET_PROTOCOL_HTTP_SSL
 CPE_DECLARE_TEST_SUIT(net_https_basic_tests);
+#endif
 
 #endif
