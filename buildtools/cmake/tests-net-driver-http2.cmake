@@ -21,10 +21,6 @@ if (DEFINED net_driver_http2_base)
     net_driver_http2 net_core cpe_utils_sock cpe_utils cpe_pal
     cmocka)
 
-  # if (OS_NAME STREQUAL linux32 OR OS_NAME STREQUAL linux64)
-  #   set(tests_net_driver_http2_libraries ${tests_net_driver_http2_libraries} m)
-  # endif()
-
   set_property(TARGET tests_net_driver_http2 PROPERTY LINK_LIBRARIES ${tests_net_driver_http2_libraries})
 
   add_test(NAME net-http2 COMMAND tests_net_driver_http2)

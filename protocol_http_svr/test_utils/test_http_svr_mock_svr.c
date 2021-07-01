@@ -11,7 +11,7 @@
 #include "net_http_svr_protocol.h"
 #include "net_http_svr_processor.h"
 #include "net_http_svr_mount_point.h"
-#if TESTS_NET_PROTOCOL_HTTP_SSL
+#if TESTS_UTILS_NET_PROTOCOL_HTTP_SVR_SSL
 #include "net_ssl_stream_driver.h"
 #endif
 #include "net_http_svr_request.h"
@@ -63,7 +63,7 @@ test_http_svr_mock_svr_create(test_http_svr_testenv_t env, const char * name, co
     if (strcasecmp(cpe_url_protocol(url), "http") == 0) {
         driver = net_driver_from_data(env->m_driver);
     }
-#if TESTS_NET_PROTOCOL_HTTP_SSL
+#if TESTS_UTILS_NET_PROTOCOL_HTTP_SVR_SSL
     else if (strcasecmp(cpe_url_protocol(url), "https") == 0) {
         net_ssl_stream_driver_t ssl_driver =
             net_ssl_stream_driver_create(
