@@ -1,5 +1,6 @@
 #include "cmocka_all.h"
 #include "cpe/pal/pal_string.h"
+#include "cpe/pal/pal_strings.h"
 #include "cpe/utils/buffer.h"
 #include "prometheus_tests.h"
 #include "prometheus_testenv.h"
