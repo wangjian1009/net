@@ -20,6 +20,10 @@ endif ()
 
 add_library(ev STATIC ${ev_source})
 
+if(WIN32)
+  list(APPEND ev_link_libraries Ws2_32)
+endif()
+
 set_property(TARGET ev PROPERTY INCLUDE_DIRECTORIES
   ${ev_base}/include
   ${ev_base}/src/${OS_NAME}
@@ -27,3 +31,4 @@ set_property(TARGET ev PROPERTY INCLUDE_DIRECTORIES
 
 set_property(TARGET ev PROPERTY COMPILE_OPTIONS ${ev_compile_options})
 set_property(TARGET ev PROPERTY COMPILE_DEFINITIONS ${ev_compile_definitions})
+target_link_libraries(ev INTERFACE ${ev_link_libraries})

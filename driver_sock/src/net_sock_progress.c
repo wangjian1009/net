@@ -1,5 +1,10 @@
 #include <assert.h>
+#if CPE_OS_MINGW
+#include "unixem/setenv.h"
+extern int setenv(const char* name, const char* value, int bOverwrite);
+#else
 #include <sys/wait.h>
+#endif
 #include "cpe/pal/pal_signal.h"
 #include "cpe/pal/pal_errno.h"
 #include "cpe/pal/pal_unistd.h"
