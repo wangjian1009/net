@@ -526,7 +526,7 @@ net_address_t net_endpoint_address(net_endpoint_t endpoint) {
 void net_endpoint_set_error(net_endpoint_t endpoint, net_endpoint_error_source_t error_source, uint32_t error_no, const char * msg) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
 
-    //assert(endpoint->m_error_source == net_endpoint_error_source_none);
+    assert(endpoint->m_error_source == net_endpoint_error_source_none);
     endpoint->m_error_source = error_source;
     endpoint->m_error_no = error_no;
 

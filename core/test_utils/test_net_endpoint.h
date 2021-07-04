@@ -44,6 +44,9 @@ void test_net_endpoint_error(
     int64_t delay_ms);
 
 /*endpoint by id*/
+void test_net_endpoint_id_expect_connect_noop(
+    test_net_driver_t driver, uint32_t ep_id, const char * target);
+
 void test_net_endpoint_id_expect_connect_success(
     test_net_driver_t driver, uint32_t ep_id, const char * target, int64_t delay_ms);
 
