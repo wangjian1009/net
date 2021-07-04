@@ -2,6 +2,7 @@
 #include "cpe/pal/pal_string.h"
 #include "cpe/pal/pal_strings.h"
 #include "cpe/utils/stream_buffer.h"
+#include "cpe/utils/stream_mem.h"
 #include "cpe/utils/string_utils.h"
 #include "net_timer.h"
 #include "net_endpoint_i.h"
@@ -414,11 +415,21 @@ int net_endpoint_set_state(net_endpoint_t endpoint, net_endpoint_state_t state) 
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
     
     if (endpoint->m_protocol_debug || endpoint->m_driver_debug || schedule->m_debug >= 2) {
-        CPE_INFO(
-            schedule->m_em, "core: %s: state %s ==> %s",
-            net_endpoint_dump(&schedule->m_tmp_buffer, endpoint),
-            net_endpoint_state_str(endpoint->m_state),
-            net_endpoint_state_str(state));
+        if (state == net_endpoint_state_error) {
+            char error_buf[128];
+            CPE_INFO(
+                schedule->m_em, "core: %s: state %s ==> %s(%s)",
+                net_endpoint_dump(&schedule->m_tmp_buffer, endpoint),
+                net_endpoint_state_str(endpoint->m_state),
+                net_endpoint_state_str(state),
+                net_endpoint_dump_error(error_buf, sizeof(error_buf), endpoint));
+        } else {
+            CPE_INFO(
+                schedule->m_em, "core: %s: state %s ==> %s",
+                net_endpoint_dump(&schedule->m_tmp_buffer, endpoint),
+                net_endpoint_state_str(endpoint->m_state),
+                net_endpoint_state_str(state));
+        }
     }
 
     uint8_t old_is_active = net_endpoint_is_active(endpoint);
@@ -515,6 +526,7 @@ net_address_t net_endpoint_address(net_endpoint_t endpoint) {
 void net_endpoint_set_error(net_endpoint_t endpoint, net_endpoint_error_source_t error_source, uint32_t error_no, const char * msg) {
     net_schedule_t schedule = endpoint->m_driver->m_schedule;
 
+    //assert(endpoint->m_error_source == net_endpoint_error_source_none);
     endpoint->m_error_source = error_source;
     endpoint->m_error_no = error_no;
 
@@ -540,6 +552,29 @@ const char * net_endpoint_error_msg(net_endpoint_t endpoint) {
 
 uint8_t net_endpoint_have_error(net_endpoint_t endpoint) {
     return endpoint->m_error_source == net_endpoint_error_source_none ? 0 : 1;
+}
+
+const char * net_endpoint_dump_error(char * buf, uint32_t buf_capacity, net_endpoint_t endpoint) {
+    struct write_stream_mem ws = CPE_WRITE_STREAM_MEM_INITIALIZER(buf, buf_capacity - 1);
+
+    stream_printf((write_stream_t)&ws, "%s", net_endpoint_error_source_str(endpoint->m_error_source));
+
+    switch(endpoint->m_error_source) {
+    case net_endpoint_error_source_none:
+        break;
+    case net_endpoint_error_source_network:
+        stream_printf((write_stream_t)&ws, ".%s", net_endpoint_network_errno_str(endpoint->m_error_no));
+        break;
+    case net_endpoint_error_source_http:
+    case net_endpoint_error_source_ssl:
+    case net_endpoint_error_source_websocket:
+    case net_endpoint_error_source_user:
+        stream_printf((write_stream_t)&ws, ".%d", endpoint->m_error_no);
+        break;
+    }
+
+    buf[ws.m_pos] = 0;
+    return buf;
 }
 
 int net_endpoint_set_address(net_endpoint_t endpoint, net_address_t address) {

@@ -82,6 +82,7 @@ net_endpoint_error_source_t net_endpoint_error_source(net_endpoint_t endpoint);
 uint32_t net_endpoint_error_no(net_endpoint_t endpoint);
 const char * net_endpoint_error_msg(net_endpoint_t endpoint);
 uint8_t net_endpoint_have_error(net_endpoint_t endpoint);
+const char * net_endpoint_dump_error(char * buf, uint32_t buf_capacity, net_endpoint_t endpoint);
 
 /*    check */
 uint32_t net_endpoint_buf_size(net_endpoint_t endpoint, net_endpoint_buf_type_t buf_type);
