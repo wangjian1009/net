@@ -1,4 +1,5 @@
 #include <assert.h>
+#include "cpe/pal/pal_string.h"
 #include "net_driver.h"
 #include "net_endpoint.h"
 #include "net_protocol.h"
@@ -259,8 +260,16 @@ int net_pair_endpoint_update(net_endpoint_t base_endpoint) {
 
                 if (net_endpoint_is_active(base_other)) {
                     if (net_endpoint_error_source(base_other) == net_endpoint_error_source_none) {
+                        char error_buf[256];
+                        net_endpoint_dump_error(error_buf, sizeof(error_buf), base_endpoint);
+                        if (net_endpoint_error_msg(base_endpoint)) {
+                            uint32_t len = strlen(error_buf);
+                            snprintf(
+                                error_buf + len, sizeof(error_buf) - len, ".%s", net_endpoint_error_msg(base_endpoint));
+                        }
+                            
                         net_endpoint_set_error(
-                            base_other, net_endpoint_error_source_network, net_endpoint_network_errno_internal, NULL);
+                            base_other, net_endpoint_error_source_network, net_endpoint_network_errno_internal, error_buf);
                     }
 
                     if (net_endpoint_set_state(base_other, net_endpoint_state_error) != 0) {
