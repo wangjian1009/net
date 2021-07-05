@@ -246,10 +246,12 @@ int net_ssl_endpoint_on_state_change(net_endpoint_t base_endpoint, net_endpoint_
         break;
     case net_endpoint_state_error:
         if (base_stream) {
-            net_endpoint_set_error(
-                base_stream,
-                net_endpoint_error_source(base_endpoint),
-                net_endpoint_error_no(base_endpoint), net_endpoint_error_msg(base_endpoint));
+            if (!net_endpoint_have_error(base_stream)) {
+                net_endpoint_set_error(
+                    base_stream,
+                    net_endpoint_error_source(base_endpoint),
+                    net_endpoint_error_no(base_endpoint), net_endpoint_error_msg(base_endpoint));
+            }
             if (net_endpoint_set_state(base_stream, net_endpoint_state_error) != 0) return -1;
         }
         break;
@@ -508,11 +510,13 @@ static int net_ssl_endpoint_update_error(net_endpoint_t base_endpoint, int ssl_e
         }
         return net_endpoint_set_state(base_endpoint, net_endpoint_state_disable);
     default:
-        net_ssl_endpoint_dump_error(base_endpoint, ssl_error);
-        char error_buf[1024];
-        net_endpoint_set_error(
-            base_endpoint, net_endpoint_error_source_ssl, ssl_error,
-            net_ssl_strerror(error_buf, sizeof(error_buf), ssl_error));
+        if (!net_endpoint_have_error(base_endpoint)) {
+            net_ssl_endpoint_dump_error(base_endpoint, ssl_error);
+            char error_buf[1024];
+            net_endpoint_set_error(
+                base_endpoint, net_endpoint_error_source_ssl, ssl_error,
+                net_ssl_strerror(error_buf, sizeof(error_buf), ssl_error));
+        }
         return net_endpoint_set_state(base_endpoint, net_endpoint_state_error);
     }
     return 0;
