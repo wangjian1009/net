@@ -34,6 +34,7 @@ int prometheus_process_linux_fds_count(prometheus_process_provider_t provider, u
 
     vfs_entry_info_t entry;
     while((entry = vfs_entry_info_it_next(&entry_it))) {
+        CPE_ERROR(provider->m_em, "xxxxxx: collect open fdns: path = %s, name=%s", path, entry->m_name);
         if (strcmp(".", entry->m_name) == 0 || strcmp("..", entry->m_name) == 0) {
             continue;
         }
