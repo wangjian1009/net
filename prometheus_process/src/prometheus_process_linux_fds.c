@@ -15,8 +15,6 @@ int prometheus_process_linux_fds_count(prometheus_process_provider_t provider, u
     int pid = (int)getpid();
     snprintf(path, sizeof(path), "/proc/%d/fd", pid);
 
-    CPE_ERROR(provider->m_em, "xxxxxx: collect open fdns: path = %s", path);
-    
     vfs_dir_t d = vfs_dir_open(provider->m_vfs_mgr, path);
     if (d == NULL) {
         CPE_ERROR(
@@ -25,8 +23,6 @@ int prometheus_process_linux_fds_count(prometheus_process_provider_t provider, u
         return -1;
     }
 
-    CPE_ERROR(provider->m_em, "xxxxxx: collect open fdns: path = %s, open success", path);
-
     struct vfs_entry_info_it entry_it;
     vfs_dir_entries(d, &entry_it);
 
@@ -34,7 +30,6 @@ int prometheus_process_linux_fds_count(prometheus_process_provider_t provider, u
 
     vfs_entry_info_t entry;
     while((entry = vfs_entry_info_it_next(&entry_it))) {
-        CPE_ERROR(provider->m_em, "xxxxxx: collect open fdns: path = %s, name=%s", path, entry->m_name);
         if (strcmp(".", entry->m_name) == 0 || strcmp("..", entry->m_name) == 0) {
             continue;
         }
@@ -42,7 +37,6 @@ int prometheus_process_linux_fds_count(prometheus_process_provider_t provider, u
     }
 
     vfs_dir_close(d);
-    CPE_ERROR(provider->m_em, "xxxxxx: collect open fdns: count=%d", *count);
     
     return 0;
 }
