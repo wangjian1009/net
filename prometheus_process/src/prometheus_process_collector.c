@@ -50,7 +50,7 @@ prometheus_collector_t
 prometheus_process_collector_create(prometheus_process_provider_t provider, const char * name) {
 #if CPE_OS_MAC
     return prometheus_process_collector_create_i(provider, name, prometheus_process_collector_mac_collect);
-#elif CPE_OS_LINUX    
+#elif CPE_OS_LINUX
     return prometheus_process_collector_create_i(provider, name, prometheus_process_collector_linux_collect);
 #else
     return prometheus_process_collector_create_i(provider, name, prometheus_process_collector_nooop_collect);

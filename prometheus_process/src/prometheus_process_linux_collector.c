@@ -164,6 +164,8 @@ void prometheus_process_collector_open_fds(prometheus_collector_t base_collector
     prometheus_process_provider_t provider = collector->m_provider;
     assert(provider);
 
+    CPE_ERROR(provider->m_em, "xxxxxx: collect open fdns");
+    
     prometheus_collector_metric_t open_fds =
         prometheus_collector_metric_find_by_metric(
             base_collector, prometheus_process_provider_open_fds(provider));
